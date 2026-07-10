@@ -17,7 +17,9 @@ const nextConfig: NextConfig = {
   },
   turbopack: {
     resolveAlias: {
-      "@/lib/firebase/admin": "./tests/mocks/admin-mock.ts",
+      ...(process.env.NODE_ENV !== "production" ? {
+        "@/lib/firebase/admin": "./tests/mocks/admin-mock.ts",
+      } : {}),
     },
   },
 };
