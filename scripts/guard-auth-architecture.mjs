@@ -67,9 +67,9 @@ walk(rootDir, isSourceFile, (filePath) => {
     logError(relPath, "Contains banned NextAuth SessionProvider, useSession or getServerSession.");
   }
 
-  // 2. popup authentication
-  if (content.includes('signInWithPopup')) {
-    logError(relPath, "Contains banned signInWithPopup method. Use signInWithRedirect.");
+  // 2. redirect authentication
+  if (content.includes('signInWithRedirect') || content.includes('getRedirectResult')) {
+    logError(relPath, "Contains banned signInWithRedirect or getRedirectResult method. Use signInWithPopup.");
   }
 
   // 3. window.open / window.closed in auth files

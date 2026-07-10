@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider, getRedirectResult, signOut } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
 import { firebaseAuth as auth } from "@/lib/firebase/client";
-import { createServerSession } from "@/lib/auth/create-server-session";
+import { finalizeServerSession } from "@/lib/auth/create-server-session";
 import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
@@ -14,36 +14,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const redirectHandledRef = useRef(false);
-
-  useEffect(() => {
-    if (redirectHandledRef.current) {
-      return;
-    }
-
-    redirectHandledRef.current = true;
-
-    void (async () => {
-      const credential = await getRedirectResult(auth);
-
-      if (!credential) {
-        return;
-      }
-
-      setLoading(true);
-      await createServerSession(credential.user);
-      await signOut(auth);
-
-      window.location.assign("/dashboard");
-    })().catch((error) => {
-      console.error("[GOOGLE_LOGIN_FAILED]", error);
-      setError(
-        "Unable to complete Google sign-in. Please try again."
-      );
-      setLoading(false);
-    });
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,13 +27,10 @@ export default function LoginPage() {
         password
       );
 
-      await createServerSession(credential.user);
-      await signOut(auth);
-
-      window.location.assign("/dashboard");
+      await finalizeServerSession(credential.user);
     } catch (err: any) {
       console.error(err);
-      setError("Unable to start your session. Check your details and try again.");
+      setError(err?.message || "Unable to start your session. Check your details and try again.");
       setLoading(false);
     }
   };
@@ -77,10 +44,22 @@ export default function LoginPage() {
       provider.setCustomParameters({
         prompt: "select_account",
       });
-      await signInWithRedirect(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      await finalizeServerSession(result.user);
     } catch (err: any) {
       console.error(err);
-      setError("Unable to start Google sign-in.");
+      const code = err?.code || "";
+      if (code === "auth/popup-blocked") {
+        setError("Sign-in popup was blocked by your browser. Please enable popups for this site.");
+      } else if (code === "auth/popup-closed-by-user") {
+        setError("Sign-in popup was closed before completion. Please try again.");
+      } else if (code === "auth/cancelled-popup-request") {
+        setError("Sign-in request was cancelled. Please try again.");
+      } else if (code === "auth/account-exists-with-different-credential") {
+        setError("An account already exists with a different credential linked to this email.");
+      } else {
+        setError(err?.message || "Unable to start Google sign-in.");
+      }
       setLoading(false);
     }
   };

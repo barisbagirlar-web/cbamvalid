@@ -3,9 +3,9 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createUserWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider, signOut } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
 import { firebaseAuth as auth } from "@/lib/firebase/client";
-import { createServerSession } from "@/lib/auth/create-server-session";
+import { finalizeServerSession } from "@/lib/auth/create-server-session";
 import { Loader2 } from "lucide-react";
 
 export default function RegisterPage() {
@@ -31,10 +31,7 @@ export default function RegisterPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      await createServerSession(user);
-      await signOut(auth);
-
-      window.location.assign("/dashboard");
+      await finalizeServerSession(user);
     } catch (err: unknown) {
       console.error(err);
       if (err instanceof Error) {
@@ -45,7 +42,7 @@ export default function RegisterPage() {
         } else if (msg.includes("weak-password")) {
           setError("Password is too weak. Use at least 6 characters.");
         } else {
-          setError("Unable to complete your registration. Check your details and try again.");
+          setError(err.message || "Unable to complete your registration. Check your details and try again.");
         }
       } else {
         setError("Unable to complete your registration. Check your details and try again.");
@@ -59,12 +56,26 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const googleProvider = new GoogleAuthProvider();
-      await signInWithRedirect(auth, googleProvider);
-    } catch (err: unknown) {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: "select_account",
+      });
+      const result = await signInWithPopup(auth, provider);
+      await finalizeServerSession(result.user);
+    } catch (err: any) {
       console.error(err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to start Google sign-in.";
-      setError(errorMessage);
+      const code = err?.code || "";
+      if (code === "auth/popup-blocked") {
+        setError("Sign-in popup was blocked by your browser. Please enable popups for this site.");
+      } else if (code === "auth/popup-closed-by-user") {
+        setError("Sign-in popup was closed before completion. Please try again.");
+      } else if (code === "auth/cancelled-popup-request") {
+        setError("Sign-in request was cancelled. Please try again.");
+      } else if (code === "auth/account-exists-with-different-credential") {
+        setError("An account already exists with a different credential linked to this email.");
+      } else {
+        setError(err?.message || "Failed to start Google sign-in.");
+      }
       setLoading(false);
     }
   };

@@ -3,10 +3,9 @@ import "server-only";
 import { cookies } from "next/headers";
 import { getAdminAuth } from "@/lib/firebase/admin";
 
-export const SESSION_COOKIE_NAME =
-  process.env.NODE_ENV === "production"
-    ? "__Host-cbam_session"
-    : "cbam_session_dev";
+import { SESSION_COOKIE_NAME } from "./session-config";
+
+export { SESSION_COOKIE_NAME };
 
 export type AuthSession = {
   uid: string;
@@ -30,8 +29,13 @@ export async function getSession(): Promise<AuthSession | null> {
       true
     );
 
+    const uid = claims.uid || claims.sub;
+    if (!uid || typeof uid !== "string") {
+      return null;
+    }
+
     return {
-      uid: claims.uid,
+      uid,
       email:
         typeof claims.email === "string"
           ? claims.email

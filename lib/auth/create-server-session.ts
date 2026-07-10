@@ -1,51 +1,38 @@
-"use client";
-
 import type { User } from "firebase/auth";
+import { signOut } from "firebase/auth";
+import { firebaseAuth as auth } from "@/lib/firebase/client";
 
-let activeSessionRequest: Promise<void> | null = null;
-
-async function executeSessionRequest(
-  user: User
-): Promise<void> {
+export async function createServerSession(user: User): Promise<void> {
   const idToken = await user.getIdToken(true);
 
   const response = await fetch("/api/auth/session", {
     method: "POST",
-    credentials: "include",
-    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      idToken,
-    }),
+    credentials: "same-origin",
+    cache: "no-store",
+    body: JSON.stringify({ idToken }),
   });
 
   if (!response.ok) {
-    const payload = (await response
-      .json()
-      .catch(() => null)) as
-      | {
-          error?: string;
-          requestId?: string;
-        }
-      | null;
+    const payload = (await response.json().catch(() => null)) as {
+      error?: string;
+      requestId?: string;
+    } | null;
 
-    throw new Error(
-      payload?.error ?? "AUTH_SESSION_CREATE_FAILED"
-    );
+    const errMsg = payload?.error || `Session creation failed: ${response.status}`;
+    console.error("[SESSION_CREATION_FAILED]", {
+      status: response.status,
+      error: payload?.error,
+      requestId: payload?.requestId,
+    });
+    throw new Error(errMsg);
   }
 }
 
-export function createServerSession(
-  user: User
-): Promise<void> {
-  if (!activeSessionRequest) {
-    activeSessionRequest = executeSessionRequest(user)
-      .finally(() => {
-        activeSessionRequest = null;
-      });
-  }
-
-  return activeSessionRequest;
+export async function finalizeServerSession(user: User): Promise<void> {
+  await createServerSession(user);
+  await signOut(auth);
+  window.location.assign("/dashboard");
 }
