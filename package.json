@@ -11,6 +11,7 @@
     "guard:auth-architecture": "node scripts/guard-auth-architecture.mjs",
     "guard:auth-env": "node scripts/guard-auth-env.mjs",
     "guard:auth-env:prod": "node scripts/guard-auth-env.mjs --production",
+    "test": "vitest",
     "test:auth": "vitest run tests/auth",
     "test:integration": "vitest run tests/integration",
     "test:e2e:auth": "playwright test tests/e2e/auth",

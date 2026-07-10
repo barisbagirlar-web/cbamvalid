@@ -39,15 +39,34 @@ function sessionTtlSeconds(): number {
 
 function originAllowed(request: Request): boolean {
   const origin = request.headers.get("origin");
+  if (!origin) return false;
   
   // Allow localhost origins during non-production runs / tests
   if (process.env.NODE_ENV !== "production") {
-    if (origin && (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:"))) {
+    if (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")) {
       return true;
     }
   }
 
-  return Boolean(origin && ALLOWED_ORIGINS.has(origin));
+  // Allow hardcoded production domains
+  if (ALLOWED_ORIGINS.has(origin)) {
+    return true;
+  }
+
+  // Allow dynamically configured env origins
+  if (process.env.AUTH_ALLOWED_ORIGINS) {
+    const envOrigins = process.env.AUTH_ALLOWED_ORIGINS.split(",").map(o => o.trim());
+    if (envOrigins.includes(origin)) {
+      return true;
+    }
+  }
+
+  // Allow Firebase App Hosting subdomains for this project
+  if (origin.endsWith(".hosted.app") && origin.includes("cbam-desk")) {
+    return true;
+  }
+
+  return false;
 }
 
 function errorCode(error: unknown): string {
