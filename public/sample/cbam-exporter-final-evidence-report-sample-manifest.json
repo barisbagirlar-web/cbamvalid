@@ -1,0 +1,18 @@
+{
+  "name": "cbam-exporter-final-evidence-report-sample",
+  "version": "1.0",
+  "files": [
+    {
+      "name": "cbam-exporter-final-evidence-report-sample.pdf",
+      "sha256": "02b8dc342c5d33386eca629d90eacaa06747d7ed175282e5436e1d667ad5b734"
+    },
+    {
+      "name": "cbam-exporter-final-evidence-report-sample.json",
+      "sha256": "a12b1942c4b30648afb115ce0996b60dd6d1fc1bfa5fe74e2881287a1c1ba3e5"
+    },
+    {
+      "name": "cbam-exporter-final-evidence-report-sample.xml",
+      "sha256": "4f8270f0a3d04bd9c291c299ae283ae5e7809bfd6afc5dd5a47f2434ca015535"
+    }
+  ]
+}

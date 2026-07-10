@@ -1,0 +1,247 @@
+app/admin/AdminClient.tsx:14:  tokens: number;
+app/admin/AdminClient.tsx:54:              tokens: data.tokens || 0,
+app/admin/AdminClient.tsx:69:        collection(db, "cbam_reports"),
+app/admin/AdminClient.tsx:98:    setEditTokensValue(userProfile.tokens);
+app/admin/AdminClient.tsx:112:      const response = await fetch("/api/admin/tokens", {
+app/admin/AdminClient.tsx:117:          tokensToSet: editTokensValue,
+app/admin/AdminClient.tsx:124:        throw new Error(result.error || "Failed to update tokens");
+app/admin/AdminClient.tsx:198:            {users.reduce((sum, u) => sum + u.tokens, 0)}
+app/admin/AdminClient.tsx:247:                      profile.tokens
+app/dashboard/wizard/WizardClient.tsx:9:import { cbamFormSchema, CBAMFormData } from "@/lib/cbam/schema";
+app/dashboard/wizard/WizardClient.tsx:10:import { calculateEmissions, CalculationResult } from "@/lib/cbam/calculator";
+app/dashboard/wizard/WizardClient.tsx:11:import { generateAnonymousXML } from "@/lib/cbam/xmlGenerator";
+app/dashboard/wizard/WizardClient.tsx:12:import { generateAnonymousPDF } from "@/lib/cbam/pdfGenerator";
+app/dashboard/wizard/WizardClient.tsx:13:import { generateAnonymousJSON } from "@/lib/cbam/jsonGenerator";
+app/dashboard/wizard/WizardClient.tsx:14:import { initializePaddle, Paddle } from "@paddle/paddle-js";
+app/dashboard/wizard/WizardClient.tsx:44:  const [paddle, setPaddle] = useState<Paddle>();
+app/dashboard/wizard/WizardClient.tsx:51:      token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || "",
+app/dashboard/wizard/WizardClient.tsx:69:    resolver: zodResolver(cbamFormSchema),
+app/dashboard/wizard/WizardClient.tsx:108:    const xmlString = generateAnonymousXML(reportData.data, reportData.calcResult);
+app/dashboard/wizard/WizardClient.tsx:109:    const blob = new Blob([xmlString], { type: "application/xml" });
+app/dashboard/wizard/WizardClient.tsx:113:    a.download = `CBAM_${reportData.data.cnCode}_${Date.now()}.xml`;
+app/dashboard/wizard/WizardClient.tsx:120:    const jsonString = generateAnonymousJSON(reportData.data, reportData.calcResult);
+app/dashboard/wizard/WizardClient.tsx:125:    a.download = `CBAM_${reportData.data.cnCode}_${Date.now()}.json`;
+app/dashboard/wizard/WizardClient.tsx:132:    const blob = generateAnonymousPDF(reportData.data, reportData.calcResult);
+app/dashboard/wizard/WizardClient.tsx:136:    a.download = `CBAM_${reportData.data.cnCode}_${Date.now()}.pdf`;
+app/dashboard/wizard/WizardClient.tsx:151:      const tokensCount = userData?.tokens || 0;
+app/dashboard/wizard/WizardClient.tsx:156:        console.log("[SUPER ADMIN BYPASS] Report is being generated with unlimited access without spending tokens.");
+app/dashboard/wizard/WizardClient.tsx:159:        alert("Free report generated with Super Admin privileges!");
+app/dashboard/wizard/WizardClient.tsx:164:      if (isDevelopment && tokensCount < 1) {
+app/dashboard/wizard/WizardClient.tsx:172:      if (tokensCount < 1) {
+app/dashboard/wizard/WizardClient.tsx:173:        if (!paddle) {
+app/dashboard/wizard/WizardClient.tsx:180:        paddle.Checkout.open({
+app/dashboard/wizard/WizardClient.tsx:194:      const reportRef = doc(collection(db, "cbam_reports"));
+app/dashboard/wizard/WizardClient.tsx:201:        const currentTokens = userDoc.data()?.tokens || 0;
+app/dashboard/wizard/WizardClient.tsx:203:          throw new Error("Insufficient credits.");
+app/dashboard/wizard/WizardClient.tsx:206:        // Deduct 1 credit
+app/dashboard/wizard/WizardClient.tsx:207:        transaction.update(userRef, { tokens: currentTokens - 1 });
+app/dashboard/wizard/WizardClient.tsx:209:        // Log the completed report under cbam_reports
+app/dashboard/wizard/WizardClient.tsx:247:        <img src="/cbam_logo.svg" alt="CBAM Valid Logo" className="h-8 w-auto object-contain" />
+app/dashboard/wizard/WizardClient.tsx:574:                <p className="text-sm text-kil-text/60 font-mono">Credit successfully deducted. You can download your files below.</p>
+app/dashboard/wizard/WizardClient.tsx:658:                  ) : (userData?.tokens ?? 0) < 1 ? (
+app/dashboard/DashboardClient.tsx:7:import { initializePaddle, Paddle } from "@paddle/paddle-js";
+app/dashboard/DashboardClient.tsx:33:  const [paddle, setPaddle] = useState<Paddle | null>(null);
+app/dashboard/DashboardClient.tsx:35:  const [paddleLoading, setPaddleLoading] = useState(true);
+app/dashboard/DashboardClient.tsx:42:        token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || "",
+app/dashboard/DashboardClient.tsx:61:      collection(db, "cbam_reports"),
+app/dashboard/DashboardClient.tsx:85:    if (!paddle || !user) return;
+app/dashboard/DashboardClient.tsx:87:    paddle.Checkout.open({
+app/dashboard/DashboardClient.tsx:97:        tokens: "1",
+app/dashboard/DashboardClient.tsx:126:          <img src="/cbam_logo.svg" alt="CBAM Valid Logo" className="h-8 w-auto object-contain" />
+app/dashboard/DashboardClient.tsx:158:                {userData?.tokens ?? 0}
+app/dashboard/DashboardClient.tsx:168:            disabled={paddleLoading}
+app/dashboard/DashboardClient.tsx:171:            {paddleLoading ? "Yükleniyor..." : "Kredi Satın Al ($150)"}
+app/layout.tsx:29:      { url: "/favicon.svg", type: "image/svg+xml" }
+app/cn-code/[code]/page.tsx:13:export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+app/cn-code/[code]/page.tsx:25:      canonical: `https://cbamvalid.com/cn-code/${code}`,
+app/api/webhook/paddle/route.ts:2:import { Paddle, Environment } from "@paddle/paddle-node-sdk";
+app/api/webhook/paddle/route.ts:6:const paddle = new Paddle(process.env.PADDLE_API_KEY || "", {
+app/api/webhook/paddle/route.ts:14:  const signature = request.headers.get("paddle-signature") || "";
+app/api/webhook/paddle/route.ts:23:    const event = await paddle.webhooks.unmarshal(rawBody, secretKey, signature);
+app/api/webhook/paddle/route.ts:26:    if (event.eventType === "transaction.completed") {
+app/api/webhook/paddle/route.ts:36:      const tokensPurchased = Number(customData?.tokens || 1);
+app/api/webhook/paddle/route.ts:45:            tokens: tokensPurchased,
+app/api/webhook/paddle/route.ts:49:          const currentTokens = userDoc.data()?.tokens || 0;
+app/api/webhook/paddle/route.ts:51:            tokens: currentTokens + tokensPurchased,
+app/api/webhook/paddle/route.ts:56:      console.log(`Successfully credited ${tokensPurchased} tokens to user ${userId}`);
+app/api/auth/session/route.ts:58:      ? "https://cbamvalid.com"
+app/api/auth/session/route.ts:69:function verifyOrigin(
+app/api/auth/session/route.ts:136:      await adminAuth.verifySessionCookie(
+app/api/auth/session/route.ts:231:  if (!verifyOrigin(request)) {
+app/api/auth/session/route.ts:338:      decoded = await adminAuth.verifyIdToken(idToken, true);
+app/api/auth/session/route.ts:464:  if (!verifyOrigin(request)) {
+app/api/health/release/route.ts:9:    deploymentId: process.env.DEPLOYMENT_ID || "cbamvalid-production-build-20260710",
+app/api/admin/tokens/route.ts:16:    const { targetUserId, tokensToSet } = await request.json();
+app/api/admin/tokens/route.ts:18:    if (!targetUserId || tokensToSet === undefined || isNaN(Number(tokensToSet))) {
+app/api/admin/tokens/route.ts:19:      return NextResponse.json({ error: "Invalid target user or token count" }, { status: 400 });
+app/api/admin/tokens/route.ts:22:    // Update user tokens using Firebase Admin SDK
+app/api/admin/tokens/route.ts:24:      tokens: Number(tokensToSet),
+app/api/admin/tokens/route.ts:27:    console.log(`Admin ${session.email} set tokens of user ${targetUserId} to ${tokensToSet}`);
+app/api/admin/tokens/route.ts:29:    return NextResponse.json({ success: true, updatedUserId: targetUserId, newTokens: tokensToSet });
+app/api/admin/tokens/route.ts:32:    console.error("Admin action token route error:", err.message || err);
+app/api/cbam/generate/route.ts:4:import { cbamFormSchema } from "@/lib/cbam/schema";
+app/api/cbam/generate/route.ts:5:import { calculateEmissions } from "@/lib/cbam/calculator";
+app/api/cbam/generate/route.ts:6:import { generateAnonymousXML } from "@/lib/cbam/xmlGenerator";
+app/api/cbam/generate/route.ts:20:    const validationResult = cbamFormSchema.safeParse(body);
+app/api/cbam/generate/route.ts:31:    // 4. Perform atomic Firestore transaction (decrement token and create report)
+app/api/cbam/generate/route.ts:33:    const reportRef = adminDb.collection("cbam_reports").doc();
+app/api/cbam/generate/route.ts:39:      const currentTokens = userData?.tokens || 0;
+app/api/cbam/generate/route.ts:42:        throw new Error("Insufficient tokens. Please purchase tokens on the dashboard.");
+app/api/cbam/generate/route.ts:45:      // Decrement tokens by 1
+app/api/cbam/generate/route.ts:47:        tokens: currentTokens - 1,
+app/api/cbam/generate/route.ts:63:    const xmlContent = generateAnonymousXML(data, emissionsResult);
+app/api/cbam/generate/route.ts:69:      xmlContent,
+app/api/webhooks/paddle/route.ts:2:import { Paddle, Environment } from "@paddle/paddle-node-sdk";
+app/api/webhooks/paddle/route.ts:6:const paddle = new Paddle(process.env.PADDLE_API_KEY || "", {
+app/api/webhooks/paddle/route.ts:14:  const signature = request.headers.get("paddle-signature") || "";
+app/api/webhooks/paddle/route.ts:24:    const event = await paddle.webhooks.unmarshal(rawBody, secretKey, signature);
+app/api/webhooks/paddle/route.ts:27:    // We listen to the transaction.completed event
+app/api/webhooks/paddle/route.ts:28:    if (event.eventType === "transaction.completed") {
+app/api/webhooks/paddle/route.ts:40:      // Quantity of tokens purchased (passed in customData or default to 1)
+app/api/webhooks/paddle/route.ts:41:      const tokensPurchased = Number(customData?.tokens || 1);
+app/api/webhooks/paddle/route.ts:43:      // Securely increment user tokens in Firestore using a transaction
+app/api/webhooks/paddle/route.ts:50:          // If profile doc doesn't exist, create it with purchased tokens
+app/api/webhooks/paddle/route.ts:53:            tokens: tokensPurchased,
+app/api/webhooks/paddle/route.ts:57:          // Increment current tokens
+app/api/webhooks/paddle/route.ts:58:          const currentTokens = userDoc.data()?.tokens || 0;
+app/api/webhooks/paddle/route.ts:60:            tokens: currentTokens + tokensPurchased,
+app/api/webhooks/paddle/route.ts:65:      console.log(`Successfully credited ${tokensPurchased} tokens to user ${userId}`);
+app/(auth)/register/page.tsx:116:      // 3. Retrieve ID token and create secure HttpOnly session cookie
+app/(auth)/register/page.tsx:177:          <img src="/cbam_logo.svg" alt="CBAM Valid Logo" className="h-8 w-auto object-contain mb-4" />
+app/(auth)/login/page.tsx:157:          <img src="/cbam_logo.svg" alt="CBAM Valid Logo" className="h-8 w-auto object-contain mb-4" />
+app/page.tsx:22:            <img src="/cbam_logo.svg" alt="CBAM Valid Logo" className="h-7 md:h-8 w-auto object-contain" />
+app/page.tsx:190:          <img src="/cbam_logo.svg" alt="CBAM Valid Logo" className="h-7 md:h-8 w-auto object-contain mb-4" />
+app/page.tsx:192:            Independent compliance software. Not affiliated with, endorsed by, or sponsored by the European Union or the European Commission. The generated XML structure follows the published Transitional Registry guidelines.
+lib/auth/firebase-auth-errors.ts:5:  "auth/invalid-id-token",
+lib/auth/firebase-auth-errors.ts:6:  "auth/id-token-expired",
+lib/auth/firebase-auth-errors.ts:7:  "auth/id-token-revoked",
+lib/auth/firebase-auth-errors.ts:13:  "auth/invalid-id-token",
+lib/auth/firebase-auth-errors.ts:14:  "auth/id-token-expired",
+lib/auth/firebase-auth-errors.ts:15:  "auth/id-token-revoked",
+lib/auth/session-cookie.ts:72:      await adminAuth.verifySessionCookie(
+lib/auth/session-config.ts:3:    ? "__Host-cbam_session"
+lib/auth/session-config.ts:4:    : "cbam_session_dev";
+lib/cbam/schema.ts:14:export const cbamFormSchema = z.object({
+lib/cbam/schema.ts:55:export type CBAMFormData = z.infer<typeof cbamFormSchema>;
+lib/cbam/jsonGenerator.ts:4:export function generateAnonymousJSON(data: CBAMFormData, calc: CalculationResult): string {
+lib/cbam/jsonGenerator.ts:7:      standard: "urn:eu:taxud:cbam:v1",
+lib/cbam/jsonGenerator.ts:8:      generatedAt: new Date().toISOString(),
+lib/cbam/pdfGenerator.ts:1:import { jsPDF } from "jspdf";
+lib/cbam/pdfGenerator.ts:5:export function generateAnonymousPDF(data: CBAMFormData, calc: CalculationResult): Blob {
+lib/cbam/pdfGenerator.ts:65:  const disclaimerText = "The values stated in this document are generated strictly based on the inputs provided by the declarant. The platform acts solely as a computational tool and holds no legal liability regarding the accuracy of the data or any customs penalties applied by the EU authorities. The declarant assumes full responsibility for the reported emissions.";
+lib/cbam/xmlGenerator.ts:1:import { create } from "xmlbuilder2";
+lib/cbam/xmlGenerator.ts:5:export function generateAnonymousXML(data: CBAMFormData, calc: CalculationResult): string {
+lib/cbam/xmlGenerator.ts:8:    .ele("CBAMDeclaration", { xmlns: "urn:eu:taxud:cbam:v1" })
+scripts/create_admin.js:38:      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "cbam-projesi"
+scripts/create_admin.js:65:      tokens: 100,
+scripts/create_admin.js:70:    console.log("Firestore profil güncellendi: role='admin', tokens=100");
+scripts/guard-auth-env.mjs:148:      parsed.hash
+scripts/guard-auth-env.mjs:151:        `Origin must not contain a path, query or hash: ${rawOrigin}`
+scripts/guard-auth-env.mjs:174:    !uniqueOrigins.has("https://cbamvalid.com")
+scripts/guard-auth-env.mjs:177:      "Production AUTH_ALLOWED_ORIGINS must contain exactly https://cbamvalid.com."
+scripts/guard-auth-architecture.mjs:104:  // 6. verifyIdToken applied to session-cookie value or raw ID token cookie fallbacks
+scripts/guard-auth-architecture.mjs:106:    if (content.includes('verifyIdToken')) {
+scripts/guard-auth-architecture.mjs:107:      logError(relPath, "verifyIdToken is strictly forbidden in the session reader (session-cookie.ts). Only verifySessionCookie must be used.");
+scripts/guard-auth-architecture.mjs:120:  if (content.includes('raw ID token') || content.includes('cookieValue = idToken') || content.includes('cookieValue=idToken')) {
+scripts/guard-auth-architecture.mjs:121:    logError(relPath, "Contains forbidden raw ID token fallback patterns.");
+scripts/guard-auth-architecture.mjs:133:  // 9. token/credit grant in auth session route
+scripts/guard-auth-architecture.mjs:135:    if (content.includes('tokens:') || content.includes('credits:')) {
+scripts/guard-auth-architecture.mjs:136:      logError(relPath, "Auth session route contains forbidden tokens/credits grant rules.");
+tests/auth/auth.test.ts:9:process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = "cbam-project";
+tests/auth/auth.test.ts:10:process.env.AUTH_ALLOWED_ORIGINS = "https://cbamvalid.com";
+tests/auth/auth.test.ts:21:  const verifySessionCookie = vi.fn();
+tests/auth/auth.test.ts:22:  const verifyIdToken = vi.fn();
+tests/auth/auth.test.ts:26:      verifySessionCookie,
+tests/auth/auth.test.ts:27:      verifyIdToken,
+tests/auth/auth.test.ts:89:    vi.mocked(authInstance.verifySessionCookie).mockResolvedValue({
+tests/auth/auth.test.ts:91:      email: "test@cbamvalid.com",
+tests/auth/auth.test.ts:98:        cookie: "cbam_session_dev=valid-cookie-value",
+tests/auth/auth.test.ts:107:    expect(body.user.email).toBe("test@cbamvalid.com");
+tests/auth/auth.test.ts:113:    vi.mocked(authInstance.verifySessionCookie).mockRejectedValue(expiredError);
+tests/auth/auth.test.ts:118:        cookie: "cbam_session_dev=expired-cookie-value",
+tests/auth/auth.test.ts:134:    vi.mocked(authInstance.verifySessionCookie).mockRejectedValue(revokedError);
+tests/auth/auth.test.ts:139:        cookie: "cbam_session_dev=revoked-cookie-value",
+tests/auth/auth.test.ts:152:    const invalidError = new Error("Invalid token");
+tests/auth/auth.test.ts:154:    vi.mocked(authInstance.verifySessionCookie).mockRejectedValue(invalidError);
+tests/auth/auth.test.ts:159:        cookie: "cbam_session_dev=invalid-cookie-value",
+tests/auth/auth.test.ts:174:    vi.mocked(authInstance.verifySessionCookie).mockRejectedValue(networkError);
+tests/auth/auth.test.ts:179:        cookie: "cbam_session_dev=valid-cookie-value",
+tests/auth/auth.test.ts:192:  it("Missing token -> 400", async () => {
+tests/auth/auth.test.ts:196:        "Origin": "https://cbamvalid.com",
+tests/auth/auth.test.ts:212:        "Origin": "https://cbamvalid.com",
+tests/auth/auth.test.ts:228:        "Origin": "https://cbamvalid.com",
+tests/auth/auth.test.ts:231:      body: JSON.stringify({ idToken: "some-id-token" }),
+tests/auth/auth.test.ts:247:      body: JSON.stringify({ idToken: "some-id-token" }),
+tests/auth/auth.test.ts:256:  it("Invalid ID token -> 401", async () => {
+tests/auth/auth.test.ts:257:    const tokenError = new Error("Invalid ID token");
+tests/auth/auth.test.ts:258:    (tokenError as any).code = "auth/invalid-id-token";
+tests/auth/auth.test.ts:259:    vi.mocked(authInstance.verifyIdToken).mockRejectedValue(tokenError);
+tests/auth/auth.test.ts:264:        "Origin": "https://cbamvalid.com",
+tests/auth/auth.test.ts:267:      body: JSON.stringify({ idToken: "invalid-id-token" }),
+tests/auth/auth.test.ts:277:    vi.mocked(authInstance.verifyIdToken).mockResolvedValue({
+tests/auth/auth.test.ts:279:      email: "test@cbamvalid.com",
+tests/auth/auth.test.ts:286:        "Origin": "https://cbamvalid.com",
+tests/auth/auth.test.ts:289:      body: JSON.stringify({ idToken: "old-id-token" }),
+tests/auth/auth.test.ts:298:  it("Valid fresh ID token -> session created", async () => {
+tests/auth/auth.test.ts:299:    vi.mocked(authInstance.verifyIdToken).mockResolvedValue({
+tests/auth/auth.test.ts:301:      email: "test@cbamvalid.com",
+tests/auth/auth.test.ts:311:        "Origin": "https://cbamvalid.com",
+tests/auth/auth.test.ts:314:      body: JSON.stringify({ idToken: "fresh-id-token" }),
+tests/auth/auth.test.ts:323:    expect(setCookie).toContain("cbam_session_dev=mocked-session-cookie-val");
+tests/auth/auth.test.ts:327:    vi.mocked(authInstance.verifyIdToken).mockResolvedValue({
+tests/auth/auth.test.ts:329:      email: "test@cbamvalid.com",
+tests/auth/auth.test.ts:337:        "Origin": "https://cbamvalid.com",
+tests/auth/auth.test.ts:340:      body: JSON.stringify({ idToken: "fresh-id-token" }),
+tests/auth/auth.test.ts:356:        "Origin": "https://cbamvalid.com",
+tests/integration/integration.test.ts:9:process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = "cbam-project";
+tests/integration/integration.test.ts:30:  const verifySessionCookie = vi.fn();
+tests/integration/integration.test.ts:33:      verifySessionCookie,
+tests/integration/integration.test.ts:85:import { POST as adminTokensRoute } from "@/app/api/admin/tokens/route";
+tests/integration/integration.test.ts:106:      email: "new@cbamvalid.com",
+tests/integration/integration.test.ts:116:      email: "new@cbamvalid.com",
+tests/integration/integration.test.ts:125:  it("Existing user profile not overwritten and tokens not modified", async () => {
+tests/integration/integration.test.ts:126:    vi.mocked(mockDocRef.get).mockResolvedValue({ exists: true, data: () => ({ tokens: 42, role: "user" }) } as any);
+tests/integration/integration.test.ts:130:      email: "new@cbamvalid.com",
+tests/integration/integration.test.ts:143:    vi.mocked(authInstance.verifySessionCookie).mockResolvedValue({
+tests/integration/integration.test.ts:145:      email: "user@cbamvalid.com",
+tests/integration/integration.test.ts:160:    vi.mocked(authInstance.verifySessionCookie).mockResolvedValue({
+tests/integration/integration.test.ts:162:      email: "baris@cbamvalid.com",
+tests/integration/integration.test.ts:174:  it("Protected APIs reject no cookie (e.g. admin tokens route returns 401)", async () => {
+tests/integration/integration.test.ts:177:    const req = new NextRequest("http://localhost:3000/api/admin/tokens", {
+tests/integration/integration.test.ts:179:      body: JSON.stringify({ targetUserId: "user-1", tokensToSet: 10 }),
+tests/integration/integration.test.ts:191:    vi.mocked(authInstance.verifySessionCookie).mockRejectedValue(err);
+tests/integration/integration.test.ts:194:    const req = new NextRequest("http://localhost:3000/api/admin/tokens", {
+tests/integration/integration.test.ts:196:      body: JSON.stringify({ targetUserId: "user-1", tokensToSet: 10 }),
+tests/integration/integration.test.ts:204:    vi.mocked(authInstance.verifySessionCookie).mockResolvedValue({
+tests/integration/integration.test.ts:206:      email: "user@cbamvalid.com",
+tests/integration/integration.test.ts:211:    const req = new NextRequest("http://localhost:3000/api/admin/tokens", {
+tests/integration/integration.test.ts:213:      body: JSON.stringify({ targetUserId: "user-1", tokensToSet: 10 }),
+tests/e2e/auth/login.spec.ts:7:    // Dynamically generate a valid mock JWT with proper expiration and issued-at timestamps
+tests/e2e/auth/login.spec.ts:10:      iss: "https://securetoken.google.com/cbam-desk",
+tests/e2e/auth/login.spec.ts:11:      aud: "cbam-desk",
+tests/e2e/auth/login.spec.ts:15:      email: "e2e@cbamvalid.com",
+tests/e2e/auth/login.spec.ts:20:          email: ["e2e@cbamvalid.com"]
+tests/e2e/auth/login.spec.ts:55:          url.includes("verifyPassword") ||
+tests/e2e/auth/login.spec.ts:60:          url.includes("token")
+tests/e2e/auth/login.spec.ts:124:          email: "e2e@cbamvalid.com",
+tests/e2e/auth/login.spec.ts:128:          refreshToken: "mock-refresh-token",
+tests/e2e/auth/login.spec.ts:135:    await page.route(/\/identitytoolkit\/v3\/relyingparty\/verifyPassword/, mockSignInResponse);
+tests/e2e/auth/login.spec.ts:148:              email: "e2e@cbamvalid.com",
+tests/e2e/auth/login.spec.ts:167:          projectId: "cbam-desk",
+tests/e2e/auth/login.spec.ts:173:    // Intercept token refresh requests to return mock ID token via RegExp
+tests/e2e/auth/login.spec.ts:174:    await page.route(/\/securetoken\.googleapis\.com\/v1\/token/, async (route) => {
+tests/e2e/auth/login.spec.ts:180:          token_type: "Bearer",
+tests/e2e/auth/login.spec.ts:181:          refresh_token: "mock-refresh-token",
+tests/e2e/auth/login.spec.ts:182:          id_token: mockJwt,
+tests/e2e/auth/login.spec.ts:183:          access_token: mockJwt, // Crucial: mapped to accessToken in client SDK
+tests/e2e/auth/login.spec.ts:185:          project_id: "cbam-desk",
+tests/e2e/auth/login.spec.ts:198:            "set-cookie": `cbam_session_dev=${mockJwt}; Path=/; HttpOnly`,
+tests/e2e/auth/login.spec.ts:206:            "set-cookie": "cbam_session_dev=; Path=/; Max-Age=0; HttpOnly",
+tests/e2e/auth/login.spec.ts:212:        const hasCookie = headers["cookie"]?.includes("cbam_session_dev=");
+tests/e2e/auth/login.spec.ts:221:                email: "e2e@cbamvalid.com",
+tests/e2e/auth/login.spec.ts:243:            email: { stringValue: "e2e@cbamvalid.com" },
+tests/e2e/auth/login.spec.ts:244:            tokens: { integerValue: "5" },
+tests/e2e/auth/login.spec.ts:256:    await page.fill('input[type="email"]', "e2e@cbamvalid.com");
+tests/e2e/auth/login.spec.ts:264:    await expect(page.locator("body")).toContainText("e2e@cbamvalid.com", { timeout: 15000 });
+tests/e2e/auth/login.spec.ts:282:        name: "cbam_session_dev",
+tests/e2e/auth/login.spec.ts:300:    const sessionCookie = cookies.find((c) => c.name === "cbam_session_dev");

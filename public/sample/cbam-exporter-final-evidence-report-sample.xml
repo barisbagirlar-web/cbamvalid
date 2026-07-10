@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CBAMDefinitiveDossier xmlns="https://cbamvalid.com/schema/exporter-evidence/1.0" generator="CBAMValid Sealing Engine v3.0" generatedAt="2026-07-10T18:42:37.165Z">
+  <Header>
+    <SchemaVersion>3.0</SchemaVersion>
+    <Language>en</Language>
+  </Header>
+  <Declarant>
+    <EORI>GB123456789000</EORI>
+    <Role>IMPORTER</Role>
+    <ReportingYear>2026</ReportingYear>
+    <ReportingQuarter>1</ReportingQuarter>
+  </Declarant>
+  <Installation>
+    <Name>Smelting Facility North</Name>
+    <CNCode>72085120</CNCode>
+    <Sector>STEEL</Sector>
+    <ProductionVolume unit="metric_tonne">15000</ProductionVolume>
+  </Installation>
+  <Metrics>
+    <TotalEmbeddedEmissions unit="tCO2e">0</TotalEmbeddedEmissions>
+    <SpecificDirectEmissions unit="tCO2e/t">0</SpecificDirectEmissions>
+    <SpecificIndirectEmissions unit="tCO2e/t">0</SpecificIndirectEmissions>
+    <FreeAllocationAdjustment unit="tCO2e">0</FreeAllocationAdjustment>
+    <CarbonPriceDeduction unit="EUR">0</CarbonPriceDeduction>
+    <NetCertificatesDue unit="units">0</NetCertificatesDue>
+    <EstimatedCostEur unit="EUR">0</EstimatedCostEur>
+  </Metrics>
+  <SourcesRegister>
+    <Source>
+      <Authority>European Commission DG TAXUD</Authority>
+      <DatasetVersion>EU_CBAM_PRICE_2026_Q1</DatasetVersion>
+      <Reference>Official weekly/quarterly price registry snapshot</Reference>
+    </Source>
+  </SourcesRegister>
+  <CalculationTraceLog>
+    <TraceNode id="applicability">
+      <FormulaId>determineApplicability</FormulaId>
+      <FormulaVersion>v1.0.0</FormulaVersion>
+      <Units>boolean</Units>
+      <RoundingMethod>NONE</RoundingMethod>
+      <LegalReference>EU_2023_956_REGULATION</LegalReference>
+      <FinalResult>1</FinalResult>
+    </TraceNode>
+    <TraceNode id="actualEmissions">
+      <FormulaId>actualEmissionsSum</FormulaId>
+      <FormulaVersion>v1.0.0</FormulaVersion>
+      <Units>tCO2e</Units>
+      <RoundingMethod>ROUND_HALF_UP_TO_4_DECIMALS</RoundingMethod>
+      <LegalReference>EU_2023_956_REGULATION</LegalReference>
+      <FinalResult>0</FinalResult>
+    </TraceNode>
+    <TraceNode id="precursors">
+      <FormulaId>precursorSum</FormulaId>
+      <FormulaVersion>v1.0.0</FormulaVersion>
+      <Units>tCO2e</Units>
+      <RoundingMethod>ROUND_HALF_UP_TO_4_DECIMALS</RoundingMethod>
+      <LegalReference>EU_2023_956_REGULATION</LegalReference>
+      <FinalResult>0</FinalResult>
+    </TraceNode>
+    <TraceNode id="totalEmbedded">
+      <FormulaId>totalEmbeddedFormula</FormulaId>
+      <FormulaVersion>v1.0.0</FormulaVersion>
+      <Units>tCO2e</Units>
+      <RoundingMethod>ROUND_HALF_UP_TO_4_DECIMALS</RoundingMethod>
+      <LegalReference>EU_2023_956_REGULATION</LegalReference>
+      <FinalResult>0</FinalResult>
+    </TraceNode>
+    <TraceNode id="freeAllocation">
+      <FormulaId>freeAllocationDeduction</FormulaId>
+      <FormulaVersion>v1.0.0</FormulaVersion>
+      <Units>tCO2e</Units>
+      <RoundingMethod>ROUND_HALF_UP_TO_4_DECIMALS</RoundingMethod>
+      <LegalReference>EU_2023_956_REGULATION</LegalReference>
+      <FinalResult>0</FinalResult>
+    </TraceNode>
+    <TraceNode id="carbonPriceDeduction">
+      <FormulaId>carbonPriceDeductionFormula</FormulaId>
+      <FormulaVersion>v1.0.0</FormulaVersion>
+      <Units>EUR</Units>
+      <RoundingMethod>ROUND_HALF_UP_TO_4_DECIMALS</RoundingMethod>
+      <LegalReference>EU_2023_956_REGULATION</LegalReference>
+      <FinalResult>0</FinalResult>
+    </TraceNode>
+    <TraceNode id="netCertificates">
+      <FormulaId>netCertificatesFormula</FormulaId>
+      <FormulaVersion>v1.0.0</FormulaVersion>
+      <Units>units</Units>
+      <RoundingMethod>CEIL</RoundingMethod>
+      <LegalReference>EU_2023_956_REGULATION</LegalReference>
+      <FinalResult>0</FinalResult>
+    </TraceNode>
+    <TraceNode id="certificateCost">
+      <FormulaId>certificateCostFormula</FormulaId>
+      <FormulaVersion>v1.0.0</FormulaVersion>
+      <Units>EUR</Units>
+      <RoundingMethod>ROUND_HALF_UP_TO_4_DECIMALS</RoundingMethod>
+      <LegalReference>EU_2023_956_REGULATION</LegalReference>
+      <FinalResult>0</FinalResult>
+    </TraceNode>
+  </CalculationTraceLog>
+  <Seal>
+    <HashSHA256>2c1b2a5782ed6642cbf0e08ac8037c3a042abcf2b946c79c7c135ff43e6f3f78</HashSHA256>
+    <SealStatus>VERIFIED_IMPOSSIBLE_TO_ALTER</SealStatus>
+  </Seal>
+</CBAMDefinitiveDossier>

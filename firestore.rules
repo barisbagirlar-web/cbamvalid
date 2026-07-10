@@ -1,0 +1,48 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if the user is the Super Admin
+    function isSuperAdmin() {
+      return request.auth != null && request.auth.token.email == 'barisbagirlar@gmail.com';
+    }
+
+    // Rules for the users collection
+    match /users/{userId} {
+      // Users can read their own profile; Super Admin can read all
+      allow read: if (request.auth != null && request.auth.uid == userId) || isSuperAdmin();
+      
+      // Users can create their own profile, but must start with 0 tokens and role 'user'
+      allow create: if request.auth != null 
+                    && request.auth.uid == userId 
+                    && request.resource.data.tokens == 0 
+                    && request.resource.data.role == 'user';
+      
+      // Users can update their profile but CANNOT mutate 'role'. They can mutate 'tokens' ONLY if it is a decrement of exactly 1.
+      allow update: if request.auth != null 
+                    && request.auth.uid == userId 
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])
+                    && (
+                      !request.resource.data.diff(resource.data).affectedKeys().hasAny(['tokens'])
+                      || (request.resource.data.tokens == resource.data.tokens - 1)
+                    );
+                    
+      // Server SDK (Admin SDK) bypasses these rules completely, allowing it to mutate tokens and roles.
+      // Super Admin can edit from client if needed (optional, but let's restrict to keep strict consistency)
+      allow delete: if isSuperAdmin();
+    }
+    
+    // Rules for the cbam_reports collection
+    match /cbam_reports/{reportId} {
+      // Users can read their own reports; Super Admin can read all
+      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) || isSuperAdmin();
+      
+      // Users can create their own reports
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      
+      // CBAM reports are immutable audit logs once submitted
+      allow update, delete: if isSuperAdmin();
+    }
+  }
+}

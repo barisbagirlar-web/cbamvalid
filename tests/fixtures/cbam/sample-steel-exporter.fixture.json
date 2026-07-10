@@ -1,0 +1,19 @@
+{
+  "exporterName": "Global Steel Exporter Ltd",
+  "declarantEORI": "GB123456789000",
+  "cnCode": "72085120",
+  "installationName": "Smelting Facility North",
+  "productionVolume": 15000,
+  "importYear": 2026,
+  "importQuarter": 1,
+  "role": "IMPORTER",
+  "hasActualData": true,
+  "isVerified": true,
+  "directEmissions": 27750,
+  "electricityConsumed": 12000,
+  "gridEmissionFactor": 0.45,
+  "isComplexGood": true,
+  "precursorDirectEmissions": 1200,
+  "precursorIndirectEmissions": 350,
+  "carbonPricePaid": 25.5
+}

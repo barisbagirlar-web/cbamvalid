@@ -1,0 +1,134 @@
+{
+  "status": "success",
+  "classification": "SAMPLE_REPORT",
+  "legalNotice": "SAMPLE REPORT - Fictional demonstration data - Not valid for regulatory use",
+  "documentHash": "2c1b2a5782ed6642cbf0e08ac8037c3a042abcf2b946c79c7c135ff43e6f3f78",
+  "data": {
+    "exporterName": "Global Steel Exporter Ltd",
+    "declarantEORI": "GB123456789000",
+    "importYear": 2026,
+    "importQuarter": 1,
+    "role": "IMPORTER",
+    "installation": {
+      "name": "Smelting Facility North",
+      "cnCode": "72085120",
+      "productionVolume": 15000,
+      "isComplexGood": true
+    },
+    "emissions": {
+      "directEmissions": 27750,
+      "electricityConsumed": 12000,
+      "gridEmissionFactor": 0.45,
+      "precursorDirectEmissions": 1200,
+      "precursorIndirectEmissions": 350
+    },
+    "results": {
+      "totalEmbeddedEmissions": 0,
+      "specificDirectEmissions": 0,
+      "specificIndirectEmissions": 0,
+      "freeAllocationAdjustment": 0,
+      "carbonPriceDeduction": 0,
+      "netCertificatesDue": 0,
+      "estimatedCertificateCostEur": 0
+    },
+    "traces": {
+      "applicability": {
+        "formulaId": "determineApplicability",
+        "formulaVersion": "v1.0.0",
+        "inputs": {
+          "cnCode": "72085120",
+          "mass": 15000
+        },
+        "units": "boolean",
+        "roundingMethod": "NONE",
+        "legalVersionRef": "EU_2023_956_REGULATION",
+        "finalResult": 1
+      },
+      "actualEmissions": {
+        "formulaId": "actualEmissionsSum",
+        "formulaVersion": "v1.0.0",
+        "inputs": {},
+        "units": "tCO2e",
+        "intermediateValues": {
+          "factor": 0.45
+        },
+        "roundingMethod": "ROUND_HALF_UP_TO_4_DECIMALS",
+        "legalVersionRef": "EU_2023_956_REGULATION",
+        "finalResult": 0
+      },
+      "precursors": {
+        "formulaId": "precursorSum",
+        "formulaVersion": "v1.0.0",
+        "inputs": {},
+        "units": "tCO2e",
+        "roundingMethod": "ROUND_HALF_UP_TO_4_DECIMALS",
+        "legalVersionRef": "EU_2023_956_REGULATION",
+        "finalResult": 0
+      },
+      "totalEmbedded": {
+        "formulaId": "totalEmbeddedFormula",
+        "formulaVersion": "v1.0.0",
+        "inputs": {
+          "directEmissions": 0,
+          "indirectEmissions": 0,
+          "precursorEmissions": 0
+        },
+        "units": "tCO2e",
+        "roundingMethod": "ROUND_HALF_UP_TO_4_DECIMALS",
+        "legalVersionRef": "EU_2023_956_REGULATION",
+        "finalResult": 0
+      },
+      "freeAllocation": {
+        "formulaId": "freeAllocationDeduction",
+        "formulaVersion": "v1.0.0",
+        "inputs": {
+          "totalEmbedded": 0,
+          "allocationFactor": 0.05
+        },
+        "units": "tCO2e",
+        "roundingMethod": "ROUND_HALF_UP_TO_4_DECIMALS",
+        "legalVersionRef": "EU_2023_956_REGULATION",
+        "finalResult": 0
+      },
+      "carbonPriceDeduction": {
+        "formulaId": "carbonPriceDeductionFormula",
+        "formulaVersion": "v1.0.0",
+        "inputs": {
+          "carbonPricePaid": 0,
+          "totalEmbedded": 0
+        },
+        "units": "EUR",
+        "roundingMethod": "ROUND_HALF_UP_TO_4_DECIMALS",
+        "legalVersionRef": "EU_2023_956_REGULATION",
+        "finalResult": 0
+      },
+      "netCertificates": {
+        "formulaId": "netCertificatesFormula",
+        "formulaVersion": "v1.0.0",
+        "inputs": {
+          "totalEmbedded": 0,
+          "freeAllocationAdjustment": 0
+        },
+        "units": "units",
+        "roundingMethod": "CEIL",
+        "legalVersionRef": "EU_2023_956_REGULATION",
+        "finalResult": 0
+      },
+      "certificateCost": {
+        "formulaId": "certificateCostFormula",
+        "formulaVersion": "v1.0.0",
+        "inputs": {
+          "netCertificatesDue": 0,
+          "priceEurPerTonne": 75.36
+        },
+        "units": "EUR",
+        "roundingMethod": "ROUND_HALF_UP_TO_4_DECIMALS",
+        "officialDatasetIds": [
+          "EU_CBAM_PRICE_2026_Q1"
+        ],
+        "legalVersionRef": "EU_2023_956_REGULATION",
+        "finalResult": 0
+      }
+    }
+  }
+}
