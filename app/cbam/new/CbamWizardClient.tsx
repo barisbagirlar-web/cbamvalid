@@ -8,6 +8,8 @@ import { Shield, CreditCard, CheckCircle2, ChevronRight, ChevronLeft, Loader2, C
 import { getSectorConfig, CbamSector } from "@/lib/cbam/sectors/sector-adapter";
 import { assessCaseReadiness, EvidenceGapItem } from "@/lib/cbam/validation/readiness-assessor";
 
+let paddleInstancePromise: Promise<Paddle | undefined> | null = null;
+
 interface CbamWizardClientProps {
   sessionUser: {
     uid: string;
@@ -62,6 +64,12 @@ export default function CbamWizardClient({ sessionUser, initialCase, availableEn
   const entitlements = availableEntitlements;
   const selectedEntitlementId = availableEntitlements[0]?.entitlementId || "";
   const [paddle, setPaddle] = useState<Paddle | null>(null);
+  const [paddleConfigError, setPaddleConfigError] = useState<string | null>(() => {
+    if (typeof window !== "undefined" && !process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN) {
+      return "Paddle configuration is missing: NEXT_PUBLIC_PADDLE_CLIENT_TOKEN is not defined.";
+    }
+    return null;
+  });
   const [paymentPending, setPaymentPending] = useState(false);
   const [sealedReport, setSealedReport] = useState<any | null>(null);
 
@@ -71,12 +79,31 @@ export default function CbamWizardClient({ sessionUser, initialCase, availableEn
   // Initialize analytics & Paddle
   useEffect(() => {
     logConversionEvent("report_started", { hasInitialCase: !!initialCase, email: sessionUser.email });
-    initializePaddle({
-      token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || "",
-      environment: process.env.NEXT_PUBLIC_PADDLE_SANDBOX === "true" ? "sandbox" : "production",
-    }).then((instance) => {
-      if (instance) setPaddle(instance);
-    }).catch(err => console.error("Paddle initialization error:", err));
+    
+    const token = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
+    if (!token) {
+      return;
+    }
+
+    if (!paddleInstancePromise) {
+      paddleInstancePromise = initializePaddle({
+        token,
+        environment: process.env.NEXT_PUBLIC_PADDLE_SANDBOX === "true" ? "sandbox" : "production",
+      });
+    }
+
+    if (paddleInstancePromise) {
+      paddleInstancePromise
+        .then((instance) => {
+          if (instance) {
+            setPaddle(instance);
+          }
+        })
+        .catch((err) => {
+          console.error("Paddle initialization error:", err);
+          setPaddleConfigError("Paddle initialization failed. Please check your configuration.");
+        });
+    }
   }, [initialCase, sessionUser.email]);
 
   // Compute sector based on CN Code
@@ -786,9 +813,14 @@ export default function CbamWizardClient({ sessionUser, initialCase, availableEn
                   <p className="text-xs text-muted">
                     A USD 150.00 single payment purchase is required to unlock sealing. You currently have 0 entitlements.
                   </p>
+                  {paddleConfigError && (
+                    <div className="p-3 border border-border bg-accent-soft text-accent text-xs font-mono text-center rounded-md">
+                      {paddleConfigError}
+                    </div>
+                  )}
                   <button
                     onClick={handlePurchase}
-                    disabled={loading || readiness.status === "BLOCKED"}
+                    disabled={loading || readiness.status === "BLOCKED" || !!paddleConfigError}
                     className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-accent px-5 py-3 font-semibold text-surface transition-colors hover:bg-accent-hover active:bg-accent-active disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer"
                   >
                     {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <CreditCard className="h-5 w-5" />}

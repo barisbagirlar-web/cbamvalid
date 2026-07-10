@@ -3,7 +3,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { firebaseAuth as auth } from "@/lib/firebase/client";
 import { finalizeServerSession } from "@/lib/auth/create-server-session";
 import { Loader2 } from "lucide-react";
