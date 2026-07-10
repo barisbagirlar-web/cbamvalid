@@ -820,7 +820,7 @@ export default function CbamWizardClient({ sessionUser, initialCase, availableEn
                   )}
                   <button
                     onClick={handlePurchase}
-                    disabled={loading || readiness.status === "BLOCKED" || !!paddleConfigError}
+                    disabled={loading || readiness.status === "BLOCKED" || !paddle || !!paddleConfigError}
                     className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-accent px-5 py-3 font-semibold text-surface transition-colors hover:bg-accent-hover active:bg-accent-active disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer"
                   >
                     {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <CreditCard className="h-5 w-5" />}
