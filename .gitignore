@@ -21,3 +21,4 @@ test-results/
 service-account*.json
 firebase-adminsdk*.json
 .DS_Store
+tsconfig.tsbuildinfo
