@@ -284,10 +284,14 @@ export async function POST(request: Request) {
     return response;
   } catch (error) {
     const code = errorCode(error);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const err = error as any;
 
     console.error("[AUTH_SESSION_CREATE_FAILED]", {
       requestId,
       code,
+      message: err?.message,
+      stack: err?.stack,
     });
 
     const invalidTokenCodes = new Set([
