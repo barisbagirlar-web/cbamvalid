@@ -34,3 +34,10 @@ env:
     availability:
       - BUILD
       - RUNTIME
+
+  # Firebase Admin SDK — mounted from Secret Manager at runtime
+  # Never stored in plaintext; bound via IAM to App Hosting service account
+  - variable: FIREBASE_ADMIN_SERVICE_ACCOUNT_B64
+    secret: FIREBASE_ADMIN_SERVICE_ACCOUNT_B64
+    availability:
+      - RUNTIME
