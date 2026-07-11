@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/session-cookie";
+import { getServerSession } from "@/lib/auth/get-server-session";
 import { adminDb } from "@/lib/firebase/admin";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ repor
     const reportId = params.reportId;
     
     // 1. Session check
-    const session = await getSession();
+    const session = await getServerSession();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

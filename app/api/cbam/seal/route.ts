@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/session-cookie";
+import { getServerSession } from "@/lib/auth/get-server-session";
 import { verifyCaseOwner } from "@/lib/cbam/storage/case-repository";
 import { sealReport } from "@/lib/cbam/report/seal-service";
 
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Session check
-    const session = await getSession();
+    const session = await getServerSession();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

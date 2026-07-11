@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Lora, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/context/auth-context";
+import { AuthProvider } from "@/context/AuthProvider";
 
 // Sans: Gövde Metinleri
 const inter = Inter({ 

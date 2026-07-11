@@ -1,19 +1,14 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/AuthProvider";
 
 export default function SignOutButton() {
-  const router = useRouter();
-  const { logout } = useAuth();
+  const { signOutUser } = useAuth();
 
   const handleSignOut = async () => {
     try {
-      await fetch("/api/auth/session", { method: "DELETE" });
-      await logout();
-      router.push("/login");
-      router.refresh();
+      await signOutUser();
     } catch (e) {
       console.error("Sign out failed", e);
     }

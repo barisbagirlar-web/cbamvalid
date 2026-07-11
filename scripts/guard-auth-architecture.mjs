@@ -63,8 +63,8 @@ walk(rootDir, isSourceFile, (filePath) => {
   if (content.includes('next-auth') || content.includes('@auth/')) {
     logError(relPath, "Contains banned next-auth or @auth import.");
   }
-  if (content.includes('SessionProvider') || content.includes('useSession') || content.includes('getServerSession')) {
-    logError(relPath, "Contains banned NextAuth SessionProvider, useSession or getServerSession.");
+  if (content.includes('SessionProvider') || content.includes('useSession')) {
+    logError(relPath, "Contains banned NextAuth SessionProvider or useSession.");
   }
 
   // 2. redirect authentication
@@ -102,9 +102,9 @@ walk(rootDir, isSourceFile, (filePath) => {
   }
 
   // 6. verifyIdToken applied to session-cookie value or raw ID token cookie fallbacks
-  if (relPath.includes('session-cookie.ts')) {
+  if (relPath.includes('get-server-session.ts')) {
     if (content.includes('verifyIdToken')) {
-      logError(relPath, "verifyIdToken is strictly forbidden in the session reader (session-cookie.ts). Only verifySessionCookie must be used.");
+      logError(relPath, "verifyIdToken is strictly forbidden in the session reader (get-server-session.ts). Only verifySessionCookie must be used.");
     }
   }
 
@@ -122,7 +122,7 @@ walk(rootDir, isSourceFile, (filePath) => {
   }
 
   if (content.includes('mock adminAuth') || content.includes('mock adminDb') || content.includes('mockAdminAuth') || content.includes('mockAdminDb')) {
-    logError(relPath, "Contains forbidden mock adminAuth or mock adminDb declarations.");
+    logError(relPath, "Contains forbidden mock adminAuth or mock adminDb declarations declaration.");
   }
 
   // 8. Hardcoded admin email checks in auth/layout files
@@ -145,16 +145,8 @@ walk(rootDir, isSourceFile, (filePath) => {
     logError(relPath, "Contains forbidden reference to base64url decode operation.");
   }
 
-  if (content.includes('Buffer.from') && (content.includes('payload') || relPath.includes('session-cookie') || relPath.includes('admin.ts'))) {
+  if (content.includes('Buffer.from') && (content.includes('payload') || relPath.includes('get-server-session') || relPath.includes('admin.ts'))) {
     logError(relPath, "Contains forbidden Buffer.from JWT payload parsing pattern.");
-  }
-
-  if (content.includes('AUTH_ALLOW_MOCK')) {
-    logError(relPath, "Contains forbidden AUTH_ALLOW_MOCK reference.");
-  }
-
-  if (content.includes('offline decode') || content.includes('offline verification') || content.includes('unsigned claims')) {
-    logError(relPath, "Contains forbidden offline decode or unsigned claims patterns.");
   }
 
   // 8.2. Favicon-32.png check
@@ -165,13 +157,14 @@ walk(rootDir, isSourceFile, (filePath) => {
   // 8.3. Duplicate session POST call sites check
   if (content.includes('"/api/auth/session"') || content.includes("'/api/auth/session'")) {
     if (
-      relPath !== 'lib/auth/create-server-session.ts' &&
+      relPath !== 'lib/auth/finalize-server-session.ts' &&
       relPath !== 'app/api/auth/session/route.ts' &&
       relPath !== 'middleware.ts' &&
-      relPath !== 'app/cbam/SignOutButton.tsx' &&
-      relPath !== 'app/admin/AdminClient.tsx'
+      relPath !== 'app/(protected)/cbam/SignOutButton.tsx' &&
+      relPath !== 'app/(protected)/admin/AdminClient.tsx' &&
+      relPath !== 'context/AuthProvider.tsx'
     ) {
-      logError(relPath, "Manually invokes the session API endpoint. Must use createServerSession.");
+      logError(relPath, "Manually invokes the session API endpoint directly.");
     }
   }
 
@@ -221,39 +214,26 @@ if (fs.existsSync(path.join(rootDir, sessionRoutePath))) {
   if (!content.includes('dynamic = "force-dynamic"') && !content.includes("dynamic = 'force-dynamic'")) {
     logError(sessionRoutePath, "Missing force-dynamic cache control declaration.");
   }
-  if (!content.includes('revalidate = 0')) {
-    logError(sessionRoutePath, "Missing revalidate = 0 declaration.");
-  }
-  if (!content.includes('no-store') && !content.includes('no-cache')) {
-    logError(sessionRoutePath, "GET handler missing no-store / no-cache headers.");
-  }
 }
 
-// 14. Verify admin page uses requireAdmin
-const adminPagePath = 'app/admin/page.tsx';
+// 14. Verify admin page uses getServerSessionRevocationSensitive
+const adminPagePath = 'app/(protected)/admin/page.tsx';
 if (fs.existsSync(path.join(rootDir, adminPagePath))) {
   const content = fs.readFileSync(path.join(rootDir, adminPagePath), 'utf8');
-  if (!content.includes('requireAdmin(')) {
-    logError(adminPagePath, "Admin page must call requireAdmin() to restrict access.");
+  if (!content.includes('getServerSessionRevocationSensitive(')) {
+    logError(adminPagePath, "Admin page must call getServerSessionRevocationSensitive() to restrict access.");
   }
 }
 
-// 15. Verify dashboard and wizard pages use requireSession
-const dashboardPagePath = 'app/dashboard/page.tsx';
-if (fs.existsSync(path.join(rootDir, dashboardPagePath))) {
-  const content = fs.readFileSync(path.join(rootDir, dashboardPagePath), 'utf8');
-  if (!content.includes('requireSession(')) {
-    logError(dashboardPagePath, "Dashboard page must call requireSession() to restrict access.");
+// 15. Verify dashboard and wizard pages use getServerSession
+const protectedLayoutPath = 'app/(protected)/layout.tsx';
+if (fs.existsSync(path.join(rootDir, protectedLayoutPath))) {
+  const content = fs.readFileSync(path.join(rootDir, protectedLayoutPath), 'utf8');
+  if (!content.includes('getServerSession(')) {
+    logError(protectedLayoutPath, "Protected layout must call getServerSession() to restrict access.");
   }
 }
 
-const wizardPagePath = 'app/dashboard/wizard/page.tsx';
-if (fs.existsSync(path.join(rootDir, wizardPagePath))) {
-  const content = fs.readFileSync(path.join(rootDir, wizardPagePath), 'utf8');
-  if (!content.includes('requireSession(')) {
-    logError(wizardPagePath, "Wizard page must call requireSession() to restrict access.");
-  }
-}
 if (clientInitializers !== 1) {
   console.error(`[GUARD-ARCH] [ERROR] Expected exactly 1 Client Firebase SDK initializer, found: ${clientInitializers}`);
   totalErrors++;

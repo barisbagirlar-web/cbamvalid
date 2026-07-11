@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { requireSession } from "@/lib/auth/require-session";
+import { getServerSession } from "@/lib/auth/get-server-session";
+import { redirect } from "next/navigation";
 import { adminDb } from "@/lib/firebase/admin";
 import Link from "next/link";
 import { ShieldCheck, Calendar, ArrowRight } from "lucide-react";
@@ -7,7 +8,10 @@ import { ShieldCheck, Calendar, ArrowRight } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardReportsHistoryPage() {
-  const session = await requireSession();
+  const session = await getServerSession();
+  if (!session) {
+    redirect("/login");
+  }
 
   // Load sealed reports for this user
   const snapshot = await adminDb

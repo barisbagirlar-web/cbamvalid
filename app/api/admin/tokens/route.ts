@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
-import { getSessionRevocationSensitive } from "@/lib/auth/session-cookie";
+import { getServerSessionRevocationSensitive } from "@/lib/auth/get-server-session";
 
 export async function POST(request: Request) {
   try {
-    const session = await getSessionRevocationSensitive();
+    const session = await getServerSessionRevocationSensitive();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

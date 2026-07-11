@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { firebaseAuth as auth } from "@/lib/firebase/client";
-import { finalizeServerSession } from "@/lib/auth/create-server-session";
+import { finalizeServerSession } from "@/lib/auth/finalize-server-session";
 import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
@@ -17,6 +17,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError("");
     setLoading(true);
 
@@ -36,6 +37,7 @@ export default function LoginPage() {
   };
 
   const handleGoogleSignIn = async () => {
+    if (loading) return;
     setError("");
     setLoading(true);
 
@@ -57,6 +59,8 @@ export default function LoginPage() {
         setError("Sign-in request was cancelled. Please try again.");
       } else if (code === "auth/account-exists-with-different-credential") {
         setError("An account already exists with a different credential linked to this email.");
+      } else if (code === "auth/unauthorized-domain") {
+        setError("This domain is not authorized for Google Sign-in in Firebase Console.");
       } else {
         setError(err?.message || "Unable to start Google sign-in.");
       }
@@ -67,18 +71,18 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-6 font-sans">
       <div className="w-full max-w-md animate-in fade-in">
-        {/* LOGO / BAŞLIK */}
+        {/* LOGO / HEADING */}
         <div className="mb-12 text-center flex flex-col items-center">
           <img src="/cbam_logo.svg" alt="CBAM Valid Logo" className="h-8 w-auto object-contain mb-4" />
           <h1 className="font-serif text-3xl text-foreground mb-3 tracking-tight">CBAM Portal</h1>
           <p className="text-sm font-mono text-muted">Authorized Exporter Portal</p>
         </div>
 
-        {/* FORM KARTI */}
+        {/* FORM CARD */}
         <div className="bg-surface border border-border rounded-xl p-10 shadow-[var(--shadow-card)]">
           <form onSubmit={handleSubmit} className="space-y-8">
             {error && (
-              <div className="p-3 border border-border bg-accent-soft text-accent text-xs font-mono text-center rounded-md">
+              <div className="p-3 border border-border bg-accent-soft text-accent text-xs font-mono text-center rounded-md animate-in shake">
                 {error}
               </div>
             )}
@@ -140,7 +144,6 @@ export default function LoginPage() {
             disabled={loading}
             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-border-strong bg-transparent px-5 py-3 font-medium text-foreground transition-colors hover:bg-neutral-soft disabled:opacity-45 cursor-pointer"
           >
-            {/* GOOGLE LOGO INLINE BRANDING RULES */}
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
               <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -151,7 +154,7 @@ export default function LoginPage() {
           </button>
         </div>
 
-        {/* ALT LİNKLER */}
+        {/* BOTTOM LINKS */}
         <div className="mt-8 text-center text-sm font-semibold">
           <button
             type="button"

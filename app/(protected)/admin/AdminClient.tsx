@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/AuthProvider";
 import { firebaseAuth } from "@/lib/firebase/client";
-import { collection, onSnapshot, getFirestore } from "firebase/firestore";
+import { collection, onSnapshot, getFirestore, doc, getDoc } from "firebase/firestore";
 import { ArrowLeft } from "lucide-react";
 
 const db = getFirestore(firebaseAuth.app);
@@ -26,7 +26,9 @@ interface ReportLog {
 }
 
 export default function AdminClient() {
-  const { user, userData, loading: authLoading, logout } = useAuth();
+  const { user, loading: authLoading, signOutUser } = useAuth();
+  const [role, setRole] = useState<string | null>(null);
+  const [roleLoading, setRoleLoading] = useState(true);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [reports, setReports] = useState<ReportLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,12 +39,39 @@ export default function AdminClient() {
   const router = useRouter();
 
   useEffect(() => {
-    if (user && userData && userData.role !== "admin") {
+    if (!user) {
+      if (!authLoading) {
+        Promise.resolve().then(() => {
+          setRoleLoading(false);
+        });
+      }
+      return;
+    }
+
+    getDoc(doc(db, "users", user.uid))
+      .then((docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setRole(data?.role || "user");
+        } else {
+          setRole("user");
+        }
+        setRoleLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error loading user role:", err);
+        setRole("user");
+        setRoleLoading(false);
+      });
+  }, [user, authLoading]);
+
+  useEffect(() => {
+    if (role && role !== "admin") {
       router.push("/cbam");
       return;
     }
 
-    if (user) {
+    if (user && role === "admin") {
       // Real-time listener for all users
       const unsubscribeUsers = onSnapshot(
         collection(db, "users"),
@@ -93,7 +122,7 @@ export default function AdminClient() {
         unsubscribeReports();
       };
     }
-  }, [user, router, userData]);
+  }, [user, router, role]);
 
   const handleStartEdit = (userProfile: UserProfile) => {
     setEditingUserId(userProfile.id);
@@ -137,13 +166,10 @@ export default function AdminClient() {
   };
 
   const handleSignOut = async () => {
-    await fetch("/api/auth/session", { method: "DELETE" });
-    await logout();
-    router.push("/login");
-    router.refresh();
+    await signOutUser();
   };
 
-  if (authLoading || loading) {
+  if (authLoading || roleLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-kil-base text-kil-text font-mono text-sm">
         Verifying authorization state...
@@ -151,7 +177,7 @@ export default function AdminClient() {
     );
   }
 
-  if (userData?.role !== "admin") {
+  if (role !== "admin") {
     return (
       <div className="p-8 text-kil-accent font-bold text-center mt-20 font-serif text-lg">
         Forbidden: You do not have administrator permissions to access this page.

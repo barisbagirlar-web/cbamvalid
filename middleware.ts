@@ -5,7 +5,7 @@ import {
 
 import {
   SESSION_COOKIE_NAME,
-} from "@/lib/auth/session-config";
+} from "@/lib/auth/session-constants";
 
 export function middleware(
   request: NextRequest

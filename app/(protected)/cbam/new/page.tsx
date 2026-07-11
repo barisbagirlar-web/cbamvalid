@@ -1,4 +1,5 @@
-import { requireSession } from "@/lib/auth/require-session";
+import { getServerSession } from "@/lib/auth/get-server-session";
+import { redirect } from "next/navigation";
 import { getCase } from "@/lib/cbam/storage/case-repository";
 import { adminDb } from "@/lib/firebase/admin";
 import CbamWizardClient from "./CbamWizardClient";
@@ -11,7 +12,10 @@ interface PageProps {
 
 export default async function NewCbamCasePage(props: PageProps) {
   const searchParams = await props.searchParams;
-  const session = await requireSession();
+  const session = await getServerSession();
+  if (!session) {
+    redirect("/login");
+  }
   const caseId = searchParams.caseId;
 
   let initialCase = null;

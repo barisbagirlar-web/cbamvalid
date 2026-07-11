@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/session-cookie";
+import { getServerSession } from "@/lib/auth/get-server-session";
 import { adminDb } from "@/lib/firebase/admin";
 import { buildPdfDossier } from "@/lib/cbam/report/pdf-builder";
 import { buildWorkbook } from "@/lib/cbam/report/workbook-builder";
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ repor
     const reportId = params.reportId;
     
     // 1. Session check
-    const session = await getSession();
+    const session = await getServerSession();
     if (!session) {
       return new Response("Unauthorized", { status: 401 });
     }

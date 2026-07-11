@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { requireSession } from "@/lib/auth/require-session";
+import { getServerSession } from "@/lib/auth/get-server-session";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { adminDb } from "@/lib/firebase/admin";
 
@@ -8,7 +9,10 @@ import SignOutButton from "./SignOutButton";
 export const dynamic = "force-dynamic";
 
 export default async function CbamLandingPage() {
-  const session = await requireSession();
+  const session = await getServerSession();
+  if (!session) {
+    redirect("/login");
+  }
 
   // Load cases and reports
   const casesSnapshot = await adminDb
