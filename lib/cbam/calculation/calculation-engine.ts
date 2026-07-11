@@ -10,6 +10,14 @@ export interface TraceNode {
   roundingMethod: string;
   officialDatasetIds?: string[];
   legalVersionRef: string;
+  
+  // Regulatory requirements:
+  unitContract: string;
+  roundingRule: string;
+  source: string;
+  sourceVersion: string;
+  effectiveDate: string;
+  
   finalResult: number;
 }
 
@@ -18,7 +26,16 @@ export interface DeterministicEngineOutput {
   totalEmbeddedEmissions: number;
   specificEmbeddedEmissions: number;
   freeAllocationAdjustment: number;
-  carbonPriceDeduction: number;
+  carbonPriceDeduction: number; // mapped to eligibleCertificateReduction for backward compatibility
+  
+  // Decoupled regulatory parameters:
+  embeddedEmissionsTco2e: number;
+  carbonPricePaidCurrency: number;
+  carbonPricePaidPerTco2e: number;
+  eligibleCertificateReduction: number;
+  certificatesBeforeReduction: number;
+  certificatesAfterReduction: number;
+  
   netCertificatesDue: number;
   estimatedCertificateCostEur: number;
   dataCompletenessScore: number;
@@ -46,7 +63,10 @@ export function executeDeterministicCalculation(inputs: {
   carbonPricePaidInput?: number;
 }): DeterministicEngineOutput {
   const traces: Record<string, TraceNode> = {};
-  const legalVersionRef = "EU_2023_956_REGULATION";
+  const legalVersionRef = "Regulation (EU) 2023/956";
+  const source = "Regulation (EU) 2023/956, Annex III & IV";
+  const sourceVersion = "v1.0.0";
+  const effectiveDate = "2023-10-01";
   const roundingMethod = "ROUND_HALF_UP_TO_4_DECIMALS";
 
   // 1. Scope and Threshold check
@@ -63,6 +83,11 @@ export function executeDeterministicCalculation(inputs: {
     units: "boolean",
     roundingMethod: "NONE",
     legalVersionRef,
+    unitContract: "(string, number) => boolean",
+    roundingRule: "NONE",
+    source,
+    sourceVersion,
+    effectiveDate,
     finalResult: applicability.isApplicable ? 1 : 0,
   };
 
@@ -73,6 +98,12 @@ export function executeDeterministicCalculation(inputs: {
       specificEmbeddedEmissions: 0,
       freeAllocationAdjustment: 0,
       carbonPriceDeduction: 0,
+      embeddedEmissionsTco2e: 0,
+      carbonPricePaidCurrency: 0,
+      carbonPricePaidPerTco2e: 0,
+      eligibleCertificateReduction: 0,
+      certificatesBeforeReduction: 0,
+      certificatesAfterReduction: 0,
       netCertificatesDue: 0,
       estimatedCertificateCostEur: 0,
       dataCompletenessScore: 0,
@@ -86,7 +117,6 @@ export function executeDeterministicCalculation(inputs: {
 
   if (inputs.hasActualData) {
     directEmissions = Number(inputs.directEmissionsInput || 0);
-    // Net indirect = electricity consumed * factor
     const factor = Number(inputs.gridEmissionFactorInput || 0.45);
     indirectEmissions = Number(inputs.electricityConsumedInput || 0) * factor;
 
@@ -102,10 +132,14 @@ export function executeDeterministicCalculation(inputs: {
       intermediateValues: { factor },
       roundingMethod,
       legalVersionRef,
-      finalResult: directEmissions + indirectEmissions,
+      unitContract: "(tCO2e, MWh, tCO2e/MWh) => tCO2e",
+      roundingRule: "ROUND_HALF_UP_TO_4_DECIMALS",
+      source,
+      sourceVersion,
+      effectiveDate,
+      finalResult: Number((directEmissions + indirectEmissions).toFixed(4)),
     };
   } else {
-    // Sector-specific defaults mapping
     const sectorDefaults: Record<string, { direct: number; indirect: number }> = {
       STEEL: { direct: 1.85, indirect: 0.35 },
       ALUMINIUM: { direct: 2.1, indirect: 11.4 },
@@ -130,7 +164,12 @@ export function executeDeterministicCalculation(inputs: {
       intermediateValues: { directFactor: defs.direct, indirectFactor: defs.indirect },
       roundingMethod,
       legalVersionRef,
-      finalResult: directEmissions + indirectEmissions,
+      unitContract: "(string, number) => tCO2e",
+      roundingRule: "ROUND_HALF_UP_TO_4_DECIMALS",
+      source,
+      sourceVersion,
+      effectiveDate,
+      finalResult: Number((directEmissions + indirectEmissions).toFixed(4)),
     };
   }
 
@@ -151,7 +190,12 @@ export function executeDeterministicCalculation(inputs: {
       units: "tCO2e",
       roundingMethod,
       legalVersionRef,
-      finalResult: precursorEmissions,
+      unitContract: "(tCO2e, tCO2e) => tCO2e",
+      roundingRule: "ROUND_HALF_UP_TO_4_DECIMALS",
+      source,
+      sourceVersion,
+      effectiveDate,
+      finalResult: Number(precursorEmissions.toFixed(4)),
     };
   }
 
@@ -170,6 +214,11 @@ export function executeDeterministicCalculation(inputs: {
     units: "tCO2e",
     roundingMethod,
     legalVersionRef,
+    unitContract: "(tCO2e, tCO2e, tCO2e) => tCO2e",
+    roundingRule: "ROUND_HALF_UP_TO_4_DECIMALS",
+    source,
+    sourceVersion,
+    effectiveDate,
     finalResult: Number(totalEmbedded.toFixed(4)),
   };
 
@@ -187,25 +236,18 @@ export function executeDeterministicCalculation(inputs: {
     units: "tCO2e",
     roundingMethod,
     legalVersionRef,
+    unitContract: "(tCO2e, number) => tCO2e",
+    roundingRule: "ROUND_HALF_UP_TO_4_DECIMALS",
+    source,
+    sourceVersion,
+    effectiveDate,
     finalResult: Number(freeAllocationAdjustment.toFixed(4)),
   };
 
-  // Carbon Price Paid Deduction
-  const carbonPricePaid = Number(inputs.carbonPricePaidInput || 0);
-  const carbonPriceDeduction = carbonPricePaid * totalEmbedded;
-
-  traces["carbonPriceDeduction"] = {
-    formulaId: "carbonPriceDeductionFormula",
-    formulaVersion: "v1.0.0",
-    inputs: {
-      carbonPricePaid,
-      totalEmbedded,
-    },
-    units: "EUR",
-    roundingMethod,
-    legalVersionRef,
-    finalResult: Number(carbonPriceDeduction.toFixed(4)),
-  };
+  // Decoupled Regulatory Calculations (Carbon Price Paid Relief)
+  const embeddedEmissionsTco2e = totalEmbedded;
+  const carbonPricePaidPerTco2e = Number(inputs.carbonPricePaidInput || 0);
+  const carbonPricePaidCurrency = carbonPricePaidPerTco2e * embeddedEmissionsTco2e;
 
   // Resolve Certificate Pricing
   const pricing = resolveCertificatePrice({
@@ -213,21 +255,79 @@ export function executeDeterministicCalculation(inputs: {
     importQuarter: inputs.importQuarter,
   });
 
-  // Net Certificates Due
-  const rawCertificates = totalEmbedded - freeAllocationAdjustment - carbonPriceDeduction;
-  const netCertificatesDue = Math.max(0, Math.ceil(rawCertificates));
+  // Verify unit contracts and compatibilities before calculation
+  if (isNaN(carbonPricePaidPerTco2e) || isNaN(pricing.priceEurPerTonne) || pricing.priceEurPerTonne <= 0) {
+    return {
+      status: "CALCULATION_BLOCKED",
+      totalEmbeddedEmissions: 0,
+      specificEmbeddedEmissions: 0,
+      freeAllocationAdjustment: 0,
+      carbonPriceDeduction: 0,
+      embeddedEmissionsTco2e: 0,
+      carbonPricePaidCurrency: 0,
+      carbonPricePaidPerTco2e: 0,
+      eligibleCertificateReduction: 0,
+      certificatesBeforeReduction: 0,
+      certificatesAfterReduction: 0,
+      netCertificatesDue: 0,
+      estimatedCertificateCostEur: 0,
+      dataCompletenessScore: 0,
+      traces,
+    };
+  }
 
+  // Certificates due before carbon price relief
+  const certificatesBeforeReduction = Math.max(0, Math.ceil(embeddedEmissionsTco2e - freeAllocationAdjustment));
+
+  // Carbon Price Paid Deduction is calculated separately in certificates count
+  // Unverified carbon-price evidence must produce a readiness gap, not an automatic deduction
+  let eligibleCertificateReduction = 0;
+  if (inputs.isVerified && carbonPricePaidCurrency > 0) {
+    eligibleCertificateReduction = Math.min(
+      certificatesBeforeReduction,
+      Math.floor(carbonPricePaidCurrency / pricing.priceEurPerTonne)
+    );
+  }
+
+  const certificatesAfterReduction = Math.max(0, certificatesBeforeReduction - eligibleCertificateReduction);
+  const netCertificatesDue = certificatesAfterReduction;
+
+  traces["carbonPriceDeduction"] = {
+    formulaId: "carbonPriceReliefReduction",
+    formulaVersion: "v1.0.0",
+    inputs: {
+      carbonPricePaidPerTco2e,
+      embeddedEmissionsTco2e,
+      certificatePriceEur: pricing.priceEurPerTonne,
+      isVerified: inputs.isVerified,
+    },
+    units: "certificates",
+    roundingMethod: "FLOOR",
+    legalVersionRef,
+    unitContract: "(EUR/tCO2e, tCO2e, EUR/certificate, boolean) => certificates",
+    roundingRule: "FLOOR_TO_INTEGER",
+    source,
+    sourceVersion,
+    effectiveDate,
+    finalResult: eligibleCertificateReduction,
+  };
+
+  // Net Certificates Due
   traces["netCertificates"] = {
     formulaId: "netCertificatesFormula",
     formulaVersion: "v1.0.0",
     inputs: {
-      totalEmbedded,
-      freeAllocationAdjustment,
-      carbonPriceDeduction,
+      certificatesBeforeReduction,
+      eligibleCertificateReduction,
     },
-    units: "units",
-    roundingMethod: "CEIL",
+    units: "certificates",
+    roundingMethod: "SUBTRACT",
     legalVersionRef,
+    unitContract: "(certificates, certificates) => certificates",
+    roundingRule: "EXACT",
+    source,
+    sourceVersion,
+    effectiveDate,
     finalResult: netCertificatesDue,
   };
 
@@ -245,6 +345,11 @@ export function executeDeterministicCalculation(inputs: {
     roundingMethod,
     officialDatasetIds: [pricing.datasetVersion],
     legalVersionRef,
+    unitContract: "(certificates, EUR/certificate) => EUR",
+    roundingRule: "ROUND_HALF_UP_TO_2_DECIMALS",
+    source,
+    sourceVersion,
+    effectiveDate,
     finalResult: Number(estimatedCertificateCostEur.toFixed(2)),
   };
 
@@ -267,7 +372,16 @@ export function executeDeterministicCalculation(inputs: {
     totalEmbeddedEmissions: Number(totalEmbedded.toFixed(4)),
     specificEmbeddedEmissions: Number(specificEmbedded.toFixed(4)),
     freeAllocationAdjustment: Number(freeAllocationAdjustment.toFixed(4)),
-    carbonPriceDeduction: Number(carbonPriceDeduction.toFixed(4)),
+    carbonPriceDeduction: eligibleCertificateReduction, // mapped to legacy key for backward compatibility
+    
+    // Decoupled regulatory fields:
+    embeddedEmissionsTco2e: Number(embeddedEmissionsTco2e.toFixed(4)),
+    carbonPricePaidCurrency: Number(carbonPricePaidCurrency.toFixed(2)),
+    carbonPricePaidPerTco2e,
+    eligibleCertificateReduction,
+    certificatesBeforeReduction,
+    certificatesAfterReduction,
+    
     netCertificatesDue,
     estimatedCertificateCostEur: Number(estimatedCertificateCostEur.toFixed(2)),
     dataCompletenessScore: completenessScore,

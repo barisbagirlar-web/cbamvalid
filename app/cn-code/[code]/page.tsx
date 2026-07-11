@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: `CBAM Declaration for CN Code ${code} | EU Compliance`,
-    description: `Generate instant EU CBAM XML and PDF declarations for CN Code ${code}. Calculate direct and precursor embedded emissions accurately.`,
+    description: `Generate CBAMValid Exporter Evidence XML and PDF documents for CN Code ${code}. Calculate direct and precursor embedded emissions accurately.`,
     alternates: {
       canonical: `https://cbamvalid.com/cn-code/${code}`,
     },
@@ -73,7 +73,7 @@ export default async function CNCodeLandingPage({ params }: PageProps) {
           </h1>
           
           <p className="text-lg text-muted mb-12 leading-relaxed">
-            Exporting products under CN Code {code} to the European Union? Calculate your embedded direct, indirect, and precursor emissions. Generate your official XML ready for the AMM portal in minutes.
+            Exporting products under CN Code {code} to the European Union? Calculate your embedded direct, indirect, and precursor emissions. Generate your CBAMValid Exporter Evidence XML package in minutes.
           </p>
           
           <Link 

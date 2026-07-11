@@ -90,38 +90,39 @@ export function buildPdfDossier(data: any, calc: CalculationOutput, docHash?: st
   doc.text("5. CBAM Exposure & Cost Calculations", 15, 157);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text(`Free Allocation Adjustment: -${calc.freeAllocationAdjustment} tCO2e`, 15, 164);
-  doc.text(`Carbon Price Paid Deduction: -${calc.carbonPriceDeduction} tCO2e`, 15, 169);
-  doc.text(`Net CBAM Certificates Due: ${calc.netCertificatesDue} units`, 15, 174);
-  doc.text(`Certificate Price Resolved: ${calc.pricing.priceEurPerTonne} EUR/unit (${calc.pricing.state})`, 15, 179);
-  doc.text(`Estimated CBAM Financial Exposure: ${calc.estimatedCertificateCostEur} EUR`, 15, 184);
+  doc.text(`Certificates Before Reduction: ${calc.certificatesBeforeReduction} certificates`, 15, 164);
+  doc.text(`Carbon Price Paid Currency: ${calc.carbonPricePaidCurrency} EUR (${calc.carbonPricePaidPerTco2e} EUR/tCO2e)`, 15, 169);
+  doc.text(`Eligible Certificate Reduction: -${calc.eligibleCertificateReduction} certificates`, 15, 174);
+  doc.text(`Net CBAM Certificates Due: ${calc.netCertificatesDue} certificates`, 15, 179);
+  doc.text(`Certificate Price: ${calc.pricing.priceEurPerTonne} EUR/certificate (${calc.pricing.state})`, 15, 184);
+  doc.text(`Estimated CBAM Financial Exposure: ${calc.estimatedCertificateCostEur} EUR`, 15, 189);
 
   // Section 6: Provenance & Seals
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
-  doc.text("6. Sealing & Provenance Integrity", 15, 193);
+  doc.text("6. Sealing & Provenance Integrity", 15, 198);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text(`Calculation engine version: v1.0.0-deterministic`, 15, 200);
-  doc.text(`Regulatory ruleset dataset: ${calc.pricing.datasetVersion}`, 15, 205);
+  doc.text(`Calculation engine version: v1.0.0-deterministic`, 15, 205);
+  doc.text(`Regulatory ruleset dataset: ${calc.pricing.datasetVersion}`, 15, 210);
   if (docHash) {
     doc.setFont("helvetica", "bold");
-    doc.text(`DOCUMENT SEAL SHA-256 HASH: ${docHash}`, 15, 212);
+    doc.text(`DOCUMENT SEAL SHA-256 HASH: ${docHash}`, 15, 217);
     doc.setFont("helvetica", "normal");
   }
 
   // Disclaimer
-  doc.line(15, 220, 195, 220);
+  doc.line(15, 225, 195, 225);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(150, 150, 150);
-  doc.text("LEGAL NOTICE", 15, 228);
+  doc.text("LEGAL NOTICE", 15, 233);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(150, 150, 150);
   const legalNotice =
     "Independent compliance software. Not affiliated with, endorsed by, or sponsored by the European Union or the European Commission. The values stated in this document are generated based on the inputs provided by the declarant. The platform acts solely as a computational tool and holds no legal liability regarding the accuracy of the data or any customs penalties applied by the EU authorities.";
   const splitNotice = doc.splitTextToSize(legalNotice, 180);
-  doc.text(splitNotice, 15, 234);
+  doc.text(splitNotice, 15, 239);
 
   const arrayBuffer = doc.output("arraybuffer");
   return Buffer.from(arrayBuffer);

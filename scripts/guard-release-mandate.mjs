@@ -140,6 +140,59 @@ switch (check) {
     break;
   }
 
+  case "bundle-scan": {
+    const nextDir = path.join(rootDir, ".next");
+    if (!fs.existsSync(nextDir)) {
+      console.error("[FAIL] .next directory not found. Please run 'npm run build' first.");
+      process.exit(1);
+    }
+    let errors = 0;
+    const scanFile = (filePath) => {
+      const content = fs.readFileSync(filePath, "utf-8");
+      // Check for mock references
+      if (content.includes("admin-mock.ts")) {
+        console.error(`[FAIL] Production bundle ${filePath} contains mock reference 'admin-mock.ts'`);
+        errors++;
+      }
+      const bannedMockTerms = [
+        "AUTH_ALLOW_MOCK",
+        "offline decode",
+        "offline verification",
+        "unsigned claims",
+        "mock adminAuth",
+        "mock adminDb"
+      ];
+      for (const term of bannedMockTerms) {
+        if (content.includes(term)) {
+          console.error(`[FAIL] Production bundle ${filePath} contains banned mock/bypass term: "${term}"`);
+          errors++;
+        }
+      }
+    };
+    const walkNext = (dir) => {
+      if (!fs.existsSync(dir)) return;
+      const list = fs.readdirSync(dir);
+      list.forEach((file) => {
+        const fullPath = path.join(dir, file);
+        const stat = fs.statSync(fullPath);
+        if (stat && stat.isDirectory()) {
+          walkNext(fullPath);
+        } else {
+          if (file.endsWith(".js")) {
+            scanFile(fullPath);
+          }
+        }
+      });
+    };
+    walkNext(path.join(nextDir, "server"));
+    if (errors > 0) {
+      console.error(`[FAIL] Bundle scan failed with ${errors} error(s). Banned patterns present in production build!`);
+      process.exit(1);
+    }
+    console.log("[PASS] Post-build bundle scan passed successfully. No mocks or banned patterns found.");
+    break;
+  }
+
   default: {
     console.error(`[FAIL] Unknown check: ${check}`);
     process.exit(1);

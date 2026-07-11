@@ -37,14 +37,18 @@ export function buildXml(data: any, calc: CalculationOutput, docHash?: string): 
     .ele("ProductionVolume", { unit: sectorUnit }).txt(String(calc.inputs.productionVolume)).up()
     .up();
 
-  // 4. Calculation Metrics (with explicit units)
+  // 4. Calculation Metrics (with explicit decoupled units)
   root.ele("Metrics")
-    .ele("TotalEmbeddedEmissions", { unit: "tCO2e" }).txt(String(calc.totalEmbeddedEmissions)).up()
+    .ele("EmbeddedEmissionsTco2e", { unit: "tCO2e" }).txt(String(calc.embeddedEmissionsTco2e)).up()
     .ele("SpecificDirectEmissions", { unit: "tCO2e/t" }).txt(String(calc.specificDirectEmissions)).up()
     .ele("SpecificIndirectEmissions", { unit: "tCO2e/t" }).txt(String(calc.specificIndirectEmissions)).up()
     .ele("FreeAllocationAdjustment", { unit: "tCO2e" }).txt(String(calc.freeAllocationAdjustment)).up()
-    .ele("CarbonPriceDeduction", { unit: "EUR" }).txt(String(calc.carbonPriceDeduction)).up()
-    .ele("NetCertificatesDue", { unit: "units" }).txt(String(calc.netCertificatesDue)).up()
+    .ele("CarbonPricePaidCurrency", { unit: "EUR" }).txt(String(calc.carbonPricePaidCurrency)).up()
+    .ele("CarbonPricePaidPerTco2e", { unit: "EUR/tCO2e" }).txt(String(calc.carbonPricePaidPerTco2e)).up()
+    .ele("CertificatesBeforeReduction", { unit: "certificates" }).txt(String(calc.certificatesBeforeReduction)).up()
+    .ele("EligibleCertificateReduction", { unit: "certificates" }).txt(String(calc.eligibleCertificateReduction)).up()
+    .ele("CertificatesAfterReduction", { unit: "certificates" }).txt(String(calc.certificatesAfterReduction)).up()
+    .ele("NetCertificatesDue", { unit: "certificates" }).txt(String(calc.netCertificatesDue)).up()
     .ele("EstimatedCostEur", { unit: "EUR" }).txt(String(calc.estimatedCertificateCostEur)).up()
     .up();
 
@@ -67,11 +71,15 @@ export function buildXml(data: any, calc: CalculationOutput, docHash?: string): 
         .ele("Units").txt(trace.units).up()
         .ele("RoundingMethod").txt(trace.roundingMethod).up()
         .ele("LegalReference").txt(trace.legalVersionRef).up()
+        .ele("UnitContract").txt(trace.unitContract).up()
+        .ele("RoundingRule").txt(trace.roundingRule).up()
+        .ele("Source").txt(trace.source).up()
+        .ele("SourceVersion").txt(trace.sourceVersion).up()
+        .ele("EffectiveDate").txt(trace.effectiveDate).up()
         .ele("FinalResult").txt(String(trace.finalResult)).up()
         .up();
     });
   } else {
-    // Fallback simple formula trace logs if traces is empty
     Object.entries(calc.formulasUsed).forEach(([key, val]) => {
       tracesEle.ele("TraceNode", { id: key })
         .ele("FormulaId").txt(key).up()

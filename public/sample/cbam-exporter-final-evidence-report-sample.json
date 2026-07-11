@@ -41,7 +41,12 @@
         },
         "units": "boolean",
         "roundingMethod": "NONE",
-        "legalVersionRef": "EU_2023_956_REGULATION",
+        "legalVersionRef": "Regulation (EU) 2023/956",
+        "unitContract": "(string, number) => boolean",
+        "roundingRule": "NONE",
+        "source": "Regulation (EU) 2023/956, Annex III & IV",
+        "sourceVersion": "v1.0.0",
+        "effectiveDate": "2023-10-01",
         "finalResult": 1
       },
       "actualEmissions": {
@@ -53,7 +58,12 @@
           "factor": 0.45
         },
         "roundingMethod": "ROUND_HALF_UP_TO_4_DECIMALS",
-        "legalVersionRef": "EU_2023_956_REGULATION",
+        "legalVersionRef": "Regulation (EU) 2023/956",
+        "unitContract": "(tCO2e, MWh, tCO2e/MWh) => tCO2e",
+        "roundingRule": "ROUND_HALF_UP_TO_4_DECIMALS",
+        "source": "Regulation (EU) 2023/956, Annex III & IV",
+        "sourceVersion": "v1.0.0",
+        "effectiveDate": "2023-10-01",
         "finalResult": 0
       },
       "precursors": {
@@ -62,7 +72,12 @@
         "inputs": {},
         "units": "tCO2e",
         "roundingMethod": "ROUND_HALF_UP_TO_4_DECIMALS",
-        "legalVersionRef": "EU_2023_956_REGULATION",
+        "legalVersionRef": "Regulation (EU) 2023/956",
+        "unitContract": "(tCO2e, tCO2e) => tCO2e",
+        "roundingRule": "ROUND_HALF_UP_TO_4_DECIMALS",
+        "source": "Regulation (EU) 2023/956, Annex III & IV",
+        "sourceVersion": "v1.0.0",
+        "effectiveDate": "2023-10-01",
         "finalResult": 0
       },
       "totalEmbedded": {
@@ -75,7 +90,12 @@
         },
         "units": "tCO2e",
         "roundingMethod": "ROUND_HALF_UP_TO_4_DECIMALS",
-        "legalVersionRef": "EU_2023_956_REGULATION",
+        "legalVersionRef": "Regulation (EU) 2023/956",
+        "unitContract": "(tCO2e, tCO2e, tCO2e) => tCO2e",
+        "roundingRule": "ROUND_HALF_UP_TO_4_DECIMALS",
+        "source": "Regulation (EU) 2023/956, Annex III & IV",
+        "sourceVersion": "v1.0.0",
+        "effectiveDate": "2023-10-01",
         "finalResult": 0
       },
       "freeAllocation": {
@@ -83,35 +103,52 @@
         "formulaVersion": "v1.0.0",
         "inputs": {
           "totalEmbedded": 0,
-          "allocationFactor": 0.05
+          "allocationFactor": 0.1
         },
         "units": "tCO2e",
         "roundingMethod": "ROUND_HALF_UP_TO_4_DECIMALS",
-        "legalVersionRef": "EU_2023_956_REGULATION",
+        "legalVersionRef": "Regulation (EU) 2023/956",
+        "unitContract": "(tCO2e, number) => tCO2e",
+        "roundingRule": "ROUND_HALF_UP_TO_4_DECIMALS",
+        "source": "Regulation (EU) 2023/956, Annex III & IV",
+        "sourceVersion": "v1.0.0",
+        "effectiveDate": "2023-10-01",
         "finalResult": 0
       },
       "carbonPriceDeduction": {
-        "formulaId": "carbonPriceDeductionFormula",
+        "formulaId": "carbonPriceReliefReduction",
         "formulaVersion": "v1.0.0",
         "inputs": {
-          "carbonPricePaid": 0,
-          "totalEmbedded": 0
+          "carbonPricePaidPerTco2e": 0,
+          "embeddedEmissionsTco2e": 0,
+          "certificatePriceEur": 75.36,
+          "isVerified": true
         },
-        "units": "EUR",
-        "roundingMethod": "ROUND_HALF_UP_TO_4_DECIMALS",
-        "legalVersionRef": "EU_2023_956_REGULATION",
+        "units": "certificates",
+        "roundingMethod": "FLOOR",
+        "legalVersionRef": "Regulation (EU) 2023/956",
+        "unitContract": "(EUR/tCO2e, tCO2e, EUR/certificate, boolean) => certificates",
+        "roundingRule": "FLOOR_TO_INTEGER",
+        "source": "Regulation (EU) 2023/956, Annex III & IV",
+        "sourceVersion": "v1.0.0",
+        "effectiveDate": "2023-10-01",
         "finalResult": 0
       },
       "netCertificates": {
         "formulaId": "netCertificatesFormula",
         "formulaVersion": "v1.0.0",
         "inputs": {
-          "totalEmbedded": 0,
-          "freeAllocationAdjustment": 0
+          "certificatesBeforeReduction": 0,
+          "eligibleCertificateReduction": 0
         },
-        "units": "units",
-        "roundingMethod": "CEIL",
-        "legalVersionRef": "EU_2023_956_REGULATION",
+        "units": "certificates",
+        "roundingMethod": "SUBTRACT",
+        "legalVersionRef": "Regulation (EU) 2023/956",
+        "unitContract": "(certificates, certificates) => certificates",
+        "roundingRule": "EXACT",
+        "source": "Regulation (EU) 2023/956, Annex III & IV",
+        "sourceVersion": "v1.0.0",
+        "effectiveDate": "2023-10-01",
         "finalResult": 0
       },
       "certificateCost": {
@@ -126,7 +163,12 @@
         "officialDatasetIds": [
           "EU_CBAM_PRICE_2026_Q1"
         ],
-        "legalVersionRef": "EU_2023_956_REGULATION",
+        "legalVersionRef": "Regulation (EU) 2023/956",
+        "unitContract": "(certificates, EUR/certificate) => EUR",
+        "roundingRule": "ROUND_HALF_UP_TO_2_DECIMALS",
+        "source": "Regulation (EU) 2023/956, Annex III & IV",
+        "sourceVersion": "v1.0.0",
+        "effectiveDate": "2023-10-01",
         "finalResult": 0
       }
     }

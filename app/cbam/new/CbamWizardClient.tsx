@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { initializePaddle, Paddle } from "@paddle/paddle-js";
-import { Shield, CreditCard, CheckCircle2, ChevronRight, ChevronLeft, Loader2, CircleAlert, FileText, Download, ShieldCheck, FileJson, FileCode2, Info, ClipboardCheck, HelpCircle } from "lucide-react";
+import { Shield, CreditCard, CheckCircle2, ChevronRight, ChevronLeft, Loader2, CircleAlert, FileText, ShieldCheck, FileJson, FileCode2, Info, HelpCircle } from "lucide-react";
 import { getSectorConfig, CbamSector } from "@/lib/cbam/sectors/sector-adapter";
 import { assessCaseReadiness, EvidenceGapItem } from "@/lib/cbam/validation/readiness-assessor";
 
@@ -883,7 +883,7 @@ export default function CbamWizardClient({ sessionUser, initialCase, availableEn
                           className="bg-surface border border-border p-3.5 rounded-xl text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 hover:bg-neutral-soft text-foreground shadow-[var(--shadow-card)]"
                         >
                           <FileCode2 className="h-5 w-5 text-accent" strokeWidth={1.75} />
-                          <span className="text-xs font-bold">XML Package</span>
+                          <span className="text-xs font-bold">XML Evidence</span>
                         </a>
                       </div>
 
@@ -892,7 +892,7 @@ export default function CbamWizardClient({ sessionUser, initialCase, availableEn
                         onClick={() => logConversionEvent("verification_page_opened")}
                         className="block text-center text-xs text-accent hover:underline font-semibold mt-2"
                       >
-                        Public Registry Seal verification page
+                        Public Sealing verification page
                       </a>
                     </div>
                   )}

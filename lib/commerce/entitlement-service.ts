@@ -2,6 +2,7 @@ import admin from "firebase-admin";
 import { adminDb } from "../firebase/admin";
 import { DoubleSpendViolationError, EntitlementUnavailableError } from "./commerce-errors";
 import { writeLedgerEntry } from "./ledger-service";
+import { validateIdentifier } from "../firebase/firestore-validator";
 
 export interface Entitlement {
   entitlementId: string;
@@ -32,6 +33,10 @@ export async function createEntitlement(
     quantity: number;
   }
 ): Promise<Entitlement> {
+  validateIdentifier("uid", params.uid);
+  validateIdentifier("orderId", params.orderId);
+  validateIdentifier("transactionId", params.transactionId);
+
   const entitlementRef = adminDb.collection("entitlements").doc();
   const entitlementId = entitlementRef.id;
   const now = new Date().toISOString();
@@ -75,6 +80,10 @@ export async function reserveEntitlement(
     expiresInSeconds?: number;
   }
 ): Promise<Entitlement> {
+  validateIdentifier("entitlementId", params.entitlementId);
+  validateIdentifier("uid", params.uid);
+  validateIdentifier("reportId", params.reportId);
+
   const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
   const snapshot: any = await dbTransaction.get(entitlementRef as any);
 
@@ -99,15 +108,14 @@ export async function reserveEntitlement(
     throw new DoubleSpendViolationError(params.entitlementId);
   }
 
-  const reservationDuration = params.expiresInSeconds || 300; // default 5 minutes
-  const reservationExpiresAt = new Date(Date.now() + reservationDuration * 1000).toISOString();
-  const updatedAt = now.toISOString();
+  const defaultDuration = params.expiresInSeconds || 300; // 5 minutes default
+  const expiresAt = new Date(now.getTime() + defaultDuration * 1000).toISOString();
 
   const updatedEntitlement: Partial<Entitlement> = {
     status: "RESERVED",
     reservedReportId: params.reportId,
-    reservationExpiresAt,
-    updatedAt,
+    reservationExpiresAt: expiresAt,
+    updatedAt: now.toISOString(),
   };
 
   dbTransaction.update(entitlementRef, updatedEntitlement);
@@ -116,8 +124,8 @@ export async function reserveEntitlement(
   await writeLedgerEntry(dbTransaction, {
     uid: entitlement.uid,
     orderId: entitlement.orderId,
-    transactionId: entitlement.orderId, // mapping transaction scope to orderId
-    eventId: `reserve_${params.reportId}_${now.getTime()}`,
+    transactionId: entitlement.orderId,
+    eventId: `reserve_${params.reportId}_${new Date().getTime()}`,
     type: "ENTITLEMENT_RESERVED",
     quantity: entitlement.quantity,
     idempotencyKey: `reserve:${params.entitlementId}:${params.reportId}`,
@@ -138,6 +146,10 @@ export async function consumeEntitlement(
     reportHash: string;
   }
 ): Promise<Entitlement> {
+  validateIdentifier("entitlementId", params.entitlementId);
+  validateIdentifier("uid", params.uid);
+  validateIdentifier("reportId", params.reportId);
+
   const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
   const snapshot: any = await dbTransaction.get(entitlementRef as any);
 
@@ -190,6 +202,10 @@ export async function releaseEntitlementReservation(
     reportId: string;
   }
 ): Promise<Entitlement> {
+  validateIdentifier("entitlementId", params.entitlementId);
+  validateIdentifier("uid", params.uid);
+  validateIdentifier("reportId", params.reportId);
+
   const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
   const snapshot: any = await dbTransaction.get(entitlementRef as any);
 
@@ -246,6 +262,8 @@ export async function revokeEntitlement(
     eventId: string;
   }
 ): Promise<Entitlement> {
+  validateIdentifier("entitlementId", params.entitlementId);
+
   const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
   const snapshot: any = await dbTransaction.get(entitlementRef as any);
 

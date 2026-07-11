@@ -88,9 +88,19 @@ describe("Emissions Calculation Engine", () => {
     
     // Benchmark = 10% for steel -> allocation = 20 tCO2e
     expect(result.freeAllocationAdjustment).toBe(20);
-    // Carbon price deduction = 15 * 200 = 3000 tCO2e deduction? No: max(0, gross - carbon_deduction)
-    // Wait, let's verify formula: carbonPriceDeduction = carbonPricePaid * totalEmbeddedEmissions
-    expect(result.carbonPriceDeduction).toBe(3000);
-    expect(result.netCertificatesDue).toBe(0); // 200 - 20 - 3000 = -2820 -> 0
+    
+    // Decoupled certificate reduction validation:
+    // certificatesBeforeReduction = 200 - 20 = 180 certificates
+    // carbonPricePaidCurrency = 15 * 200 = 3000 EUR
+    // certificatePrice = 75.36 EUR
+    // eligibleCertificateReduction = floor(3000 / 75.36) = 39 certificates
+    // certificatesAfterReduction = 180 - 39 = 141 certificates
+    expect(result.embeddedEmissionsTco2e).toBe(200);
+    expect(result.carbonPricePaidCurrency).toBe(3000);
+    expect(result.certificatesBeforeReduction).toBe(180);
+    expect(result.eligibleCertificateReduction).toBe(39);
+    expect(result.certificatesAfterReduction).toBe(141);
+    expect(result.netCertificatesDue).toBe(141);
+    expect(result.estimatedCertificateCostEur).toBe(10625.76); // 141 * 75.36
   });
 });

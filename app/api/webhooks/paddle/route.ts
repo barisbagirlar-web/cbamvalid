@@ -27,13 +27,38 @@ export async function POST(request: NextRequest) {
     const occurredAt = verifiedEvent.occurredAt;
     const payloadSha256 = crypto.createHash("sha256").update(rawBody).digest("hex");
 
-    // 4. Duplicate event deduplication checks
+    // 4. Duplicate event deduplication checks and registration in transactional block
     const eventRef = adminDb.collection("paddle_events").doc(eventId);
-    const existingEventDoc = await eventRef.get();
+    const duplicate = await adminDb.runTransaction(async (dbTransaction: any) => {
+      const docSnap = await dbTransaction.get(eventRef);
+      if (docSnap.exists) {
+        const existingEvent = docSnap.data();
+        if (existingEvent?.payloadSha256 === payloadSha256) {
+          return { isDuplicate: true, status: 200 };
+        } else {
+          return { isDuplicate: true, status: 409 };
+        }
+      }
 
-    if (existingEventDoc.exists) {
-      const existingEvent = existingEventDoc.data();
-      if (existingEvent?.payloadSha256 === payloadSha256) {
+      const now = new Date().toISOString();
+      const eventRecord = {
+        eventId,
+        eventType,
+        occurredAt,
+        receivedAt: now,
+        payloadSha256,
+        payload: verifiedEvent,
+        signatureVerified: true,
+        processingState: "PROCESSING",
+        attempts: 1,
+      };
+
+      dbTransaction.set(eventRef, eventRecord);
+      return { isDuplicate: false };
+    });
+
+    if (duplicate.isDuplicate) {
+      if (duplicate.status === 200) {
         console.log(`[PADDLE-WEBHOOK] Duplicate event ${eventId} recognized. Acknowledging with 200.`);
         return NextResponse.json({ status: "acknowledged", duplicate: true }, { status: 200 });
       } else {
@@ -41,22 +66,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "PAYLOAD_MISMATCH" }, { status: 409 });
       }
     }
-
-    // 5. Register the event in RECEIVED state
-    const now = new Date().toISOString();
-    const eventRecord = {
-      eventId,
-      eventType,
-      occurredAt,
-      receivedAt: now,
-      payloadSha256,
-      payload: verifiedEvent,
-      signatureVerified: true,
-      processingState: "PROCESSING",
-      attempts: 1,
-    };
-
-    await eventRef.set(eventRecord);
 
     // 6. Process the event payload
     try {

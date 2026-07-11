@@ -199,6 +199,18 @@ export function assessCaseReadiness(data: Record<string, any>): ReadinessAssessm
       blocksPayment: false,
       blocksSealing: false,
     });
+
+    if (!data.isVerified) {
+      gaps.push({
+        itemName: "Verified Carbon Price Evidence",
+        severity: "Warning",
+        whyItMatters: "Unverified carbon price paid evidence cannot be applied to reduce CBAM certificates due until verified by an accredited independent verifier.",
+        whereToObtain: "Contract an accredited environmental verifier for site inspection audits.",
+        acceptableSubstitute: "Local tax clearance certificate.",
+        blocksPayment: false,
+        blocksSealing: false,
+      });
+    }
   }
 
   const criticalGaps = gaps.filter((g) => g.blocksPayment);

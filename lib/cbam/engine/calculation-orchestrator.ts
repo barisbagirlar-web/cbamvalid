@@ -35,6 +35,15 @@ export interface CalculationOutput {
   freeAllocationAdjustment: number;
   carbonPriceDeduction: number;
   grossCertificates: number;
+  
+  // Decoupled regulatory fields:
+  embeddedEmissionsTco2e: number;
+  carbonPricePaidCurrency: number;
+  carbonPricePaidPerTco2e: number;
+  eligibleCertificateReduction: number;
+  certificatesBeforeReduction: number;
+  certificatesAfterReduction: number;
+  
   netCertificatesDue: number;
   estimatedCertificateCostEur: number;
   costPerTonneProductEur: number;
@@ -104,7 +113,8 @@ export function orchestrateCalculation(input: CalculationInput): CalculationOutp
     totalEmbedded: "TotalDirectEmissions + TotalIndirectEmissions",
     freeAllocation: "TotalEmbeddedEmissions * BenchmarkFactor",
     grossCertificates: "max(0, TotalEmbeddedEmissions - FreeAllocationAdjustment)",
-    netCertificates: "max(0, GrossCertificates - CarbonPricePaidDeduction)",
+    eligibleCertificateReduction: "floor((CarbonPricePaidPerTco2e * EmbeddedEmissions) / CertificatePrice)",
+    netCertificates: "max(0, GrossCertificates - EligibleCertificateReduction)",
     cost: "NetCertificatesDue * CertificatePrice",
   };
 
@@ -121,6 +131,15 @@ export function orchestrateCalculation(input: CalculationInput): CalculationOutp
     freeAllocationAdjustment: res.freeAllocationAdjustment,
     carbonPriceDeduction: res.carbonPriceDeduction,
     grossCertificates,
+    
+    // Decoupled fields mapping:
+    embeddedEmissionsTco2e: res.embeddedEmissionsTco2e,
+    carbonPricePaidCurrency: res.carbonPricePaidCurrency,
+    carbonPricePaidPerTco2e: res.carbonPricePaidPerTco2e,
+    eligibleCertificateReduction: res.eligibleCertificateReduction,
+    certificatesBeforeReduction: res.certificatesBeforeReduction,
+    certificatesAfterReduction: res.certificatesAfterReduction,
+    
     netCertificatesDue: res.netCertificatesDue,
     estimatedCertificateCostEur: res.estimatedCertificateCostEur,
     costPerTonneProductEur: totalMass > 0 ? Number((res.estimatedCertificateCostEur / totalMass).toFixed(2)) : 0,

@@ -32,6 +32,7 @@
     "guard:canonical-report": "node scripts/guard-release-mandate.mjs --check=canonical-report",
     "guard:cross-format": "node scripts/guard-release-mandate.mjs --check=cross-format",
     "guard:sample-report": "node scripts/guard-release-mandate.mjs --check=sample-report",
+    "guard:bundle-scan": "node scripts/guard-release-mandate.mjs --check=bundle-scan",
     "test:commerce": "vitest run tests/commerce",
     "test:cbam-engine": "vitest run tests/cbam-engine",
     "test:reports": "vitest run tests/reports",
@@ -42,7 +43,7 @@
     "test:e2e:visual": "playwright test tests/e2e/visual.spec.ts",
     "reconcile:paddle": "node scripts/guard-commercial-architecture.mjs --reconcile",
     "audit:ledger": "node scripts/guard-commercial-architecture.mjs --audit",
-    "release:commercial": "npm run guard:auth-architecture && npm run guard:auth-env:prod && npm run guard:english-only && npm run guard:visual-system && npm run guard:single-product && npm run guard:single-payment-channel && npm run guard:field-help-coverage && npm run guard:sector-adapters && npm run guard:official-sources && npm run guard:calculation-trace && npm run guard:canonical-report && npm run guard:cross-format && npm run guard:sample-report && npm run guard:claims && npm run guard:commerce && npm run typecheck && npm run lint && npm run test:auth && npm run test:commerce && npm run test:sectors && npm run test:cbam-engine && npm run test:reports && npm run test:sample-report && npm run build && npm run test:e2e:commercial && npm run test:e2e:visual && npm run audit:ledger && npm audit --omit=dev --audit-level=high"
+    "release:commercial": "npm run guard:auth-architecture && npm run guard:auth-env:prod && npm run guard:english-only && npm run guard:visual-system && npm run guard:single-product && npm run guard:single-payment-channel && npm run guard:field-help-coverage && npm run guard:sector-adapters && npm run guard:official-sources && npm run guard:calculation-trace && npm run guard:canonical-report && npm run guard:cross-format && npm run guard:sample-report && npm run guard:claims && npm run guard:commerce && npm run typecheck && npm run lint && npm run test:auth && npm run test:commerce && npm run test:sectors && npm run test:cbam-engine && npm run test:reports && npm run test:sample-report && npm run build && npm run guard:bundle-scan && npm run test:e2e:commercial && npm run test:e2e:visual && npm run audit:ledger && npm audit --omit=dev --audit-level=high"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

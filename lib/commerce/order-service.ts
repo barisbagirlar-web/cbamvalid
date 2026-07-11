@@ -1,6 +1,7 @@
 import admin from "firebase-admin";
 import { adminDb } from "../firebase/admin";
 import { OrderNotFoundError } from "./commerce-errors";
+import { validateIdentifier } from "../firebase/firestore-validator";
 
 export interface CommerceOrder {
   orderId: string;
@@ -41,6 +42,9 @@ export async function createOrder(
     amountMinor: number;
   }
 ): Promise<CommerceOrder> {
+  validateIdentifier("uid", params.uid);
+  validateIdentifier("caseId", params.caseId);
+  
   const orderRef = adminDb.collection("commerce_orders").doc();
   const orderId = `ord_${orderRef.id}`;
   const now = new Date().toISOString();
@@ -70,6 +74,11 @@ export async function transitionOrderStatus(
   newStatus: CommerceOrder["status"],
   metadata?: Partial<CommerceOrder>
 ): Promise<CommerceOrder> {
+  validateIdentifier("orderId", orderId);
+  if (metadata?.paddleTransactionId) {
+    validateIdentifier("paddleTransactionId", metadata.paddleTransactionId);
+  }
+  
   const orderRef = adminDb.collection("commerce_orders").doc(orderId);
   const snapshot: any = await dbTransaction.get(orderRef as any);
 

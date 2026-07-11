@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<CBAMDefinitiveDossier xmlns="https://cbamvalid.com/schema/exporter-evidence/1.0" generator="CBAMValid Sealing Engine v3.0" generatedAt="2026-07-10T18:42:37.165Z">
+<CBAMDefinitiveDossier xmlns="https://cbamvalid.com/schema/exporter-evidence/1.0" generator="CBAMValid Sealing Engine v3.0" generatedAt="2026-07-11T09:56:41.973Z">
   <Header>
     <SchemaVersion>3.0</SchemaVersion>
     <Language>en</Language>
@@ -17,12 +17,16 @@
     <ProductionVolume unit="metric_tonne">15000</ProductionVolume>
   </Installation>
   <Metrics>
-    <TotalEmbeddedEmissions unit="tCO2e">0</TotalEmbeddedEmissions>
+    <EmbeddedEmissionsTco2e unit="tCO2e">0</EmbeddedEmissionsTco2e>
     <SpecificDirectEmissions unit="tCO2e/t">0</SpecificDirectEmissions>
     <SpecificIndirectEmissions unit="tCO2e/t">0</SpecificIndirectEmissions>
     <FreeAllocationAdjustment unit="tCO2e">0</FreeAllocationAdjustment>
-    <CarbonPriceDeduction unit="EUR">0</CarbonPriceDeduction>
-    <NetCertificatesDue unit="units">0</NetCertificatesDue>
+    <CarbonPricePaidCurrency unit="EUR">0</CarbonPricePaidCurrency>
+    <CarbonPricePaidPerTco2e unit="EUR/tCO2e">0</CarbonPricePaidPerTco2e>
+    <CertificatesBeforeReduction unit="certificates">0</CertificatesBeforeReduction>
+    <EligibleCertificateReduction unit="certificates">0</EligibleCertificateReduction>
+    <CertificatesAfterReduction unit="certificates">0</CertificatesAfterReduction>
+    <NetCertificatesDue unit="certificates">0</NetCertificatesDue>
     <EstimatedCostEur unit="EUR">0</EstimatedCostEur>
   </Metrics>
   <SourcesRegister>
@@ -38,7 +42,12 @@
       <FormulaVersion>v1.0.0</FormulaVersion>
       <Units>boolean</Units>
       <RoundingMethod>NONE</RoundingMethod>
-      <LegalReference>EU_2023_956_REGULATION</LegalReference>
+      <LegalReference>Regulation (EU) 2023/956</LegalReference>
+      <UnitContract>(string, number) =&gt; boolean</UnitContract>
+      <RoundingRule>NONE</RoundingRule>
+      <Source>Regulation (EU) 2023/956, Annex III &amp; IV</Source>
+      <SourceVersion>v1.0.0</SourceVersion>
+      <EffectiveDate>2023-10-01</EffectiveDate>
       <FinalResult>1</FinalResult>
     </TraceNode>
     <TraceNode id="actualEmissions">
@@ -46,7 +55,12 @@
       <FormulaVersion>v1.0.0</FormulaVersion>
       <Units>tCO2e</Units>
       <RoundingMethod>ROUND_HALF_UP_TO_4_DECIMALS</RoundingMethod>
-      <LegalReference>EU_2023_956_REGULATION</LegalReference>
+      <LegalReference>Regulation (EU) 2023/956</LegalReference>
+      <UnitContract>(tCO2e, MWh, tCO2e/MWh) =&gt; tCO2e</UnitContract>
+      <RoundingRule>ROUND_HALF_UP_TO_4_DECIMALS</RoundingRule>
+      <Source>Regulation (EU) 2023/956, Annex III &amp; IV</Source>
+      <SourceVersion>v1.0.0</SourceVersion>
+      <EffectiveDate>2023-10-01</EffectiveDate>
       <FinalResult>0</FinalResult>
     </TraceNode>
     <TraceNode id="precursors">
@@ -54,7 +68,12 @@
       <FormulaVersion>v1.0.0</FormulaVersion>
       <Units>tCO2e</Units>
       <RoundingMethod>ROUND_HALF_UP_TO_4_DECIMALS</RoundingMethod>
-      <LegalReference>EU_2023_956_REGULATION</LegalReference>
+      <LegalReference>Regulation (EU) 2023/956</LegalReference>
+      <UnitContract>(tCO2e, tCO2e) =&gt; tCO2e</UnitContract>
+      <RoundingRule>ROUND_HALF_UP_TO_4_DECIMALS</RoundingRule>
+      <Source>Regulation (EU) 2023/956, Annex III &amp; IV</Source>
+      <SourceVersion>v1.0.0</SourceVersion>
+      <EffectiveDate>2023-10-01</EffectiveDate>
       <FinalResult>0</FinalResult>
     </TraceNode>
     <TraceNode id="totalEmbedded">
@@ -62,7 +81,12 @@
       <FormulaVersion>v1.0.0</FormulaVersion>
       <Units>tCO2e</Units>
       <RoundingMethod>ROUND_HALF_UP_TO_4_DECIMALS</RoundingMethod>
-      <LegalReference>EU_2023_956_REGULATION</LegalReference>
+      <LegalReference>Regulation (EU) 2023/956</LegalReference>
+      <UnitContract>(tCO2e, tCO2e, tCO2e) =&gt; tCO2e</UnitContract>
+      <RoundingRule>ROUND_HALF_UP_TO_4_DECIMALS</RoundingRule>
+      <Source>Regulation (EU) 2023/956, Annex III &amp; IV</Source>
+      <SourceVersion>v1.0.0</SourceVersion>
+      <EffectiveDate>2023-10-01</EffectiveDate>
       <FinalResult>0</FinalResult>
     </TraceNode>
     <TraceNode id="freeAllocation">
@@ -70,23 +94,38 @@
       <FormulaVersion>v1.0.0</FormulaVersion>
       <Units>tCO2e</Units>
       <RoundingMethod>ROUND_HALF_UP_TO_4_DECIMALS</RoundingMethod>
-      <LegalReference>EU_2023_956_REGULATION</LegalReference>
+      <LegalReference>Regulation (EU) 2023/956</LegalReference>
+      <UnitContract>(tCO2e, number) =&gt; tCO2e</UnitContract>
+      <RoundingRule>ROUND_HALF_UP_TO_4_DECIMALS</RoundingRule>
+      <Source>Regulation (EU) 2023/956, Annex III &amp; IV</Source>
+      <SourceVersion>v1.0.0</SourceVersion>
+      <EffectiveDate>2023-10-01</EffectiveDate>
       <FinalResult>0</FinalResult>
     </TraceNode>
     <TraceNode id="carbonPriceDeduction">
-      <FormulaId>carbonPriceDeductionFormula</FormulaId>
+      <FormulaId>carbonPriceReliefReduction</FormulaId>
       <FormulaVersion>v1.0.0</FormulaVersion>
-      <Units>EUR</Units>
-      <RoundingMethod>ROUND_HALF_UP_TO_4_DECIMALS</RoundingMethod>
-      <LegalReference>EU_2023_956_REGULATION</LegalReference>
+      <Units>certificates</Units>
+      <RoundingMethod>FLOOR</RoundingMethod>
+      <LegalReference>Regulation (EU) 2023/956</LegalReference>
+      <UnitContract>(EUR/tCO2e, tCO2e, EUR/certificate, boolean) =&gt; certificates</UnitContract>
+      <RoundingRule>FLOOR_TO_INTEGER</RoundingRule>
+      <Source>Regulation (EU) 2023/956, Annex III &amp; IV</Source>
+      <SourceVersion>v1.0.0</SourceVersion>
+      <EffectiveDate>2023-10-01</EffectiveDate>
       <FinalResult>0</FinalResult>
     </TraceNode>
     <TraceNode id="netCertificates">
       <FormulaId>netCertificatesFormula</FormulaId>
       <FormulaVersion>v1.0.0</FormulaVersion>
-      <Units>units</Units>
-      <RoundingMethod>CEIL</RoundingMethod>
-      <LegalReference>EU_2023_956_REGULATION</LegalReference>
+      <Units>certificates</Units>
+      <RoundingMethod>SUBTRACT</RoundingMethod>
+      <LegalReference>Regulation (EU) 2023/956</LegalReference>
+      <UnitContract>(certificates, certificates) =&gt; certificates</UnitContract>
+      <RoundingRule>EXACT</RoundingRule>
+      <Source>Regulation (EU) 2023/956, Annex III &amp; IV</Source>
+      <SourceVersion>v1.0.0</SourceVersion>
+      <EffectiveDate>2023-10-01</EffectiveDate>
       <FinalResult>0</FinalResult>
     </TraceNode>
     <TraceNode id="certificateCost">
@@ -94,7 +133,12 @@
       <FormulaVersion>v1.0.0</FormulaVersion>
       <Units>EUR</Units>
       <RoundingMethod>ROUND_HALF_UP_TO_4_DECIMALS</RoundingMethod>
-      <LegalReference>EU_2023_956_REGULATION</LegalReference>
+      <LegalReference>Regulation (EU) 2023/956</LegalReference>
+      <UnitContract>(certificates, EUR/certificate) =&gt; EUR</UnitContract>
+      <RoundingRule>ROUND_HALF_UP_TO_2_DECIMALS</RoundingRule>
+      <Source>Regulation (EU) 2023/956, Annex III &amp; IV</Source>
+      <SourceVersion>v1.0.0</SourceVersion>
+      <EffectiveDate>2023-10-01</EffectiveDate>
       <FinalResult>0</FinalResult>
     </TraceNode>
   </CalculationTraceLog>

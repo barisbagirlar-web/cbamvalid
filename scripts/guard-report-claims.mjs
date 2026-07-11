@@ -21,6 +21,18 @@ const forbiddenClaims = [
   "verified emissions",
   "accredited report",
   "accepted by all authorities",
+  "Official EU CBAM XML",
+  "EU Registry certified",
+  "Directly importable into the CBAM Registry",
+  "EU-approved format",
+  "Government-certified",
+  "TÜV-certified",
+  "ISO-certified",
+  "registry-compatible",
+  "registry compatible",
+  "approved by the EU",
+  "EU approved",
+  "officially certified",
 ];
 
 // Scan files

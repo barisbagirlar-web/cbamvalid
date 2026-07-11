@@ -77,7 +77,7 @@ export default async function SealedReportPage(props: PageProps) {
               href={`/api/cbam/reports/${reportId}/download?type=xml`}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-strong bg-transparent px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-neutral-soft"
             >
-              <Download className="w-4 h-4" strokeWidth={1.75} /> CBAM XML
+              <Download className="w-4 h-4" strokeWidth={1.75} /> Exporter Evidence XML
             </a>
           </div>
         </div>

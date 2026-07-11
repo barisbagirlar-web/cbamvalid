@@ -31,7 +31,7 @@ export default function HomePage() {
             <div className="max-w-2xl space-y-6">
               <div className="inline-flex items-center space-x-2 border border-border bg-accent-soft px-3 py-1.5 rounded-full text-xs font-semibold tracking-wider text-accent uppercase">
                 <Globe2 className="w-4 h-4 mr-1" strokeWidth={1.75} /> 
-                EU Registry Rules Aligned
+                EU Regulatory Method Alignment
               </div>
               
               <h1 className="text-4xl lg:text-6xl font-bold tracking-tight leading-[1.1]">
@@ -87,7 +87,7 @@ export default function HomePage() {
                     <span className="text-accent font-semibold">Included</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-border/30">
-                    <span className="text-muted">Structured CBAMValid XML</span>
+                    <span className="text-muted">CBAMValid Exporter Evidence XML</span>
                     <span className="text-accent font-semibold">Included</span>
                   </div>
                 </div>
