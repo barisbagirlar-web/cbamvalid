@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  serverExternalPackages: ["firebase-admin"],
   webpack: (config, { dev }) => {
     if (dev) {
       config.resolve.alias["@/lib/firebase/admin"] = path.resolve(
