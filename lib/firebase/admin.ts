@@ -4,10 +4,10 @@ let authInstance: import("firebase-admin/auth").Auth | null = null;
 let dbInstance: import("firebase-admin/firestore").Firestore | null = null;
 
 function getFirebaseApp() {
-  // Store package names in variables to defeat Turbopack static analysis/bundling.
-  // This guarantees they are left as native Node.js require() calls at runtime.
-  const adminPkg = "firebase-admin";
-  const appPkg = "firebase-admin/app";
+  // Use runtime conditional expressions to prevent Turbopack from statically inlining
+  // and rewriting these module paths during compilation.
+  const adminPkg = process.env.NODE_ENV ? "firebase-admin" : "firebase-admin";
+  const appPkg = process.env.NODE_ENV ? "firebase-admin/app" : "firebase-admin/app";
 
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const admin = require(adminPkg) as typeof import("firebase-admin");
@@ -56,7 +56,7 @@ function getFirebaseApp() {
 
 export function getAdminAuth() {
   if (!authInstance) {
-    const authPkg = "firebase-admin/auth";
+    const authPkg = process.env.NODE_ENV ? "firebase-admin/auth" : "firebase-admin/auth";
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getAuth } = require(authPkg) as typeof import("firebase-admin/auth");
     authInstance = getAuth(getFirebaseApp());
@@ -66,7 +66,7 @@ export function getAdminAuth() {
 
 export function getAdminDb() {
   if (!dbInstance) {
-    const dbPkg = "firebase-admin/firestore";
+    const dbPkg = process.env.NODE_ENV ? "firebase-admin/firestore" : "firebase-admin/firestore";
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getFirestore } = require(dbPkg) as typeof import("firebase-admin/firestore");
     dbInstance = getFirestore(getFirebaseApp());
