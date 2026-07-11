@@ -8,6 +8,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: Error | null;
+  claims: Record<string, any> | null;
   signOutUser: () => Promise<void>;
 }
 
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   error: null,
+  claims: null,
   signOutUser: async () => {},
 });
 
@@ -22,14 +24,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
+  const [claims, setClaims] = useState<Record<string, any> | null>(null);
 
   useEffect(() => {
     // Set up the single unified auth state listener
     const unsubscribe = onAuthStateChanged(
       auth,
-      (currentUser) => {
+      async (currentUser) => {
         setUser(currentUser);
         setError(null);
+        if (currentUser) {
+          try {
+            const tokenResult = await currentUser.getIdTokenResult();
+            setClaims(tokenResult.claims);
+          } catch (e) {
+            console.error("Failed to fetch claims:", e);
+            setClaims(null);
+          }
+        } else {
+          setClaims(null);
+        }
         setLoading(false);
       },
       (err) => {
@@ -53,7 +67,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, signOutUser }}>
+    <AuthContext.Provider value={{ user, loading, error, claims, signOutUser }}>
       {children}
     </AuthContext.Provider>
   );

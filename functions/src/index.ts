@@ -9,4 +9,6 @@ setGlobalOptions({
 export * from "./handlers/cases";
 export * from "./handlers/reports";
 export * from "./handlers/commerce";
+export * from "./handlers/account";
+export * from "./handlers/admin";
 export * from "./webhook";

@@ -25,6 +25,77 @@ export const saveCbamCase = createCallable(
   }
 );
 
+export const getCbamCase = createCallable(
+  {
+    schema: z.object({
+      caseId: z.string()
+    })
+  },
+  async ({ caseId }, { auth }) => {
+    const cbamCase = await getCase(caseId);
+    if (!cbamCase || cbamCase.uid !== auth.uid) {
+      throw new Error("Case not found or access denied.");
+    }
+    return { case: cbamCase, status: "success" };
+  }
+);
+
+export const renameCbamCase = createCallable(
+  {
+    schema: z.object({
+      caseId: z.string(),
+      newName: z.string()
+    })
+  },
+  async ({ caseId, newName }, { auth }) => {
+    const existing = await getCase(caseId);
+    if (!existing || existing.uid !== auth.uid) {
+      throw new Error("Case not found or access denied.");
+    }
+    const updatedData = { ...existing.data, installationName: newName };
+    await updateCase(caseId, auth.uid, updatedData);
+    return { success: true };
+  }
+);
+
+export const archiveCbamCase = createCallable(
+  {
+    schema: z.object({
+      caseId: z.string()
+    })
+  },
+  async ({ caseId }, { auth }) => {
+    const existing = await getCase(caseId);
+    if (!existing || existing.uid !== auth.uid) {
+      throw new Error("Case not found or access denied.");
+    }
+    // Update status to ARCHIVED
+    const { adminDb } = await import("@/firebase-admin");
+    await adminDb.collection("cbam_cases").doc(caseId).update({
+      status: "ARCHIVED",
+      updatedAt: new Date().toISOString()
+    });
+    return { success: true };
+  }
+);
+
+export const deleteCbamCase = createCallable(
+  {
+    schema: z.object({
+      caseId: z.string()
+    })
+  },
+  async ({ caseId }, { auth }) => {
+    const existing = await getCase(caseId);
+    if (!existing || existing.uid !== auth.uid) {
+      throw new Error("Case not found or access denied.");
+    }
+    const { adminDb } = await import("@/firebase-admin");
+    await adminDb.collection("cbam_cases").doc(caseId).delete();
+    return { success: true };
+  }
+);
+
 export const getCbamCases = createCallable({}, async (_, { auth }) => {
   const cases = await getCasesForUser(auth.uid);
   return { cases, status: "success" };

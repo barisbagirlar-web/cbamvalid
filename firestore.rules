@@ -5,7 +5,7 @@ service cloud.firestore {
     
     // Helper function to check if the user is the Super Admin
     function isSuperAdmin() {
-      return request.auth != null && request.auth.token.email == 'barisbagirlar@gmail.com';
+      return request.auth != null && (request.auth.token.admin == true || request.auth.token.ownerAdmin == true);
     }
 
     // Rules for the users collection
@@ -31,6 +31,18 @@ service cloud.firestore {
       // Server SDK (Admin SDK) bypasses these rules completely, allowing it to mutate tokens and roles.
       // Super Admin can edit from client if needed (optional, but let's restrict to keep strict consistency)
       allow delete: if isSuperAdmin();
+      
+      // Credit Summary (Publicly readable by the user themselves, no writes allowed)
+      match /creditSummary/{docId} {
+        allow read: if (request.auth != null && request.auth.uid == userId) || isSuperAdmin();
+        allow write: if false; // Only backend functions mutate creditSummary
+      }
+
+      // Credit Ledger (Readable by the user, no writes allowed)
+      match /creditLedger/{docId} {
+        allow read: if (request.auth != null && request.auth.uid == userId) || isSuperAdmin();
+        allow write: if false; // Only backend functions mutate creditLedger
+      }
     }
     
     // Rules for the cbam_reports collection
@@ -53,10 +65,15 @@ service cloud.firestore {
       allow create, update, delete: if false; // Strictly backend only
     }
 
-    // Rules for entitlements
+    // Rules for entitlements (Legacy, replaced by creditSummary)
     match /entitlements/{entitlementId} {
       allow read: if (request.auth != null && resource.data.uid == request.auth.uid) || isSuperAdmin();
       allow create, update, delete: if false; // Strictly backend only
+    }
+
+    // Rules for account closures
+    match /account_closures/{closureId} {
+      allow read, write: if false; // Backend/Admin only
     }
 
     // Rules for paddle_events

@@ -30,18 +30,3 @@ export const createCheckoutSession = createCallable(
   }
 );
 
-export const adminSetUserTokens = createCallable(
-  {
-    schema: z.object({
-      targetUserId: z.string(),
-      tokensToSet: z.number()
-    })
-  },
-  async ({ targetUserId, tokensToSet }, { auth }) => {
-    if (auth.uid !== "rB98q8p7fWTh8Hl5X3jKkQGZXYO2") {
-      // ignore
-    }
-    // Mock provisioning
-    return { success: true };
-  }
-);

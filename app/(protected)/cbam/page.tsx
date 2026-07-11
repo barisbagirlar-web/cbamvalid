@@ -5,7 +5,6 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthProvider";
 import { getCases, getReports, getEntitlements } from "@/lib/functions/client";
-import SignOutButton from "./SignOutButton";
 
 export default function CbamLandingPage() {
   const { user, loading } = useAuth();
@@ -68,12 +67,11 @@ export default function CbamLandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground px-4 py-8 md:px-8">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        {/* Page Title */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">CBAM Definitive Dossiers</h1>
             <p className="text-sm text-muted mt-1">Create calculation cases, purchase entitlements, and seal verified compliance reports.</p>
-            <p className="text-xs text-muted mt-1 font-semibold">{user.email}</p>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs bg-neutral-soft text-foreground px-3 py-1.5 rounded-full font-semibold border border-border">
@@ -85,9 +83,8 @@ export default function CbamLandingPage() {
             >
               Create New Case
             </Link>
-            <SignOutButton />
           </div>
-        </header>
+        </div>
 
         {/* Dashboard grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

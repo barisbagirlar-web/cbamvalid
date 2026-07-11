@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Lora, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthProvider";
+import { AppHeader } from "@/components/layout/AppHeader";
+import AppFooter from "@/components/layout/AppFooter";
 
 // Sans: Gövde Metinleri
 const inter = Inter({ 
@@ -22,8 +24,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CBAM Türkiye | Karbon Beyannamesi Oluşturucu",
-  description: "AB standartlarında anında CBAM XML ve PDF raporu üretin.",
+  title: "CBAMValid — CBAM Evidence Validation and Report Preparation",
+  description: "Prepare structured exporter evidence, identify documentation gaps, calculate embedded emissions, and generate auditable CBAM preparation dossiers.",
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" }
@@ -41,7 +43,9 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${lora.variable} ${jetbrainsMono.variable}`}>
       <body className={`${inter.className} bg-kil-base text-kil-text antialiased min-h-screen`}>
         <AuthProvider>
-          {children}
+          <AppHeader />
+          <main className="flex-1">{children}</main>
+          <AppFooter />
         </AuthProvider>
       </body>
     </html>

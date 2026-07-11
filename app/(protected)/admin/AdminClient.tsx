@@ -4,17 +4,17 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthProvider";
-import { adminSetUserTokens } from "@/lib/functions/client";
+import { adminSetUserTokens, listAllUsers, listAllTransactions } from "@/lib/functions/client";
 import { firebaseAuth } from "@/lib/firebase/client";
-import { collection, onSnapshot, getFirestore, doc, getDoc } from "firebase/firestore";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 
-const db = getFirestore(firebaseAuth.app);
+
 
 interface UserProfile {
   id: string;
   email: string;
-  tokens: number;
+  displayName: string;
+  credits: number;
   role: "user" | "admin";
 }
 
@@ -49,21 +49,18 @@ export default function AdminClient() {
       return;
     }
 
-    getDoc(doc(db, "users", user.uid))
-      .then((docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setRole(data?.role || "user");
-        } else {
-          setRole("user");
-        }
-        setRoleLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error loading user role:", err);
-        setRole("user");
-        setRoleLoading(false);
-      });
+    if (user.uid) {
+      // We don't need docSnap anymore, we can just rely on claims
+      const claims = (user as any).reloadUserInfo?.customAttributes;
+      let parsedClaims = {};
+      try {
+        if (claims) parsedClaims = JSON.parse(claims);
+      } catch(e) {}
+      
+      const userIsAdmin = (parsedClaims as any)?.admin || (parsedClaims as any)?.ownerAdmin;
+      setRole(userIsAdmin ? "admin" : "user");
+      setRoleLoading(false);
+    }
   }, [user, authLoading]);
 
   useEffect(() => {
@@ -73,61 +70,29 @@ export default function AdminClient() {
     }
 
     if (user && role === "admin") {
-      // Real-time listener for all users
-      const unsubscribeUsers = onSnapshot(
-        collection(db, "users"),
-        (snapshot) => {
-          const userList: UserProfile[] = [];
-          snapshot.forEach((doc) => {
-            const data = doc.data();
-            userList.push({
-              id: doc.id,
-              email: data.email || "",
-              tokens: data.tokens || 0,
-              role: data.role || "user",
-            });
-          });
-          setUsers(userList);
-          setLoading(false);
-        },
-        (error) => {
-          console.error("Error listening to users:", error);
-          setLoading(false);
-        }
-      );
-
-      // Real-time listener for reports log
-      const unsubscribeReports = onSnapshot(
-        collection(db, "cbam_reports"),
-        (snapshot) => {
-          const reportList: ReportLog[] = [];
-          snapshot.forEach((doc) => {
-            const data = doc.data();
-            reportList.push({
-              id: doc.id,
-              userId: data.userId || data.uid || "",
-              cnCode: data.cnCode || (data.calculation?.inputs?.cnCode) || "",
-              totalEmissions: data.totalEmissions || (data.calculation?.totalEmbeddedEmissions) || 0,
-              status: data.status || "completed",
-            });
-          });
-          setReports(reportList);
-        },
-        (error) => {
-          console.error("Error listening to reports:", error);
-        }
-      );
-
-      return () => {
-        unsubscribeUsers();
-        unsubscribeReports();
-      };
+      fetchAdminData();
     }
   }, [user, router, role]);
 
+  const fetchAdminData = async () => {
+    setLoading(true);
+    try {
+      const [usersData, txData] = await Promise.all([
+        listAllUsers(),
+        listAllTransactions()
+      ]);
+      setUsers(usersData || []);
+      setReports(txData || []);
+    } catch (err) {
+      console.error("Admin fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleStartEdit = (userProfile: UserProfile) => {
     setEditingUserId(userProfile.id);
-    setEditTokensValue(userProfile.tokens);
+    setEditTokensValue(userProfile.credits);
     setActionError("");
   };
 
@@ -143,6 +108,7 @@ export default function AdminClient() {
     try {
       await adminSetUserTokens(userId, editTokensValue);
       setEditingUserId(null);
+      await fetchAdminData();
     } catch (error) {
       const err = error as Error;
       console.error(err);
@@ -150,10 +116,6 @@ export default function AdminClient() {
     } finally {
       setUpdatingUserId(null);
     }
-  };
-
-  const handleSignOut = async () => {
-    await signOutUser();
   };
 
   if (authLoading || roleLoading || loading) {
@@ -179,19 +141,19 @@ export default function AdminClient() {
         <ArrowLeft className="h-4 w-4" /> Return to Dashboard
       </Link>
 
-      {/* HEADER */}
-      <header className="flex justify-between items-end border-b border-kil-text/15 pb-6 mb-8">
+      {/* Page Title */}
+      <div className="flex justify-between items-end border-b border-kil-text/15 pb-6 mb-8">
         <div>
           <h1 className="font-serif text-3xl font-black mb-2 text-kil-text">Super Admin Control Panel</h1>
           <p className="text-kil-text/60 font-mono text-sm">Administrative metrics and commercial transaction ledger registry.</p>
         </div>
         <button 
-          onClick={handleSignOut}
-          className="text-xs font-mono uppercase tracking-widest text-kil-text hover:text-kil-accent transition-colors pb-1 border-b border-transparent hover:border-kil-accent cursor-pointer"
+          onClick={fetchAdminData}
+          className="text-xs font-semibold text-kil-text/60 hover:text-kil-text flex items-center gap-1 cursor-pointer"
         >
-          Sign Out of System
+          <RefreshCw className="h-3 w-3" /> Refresh
         </button>
-      </header>
+      </div>
 
       {/* STATS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -208,9 +170,9 @@ export default function AdminClient() {
           <p className="text-3xl font-bold font-mono text-kil-accent">${(reports.length * 150).toFixed(2)}</p>
         </div>
         <div className="p-6 border border-kil-text/10 rounded-sm bg-kil-surface shadow-sm">
-          <p className="text-xs font-mono uppercase text-kil-text/60 mb-2">Total Entitlements Ledger</p>
+          <p className="text-xs font-mono uppercase text-kil-text/60 mb-2">Total Issued Credits</p>
           <p className="text-3xl font-bold font-mono text-kil-text">
-            {users.reduce((sum, u) => sum + u.tokens, 0)}
+            {users.reduce((sum, u) => sum + u.credits, 0)}
           </p>
         </div>
       </div>
@@ -232,7 +194,7 @@ export default function AdminClient() {
                 <th className="py-3 px-4 rounded-l-sm">User ID</th>
                 <th className="py-3 px-4">Email Address</th>
                 <th className="py-3 px-4">System Role</th>
-                <th className="py-3 px-4">Entitlements</th>
+                <th className="py-3 px-4">Credits</th>
                 <th className="py-3 px-4 rounded-r-sm text-right">Actions</th>
               </tr>
             </thead>
@@ -259,7 +221,7 @@ export default function AdminClient() {
                         className="w-20 px-2 py-1 bg-transparent border-b border-kil-text/30 focus:outline-none focus:border-kil-accent font-mono text-sm"
                       />
                     ) : (
-                      profile.tokens
+                      profile.credits
                     )}
                   </td>
                   <td className="py-3.5 px-4 text-right">
@@ -284,7 +246,7 @@ export default function AdminClient() {
                         onClick={() => handleStartEdit(profile)}
                         className="text-xs font-semibold text-accent hover:text-accent-hover border-b border-transparent hover:border-accent pb-0.5 cursor-pointer"
                       >
-                        Adjust Entitlements
+                        Adjust Credits
                       </button>
                     )}
                   </td>

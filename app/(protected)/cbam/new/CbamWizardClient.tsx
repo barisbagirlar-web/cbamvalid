@@ -151,11 +151,11 @@ export default function CbamWizardClient({ sessionUser, initialCase, availableEn
   const saveDraft = async () => {
     setSaving(true);
     try {
-      const savedCase = await saveCase(casePayload, caseId || undefined);
-      if (savedCase && savedCase.caseId) {
-        setCaseId(savedCase.caseId);
-        logConversionEvent("draft_resumed", { caseId: savedCase.caseId });
-        return savedCase.caseId;
+      const savedCaseId = await saveCase(casePayload, caseId || undefined);
+      if (savedCaseId) {
+        setCaseId(savedCaseId);
+        logConversionEvent("draft_resumed", { caseId: savedCaseId });
+        return savedCaseId;
       }
     } catch (e) {
       console.error("Draft save failed:", e);
