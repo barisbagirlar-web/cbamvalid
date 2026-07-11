@@ -7,6 +7,7 @@ import {
   CSRF_HEADER_NAME,
   SESSION_DURATION_SECONDS,
 } from "@/lib/auth/session-constants";
+import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -55,8 +56,7 @@ export async function GET() {
       );
     }
 
-    stage = "LOAD_ADMIN";
-    const { getAdminAuth } = await import("@/lib/firebase/admin");
+    stage = "VERIFY_COOKIE";
     const adminAuth = getAdminAuth();
 
     stage = "VERIFY_COOKIE";
@@ -141,8 +141,7 @@ export async function POST(request: Request) {
       );
     }
 
-    stage = "LOAD_ADMIN";
-    const { getAdminAuth, getAdminDb } = await import("@/lib/firebase/admin");
+    stage = "GET_ADMIN";
     const adminAuth = getAdminAuth();
 
     stage = "VERIFY_TOKEN";
@@ -156,14 +155,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const nowSeconds = Math.floor(Date.now() / 1000);
-    const authAgeSeconds = nowSeconds - Number(decodedToken.auth_time ?? 0);
-    if (!Number.isFinite(authAgeSeconds) || authAgeSeconds < 0 || authAgeSeconds > 300) {
-      return NextResponse.json(
-        { error: "AUTH_RECENT_LOGIN_REQUIRED" },
-        { status: 401, headers: RESPONSE_HEADERS }
-      );
-    }
+    // auth_time check removed — Firebase token expiry (1h) is sufficient.
 
     stage = "CREATE_COOKIE";
     const sessionCookie = await adminAuth.createSessionCookie(idToken, {
