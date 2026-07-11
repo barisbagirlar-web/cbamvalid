@@ -1,4 +1,4 @@
-import { Transaction } from "firebase-admin/firestore";
+import admin from "firebase-admin";
 import { adminDb } from "../firebase/admin";
 import { DoubleSpendViolationError, EntitlementUnavailableError } from "./commerce-errors";
 import { writeLedgerEntry } from "./ledger-service";
@@ -22,7 +22,7 @@ export interface Entitlement {
  * Creates a new entitlement after a successful payment transaction
  */
 export async function createEntitlement(
-  dbTransaction: Transaction,
+  dbTransaction: admin.firestore.Transaction,
   params: {
     uid: string;
     orderId: string;
@@ -67,7 +67,7 @@ export async function createEntitlement(
  * Phase 1: Reserve Entitlement (Double-Spend Protection)
  */
 export async function reserveEntitlement(
-  dbTransaction: Transaction,
+  dbTransaction: admin.firestore.Transaction,
   params: {
     entitlementId: string;
     uid: string;
@@ -130,7 +130,7 @@ export async function reserveEntitlement(
  * Phase 2: Seal and Consume Entitlement (Finalizes consumption after report is built successfully)
  */
 export async function consumeEntitlement(
-  dbTransaction: Transaction,
+  dbTransaction: admin.firestore.Transaction,
   params: {
     entitlementId: string;
     uid: string;
@@ -183,7 +183,7 @@ export async function consumeEntitlement(
  * Reverts an active reservation to AVAILABLE in case of report generation errors
  */
 export async function releaseEntitlementReservation(
-  dbTransaction: Transaction,
+  dbTransaction: admin.firestore.Transaction,
   params: {
     entitlementId: string;
     uid: string;
@@ -240,7 +240,7 @@ export async function releaseEntitlementReservation(
  * Revokes an entitlement entirely (e.g. during a checkout refund process)
  */
 export async function revokeEntitlement(
-  dbTransaction: Transaction,
+  dbTransaction: admin.firestore.Transaction,
   params: {
     entitlementId: string;
     eventId: string;

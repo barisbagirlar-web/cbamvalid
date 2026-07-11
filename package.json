@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint app/api/auth/session/route.ts lib/auth/session-cookie.ts lib/auth/session-config.ts lib/auth/firebase-auth-errors.ts lib/auth/provision-user.ts lib/firebase/admin.ts middleware.ts app/admin/page.tsx app/admin/AdminClient.tsx app/dashboard/page.tsx app/dashboard/wizard/page.tsx app/\\(auth\\)/login/page.tsx app/\\(auth\\)/register/page.tsx scripts/set-admin-claim.mjs scripts/guard-auth-env.mjs scripts/guard-auth-architecture.mjs tests/auth/auth.test.ts tests/integration/integration.test.ts app/cbam/page.tsx app/cbam/SignOutButton.tsx app/cbam/new/page.tsx app/cbam/new/CbamWizardClient.tsx app/cbam/reports/\\[reportId\\]/page.tsx app/dashboard/reports/page.tsx lib/cbam/sectors/sector-adapter.ts lib/cbam/validation/readiness-assessor.ts lib/cbam/calculation/calculation-engine.ts scripts/guard-release-mandate.mjs scripts/generate-sample-reports.mjs tests/cbam-engine/sectors.test.ts tests/reports/sample-report.test.ts",
     "typecheck": "tsc --noEmit",
@@ -50,6 +50,7 @@
     "@paddle/paddle-node-sdk": "^3.8.0",
     "firebase": "^12.16.0",
     "firebase-admin": "^13.10.0",
+    "firebase-admin-a14c8a5423a75469": "npm:firebase-admin@^13.10.0",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.24.0",
     "next": "16.2.10",

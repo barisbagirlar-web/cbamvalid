@@ -1,7 +1,7 @@
 import "server-only";
 
+import admin from "firebase-admin";
 import type { DecodedIdToken } from "firebase-admin/auth";
-import { FieldValue } from "firebase-admin/firestore";
 
 import { adminDb } from "@/lib/firebase/admin";
 
@@ -33,8 +33,8 @@ export async function provisionUserProfile(
             : "",
         role: "user",
         accountStatus: "active",
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     }
   );

@@ -1,14 +1,13 @@
 import "server-only";
-import { getApp, getApps, initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import admin from "firebase-admin";
 
-const adminApp = getApps().length === 0 ? initializeApp() : getApp();
+const adminApp = admin.apps.length === 0 ? admin.initializeApp() : admin.app();
 
 export function getAdminApp() {
   return adminApp;
 }
 
-export const adminDb = getFirestore(adminApp);
+export const adminDb = admin.firestore(adminApp);
 
 export function getAdminDb() {
   return adminDb;

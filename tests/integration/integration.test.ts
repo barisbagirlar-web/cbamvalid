@@ -5,7 +5,7 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 vi.mock("server-only", () => ({}));
 
 // Mock env parameters
-process.env.FIREBASE_ADMIN_USE_ADC = "true";
+process.env.ADMIN_USE_ADC = "true";
 process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = "cbam-project";
 
 // Setup single stable mock cookie store
@@ -19,6 +19,75 @@ vi.mock("next/headers", () => ({
 }));
 
 // Setup mocks BEFORE importing the targets
+const verifySessionCookie = vi.fn();
+
+const sharedAuth = {
+  verifySessionCookie,
+};
+
+const docGet = vi.fn();
+const docCreate = vi.fn();
+const docUpdate = vi.fn();
+const docSet = vi.fn();
+const docRef = {
+  get: docGet,
+  create: docCreate,
+  update: docUpdate,
+  set: docSet,
+};
+const collectionMock = vi.fn(() => ({
+  doc: vi.fn(() => docRef),
+}));
+const runTransaction = vi.fn(async (cb) => {
+  const transactionMock = {
+    get: async (ref: any) => {
+      const snap = await docGet();
+      return snap;
+    },
+    create: async (ref: any, data: any) => {
+      return await docCreate(data);
+    },
+    update: async (ref: any, data: any) => {
+      return await docUpdate(data);
+    },
+    set: async (ref: any, data: any) => {
+      return await docSet(data);
+    },
+  };
+  return await cb(transactionMock);
+});
+
+const sharedFirestore = {
+  collection: collectionMock,
+  runTransaction,
+};
+
+vi.mock("firebase-admin", () => {
+  const mockApp = { name: "[DEFAULT]" };
+  return {
+    default: {
+      apps: [mockApp],
+      app: vi.fn(() => mockApp),
+      initializeApp: vi.fn(() => mockApp),
+      auth: vi.fn(() => sharedAuth),
+      firestore: Object.assign(vi.fn(() => sharedFirestore), {
+        FieldValue: {
+          serverTimestamp: () => "server-timestamp-val",
+        },
+      }),
+    },
+    apps: [mockApp],
+    app: vi.fn(() => mockApp),
+    initializeApp: vi.fn(() => mockApp),
+    auth: vi.fn(() => sharedAuth),
+    firestore: Object.assign(vi.fn(() => sharedFirestore), {
+      FieldValue: {
+        serverTimestamp: () => "server-timestamp-val",
+      },
+    }),
+  };
+});
+
 vi.mock("firebase-admin/app", () => ({
   initializeApp: vi.fn(),
   getApps: vi.fn(() => [{ name: "[DEFAULT]" }]),
@@ -28,51 +97,14 @@ vi.mock("firebase-admin/app", () => ({
 }));
 
 vi.mock("firebase-admin/auth", () => {
-  const verifySessionCookie = vi.fn();
   return {
-    getAuth: vi.fn(() => ({
-      verifySessionCookie,
-    })),
+    getAuth: vi.fn(() => sharedAuth),
   };
 });
 
 vi.mock("firebase-admin/firestore", () => {
-  const docGet = vi.fn();
-  const docCreate = vi.fn();
-  const docUpdate = vi.fn();
-  const docSet = vi.fn();
-  const docRef = {
-    get: docGet,
-    create: docCreate,
-    update: docUpdate,
-    set: docSet,
-  };
-  const collectionMock = vi.fn(() => ({
-    doc: vi.fn(() => docRef),
-  }));
-  const runTransaction = vi.fn(async (cb) => {
-    const transactionMock = {
-      get: async (ref: any) => {
-        const snap = await docGet();
-        return snap;
-      },
-      create: async (ref: any, data: any) => {
-        return await docCreate(data);
-      },
-      update: async (ref: any, data: any) => {
-        return await docUpdate(data);
-      },
-      set: async (ref: any, data: any) => {
-        return await docSet(data);
-      },
-    };
-    return await cb(transactionMock);
-  });
   return {
-    getFirestore: vi.fn(() => ({
-      collection: collectionMock,
-      runTransaction,
-    })),
+    getFirestore: vi.fn(() => sharedFirestore),
     FieldValue: {
       serverTimestamp: () => "server-timestamp-val",
     },

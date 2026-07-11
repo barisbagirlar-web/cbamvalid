@@ -9,7 +9,7 @@ import {
 
 const encoded =
   process.env
-    .FIREBASE_ADMIN_SERVICE_ACCOUNT_B64;
+    .ADMIN_SERVICE_ACCOUNT_B64;
 
 const email =
   process.env.ADMIN_BOOTSTRAP_EMAIL;

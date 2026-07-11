@@ -1,23 +1,17 @@
 import "server-only";
 
-import {
-  getApp,
-  getApps,
-  initializeApp,
-} from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
+import admin from "firebase-admin";
 
 function getAdminApp() {
-  return getApps().length ? getApp() : initializeApp();
+  return admin.apps.length ? admin.app() : admin.initializeApp();
 }
 
 export function getAdminAuth() {
-  return getAuth(getAdminApp());
+  return admin.auth(getAdminApp());
 }
 
 export function getAdminDb() {
-  return getFirestore(getAdminApp());
+  return admin.firestore(getAdminApp());
 }
 
 // Proxies for backward compatibility and lazy initialization

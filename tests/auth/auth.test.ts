@@ -5,11 +5,39 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 vi.mock("server-only", () => ({}));
 
 // Set mock environment variables
-process.env.FIREBASE_ADMIN_USE_ADC = "true";
+process.env.ADMIN_USE_ADC = "true";
 process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = "cbam-project";
 process.env.AUTH_ALLOWED_ORIGINS = "https://cbamvalid.com";
 
 // Mock firebase-admin modules BEFORE importing routing layers
+const verifySessionCookie = vi.fn();
+const verifyIdToken = vi.fn();
+const createSessionCookie = vi.fn();
+
+const sharedAuth = {
+  verifySessionCookie,
+  verifyIdToken,
+  createSessionCookie,
+};
+
+vi.mock("firebase-admin", () => {
+  const mockApp = { name: "[DEFAULT]" };
+  return {
+    default: {
+      apps: [mockApp],
+      app: vi.fn(() => mockApp),
+      initializeApp: vi.fn(() => mockApp),
+      auth: vi.fn(() => sharedAuth),
+      firestore: vi.fn(() => ({})),
+    },
+    apps: [mockApp],
+    app: vi.fn(() => mockApp),
+    initializeApp: vi.fn(() => mockApp),
+    auth: vi.fn(() => sharedAuth),
+    firestore: vi.fn(() => ({})),
+  };
+});
+
 vi.mock("firebase-admin/app", () => ({
   initializeApp: vi.fn(),
   getApps: vi.fn(() => [{ name: "[DEFAULT]" }]),
@@ -19,15 +47,8 @@ vi.mock("firebase-admin/app", () => ({
 }));
 
 vi.mock("firebase-admin/auth", () => {
-  const verifySessionCookie = vi.fn();
-  const verifyIdToken = vi.fn();
-  const createSessionCookie = vi.fn();
   return {
-    getAuth: vi.fn(() => ({
-      verifySessionCookie,
-      verifyIdToken,
-      createSessionCookie,
-    })),
+    getAuth: vi.fn(() => sharedAuth),
   };
 });
 

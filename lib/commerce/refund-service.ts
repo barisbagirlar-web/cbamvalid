@@ -1,4 +1,4 @@
-import { Transaction } from "firebase-admin/firestore";
+import admin from "firebase-admin";
 import { adminDb } from "../firebase/admin";
 import { transitionOrderStatus } from "./order-service";
 import { revokeEntitlement } from "./entitlement-service";
@@ -8,7 +8,7 @@ import { writeLedgerEntry } from "./ledger-service";
  * Handles payment adjustments and refunds asynchronously in a single Firestore transaction
  */
 export async function processRefund(
-  dbTransaction: Transaction,
+  dbTransaction: admin.firestore.Transaction,
   params: {
     uid: string;
     orderId: string;

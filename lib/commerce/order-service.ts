@@ -1,4 +1,4 @@
-import { Transaction } from "firebase-admin/firestore";
+import admin from "firebase-admin";
 import { adminDb } from "../firebase/admin";
 import { OrderNotFoundError } from "./commerce-errors";
 
@@ -32,7 +32,7 @@ export interface CommerceOrder {
  * Creates an initial order record in CHECKOUT_CREATED state
  */
 export async function createOrder(
-  dbTransaction: Transaction,
+  dbTransaction: admin.firestore.Transaction,
   params: {
     uid: string;
     caseId: string;
@@ -65,7 +65,7 @@ export async function createOrder(
  * Atomic status transition with validation rules
  */
 export async function transitionOrderStatus(
-  dbTransaction: Transaction,
+  dbTransaction: admin.firestore.Transaction,
   orderId: string,
   newStatus: CommerceOrder["status"],
   metadata?: Partial<CommerceOrder>

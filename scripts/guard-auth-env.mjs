@@ -219,7 +219,7 @@ function validateFirebaseAdminCredential({
     parsed = JSON.parse(decoded);
   } catch {
     addError(
-      "FIREBASE_ADMIN_SERVICE_ACCOUNT_B64 is not valid strict Base64-encoded JSON."
+      "ADMIN_SERVICE_ACCOUNT_B64 is not valid strict Base64-encoded JSON."
     );
     return;
   }
@@ -346,18 +346,18 @@ function assertValidEnvironment() {
 
   const encodedCredential =
     process.env
-      .FIREBASE_ADMIN_SERVICE_ACCOUNT_B64
+      .ADMIN_SERVICE_ACCOUNT_B64
       ?.trim() || "";
 
   const hasB64 = encodedCredential.length > 0;
 
   const useADC = readBoolean(
-    "FIREBASE_ADMIN_USE_ADC",
+    "ADMIN_USE_ADC",
     false
   );
 
   const adcRuntimeConfirmed = readBoolean(
-    "FIREBASE_ADMIN_ADC_RUNTIME_CONFIRMED",
+    "ADMIN_ADC_RUNTIME_CONFIRMED",
     false
   );
 
@@ -379,7 +379,7 @@ function assertValidEnvironment() {
     !adcRuntimeConfirmed
   ) {
     addError(
-      "ADC production mode requires FIREBASE_ADMIN_ADC_RUNTIME_CONFIRMED=true."
+      "ADC production mode requires ADMIN_ADC_RUNTIME_CONFIRMED=true."
     );
   }
 

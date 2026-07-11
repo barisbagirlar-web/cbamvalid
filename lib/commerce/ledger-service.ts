@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { Transaction } from "firebase-admin/firestore";
+import admin from "firebase-admin";
 import { adminDb } from "../firebase/admin";
 
 export interface LedgerEntry {
@@ -51,7 +51,7 @@ export function calculateEntryHash(entry: Omit<LedgerEntry, "entryHash">): strin
  * Appends a new entry to the immutable commerce ledger within a transaction context
  */
 export async function writeLedgerEntry(
-  dbTransaction: Transaction,
+  dbTransaction: admin.firestore.Transaction,
   entryParams: Omit<LedgerEntry, "entryId" | "createdAt" | "previousEntryHash" | "entryHash">
 ): Promise<LedgerEntry> {
   const ledgerCollection = adminDb.collection("commerce_ledger");
