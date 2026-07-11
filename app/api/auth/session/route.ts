@@ -38,7 +38,18 @@ function sessionTtlSeconds(): number {
 }
 
 function originAllowed(request: Request): boolean {
-  const origin = request.headers.get("origin");
+  let origin = request.headers.get("origin");
+  if (!origin) {
+    const referer = request.headers.get("referer");
+    if (referer) {
+      try {
+        const refUrl = new URL(referer);
+        origin = refUrl.origin;
+      } catch {
+        return false;
+      }
+    }
+  }
   if (!origin) return false;
   
   // Allow localhost origins during non-production runs / tests
@@ -116,7 +127,7 @@ export async function GET() {
   try {
     const claims = await getAdminAuth().verifySessionCookie(
       sessionCookie,
-      true
+      false
     );
 
     return NextResponse.json(
@@ -220,7 +231,7 @@ export async function POST(request: Request) {
   try {
     const decoded = await getAdminAuth().verifyIdToken(
       idToken,
-      true
+      false
     );
 
     const nowSeconds = Math.floor(Date.now() / 1000);

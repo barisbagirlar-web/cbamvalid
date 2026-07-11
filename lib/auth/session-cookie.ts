@@ -26,7 +26,7 @@ export async function getSession(): Promise<AuthSession | null> {
   try {
     const claims = await getAdminAuth().verifySessionCookie(
       sessionCookie,
-      true
+      false
     );
 
     const uid = claims.uid || claims.sub;

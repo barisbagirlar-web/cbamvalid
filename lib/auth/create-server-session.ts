@@ -33,6 +33,5 @@ export async function createServerSession(user: User): Promise<void> {
 
 export async function finalizeServerSession(user: User): Promise<void> {
   await createServerSession(user);
-  await signOut(auth);
   window.location.assign("/dashboard");
 }
