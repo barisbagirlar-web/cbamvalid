@@ -35,14 +35,39 @@ service cloud.firestore {
     
     // Rules for the cbam_reports collection
     match /cbam_reports/{reportId} {
-      // Users can read their own reports; Super Admin can read all
-      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) || isSuperAdmin();
-      
-      // Users can create their own reports
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      
-      // CBAM reports are immutable audit logs once submitted
+      allow read: if (request.auth != null && resource.data.uid == request.auth.uid) || isSuperAdmin();
+      allow create: if false; // Only backend functions create reports
       allow update, delete: if isSuperAdmin();
+    }
+
+    // Rules for cbam_cases
+    match /cbam_cases/{caseId} {
+      allow read: if (request.auth != null && resource.data.uid == request.auth.uid) || isSuperAdmin();
+      allow create: if false; // Managed by backend functions
+      allow update, delete: if isSuperAdmin();
+    }
+
+    // Rules for commerce_orders
+    match /commerce_orders/{orderId} {
+      allow read: if (request.auth != null && resource.data.uid == request.auth.uid) || isSuperAdmin();
+      allow create, update, delete: if false; // Strictly backend only
+    }
+
+    // Rules for entitlements
+    match /entitlements/{entitlementId} {
+      allow read: if (request.auth != null && resource.data.uid == request.auth.uid) || isSuperAdmin();
+      allow create, update, delete: if false; // Strictly backend only
+    }
+
+    // Rules for paddle_events
+    match /paddle_events/{eventId} {
+      allow read, write: if false; // Webhook logs are strictly backend only
+    }
+
+    // Rules for document_seals
+    match /document_seals/{documentHash} {
+      allow read: if true; // Publicly verifiable signatures
+      allow create, update, delete: if false; // Only backend functions seal documents
     }
   }
 }

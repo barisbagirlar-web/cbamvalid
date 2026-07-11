@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthProvider";
-import { authenticatedFetch } from "@/lib/auth/authenticated-fetch";
+import { getReport, getReportDownloadUrl } from "@/lib/functions/client";
 import Link from "next/link";
 import { ShieldCheck, Download, ExternalLink, ArrowLeft } from "lucide-react";
 
@@ -23,11 +23,10 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
     const fetchReport = async () => {
       setDataLoading(true);
       try {
-        const res = await authenticatedFetch(`/api/cbam/reports/${reportId}`);
-        if (res.ok) {
-          const data = await res.json();
-          setReport(data.report || null);
-        } else if (res.status === 404) {
+        const data = await getReport(reportId);
+        if (data) {
+          setReport(data || null);
+        } else {
           setReport(null);
         }
       } catch (err) {
@@ -43,20 +42,16 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
   const handleDownload = async (type: string) => {
     if (!reportId) return;
     try {
-      const res = await authenticatedFetch(`/api/cbam/reports/${reportId}/download?type=${type}`);
-      if (!res.ok) throw new Error("Download failed");
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
+      const signedUrl = await getReportDownloadUrl(reportId, type);
+      if (!signedUrl) throw new Error("Download failed");
+      
       const a = document.createElement("a");
-      a.href = url;
-      
-      let ext = type;
-      if (type === "xlsx") ext = "xls";
-      
-      a.download = `CBAM_${type === "xlsx" ? "Workbook" : type === "pdf" ? "Dossier" : "Declaration"}_${reportId}.${ext}`;
+      a.href = signedUrl;
+      // Note: Download attributes might be ignored for cross-origin URLs, 
+      // but it's good practice. The backend Storage bucket will set Content-Disposition.
+      a.download = `CBAM_Report_${reportId}.${type === "xlsx" ? "xls" : type}`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (err) {
       console.error(err);

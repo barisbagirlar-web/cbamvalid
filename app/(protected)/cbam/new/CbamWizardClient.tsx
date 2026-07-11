@@ -8,6 +8,7 @@ import { Shield, CreditCard, CheckCircle2, ChevronRight, ChevronLeft, Loader2, C
 import { getSectorConfig, CbamSector } from "@/lib/cbam/sectors/sector-adapter";
 import { assessCaseReadiness, EvidenceGapItem } from "@/lib/cbam/validation/readiness-assessor";
 import { authenticatedFetch } from "@/lib/auth/authenticated-fetch";
+import { saveCase, createCheckout, sealReport, getCases } from "@/lib/functions/client";
 
 let paddleInstancePromise: Promise<Paddle | undefined> | null = null;
 
@@ -150,19 +151,11 @@ export default function CbamWizardClient({ sessionUser, initialCase, availableEn
   const saveDraft = async () => {
     setSaving(true);
     try {
-      const res = await authenticatedFetch("/api/cbam/cases", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          caseId,
-          data: casePayload,
-        }),
-      });
-      const data = await res.json();
-      if (data.status === "success") {
-        setCaseId(data.caseId);
-        logConversionEvent("draft_resumed", { caseId: data.caseId });
-        return data.caseId;
+      const savedCase = await saveCase(casePayload, caseId || undefined);
+      if (savedCase && savedCase.caseId) {
+        setCaseId(savedCase.caseId);
+        logConversionEvent("draft_resumed", { caseId: savedCase.caseId });
+        return savedCase.caseId;
       }
     } catch (e) {
       console.error("Draft save failed:", e);
@@ -222,15 +215,7 @@ export default function CbamWizardClient({ sessionUser, initialCase, availableEn
     setLoading(true);
     logConversionEvent("checkout_started", { caseId });
     try {
-      const res = await authenticatedFetch("/api/checkout/cbam", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productCode: "CBAM_EXPORTER_FINAL_REPORT",
-          caseId,
-        }),
-      });
-      const data = await res.json();
+      const data = await createCheckout("CBAM_EXPORTER_FINAL_REPORT", caseId);
       if (data.error) {
         alert(data.error);
         return;
@@ -261,20 +246,14 @@ export default function CbamWizardClient({ sessionUser, initialCase, availableEn
     setLoading(true);
     logConversionEvent("report_generation_started");
     try {
-      const res = await authenticatedFetch("/api/cbam/seal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          caseId,
-          entitlementId: selectedEntitlementId || entitlements[0].entitlementId,
-        }),
-      });
-      const data = await res.json();
-      if (data.status === "success") {
+      const reportId = selectedEntitlementId || entitlements[0].entitlementId;
+      const data = await sealReport(caseId, reportId);
+      
+      if (data && data.status === "success") {
         setSealedReport(data.report);
         logConversionEvent("report_generation_completed", { reportId: data.report.reportId });
       } else {
-        alert(data.error || "Sealing failed.");
+        alert(data?.error || "Sealing failed.");
       }
     } catch (e) {
       console.error(e);
@@ -286,7 +265,7 @@ export default function CbamWizardClient({ sessionUser, initialCase, availableEn
   const refreshEntitlements = async () => {
     setLoading(true);
     try {
-      await authenticatedFetch("/api/cbam/cases");
+      await getCases(); // Just touching the network to potentially refresh claims or token state
       router.refresh();
       window.location.reload();
     } catch (e) {

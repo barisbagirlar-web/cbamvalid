@@ -2,6 +2,9 @@
 
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { getFunctions } from "firebase/functions";
+import { getFirestore } from "firebase/firestore";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 
 const config = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -21,6 +24,20 @@ for (const [key, value] of Object.entries(config)) {
 
 const app = getApps().length ? getApp() : initializeApp(config);
 export const firebaseAuth = getAuth(app);
+export const firebaseFunctions = getFunctions(app, "europe-west1");
+export const firebaseDb = getFirestore(app);
+
+// Initialize App Check (browser only)
+if (typeof window !== "undefined") {
+  // Use debug token in development, use ReCaptcha Enterprise in production
+  if (process.env.NODE_ENV !== 'production') {
+    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  }
+  initializeAppCheck(app, {
+    provider: new ReCaptchaEnterpriseProvider(process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_KEY || 'dummy_key'),
+    isTokenAutoRefreshEnabled: true
+  });
+}
 
 // Enforce browserLocalPersistence
 setPersistence(firebaseAuth, browserLocalPersistence).catch((err) => {

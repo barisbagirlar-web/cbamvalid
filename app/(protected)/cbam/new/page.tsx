@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthProvider";
-import { authenticatedFetch } from "@/lib/auth/authenticated-fetch";
+import { getEntitlements, getCase } from "@/lib/functions/client";
 import CbamWizardClient from "./CbamWizardClient";
 
 export default function NewCbamCasePage() {
@@ -23,19 +23,13 @@ export default function NewCbamCasePage() {
       setDataLoading(true);
       try {
         // Fetch entitlements
-        const entRes = await authenticatedFetch("/api/cbam/entitlements");
-        if (entRes.ok) {
-          const entData = await entRes.json();
-          setAvailableEntitlements(entData.entitlements || []);
-        }
+        const entData = await getEntitlements();
+        setAvailableEntitlements(entData || []);
 
         // Fetch case if caseId exists
         if (caseId) {
-          const caseRes = await authenticatedFetch(`/api/cbam/cases?caseId=${caseId}`);
-          if (caseRes.ok) {
-            const caseData = await caseRes.json();
-            setInitialCase(caseData.case || null);
-          }
+          const caseData = await getCase(caseId);
+          setInitialCase(caseData || null);
         }
       } catch (err) {
         console.error("Error fetching data in Wizard page:", err);

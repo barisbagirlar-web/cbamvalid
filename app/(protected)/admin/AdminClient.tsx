@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthProvider";
+import { adminSetUserTokens } from "@/lib/functions/client";
 import { firebaseAuth } from "@/lib/firebase/client";
 import { collection, onSnapshot, getFirestore, doc, getDoc } from "firebase/firestore";
 import { ArrowLeft } from "lucide-react";
@@ -140,21 +141,7 @@ export default function AdminClient() {
     setActionError("");
 
     try {
-      const response = await fetch("/api/admin/tokens", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          targetUserId: userId,
-          tokensToSet: editTokensValue,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to update tokens");
-      }
-
+      await adminSetUserTokens(userId, editTokensValue);
       setEditingUserId(null);
     } catch (error) {
       const err = error as Error;

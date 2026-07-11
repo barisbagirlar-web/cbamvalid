@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthProvider";
-import { authenticatedFetch } from "@/lib/auth/authenticated-fetch";
+import { getReports } from "@/lib/functions/client";
 import Link from "next/link";
 import { ShieldCheck, Calendar, ArrowRight } from "lucide-react";
 
@@ -18,10 +18,9 @@ export default function DashboardReportsHistoryPage() {
     const fetchReports = async () => {
       setDataLoading(true);
       try {
-        const res = await authenticatedFetch("/api/cbam/reports");
-        if (res.ok) {
-          const data = await res.json();
-          setReports(data.reports || []);
+        const data = await getReports();
+        if (data) {
+          setReports(data || []);
         }
       } catch (err) {
         console.error("Error fetching reports:", err);

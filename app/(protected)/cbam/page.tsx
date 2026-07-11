@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthProvider";
-import { authenticatedFetch } from "@/lib/auth/authenticated-fetch";
+import { getCases, getReports, getEntitlements } from "@/lib/functions/client";
 import SignOutButton from "./SignOutButton";
 
 export default function CbamLandingPage() {
@@ -21,22 +21,19 @@ export default function CbamLandingPage() {
       setDataLoading(true);
       try {
         const [casesRes, reportsRes, entitlementsRes] = await Promise.all([
-          authenticatedFetch("/api/cbam/cases"),
-          authenticatedFetch("/api/cbam/reports"),
-          authenticatedFetch("/api/cbam/entitlements")
+          getCases(),
+          getReports(),
+          getEntitlements()
         ]);
 
-        if (casesRes.ok) {
-          const cData = await casesRes.json();
-          setCases(cData.cases || []);
+        if (casesRes) {
+          setCases(casesRes || []);
         }
-        if (reportsRes.ok) {
-          const rData = await reportsRes.json();
-          setReports(rData.reports || []);
+        if (reportsRes) {
+          setReports(reportsRes || []);
         }
-        if (entitlementsRes.ok) {
-          const eData = await entitlementsRes.json();
-          setAvailableEntitlementsCount((eData.entitlements || []).length);
+        if (entitlementsRes) {
+          setAvailableEntitlementsCount((entitlementsRes || []).length);
         }
       } catch (err) {
         console.error("Error fetching landing page data:", err);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminDb } from "@/lib/firebase/admin";
-
+import { firebaseDb } from "@/lib/firebase/client";
+import { doc, getDoc } from "firebase/firestore";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest, props: { params: Promise<{ documentHash: string }> }) {
@@ -12,16 +12,17 @@ export async function GET(request: NextRequest, props: { params: Promise<{ docum
       return NextResponse.json({ error: "Missing document hash parameter" }, { status: 400 });
     }
 
-    const doc = await getAdminDb().collection("document_seals").doc(documentHash).get();
+    const docRef = doc(firebaseDb, "document_seals", documentHash);
+    const docSnap = await getDoc(docRef);
 
-    if (!doc.exists) {
+    if (!docSnap.exists()) {
       return NextResponse.json({
         valid: false,
         message: "No registered sealed document was found matching the provided cryptographic signature.",
       }, { status: 404 });
     }
 
-    const sealData = doc.data() as any;
+    const sealData = docSnap.data() as any;
 
     // Return only safe metadata without leaking customer identity, EORI, volume, or emission values
     return NextResponse.json({

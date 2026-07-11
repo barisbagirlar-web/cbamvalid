@@ -29,7 +29,8 @@ function walk(dir, filter, callback) {
         file !== 'scripts' &&
         file !== 'tests' &&
         file !== 'release-evidence' &&
-        file !== 'scratch'
+        file !== 'scratch' &&
+        file !== 'functions'
       ) {
         walk(fullPath, filter, callback);
       }
@@ -196,11 +197,9 @@ walk(rootDir, isSourceFile, (filePath) => {
     clientInitializers++;
   }
 
-  // 12. Multiple Firebase Admin SDK initializers
-  if (content.includes('initializeApp(') && (content.includes('firebase-admin') || content.includes('firebase-admin/app'))) {
-    if (relPath !== 'lib/firebase/admin.ts') {
-      logError(relPath, "Initializes Firebase Admin SDK directly. Must use admin.ts.");
-    }
+  // 12. Forbidden Firebase Admin SDK initializers or imports
+  if (content.includes('firebase-admin')) {
+    logError(relPath, "Imports or uses firebase-admin, which is forbidden in Next.js.");
     adminInitializers++;
   }
 });
@@ -239,8 +238,8 @@ if (clientInitializers !== 1) {
   console.error(`[GUARD-ARCH] [ERROR] Expected exactly 1 Client Firebase SDK initializer, found: ${clientInitializers}`);
   totalErrors++;
 }
-if (adminInitializers !== 1) {
-  console.error(`[GUARD-ARCH] [ERROR] Expected exactly 1 Firebase Admin SDK initializer, found: ${adminInitializers}`);
+if (adminInitializers > 0) {
+  console.error(`[GUARD-ARCH] [ERROR] Expected 0 Firebase Admin SDK references, found: ${adminInitializers}`);
   totalErrors++;
 }
 if (totalErrors > 0) {
