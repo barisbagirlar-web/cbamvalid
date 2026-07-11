@@ -63,7 +63,13 @@ export async function GET() {
         { authenticated: false, user: null },
         { status: 200, headers: RESPONSE_HEADERS }
       );
-      response.cookies.delete(SESSION_COOKIE_NAME);
+      response.cookies.set(SESSION_COOKIE_NAME, "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 0,
+      });
       return response;
     }
 
@@ -82,7 +88,13 @@ export async function GET() {
       { authenticated: false, user: null },
       { status: 200, headers: RESPONSE_HEADERS }
     );
-    response.cookies.delete(SESSION_COOKIE_NAME);
+    response.cookies.set(SESSION_COOKIE_NAME, "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 0,
+    });
     return response;
   }
 }
@@ -208,6 +220,12 @@ export async function DELETE(request: Request) {
     { status: 200, headers: RESPONSE_HEADERS }
   );
 
-  response.cookies.delete(SESSION_COOKIE_NAME);
+  response.cookies.set(SESSION_COOKIE_NAME, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
   return response;
 }
