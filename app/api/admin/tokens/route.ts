@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { getServerSessionRevocationSensitive } from "@/lib/auth/get-server-session";
 
+// Force-invalidate cache: Turbopack compilation trigger
+
 export async function POST(request: Request) {
   try {
     const session = await getServerSessionRevocationSensitive();
