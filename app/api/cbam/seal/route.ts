@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "@/lib/auth/get-server-session";
+import { requireFirebaseUser } from "@/lib/auth/require-firebase-user";
 import { verifyCaseOwner } from "@/lib/cbam/storage/case-repository";
 import { sealReport } from "@/lib/cbam/report/seal-service";
 
@@ -20,10 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Session check
-    const session = await getServerSession();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const session = await requireFirebaseUser(request);
 
     // 3. Request inputs validation
     const { caseId, entitlementId } = await request.json();
@@ -48,9 +45,11 @@ export async function POST(request: NextRequest) {
       status: "success",
       reportId: sealedResult.reportId,
       documentHash: sealedResult.documentHash,
+      report: sealedResult, // We include the report so the frontend can receive it on sealing success
     });
   } catch (error: any) {
     console.error("[REPORT SEALING ENDPOINT ERROR]:", error.message || error);
-    return NextResponse.json({ error: error.message || "Failed to seal dossier report" }, { status: 500 });
+    const status = error.status || 500;
+    return NextResponse.json({ error: error.message || "Failed to seal dossier report" }, { status });
   }
 }

@@ -7,6 +7,7 @@ import { initializePaddle, Paddle } from "@paddle/paddle-js";
 import { Shield, CreditCard, CheckCircle2, ChevronRight, ChevronLeft, Loader2, CircleAlert, FileText, ShieldCheck, FileJson, FileCode2, Info, HelpCircle } from "lucide-react";
 import { getSectorConfig, CbamSector } from "@/lib/cbam/sectors/sector-adapter";
 import { assessCaseReadiness, EvidenceGapItem } from "@/lib/cbam/validation/readiness-assessor";
+import { authenticatedFetch } from "@/lib/auth/authenticated-fetch";
 
 let paddleInstancePromise: Promise<Paddle | undefined> | null = null;
 
@@ -149,7 +150,7 @@ export default function CbamWizardClient({ sessionUser, initialCase, availableEn
   const saveDraft = async () => {
     setSaving(true);
     try {
-      const res = await fetch("/api/cbam/cases", {
+      const res = await authenticatedFetch("/api/cbam/cases", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -221,7 +222,7 @@ export default function CbamWizardClient({ sessionUser, initialCase, availableEn
     setLoading(true);
     logConversionEvent("checkout_started", { caseId });
     try {
-      const res = await fetch("/api/checkout/cbam", {
+      const res = await authenticatedFetch("/api/checkout/cbam", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -260,7 +261,7 @@ export default function CbamWizardClient({ sessionUser, initialCase, availableEn
     setLoading(true);
     logConversionEvent("report_generation_started");
     try {
-      const res = await fetch("/api/cbam/seal", {
+      const res = await authenticatedFetch("/api/cbam/seal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -285,7 +286,7 @@ export default function CbamWizardClient({ sessionUser, initialCase, availableEn
   const refreshEntitlements = async () => {
     setLoading(true);
     try {
-      await fetch("/api/cbam/cases");
+      await authenticatedFetch("/api/cbam/cases");
       router.refresh();
       window.location.reload();
     } catch (e) {

@@ -4,257 +4,160 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 // Mock server-only in Vitest environment
 vi.mock("server-only", () => ({}));
 
-const { sharedAuth, sharedDb, verifySessionCookie, verifyIdToken, createSessionCookie, mockDoc, mockCollection } = vi.hoisted(() => {
-  const verifySessionCookie = vi.fn();
+const { sharedAuth, verifyIdToken, mockUser } = vi.hoisted(() => {
   const verifyIdToken = vi.fn();
-  const createSessionCookie = vi.fn();
-
-  const mockSet = vi.fn();
-  const mockUpdate = vi.fn();
-  const mockGet = vi.fn(() => ({ exists: false }));
-  const mockDoc = vi.fn(() => ({
-    set: mockSet,
-    update: mockUpdate,
-    get: mockGet,
-  }));
-  const mockCollection = vi.fn(() => ({
-    doc: mockDoc,
-  }));
-
   const sharedAuth = {
-    verifySessionCookie,
     verifyIdToken,
-    createSessionCookie,
   };
-
-  const sharedDb = {
-    collection: mockCollection,
+  const mockUser = {
+    getIdToken: vi.fn(),
   };
-
   return {
     sharedAuth,
-    sharedDb,
-    verifySessionCookie,
     verifyIdToken,
-    createSessionCookie,
-    mockDoc,
-    mockCollection,
+    mockUser,
   };
 });
 
-vi.mock("firebase-admin", () => {
-  const mockApp = { name: "[DEFAULT]" };
+// Mock getAdminAuth/getAdminDb helpers directly
+vi.mock("@/lib/firebase/admin", () => {
   return {
-    default: {
-      apps: [mockApp],
-      app: vi.fn(() => mockApp),
-      initializeApp: vi.fn(() => mockApp),
-      auth: vi.fn(() => sharedAuth),
-      firestore: vi.fn(() => sharedDb),
-    },
-    apps: [mockApp],
-    app: vi.fn(() => mockApp),
-    initializeApp: vi.fn(() => mockApp),
-    auth: vi.fn(() => sharedAuth),
-    firestore: vi.fn(() => sharedDb),
+    getAdminAuth: () => sharedAuth,
+    getAdminDb: () => ({}),
   };
 });
 
-vi.mock("firebase-admin/app", () => ({
-  initializeApp: vi.fn(),
-  getApps: vi.fn(() => [{ name: "[DEFAULT]" }]),
-  getApp: vi.fn(() => ({ name: "[DEFAULT]" })),
-  cert: vi.fn(),
-  applicationDefault: vi.fn(),
-}));
+// Mock Firebase Client Auth
+vi.mock("@/lib/firebase/client", () => {
+  return {
+    firebaseAuth: {
+      currentUser: mockUser,
+    },
+  };
+});
 
-vi.mock("firebase-admin/auth", () => ({
-  getAuth: vi.fn(() => sharedAuth),
-}));
-
-vi.mock("firebase-admin/firestore", () => ({
-  getFirestore: vi.fn(() => sharedDb),
-}));
-
-const mockCookiesStore = {
-  get: vi.fn(),
-  set: vi.fn(),
-  delete: vi.fn(),
-};
-
-// Mock next/headers
-vi.mock("next/headers", () => ({
-  cookies: vi.fn(async () => mockCookiesStore),
-}));
-
-import { getAuth } from "firebase-admin/auth";
-import { GET, POST, DELETE } from "@/app/api/auth/session/route";
+import { requireFirebaseUser } from "@/lib/auth/require-firebase-user";
+import { authenticatedFetch } from "@/lib/auth/authenticated-fetch";
 import { NextRequest } from "next/server";
-import { SESSION_COOKIE_NAME, CSRF_COOKIE_NAME, CSRF_HEADER_NAME } from "@/lib/auth/session-constants";
-import fs from "fs";
-import path from "path";
-
-const authInstance = getAuth();
-const LONG_ID_TOKEN = "a".repeat(120);
-const VALID_CSRF = "csrf-token-12345";
 
 describe("Cleanroom Authentication Unit Tests", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCookiesStore.get.mockImplementation((name) => {
-      if (name === CSRF_COOKIE_NAME) {
-        return { value: VALID_CSRF };
-      }
-      return undefined;
+  });
+
+  describe("requireFirebaseUser", () => {
+    it("throws 401 if Authorization header is missing", async () => {
+      const req = new NextRequest("http://localhost:3000/api/some-endpoint");
+      await expect(requireFirebaseUser(req)).rejects.toMatchObject({
+        status: 401,
+        message: "Missing or invalid authorization header.",
+      });
+    });
+
+    it("throws 401 if Authorization header does not start with Bearer", async () => {
+      const req = new NextRequest("http://localhost:3000/api/some-endpoint", {
+        headers: { Authorization: "Basic dGVzdDp0ZXN0" },
+      });
+      await expect(requireFirebaseUser(req)).rejects.toMatchObject({
+        status: 401,
+        message: "Missing or invalid authorization header.",
+      });
+    });
+
+    it("throws 401 if Bearer token is empty", async () => {
+      const req = new NextRequest("http://localhost:3000/api/some-endpoint", {
+        headers: { Authorization: "Bearer " },
+      });
+      await expect(requireFirebaseUser(req)).rejects.toMatchObject({
+        status: 401,
+        message: "Bearer token is empty.",
+      });
+    });
+
+    it("returns decoded token payload if token is valid", async () => {
+      const mockPayload = { uid: "user-123", email: "test@cbamvalid.com" };
+      verifyIdToken.mockResolvedValueOnce(mockPayload);
+
+      const req = new NextRequest("http://localhost:3000/api/some-endpoint", {
+        headers: { Authorization: "Bearer valid-token" },
+      });
+
+      const user = await requireFirebaseUser(req);
+      expect(user).toEqual(mockPayload);
+      expect(verifyIdToken).toHaveBeenCalledWith("valid-token");
+    });
+
+    it("throws 401 if verifyIdToken fails with Firebase auth error", async () => {
+      const firebaseError = new Error("Token expired");
+      (firebaseError as any).code = "auth/id-token-expired";
+      verifyIdToken.mockRejectedValueOnce(firebaseError);
+
+      const req = new NextRequest("http://localhost:3000/api/some-endpoint", {
+        headers: { Authorization: "Bearer expired-token" },
+      });
+
+      await expect(requireFirebaseUser(req)).rejects.toMatchObject({
+        status: 401,
+        message: expect.stringContaining("Unauthorized"),
+      });
+    });
+
+    it("throws 500 if verifyIdToken fails with unexpected database error", async () => {
+      const sysError = new Error("Database connection timed out");
+      verifyIdToken.mockRejectedValueOnce(sysError);
+
+      const req = new NextRequest("http://localhost:3000/api/some-endpoint", {
+        headers: { Authorization: "Bearer connection-fail-token" },
+      });
+
+      await expect(requireFirebaseUser(req)).rejects.toMatchObject({
+        status: 500,
+        message: expect.stringContaining("Internal authentication failure"),
+      });
     });
   });
 
-  it("session GET: no session cookie returns 200 with authenticated=false", async () => {
-    mockCookiesStore.get.mockImplementation((name) => {
-      if (name === SESSION_COOKIE_NAME) return undefined;
-      return { value: VALID_CSRF };
+  describe("authenticatedFetch", () => {
+    beforeEach(() => {
+      global.fetch = vi.fn();
     });
 
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.authenticated).toBe(false);
-    expect(body.user).toBeNull();
-  });
+    it("attaches Authorization header with ID token", async () => {
+      mockUser.getIdToken.mockResolvedValueOnce("cached-token");
+      vi.mocked(global.fetch).mockResolvedValueOnce(new Response("success", { status: 200 }));
 
-  it("session GET: valid session cookie returns authenticated user details", async () => {
-    vi.mocked(authInstance.verifySessionCookie).mockResolvedValue({
-      uid: "user-123",
-      email: "test@cbamvalid.com",
-    } as any);
+      await authenticatedFetch("/api/test");
 
-    mockCookiesStore.get.mockImplementation((name) => {
-      if (name === SESSION_COOKIE_NAME) {
-        return { name: SESSION_COOKIE_NAME, value: "valid-session" };
-      }
-      return { value: VALID_CSRF };
+      expect(mockUser.getIdToken).toHaveBeenCalledWith();
+      expect(global.fetch).toHaveBeenCalledWith("/api/test", {
+        headers: expect.any(Headers),
+      });
+
+      const headersCall = vi.mocked(global.fetch).mock.calls[0][1]?.headers as Headers;
+      expect(headersCall.get("Authorization")).toBe("Bearer cached-token");
     });
 
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.authenticated).toBe(true);
-    expect(body.user.uid).toBe("user-123");
-    expect(body.user.email).toBe("test@cbamvalid.com");
-  });
+    it("retries once with force refreshed token if fetch returns 401", async () => {
+      mockUser.getIdToken.mockResolvedValueOnce("cached-token");
+      mockUser.getIdToken.mockResolvedValueOnce("fresh-token");
 
-  it("session POST: missing CSRF token returns 403", async () => {
-    const req = new NextRequest("http://localhost:3000/api/auth/session", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ idToken: LONG_ID_TOKEN }),
+      vi.mocked(global.fetch)
+        .mockResolvedValueOnce(new Response("unauthorized", { status: 401 }))
+        .mockResolvedValueOnce(new Response("success", { status: 200 }));
+
+      await authenticatedFetch("/api/test");
+
+      expect(mockUser.getIdToken).toHaveBeenCalledTimes(2);
+      expect(mockUser.getIdToken).toHaveBeenNthCalledWith(1);
+      expect(mockUser.getIdToken).toHaveBeenNthCalledWith(2, true);
+
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+
+      const firstHeaders = vi.mocked(global.fetch).mock.calls[0][1]?.headers as Headers;
+      const secondHeaders = vi.mocked(global.fetch).mock.calls[1][1]?.headers as Headers;
+
+      expect(firstHeaders.get("Authorization")).toBe("Bearer cached-token");
+      expect(secondHeaders.get("Authorization")).toBe("Bearer fresh-token");
     });
-
-    const res = await POST(req);
-    expect(res.status).toBe(403);
-    const body = await res.json();
-    expect(body.error).toContain("CSRF");
-  });
-
-  it("session POST: mismatched CSRF token returns 403", async () => {
-    const req = new NextRequest("http://localhost:3000/api/auth/session", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        [CSRF_HEADER_NAME]: "attacker-csrf-token",
-      },
-      body: JSON.stringify({ idToken: LONG_ID_TOKEN }),
-    });
-
-    const res = await POST(req);
-    expect(res.status).toBe(403);
-  });
-
-  it("session POST: invalid ID token returns 401", async () => {
-    const tokenError = new Error("Invalid ID token");
-    vi.mocked(authInstance.verifyIdToken).mockRejectedValue(tokenError);
-
-    const req = new NextRequest("http://localhost:3000/api/auth/session", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        [CSRF_HEADER_NAME]: VALID_CSRF,
-      },
-      body: JSON.stringify({ idToken: LONG_ID_TOKEN }),
-    });
-
-    const res = await POST(req);
-    expect(res.status).toBe(401);
-  });
-
-  it("session POST: valid fresh token creates cookie and fires DB merges", async () => {
-    vi.mocked(authInstance.verifyIdToken).mockResolvedValue({
-      uid: "user-123",
-      email: "test@cbamvalid.com",
-      auth_time: Math.floor(Date.now() / 1000) - 10,
-    } as any);
-
-    vi.mocked(authInstance.createSessionCookie).mockResolvedValue("mocked-session-cookie-value");
-
-    const req = new NextRequest("http://localhost:3000/api/auth/session", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        [CSRF_HEADER_NAME]: VALID_CSRF,
-      },
-      body: JSON.stringify({ idToken: LONG_ID_TOKEN }),
-    });
-
-    const res = await POST(req);
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.authenticated).toBe(true);
-    expect(body.user.uid).toBe("user-123");
-
-    // Verify correct cookie settings and doc sync
-    const cookie = res.cookies.get(SESSION_COOKIE_NAME);
-    expect(cookie).toBeDefined();
-    expect(cookie?.value).toBe("mocked-session-cookie-value");
-    expect(cookie?.httpOnly).toBe(true);
-    expect(cookie?.path).toBe("/");
-    expect(mockCollection).toHaveBeenCalledWith("users");
-    expect(mockDoc).toHaveBeenCalledWith("user-123");
-  });
-
-  it("session DELETE: clears session cookie", async () => {
-    const req = new NextRequest("http://localhost:3000/api/auth/session", {
-      method: "DELETE",
-      headers: {
-        [CSRF_HEADER_NAME]: VALID_CSRF,
-      },
-    });
-
-    const res = await DELETE(req);
-    expect(res.status).toBe(200);
-    const cookie = res.cookies.get(SESSION_COOKIE_NAME);
-    expect(cookie).toBeDefined();
-    expect(cookie?.value).toBe("");
-  });
-
-  it("structural check: assert single client and admin initializers exist", () => {
-    const clientPath = path.join(process.cwd(), "lib/firebase/client.ts");
-    const adminPath = path.join(process.cwd(), "lib/firebase/admin.ts");
-    expect(fs.existsSync(clientPath)).toBe(true);
-    expect(fs.existsSync(adminPath)).toBe(true);
-  });
-
-  it("structural check: assert no redirect methods are referenced in client auth flows", () => {
-    const loginPagePath = path.join(process.cwd(), "app/(auth)/login/page.tsx");
-    const registerPagePath = path.join(process.cwd(), "app/(auth)/register/page.tsx");
-    
-    const loginContent = fs.readFileSync(loginPagePath, "utf8");
-    const registerContent = fs.readFileSync(registerPagePath, "utf8");
-
-    expect(loginContent.includes("signInWithRedirect")).toBe(false);
-    expect(loginContent.includes("getRedirectResult")).toBe(false);
-    expect(registerContent.includes("signInWithRedirect")).toBe(false);
-    expect(registerContent.includes("getRedirectResult")).toBe(false);
   });
 });

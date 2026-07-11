@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "@/lib/auth/get-server-session";
+import { NextRequest } from "next/server";
+import { requireFirebaseUser } from "@/lib/auth/require-firebase-user";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { buildPdfDossier } from "@/lib/cbam/report/pdf-builder";
 import { buildWorkbook } from "@/lib/cbam/report/workbook-builder";
@@ -13,10 +13,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ repor
     const reportId = params.reportId;
     
     // 1. Session check
-    const session = await getServerSession();
-    if (!session) {
-      return new Response("Unauthorized", { status: 401 });
-    }
+    const session = await requireFirebaseUser(request);
 
     // 2. Fetch report
     const doc = await getAdminDb().collection("cbam_reports").doc(reportId).get();
@@ -84,6 +81,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ repor
 
   } catch (error: any) {
     console.error("[REPORT DOWNLOAD ENDPOINT ERROR]:", error.message || error);
-    return new Response(error.message || "Failed to download file", { status: 500 });
+    const status = error.status || 500;
+    return new Response(error.message || "Failed to download file", { status });
   }
 }

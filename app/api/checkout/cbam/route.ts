@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSessionRevocationSensitive } from "@/lib/auth/get-server-session";
+import { requireFirebaseUser } from "@/lib/auth/require-firebase-user";
 import { getPriceIdForProduct, PRODUCT_CATALOG } from "@/lib/commerce/catalog";
 import { paddle, isSandboxMode } from "@/lib/commerce/paddle-client";
 import { verifyCaseOwner } from "@/lib/cbam/storage/case-repository";
@@ -23,10 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Session check
-    const session = await getServerSessionRevocationSensitive();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const session = await requireFirebaseUser(request);
 
     // 3. Request inputs validation
     const { productCode, caseId } = await request.json();
@@ -97,6 +94,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[CHECKOUT CREATION ERROR]:", error.message || error);
-    return NextResponse.json({ error: error.message || "Failed to create checkout session" }, { status: 500 });
+    const status = error.status || 500;
+    return NextResponse.json({ error: error.message || "Failed to create checkout session" }, { status });
   }
 }

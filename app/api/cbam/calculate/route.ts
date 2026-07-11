@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "@/lib/auth/get-server-session";
+import { requireFirebaseUser } from "@/lib/auth/require-firebase-user";
 import { orchestrateCalculation } from "@/lib/cbam/engine/calculation-orchestrator";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await requireFirebaseUser(request);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[CALCULATE ENDPOINT ERROR]:", error.message || error);
-    return NextResponse.json({ error: error.message || "Failed to calculate emissions preview" }, { status: 500 });
+    const status = error.status || 500;
+    return NextResponse.json({ error: error.message || "Failed to calculate emissions preview" }, { status });
   }
 }

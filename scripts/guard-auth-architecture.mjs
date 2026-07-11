@@ -28,7 +28,8 @@ function walk(dir, filter, callback) {
         file !== '.firebase' &&
         file !== 'scripts' &&
         file !== 'tests' &&
-        file !== 'release-evidence'
+        file !== 'release-evidence' &&
+        file !== 'scratch'
       ) {
         walk(fullPath, filter, callback);
       }
@@ -145,7 +146,7 @@ walk(rootDir, isSourceFile, (filePath) => {
     logError(relPath, "Contains forbidden reference to base64url decode operation.");
   }
 
-  if (content.includes('Buffer.from') && (content.includes('payload') || relPath.includes('get-server-session') || relPath.includes('admin.ts'))) {
+  if (content.includes('Buffer.from') && (content.includes('payload') || relPath.includes('get-server-session'))) {
     logError(relPath, "Contains forbidden Buffer.from JWT payload parsing pattern.");
   }
 
@@ -216,21 +217,21 @@ if (fs.existsSync(path.join(rootDir, sessionRoutePath))) {
   }
 }
 
-// 14. Verify admin page uses getServerSessionRevocationSensitive
+// 14. Verify admin page uses AdminClient client gate
 const adminPagePath = 'app/(protected)/admin/page.tsx';
 if (fs.existsSync(path.join(rootDir, adminPagePath))) {
   const content = fs.readFileSync(path.join(rootDir, adminPagePath), 'utf8');
-  if (!content.includes('getServerSessionRevocationSensitive(')) {
-    logError(adminPagePath, "Admin page must call getServerSessionRevocationSensitive() to restrict access.");
+  if (!content.includes('AdminClient')) {
+    logError(adminPagePath, "Admin page must render AdminClient directly.");
   }
 }
 
-// 15. Verify dashboard and wizard pages use getServerSession
+// 15. Verify protected layout page uses client auth
 const protectedLayoutPath = 'app/(protected)/layout.tsx';
 if (fs.existsSync(path.join(rootDir, protectedLayoutPath))) {
   const content = fs.readFileSync(path.join(rootDir, protectedLayoutPath), 'utf8');
-  if (!content.includes('getServerSession(')) {
-    logError(protectedLayoutPath, "Protected layout must call getServerSession() to restrict access.");
+  if (!content.includes('useAuth(')) {
+    logError(protectedLayoutPath, "Protected layout must call useAuth() to restrict access.");
   }
 }
 

@@ -1,16 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
-import { getServerSessionRevocationSensitive } from "@/lib/auth/get-server-session";
+import { requireFirebaseUser } from "@/lib/auth/require-firebase-user";
 
-// Force-invalidate cache: Turbopack compilation trigger
+export const dynamic = "force-dynamic";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSessionRevocationSensitive();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+    const session = await requireFirebaseUser(request);
+    
     if (!session.admin) {
       return NextResponse.json({ error: "Forbidden: Access restricted to Super Admin" }, { status: 403 });
     }
@@ -29,9 +26,9 @@ export async function POST(request: Request) {
     console.log(`Admin ${session.email} set tokens of user ${targetUserId} to ${tokensToSet}`);
 
     return NextResponse.json({ success: true, updatedUserId: targetUserId, newTokens: tokensToSet });
-  } catch (error) {
-    const err = error as Error;
-    console.error("Admin action token route error:", err.message || err);
-    return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Admin action token route error:", error.message || error);
+    const status = error.status || 500;
+    return NextResponse.json({ error: error.message || "Server error" }, { status });
   }
 }

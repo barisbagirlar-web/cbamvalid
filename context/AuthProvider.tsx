@@ -3,23 +3,25 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, signOut, onAuthStateChanged } from "firebase/auth";
 import { firebaseAuth as auth } from "@/lib/firebase/client";
-import { CSRF_HEADER_NAME } from "@/lib/auth/session-constants";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  error: Error | null;
   signOutUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  error: null,
   signOutUser: async () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     // Set up the single unified auth state listener
@@ -27,10 +29,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       auth,
       (currentUser) => {
         setUser(currentUser);
+        setError(null);
         setLoading(false);
       },
-      (error) => {
-        console.error("Auth state listener error:", error);
+      (err) => {
+        console.error("Auth state listener error:", err);
+        setError(err);
         setLoading(false);
       }
     );
@@ -40,39 +44,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOutUser = async () => {
     try {
-      console.log("signOutUser: fetching CSRF...");
-      const csrfRes = await fetch("/api/auth/csrf", {
-        method: "GET",
-        credentials: "same-origin",
-      });
-      
-      let csrfToken = "";
-      if (csrfRes.ok) {
-        const payload = await csrfRes.json();
-        csrfToken = payload.csrfToken;
-        console.log("signOutUser: CSRF token fetched successfully");
-      } else {
-        console.error("signOutUser: CSRF token fetch failed with status:", csrfRes.status);
-      }
-
-      console.log("signOutUser: sending DELETE session request...");
-      const deleteRes = await fetch("/api/auth/session", {
-        method: "DELETE",
-        headers: csrfToken ? { [CSRF_HEADER_NAME]: csrfToken } : {},
-        credentials: "same-origin",
-      });
-      console.log("signOutUser: DELETE session response status:", deleteRes.status);
-    } catch (err) {
-      console.error("Server session deletion error:", err);
-    } finally {
-      // 3. Clear client auth and redirect
       await signOut(auth);
+    } catch (err: any) {
+      console.error("Firebase signOut error:", err);
+    } finally {
       window.location.replace("/login");
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signOutUser }}>
+    <AuthContext.Provider value={{ user, loading, error, signOutUser }}>
       {children}
     </AuthContext.Provider>
   );
