@@ -51,6 +51,7 @@
     "@paddle/paddle-node-sdk": "^3.8.0",
     "firebase": "^12.16.0",
     "firebase-admin": "^13.10.0",
+    "firebase-admin-a14c8a5423a75469": "npm:firebase-admin@^13.10.0",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.24.0",
     "next": "16.2.10",
