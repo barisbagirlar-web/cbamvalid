@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/session-cookie";
+import { getSessionRevocationSensitive } from "@/lib/auth/session-cookie";
 import { getPriceIdForProduct, PRODUCT_CATALOG } from "@/lib/commerce/catalog";
 import { paddle, isSandboxMode } from "@/lib/commerce/paddle-client";
 import { verifyCaseOwner } from "@/lib/cbam/storage/case-repository";
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Session check
-    const session = await getSession();
+    const session = await getSessionRevocationSensitive();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

@@ -251,4 +251,32 @@ describe("Authentication Integration Tests", () => {
     const body = await res.json();
     expect(body.error).toContain("Forbidden");
   });
+
+  it("getSession verification uses offline mode (checkRevoked=false)", async () => {
+    const { getSession } = await import("@/lib/auth/session-cookie");
+    vi.mocked(authInstance.verifySessionCookie).mockResolvedValue({
+      uid: "user-offline",
+      email: "offline@cbamvalid.com",
+      admin: false,
+    } as any);
+    mockCookieStore.get.mockReturnValue({ name: SESSION_COOKIE_NAME, value: "offline-cookie" });
+
+    const session = await getSession();
+    expect(session?.uid).toBe("user-offline");
+    expect(authInstance.verifySessionCookie).toHaveBeenCalledWith("offline-cookie", false);
+  });
+
+  it("getSessionRevocationSensitive verification uses online mode (checkRevoked=true)", async () => {
+    const { getSessionRevocationSensitive } = await import("@/lib/auth/session-cookie");
+    vi.mocked(authInstance.verifySessionCookie).mockResolvedValue({
+      uid: "user-online",
+      email: "online@cbamvalid.com",
+      admin: true,
+    } as any);
+    mockCookieStore.get.mockReturnValue({ name: SESSION_COOKIE_NAME, value: "online-cookie" });
+
+    const session = await getSessionRevocationSensitive();
+    expect(session?.uid).toBe("user-online");
+    expect(authInstance.verifySessionCookie).toHaveBeenCalledWith("online-cookie", true);
+  });
 });
