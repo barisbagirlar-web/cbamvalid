@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getServerSession } from "@/lib/auth/get-server-session";
 import { redirect } from "next/navigation";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import Link from "next/link";
 import { ShieldCheck, Calendar, ArrowRight } from "lucide-react";
 
@@ -14,7 +14,7 @@ export default async function DashboardReportsHistoryPage() {
   }
 
   // Load sealed reports for this user
-  const snapshot = await adminDb
+  const snapshot = await getAdminDb()
     .collection("cbam_reports")
     .where("uid", "==", session.uid)
     .get();

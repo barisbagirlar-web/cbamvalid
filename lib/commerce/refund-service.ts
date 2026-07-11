@@ -1,5 +1,5 @@
 import admin from "firebase-admin";
-import { adminDb } from "../firebase/admin";
+import { getAdminDb } from "../firebase/admin";
 import { transitionOrderStatus } from "./order-service";
 import { revokeEntitlement } from "./entitlement-service";
 import { writeLedgerEntry } from "./ledger-service";
@@ -19,7 +19,7 @@ export async function processRefund(
     currency: string;
   }
 ): Promise<void> {
-  const orderRef = adminDb.collection("commerce_orders").doc(params.orderId);
+  const orderRef = getAdminDb().collection("commerce_orders").doc(params.orderId);
   const orderSnapshot: any = await dbTransaction.get(orderRef as any);
 
   if (!orderSnapshot.exists) {
@@ -44,7 +44,7 @@ export async function processRefund(
 
   // 2. Fetch all entitlements linked to this order to revoke them
   const entitlementsQuery = await dbTransaction.get(
-    adminDb.collection("entitlements").where("orderId", "==", params.orderId)
+    getAdminDb().collection("entitlements").where("orderId", "==", params.orderId)
   );
 
   let hasSealedReports = false;

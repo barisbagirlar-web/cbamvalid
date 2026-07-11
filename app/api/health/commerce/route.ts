@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { PRODUCT_CATALOG } from "@/lib/commerce/catalog";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
     // Basic ping to Firestore to test connection health
-    await adminDb.collection("commerce_orders").limit(1).get();
+    await getAdminDb().collection("commerce_orders").limit(1).get();
 
     return NextResponse.json({
       status: "ok",

@@ -43,7 +43,7 @@ switch (check) {
 
   case "field-help-coverage": {
     // Verify help text fields in sector adapter and wizard client
-    const wizardClientPath = path.join(rootDir, "app/cbam/new/CbamWizardClient.tsx");
+    const wizardClientPath = path.join(rootDir, "app/(protected)/cbam/new/CbamWizardClient.tsx");
     const content = fs.readFileSync(wizardClientPath, "utf-8");
     if (!content.includes("fieldHelpData")) {
       console.error("[FAIL] Wizard client must include inline fieldHelpData declarations.");

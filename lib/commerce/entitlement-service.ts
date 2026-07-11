@@ -1,5 +1,5 @@
 import admin from "firebase-admin";
-import { adminDb } from "../firebase/admin";
+import { getAdminDb } from "../firebase/admin";
 import { DoubleSpendViolationError, EntitlementUnavailableError } from "./commerce-errors";
 import { writeLedgerEntry } from "./ledger-service";
 import { validateIdentifier } from "../firebase/firestore-validator";
@@ -37,7 +37,7 @@ export async function createEntitlement(
   validateIdentifier("orderId", params.orderId);
   validateIdentifier("transactionId", params.transactionId);
 
-  const entitlementRef = adminDb.collection("entitlements").doc();
+  const entitlementRef = getAdminDb().collection("entitlements").doc();
   const entitlementId = entitlementRef.id;
   const now = new Date().toISOString();
 
@@ -84,7 +84,7 @@ export async function reserveEntitlement(
   validateIdentifier("uid", params.uid);
   validateIdentifier("reportId", params.reportId);
 
-  const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
+  const entitlementRef = getAdminDb().collection("entitlements").doc(params.entitlementId);
   const snapshot: any = await dbTransaction.get(entitlementRef as any);
 
   if (!snapshot.exists) {
@@ -150,7 +150,7 @@ export async function consumeEntitlement(
   validateIdentifier("uid", params.uid);
   validateIdentifier("reportId", params.reportId);
 
-  const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
+  const entitlementRef = getAdminDb().collection("entitlements").doc(params.entitlementId);
   const snapshot: any = await dbTransaction.get(entitlementRef as any);
 
   if (!snapshot.exists) {
@@ -206,7 +206,7 @@ export async function releaseEntitlementReservation(
   validateIdentifier("uid", params.uid);
   validateIdentifier("reportId", params.reportId);
 
-  const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
+  const entitlementRef = getAdminDb().collection("entitlements").doc(params.entitlementId);
   const snapshot: any = await dbTransaction.get(entitlementRef as any);
 
   if (!snapshot.exists) {
@@ -264,7 +264,7 @@ export async function revokeEntitlement(
 ): Promise<Entitlement> {
   validateIdentifier("entitlementId", params.entitlementId);
 
-  const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
+  const entitlementRef = getAdminDb().collection("entitlements").doc(params.entitlementId);
   const snapshot: any = await dbTransaction.get(entitlementRef as any);
 
   if (!snapshot.exists) {

@@ -1,7 +1,7 @@
 import { getServerSession } from "@/lib/auth/get-server-session";
 import { redirect } from "next/navigation";
 import { getCase } from "@/lib/cbam/storage/case-repository";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import CbamWizardClient from "./CbamWizardClient";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +27,7 @@ export default async function NewCbamCasePage(props: PageProps) {
   }
 
   // Fetch available entitlements for the user
-  const entitlementsSnapshot = await adminDb
+  const entitlementsSnapshot = await getAdminDb()
     .collection("entitlements")
     .where("uid", "==", session.uid)
     .where("status", "==", "AVAILABLE")

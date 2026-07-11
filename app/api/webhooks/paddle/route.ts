@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { verifyWebhookSignature } from "@/lib/commerce/webhook-verifier";
 import { processWebhookEvent } from "@/lib/commerce/webhook-processor";
 
@@ -28,8 +28,8 @@ export async function POST(request: NextRequest) {
     const payloadSha256 = crypto.createHash("sha256").update(rawBody).digest("hex");
 
     // 4. Duplicate event deduplication checks and registration in transactional block
-    const eventRef = adminDb.collection("paddle_events").doc(eventId);
-    const duplicate = await adminDb.runTransaction(async (dbTransaction: any) => {
+    const eventRef = getAdminDb().collection("paddle_events").doc(eventId);
+    const duplicate = await getAdminDb().runTransaction(async (dbTransaction: any) => {
       const docSnap = await dbTransaction.get(eventRef);
       if (docSnap.exists) {
         const existingEvent = docSnap.data();

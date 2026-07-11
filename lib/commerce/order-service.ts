@@ -1,5 +1,5 @@
 import admin from "firebase-admin";
-import { adminDb } from "../firebase/admin";
+import { getAdminDb } from "../firebase/admin";
 import { OrderNotFoundError } from "./commerce-errors";
 import { validateIdentifier } from "../firebase/firestore-validator";
 
@@ -45,7 +45,7 @@ export async function createOrder(
   validateIdentifier("uid", params.uid);
   validateIdentifier("caseId", params.caseId);
   
-  const orderRef = adminDb.collection("commerce_orders").doc();
+  const orderRef = getAdminDb().collection("commerce_orders").doc();
   const orderId = `ord_${orderRef.id}`;
   const now = new Date().toISOString();
 
@@ -61,7 +61,7 @@ export async function createOrder(
     updatedAt: now,
   };
 
-  dbTransaction.set(adminDb.collection("commerce_orders").doc(orderId), order);
+  dbTransaction.set(getAdminDb().collection("commerce_orders").doc(orderId), order);
   return order;
 }
 
@@ -79,7 +79,7 @@ export async function transitionOrderStatus(
     validateIdentifier("paddleTransactionId", metadata.paddleTransactionId);
   }
   
-  const orderRef = adminDb.collection("commerce_orders").doc(orderId);
+  const orderRef = getAdminDb().collection("commerce_orders").doc(orderId);
   const snapshot: any = await dbTransaction.get(orderRef as any);
 
   if (!snapshot.exists) {

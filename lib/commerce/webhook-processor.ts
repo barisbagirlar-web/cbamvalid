@@ -1,4 +1,4 @@
-import { adminDb } from "../firebase/admin";
+import { getAdminDb } from "../firebase/admin";
 import { transitionOrderStatus } from "./order-service";
 import { createEntitlement } from "./entitlement-service";
 import { writeLedgerEntry } from "./ledger-service";
@@ -66,7 +66,7 @@ async function handleTransactionCompleted(eventId: string, transaction: any): Pr
   }
 
   // Execute atomic transactional updates
-  await adminDb.runTransaction(async (dbTransaction: any) => {
+  await getAdminDb().runTransaction(async (dbTransaction: any) => {
     // 1. Log payment captured entry in the ledger with idempotency verification
     await writeLedgerEntry(dbTransaction, {
       uid,
@@ -117,7 +117,7 @@ async function handleAdjustmentUpdated(eventId: string, adjustment: any): Promis
   }
 
   // Retrieve transaction to extract order metadata from customData
-  const orderQuery = await adminDb
+  const orderQuery = await getAdminDb()
     .collection("commerce_orders")
     .where("paddleTransactionId", "==", transactionId)
     .limit(1)
@@ -130,7 +130,7 @@ async function handleAdjustmentUpdated(eventId: string, adjustment: any): Promis
 
   const order = orderQuery.docs[0].data() as any;
 
-  await adminDb.runTransaction(async (dbTransaction: any) => {
+  await getAdminDb().runTransaction(async (dbTransaction: any) => {
     await processRefund(dbTransaction, {
       uid: order.uid,
       orderId: order.orderId,

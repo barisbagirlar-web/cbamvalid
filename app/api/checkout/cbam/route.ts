@@ -3,7 +3,7 @@ import { getServerSessionRevocationSensitive } from "@/lib/auth/get-server-sessi
 import { getPriceIdForProduct, PRODUCT_CATALOG } from "@/lib/commerce/catalog";
 import { paddle, isSandboxMode } from "@/lib/commerce/paddle-client";
 import { verifyCaseOwner } from "@/lib/cbam/storage/case-repository";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { createOrder } from "@/lib/commerce/order-service";
 
 export const dynamic = "force-dynamic";
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 7. Atomic transaction to create order and invoke Paddle checkout creation
-    const result = await adminDb.runTransaction(async (dbTransaction: any) => {
+    const result = await getAdminDb().runTransaction(async (dbTransaction: any) => {
       // Create server-side tracking order
       const order = await createOrder(dbTransaction, {
         uid: session.uid,
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Update order with the generated transaction ID
-    await adminDb.collection("commerce_orders").doc(result.orderId).update({
+    await getAdminDb().collection("commerce_orders").doc(result.orderId).update({
       paddleTransactionId: paddleTransaction.id,
       status: "PAYMENT_PENDING",
     });

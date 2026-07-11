@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { adminDb } from "../../firebase/admin";
+import { getAdminDb } from "../../firebase/admin";
 import { orchestrateCalculation } from "../engine/calculation-orchestrator";
 import { reserveEntitlement, consumeEntitlement, releaseEntitlementReservation } from "../../commerce/entitlement-service";
 import { buildPdfDossier } from "./pdf-builder";
@@ -31,11 +31,11 @@ export async function sealReport(params: {
   entitlementId: string;
   inputData: any;
 }): Promise<SealingResult> {
-  const reportRef = adminDb.collection("cbam_reports").doc();
+  const reportRef = getAdminDb().collection("cbam_reports").doc();
   const reportId = reportRef.id;
 
   // Phase 1: Reserve the entitlement (Atomic)
-  await adminDb.runTransaction(async (dbTransaction: any) => {
+  await getAdminDb().runTransaction(async (dbTransaction: any) => {
     await reserveEntitlement(dbTransaction, {
       entitlementId: params.entitlementId,
       uid: params.uid,
@@ -114,7 +114,7 @@ export async function sealReport(params: {
     };
 
     // 5. Phase 2: Consume the entitlement and store the verification index record atomically
-    await adminDb.runTransaction(async (dbTransaction: any) => {
+    await getAdminDb().runTransaction(async (dbTransaction: any) => {
       // Finalize entitlement consumption
       await consumeEntitlement(dbTransaction, {
         entitlementId: params.entitlementId,
@@ -124,7 +124,7 @@ export async function sealReport(params: {
       });
 
       // Write public document verification seal
-      const sealRef = adminDb.collection("document_seals").doc(documentHash);
+      const sealRef = getAdminDb().collection("document_seals").doc(documentHash);
       dbTransaction.set(sealRef, {
         valid: true,
         documentHash,
@@ -153,7 +153,7 @@ export async function sealReport(params: {
     console.error(`[SEALING-ENGINE] Sealing failed for report ${reportId}. Releasing reservation.`, error);
     // Failure Recovery: Release the reservation lease back to AVAILABLE
     try {
-      await adminDb.runTransaction(async (dbTransaction: any) => {
+      await getAdminDb().runTransaction(async (dbTransaction: any) => {
         await releaseEntitlementReservation(dbTransaction, {
           entitlementId: params.entitlementId,
           uid: params.uid,

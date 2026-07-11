@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ docum
       return NextResponse.json({ error: "Missing document hash parameter" }, { status: 400 });
     }
 
-    const doc = await adminDb.collection("document_seals").doc(documentHash).get();
+    const doc = await getAdminDb().collection("document_seals").doc(documentHash).get();
 
     if (!doc.exists) {
       return NextResponse.json({

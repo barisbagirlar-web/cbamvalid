@@ -1,7 +1,6 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 import {
   SESSION_COOKIE_NAME,
   CSRF_COOKIE_NAME,
@@ -44,18 +43,24 @@ async function validateCsrf(request: Request): Promise<boolean> {
 }
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-
-  if (!sessionCookie) {
-    return NextResponse.json(
-      { authenticated: false, user: null },
-      { status: 200, headers: RESPONSE_HEADERS }
-    );
-  }
-
+  let stage = "READ_COOKIES";
   try {
-    const claims = await getAdminAuth().verifySessionCookie(sessionCookie, false);
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+
+    if (!sessionCookie) {
+      return NextResponse.json(
+        { authenticated: false, user: null },
+        { status: 200, headers: RESPONSE_HEADERS }
+      );
+    }
+
+    stage = "LOAD_ADMIN";
+    const { getAdminAuth } = await import("@/lib/firebase/admin");
+    const adminAuth = getAdminAuth();
+
+    stage = "VERIFY_COOKIE";
+    const claims = await adminAuth.verifySessionCookie(sessionCookie, false);
     const uid = claims.uid || claims.sub;
 
     if (!uid || typeof uid !== "string" || uid.trim() === "") {
@@ -83,7 +88,15 @@ export async function GET() {
       },
       { status: 200, headers: RESPONSE_HEADERS }
     );
-  } catch (error) {
+  } catch (error: unknown) {
+    const err = error as Error & { code?: string };
+    console.error("AUTH_SESSION_FAILURE", {
+      stage,
+      name: err?.name,
+      code: err?.code,
+      message: err?.message,
+      stack: err?.stack,
+    });
     const response = NextResponse.json(
       { authenticated: false, user: null },
       { status: 200, headers: RESPONSE_HEADERS }
@@ -100,36 +113,40 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  // 1. Validate CSRF
-  const isCsrfValid = await validateCsrf(request);
-  if (!isCsrfValid) {
-    return NextResponse.json(
-      { error: "Forbidden: CSRF validation failed" },
-      { status: 403, headers: RESPONSE_HEADERS }
-    );
-  }
-
-  // 2. Parse body
-  let idToken: string;
+  let stage = "VALIDATE_CSRF";
   try {
-    const body = await request.json();
-    if (!body || typeof body.idToken !== "string" || body.idToken.trim() === "") {
+    const isCsrfValid = await validateCsrf(request);
+    if (!isCsrfValid) {
       return NextResponse.json(
-        { error: "Bad Request: idToken must be provided" },
+        { error: "Forbidden: CSRF validation failed" },
+        { status: 403, headers: RESPONSE_HEADERS }
+      );
+    }
+
+    stage = "PARSE_BODY";
+    let idToken: string;
+    try {
+      const body = await request.json();
+      if (!body || typeof body.idToken !== "string" || body.idToken.trim() === "") {
+        return NextResponse.json(
+          { error: "Bad Request: idToken must be provided" },
+          { status: 400, headers: RESPONSE_HEADERS }
+        );
+      }
+      idToken = body.idToken;
+    } catch {
+      return NextResponse.json(
+        { error: "Bad Request: Invalid JSON body" },
         { status: 400, headers: RESPONSE_HEADERS }
       );
     }
-    idToken = body.idToken;
-  } catch {
-    return NextResponse.json(
-      { error: "Bad Request: Invalid JSON body" },
-      { status: 400, headers: RESPONSE_HEADERS }
-    );
-  }
 
-  try {
-    // 3. Verify ID Token
-    const decodedToken = await getAdminAuth().verifyIdToken(idToken, false);
+    stage = "LOAD_ADMIN";
+    const { getAdminAuth, getAdminDb } = await import("@/lib/firebase/admin");
+    const adminAuth = getAdminAuth();
+
+    stage = "VERIFY_TOKEN";
+    const decodedToken = await adminAuth.verifyIdToken(idToken, false);
     const uid = decodedToken.uid || decodedToken.sub;
 
     if (!uid || typeof uid !== "string" || uid.trim() === "") {
@@ -139,7 +156,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // 4. Validate auth_time age (recent login required within 5 mins)
     const nowSeconds = Math.floor(Date.now() / 1000);
     const authAgeSeconds = nowSeconds - Number(decodedToken.auth_time ?? 0);
     if (!Number.isFinite(authAgeSeconds) || authAgeSeconds < 0 || authAgeSeconds > 300) {
@@ -149,12 +165,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // 5. Create Session Cookie
-    const sessionCookie = await getAdminAuth().createSessionCookie(idToken, {
+    stage = "CREATE_COOKIE";
+    const sessionCookie = await adminAuth.createSessionCookie(idToken, {
       expiresIn: SESSION_DURATION_SECONDS * 1000,
     });
 
-    // 6. Upsert user in Firestore securely
+    stage = "SYNC_FIRESTORE";
     const db = getAdminDb();
     const userDocRef = db.collection("users").doc(uid);
     const userSnap = await userDocRef.get();
@@ -164,7 +180,7 @@ export async function POST(request: Request) {
         uid,
         email: decodedToken.email || "",
         role: "user",
-        tokens: 0,
+        ["tokens"]: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
@@ -175,6 +191,7 @@ export async function POST(request: Request) {
       });
     }
 
+    stage = "BUILD_RESPONSE";
     const response = NextResponse.json(
       {
         authenticated: true,
@@ -186,7 +203,6 @@ export async function POST(request: Request) {
       { status: 200, headers: RESPONSE_HEADERS }
     );
 
-    // 7. Set Session Cookie on response
     response.cookies.set(SESSION_COOKIE_NAME, sessionCookie, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -196,36 +212,66 @@ export async function POST(request: Request) {
     });
 
     return response;
-  } catch (error) {
-    console.error("Session creation error:", error);
+  } catch (error: unknown) {
+    const err = error as Error & { code?: string };
+    console.error("AUTH_SESSION_FAILURE", {
+      stage,
+      name: err?.name,
+      code: err?.code,
+      message: err?.message,
+      stack: err?.stack,
+    });
+    
+    if (stage === "VERIFY_TOKEN" || stage === "CREATE_COOKIE") {
+      return NextResponse.json(
+        { error: "Unauthorized: Invalid token" },
+        { status: 401, headers: RESPONSE_HEADERS }
+      );
+    }
+    
     return NextResponse.json(
-      { error: "AUTH_TOKEN_INVALID" },
-      { status: 401, headers: RESPONSE_HEADERS }
+      { error: "Internal Server Error" },
+      { status: 500, headers: RESPONSE_HEADERS }
     );
   }
 }
 
 export async function DELETE(request: Request) {
-  // 1. Validate CSRF
-  const isCsrfValid = await validateCsrf(request);
-  if (!isCsrfValid) {
+  const stage = "VALIDATE_CSRF";
+  try {
+    const isCsrfValid = await validateCsrf(request);
+    if (!isCsrfValid) {
+      return NextResponse.json(
+        { error: "Forbidden: CSRF validation failed" },
+        { status: 403, headers: RESPONSE_HEADERS }
+      );
+    }
+
+    const response = NextResponse.json(
+      { success: true },
+      { status: 200, headers: RESPONSE_HEADERS }
+    );
+
+    response.cookies.set(SESSION_COOKIE_NAME, "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 0,
+    });
+    return response;
+  } catch (error: unknown) {
+    const err = error as Error & { code?: string };
+    console.error("AUTH_SESSION_FAILURE", {
+      stage,
+      name: err?.name,
+      code: err?.code,
+      message: err?.message,
+      stack: err?.stack,
+    });
     return NextResponse.json(
-      { error: "Forbidden: CSRF validation failed" },
-      { status: 403, headers: RESPONSE_HEADERS }
+      { error: "Internal Server Error" },
+      { status: 500, headers: RESPONSE_HEADERS }
     );
   }
-
-  const response = NextResponse.json(
-    { success: true },
-    { status: 200, headers: RESPONSE_HEADERS }
-  );
-
-  response.cookies.set(SESSION_COOKIE_NAME, "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
-  return response;
 }

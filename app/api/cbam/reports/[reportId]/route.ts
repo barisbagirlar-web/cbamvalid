@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/get-server-session";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ repor
     }
 
     // 2. Fetch report
-    const doc = await adminDb.collection("cbam_reports").doc(reportId).get();
+    const doc = await getAdminDb().collection("cbam_reports").doc(reportId).get();
     if (!doc.exists) {
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
     }

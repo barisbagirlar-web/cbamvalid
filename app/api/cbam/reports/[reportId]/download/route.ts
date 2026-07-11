@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/get-server-session";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { buildPdfDossier } from "@/lib/cbam/report/pdf-builder";
 import { buildWorkbook } from "@/lib/cbam/report/workbook-builder";
 import { buildXml } from "@/lib/cbam/report/xml-builder";
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ repor
     }
 
     // 2. Fetch report
-    const doc = await adminDb.collection("cbam_reports").doc(reportId).get();
+    const doc = await getAdminDb().collection("cbam_reports").doc(reportId).get();
     if (!doc.exists) {
       return new Response("Report not found", { status: 404 });
     }

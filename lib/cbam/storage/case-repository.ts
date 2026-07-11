@@ -1,4 +1,4 @@
-import { adminDb } from "../../firebase/admin";
+import { getAdminDb } from "../../firebase/admin";
 import { CaseOwnershipViolationError } from "../../commerce/commerce-errors";
 import { validateIdentifier } from "../../firebase/firestore-validator";
 
@@ -16,7 +16,7 @@ export interface CbamCase {
  */
 export async function getCase(caseId: string): Promise<CbamCase | null> {
   validateIdentifier("caseId", caseId);
-  const doc = await adminDb.collection("cbam_cases").doc(caseId).get();
+  const doc = await getAdminDb().collection("cbam_cases").doc(caseId).get();
   if (!doc.exists) {
     return null;
   }
@@ -47,7 +47,7 @@ export async function createCase(uid: string, data: any): Promise<CbamCase> {
   if (data?.cnCode) {
     validateIdentifier("cnCode", data.cnCode);
   }
-  const caseRef = adminDb.collection("cbam_cases").doc();
+  const caseRef = getAdminDb().collection("cbam_cases").doc();
   const caseId = `case_${caseRef.id}`;
   const now = new Date().toISOString();
 
@@ -81,6 +81,6 @@ export async function updateCase(caseId: string, uid: string, data: any): Promis
     updatedAt: now,
   };
 
-  await adminDb.collection("cbam_cases").doc(caseId).update(updated);
+  await getAdminDb().collection("cbam_cases").doc(caseId).update(updated);
   return { ...cbamCase, ...updated };
 }

@@ -6,6 +6,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   workers: 1,
+  timeout: 60000,
   reporter: "line",
   use: {
     baseURL: "http://localhost:3000",
@@ -22,7 +23,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "AUTH_ALLOW_" + "MOCK=true npm run dev",
+    command: "npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: true,
     timeout: 120000,

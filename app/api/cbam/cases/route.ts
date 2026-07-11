@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/get-server-session";
 import { createCase, updateCase, verifyCaseOwner } from "@/lib/cbam/storage/case-repository";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const snapshot = await adminDb
+    const snapshot = await getAdminDb()
       .collection("cbam_cases")
       .where("uid", "==", session.uid)
       .get();

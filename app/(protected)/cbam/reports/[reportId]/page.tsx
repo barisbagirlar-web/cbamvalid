@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getServerSession } from "@/lib/auth/get-server-session";
 import { redirect } from "next/navigation";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ShieldCheck, Download, ExternalLink, ArrowLeft } from "lucide-react";
@@ -21,7 +21,7 @@ export default async function SealedReportPage(props: PageProps) {
   const reportId = params.reportId;
 
   // Retrieve sealed report
-  const doc = await adminDb.collection("cbam_reports").doc(reportId).get();
+  const doc = await getAdminDb().collection("cbam_reports").doc(reportId).get();
   if (!doc.exists) {
     notFound();
   }

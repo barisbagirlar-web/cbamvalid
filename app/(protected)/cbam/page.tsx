@@ -2,7 +2,7 @@
 import { getServerSession } from "@/lib/auth/get-server-session";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 
 import SignOutButton from "./SignOutButton";
 
@@ -15,7 +15,7 @@ export default async function CbamLandingPage() {
   }
 
   // Load cases and reports
-  const casesSnapshot = await adminDb
+  const casesSnapshot = await getAdminDb()
     .collection("cbam_cases")
     .where("uid", "==", session.uid)
     .get();
@@ -24,7 +24,7 @@ export default async function CbamLandingPage() {
     .map((doc: any) => doc.data())
     .sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
-  const reportsSnapshot = await adminDb
+  const reportsSnapshot = await getAdminDb()
     .collection("cbam_reports")
     .where("uid", "==", session.uid)
     .get();
@@ -33,7 +33,7 @@ export default async function CbamLandingPage() {
     .map((doc: any) => doc.data())
     .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const entitlementsSnapshot = await adminDb
+  const entitlementsSnapshot = await getAdminDb()
     .collection("entitlements")
     .where("uid", "==", session.uid)
     .where("status", "==", "AVAILABLE")

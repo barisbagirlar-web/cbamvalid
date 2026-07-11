@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { getServerSessionRevocationSensitive } from "@/lib/auth/get-server-session";
 
 export async function POST(request: Request) {
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     }
 
     // Update user tokens using Firebase Admin SDK
-    await adminDb.collection("users").doc(targetUserId).update({
+    await getAdminDb().collection("users").doc(targetUserId).update({
       tokens: Number(tokensToSet),
     });
 

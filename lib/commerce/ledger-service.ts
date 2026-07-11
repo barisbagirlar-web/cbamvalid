@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import admin from "firebase-admin";
-import { adminDb } from "../firebase/admin";
+import { getAdminDb } from "../firebase/admin";
 
 export interface LedgerEntry {
   entryId: string;
@@ -54,7 +54,7 @@ export async function writeLedgerEntry(
   dbTransaction: admin.firestore.Transaction,
   entryParams: Omit<LedgerEntry, "entryId" | "createdAt" | "previousEntryHash" | "entryHash">
 ): Promise<LedgerEntry> {
-  const ledgerCollection = adminDb.collection("commerce_ledger");
+  const ledgerCollection = getAdminDb().collection("commerce_ledger");
 
   // 1. Check if an entry with this idempotency key already exists to prevent duplicate operations
   const existingQuery = await dbTransaction.get(
