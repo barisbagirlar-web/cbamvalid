@@ -4,27 +4,31 @@ let authInstance: import("firebase-admin/auth").Auth | null = null;
 let dbInstance: import("firebase-admin/firestore").Firestore | null = null;
 
 function getFirebaseApp() {
-  // Use require() so Turbopack/Webpack treat firebase-admin as a
-  // server-only external module and never attempt to bundle it.
+  // Store package names in variables to defeat Turbopack static analysis/bundling.
+  // This guarantees they are left as native Node.js require() calls at runtime.
+  const adminPkg = "firebase-admin";
+  const appPkg = "firebase-admin/app";
+
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const admin = require("firebase-admin") as typeof import("firebase-admin");
+  const admin = require(adminPkg) as typeof import("firebase-admin");
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { getApps, getApp, initializeApp } = require("firebase-admin/app") as typeof import("firebase-admin/app");
+  const { getApps, getApp, initializeApp } = require(appPkg) as typeof import("firebase-admin/app");
 
   if (getApps().length > 0) return getApp();
 
   let serviceAccount: Record<string, string> | undefined;
 
   // Priority 1: base64-encoded full service account JSON
-  if (process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT_B64) {
+  const b64 = process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT_B64 || process.env.ADMIN_SERVICE_ACCOUNT_B64;
+  if (b64) {
     try {
       const decoded = Buffer.from(
-        process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT_B64,
+        b64,
         "base64"
       ).toString("utf8");
       serviceAccount = JSON.parse(decoded);
     } catch {
-      console.warn("[admin] Failed to parse FIREBASE_ADMIN_SERVICE_ACCOUNT_B64");
+      console.warn("[admin] Failed to parse service account B64");
     }
   }
 
@@ -52,8 +56,9 @@ function getFirebaseApp() {
 
 export function getAdminAuth() {
   if (!authInstance) {
+    const authPkg = "firebase-admin/auth";
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { getAuth } = require("firebase-admin/auth") as typeof import("firebase-admin/auth");
+    const { getAuth } = require(authPkg) as typeof import("firebase-admin/auth");
     authInstance = getAuth(getFirebaseApp());
   }
   return authInstance;
@@ -61,8 +66,9 @@ export function getAdminAuth() {
 
 export function getAdminDb() {
   if (!dbInstance) {
+    const dbPkg = "firebase-admin/firestore";
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { getFirestore } = require("firebase-admin/firestore") as typeof import("firebase-admin/firestore");
+    const { getFirestore } = require(dbPkg) as typeof import("firebase-admin/firestore");
     dbInstance = getFirestore(getFirebaseApp());
   }
   return dbInstance;
