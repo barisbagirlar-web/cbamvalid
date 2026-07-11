@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOutUser = async () => {
     try {
-      // 1. Fetch CSRF token for DELETE request
+      console.log("signOutUser: fetching CSRF...");
       const csrfRes = await fetch("/api/auth/csrf", {
         method: "GET",
         credentials: "same-origin",
@@ -50,14 +50,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (csrfRes.ok) {
         const payload = await csrfRes.json();
         csrfToken = payload.csrfToken;
+        console.log("signOutUser: CSRF token fetched successfully");
+      } else {
+        console.error("signOutUser: CSRF token fetch failed with status:", csrfRes.status);
       }
 
-      // 2. Clear the server session cookie
-      await fetch("/api/auth/session", {
+      console.log("signOutUser: sending DELETE session request...");
+      const deleteRes = await fetch("/api/auth/session", {
         method: "DELETE",
         headers: csrfToken ? { [CSRF_HEADER_NAME]: csrfToken } : {},
         credentials: "same-origin",
       });
+      console.log("signOutUser: DELETE session response status:", deleteRes.status);
     } catch (err) {
       console.error("Server session deletion error:", err);
     } finally {

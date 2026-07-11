@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 
 test("Live Production Authentication Acceptance Test", async ({ page, context }) => {
+  page.on("console", msg => {
+    console.log(`[BROWSER LOG] [${msg.type()}] ${msg.text()}`);
+  });
+
   const email = `test-acceptance-${Date.now()}@cbamvalid.com`;
   const password = "Password123!";
 
