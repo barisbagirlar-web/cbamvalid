@@ -28,6 +28,20 @@ export const PRODUCT_CATALOG: Record<string, ProductDefinition> = {
     paddlePriceIdSandbox: process.env.PADDLE_PRICE_ID_SANDBOX || "pri_01j2fxyz...",
     paddlePriceIdProduction: process.env.PADDLE_PRICE_ID_PRODUCTION || "pri_01j2fabc...",
   },
+  CBAM_CREDIT_PACK_5: {
+    productCode: "CBAM_CREDIT_PACK_5",
+    currency: "USD",
+    expectedUnitAmount: 15000, // Or whatever the pack costs (150 EUR/USD)
+    entitlementType: "CBAM_SEALED_DOSSIER",
+    entitlementQuantity: 5,
+    correctionWindowDays: 14,
+    maxCustomsLines: 100,
+    maxInstallations: 1,
+    maxCnCodes: 25,
+    active: true,
+    paddlePriceIdSandbox: process.env.PADDLE_PRICE_ID_SANDBOX || "pri_01j2fxyz...",
+    paddlePriceIdProduction: process.env.PADDLE_PRICE_ID_PRODUCTION || "pri_01j2fabc...",
+  },
 } as const;
 
 export function getPriceIdForProduct(productCode: string, isSandbox: boolean): string | null {

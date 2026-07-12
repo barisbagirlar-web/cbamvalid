@@ -2,9 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createOrder = createOrder;
 exports.transitionOrderStatus = transitionOrderStatus;
-const firebase_admin_1 = require("@/firebase-admin");
+const firebase_admin_1 = require("../firebase-admin");
 const commerce_errors_1 = require("./commerce-errors");
-const firestore_validator_1 = require("@/firestore-validator");
+const firestore_validator_1 = require("../firestore-validator");
 /**
  * Creates an initial order record in CHECKOUT_CREATED state
  */

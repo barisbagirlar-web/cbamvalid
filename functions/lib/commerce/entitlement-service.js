@@ -5,10 +5,10 @@ exports.reserveEntitlement = reserveEntitlement;
 exports.consumeEntitlement = consumeEntitlement;
 exports.releaseEntitlementReservation = releaseEntitlementReservation;
 exports.revokeEntitlement = revokeEntitlement;
-const firebase_admin_1 = require("@/firebase-admin");
+const firebase_admin_1 = require("../firebase-admin");
 const commerce_errors_1 = require("./commerce-errors");
 const ledger_service_1 = require("./ledger-service");
-const firestore_validator_1 = require("@/firestore-validator");
+const firestore_validator_1 = require("../firestore-validator");
 /**
  * Creates a new entitlement after a successful payment transaction
  */

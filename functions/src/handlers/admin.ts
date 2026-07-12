@@ -1,7 +1,7 @@
 import { createCallable } from "../wrapper";
 import { z } from "zod";
 import { HttpsError } from "firebase-functions/v2/https";
-import { adminDb } from "@/firebase-admin";
+import { adminDb } from "../firebase-admin";
 
 function requireAdmin(auth: any) {
   if (auth.token.admin !== true && auth.token.ownerAdmin !== true) {

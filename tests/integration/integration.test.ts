@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
@@ -62,8 +64,8 @@ const { sharedAuth, sharedFirestore, collectionMock } = vi.hoisted(() => {
 // Mock getAdminAuth/getAdminDb helpers directly
 vi.mock("@/lib/firebase/admin", () => {
   return {
-    getAdminAuth: () => sharedAuth,
-    getAdminDb: () => sharedFirestore,
+    adminAuth: sharedAuth,
+    adminDb: sharedFirestore,
   };
 });
 

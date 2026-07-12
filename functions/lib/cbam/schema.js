@@ -1,48 +1,167 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cbamFormSchema = void 0;
+exports.createEmptyInput = exports.AuditReadyCaseSchema = exports.CaseStatusSchema = exports.GapRecordSchema = exports.GapSeveritySchema = exports.CalculationTraceNodeSchema = exports.CarbonPricePaidSchema = exports.EvidenceRecordSchema = exports.InputDatumSchema = void 0;
 const zod_1 = require("zod");
-// List of valid CBAM chapters (first 2 digits of CN Code)
-const VALID_CBAM_CHAPTERS = [
-    "72", // Iron and Steel
-    "73", // Articles of Iron and Steel
-    "76", // Aluminium and articles thereof
-    "25", // Cement
-    "27", // Electricity
-    "28", // Hydrogen (Inorganic chemicals)
-    "31", // Fertilizers
-];
-exports.cbamFormSchema = zod_1.z.object({
-    declarantEORI: zod_1.z.string().min(8).max(17),
-    installationName: zod_1.z.string().min(3),
-    // CN Code (GTIP) Validator
-    cnCode: zod_1.z.string()
-        .length(8, "CN Code must be exactly 8 digits")
-        .regex(/^\d+$/, "CN Code must contain only digits")
-        .refine((code) => {
-        const chapter = code.substring(0, 2);
-        return VALID_CBAM_CHAPTERS.includes(chapter);
-    }, {
-        message: "ERROR: The entered CN Code is not within the scope of CBAM regulation."
-    }),
-    productionVolume: zod_1.z.number().positive(),
-    electricityConsumed: zod_1.z.number().min(0),
-    directEmissions: zod_1.z.number().min(0),
-    gridEmissionFactor: zod_1.z.number().min(0, "Factor cannot be negative."),
-    isCustomGridFactor: zod_1.z.boolean(),
-    customGridFactor: zod_1.z.number().min(0).optional(),
-    isComplexGood: zod_1.z.boolean(),
-    precursorDirectEmissions: zod_1.z.number().min(0).optional(),
-    precursorIndirectEmissions: zod_1.z.number().min(0).optional(),
-    liabilityAccepted: zod_1.z.literal(true, {
-        message: "You must accept legal liability to proceed."
-    })
-}).superRefine((data, ctx) => {
-    if (data.isCustomGridFactor && (data.customGridFactor === undefined || isNaN(data.customGridFactor))) {
-        ctx.addIssue({ code: zod_1.z.ZodIssueCode.custom, message: "Custom grid emission factor value is required.", path: ["customGridFactor"] });
-    }
-    if (data.isComplexGood && (data.precursorDirectEmissions === undefined && data.precursorIndirectEmissions === undefined)) {
-        ctx.addIssue({ code: zod_1.z.ZodIssueCode.custom, message: "Precursor emissions details are required for complex goods.", path: ["precursorDirectEmissions"] });
-    }
+// Base Input Standard
+exports.InputDatumSchema = zod_1.z.object({
+    id: zod_1.z.string().uuid().optional(),
+    value: zod_1.z.union([zod_1.z.number(), zod_1.z.string(), zod_1.z.null()]),
+    unit: zod_1.z.string(),
+    reportingPeriod: zod_1.z.string().optional(),
+    sourceType: zod_1.z.enum(["PRIMARY", "DEFAULT", "SECONDARY", "ESTIMATED"]),
+    evidenceId: zod_1.z.string().optional(), // Links to EvidenceRegister
+    documentReference: zod_1.z.string().optional(),
+    measurementMethod: zod_1.z.string().optional(),
+    confidenceStatus: zod_1.z.enum(["HIGH_VERIFIED", "MEDIUM_DOCUMENTED", "LOW_ESTIMATE", "DEFAULT"]),
+    responsiblePerson: zod_1.z.string().optional(),
+    reviewerNote: zod_1.z.string().optional(),
 });
+// Evidence Record System
+exports.EvidenceRecordSchema = zod_1.z.object({
+    evidenceId: zod_1.z.string().uuid(),
+    documentType: zod_1.z.string(), // e.g. "CUSTOMS_DECLARATION", "SUPPLIER_INVOICE", "LAB_REPORT"
+    fileName: zod_1.z.string(),
+    issuer: zod_1.z.string(),
+    issueDate: zod_1.z.string(),
+    reportingPeriod: zod_1.z.string(),
+    pageReference: zod_1.z.string().optional(),
+    fileHash: zod_1.z.string(),
+    uploadTimestamp: zod_1.z.string().datetime(),
+    uploader: zod_1.z.string(),
+    reviewStatus: zod_1.z.enum(["PENDING", "APPROVED", "REJECTED"]),
+    linkedInputs: zod_1.z.array(zod_1.z.string()), // IDs of InputDatum
+    linkedCalculations: zod_1.z.array(zod_1.z.string()), // IDs of Calculation traces
+    reviewerNotes: zod_1.z.string().optional()
+});
+// Carbon Price Paid Module
+exports.CarbonPricePaidSchema = zod_1.z.object({
+    id: zod_1.z.string().uuid(),
+    amountPaid: zod_1.z.number().min(0),
+    applicableEmissions: zod_1.z.number().min(0),
+    currency: zod_1.z.string().length(3),
+    paymentPeriod: zod_1.z.string(),
+    legislationReference: zod_1.z.string(),
+    proofOfPaymentEvidenceId: zod_1.z.string().uuid(),
+    rebateInformation: zod_1.z.string().optional(),
+    independentCertificationEvidenceId: zod_1.z.string().uuid().optional(),
+    conversionMethod: zod_1.z.string().optional(),
+    eligibleCertificateReduction: zod_1.z.number().min(0)
+});
+// Calculation Trace Node
+exports.CalculationTraceNodeSchema = zod_1.z.object({
+    calculationId: zod_1.z.string().uuid(),
+    formulaId: zod_1.z.string(),
+    formulaVersion: zod_1.z.string(),
+    officialSource: zod_1.z.string(),
+    sourceVersion: zod_1.z.string(),
+    effectiveDate: zod_1.z.string(),
+    inputs: zod_1.z.record(zod_1.z.string(), zod_1.z.any()), // Raw inputs mapped
+    conversions: zod_1.z.record(zod_1.z.string(), zod_1.z.any()).optional(),
+    intermediateCalculations: zod_1.z.record(zod_1.z.string(), zod_1.z.any()).optional(),
+    roundingApplied: zod_1.z.record(zod_1.z.string(), zod_1.z.any()).optional(),
+    assumptions: zod_1.z.array(zod_1.z.string()),
+    warnings: zod_1.z.array(zod_1.z.string()),
+    outputValue: zod_1.z.number(),
+    outputUnit: zod_1.z.string(),
+    calculationHash: zod_1.z.string()
+});
+// Gap Assessment Severity
+exports.GapSeveritySchema = zod_1.z.enum([
+    "BLOCKER",
+    "CRITICAL",
+    "MAJOR",
+    "MINOR",
+    "ADVISORY"
+]);
+exports.GapRecordSchema = zod_1.z.object({
+    gapId: zod_1.z.string().uuid(),
+    requirement: zod_1.z.string(),
+    severity: exports.GapSeveritySchema,
+    affectedResult: zod_1.z.string().optional(),
+    whyItMatters: zod_1.z.string(),
+    requiredEvidence: zod_1.z.string(),
+    suggestedAction: zod_1.z.string(),
+    responsibleParty: zod_1.z.string().optional(),
+    deadline: zod_1.z.string().optional(),
+    isBlocking: zod_1.z.boolean(),
+    resolutionStatus: zod_1.z.enum(["OPEN", "IN_PROGRESS", "RESOLVED"])
+});
+// Global Case Status
+exports.CaseStatusSchema = zod_1.z.enum([
+    "DRAFT",
+    "REVIEW_REQUIRED",
+    "VERIFICATION_READY",
+    "SEALED",
+    "SUPERSEDED",
+    "REVOKED"
+]);
+// Main Case Payload
+exports.AuditReadyCaseSchema = zod_1.z.object({
+    caseId: zod_1.z.string().uuid().optional(),
+    status: exports.CaseStatusSchema.default("DRAFT"),
+    version: zod_1.z.number().default(1),
+    // 1. Case Identity
+    ownerId: zod_1.z.string(),
+    importerIdentity: zod_1.z.object({
+        legalName: exports.InputDatumSchema,
+        eoriNumber: exports.InputDatumSchema,
+        address: exports.InputDatumSchema.optional()
+    }),
+    exporterIdentity: zod_1.z.object({
+        legalName: exports.InputDatumSchema,
+        address: exports.InputDatumSchema.optional()
+    }),
+    // 2. Reporting Profile
+    reportingPeriod: zod_1.z.object({
+        year: exports.InputDatumSchema,
+        quarter: exports.InputDatumSchema,
+    }),
+    // 3. Products
+    goods: zod_1.z.array(zod_1.z.object({
+        cnCode: exports.InputDatumSchema,
+        sector: zod_1.z.string(),
+        productionVolume: exports.InputDatumSchema,
+        shipmentRecords: exports.InputDatumSchema
+    })),
+    // 4. Installation & Boundaries
+    installation: zod_1.z.object({
+        name: exports.InputDatumSchema,
+        unloCode: exports.InputDatumSchema.optional(),
+        country: exports.InputDatumSchema,
+        productionRoute: exports.InputDatumSchema,
+        systemBoundaries: zod_1.z.string().optional()
+    }),
+    // 5. Emissions
+    directEmissions: exports.InputDatumSchema,
+    electricityConsumed: exports.InputDatumSchema,
+    gridEmissionFactor: exports.InputDatumSchema,
+    precursors: zod_1.z.array(zod_1.z.object({
+        name: exports.InputDatumSchema,
+        quantity: exports.InputDatumSchema,
+        directEmissions: exports.InputDatumSchema,
+        indirectEmissions: exports.InputDatumSchema,
+        countryOfOrigin: exports.InputDatumSchema
+    })),
+    // 6. Sub-Systems
+    carbonPriceRecords: zod_1.z.array(exports.CarbonPricePaidSchema),
+    evidenceRegister: zod_1.z.array(exports.EvidenceRecordSchema),
+    calculationTrace: zod_1.z.array(exports.CalculationTraceNodeSchema),
+    gapAssessment: zod_1.z.array(exports.GapRecordSchema),
+    // 7. Audit Manifest
+    auditEvents: zod_1.z.array(zod_1.z.object({
+        eventId: zod_1.z.string().uuid(),
+        timestamp: zod_1.z.string().datetime(),
+        actor: zod_1.z.string(),
+        action: zod_1.z.string(),
+        metadata: zod_1.z.record(zod_1.z.string(), zod_1.z.any()).optional()
+    }))
+});
+// Helper function to create an empty InputDatum
+const createEmptyInput = (unit = "") => ({
+    value: null,
+    unit,
+    sourceType: "ESTIMATED",
+    confidenceStatus: "LOW_ESTIMATE"
+});
+exports.createEmptyInput = createEmptyInput;
 //# sourceMappingURL=schema.js.map

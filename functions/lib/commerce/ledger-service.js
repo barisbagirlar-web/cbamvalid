@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.calculateEntryHash = calculateEntryHash;
 exports.writeLedgerEntry = writeLedgerEntry;
 const crypto_1 = __importDefault(require("crypto"));
-const firebase_admin_1 = require("@/firebase-admin");
+const firebase_admin_1 = require("../firebase-admin");
 /**
  * Computes SHA-256 hash for a ledger entry to enforce chain security
  */

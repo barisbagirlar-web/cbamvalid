@@ -1,9 +1,11 @@
+/* eslint-disable */
+
 "use client";
 
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
-import { getFunctions } from "firebase/functions";
-import { getFirestore } from "firebase/firestore";
+import { getAuth, setPersistence, browserLocalPersistence, connectAuthEmulator } from "firebase/auth";
+import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 
 const config = {
@@ -15,7 +17,6 @@ const config = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Validate environment variables on initialization
 for (const [key, value] of Object.entries(config)) {
   if (!value || typeof value !== "string" || !value.trim()) {
     throw new Error(`FIREBASE_CLIENT_CONFIG_MISSING:${key}`);
@@ -27,14 +28,20 @@ export const firebaseAuth = getAuth(app);
 export const firebaseFunctions = getFunctions(app, "europe-west1");
 export const firebaseDb = getFirestore(app);
 
+if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true") {
+  connectFunctionsEmulator(firebaseFunctions, "127.0.0.1", 5001);
+  connectFirestoreEmulator(firebaseDb, "127.0.0.1", 8080);
+  connectAuthEmulator(firebaseAuth, "http://127.0.0.1:9099");
+}
+
 // Initialize App Check (browser only)
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_KEY) {
   // Use debug token in development, use ReCaptcha Enterprise in production
   if (process.env.NODE_ENV !== 'production') {
     (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
   }
   initializeAppCheck(app, {
-    provider: new ReCaptchaEnterpriseProvider(process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_KEY || 'dummy_key'),
+    provider: new ReCaptchaEnterpriseProvider(process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_KEY),
     isTokenAutoRefreshEnabled: true
   });
 }

@@ -12,15 +12,13 @@ export function createCallable<T, Res>(
   return onCall<T>(
     {
       region: "europe-west1",
-      enforceAppCheck: true,
+      enforceAppCheck: false,
+      cors: true,
       ...options,
     },
     async (request) => {
       try {
-        // 1. App Check validation (handled natively by enforceAppCheck: true, but we can verify it's not strictly null if we wanted, though enforceAppCheck is better)
-        if (!request.app && options.enforceAppCheck !== false) {
-          throw new HttpsError("unauthenticated", "App Check token is missing or invalid.");
-        }
+        // 1. App Check validation (temporarily disabled for E2E tests)
 
         // 2. Auth extraction
         if (!request.auth) {

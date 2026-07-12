@@ -5,9 +5,9 @@ exports.verifyCaseOwner = verifyCaseOwner;
 exports.createCase = createCase;
 exports.updateCase = updateCase;
 exports.getCasesForUser = getCasesForUser;
-const firebase_admin_1 = require("@/firebase-admin");
+const firebase_admin_1 = require("../../firebase-admin");
 const commerce_errors_1 = require("../../commerce/commerce-errors");
-const firestore_validator_1 = require("@/firestore-validator");
+const firestore_validator_1 = require("../../firestore-validator");
 /**
  * Retrieve case data by ID
  */
@@ -77,6 +77,6 @@ async function updateCase(caseId, uid, data) {
 async function getCasesForUser(uid) {
     (0, firestore_validator_1.validateIdentifier)("uid", uid);
     const snapshot = await firebase_admin_1.adminDb.collection("cbam_cases").where("uid", "==", uid).get();
-    return snapshot.docs.map(doc => doc.data());
+    return snapshot.docs.map((doc) => (Object.assign({ caseId: doc.id }, doc.data())));
 }
 //# sourceMappingURL=case-repository.js.map

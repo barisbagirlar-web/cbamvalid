@@ -1,6 +1,6 @@
 import { createCallable } from "../wrapper";
 import { z } from "zod";
-import { createCase, updateCase, getCase, getCasesForUser } from "@/cbam/storage/case-repository";
+import { createCase, updateCase, getCase, getCasesForUser } from "../cbam/storage/case-repository";
 
 
 export const saveCbamCase = createCallable(
@@ -70,7 +70,7 @@ export const archiveCbamCase = createCallable(
       throw new Error("Case not found or access denied.");
     }
     // Update status to ARCHIVED
-    const { adminDb } = await import("@/firebase-admin");
+    const { adminDb } = await import("../firebase-admin");
     await adminDb.collection("cbam_cases").doc(caseId).update({
       status: "ARCHIVED",
       updatedAt: new Date().toISOString()
@@ -90,7 +90,7 @@ export const deleteCbamCase = createCallable(
     if (!existing || existing.uid !== auth.uid) {
       throw new Error("Case not found or access denied.");
     }
-    const { adminDb } = await import("@/firebase-admin");
+    const { adminDb } = await import("../firebase-admin");
     await adminDb.collection("cbam_cases").doc(caseId).delete();
     return { success: true };
   }

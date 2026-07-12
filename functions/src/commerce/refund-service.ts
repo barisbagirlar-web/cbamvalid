@@ -1,5 +1,5 @@
 import admin from "firebase-admin";
-import { adminDb } from "@/firebase-admin";
+import { adminDb } from "../firebase-admin";
 import { transitionOrderStatus } from "./order-service";
 import { revokeEntitlement } from "./entitlement-service";
 import { writeLedgerEntry } from "./ledger-service";

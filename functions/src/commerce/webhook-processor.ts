@@ -1,4 +1,4 @@
-import { adminDb } from "@/firebase-admin";
+import { adminDb } from "../firebase-admin";
 import { transitionOrderStatus } from "./order-service";
 import { createEntitlement } from "./entitlement-service";
 import { writeLedgerEntry } from "./ledger-service";
@@ -65,6 +65,11 @@ async function handleTransactionCompleted(eventId: string, transaction: any): Pr
     return;
   }
 
+  // Calculate total quantity across items matching the productCode
+  // (Assuming one line item for simplicity, but summing is safer)
+  const purchasedQuantity = items.reduce((acc: number, item: any) => acc + (item.quantity || 1), 0);
+  const totalEntitlementsToGrant = catalogProduct.entitlementQuantity * purchasedQuantity;
+
   // Execute atomic transactional updates
   await adminDb.runTransaction(async (dbTransaction: any) => {
     // 1. Log payment captured entry in the ledger with idempotency verification
@@ -74,9 +79,9 @@ async function handleTransactionCompleted(eventId: string, transaction: any): Pr
       transactionId,
       eventId,
       type: "PAYMENT_CAPTURED",
-      quantity: 1,
+      quantity: purchasedQuantity,
       currency,
-      amountMinor: catalogProduct.expectedUnitAmount,
+      amountMinor: catalogProduct.expectedUnitAmount * purchasedQuantity,
       idempotencyKey: `payment:${transactionId}`,
     });
 
@@ -92,7 +97,7 @@ async function handleTransactionCompleted(eventId: string, transaction: any): Pr
       transactionId,
       eventId,
       productCode,
-      quantity: catalogProduct.entitlementQuantity,
+      quantity: totalEntitlementsToGrant,
     });
 
     // 4. Transition order state to ENTITLED

@@ -12,3 +12,4 @@ export * from "./handlers/commerce";
 export * from "./handlers/account";
 export * from "./handlers/admin";
 export * from "./webhook";
+export * from "./cbam/report/seal-recovery-worker";

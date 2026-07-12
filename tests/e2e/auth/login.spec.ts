@@ -21,10 +21,10 @@ test.describe("Authentication E2E Flow", () => {
     // Click Login
     await page.click('button[type="submit"]');
 
-    // Should redirect to dashboard and display email
+    // Should redirect to dashboard and display name
     await page.waitForURL(/\/cbam/, { timeout: 30000 });
     await expect(page).toHaveURL(/\/cbam/);
-    await expect(page.locator("body")).toContainText("e2e@cbamvalid.com", { timeout: 30000 });
+    await expect(page.locator("body")).toContainText("E2E User", { timeout: 30000 });
   });
 
   test("Redirect to login when visiting dashboard unauthenticated", async ({ page }) => {
@@ -47,10 +47,13 @@ test.describe("Authentication E2E Flow", () => {
     await page.waitForURL(/\/cbam/, { timeout: 30000 });
     await expect(page).toHaveURL(/\/cbam/);
 
-    // 2. Trigger logout
+    // 2. Open Account Dropdown
+    await page.click('button:has-text("E2E User")');
+
+    // 3. Trigger logout
     await page.click('button:has-text("Sign Out")');
 
-    // 3. Should redirect back to login page
+    // 4. Should redirect back to login page
     await expect(page).toHaveURL(/\/login/, { timeout: 15000 });
 
     // Verify cookie has been removed

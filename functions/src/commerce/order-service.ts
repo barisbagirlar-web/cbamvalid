@@ -1,7 +1,7 @@
 import admin from "firebase-admin";
-import { adminDb } from "@/firebase-admin";
+import { adminDb } from "../firebase-admin";
 import { OrderNotFoundError } from "./commerce-errors";
-import { validateIdentifier } from "@/firestore-validator";
+import { validateIdentifier } from "../firestore-validator";
 
 export interface CommerceOrder {
   orderId: string;

@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createCheckout = createCheckout;
-const catalog_1 = require("@/commerce/catalog");
+const catalog_1 = require("../../commerce/catalog");
 const paddle_client_1 = require("../paddle-client");
-const firebase_admin_1 = require("@/firebase-admin");
+const firebase_admin_1 = require("../../firebase-admin");
 const order_service_1 = require("../order-service");
 async function createCheckout(uid, email, productCode, metadata) {
     const { caseId } = metadata;

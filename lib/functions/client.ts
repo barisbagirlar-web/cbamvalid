@@ -18,6 +18,7 @@ export const getReportDownloadUrlCallable = httpsCallable<{ reportId: string, fo
 
 export const getEntitlementsCallable = httpsCallable<void, { entitlements: any[] }>(firebaseFunctions, "getEntitlements");
 export const createCheckoutSessionCallable = httpsCallable<{ productCode: string, caseId: string }, { transactionId: string, error?: string }>(firebaseFunctions, "createCheckoutSession");
+export const unlockCbamUsesCallable = httpsCallable<{ requestId: string }, any>(firebaseFunctions, "unlockCbamUses");
 
 export const adminSetUserTokensCallable = httpsCallable<{ targetUserId: string, tokensToSet: number }, { success: boolean }>(firebaseFunctions, "adminSetUserTokens");
 export const getSourcesStatusCallable = httpsCallable<void, any>(firebaseFunctions, "getSourcesStatus");
@@ -97,6 +98,11 @@ export async function getEntitlements() {
 
 export async function createCheckout(productCode: string, caseId: string) {
   const result = await createCheckoutSessionCallable({ productCode, caseId });
+  return result.data;
+}
+
+export async function unlockCbamUses(requestId: string) {
+  const result = await unlockCbamUsesCallable({ requestId });
   return result.data;
 }
 

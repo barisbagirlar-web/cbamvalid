@@ -1,6 +1,6 @@
-import { getPriceIdForProduct, PRODUCT_CATALOG } from "@/commerce/catalog";
+import { getPriceIdForProduct, PRODUCT_CATALOG } from "../../commerce/catalog";
 import { paddle, isSandboxMode } from "../paddle-client";
-import { adminDb } from "@/firebase-admin";
+import { adminDb } from "../../firebase-admin";
 import { createOrder } from "../order-service";
 
 export async function createCheckout(uid: string, email: string, productCode: string, metadata: { caseId: string }) {

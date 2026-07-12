@@ -1,6 +1,6 @@
 import { createCallable } from "../wrapper";
 import { z } from "zod";
-import { adminDb } from "@/firebase-admin";
+import { adminDb } from "../firebase-admin";
 
 export const getAccountOverview = createCallable({}, async (_, { auth }) => {
   const uid = auth.uid;

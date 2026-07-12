@@ -1,4 +1,4 @@
-import { resolveCNCodeScope } from "@/cbam/regulatory/cn-scope-dataset";
+import { resolveCNCodeScope } from "./cbam/regulatory/cn-scope-dataset";
 
 export class InvalidIdentifierError extends Error {
   constructor(public field: string, message: string) {

@@ -37,12 +37,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           try {
             const tokenResult = await currentUser.getIdTokenResult();
             setClaims(tokenResult.claims);
+            // Set __session cookie for Next.js Middleware
+            const token = await currentUser.getIdToken();
+            const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
+            document.cookie = `__session=${token}; path=/; max-age=3600; SameSite=Lax${isSecure ? '; Secure' : ''}`;
           } catch (e) {
             console.error("Failed to fetch claims:", e);
             setClaims(null);
+            document.cookie = `__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
           }
         } else {
           setClaims(null);
+          document.cookie = `__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
         }
         setLoading(false);
       },
@@ -59,6 +65,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOutUser = async () => {
     try {
       await signOut(auth);
+      document.cookie = `__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
     } catch (err: any) {
       console.error("Firebase signOut error:", err);
     } finally {

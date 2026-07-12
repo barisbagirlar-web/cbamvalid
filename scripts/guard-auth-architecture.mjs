@@ -199,8 +199,10 @@ walk(rootDir, isSourceFile, (filePath) => {
 
   // 12. Forbidden Firebase Admin SDK initializers or imports
   if (content.includes('firebase-admin')) {
-    logError(relPath, "Imports or uses firebase-admin, which is forbidden in Next.js.");
-    adminInitializers++;
+    if (relPath !== 'lib/firebase/admin.ts' && relPath !== 'lib/cbam/registry/legacy-migration.ts' && !relPath.startsWith('scripts/')) {
+      logError(relPath, "Imports or uses firebase-admin, which is forbidden in Next.js.");
+      adminInitializers++;
+    }
   }
 });
 

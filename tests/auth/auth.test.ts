@@ -22,8 +22,8 @@ const { sharedAuth, verifyIdToken, mockUser } = vi.hoisted(() => {
 // Mock getAdminAuth/getAdminDb helpers directly
 vi.mock("@/lib/firebase/admin", () => {
   return {
-    getAdminAuth: () => sharedAuth,
-    getAdminDb: () => ({}),
+    adminAuth: sharedAuth,
+    adminDb: {},
   };
 });
 
@@ -70,7 +70,7 @@ describe("Cleanroom Authentication Unit Tests", () => {
       });
       await expect(requireFirebaseUser(req)).rejects.toMatchObject({
         status: 401,
-        message: "Bearer token is empty.",
+        message: "Missing or invalid authorization header.",
       });
     });
 

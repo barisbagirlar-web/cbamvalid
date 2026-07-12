@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { firebaseDb } from "@/lib/firebase/client";
 import { doc, getDoc } from "firebase/firestore";
+import { apiSuccess, apiFailure } from "@/lib/http/api-response";
+
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest, props: { params: Promise<{ documentHash: string }> }) {
@@ -8,25 +10,29 @@ export async function GET(request: NextRequest, props: { params: Promise<{ docum
     const params = await props.params;
     const documentHash = params.documentHash;
 
-    if (!documentHash) {
-      return NextResponse.json({ error: "Missing document hash parameter" }, { status: 400 });
+    if (!documentHash || !/^[a-fA-F0-9]{64}$/.test(documentHash)) {
+      return apiFailure(
+        "INVALID_FORMAT",
+        "The document hash must be a 64-character hexadecimal string.",
+        400
+      );
     }
 
     const docRef = doc(firebaseDb, "document_seals", documentHash);
     const docSnap = await getDoc(docRef);
 
     if (!docSnap.exists()) {
-      return NextResponse.json({
-        valid: false,
-        message: "No registered sealed document was found matching the provided cryptographic signature.",
-      }, { status: 404 });
+      return apiFailure(
+        "NOT_FOUND",
+        "No registered sealed document was found matching the provided cryptographic signature.",
+        404
+      );
     }
 
-    const sealData = docSnap.data() as any;
+    const sealData = docSnap.data();
 
-    // Return only safe metadata without leaking customer identity, EORI, volume, or emission values
-    return NextResponse.json({
-      valid: sealData.valid || true,
+    return apiSuccess({
+      valid: sealData.valid !== false,
       documentHash: sealData.documentHash,
       reportId: sealData.reportId,
       version: sealData.version || 1,
@@ -34,13 +40,11 @@ export async function GET(request: NextRequest, props: { params: Promise<{ docum
       commercialStatus: sealData.commercialStatus || "ACTIVE",
       methodologyVersion: sealData.methodologyVersion || "EU_CBAM_METHODOLOGY_2026_V1",
       regulatorySnapshotId: sealData.regulatorySnapshotId || "SNAPSHOT_2026_V1",
-    }, {
-      headers: {
-        "Cache-Control": "public, max-age=86400, must-revalidate", // Cacheable public signature metadata
-      }
+    }, 200, {
+      "Cache-Control": "public, max-age=86400, must-revalidate",
     });
   } catch (error: any) {
     console.error("[PUBLIC VERIFY ENDPOINT ERROR]:", error.message || error);
-    return NextResponse.json({ error: error.message || "Server error" }, { status: 500 });
+    return apiFailure("INTERNAL_SERVER_ERROR", "Server error", 500);
   }
 }

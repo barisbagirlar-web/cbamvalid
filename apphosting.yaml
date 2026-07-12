@@ -41,3 +41,36 @@ env:
     secret: FIREBASE_ADMIN_SERVICE_ACCOUNT_B64
     availability:
       - RUNTIME
+
+  - variable: NEXT_PUBLIC_PADDLE_SANDBOX
+    value: "true"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_PADDLE_PRICE_ID
+    value: "pri_01kx4373n0xa7fthk3ttqqd7p8"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_PADDLE_CLIENT_TOKEN
+    value: "pdl_sdbx_apikey_01kx70bp0qr6g41532xq3kwyq8_QyGKxHddW6b1HfFG9zxGrC_AvQ"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: PADDLE_API_KEY
+    value: "pdl_sdbx_apikey_01kx439q4j5644r458629x7vjr_3pSFnJzNMX2tf0YfnmmJF6_Afi"
+    availability:
+      - RUNTIME
+
+  - variable: PADDLE_WEBHOOK_SECRET_KEY
+    value: "pws_sandbox_xxxxxx"
+    availability:
+      - RUNTIME
+
+  - variable: PADDLE_WEBHOOK_SECRET
+    value: "pws_sandbox_xxxxxx"
+    availability:
+      - RUNTIME

@@ -37,14 +37,14 @@ exports.getReportDownloadUrl = exports.getCbamReport = exports.getCbamReports = 
 const wrapper_1 = require("../wrapper");
 const zod_1 = require("zod");
 const https_1 = require("firebase-functions/v2/https");
-const firebase_admin_1 = require("@/firebase-admin");
+const firebase_admin_1 = require("../firebase-admin");
 exports.sealCbamReport = (0, wrapper_1.createCallable)({
     schema: zod_1.z.object({
         caseId: zod_1.z.string(),
         entitlementId: zod_1.z.string()
     })
 }, async ({ caseId, entitlementId }, { auth }) => {
-    const { sealReport } = await Promise.resolve().then(() => __importStar(require("@/cbam/report/seal-service")));
+    const { sealReport } = await Promise.resolve().then(() => __importStar(require("../cbam/report/seal-service")));
     try {
         const report = await sealReport({
             uid: auth.uid,

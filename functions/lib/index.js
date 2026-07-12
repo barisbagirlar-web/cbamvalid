@@ -23,5 +23,8 @@ const v2_1 = require("firebase-functions/v2");
 __exportStar(require("./handlers/cases"), exports);
 __exportStar(require("./handlers/reports"), exports);
 __exportStar(require("./handlers/commerce"), exports);
+__exportStar(require("./handlers/account"), exports);
+__exportStar(require("./handlers/admin"), exports);
 __exportStar(require("./webhook"), exports);
+__exportStar(require("./cbam/report/seal-recovery-worker"), exports);
 //# sourceMappingURL=index.js.map

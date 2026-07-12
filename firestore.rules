@@ -86,5 +86,21 @@ service cloud.firestore {
       allow read: if true; // Publicly verifiable signatures
       allow create, update, delete: if false; // Only backend functions seal documents
     }
+
+    // Rules for seal workflows (Strictly Backend)
+    match /seal_outbox/{reportId} {
+      allow read, write: if false; 
+    }
+    match /seal_log/{reportId} {
+      allow read, write: if false; 
+    }
+
+    // Rules for Source Watchers and System Logs (Strictly Backend)
+    match /source_registry_snapshots/{docId} {
+      allow read, write: if false;
+    }
+    match /audit_events/{docId} {
+      allow read, write: if false;
+    }
   }
 }

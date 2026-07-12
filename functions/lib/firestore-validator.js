@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InvalidIdentifierError = void 0;
 exports.validateIdentifier = validateIdentifier;
-const cn_scope_dataset_1 = require("@/cbam/regulatory/cn-scope-dataset");
+const cn_scope_dataset_1 = require("./cbam/regulatory/cn-scope-dataset");
 class InvalidIdentifierError extends Error {
     constructor(field, message) {
         super(message);

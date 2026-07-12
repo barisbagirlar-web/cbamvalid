@@ -1,6 +1,6 @@
-import { adminDb } from "@/firebase-admin";
+import { adminDb } from "../../firebase-admin";
 import { CaseOwnershipViolationError } from "../../commerce/commerce-errors";
-import { validateIdentifier } from "@/firestore-validator";
+import { validateIdentifier } from "../../firestore-validator";
 
 export interface CbamCase {
   caseId: string;
@@ -88,5 +88,5 @@ export async function updateCase(caseId: string, uid: string, data: any): Promis
 export async function getCasesForUser(uid: string): Promise<CbamCase[]> {
   validateIdentifier("uid", uid);
   const snapshot = await adminDb.collection("cbam_cases").where("uid", "==", uid).get();
-  return snapshot.docs.map(doc => doc.data() as CbamCase);
+  return snapshot.docs.map((doc: any) => ({ caseId: doc.id, ...doc.data() })) as CbamCase[];
 }

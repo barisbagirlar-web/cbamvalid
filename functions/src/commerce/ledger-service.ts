@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import admin from "firebase-admin";
-import { adminDb } from "@/firebase-admin";
+import { adminDb } from "../firebase-admin";
 
 export interface LedgerEntry {
   entryId: string;

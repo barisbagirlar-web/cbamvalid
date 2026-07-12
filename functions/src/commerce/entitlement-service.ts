@@ -1,8 +1,8 @@
 import admin from "firebase-admin";
-import { adminDb } from "@/firebase-admin";
+import { adminDb } from "../firebase-admin";
 import { DoubleSpendViolationError, EntitlementUnavailableError } from "./commerce-errors";
 import { writeLedgerEntry } from "./ledger-service";
-import { validateIdentifier } from "@/firestore-validator";
+import { validateIdentifier } from "../firestore-validator";
 
 export interface Entitlement {
   entitlementId: string;

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.processWebhookEvent = processWebhookEvent;
-const firebase_admin_1 = require("@/firebase-admin");
+const firebase_admin_1 = require("../firebase-admin");
 const order_service_1 = require("./order-service");
 const entitlement_service_1 = require("./entitlement-service");
 const ledger_service_1 = require("./ledger-service");
@@ -60,6 +60,10 @@ async function handleTransactionCompleted(eventId, transaction) {
         console.error(`[PADDLE-PROCESSOR] Transaction has no items.`);
         return;
     }
+    // Calculate total quantity across items matching the productCode
+    // (Assuming one line item for simplicity, but summing is safer)
+    const purchasedQuantity = items.reduce((acc, item) => acc + (item.quantity || 1), 0);
+    const totalEntitlementsToGrant = catalogProduct.entitlementQuantity * purchasedQuantity;
     // Execute atomic transactional updates
     await firebase_admin_1.adminDb.runTransaction(async (dbTransaction) => {
         // 1. Log payment captured entry in the ledger with idempotency verification
@@ -69,9 +73,9 @@ async function handleTransactionCompleted(eventId, transaction) {
             transactionId,
             eventId,
             type: "PAYMENT_CAPTURED",
-            quantity: 1,
+            quantity: purchasedQuantity,
             currency,
-            amountMinor: catalogProduct.expectedUnitAmount,
+            amountMinor: catalogProduct.expectedUnitAmount * purchasedQuantity,
             idempotencyKey: `payment:${transactionId}`,
         });
         // 2. Transition order state to PAID
@@ -85,7 +89,7 @@ async function handleTransactionCompleted(eventId, transaction) {
             transactionId,
             eventId,
             productCode,
-            quantity: catalogProduct.entitlementQuantity,
+            quantity: totalEntitlementsToGrant,
         });
         // 4. Transition order state to ENTITLED
         await (0, order_service_1.transitionOrderStatus)(dbTransaction, orderId, "ENTITLED");

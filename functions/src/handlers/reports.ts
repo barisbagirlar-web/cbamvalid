@@ -1,7 +1,7 @@
 import { createCallable } from "../wrapper";
 import { z } from "zod";
 import { HttpsError } from "firebase-functions/v2/https";
-import { adminDb } from "@/firebase-admin";
+import { adminDb } from "../firebase-admin";
 
 export const sealCbamReport = createCallable(
   {
@@ -11,7 +11,7 @@ export const sealCbamReport = createCallable(
     })
   },
   async ({ caseId, entitlementId }, { auth }) => {
-    const { sealReport } = await import("@/cbam/report/seal-service");
+    const { sealReport } = await import("../cbam/report/seal-service");
     try {
       const report = await sealReport({
         uid: auth.uid,

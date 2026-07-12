@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.processRefund = processRefund;
-const firebase_admin_1 = require("@/firebase-admin");
+const firebase_admin_1 = require("../firebase-admin");
 const order_service_1 = require("./order-service");
 const entitlement_service_1 = require("./entitlement-service");
 const ledger_service_1 = require("./ledger-service");

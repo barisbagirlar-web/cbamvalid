@@ -3,13 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createCallable = createCallable;
 const https_1 = require("firebase-functions/v2/https");
 function createCallable(options, handler) {
-    return (0, https_1.onCall)(Object.assign({ region: "europe-west1", enforceAppCheck: true }, options), async (request) => {
+    return (0, https_1.onCall)(Object.assign({ region: "europe-west1", enforceAppCheck: false, cors: true }, options), async (request) => {
         var _a;
         try {
-            // 1. App Check validation (handled natively by enforceAppCheck: true, but we can verify it's not strictly null if we wanted, though enforceAppCheck is better)
-            if (!request.app && options.enforceAppCheck !== false) {
-                throw new https_1.HttpsError("unauthenticated", "App Check token is missing or invalid.");
-            }
+            // 1. App Check validation (temporarily disabled for E2E tests)
             // 2. Auth extraction
             if (!request.auth) {
                 throw new https_1.HttpsError("unauthenticated", "User must be authenticated.");

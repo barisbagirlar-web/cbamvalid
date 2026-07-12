@@ -1,250 +1,191 @@
-import { CbamSector } from "../sectors/sector-adapter";
-import { determineApplicability } from "../engine/applicability-engine";
+import { AuditReadyCase, GapRecord, GapSeverity } from "../schema";
 
-export type ReadinessStatus =
-  | "DRAFT"
-  | "DATA_INCOMPLETE"
-  | "CALCULATION_READY"
-  | "PAYMENT_ELIGIBLE"
-  | "REPORT_SEAL_ELIGIBLE"
-  | "BLOCKED";
+export type VerificationReadinessStatus =
+  | "NOT_READY"
+  | "READY_WITH_OPEN_ITEMS"
+  | "READY_FOR_INDEPENDENT_VERIFICATION";
 
-export interface EvidenceGapItem {
-  itemName: string;
-  severity: "Critical" | "Warning" | "Informational";
-  whyItMatters: string;
-  whereToObtain: string;
-  acceptableSubstitute: string;
-  blocksPayment: boolean;
-  blocksSealing: boolean;
-}
-
-export interface ReadinessAssessment {
-  status: ReadinessStatus;
-  sector: CbamSector | "UNKNOWN";
-  dataCompletenessPercentage: number;
-  evidenceCompletenessPercentage: number;
-  missingEvidenceCount: number;
-  gapAnalysis: EvidenceGapItem[];
-  isEligibleForPayment: boolean;
+export interface VerificationReadinessAssessment {
+  status: VerificationReadinessStatus;
+  criticalBlockers: GapRecord[];
+  allGaps: GapRecord[];
   isEligibleForSealing: boolean;
-  remediationMessage?: string;
+  completenessPercentage: number;
 }
 
-/**
- * Assesses exporter case inputs to calculate data completeness, missing evidence gaps, and payment eligibility
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function assessCaseReadiness(data: Record<string, any>): ReadinessAssessment {
-  const gaps: EvidenceGapItem[] = [];
-  let filledFields = 0;
-  let totalFields = 0;
+const SEVERITY_WEIGHTS: Record<GapSeverity, number> = {
+  BLOCKER: 100,
+  CRITICAL: 50,
+  MAJOR: 20,
+  MINOR: 5,
+  ADVISORY: 1
+};
 
-  const checkField = (val: unknown) => {
-    totalFields++;
-    if (val !== undefined && val !== null && val !== "" && val !== 0) {
-      filledFields++;
-      return true;
-    }
-    return false;
+export function assessCaseReadiness(caseData: AuditReadyCase): VerificationReadinessAssessment {
+  const gaps: GapRecord[] = [];
+  
+  // Internal helper to create gaps
+  const addGap = (
+    requirement: string,
+    severity: GapSeverity,
+    whyItMatters: string,
+    requiredEvidence: string,
+    suggestedAction: string,
+    isBlocking: boolean = false
+  ) => {
+    gaps.push({
+      gapId: crypto.randomUUID(),
+      requirement,
+      severity,
+      whyItMatters,
+      requiredEvidence,
+      suggestedAction,
+      isBlocking,
+      resolutionStatus: "OPEN"
+    });
   };
 
-  // Critical inputs check
-  const hasExporterName = checkField(data.exporterName);
-  const hasEori = checkField(data.declarantEORI);
-  checkField(data.cnCode);
-  const hasInstallationName = checkField(data.installationName);
-  const hasProductionVolume = checkField(data.productionVolume);
-  checkField(data.importYear);
-  checkField(data.importQuarter);
-  checkField(data.role);
-
-  // Sector identification
-  let sector: CbamSector | "UNKNOWN" = "UNKNOWN";
-  if (data.cnCode && data.cnCode.length >= 2) {
-    const chapter = data.cnCode.substring(0, 2);
-    if (["72", "73"].includes(chapter)) sector = "IRON_AND_STEEL";
-    else if (chapter === "76") sector = "ALUMINIUM";
-    else if (chapter === "25") sector = "CEMENT";
-    else if (chapter === "31") sector = "FERTILISERS";
-    else if (chapter === "28") sector = "HYDROGEN";
-    else if (chapter === "27") sector = "ELECTRICITY";
-    else sector = "DOWNSTREAM_COMPLEX_GOODS";
+  // 1. Mandatory Identity Check
+  if (!caseData.exporterIdentity.legalName.value) {
+    addGap(
+      "Exporter Legal Corporate Profile",
+      "BLOCKER",
+      "Exporter credentials must match the shipping commercial invoice to establish provenance.",
+      "Corporate Registry or tax certification statement",
+      "Provide official exporter legal name.",
+      true
+    );
+  }
+  
+  if (!caseData.importerIdentity.eoriNumber.value) {
+    addGap(
+      "Declarant EORI Reference",
+      "BLOCKER",
+      "The EU buyer cannot submit the data packet without a valid declarant registration code.",
+      "EU Customs Tariff authorization profile",
+      "Provide EORI number.",
+      true
+    );
   }
 
-  // Validate CN scope
-  let cnScopeValid = false;
-  if (data.cnCode) {
-    const app = determineApplicability({
-      cnCode: data.cnCode,
-      totalMassTonnes: Number(data.productionVolume || 0),
-      role: data.role || "IMPORTER",
-    });
-    cnScopeValid = app.isApplicable;
-  }
-
-  // Sector-specific fields
-  if (sector === "IRON_AND_STEEL" || sector === "ALUMINIUM" || sector === "DOWNSTREAM_COMPLEX_GOODS") {
-    checkField(data.isComplexGood);
-    if (data.isComplexGood) {
-      checkField(data.precursorDirectEmissions);
-      checkField(data.precursorIndirectEmissions);
-    }
-  }
-
-  if (data.hasActualData) {
-    checkField(data.directEmissions);
-    checkField(data.electricityConsumed);
-    checkField(data.gridEmissionFactor);
-  }
-
-  if (data.carbonPricePaid > 0) {
-    checkField(data.carbonPricePaid);
-  }
-
-  const dataCompletenessPercentage = totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
-
-  // Evidence Gap Assessment
-  if (!hasExporterName) {
-    gaps.push({
-      itemName: "Exporter Legal Corporate Profile",
-      severity: "Critical",
-      whyItMatters: "Exporter credentials must match the shipping commercial invoice to establish provenance.",
-      whereToObtain: "Corporate Registry or tax certification statement.",
-      acceptableSubstitute: "Trade association registration license.",
-      blocksPayment: true,
-      blocksSealing: true,
-    });
-  }
-
-  if (!hasEori) {
-    gaps.push({
-      itemName: "Declarant EORI Reference",
-      severity: "Critical",
-      whyItMatters: "The EU buyer cannot submit the data packet without a valid declarant registration code.",
-      whereToObtain: "EU Customs Tariff authorization profile or EORI registry.",
-      acceptableSubstitute: "Authorized agent representation letter.",
-      blocksPayment: true,
-      blocksSealing: true,
-    });
-  }
-
-  if (!cnScopeValid) {
-    gaps.push({
-      itemName: "CBAM Applicable Goods Scope Classification",
-      severity: "Critical",
-      whyItMatters: "The provided CN classification code is not subject to current carbon border tax regulations.",
-      whereToObtain: "Customs declaration documents, commercial invoices, or tariff code registries.",
-      acceptableSubstitute: "Supplier material test classification files.",
-      blocksPayment: true,
-      blocksSealing: true,
-    });
-  }
-
-  if (!hasInstallationName) {
-    gaps.push({
-      itemName: "Installation Facility Profile",
-      severity: "Critical",
-      whyItMatters: "Direct process emissions must be anchored to a specific production facility.",
-      whereToObtain: "Production permit licenses or factory registry statement.",
-      acceptableSubstitute: "ISO 14001 or equivalent environmental management certificate.",
-      blocksPayment: true,
-      blocksSealing: true,
-    });
-  }
-
-  if (!hasProductionVolume) {
-    gaps.push({
-      itemName: "Installation Net Production Mass Volume",
-      severity: "Critical",
-      whyItMatters: "Embedded specific emissions ratios are calculated by dividing emissions over total net production volume.",
-      whereToObtain: "Signed plant output statistics logs or ERP records.",
-      acceptableSubstitute: "Independent production report statements.",
-      blocksPayment: true,
-      blocksSealing: true,
-    });
-  }
-
-  if (data.hasActualData && !data.isVerified) {
-    gaps.push({
-      itemName: "Accredited Independent Verification Report",
-      severity: "Warning",
-      whyItMatters: "Unverified actual emissions data triggers verification warnings under EU Registry guidelines.",
-      whereToObtain: "Contract an accredited environmental verifier for site inspection audits.",
-      acceptableSubstitute: "National grid/agency signed energy and emission receipts.",
-      blocksPayment: false,
-      blocksSealing: false,
-    });
-  }
-
-  if (data.isComplexGood && (!data.precursorDirectEmissions && !data.precursorIndirectEmissions)) {
-    gaps.push({
-      itemName: "Precursor Materials Declaration Sheet",
-      severity: "Critical",
-      whyItMatters: "Complex goods require input material trace records to prevent carbon omission leaks.",
-      whereToObtain: "Ask suppliers for direct precursor declarations or material supply invoices.",
-      acceptableSubstitute: "Official default values mapped to precursors category.",
-      blocksPayment: true,
-      blocksSealing: true,
-    });
-  }
-
-  if (data.carbonPricePaid > 0) {
-    gaps.push({
-      itemName: "Carbon Pricing Scheme Payment Proof",
-      severity: "Warning",
-      whyItMatters: "Claimed price deductions must be supported by official receipts of carbon tax payments.",
-      whereToObtain: "Ministry of Finance receipts, local ETS trade auction clearing statements.",
-      acceptableSubstitute: "Environmental tax clearance certificate.",
-      blocksPayment: false,
-      blocksSealing: false,
-    });
-
-    if (!data.isVerified) {
-      gaps.push({
-        itemName: "Verified Carbon Price Evidence",
-        severity: "Warning",
-        whyItMatters: "Unverified carbon price paid evidence cannot be applied to reduce CBAM certificates due until verified by an accredited independent verifier.",
-        whereToObtain: "Contract an accredited environmental verifier for site inspection audits.",
-        acceptableSubstitute: "Local tax clearance certificate.",
-        blocksPayment: false,
-        blocksSealing: false,
-      });
-    }
-  }
-
-  const criticalGaps = gaps.filter((g) => g.blocksPayment);
-  const sealingGaps = gaps.filter((g) => g.blocksSealing);
-
-  const isEligibleForPayment = criticalGaps.length === 0;
-  const isEligibleForSealing = sealingGaps.length === 0;
-
-  // Determine readiness status state
-  let status: ReadinessStatus = "DRAFT";
-  if (gaps.length > 0) {
-    status = isEligibleForPayment ? "PAYMENT_ELIGIBLE" : "DATA_INCOMPLETE";
+  // 2. CN Code and Scope
+  if (caseData.goods.length === 0) {
+    addGap(
+      "Products Declaration",
+      "BLOCKER",
+      "At least one imported good must be declared.",
+      "Customs Declaration",
+      "Add an imported good with a valid CN Code.",
+      true
+    );
   } else {
-    status = "REPORT_SEAL_ELIGIBLE";
+    for (const good of caseData.goods) {
+      if (!good.cnCode.value) {
+        addGap(
+          "CN Code",
+          "BLOCKER",
+          "A valid 8-digit CN code is required for sector classification.",
+          "Customs Declaration",
+          "Provide an 8-digit CN code.",
+          true
+        );
+      }
+      if (!good.productionVolume.value || Number(good.productionVolume.value) <= 0) {
+        addGap(
+          "Net Production Mass Volume",
+          "BLOCKER",
+          "Specific emissions are calculated by dividing total emissions over total net production volume.",
+          "Signed plant output statistics logs",
+          "Provide positive production volume.",
+          true
+        );
+      }
+    }
   }
 
-  if (!cnScopeValid) {
-    status = "BLOCKED";
+  // 3. Installation
+  if (!caseData.installation.name.value) {
+    addGap(
+      "Installation Facility Profile",
+      "BLOCKER",
+      "Direct process emissions must be anchored to a specific production facility.",
+      "Production permit licenses",
+      "Provide installation name.",
+      true
+    );
+  }
+  
+  if (!caseData.installation.productionRoute.value) {
+    addGap(
+      "Production Route Technology",
+      "BLOCKER",
+      "The production route determines the exact system boundaries and formulas applied.",
+      "Technical plant specification",
+      "Select a production route.",
+      true
+    );
   }
 
-  const missingEvidenceCount = gaps.length;
-  const evidenceCompletenessPercentage = gaps.length > 0 ? Math.round(((8 - gaps.length) / 8) * 100) : 100;
+  // 4. Emissions Evidence Traceability
+  if (!caseData.directEmissions.value && caseData.directEmissions.value !== 0) {
+    addGap(
+      "Direct Emissions Data",
+      "BLOCKER",
+      "Direct emissions are required for all sectors.",
+      "Actual verified data or standard default values",
+      "Enter direct emissions or select default values pathway.",
+      true
+    );
+  } else if (caseData.directEmissions.sourceType === "ESTIMATED") {
+    addGap(
+      "Estimated Direct Emissions",
+      "CRITICAL",
+      "Estimates are strictly prohibited by the CBAM regulation for final reporting.",
+      "Primary monitoring data",
+      "Replace estimates with primary monitoring data.",
+      false
+    );
+  }
+
+  // Check evidence lineage
+  if (caseData.evidenceRegister.length === 0) {
+    addGap(
+      "Evidence Register Coverage",
+      "CRITICAL",
+      "An audit-ready dossier requires verifiable document references for its inputs.",
+      "Source documents (invoices, lab reports, declarations)",
+      "Upload or link at least one primary evidence document.",
+      false
+    );
+  }
+
+  // 5. Calculate Statuses
+  const criticalBlockers = gaps.filter(g => g.isBlocking || g.severity === "BLOCKER");
+  
+  let status: VerificationReadinessStatus = "NOT_READY";
+  let isEligibleForSealing = false;
+
+  if (criticalBlockers.length > 0) {
+    status = "NOT_READY";
+    isEligibleForSealing = false;
+  } else if (gaps.length > 0) {
+    status = "READY_WITH_OPEN_ITEMS";
+    // Can technically seal if no blockers exist
+    isEligibleForSealing = true;
+  } else {
+    // Only achieve independent verification readiness if zero gaps exist
+    status = "READY_FOR_INDEPENDENT_VERIFICATION";
+    isEligibleForSealing = true;
+  }
+  
+  const completenessScore = Math.max(0, 100 - gaps.reduce((acc, g) => acc + SEVERITY_WEIGHTS[g.severity], 0));
+  const completenessPercentage = criticalBlockers.length > 0 ? 0 : completenessScore;
 
   return {
     status,
-    sector,
-    dataCompletenessPercentage,
-    evidenceCompletenessPercentage,
-    missingEvidenceCount,
-    gapAnalysis: gaps,
-    isEligibleForPayment,
+    criticalBlockers,
+    allGaps: gaps,
     isEligibleForSealing,
-    remediationMessage: isEligibleForPayment
-      ? "Case data checks complete. Ready for entitlement sealing prepayment preview."
-      : `Missing critical inputs: ${criticalGaps.map((g) => g.itemName).join(", ")}. Please complete these fields.`,
+    completenessPercentage
   };
 }
