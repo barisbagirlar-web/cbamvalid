@@ -216,4 +216,59 @@ describe("Production Security & Foundation Audits", () => {
     // and require Admin credentials on the server side which are unavailable to browser callers.
     expect(createEntitlement).toBeDefined();
   });
+
+  it("11. End-to-end sandbox payment webhook lifecycle with idempotency", async () => {
+    const { processWebhookEvent } = await import("../../functions/src/commerce/webhook-processor");
+    
+    // We mock firestore runTransaction and get/set calls
+    const mockDbTransaction: any = {
+      get: vi.fn()
+        // 1. First writeLedgerEntry call checks existing idempotency key -> empty snapshot
+        .mockResolvedValueOnce({ empty: true })
+        // 2. First writeLedgerEntry fetch latest ledger entry -> empty snapshot
+        .mockResolvedValueOnce({ empty: true })
+        // 3. transitionOrderStatus fetches order (PAID transition) -> active order document
+        .mockResolvedValueOnce({ exists: true, data: () => ({ status: "PENDING" }) })
+        // 4. createEntitlement writeLedgerEntry checks existing key -> empty snapshot
+        .mockResolvedValueOnce({ empty: true })
+        // 5. createEntitlement writeLedgerEntry fetch latest entry -> empty snapshot
+        .mockResolvedValueOnce({ empty: true })
+        // 6. transitionOrderStatus fetches order (ENTITLED transition) -> active order document
+        .mockResolvedValueOnce({ exists: true, data: () => ({ status: "PAID" }) }),
+      set: vi.fn(),
+      update: vi.fn(),
+    };
+
+    // Mock adminDb runTransaction to run our mockDbTransaction callback
+    const { adminDb } = await import("../../functions/src/firebase-admin");
+    adminDb.runTransaction = vi.fn().mockImplementation(async (callback) => {
+      return await callback(mockDbTransaction);
+    });
+
+    const event = {
+      eventId: "evt_sandbox_payment_123",
+      eventType: "transaction.completed",
+      data: {
+        id: "txn_sandbox_payment_123",
+        status: "completed",
+        currencyCode: "USD",
+        customData: {
+          uid: "test-user-uid",
+          orderId: "ord_test_123",
+          productCode: "CBAM_EXPORTER_FINAL_REPORT",
+        },
+        items: [
+          {
+            quantity: 1,
+          }
+        ]
+      }
+    };
+
+    await processWebhookEvent(event);
+
+    // Assert that the ledger entries and entitlements are set and updated
+    expect(mockDbTransaction.set).toHaveBeenCalledTimes(3); // 2 ledger entries + 1 entitlement document
+    expect(mockDbTransaction.update).toHaveBeenCalledTimes(2); // Order transition to PAID + transition to ENTITLED
+  });
 });
