@@ -40,10 +40,10 @@ jobs:
           cache: npm
 
       - name: Install locked project dependencies
-        run: npm ci
+        run: npm ci --no-audit --no-fund --loglevel=error
 
       - name: Install pinned property-test runner without changing the lockfile
-        run: npm install --no-save --package-lock=false --ignore-scripts fast-check@4.9.0 tsx@4.20.6
+        run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund --loglevel=error fast-check@4.9.0 tsx@4.20.6
 
       - name: Verify mathematical invariants
-        run: npx tsx scripts/verify-calculation-properties.mjs
+        run: npx --no-install tsx scripts/verify-calculation-properties.mjs
