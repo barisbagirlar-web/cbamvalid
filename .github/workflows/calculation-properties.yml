@@ -46,4 +46,19 @@ jobs:
         run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund --loglevel=error fast-check@4.9.0 tsx@4.20.6
 
       - name: Verify mathematical invariants
-        run: npx --no-install tsx scripts/verify-calculation-properties.mjs
+        shell: bash
+        run: |
+          set +e
+          npx --no-install tsx scripts/verify-calculation-properties.mjs > property-test.log 2>&1
+          status=$?
+          cat property-test.log
+          exit "$status"
+
+      - name: Upload property-test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: calculation-properties-${{ github.sha }}
+          path: property-test.log
+          if-no-files-found: error
+          retention-days: 14
