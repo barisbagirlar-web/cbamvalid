@@ -1,6 +1,16 @@
 import assert from "node:assert/strict";
 import fc from "fast-check";
-import { executeDeterministicCalculation } from "../lib/cbam/calculation/calculation-engine.ts";
+import * as calculationEngineModule from "../lib/cbam/calculation/calculation-engine.ts";
+
+const executeDeterministicCalculation =
+  calculationEngineModule.executeDeterministicCalculation ??
+  calculationEngineModule.default?.executeDeterministicCalculation;
+
+assert.equal(
+  typeof executeDeterministicCalculation,
+  "function",
+  "Calculation engine export is unavailable",
+);
 
 const round4 = (value) => Number(value.toFixed(4));
 const finiteNonNegative = (value) => Number.isFinite(value) && value >= 0;
