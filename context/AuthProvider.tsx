@@ -31,25 +31,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = onAuthStateChanged(
       auth,
       async (currentUser) => {
-        setUser(currentUser);
-        setError(null);
         if (currentUser) {
           try {
             const tokenResult = await currentUser.getIdTokenResult();
             setClaims(tokenResult.claims);
-            // Set __session cookie for Next.js Middleware
-            const token = await currentUser.getIdToken();
-            const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
-            document.cookie = `__session=${token}; path=/; max-age=3600; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+            
+            // Only exchange token if it was authenticated recently (within 5 minutes)
+            // and has not already been established via finalizeServerSession.
+            const authTimeMs = Date.parse(tokenResult.authTime);
+            const nowMs = Date.now();
+            const isFresh = nowMs - authTimeMs < 5 * 60 * 1000;
+            const alreadyEstablished = typeof window !== "undefined" && (window as any).__sessionEstablished;
+            
+            if (isFresh && !alreadyEstablished) {
+              const token = await currentUser.getIdToken(true);
+              await fetch("/api/auth/session", {
+                method: "POST",
+                headers: {
+                  "content-type": "application/json",
+                },
+                body: JSON.stringify({ idToken: token }),
+              });
+            }
           } catch (e) {
-            console.error("Failed to fetch claims:", e);
+            console.error("Failed to establish auth session:", e);
             setClaims(null);
-            document.cookie = `__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
           }
         } else {
           setClaims(null);
-          document.cookie = `__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
         }
+        setUser(currentUser);
+        setError(null);
         setLoading(false);
       },
       (err) => {
@@ -64,8 +76,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOutUser = async () => {
     try {
+      if (typeof window !== "undefined") {
+        delete (window as any).__sessionEstablished;
+      }
+      await fetch("/api/auth/session", { method: "DELETE" });
       await signOut(auth);
-      document.cookie = `__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
     } catch (err: any) {
       console.error("Firebase signOut error:", err);
     } finally {

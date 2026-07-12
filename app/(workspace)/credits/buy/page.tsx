@@ -103,20 +103,21 @@ export default function BuyCreditsPage() {
     setError("");
 
     try {
-      const idToken = await user.getIdToken();
-      const res = await fetch("/api/checkout/cbam", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${idToken}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ slug })
-      });
-
-      const data = await readApiResponse<{ transactionId: string }>(res);
+      const orderId = `ord_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      const productCode = slug === "cbam-5-reports" ? "CBAM_CREDIT_PACK_5" : "CBAM_EXPORTER_FINAL_REPORT";
 
       paddle.Checkout.open({
-        transactionId: data.transactionId,
+        items: [
+          {
+            priceId: pkg.paddlePriceId,
+            quantity: 1,
+          }
+        ],
+        customData: {
+          uid: user.uid,
+          productCode: productCode,
+          orderId: orderId,
+        },
         settings: {
           displayMode: "overlay",
           theme: "light",

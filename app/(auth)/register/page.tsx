@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { firebaseAuth as auth } from "@/lib/firebase/client";
 import { resolvePostLoginRoute } from "@/lib/auth/post-login-routing";
+import { finalizeServerSession } from "@/lib/auth/finalize-server-session";
 
 import { Loader2 } from "lucide-react";
 
@@ -32,6 +33,8 @@ export default function RegisterPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+
+      await finalizeServerSession(user);
 
       const route = await resolvePostLoginRoute(user);
       window.location.replace(route);
@@ -64,6 +67,9 @@ export default function RegisterPage() {
         prompt: "select_account",
       });
       const result = await signInWithPopup(auth, provider);
+
+      await finalizeServerSession(result.user);
+
       const route = await resolvePostLoginRoute(result.user);
       window.location.replace(route);
     } catch (err: any) {

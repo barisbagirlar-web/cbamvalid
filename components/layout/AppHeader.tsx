@@ -127,7 +127,7 @@ export function AppHeader() {
               <User className="w-4 h-4 text-muted" /> Account
             </Link>
             {!isAdmin && (
-              <Link href="/credits" className="flex items-center gap-3 px-4 py-2 text-[15px] text-foreground hover:bg-border/30 transition-colors outline-none focus-visible:bg-border/30">
+              <Link href="/credits/buy" className="flex items-center gap-3 px-4 py-2 text-[15px] text-foreground hover:bg-border/30 transition-colors outline-none focus-visible:bg-border/30">
                 <CreditCard className="w-4 h-4 text-muted" /> Credits & Billing
               </Link>
             )}
@@ -166,7 +166,7 @@ export function AppHeader() {
         {/* RIGHT: Actions - no wrap */}
         <div className="flex-shrink-0 flex items-center gap-4 lg:gap-5">
           {!isAdmin && (
-            <Link href="/credits" className="hidden lg:flex items-center gap-2 bg-surface hover:bg-border/30 transition-colors text-foreground px-4 py-1.5 rounded-full border border-border outline-none focus-visible:ring-2 focus-visible:ring-accent">
+            <Link href="/credits/buy" className="hidden lg:flex items-center gap-2 bg-surface hover:bg-border/30 transition-colors text-foreground px-4 py-1.5 rounded-full border border-border outline-none focus-visible:ring-2 focus-visible:ring-accent">
               <span className="text-[13px] font-medium text-muted">{availableCredits} credits &middot; <span className="text-foreground">{availableUses} uses</span></span>
             </Link>
           )}
@@ -211,7 +211,7 @@ export function AppHeader() {
           <nav className="flex flex-col py-2" aria-label="Mobile Application Navigation">
             {!isAdmin && (
               <div className="px-6 py-4 mb-2 bg-accent/5 border-b border-border">
-                <Link href="/credits" className="flex items-center justify-between outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm">
+                <Link href="/credits/buy" className="flex items-center justify-between outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm">
                   <span className="text-[15px] font-semibold text-muted uppercase tracking-wider">Credits & Uses</span>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted">{availableCredits} credits</span>

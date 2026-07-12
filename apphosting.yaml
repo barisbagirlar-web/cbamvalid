@@ -61,16 +61,11 @@ env:
       - RUNTIME
 
   - variable: PADDLE_API_KEY
-    value: "pdl_sdbx_apikey_01kx439q4j5644r458629x7vjr_3pSFnJzNMX2tf0YfnmmJF6_Afi"
-    availability:
-      - RUNTIME
-
-  - variable: PADDLE_WEBHOOK_SECRET_KEY
-    value: "pws_sandbox_xxxxxx"
+    secret: PADDLE_API_KEY
     availability:
       - RUNTIME
 
   - variable: PADDLE_WEBHOOK_SECRET
-    value: "pws_sandbox_xxxxxx"
+    secret: PADDLE_WEBHOOK_SECRET
     availability:
       - RUNTIME

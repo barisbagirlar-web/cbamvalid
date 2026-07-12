@@ -5,6 +5,9 @@ import { PDFDocument, StandardFonts, rgb, degrees } from "pdf-lib";
 import { createCanvas, loadImage } from "canvas";
 import crypto from "crypto";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("__session")?.value;
@@ -15,7 +18,7 @@ export async function GET(request: Request) {
 
   let decodedClaims;
   try {
-    decodedClaims = await adminAuth.verifyIdToken(sessionCookie, true);
+    decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
   } catch (err) {
     return NextResponse.redirect(new URL("/login?next=/sample-dossier/download", request.url));
   }

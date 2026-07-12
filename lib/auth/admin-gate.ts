@@ -12,7 +12,7 @@ export async function requireSuperAdmin(): Promise<DecodedIdToken> {
   }
 
   try {
-    const decodedClaims = await adminAuth.verifyIdToken(sessionCookie, true);
+    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
 
     if (
       !decodedClaims.email_verified ||

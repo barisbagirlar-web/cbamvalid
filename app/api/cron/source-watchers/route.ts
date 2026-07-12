@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import crypto from "crypto";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function hashContent(content: string) {

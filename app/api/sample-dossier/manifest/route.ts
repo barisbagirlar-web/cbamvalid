@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const doc = await adminDb.collection("sample_dossiers").doc("v1").get();

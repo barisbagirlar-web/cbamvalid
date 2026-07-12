@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { getAdminStorageBucket } from "@/lib/firebase/admin";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request, { params }: { params: Promise<{ page: string }> }) {
   try {
     const resolvedParams = await params;

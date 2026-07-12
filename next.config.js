@@ -84,6 +84,11 @@ const nextConfig = {
     // Handling www redirect. (Requires App Hosting / Cloudflare to properly resolve www.cbamvalid.com first)
     return [
       {
+        source: '/credits',
+        destination: '/credits/buy',
+        permanent: true,
+      },
+      {
         source: '/:path*',
         has: [
           {

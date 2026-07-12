@@ -1,34 +1,32 @@
-import { adminAuth } from "@/lib/firebase/admin";
+import { requireFirebaseSession, AuthError } from "@/lib/auth/require-firebase-session";
 import { getCreditPackageBySlug } from "@/lib/billing/catalog";
 import { getPaddleConfig } from "@/lib/billing/paddle-config.server";
 import { apiSuccess, apiFailure } from "@/lib/http/api-response";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
-    // 1. Validate Paddle runtime config
+    // 1. Validate session authentication first
+    let decoded;
+    try {
+      decoded = await requireFirebaseSession();
+    } catch (authError: any) {
+      if (authError instanceof AuthError) {
+        return apiFailure(authError.code, authError.message, authError.status);
+      }
+      console.error("[PADDLE CHECKOUT AUTH ERROR]:", authError.message || authError);
+      return apiFailure("UNAUTHORIZED", "Session expired or authentication failed.", 401);
+    }
+
+    // 2. Validate Paddle runtime config
     let paddleConfig;
     try {
       paddleConfig = getPaddleConfig();
     } catch (configError: any) {
       console.error("[PADDLE CHECKOUT CONFIG ERROR]:", configError.message || configError);
       return apiFailure("PADDLE_CONFIGURATION_ERROR", "Payment system configuration is invalid.", 500);
-    }
-
-    // 2. Validate session authentication
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return apiFailure("UNAUTHORIZED", "Missing or invalid session authorization.", 401);
-    }
-    const token = authHeader.split("Bearer ")[1];
-    
-    let decoded;
-    try {
-      decoded = await adminAuth.verifyIdToken(token);
-    } catch (authError: any) {
-      console.error("[PADDLE CHECKOUT AUTH ERROR]:", authError.message || authError);
-      return apiFailure("UNAUTHORIZED", "Session expired or authentication failed.", 401);
     }
 
     // 3. Validate request JSON payload
@@ -80,6 +78,13 @@ export async function POST(request: Request) {
     if (!paddleRes.ok) {
       const errorText = await paddleRes.text();
       console.error("[PADDLE API TRANSACTION FAILURE]:", paddleRes.status, errorText);
+      if (paddleRes.status === 403) {
+        return apiFailure(
+          "PADDLE_TRANSACTION_CREATE_FAILED",
+          "Paddle API key is not authorized to create transactions. Verify key permissions in Paddle Dashboard.",
+          403
+        );
+      }
       return apiFailure("PADDLE_TRANSACTION_CREATE_FAILED", "Checkout could not be started.", 500);
     }
 
