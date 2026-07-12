@@ -74,10 +74,9 @@ fc.assert(
 
       assert.ok(numericOutputs.every(finiteNonNegative), "Outputs must be finite and non-negative");
 
-      const expectedTotal = round4(
-        direct + electricity * factor + precursorDirect + precursorIndirect,
-      );
-      const expectedSpecific = round4(expectedTotal / productionVolume);
+      const unroundedTotal = direct + electricity * factor + precursorDirect + precursorIndirect;
+      const expectedTotal = round4(unroundedTotal);
+      const expectedSpecific = round4(unroundedTotal / productionVolume);
 
       assert.equal(first.totalEmbeddedEmissions, expectedTotal, "Total emissions must reconcile");
       assert.equal(first.specificEmbeddedEmissions, expectedSpecific, "Specific emissions must reconcile");
