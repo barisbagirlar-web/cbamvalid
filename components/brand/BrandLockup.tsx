@@ -12,7 +12,7 @@ export function BrandLockup() {
       <img 
         src={SITE_CONFIG.logo.lockup} 
         alt={`${SITE_CONFIG.name} Logo`} 
-        className="h-[34px] md:h-[38px] w-auto object-contain block" 
+        className="h-[38px] md:h-[44px] w-auto object-contain block" 
       />
     </Link>
   );

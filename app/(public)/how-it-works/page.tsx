@@ -67,13 +67,6 @@ export default function HowItWorksPage() {
               className="w-full h-full object-cover"
             >
               <source src="/media/cbamvalid-product-walkthrough.mp4" type="video/mp4" />
-              <track
-                kind="captions"
-                src="/media/cbamvalid-product-walkthrough.en.vtt"
-                srcLang="en"
-                label="English"
-                default
-              />
               <p className="text-white p-4">Your browser does not support the video tag.</p>
             </video>
           </div>
