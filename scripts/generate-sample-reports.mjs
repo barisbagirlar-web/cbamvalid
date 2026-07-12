@@ -2,8 +2,8 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { orchestrateCalculation } from "../lib/cbam/engine/calculation-orchestrator.ts";
-import { buildPdfDossier } from "../lib/cbam/report/pdf-builder.ts";
-import { buildXml } from "../lib/cbam/report/xml-builder.ts";
+import { buildPdfDossier } from "../functions/src/cbam/report/pdf-builder.ts";
+import { buildXml } from "../functions/src/cbam/report/xml-builder.ts";
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 const rootDir = path.resolve(__dirname, "..");
