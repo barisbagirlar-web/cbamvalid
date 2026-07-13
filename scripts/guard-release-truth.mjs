@@ -3,6 +3,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const failures = [];
+const CURRENT_GUARD = path.normalize("scripts/guard-release-truth.mjs");
 
 function read(relativePath) {
   const absolutePath = path.join(root, relativePath);
@@ -18,10 +19,13 @@ function scanTextFiles(relativeDirectory, visitor) {
   if (!fs.existsSync(directory)) return;
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     if (["node_modules", ".git", ".next", "lib"].includes(entry.name)) continue;
-    const relativePath = path.join(relativeDirectory, entry.name);
+    const relativePath = path.normalize(path.join(relativeDirectory, entry.name));
     if (entry.isDirectory()) {
       scanTextFiles(relativePath, visitor);
-    } else if (/\.(?:ts|tsx|js|mjs|cjs|json|ya?ml|md|txt|rules)$/.test(entry.name)) {
+    } else if (
+      relativePath !== CURRENT_GUARD &&
+      /\.(?:ts|tsx|js|mjs|cjs|json|ya?ml|md|txt|rules)$/.test(entry.name)
+    ) {
       visitor(relativePath, fs.readFileSync(path.join(root, relativePath), "utf8"));
     }
   }
@@ -88,6 +92,7 @@ const prohibitedCredentialPatterns = [
 for (const directory of ["app", "components", "context", "functions/src", "lib", "scripts", ".github", "docs"]) {
   scanTextFiles(directory, (filePath, content) => {
     for (const [pattern, message] of prohibitedCredentialPatterns) {
+      pattern.lastIndex = 0;
       if (pattern.test(content)) failures.push(`${filePath}: ${message}`);
     }
   });
