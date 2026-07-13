@@ -35,11 +35,18 @@ env:
       - BUILD
       - RUNTIME
 
-  # Firebase Admin SDK — mounted from Secret Manager at runtime
-  # Never stored in plaintext; bound via IAM to App Hosting service account
+  # Firebase Admin SDK — mounted from Secret Manager at runtime.
   - variable: FIREBASE_ADMIN_SERVICE_ACCOUNT_B64
     secret: FIREBASE_ADMIN_SERVICE_ACCOUNT_B64
     availability:
+      - RUNTIME
+
+  # Public Paddle mode configuration. The browser token is intentionally
+  # separated from the private server API key.
+  - variable: NEXT_PUBLIC_PADDLE_ENV
+    value: "sandbox"
+    availability:
+      - BUILD
       - RUNTIME
 
   - variable: NEXT_PUBLIC_PADDLE_SANDBOX
@@ -55,17 +62,18 @@ env:
       - RUNTIME
 
   - variable: NEXT_PUBLIC_PADDLE_CLIENT_TOKEN
-    value: "pdl_sdbx_apikey_01kx70bp0qr6g41532xq3kwyq8_QyGKxHddW6b1HfFG9zxGrC_AvQ"
+    secret: PADDLE_CLIENT_TOKEN
     availability:
       - BUILD
       - RUNTIME
 
+  # Private Paddle credentials. Never store their values in this repository.
   - variable: PADDLE_API_KEY
-    value: "pdl_sdbx_apikey_01kx439q4j5644r458629x7vjr_3pSFnJzNMX2tf0YfnmmJF6_Afi"
+    secret: PADDLE_API_KEY
     availability:
       - RUNTIME
 
   - variable: PADDLE_WEBHOOK_SECRET
-    value: "pws_sandbox_xxxxxx"
+    secret: PADDLE_WEBHOOK_SECRET
     availability:
       - RUNTIME
