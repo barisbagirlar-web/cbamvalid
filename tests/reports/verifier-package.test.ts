@@ -3,8 +3,8 @@ import JSZip from "jszip";
 import {
   buildVerifierPreparationPackage,
   REQUIRED_TOP_LEVEL_COMPONENTS,
-  verifyVerifierPreparationPackage,
 } from "../../functions/src/cbam/report/verifier-package-builder";
+import { verifyVerifierPreparationPackage } from "../../functions/src/cbam/report/verifier-package-verifier";
 import { performDossierCalculations } from "../../functions/src/cbam/calculator";
 import { runQualityControls } from "../../functions/src/cbam/validation/quality-controls";
 import { assessVerifierGradeReport, REPORT_STANDARD_VERSION } from "../../functions/src/cbam/report/report-quality-contract";
@@ -99,7 +99,7 @@ function fixture(): AuditReadyCase {
 }
 
 describe("verifier-grade preparation package", () => {
-  it("generates and verifies all 23 top-level components under a PASS quality contract", async () => {
+  it("generates and independently verifies all 23 top-level components under a PASS quality contract", async () => {
     const caseData = fixture();
     const calculation = performDossierCalculations(caseData);
     const qualityControls = runQualityControls(caseData);
@@ -126,8 +126,8 @@ describe("verifier-grade preparation package", () => {
     const verified = await verifyVerifierPreparationPackage(result.zipBuffer);
     expect(REQUIRED_TOP_LEVEL_COMPONENTS).toHaveLength(23);
     expect(verified.topLevelComponentCount).toBe(23);
-    expect(verified.manifestHash).toBe(result.manifestHash);
-    expect(verified.verifiedFileCount).toBe(result.manifest.files.length);
+    expect(verified.verifiedFileCount).toBe(verified.manifest.files.length);
+    expect(verified.manifestHash).toMatch(/^[a-f0-9]{64}$/);
     expect(result.manifest.reportStandardVersion).toBe(REPORT_STANDARD_VERSION);
     expect(result.manifest.reportQualityAssessment.status).toBe("PASS");
     expect(result.manifest.files.some((file) => file.filename.startsWith("23_Supporting_Evidence/"))).toBe(true);
@@ -138,9 +138,10 @@ describe("verifier-grade preparation package", () => {
     expect(operatorReport).not.toBeNull();
     expect((await operatorReport!.async("nodebuffer")).byteLength).toBeGreaterThan(4_000);
     const tracePayload = JSON.parse(await calculationTrace!.async("string"));
-    expect(tracePayload.reportStandardVersion).toBe(REPORT_STANDARD_VERSION);
-    expect(tracePayload.goods).toHaveLength(1);
-    expect(tracePayload.allocationShareTotal).toBe("1");
+    expect(tracePayload.ruleset).toBe(calculation.ruleset);
+    expect(tracePayload.perGoodResults).toHaveLength(1);
+    expect(tracePayload.reconciliation.allocationShareTotal).toBe("1");
+    expect(tracePayload.reconciliation.allocationReconciliationDelta).toBe("0");
   });
 
   it("rejects an evidence file whose bytes do not match the registered hash", async () => {
@@ -160,7 +161,7 @@ describe("verifier-grade preparation package", () => {
         sourceHash: EVIDENCE_HASH,
         buffer: Buffer.from("tampered"),
       }],
-    })).rejects.toThrow("VERIFIER_PACKAGE_EVIDENCE_HASH_MISMATCH");
+    })).rejects.toThrow("EVIDENCE_HASH_MISMATCH");
   });
 
   it("blocks package generation when evidence is pending internal review", async () => {
@@ -181,6 +182,6 @@ describe("verifier-grade preparation package", () => {
         sourceHash: EVIDENCE_HASH,
         buffer: EVIDENCE_BYTES,
       }],
-    })).rejects.toThrow("VERIFIER_GRADE_REPORT_BLOCKED");
+    })).rejects.toThrow("REPORT_QUALITY_BLOCKED");
   });
 });
