@@ -1,38 +1,133 @@
-name: Temporary Source Snapshot
+name: Temporary Type Repair
 
 on:
   pull_request:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  snapshot:
-    name: Export repair source files
+  repair:
+    name: Apply deterministic TypeScript repairs
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET_BRANCH: feat/verifier-grade-report-platform-v1
+      REPOSITORY: ${{ github.repository }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          persist-credentials: false
-
-      - name: Stage repair source files
+      - name: Apply exact source repairs through GitHub Contents API
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p repair-source/app repair-source/functions/report repair-source/functions/validation repair-source/lib/validation
-          cp 'app/(workspace)/cases/[caseId]/CaseWizardClient.tsx' repair-source/app/CaseWizardClient.tsx
-          cp functions/src/cbam/report/verifier-package-builder.ts repair-source/functions/report/verifier-package-builder.ts
-          cp functions/src/cbam/validation/quality-controls.ts repair-source/functions/validation/quality-controls.ts
-          cp lib/cbam/validation/quality-controls.ts repair-source/lib/validation/quality-controls.ts
-          cp lib/cbam/validation/readiness-assessor.ts repair-source/lib/validation/readiness-assessor.ts
+          python - <<'PY'
+          import base64
+          import json
+          import os
+          from urllib.parse import quote
+          from urllib.request import Request, urlopen
 
-      - name: Upload repair source snapshot
-        uses: actions/upload-artifact@v4
-        with:
-          name: temporary-repair-source-${{ github.sha }}
-          path: repair-source
-          if-no-files-found: error
-          retention-days: 1
+          repository = os.environ["REPOSITORY"]
+          branch = os.environ["TARGET_BRANCH"]
+          token = os.environ["GH_TOKEN"]
+          api = f"https://api.github.com/repos/{repository}/contents"
+
+          def request(method: str, path: str, payload=None):
+              url = f"{api}/{quote(path, safe='/')}"
+              if method == "GET":
+                  url += f"?ref={quote(branch, safe='')}"
+              data = None if payload is None else json.dumps(payload).encode("utf-8")
+              req = Request(url, data=data, method=method, headers={
+                  "Accept": "application/vnd.github+json",
+                  "Authorization": f"Bearer {token}",
+                  "X-GitHub-Api-Version": "2022-11-28",
+                  "User-Agent": "cbamvalid-type-repair",
+              })
+              with urlopen(req) as response:
+                  return json.load(response)
+
+          def update(path: str, replacements: list[tuple[str, str]], message: str):
+              current = request("GET", path)
+              text = base64.b64decode(current["content"]).decode("utf-8")
+              changed = False
+              for old, new in replacements:
+                  if old in text:
+                      text = text.replace(old, new, 1)
+                      changed = True
+                  elif new not in text:
+                      raise RuntimeError(f"Expected repair anchor missing in {path}: {old[:80]!r}")
+              if not changed:
+                  print(f"UNCHANGED={path}")
+                  return
+              result = request("PUT", path, {
+                  "message": message,
+                  "content": base64.b64encode(text.encode("utf-8")).decode("ascii"),
+                  "sha": current["sha"],
+                  "branch": branch,
+              })
+              print(f"UPDATED={path} COMMIT={result['commit']['sha']}")
+
+          update(
+              "app/(workspace)/cases/[caseId]/CaseWizardClient.tsx",
+              [
+                  (
+                      '  EvidenceRecord,\n} from "@/lib/cbam/schema";',
+                      '  EvidenceRecord,\n  InputDatum,\n} from "@/lib/cbam/schema";'
+                  ),
+                  (
+                      '    const input = datum as {\n      evidenceId?: string;\n      documentReference?: string;\n      sourceType: string;\n      confidenceStatus: string;\n    };',
+                      '    const input = datum as InputDatum;'
+                  ),
+              ],
+              "fix(types): use canonical InputDatum for evidence linkage",
+          )
+
+          update(
+              "functions/src/cbam/report/verifier-package-builder.ts",
+              [
+                  (
+                      "    sections: caseData.methodologyDecisions.map((decision) => ({",
+                      "    sections: caseData.methodologyDecisions.map<PdfSection>((decision) => ({"
+                  ),
+              ],
+              "fix(types): contextually type methodology PDF sections",
+          )
+
+          update(
+              "functions/src/cbam/validation/quality-controls.ts",
+              [
+                  (
+                      '      const paths = [\n        [`precursors.${index}.quantity`, precursor.quantity, "quantity", ["t", "kg", "metric_tonne"]],\n        [`precursors.${index}.directEmissions`, precursor.directEmissions, "direct emissions", ["tCO2e"]],\n        [`precursors.${index}.indirectEmissions`, precursor.indirectEmissions, "indirect emissions", ["tCO2e"]],\n      ] as const;',
+                      '      const paths: Array<[string, InputDatum, string, readonly string[]]> = [\n        [`precursors.${index}.quantity`, precursor.quantity, "quantity", ["t", "kg", "metric_tonne"]],\n        [`precursors.${index}.directEmissions`, precursor.directEmissions, "direct emissions", ["tCO2e"]],\n        [`precursors.${index}.indirectEmissions`, precursor.indirectEmissions, "indirect emissions", ["tCO2e"]],\n      ];'
+                  ),
+              ],
+              "fix(types): widen precursor unit tuples in server QC",
+          )
+
+          update(
+              "lib/cbam/validation/quality-controls.ts",
+              [
+                  (
+                      '      const paths = [\n        [`precursors.${index}.quantity`, precursor.quantity, "quantity", ["t", "kg"]],\n        [`precursors.${index}.directEmissions`, precursor.directEmissions, "direct emissions", ["tCO2e"]],\n        [`precursors.${index}.indirectEmissions`, precursor.indirectEmissions, "indirect emissions", ["tCO2e"]],\n      ] as const;',
+                      '      const paths: Array<[string, InputDatum, string, readonly string[]]> = [\n        [`precursors.${index}.quantity`, precursor.quantity, "quantity", ["t", "kg"]],\n        [`precursors.${index}.directEmissions`, precursor.directEmissions, "direct emissions", ["tCO2e"]],\n        [`precursors.${index}.indirectEmissions`, precursor.indirectEmissions, "indirect emissions", ["tCO2e"]],\n      ];'
+                  ),
+              ],
+              "fix(types): widen precursor unit tuples in client QC",
+          )
+
+          update(
+              "lib/cbam/validation/readiness-assessor.ts",
+              [
+                  (
+                      'import { runQualityControls } from "./quality-controls";',
+                      'import { runQualityControls, type QualityControlResult } from "./quality-controls";'
+                  ),
+                  (
+                      '    .filter((item) => item.status === "BLOCKER" || item.status === "WARNING")',
+                      '    .filter((item): item is QualityControlResult & { status: "BLOCKER" | "WARNING" } =>\n      item.status === "BLOCKER" || item.status === "WARNING"\n    )'
+                  ),
+              ],
+              "fix(types): narrow actionable quality-control findings",
+          )
+          PY
