@@ -1,7 +1,7 @@
 export interface ProductDefinition {
   productCode: string;
   currency: string;
-  expectedUnitAmount: number; // in minor units (e.g. 15000 = $150.00)
+  expectedUnitAmount: number; // minor units: 15000 = USD 150.00
   entitlementType: string;
   entitlementQuantity: number;
   correctionWindowDays: number;
@@ -13,34 +13,22 @@ export interface ProductDefinition {
   paddlePriceIdProduction: string;
 }
 
+export const PREPARATION_PACK_PRODUCT_CODE = "CBAM_CREDIT_PACK_5" as const;
+
 export const PRODUCT_CATALOG: Record<string, ProductDefinition> = {
-  CBAM_EXPORTER_FINAL_REPORT: {
-    productCode: "CBAM_EXPORTER_FINAL_REPORT",
+  [PREPARATION_PACK_PRODUCT_CODE]: {
+    productCode: PREPARATION_PACK_PRODUCT_CODE,
     currency: "USD",
     expectedUnitAmount: 15000,
-    entitlementType: "CBAM_SEALED_DOSSIER",
-    entitlementQuantity: 1,
-    correctionWindowDays: 14,
-    maxCustomsLines: 100,
-    maxInstallations: 1,
-    maxCnCodes: 25,
-    active: true,
-    paddlePriceIdSandbox: process.env.PADDLE_PRICE_ID_SANDBOX || "pri_01j2fxyz...",
-    paddlePriceIdProduction: process.env.PADDLE_PRICE_ID_PRODUCTION || "pri_01j2fabc...",
-  },
-  CBAM_CREDIT_PACK_5: {
-    productCode: "CBAM_CREDIT_PACK_5",
-    currency: "USD",
-    expectedUnitAmount: 15000, // Or whatever the pack costs (150 EUR/USD)
-    entitlementType: "CBAM_SEALED_DOSSIER",
+    entitlementType: "CBAM_SEALED_DOSSIER_VERSION",
     entitlementQuantity: 5,
     correctionWindowDays: 14,
     maxCustomsLines: 100,
     maxInstallations: 1,
     maxCnCodes: 25,
     active: true,
-    paddlePriceIdSandbox: process.env.PADDLE_PRICE_ID_SANDBOX || "pri_01j2fxyz...",
-    paddlePriceIdProduction: process.env.PADDLE_PRICE_ID_PRODUCTION || "pri_01j2fabc...",
+    paddlePriceIdSandbox: process.env.PADDLE_PRICE_ID_SANDBOX || "",
+    paddlePriceIdProduction: process.env.PADDLE_PRICE_ID_PRODUCTION || "",
   },
 } as const;
 
@@ -49,5 +37,7 @@ export function getPriceIdForProduct(productCode: string, isSandbox: boolean): s
   if (!product || !product.active) {
     return null;
   }
-  return isSandbox ? product.paddlePriceIdSandbox : product.paddlePriceIdProduction;
+
+  const priceId = isSandbox ? product.paddlePriceIdSandbox : product.paddlePriceIdProduction;
+  return priceId || null;
 }
