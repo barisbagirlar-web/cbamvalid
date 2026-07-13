@@ -23,6 +23,7 @@ import {
   AuditReadyCase,
   createEmptyInput,
   EvidenceRecord,
+  InputDatum,
 } from "@/lib/cbam/schema";
 import { firebaseStorage } from "@/lib/firebase/client";
 import { saveCase, sealReport } from "@/lib/functions/client";
@@ -129,12 +130,7 @@ function linkEvidenceToFields(root: AuditReadyCase, paths: string[], evidence: E
     if (!datum || typeof datum !== "object" || !("value" in datum)) {
       throw new Error(`Selected field is unavailable: ${path}`);
     }
-    const input = datum as {
-      evidenceId?: string;
-      documentReference?: string;
-      sourceType: string;
-      confidenceStatus: string;
-    };
+    const input = datum as InputDatum;
     input.evidenceId = evidence.evidenceId;
     input.documentReference = evidence.pageReference || evidence.fileName;
     input.sourceType = "PRIMARY";
