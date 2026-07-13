@@ -8,7 +8,7 @@ export const PUBLIC_NAV = [
 ] as const;
 
 export const APP_NAV = [
-  { label: "Dashboard", href: "/dashboard" },
+  { label: "Dashboard", href: "/cbam" },
   { label: "Cases", href: "/cases" },
   { label: "Reports", href: "/reports" },
   { label: "Methodology & Sources", href: "/methodology" }

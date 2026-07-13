@@ -186,16 +186,6 @@ export function AppHeader() {
             </Link>
           )}
 
-          {!isAdmin && (
-            <Link 
-              href="/cases/new" 
-              className="hidden md:inline-flex h-[44px] items-center justify-center gap-2 rounded-md bg-accent px-5 text-[15px] font-medium text-surface transition-colors hover:bg-accent-hover active:bg-accent-active outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Create New Case
-            </Link>
-          )}
-          
           {renderAccountMenu()}
 
           {/* Mobile menu toggle */}
@@ -226,13 +216,6 @@ export function AppHeader() {
                       <span className="text-sm text-muted">No Active Pack</span>
                     )}
                   </div>
-                </Link>
-                <Link 
-                  href="/cases/new" 
-                  className="mt-4 flex w-full h-[44px] items-center justify-center gap-2 rounded-md bg-accent px-5 font-medium text-surface transition-colors hover:bg-accent-hover outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create New Case
                 </Link>
               </div>
             )}
