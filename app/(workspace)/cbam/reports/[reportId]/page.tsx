@@ -7,24 +7,73 @@ import { ArrowLeft, Download, FileCheck2, Loader2, ShieldCheck } from "lucide-re
 import { useAuth } from "@/context/AuthProvider";
 import { getReport, getReportDownloadUrl } from "@/lib/functions/client";
 
+type SealedReport = {
+  reportId: string;
+  uid: string;
+  caseId: string;
+  releaseVersion: number;
+  createdAt: string;
+  documentHash?: string;
+  manifestHash?: string;
+  calculationRootHash?: string;
+  evidenceRootHash?: string;
+  packageTopLevelComponentCount?: number;
+  verifiedFileCount?: number;
+  ruleset?: string;
+  engineVersion?: string;
+  calculation?: {
+    totalDirectEmissions?: string;
+    totalIndirectEmissions?: string;
+    totalEmbeddedEmissions?: string;
+    specificEmbeddedEmissions?: string;
+  };
+};
+
+function normalizeReport(value: unknown): SealedReport | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Partial<SealedReport>;
+  if (
+    typeof candidate.reportId !== "string" ||
+    typeof candidate.uid !== "string" ||
+    typeof candidate.caseId !== "string" ||
+    typeof candidate.releaseVersion !== "number" ||
+    typeof candidate.createdAt !== "string"
+  ) {
+    return null;
+  }
+  return candidate as SealedReport;
+}
+
 export default function SealedReportPage({ params }: { params: Promise<{ reportId: string }> }) {
   const { reportId } = use(params);
   const { user, loading } = useAuth();
-  const [report, setReport] = useState<any | null>(null);
+  const [report, setReport] = useState<SealedReport | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [downloading, setDownloading] = useState<"zip" | "manifest" | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (loading || !user) return;
-    setDataLoading(true);
+    let active = true;
+
     getReport(reportId)
-      .then((data) => setReport(data || null))
+      .then((data) => {
+        if (!active) return;
+        const normalized = normalizeReport(data);
+        if (!normalized) throw new Error("REPORT_SHAPE_INVALID");
+        setReport(normalized);
+      })
       .catch((fetchError) => {
         console.error("Report fetch failed", fetchError);
-        setError("The sealed release could not be loaded.");
+        if (active) setError("The sealed release could not be loaded.");
       })
-      .finally(() => setDataLoading(false));
+      .finally(() => {
+        if (active) setDataLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [user, loading, reportId]);
 
   const handleDownload = async (format: "zip" | "manifest") => {
