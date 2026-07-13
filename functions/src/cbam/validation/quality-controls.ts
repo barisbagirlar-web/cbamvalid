@@ -196,11 +196,11 @@ export function runQualityControls(caseData: AuditReadyCase): QualityControlResu
     }
   } else {
     caseData.precursors.forEach((precursor, index) => {
-      const paths = [
+      const paths: Array<[string, InputDatum, string, readonly string[]]> = [
         [`precursors.${index}.quantity`, precursor.quantity, "quantity", ["t", "kg", "metric_tonne"]],
         [`precursors.${index}.directEmissions`, precursor.directEmissions, "direct emissions", ["tCO2e"]],
         [`precursors.${index}.indirectEmissions`, precursor.indirectEmissions, "indirect emissions", ["tCO2e"]],
-      ] as const;
+      ];
       for (const [path, datum, label, units] of paths) {
         if (!finiteNonNegative(datum.value) || (label === "quantity" && !finitePositive(datum.value))) {
           add(`QC_09_${index + 1}_${label.replace(/\s/g, "_")}`, `Precursor ${index + 1} ${label}`, "BLOCKER", `Precursor ${label} must be finite and non-negative${label === "quantity" ? " and greater than zero" : ""}.`, "REM_CORRECT_PRECURSOR_DATA");
