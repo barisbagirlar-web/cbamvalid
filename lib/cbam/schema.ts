@@ -65,7 +65,7 @@ export const CarbonPricePaidSchema = z.object({
   currency: UnitCodeSchema,
   paymentPeriod: z.string(),
   legislationReference: z.string(),
-  proofOfPaymentEvidenceId: z.string().uuid(),
+  proofOfPaymentEvidenceId: z.string().uuid().optional(),
   rebateInformation: z.string().optional(),
   independentCertificationEvidenceId: z.string().uuid().optional(),
   conversionMethod: z.string().optional(),
