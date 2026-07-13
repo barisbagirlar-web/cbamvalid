@@ -217,58 +217,93 @@ describe("Production Security & Foundation Audits", () => {
     expect(createEntitlement).toBeDefined();
   });
 
-  it("11. End-to-end sandbox payment webhook lifecycle with idempotency", async () => {
+  it("11. server-side sandbox payment fulfillment issues exactly five case-bound versions", async () => {
     const { processWebhookEvent } = await import("../../functions/src/commerce/webhook-processor");
-    
-    // We mock firestore runTransaction and get/set calls
+    const { PRODUCT_CATALOG } = await import("../../functions/src/commerce/catalog");
+
+    const uid = "test-user-uid";
+    const orderId = "ord_test_123";
+    const caseId = "case_test_123";
+    const transactionId = "txn_sandbox_payment_123";
+    const productCode = "CBAM_CREDIT_PACK_5";
+    const expectedPriceId = PRODUCT_CATALOG[productCode].paddlePriceIdSandbox;
+    const baseOrder = {
+      orderId,
+      uid,
+      caseId,
+      productCode,
+      status: "PAYMENT_PENDING",
+      currency: "USD",
+      amountMinor: 15000,
+      paddleTransactionId: transactionId,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    };
+
+    const missingDocument = { exists: false };
+    const emptyQuery = { empty: true, docs: [] };
     const mockDbTransaction: any = {
       get: vi.fn()
-        // 1. First writeLedgerEntry call checks existing idempotency key -> empty snapshot
-        .mockResolvedValueOnce({ empty: true })
-        // 2. First writeLedgerEntry fetch latest ledger entry -> empty snapshot
-        .mockResolvedValueOnce({ empty: true })
-        // 3. transitionOrderStatus fetches order (PAID transition) -> active order document
-        .mockResolvedValueOnce({ exists: true, data: () => ({ status: "PENDING" }) })
-        // 4. createEntitlement writeLedgerEntry checks existing key -> empty snapshot
-        .mockResolvedValueOnce({ empty: true })
-        // 5. createEntitlement writeLedgerEntry fetch latest entry -> empty snapshot
-        .mockResolvedValueOnce({ empty: true })
-        // 6. transitionOrderStatus fetches order (ENTITLED transition) -> active order document
-        .mockResolvedValueOnce({ exists: true, data: () => ({ status: "PAID" }) }),
+        // Processor-level order reconciliation.
+        .mockResolvedValueOnce({ exists: true, data: () => baseOrder })
+        // Payment ledger idempotency and chain lookup.
+        .mockResolvedValueOnce(emptyQuery)
+        .mockResolvedValueOnce(emptyQuery)
+        // PAID state transition.
+        .mockResolvedValueOnce({ exists: true, data: () => baseOrder })
+        // Five deterministic case-bound entitlement IDs.
+        .mockResolvedValueOnce(missingDocument)
+        .mockResolvedValueOnce(missingDocument)
+        .mockResolvedValueOnce(missingDocument)
+        .mockResolvedValueOnce(missingDocument)
+        .mockResolvedValueOnce(missingDocument)
+        // Entitlement issuance ledger idempotency and chain lookup.
+        .mockResolvedValueOnce(emptyQuery)
+        .mockResolvedValueOnce(emptyQuery)
+        // ENTITLED state transition.
+        .mockResolvedValueOnce({ exists: true, data: () => ({ ...baseOrder, status: "PAID" }) }),
       set: vi.fn(),
       update: vi.fn(),
     };
 
-    // Mock adminDb runTransaction to run our mockDbTransaction callback
     const { adminDb } = await import("../../functions/src/firebase-admin");
-    adminDb.runTransaction = vi.fn().mockImplementation(async (callback) => {
-      return await callback(mockDbTransaction);
-    });
+    adminDb.runTransaction = vi.fn().mockImplementation(async (callback) => callback(mockDbTransaction));
 
     const event = {
       eventId: "evt_sandbox_payment_123",
       eventType: "transaction.completed",
       data: {
-        id: "txn_sandbox_payment_123",
+        id: transactionId,
         status: "completed",
         currencyCode: "USD",
+        details: { totals: { grandTotal: 15000 } },
         customData: {
-          uid: "test-user-uid",
-          orderId: "ord_test_123",
-          productCode: "CBAM_EXPORTER_FINAL_REPORT",
+          uid,
+          orderId,
+          caseId,
+          productCode,
+          environment: "sandbox",
         },
         items: [
           {
             quantity: 1,
-          }
-        ]
-      }
+            price: { id: expectedPriceId },
+          },
+        ],
+      },
     };
 
     await processWebhookEvent(event);
 
-    // Assert that the ledger entries and entitlements are set and updated
-    expect(mockDbTransaction.set).toHaveBeenCalledTimes(3); // 2 ledger entries + 1 entitlement document
-    expect(mockDbTransaction.update).toHaveBeenCalledTimes(2); // Order transition to PAID + transition to ENTITLED
+    const entitlementWrites = mockDbTransaction.set.mock.calls
+      .map(([, value]: [unknown, any]) => value)
+      .filter((value: any) => value?.productCode === productCode && value?.status === "AVAILABLE");
+
+    expect(mockDbTransaction.get).toHaveBeenCalledTimes(12);
+    expect(mockDbTransaction.set).toHaveBeenCalledTimes(7); // 2 ledger entries + 5 version entitlements
+    expect(mockDbTransaction.update).toHaveBeenCalledTimes(2); // PAID then ENTITLED
+    expect(entitlementWrites).toHaveLength(5);
+    expect(entitlementWrites.map((value: any) => value.versionSequence)).toEqual([1, 2, 3, 4, 5]);
+    expect(entitlementWrites.every((value: any) => value.caseId === caseId && value.uid === uid)).toBe(true);
   });
 });
