@@ -1,29 +1,21 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthProvider";
 import { CREDIT_PACKAGES } from "@/lib/billing/catalog";
-import { createCheckout, getCases } from "@/lib/functions/client";
+import { createCheckout, getCases, type CbamCaseRecord } from "@/lib/functions/client";
 import { Check, Loader2, ShieldCheck, FileText } from "lucide-react";
-import { initializePaddle, Paddle } from "@paddle/paddle-js";
+import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-const PRODUCT_CODE = "CBAM_CREDIT_PACK_5";
-
-type CaseSummary = {
-  caseId: string;
-  data?: {
-    installation?: { name?: { value?: string } };
-    reportingPeriod?: { year?: { value?: string | number } };
-  };
-};
+const PRODUCT_CODE = "CBAM_CREDIT_PACK_5" as const;
 
 export default function BuyPreparationPackPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [paddle, setPaddle] = useState<Paddle | null>(null);
-  const [cases, setCases] = useState<CaseSummary[]>([]);
+  const [cases, setCases] = useState<CbamCaseRecord[]>([]);
   const [selectedCaseId, setSelectedCaseId] = useState("");
   const [loadingPkg, setLoadingPkg] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
@@ -44,15 +36,15 @@ export default function BuyPreparationPackPage() {
     if (!user) return;
 
     let active = true;
-    setDataLoading(true);
     getCases()
       .then((result) => {
         if (!active) return;
-        const activeCases = (result || []).filter((item: any) => item.status === "DRAFT");
+        const activeCases = result.filter((item) => item.status === "DRAFT");
         setCases(activeCases);
         if (activeCases.length === 1) setSelectedCaseId(activeCases[0].caseId);
       })
-      .catch(() => {
+      .catch((loadError: unknown) => {
+        console.error("Draft case loading failed", loadError);
         if (active) setError("Your draft cases could not be loaded. Please refresh and try again.");
       })
       .finally(() => {
@@ -78,7 +70,8 @@ export default function BuyPreparationPackPage() {
       .then((instance) => {
         if (instance) setPaddle(instance);
       })
-      .catch(() => {
+      .catch((initializationError: unknown) => {
+        console.error("Paddle initialization failed", initializationError);
         setError("The secure checkout could not be initialized. Please refresh and try again.");
       });
   }, []);
@@ -102,7 +95,7 @@ export default function BuyPreparationPackPage() {
 
     try {
       const checkout = await createCheckout(PRODUCT_CODE, selectedCaseId);
-      if (!checkout?.transactionId) {
+      if (!checkout.transactionId) {
         throw new Error("CHECKOUT_TRANSACTION_MISSING");
       }
 
@@ -114,8 +107,8 @@ export default function BuyPreparationPackPage() {
           successUrl: `${window.location.origin}/cbam?purchase=success`,
         },
       });
-    } catch (err: any) {
-      console.error("Preparation Pack checkout failed", err);
+    } catch (checkoutError: unknown) {
+      console.error("Preparation Pack checkout failed", checkoutError);
       setError("Checkout could not be started. No payment has been taken. Please refresh and try again.");
     } finally {
       setLoadingPkg(false);
@@ -201,8 +194,8 @@ export default function BuyPreparationPackPage() {
             >
               <option value="">Choose a draft dossier</option>
               {cases.map((item) => {
-                const installation = item.data?.installation?.name?.value || "Unnamed installation";
-                const year = item.data?.reportingPeriod?.year?.value || "Year pending";
+                const installation = item.data.installation.name.value || "Unnamed installation";
+                const year = item.data.reportingPeriod.year.value || "Year pending";
                 return (
                   <option key={item.caseId} value={item.caseId}>
                     {String(installation)} — {String(year)}
