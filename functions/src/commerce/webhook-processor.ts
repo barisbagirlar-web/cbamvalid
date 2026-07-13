@@ -1,5 +1,5 @@
 import { adminDb } from "../firebase-admin";
-import { transitionOrderStatus, CommerceOrder } from "./order-service";
+import { CommerceOrder } from "./order-service";
 import { issuePreparationPack } from "./preparation-pack-service";
 import { writeLedgerEntry } from "./ledger-service";
 import { processRefund } from "./refund-service";
@@ -22,6 +22,29 @@ function transactionAmountMinor(transaction: any): number {
 
 function itemPriceId(item: any): string {
   return asString(item?.price?.id || item?.priceId || item?.price_id);
+}
+
+function assertOrderMatchesPayment(
+  order: CommerceOrder,
+  expected: {
+    uid: string;
+    caseId: string;
+    productCode: string;
+    currency: string;
+    amountMinor: number;
+    transactionId: string;
+  }
+): void {
+  if (
+    order.uid !== expected.uid ||
+    order.caseId !== expected.caseId ||
+    order.productCode !== expected.productCode ||
+    order.currency !== expected.currency ||
+    order.amountMinor !== expected.amountMinor ||
+    (order.paddleTransactionId && order.paddleTransactionId !== expected.transactionId)
+  ) {
+    throw new Error("PADDLE_ORDER_PAYLOAD_MISMATCH");
+  }
 }
 
 /** Main processor of verified webhook events from Paddle. */
@@ -48,11 +71,11 @@ export async function processWebhookEvent(event: any): Promise<void> {
 async function handleTransactionCompleted(eventId: string, transaction: any): Promise<void> {
   const transactionId = asString(transaction?.id);
   const status = asString(transaction?.status);
-  const customData = transaction?.customData || {};
+  const customData = transaction?.customData || transaction?.custom_data || {};
   const uid = asString(customData.uid);
-  const orderId = asString(customData.orderId);
-  const caseId = asString(customData.caseId);
-  const productCode = asString(customData.productCode);
+  const orderId = asString(customData.orderId || customData.order_id);
+  const caseId = asString(customData.caseId || customData.case_id);
+  const productCode = asString(customData.productCode || customData.product_code);
   const eventEnvironment = asString(customData.environment);
 
   if (!transactionId || !uid || !orderId || !caseId || !productCode) {
@@ -98,23 +121,23 @@ async function handleTransactionCompleted(eventId: string, transaction: any): Pr
   }
 
   const orderRef = adminDb.collection("commerce_orders").doc(orderId);
+  const expectedOrder = { uid, caseId, productCode, currency, amountMinor: actualAmountMinor, transactionId };
 
+  /*
+   * Stage 1: capture payment and bind the Paddle transaction to the order.
+   * This stage intentionally runs in its own transaction so every read occurs
+   * before the first write. It also self-heals the narrow race where Paddle
+   * creates the transaction but the checkout service loses its subsequent
+   * Firestore update.
+   */
   await adminDb.runTransaction(async (dbTransaction: any) => {
     const orderSnapshot = await dbTransaction.get(orderRef);
-    if (!orderSnapshot.exists) {
-      throw new Error("PADDLE_ORDER_NOT_FOUND");
-    }
+    if (!orderSnapshot.exists) throw new Error("PADDLE_ORDER_NOT_FOUND");
 
     const order = orderSnapshot.data() as CommerceOrder;
-    if (
-      order.uid !== uid ||
-      order.caseId !== caseId ||
-      order.productCode !== productCode ||
-      order.currency !== currency ||
-      order.amountMinor !== actualAmountMinor ||
-      order.paddleTransactionId !== transactionId
-    ) {
-      throw new Error("PADDLE_ORDER_PAYLOAD_MISMATCH");
+    assertOrderMatchesPayment(order, expectedOrder);
+    if (!["CHECKOUT_CREATED", "PAYMENT_PENDING", "PAID", "ENTITLED"].includes(order.status)) {
+      throw new Error(`PADDLE_ORDER_STATE_INVALID:${order.status}`);
     }
 
     await writeLedgerEntry(dbTransaction, {
@@ -129,9 +152,29 @@ async function handleTransactionCompleted(eventId: string, transaction: any): Pr
       idempotencyKey: `payment:${transactionId}`,
     });
 
-    await transitionOrderStatus(dbTransaction, orderId, "PAID", {
-      paddleTransactionId: transactionId,
-    });
+    if (order.status !== "ENTITLED") {
+      dbTransaction.update(orderRef, {
+        paddleTransactionId: transactionId,
+        status: "PAID",
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  });
+
+  /*
+   * Stage 2: issue exactly five deterministic, case-bound entitlements.
+   * If this stage fails, the webhook remains retryable. Stage 1 is safe to
+   * replay because its ledger key and order binding are idempotent.
+   */
+  await adminDb.runTransaction(async (dbTransaction: any) => {
+    const orderSnapshot = await dbTransaction.get(orderRef);
+    if (!orderSnapshot.exists) throw new Error("PADDLE_ORDER_NOT_FOUND_AFTER_CAPTURE");
+
+    const order = orderSnapshot.data() as CommerceOrder;
+    assertOrderMatchesPayment(order, expectedOrder);
+    if (order.status !== "PAID" && order.status !== "ENTITLED") {
+      throw new Error(`PADDLE_ORDER_NOT_PAID:${order.status}`);
+    }
 
     await issuePreparationPack(dbTransaction, {
       uid,
@@ -143,7 +186,12 @@ async function handleTransactionCompleted(eventId: string, transaction: any): Pr
       versions: catalogProduct.entitlementQuantity,
     });
 
-    await transitionOrderStatus(dbTransaction, orderId, "ENTITLED");
+    if (order.status !== "ENTITLED") {
+      dbTransaction.update(orderRef, {
+        status: "ENTITLED",
+        updatedAt: new Date().toISOString(),
+      });
+    }
   });
 
   console.log(`[PADDLE-PROCESSOR] Completed fulfillment for order ${orderId}; five case-bound versions issued.`);
