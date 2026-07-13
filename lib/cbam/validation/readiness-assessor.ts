@@ -1,5 +1,5 @@
 import { AuditReadyCase, GapRecord, GapSeverity } from "../schema";
-import { runQualityControls } from "./quality-controls";
+import { runQualityControls, type QualityControlResult } from "./quality-controls";
 
 export type VerificationReadinessStatus =
   | "NOT_READY"
@@ -23,7 +23,9 @@ export function assessCaseReadiness(caseData: AuditReadyCase): VerificationReadi
   const qualityControls = runQualityControls(caseData);
   const evaluated = qualityControls.filter((item) => item.status !== "NOT_APPLICABLE");
   const findings = evaluated
-    .filter((item) => item.status === "BLOCKER" || item.status === "WARNING")
+    .filter((item): item is QualityControlResult & { status: "BLOCKER" | "WARNING" } =>
+      item.status === "BLOCKER" || item.status === "WARNING"
+    )
     .map<GapRecord>((item) => ({
       gapId: `qc_${item.ruleId}`,
       issueType: item.status === "BLOCKER" ? "calculation blocker" : "unresolved assumption",
