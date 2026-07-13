@@ -10,6 +10,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 const PRODUCT_CODE = "CBAM_CREDIT_PACK_5" as const;
+const PADDLE_CLIENT_TOKEN = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || "";
+const PADDLE_ENVIRONMENT = process.env.NEXT_PUBLIC_PADDLE_ENV === "production" ? "production" : "sandbox";
+const PAYMENT_CONFIGURATION_ERROR = "Payment configuration is unavailable. Please contact support and quote PAYMENT_CONFIG_MISSING.";
 
 export default function BuyPreparationPackPage() {
   const { user, loading } = useAuth();
@@ -19,7 +22,7 @@ export default function BuyPreparationPackPage() {
   const [selectedCaseId, setSelectedCaseId] = useState("");
   const [loadingPkg, setLoadingPkg] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() => PADDLE_CLIENT_TOKEN ? "" : PAYMENT_CONFIGURATION_ERROR);
 
   const pkg = useMemo(
     () => CREDIT_PACKAGES.filter((item) => item.active).sort((a, b) => a.displayOrder - b.displayOrder)[0],
@@ -28,7 +31,7 @@ export default function BuyPreparationPackPage() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/login?next=/credits/buy");
+      router.replace("/login?next=/credits/buy");
     }
   }, [user, loading, router]);
 
@@ -57,28 +60,29 @@ export default function BuyPreparationPackPage() {
   }, [user]);
 
   useEffect(() => {
-    const token = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
-    if (!token) {
-      setError("Payment configuration is unavailable. Please contact support and quote PAYMENT_CONFIG_MISSING.");
-      return;
-    }
+    if (!PADDLE_CLIENT_TOKEN) return;
 
+    let active = true;
     initializePaddle({
-      environment: process.env.NEXT_PUBLIC_PADDLE_ENV === "production" ? "production" : "sandbox",
-      token,
+      environment: PADDLE_ENVIRONMENT,
+      token: PADDLE_CLIENT_TOKEN,
     })
       .then((instance) => {
-        if (instance) setPaddle(instance);
+        if (active && instance) setPaddle(instance);
       })
       .catch((initializationError: unknown) => {
         console.error("Paddle initialization failed", initializationError);
-        setError("The secure checkout could not be initialized. Please refresh and try again.");
+        if (active) setError("The secure checkout could not be initialized. Please refresh and try again.");
       });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleCheckout = async () => {
     if (!user) {
-      router.push("/login?next=/credits/buy");
+      router.replace("/login?next=/credits/buy");
       return;
     }
     if (!selectedCaseId) {
@@ -86,7 +90,7 @@ export default function BuyPreparationPackPage() {
       return;
     }
     if (!paddle) {
-      setError("The secure checkout is still initializing. Please wait a moment and try again.");
+      setError(PADDLE_CLIENT_TOKEN ? "The secure checkout is still initializing. Please wait a moment and try again." : PAYMENT_CONFIGURATION_ERROR);
       return;
     }
 
