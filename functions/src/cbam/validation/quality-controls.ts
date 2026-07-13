@@ -34,6 +34,15 @@ function supportedEvidence(caseData: AuditReadyCase, path: string, datum: InputD
   );
 }
 
+function hasAcceptedMethodologyDecision(caseData: AuditReadyCase, topic: string): boolean {
+  return caseData.methodologyDecisions.some((decision) =>
+    decision.topic === topic &&
+    decision.reviewStatus === "ACCEPTED" &&
+    decision.reason.trim().length > 0 &&
+    decision.legalOrTechnicalBasis.trim().length > 0
+  );
+}
+
 export function runQualityControls(caseData: AuditReadyCase): QualityControlResult[] {
   const results: QualityControlResult[] = [];
   const add = (
@@ -105,21 +114,34 @@ export function runQualityControls(caseData: AuditReadyCase): QualityControlResu
       add(item.ruleId, item.name, "BLOCKER", `${item.name} must be a finite, non-negative number.`, `REM_CORRECT_${item.ruleId}`);
     } else if (!supportedEvidence(caseData, item.path, item.datum)) {
       add(item.ruleId, `${item.name} evidence`, "BLOCKER", `${item.name} is not linked to a supported evidence record.`, `REM_LINK_${item.ruleId}_EVIDENCE`);
-    } else if (item.datum.sourceType === "ESTIMATED") {
-      add(item.ruleId, `${item.name} source method`, "WARNING", `${item.name} uses an estimate and requires an explicit methodology decision before external reliance.`, `REM_DOCUMENT_${item.ruleId}_METHOD`);
+    } else if (item.datum.sourceType === "ESTIMATED" && !hasAcceptedMethodologyDecision(caseData, `ESTIMATE:${item.path}`)) {
+      add(item.ruleId, `${item.name} source method`, "WARNING", `${item.name} uses an estimate without an accepted methodology decision.`, `REM_DOCUMENT_${item.ruleId}_METHOD`);
     } else {
       add(item.ruleId, `${item.name} value and evidence`, "PASS");
     }
   }
 
   if (caseData.precursors.length === 0) {
-    add("QC_09", "Precursor review", "WARNING", "No precursor records are declared. Confirm that the selected route and goods do not require precursor treatment.", "REM_CONFIRM_PRECURSOR_SCOPE");
+    if (hasAcceptedMethodologyDecision(caseData, "PRECURSOR_SCOPE")) {
+      add("QC_09", "Precursor scope decision", "PASS");
+    } else {
+      add("QC_09", "Precursor review", "WARNING", "No precursor records are declared and no accepted precursor-scope decision is recorded.", "REM_CONFIRM_PRECURSOR_SCOPE");
+    }
   } else {
     caseData.precursors.forEach((precursor, index) => {
-      if (!finiteNonNegative(precursor.directEmissions.value) || !finiteNonNegative(precursor.indirectEmissions.value)) {
-        add(`QC_09_${index + 1}`, `Precursor ${index + 1} emissions`, "BLOCKER", "Precursor direct and indirect emissions must be finite and non-negative.", "REM_CORRECT_PRECURSOR_EMISSIONS");
-      } else {
-        add(`QC_09_${index + 1}`, `Precursor ${index + 1} emissions`, "PASS");
+      const paths = [
+        [`precursors.${index}.quantity`, precursor.quantity, "quantity"],
+        [`precursors.${index}.directEmissions`, precursor.directEmissions, "direct emissions"],
+        [`precursors.${index}.indirectEmissions`, precursor.indirectEmissions, "indirect emissions"],
+      ] as const;
+      for (const [path, datum, label] of paths) {
+        if (!finiteNonNegative(datum.value) || (label === "quantity" && !finitePositive(datum.value))) {
+          add(`QC_09_${index + 1}_${label.replace(/\s/g, "_")}`, `Precursor ${index + 1} ${label}`, "BLOCKER", `Precursor ${label} must be finite and non-negative${label === "quantity" ? " and greater than zero" : ""}.`, "REM_CORRECT_PRECURSOR_DATA");
+        } else if (!supportedEvidence(caseData, path, datum)) {
+          add(`QC_09_${index + 1}_${label.replace(/\s/g, "_")}`, `Precursor ${index + 1} ${label} evidence`, "BLOCKER", `Precursor ${label} is not linked to supporting evidence.`, "REM_LINK_PRECURSOR_EVIDENCE");
+        } else {
+          add(`QC_09_${index + 1}_${label.replace(/\s/g, "_")}`, `Precursor ${index + 1} ${label}`, "PASS");
+        }
       }
     });
   }
@@ -135,7 +157,9 @@ export function runQualityControls(caseData: AuditReadyCase): QualityControlResu
       !/^[a-f0-9]{64}$/.test(normalizedHash) ||
       evidence.sizeBytes <= 0 ||
       !evidence.storagePath.startsWith(`evidence/${caseData.ownerId}/${caseData.caseId}/`) ||
-      evidence.linkedInputs.length === 0
+      evidence.linkedInputs.length === 0 ||
+      evidence.reviewStatus === "REJECTED" ||
+      evidence.supportStatus === "UNSUPPORTED"
     ) {
       invalidEvidenceMetadata = true;
     }
@@ -144,7 +168,7 @@ export function runQualityControls(caseData: AuditReadyCase): QualityControlResu
   if (caseData.evidenceRegister.length === 0) {
     add("QC_10", "Evidence register", "BLOCKER", "Evidence register is empty.", "REM_UPLOAD_EVIDENCE");
   } else if (invalidEvidenceMetadata) {
-    add("QC_10", "Evidence metadata integrity", "BLOCKER", "One or more evidence records have invalid hash, size, ownership path or field linkage.", "REM_CORRECT_EVIDENCE_METADATA");
+    add("QC_10", "Evidence metadata integrity", "BLOCKER", "One or more evidence records have invalid hash, size, ownership path, linkage or support status.", "REM_CORRECT_EVIDENCE_METADATA");
   } else if (duplicateHash) {
     add("QC_10", "Duplicate source documents", "BLOCKER", "Duplicate evidence hashes were detected.", "REM_REMOVE_DUPLICATE_EVIDENCE");
   } else {
@@ -163,8 +187,8 @@ export function runQualityControls(caseData: AuditReadyCase): QualityControlResu
       const proof = record.proofOfPaymentEvidenceId
         ? caseData.evidenceRegister.find((item) => item.evidenceId === record.proofOfPaymentEvidenceId)
         : undefined;
-      if (!proof || proof.reviewStatus === "REJECTED") {
-        add(`QC_11_${index + 1}`, `Carbon-price record ${index + 1} payment proof`, "BLOCKER", "The claimed adjustment does not reference an accepted evidence record.", "REM_LINK_CARBON_PRICE_PROOF");
+      if (!proof || proof.reviewStatus === "REJECTED" || proof.supportStatus === "UNSUPPORTED") {
+        add(`QC_11_${index + 1}`, `Carbon-price record ${index + 1} payment proof`, "BLOCKER", "The claimed adjustment does not reference a supported evidence record.", "REM_LINK_CARBON_PRICE_PROOF");
       } else if (!record.legislationReference.trim()) {
         add(`QC_11_${index + 1}`, `Carbon-price record ${index + 1} legal basis`, "BLOCKER", "The claimed adjustment is missing its scheme or legislation reference.", "REM_ADD_CARBON_PRICE_BASIS");
       } else {
@@ -174,10 +198,10 @@ export function runQualityControls(caseData: AuditReadyCase): QualityControlResu
   }
 
   const openRecordedFindings = caseData.gapAssessment.filter((gap) => gap.resolutionStatus !== "RESOLVED");
-  if (openRecordedFindings.some((gap) => gap.isBlocking || gap.severity === "BLOCKER")) {
-    add("QC_12", "Recorded blocking findings", "BLOCKER", "The dossier contains unresolved blocking findings.", "REM_RESOLVE_BLOCKING_FINDINGS");
+  if (openRecordedFindings.some((gap) => gap.isBlocking || ["BLOCKER", "CRITICAL", "MAJOR"].includes(gap.severity))) {
+    add("QC_12", "Recorded material findings", "BLOCKER", "The dossier contains unresolved blocking, critical or major findings.", "REM_RESOLVE_MATERIAL_FINDINGS");
   } else if (openRecordedFindings.length > 0) {
-    add("QC_12", "Recorded open findings", "WARNING", "The dossier contains unresolved non-blocking findings.", "REM_REVIEW_OPEN_FINDINGS");
+    add("QC_12", "Recorded open findings", "WARNING", "The dossier contains unresolved minor or advisory findings.", "REM_REVIEW_OPEN_FINDINGS");
   } else {
     add("QC_12", "Recorded findings", "PASS");
   }
