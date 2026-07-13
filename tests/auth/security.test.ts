@@ -46,7 +46,6 @@ describe("Production Security & Foundation Audits", () => {
 
   it("1. Firebase ID token cannot be used directly as session cookie", async () => {
     mockCookiesGet.mockReturnValue({ value: "firebase-id-token" });
-    // In Firebase SDK, verifySessionCookie rejects ID tokens with issuer mismatch
     verifySessionCookie.mockRejectedValueOnce(new Error("Decoding firebase session cookie failed (issuer mismatch)"));
 
     await expect(requireFirebaseSession()).rejects.toThrow("Session expired or invalid cookie.");
@@ -79,7 +78,6 @@ describe("Production Security & Foundation Audits", () => {
   });
 
   it("3. Expired, malformed and revoked sessions return structured 401", async () => {
-    // Case 1: Missing cookie
     mockCookiesGet.mockReturnValueOnce(null);
     await expect(requireFirebaseSession()).rejects.toMatchObject({
       status: 401,
@@ -87,7 +85,6 @@ describe("Production Security & Foundation Audits", () => {
       message: "Missing session cookie.",
     });
 
-    // Case 2: Expired/Revoked cookie
     mockCookiesGet.mockReturnValueOnce({ value: "expired-cookie" });
     verifySessionCookie.mockRejectedValueOnce(new Error("Firebase ID Token expired"));
     await expect(requireFirebaseSession()).rejects.toMatchObject({
@@ -98,7 +95,6 @@ describe("Production Security & Foundation Audits", () => {
   });
 
   it("4. Client JavaScript cannot read the HttpOnly session cookie", async () => {
-    // Assert that the HttpOnly option is explicitly passed as true in cookie options
     const recentAuthTime = Math.floor(Date.now() / 1000) - 10;
     verifyIdToken.mockResolvedValueOnce({ auth_time: recentAuthTime });
     createSessionCookie.mockResolvedValueOnce("cookie-val");
@@ -113,7 +109,7 @@ describe("Production Security & Foundation Audits", () => {
       "__session",
       "cookie-val",
       expect.objectContaining({
-        httpOnly: true, // MUST be HttpOnly true
+        httpOnly: true,
       })
     );
   });
@@ -127,7 +123,7 @@ describe("Production Security & Foundation Audits", () => {
     expect(decoded).toEqual(mockClaims);
   });
 
-  it("6. Checkout rejects unauthenticated requests with JSON 401", async () => {
+  it("6. Retired checkout rejects unauthenticated requests with JSON 401", async () => {
     mockCookiesGet.mockReturnValue(null);
 
     const req = new Request("http://localhost/api/checkout/cbam", {
@@ -142,20 +138,11 @@ describe("Production Security & Foundation Audits", () => {
     expect(data.error.code).toBe("UNAUTHORIZED");
   });
 
-  it("7. Checkout accepts an authenticated request", async () => {
-    process.env.NEXT_PUBLIC_PADDLE_SANDBOX = "true";
-    process.env.PADDLE_API_KEY = "pdl_sdbx_testkey";
-    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN = "pdl_sdbx_testclient";
-    process.env.NEXT_PUBLIC_PADDLE_PRICE_ID = "pri_testprice";
-
+  it("7. Retired Next.js checkout cannot create a Paddle transaction", async () => {
     const mockClaims = { uid: "user-123", email: "user@cbamvalid.com" };
     mockCookiesGet.mockReturnValue({ value: "valid-session" });
     verifySessionCookie.mockResolvedValueOnce(mockClaims);
-
-    // Mock fetch for Paddle API
-    global.fetch = vi.fn().mockResolvedValueOnce(
-      new Response(JSON.stringify({ data: { id: "txn_123" } }), { status: 200 })
-    );
+    global.fetch = vi.fn();
 
     const req = new Request("http://localhost/api/checkout/cbam", {
       method: "POST",
@@ -163,27 +150,20 @@ describe("Production Security & Foundation Audits", () => {
     });
 
     const res = await checkoutPost(req);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(410);
     const data = await res.json();
-    expect(data.ok).toBe(true);
-    expect(data.data.transactionId).toBe("txn_123");
-
-    // Cleanup
-    delete process.env.NEXT_PUBLIC_PADDLE_SANDBOX;
-    delete process.env.PADDLE_API_KEY;
-    delete process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
-    delete process.env.NEXT_PUBLIC_PADDLE_PRICE_ID;
+    expect(data.ok).toBe(false);
+    expect(data.error.code).toBe("CHECKOUT_CHANNEL_RETIRED");
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it("8. firebase-admin imports successfully in production build environment", async () => {
-    // Dynamically test importing firebase-admin in standard Node environment without compilation error
     const admin = await import("firebase-admin");
     expect(admin).toBeDefined();
     expect(admin.initializeApp).toBeDefined();
   });
 
   it("9. duplicate Paddle webhook creates zero duplicate credit", async () => {
-    // Verify our logic in webhook processor rejects duplicate idempotencyKey
     const { writeLedgerEntry } = await import("../../functions/src/commerce/ledger-service");
     const mockTransaction: any = {
       get: vi.fn().mockResolvedValueOnce({
@@ -204,20 +184,17 @@ describe("Production Security & Foundation Audits", () => {
     });
 
     expect(entry).toBeDefined();
-    expect(mockTransaction.set).not.toHaveBeenCalled(); // No set means no credit generated!
+    expect(mockTransaction.set).not.toHaveBeenCalled();
   });
 
   it("10. client callback creates zero credit", async () => {
-    // Assert client-side checkout callback has no authority to grant credits
-    // In our front-end client (wizard / buy page), the callback only redirects the user
-    // or shows visual feedback. It never executes write actions directly on entitlements or credits.
     const { createEntitlement } = await import("../../functions/src/commerce/entitlement-service");
-    // Any direct createEntitlement execution without transaction context is statically typed to fail in compile check,
-    // and require Admin credentials on the server side which are unavailable to browser callers.
     expect(createEntitlement).toBeDefined();
   });
 
   it("11. server-side sandbox payment fulfillment issues exactly five case-bound versions", async () => {
+    process.env.PADDLE_PRICE_ID_SANDBOX = "pri_test_pack_sandbox";
+
     const { processWebhookEvent } = await import("../../functions/src/commerce/webhook-processor");
     const { PRODUCT_CATALOG } = await import("../../functions/src/commerce/catalog");
 
@@ -244,23 +221,17 @@ describe("Production Security & Foundation Audits", () => {
     const emptyQuery = { empty: true, docs: [] };
     const mockDbTransaction: any = {
       get: vi.fn()
-        // Processor-level order reconciliation.
         .mockResolvedValueOnce({ exists: true, data: () => baseOrder })
-        // Payment ledger idempotency and chain lookup.
         .mockResolvedValueOnce(emptyQuery)
         .mockResolvedValueOnce(emptyQuery)
-        // PAID state transition.
         .mockResolvedValueOnce({ exists: true, data: () => baseOrder })
-        // Five deterministic case-bound entitlement IDs.
         .mockResolvedValueOnce(missingDocument)
         .mockResolvedValueOnce(missingDocument)
         .mockResolvedValueOnce(missingDocument)
         .mockResolvedValueOnce(missingDocument)
         .mockResolvedValueOnce(missingDocument)
-        // Entitlement issuance ledger idempotency and chain lookup.
         .mockResolvedValueOnce(emptyQuery)
         .mockResolvedValueOnce(emptyQuery)
-        // ENTITLED state transition.
         .mockResolvedValueOnce({ exists: true, data: () => ({ ...baseOrder, status: "PAID" }) }),
       set: vi.fn(),
       update: vi.fn(),
@@ -300,10 +271,12 @@ describe("Production Security & Foundation Audits", () => {
       .filter((value: any) => value?.productCode === productCode && value?.status === "AVAILABLE");
 
     expect(mockDbTransaction.get).toHaveBeenCalledTimes(12);
-    expect(mockDbTransaction.set).toHaveBeenCalledTimes(7); // 2 ledger entries + 5 version entitlements
-    expect(mockDbTransaction.update).toHaveBeenCalledTimes(2); // PAID then ENTITLED
+    expect(mockDbTransaction.set).toHaveBeenCalledTimes(7);
+    expect(mockDbTransaction.update).toHaveBeenCalledTimes(2);
     expect(entitlementWrites).toHaveLength(5);
     expect(entitlementWrites.map((value: any) => value.versionSequence)).toEqual([1, 2, 3, 4, 5]);
     expect(entitlementWrites.every((value: any) => value.caseId === caseId && value.uid === uid)).toBe(true);
+
+    delete process.env.PADDLE_PRICE_ID_SANDBOX;
   });
 });
