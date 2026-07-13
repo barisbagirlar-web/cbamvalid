@@ -1,0 +1,14 @@
+# Current Formal Status
+
+```text
+SOURCE_REMEDIATION_BRANCH=fix/final-revenue-release-blockers-v1
+SOURCE_GATES=NOT_PROVEN
+PADDLE_SECRET_ROTATION=EXTERNAL_BLOCKER
+REAL_PAYMENT_TRANSACTION=NOT_PROVEN
+LIVE_DEPLOYMENT=NOT_PROVEN
+PRODUCTION_BROWSER_E2E=NOT_PROVEN
+FINAL_ACCEPTANCE=FAIL
+REVENUE_RELEASE_READY=NO
+```
+
+This file must not be changed to `PASS` or `YES` solely because repository tests or builds succeed.
