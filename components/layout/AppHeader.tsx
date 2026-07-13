@@ -128,7 +128,7 @@ export function AppHeader() {
             </Link>
             {!isAdmin && (
               <Link href="/credits/buy" className="flex items-center gap-3 px-4 py-2 text-[15px] text-foreground hover:bg-border/30 transition-colors outline-none focus-visible:bg-border/30">
-                <CreditCard className="w-4 h-4 text-muted" /> Credits & Billing
+                <CreditCard className="w-4 h-4 text-muted" /> Billing & Packs
               </Link>
             )}
             <Link href="/account#security" className="flex items-center gap-3 px-4 py-2 text-[15px] text-foreground hover:bg-border/30 transition-colors outline-none focus-visible:bg-border/30">
@@ -167,16 +167,22 @@ export function AppHeader() {
         <div className="flex-shrink-0 flex items-center gap-4 lg:gap-5">
           {!isAdmin && (
             <Link href="/credits/buy" className="hidden lg:flex items-center gap-2 bg-surface hover:bg-border/30 transition-colors text-foreground px-4 py-1.5 rounded-full border border-border outline-none focus-visible:ring-2 focus-visible:ring-accent">
-              <span className="text-[13px] font-medium text-muted">{availableCredits} credits &middot; <span className="text-foreground">{availableUses} uses</span></span>
+              <span className="text-[13px] font-medium text-muted">
+                {availableUses > 0 ? (
+                  <>1 Active Preparation Pack &middot; <span className="text-foreground">{availableUses} Sealed Versions Left</span></>
+                ) : (
+                  <>No Active Preparation Pack</>
+                )}
+              </span>
             </Link>
           )}
 
-          {!isAdmin && (
+          {!isAdmin && availableUses === 0 && (
             <Link 
               href="/credits/buy" 
-              className="hidden lg:inline-flex h-[44px] items-center justify-center gap-2 rounded-md bg-surface border border-border px-5 text-[15px] font-medium text-foreground transition-colors hover:bg-border/30 active:bg-border/50 outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent"
+              className="hidden lg:inline-flex h-[44px] items-center justify-center gap-2 rounded-md bg-accent px-5 text-[15px] font-medium text-surface transition-colors hover:bg-accent-hover active:bg-accent-active outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent shadow-sm"
             >
-              Buy Credits
+              Buy Pack — $150
             </Link>
           )}
 
@@ -212,10 +218,13 @@ export function AppHeader() {
             {!isAdmin && (
               <div className="px-6 py-4 mb-2 bg-accent/5 border-b border-border">
                 <Link href="/credits/buy" className="flex items-center justify-between outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm">
-                  <span className="text-[15px] font-semibold text-muted uppercase tracking-wider">Credits & Uses</span>
+                  <span className="text-[15px] font-semibold text-muted uppercase tracking-wider">Preparation Pack</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted">{availableCredits} credits</span>
-                    <span className="text-sm font-bold text-accent px-2 py-1 bg-accent/10 rounded">{availableUses} uses</span>
+                    {availableUses > 0 ? (
+                      <span className="text-sm font-bold text-accent px-2 py-1 bg-accent/10 rounded">{availableUses} Versions Left</span>
+                    ) : (
+                      <span className="text-sm text-muted">No Active Pack</span>
+                    )}
                   </div>
                 </Link>
                 <Link 
