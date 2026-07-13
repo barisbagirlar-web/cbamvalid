@@ -8,7 +8,7 @@ const PREPARATION_PACK_PRODUCT = "CBAM_CREDIT_PACK_5" as const;
 
 export async function createCheckout(
   uid: string,
-  email: string,
+  _email: string,
   productCode: string,
   metadata: { caseId: string }
 ) {
@@ -52,7 +52,6 @@ export async function createCheckout(
           quantity: 1,
         },
       ],
-      customer: email ? { email } : undefined,
       customData: {
         uid,
         orderId: order.orderId,
