@@ -505,7 +505,7 @@ export async function buildVerifierPreparationPackage(params: {
     ...common,
     title: "Methodology Decision Log",
     subtitle: "Versioned operator decisions, bases, alternatives and evidence references",
-    sections: caseData.methodologyDecisions.map((decision) => ({
+    sections: caseData.methodologyDecisions.map<PdfSection>((decision) => ({
       heading: decision.topic,
       keyValues: [["Selected method", decision.selectedMethod], ["Reason", decision.reason], ["Legal or technical basis", decision.legalOrTechnicalBasis], ["Ruleset version", decision.rulesetVersion], ["Evidence IDs", decision.evidenceIds.join(", ") || "None"], ["Rejected alternative", decision.rejectedAlternativeReason || "Not recorded"], ["Internal review status", decision.reviewStatus]],
     })),
