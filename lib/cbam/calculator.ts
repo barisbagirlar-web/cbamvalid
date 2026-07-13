@@ -25,16 +25,22 @@ function canonicalize(value: unknown): JsonLike {
   return String(value);
 }
 
-/** Stable preview identifier; production releases use server-side SHA-256. */
+/**
+ * Stable, synchronous preview identifier that works with the application's
+ * current JavaScript target. Production releases use server-side SHA-256.
+ */
 function previewHash(value: unknown): string {
   const source = JSON.stringify(canonicalize(value));
-  let hash = 0xcbf29ce484222325n;
-  const prime = 0x100000001b3n;
+  let first = 0x811c9dc5;
+  let second = 0x9e3779b9;
+
   for (let index = 0; index < source.length; index += 1) {
-    hash ^= BigInt(source.charCodeAt(index));
-    hash = BigInt.asUintN(64, hash * prime);
+    const codePoint = source.charCodeAt(index);
+    first = Math.imul(first ^ codePoint, 0x01000193) >>> 0;
+    second = Math.imul(second ^ (codePoint + index), 0x85ebca6b) >>> 0;
   }
-  return `preview_${hash.toString(16).padStart(16, "0")}`;
+
+  return `preview_${first.toString(16).padStart(8, "0")}${second.toString(16).padStart(8, "0")}`;
 }
 
 function decimal(value: unknown, field: string): Decimal | null {
@@ -121,10 +127,13 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
   }
 
   const indirect = electricity !== null && gridFactor !== null ? electricity.times(gridFactor) : null;
-  if (indirect !== null) {
+  if (indirect !== null && electricity !== null && gridFactor !== null) {
     trace.push(node({
       formulaId: "CBAM_INDIRECT_EMISSIONS",
-      inputs: { electricityConsumed: electricity.toString(), gridEmissionFactor: gridFactor?.toString() ?? "" },
+      inputs: {
+        electricityConsumed: electricity.toString(),
+        gridEmissionFactor: gridFactor.toString(),
+      },
       outputValue: indirect,
       outputUnit: "tCO2e",
     }));
