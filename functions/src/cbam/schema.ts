@@ -133,7 +133,8 @@ export const AuditReadyCaseSchema = z.object({
     cnCode: InputDatumSchema,
     sector: z.string(),
     productionVolume: InputDatumSchema,
-    shipmentRecords: InputDatumSchema
+    shipmentRecords: InputDatumSchema,
+    allocationShare: InputDatumSchema.optional()
   })),
   installation: z.object({
     name: InputDatumSchema,
