@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
  * second transaction channel from bypassing order reconciliation, case
  * binding and the five-version Preparation Pack contract.
  */
-export async function POST() {
+export async function POST(_request: Request) {
   try {
     await requireFirebaseSession();
   } catch (authError: unknown) {
