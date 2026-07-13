@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useMemo, useState } from "react";
@@ -8,7 +9,6 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
-  FileCode2,
   FileText,
   Loader2,
   Plus,
