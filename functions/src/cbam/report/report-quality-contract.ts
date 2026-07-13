@@ -148,10 +148,14 @@ export function assessVerifierGradeReport(params: {
   let allocationReconciled = caseData.goods.length <= 1;
   if (caseData.goods.length > 1) {
     const shares = caseData.goods.map((good) => decimal(good.allocationShare?.value));
-    if (shares.some((share) => share === null || share.lte(0) || share.gt(1))) {
+    const validShares = shares.filter((share): share is Decimal => share !== null);
+    if (
+      validShares.length !== shares.length ||
+      validShares.some((share) => share.lte(0) || share.gt(1))
+    ) {
       add("REPORT_ALLOCATION_SHARE_INVALID", "BLOCKER", "Every good in a multi-good installation must have a positive allocation share not exceeding 1.", "Enter evidence-supported decimal allocation shares for every good.");
     } else {
-      const sum = shares.reduce((total, share) => total.plus(share!), new Decimal(0));
+      const sum = validShares.reduce((total, share) => total.plus(share), new Decimal(0));
       allocationReconciled = sum.minus(1).abs().lte("0.000001");
       if (!allocationReconciled) add("REPORT_ALLOCATION_NOT_RECONCILED", "BLOCKER", `Good allocation shares sum to ${sum.toString()} instead of 1.`, "Adjust allocation shares so they reconcile to 1 within 0.000001.");
     }
