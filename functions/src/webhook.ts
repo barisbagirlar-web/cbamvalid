@@ -7,6 +7,7 @@ import { processWebhookEvent } from "./commerce/webhook-processor";
 export const paddleWebhook = onRequest(
   {
     region: "europe-west1",
+    secrets: ["PADDLE_API_KEY", "PADDLE_WEBHOOK_SECRET"],
   },
   async (request, response) => {
     if (request.method !== "POST") {
@@ -14,39 +15,33 @@ export const paddleWebhook = onRequest(
       return;
     }
 
-    let rawBody = request.rawBody.toString("utf8");
+    const rawBody = request.rawBody.toString("utf8");
     try {
-      // 2. Read the signature header
       const signature = request.headers["paddle-signature"] as string || "";
-
       if (!signature) {
         response.status(401).json({ error: "Missing signature header" });
         return;
       }
 
-      // 3. Verify signature using the verifier
       const verifiedEvent = await verifyWebhookSignature(rawBody, signature);
-
       const eventId = verifiedEvent.eventId;
       const eventType = verifiedEvent.eventType;
       const occurredAt = verifiedEvent.occurredAt;
       const payloadSha256 = crypto.createHash("sha256").update(rawBody).digest("hex");
 
-      // 4. Duplicate event deduplication checks and registration in transactional block
       const eventRef = adminDb.collection("paddle_events").doc(eventId);
-      const duplicate = await adminDb.runTransaction(async (dbTransaction: any) => {
+      const duplicate = await adminDb.runTransaction(async (dbTransaction) => {
         const docSnap = await dbTransaction.get(eventRef);
         if (docSnap.exists) {
           const existingEvent = docSnap.data();
-          if (existingEvent?.payloadSha256 === payloadSha256) {
-            return { isDuplicate: true, status: 200 };
-          } else {
-            return { isDuplicate: true, status: 409 };
-          }
+          return {
+            isDuplicate: true,
+            status: existingEvent?.payloadSha256 === payloadSha256 ? 200 : 409,
+          };
         }
 
         const now = new Date().toISOString();
-        const eventRecord = {
+        dbTransaction.set(eventRef, {
           eventId,
           eventType,
           occurredAt,
@@ -56,10 +51,8 @@ export const paddleWebhook = onRequest(
           signatureVerified: true,
           processingState: "PROCESSING",
           attempts: 1,
-        };
-
-        dbTransaction.set(eventRef, eventRecord);
-        return { isDuplicate: false };
+        });
+        return { isDuplicate: false, status: 200 };
       });
 
       if (duplicate.isDuplicate) {
@@ -67,42 +60,34 @@ export const paddleWebhook = onRequest(
           console.log(`[PADDLE-WEBHOOK] Duplicate event ${eventId} recognized. Acknowledging with 200.`);
           response.status(200).json({ status: "acknowledged", duplicate: true });
           return;
-        } else {
-          console.error(`[PADDLE-WEBHOOK] SECURITY WARNING: Event payload mismatch for duplicate event ID ${eventId}!`);
-          response.status(409).json({ error: "PAYLOAD_MISMATCH" });
-          return;
         }
+        console.error(`[PADDLE-WEBHOOK] SECURITY WARNING: Event payload mismatch for duplicate event ID ${eventId}.`);
+        response.status(409).json({ error: "PAYLOAD_MISMATCH" });
+        return;
       }
 
-      // 6. Process the event payload
       try {
         await processWebhookEvent(verifiedEvent);
-
-        // Mark event as PROCESSED
         await eventRef.update({
           processingState: "PROCESSED",
           processedAt: new Date().toISOString(),
         });
-      } catch (processError: any) {
-        console.error(`[PADDLE-WEBHOOK] Error processing event ${eventId}:`, processError.message || processError);
-        
+      } catch (processError: unknown) {
+        const message = processError instanceof Error ? processError.message : "PROCESSING_FAILED";
+        console.error(`[PADDLE-WEBHOOK] Error processing event ${eventId}:`, processError);
         await eventRef.update({
           processingState: "FAILED_RETRYABLE",
-          lastErrorCode: processError.message || "PROCESSING_FAILED",
+          lastErrorCode: message,
         });
-
         response.status(500).json({ error: "Processing failed" });
         return;
       }
 
-      // 7. Acknowledge rapidly
       response.status(200).json({ status: "success", eventId });
-      return;
-
-    } catch (error: any) {
-      console.error("[PADDLE-WEBHOOK] Webhook ingestion failure:", error.message || error);
-      response.status(401).json({ error: error.message || "Unauthorized" });
-      return;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unauthorized";
+      console.error("[PADDLE-WEBHOOK] Webhook ingestion failure:", error);
+      response.status(401).json({ error: message });
     }
   }
 );
