@@ -16,7 +16,9 @@ function read(relativePath) {
 const sealService = read("functions/src/cbam/report/seal-service.ts");
 const packageBuilder = read("functions/src/cbam/report/verifier-package-builder.ts");
 const webhookProcessor = read("functions/src/commerce/webhook-processor.ts");
+const productCatalog = read("functions/src/commerce/catalog.ts");
 const checkoutPage = read("app/(workspace)/credits/buy/page.tsx");
+const legacyCheckoutRoute = read("app/api/checkout/cbam/route.ts");
 const appHosting = read("apphosting.yaml");
 const reportsHandler = read("functions/src/handlers/reports.ts");
 
@@ -71,6 +73,23 @@ if (!webhookProcessor.includes("PADDLE_PRICE_ID_MISMATCH")) failures.push("Webho
 if (!webhookProcessor.includes("PADDLE_ORDER_PAYLOAD_MISMATCH")) failures.push("Webhook order reconciliation missing");
 if (!checkoutPage.includes("transactionId: checkout.transactionId")) failures.push("Checkout is not opened from a server-created transaction");
 if (/customData\s*:/.test(checkoutPage)) failures.push("Client checkout must not control Paddle customData");
+
+if (!legacyCheckoutRoute.includes("CHECKOUT_CHANNEL_RETIRED")) {
+  failures.push("Legacy Next.js checkout route is not explicitly retired");
+}
+if (/(sandbox-api\.paddle\.com|api\.paddle\.com)\/transactions|custom_data\s*:|Math\.random\s*\(/.test(legacyCheckoutRoute)) {
+  failures.push("Legacy Next.js checkout route can still create or shape Paddle transactions");
+}
+if (!productCatalog.includes('PREPARATION_PACK_PRODUCT_CODE = "CBAM_CREDIT_PACK_5"')) {
+  failures.push("Canonical Preparation Pack product code missing");
+}
+if (productCatalog.includes("CBAM_EXPORTER_FINAL_REPORT")) {
+  failures.push("Retired parallel CBAM product remains in the production catalog");
+}
+if (/pri_01j2f(xyz|abc)\.\.\./.test(productCatalog)) {
+  failures.push("Placeholder Paddle price ID remains in the production catalog");
+}
+
 if (!sealService.includes("buildVerifierPreparationPackage")) failures.push("Seal path is not connected to the verifier package builder");
 if (!sealService.includes("packageTopLevelComponentCount: 23")) failures.push("Sealed report does not record 23 top-level components");
 if (!reportsHandler.includes('z.enum(["zip", "manifest"])')) failures.push("Download endpoint exposes unsupported or non-existent report formats");
@@ -105,6 +124,8 @@ if (failures.length > 0) {
 console.log("RELEASE_TRUTH_GUARD=PASS");
 console.log(`VERIFIER_PACKAGE_TOP_LEVEL_CONTRACT=${requiredPackageFiles.length}`);
 console.log("PADDLE_SECRET_SOURCE_CONTAINMENT=PASS");
+console.log("SINGLE_CHECKOUT_CHANNEL=PASS");
+console.log("SINGLE_PREPARATION_PACK_PRODUCT=PASS");
 console.log("SERVER_CREATED_CHECKOUT_CONTRACT=PASS");
 console.log("WEBHOOK_RECONCILIATION_CONTRACT=PASS");
 console.log("SEAL_PACKAGE_CONTRACT=PASS");
