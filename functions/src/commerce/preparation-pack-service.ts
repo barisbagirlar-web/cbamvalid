@@ -27,8 +27,11 @@ function entitlementIdFor(transactionId: string, caseId: string, sequence: numbe
 
 /**
  * Issues exactly one entitlement document per successful sealed version.
- * Deterministic IDs make webhook retries idempotent even beyond event-ID
- * deduplication.
+ *
+ * Firestore transactions require every read to occur before the first write.
+ * This function therefore preloads all deterministic entitlement documents,
+ * then creates the ledger entry, and only then writes missing entitlements.
+ * Deterministic IDs make retries idempotent beyond webhook-event deduplication.
  */
 export async function issuePreparationPack(
   dbTransaction: admin.firestore.Transaction,
@@ -47,43 +50,50 @@ export async function issuePreparationPack(
   }
 
   const now = new Date().toISOString();
-  const issued: PreparationPackEntitlement[] = [];
-
-  for (let sequence = 1; sequence <= params.versions; sequence++) {
-    const entitlementId = entitlementIdFor(params.transactionId, params.caseId, sequence);
-    const entitlementRef = adminDb.collection("entitlements").doc(entitlementId);
-    const existing = await dbTransaction.get(entitlementRef);
-
-    const entitlement: PreparationPackEntitlement = {
+  const candidates = Array.from({ length: params.versions }, (_, index) => {
+    const versionSequence = index + 1;
+    const entitlementId = entitlementIdFor(params.transactionId, params.caseId, versionSequence);
+    return {
+      versionSequence,
       entitlementId,
-      uid: params.uid,
-      orderId: params.orderId,
-      caseId: params.caseId,
-      productCode: params.productCode,
-      status: "AVAILABLE",
-      quantity: 1,
-      versionSequence: sequence,
-      createdAt: now,
-      updatedAt: now,
+      ref: adminDb.collection("entitlements").doc(entitlementId),
     };
+  });
 
-    if (existing.exists) {
-      const current = existing.data() as PreparationPackEntitlement;
+  // All entitlement reads happen before writeLedgerEntry performs its first write.
+  const snapshots = await Promise.all(
+    candidates.map((candidate) => dbTransaction.get(candidate.ref))
+  );
+
+  const issued = candidates.map((candidate, index) => {
+    const snapshot = snapshots[index];
+    if (snapshot.exists) {
+      const current = snapshot.data() as PreparationPackEntitlement;
       if (
         current.uid !== params.uid ||
         current.orderId !== params.orderId ||
         current.caseId !== params.caseId ||
-        current.versionSequence !== sequence
+        current.productCode !== params.productCode ||
+        current.versionSequence !== candidate.versionSequence
       ) {
         throw new Error("ENTITLEMENT_IDEMPOTENCY_PAYLOAD_MISMATCH");
       }
-      issued.push(current);
-      continue;
+      return current;
     }
 
-    dbTransaction.set(entitlementRef, entitlement);
-    issued.push(entitlement);
-  }
+    return {
+      entitlementId: candidate.entitlementId,
+      uid: params.uid,
+      orderId: params.orderId,
+      caseId: params.caseId,
+      productCode: params.productCode,
+      status: "AVAILABLE" as const,
+      quantity: 1 as const,
+      versionSequence: candidate.versionSequence,
+      createdAt: now,
+      updatedAt: now,
+    };
+  });
 
   await writeLedgerEntry(dbTransaction, {
     uid: params.uid,
@@ -93,6 +103,12 @@ export async function issuePreparationPack(
     type: "ENTITLEMENT_ISSUED",
     quantity: params.versions,
     idempotencyKey: `preparation-pack:${params.transactionId}:${params.caseId}`,
+  });
+
+  candidates.forEach((candidate, index) => {
+    if (!snapshots[index].exists) {
+      dbTransaction.set(candidate.ref, issued[index]);
+    }
   });
 
   return issued;
