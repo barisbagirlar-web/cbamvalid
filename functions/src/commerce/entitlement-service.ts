@@ -55,7 +55,7 @@ export async function createEntitlement(
     updatedAt: now,
   };
 
-  dbTransaction.set(entitlementRef, entitlement);
+  // writeLedgerEntry performs reads before its write; call it before any other write.
   await writeLedgerEntry(dbTransaction, {
     uid: params.uid,
     orderId: params.orderId,
@@ -65,6 +65,7 @@ export async function createEntitlement(
     quantity: params.quantity,
     idempotencyKey: `entitlement:${params.transactionId}:${params.productCode}`,
   });
+  dbTransaction.set(entitlementRef, entitlement);
 
   return entitlement;
 }
@@ -85,7 +86,7 @@ export async function reserveEntitlement(
   validateIdentifier("reportId", params.reportId);
 
   const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
-  const snapshot: any = await dbTransaction.get(entitlementRef as any);
+  const snapshot = await dbTransaction.get(entitlementRef);
   if (!snapshot.exists) {
     throw new EntitlementUnavailableError(`Entitlement with ID ${params.entitlementId} was not found.`);
   }
@@ -102,6 +103,12 @@ export async function reserveEntitlement(
   }
 
   const now = new Date();
+  const isSameReservation =
+    entitlement.status === "RESERVED" && entitlement.reservedReportId === params.reportId;
+  if (isSameReservation) {
+    return entitlement;
+  }
+
   const isExpired =
     entitlement.status === "RESERVED" &&
     entitlement.reservationExpiresAt &&
@@ -119,7 +126,6 @@ export async function reserveEntitlement(
     updatedAt: now.toISOString(),
   };
 
-  dbTransaction.update(entitlementRef, updatedEntitlement);
   await writeLedgerEntry(dbTransaction, {
     uid: entitlement.uid,
     orderId: entitlement.orderId,
@@ -129,6 +135,7 @@ export async function reserveEntitlement(
     quantity: 1,
     idempotencyKey: `reserve:${params.entitlementId}:${params.reportId}`,
   });
+  dbTransaction.update(entitlementRef, updatedEntitlement);
 
   return { ...entitlement, ...updatedEntitlement };
 }
@@ -149,7 +156,7 @@ export async function consumeEntitlement(
   validateIdentifier("reportId", params.reportId);
 
   const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
-  const snapshot: any = await dbTransaction.get(entitlementRef as any);
+  const snapshot = await dbTransaction.get(entitlementRef);
   if (!snapshot.exists) {
     throw new EntitlementUnavailableError(`Entitlement with ID ${params.entitlementId} was not found.`);
   }
@@ -157,6 +164,9 @@ export async function consumeEntitlement(
   const entitlement = snapshot.data() as Entitlement;
   if (entitlement.uid !== params.uid || entitlement.caseId !== params.caseId) {
     throw new EntitlementUnavailableError("Ownership or dossier mismatch on requested entitlement.");
+  }
+  if (entitlement.status === "CONSUMED" && entitlement.consumedReportId === params.reportId) {
+    return entitlement;
   }
   if (entitlement.status !== "RESERVED" || entitlement.reservedReportId !== params.reportId) {
     throw new DoubleSpendViolationError(params.entitlementId);
@@ -171,11 +181,6 @@ export async function consumeEntitlement(
     updatedAt: now,
   };
 
-  dbTransaction.update(entitlementRef, {
-    ...updatedEntitlement,
-    reservationExpiresAt: null,
-  });
-
   await writeLedgerEntry(dbTransaction, {
     uid: entitlement.uid,
     orderId: entitlement.orderId,
@@ -184,6 +189,10 @@ export async function consumeEntitlement(
     type: "ENTITLEMENT_CONSUMED",
     quantity: 1,
     idempotencyKey: `consume:${params.entitlementId}:${params.reportId}`,
+  });
+  dbTransaction.update(entitlementRef, {
+    ...updatedEntitlement,
+    reservationExpiresAt: null,
   });
 
   return { ...entitlement, ...updatedEntitlement };
@@ -204,25 +213,21 @@ export async function releaseEntitlementReservation(
   validateIdentifier("reportId", params.reportId);
 
   const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
-  const snapshot: any = await dbTransaction.get(entitlementRef as any);
+  const snapshot = await dbTransaction.get(entitlementRef);
   if (!snapshot.exists) throw new EntitlementUnavailableError();
 
   const entitlement = snapshot.data() as Entitlement;
   if (entitlement.uid !== params.uid || entitlement.caseId !== params.caseId) {
     throw new EntitlementUnavailableError("Ownership or dossier mismatch.");
   }
+  if (entitlement.status === "AVAILABLE") {
+    return entitlement;
+  }
   if (entitlement.status !== "RESERVED" || entitlement.reservedReportId !== params.reportId) {
     return entitlement;
   }
 
   const now = new Date().toISOString();
-  dbTransaction.update(entitlementRef, {
-    status: "AVAILABLE",
-    reservedReportId: null,
-    reservationExpiresAt: null,
-    updatedAt: now,
-  });
-
   await writeLedgerEntry(dbTransaction, {
     uid: entitlement.uid,
     orderId: entitlement.orderId,
@@ -231,6 +236,12 @@ export async function releaseEntitlementReservation(
     type: "ENTITLEMENT_RELEASED",
     quantity: 1,
     idempotencyKey: `release:${params.entitlementId}:${params.reportId}`,
+  });
+  dbTransaction.update(entitlementRef, {
+    status: "AVAILABLE",
+    reservedReportId: null,
+    reservationExpiresAt: null,
+    updatedAt: now,
   });
 
   return {
@@ -248,18 +259,13 @@ export async function revokeEntitlement(
 ): Promise<Entitlement> {
   validateIdentifier("entitlementId", params.entitlementId);
   const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
-  const snapshot: any = await dbTransaction.get(entitlementRef as any);
+  const snapshot = await dbTransaction.get(entitlementRef);
   if (!snapshot.exists) throw new EntitlementUnavailableError();
 
   const entitlement = snapshot.data() as Entitlement;
-  const now = new Date().toISOString();
-  dbTransaction.update(entitlementRef, {
-    status: "REVOKED",
-    reservedReportId: null,
-    reservationExpiresAt: null,
-    updatedAt: now,
-  });
+  if (entitlement.status === "REVOKED") return entitlement;
 
+  const now = new Date().toISOString();
   await writeLedgerEntry(dbTransaction, {
     uid: entitlement.uid,
     orderId: entitlement.orderId,
@@ -268,6 +274,12 @@ export async function revokeEntitlement(
     type: "ENTITLEMENT_REVOKED",
     quantity: entitlement.quantity,
     idempotencyKey: `revoke:${params.entitlementId}:${params.eventId}`,
+  });
+  dbTransaction.update(entitlementRef, {
+    status: "REVOKED",
+    reservedReportId: null,
+    reservationExpiresAt: null,
+    updatedAt: now,
   });
 
   return { ...entitlement, status: "REVOKED", updatedAt: now };
