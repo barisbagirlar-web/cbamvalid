@@ -79,7 +79,7 @@ requireText(wizard, "per-good results", "User workflow lacks per-good result fra
 requireText(reportTest, "reportQualityAssessment.status", "Report tests do not assert report-quality PASS");
 requireText(reportTest, "23", "Report tests do not assert the 23-component contract");
 requireText(calculationTest, "CALCULATION_ALLOCATION_NOT_RECONCILED", "Calculation tests do not cover allocation mismatch");
-requireText(calculationTest, "does not double counting", "Calculation tests do not document double-counting protection");
+requireText(calculationTest, "exactly once", "Calculation tests do not document double-counting protection");
 requireText(calculationTest, "deterministic", "Calculation tests do not cover deterministic hashes");
 
 const prohibitedPositiveClaims = [
