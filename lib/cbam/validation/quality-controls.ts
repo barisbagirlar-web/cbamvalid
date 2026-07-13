@@ -164,11 +164,11 @@ export function runQualityControls(caseData: AuditReadyCase): QualityControlResu
     );
   } else {
     caseData.precursors.forEach((precursor, index) => {
-      const paths = [
+      const paths: Array<[string, InputDatum, string, readonly string[]]> = [
         [`precursors.${index}.quantity`, precursor.quantity, "quantity", ["t", "kg"]],
         [`precursors.${index}.directEmissions`, precursor.directEmissions, "direct emissions", ["tCO2e"]],
         [`precursors.${index}.indirectEmissions`, precursor.indirectEmissions, "indirect emissions", ["tCO2e"]],
-      ] as const;
+      ];
       paths.forEach(([path, datum, label, units]) => {
         if (!finiteNonNegative(datum.value) || (label === "quantity" && !finitePositive(datum.value))) add(`QC_09_${index + 1}_${label.replace(/\s/g, "_")}`, `Precursor ${index + 1} ${label}`, "BLOCKER", `Precursor ${label} is invalid.`, "REM_CORRECT_PRECURSOR_DATA");
         else if (!units.includes(unitOf(datum, label === "quantity" ? "t" : "tCO2e"))) add(`QC_09_${index + 1}_${label.replace(/\s/g, "_")}`, `Precursor ${index + 1} ${label} unit`, "BLOCKER", `Precursor ${label} uses an unsupported unit.`, "REM_CORRECT_PRECURSOR_UNIT");
