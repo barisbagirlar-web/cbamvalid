@@ -1,32 +1,30 @@
 {
   "name": "functions",
   "version": "1.0.0",
-  "description": "",
+  "private": true,
   "main": "lib/index.js",
   "engines": {
     "node": "20"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "@paddle/paddle-node-sdk": "^3.8.0",
-    "canvas": "^3.2.3",
-    "firebase-admin": "^13.10.0",
-    "firebase-functions": "^7.2.5",
-    "jspdf": "^4.2.1",
-    "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "^6.1.200",
-    "xmlbuilder2": "^4.0.3",
-    "zod": "^4.4.3"
+    "@paddle/paddle-node-sdk": "3.8.0",
+    "canvas": "3.2.3",
+    "decimal.js": "10.6.0",
+    "firebase-admin": "13.10.0",
+    "firebase-functions": "7.2.5",
+    "jspdf": "4.2.1",
+    "jszip": "3.10.1",
+    "pdf-lib": "1.17.1",
+    "pdfjs-dist": "6.1.200",
+    "xmlbuilder2": "4.0.3",
+    "zod": "4.4.3"
   },
   "devDependencies": {
-    "@types/node": "^26.1.1",
-    "typescript": "^7.0.2",
-    "vitest": "^4.1.10"
+    "@types/node": "26.1.1",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10"
   }
 }
