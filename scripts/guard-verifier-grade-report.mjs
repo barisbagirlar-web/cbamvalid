@@ -17,6 +17,10 @@ function requireText(source, expected, message) {
   if (!source.includes(expected)) failures.push(message);
 }
 
+function requirePattern(source, pattern, message) {
+  if (!pattern.test(source)) failures.push(message);
+}
+
 const serverSchema = read("functions/src/cbam/schema.ts");
 const clientSchema = read("lib/cbam/schema.ts");
 const serverCalculator = read("functions/src/cbam/calculator.ts");
@@ -59,7 +63,11 @@ requireText(qualityContract, "REPORT_ALLOCATION_NOT_RECONCILED", "Report quality
 requireText(qualityContract, "REPORT_MATERIAL_FINDINGS_OPEN", "Report quality contract lacks open-material-finding gate");
 
 requireText(packageBuilder, "assessVerifierGradeReport", "Package builder is not connected to the report quality contract");
-requireText(packageBuilder, "VERIFIER_GRADE_REPORT_BLOCKED", "Package builder does not fail closed on report-quality failure");
+requirePattern(
+  packageBuilder,
+  /if\s*\(\s*reportQualityAssessment\.status\s*!==\s*["']PASS["']\s*\)\s*\{[\s\S]{0,500}?throw\s+new\s+Error\s*\(/,
+  "Package builder does not fail closed on report-quality failure"
+);
 requireText(packageBuilder, "Operator Emissions Report", "Operator emissions report is missing");
 requireText(packageBuilder, "Verifier completion section", "Operator report lacks accredited-verifier completion fields");
 requireText(packageBuilder, "Per-good reportable results", "Calculation annex lacks per-good reportable results");
