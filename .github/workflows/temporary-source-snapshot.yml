@@ -1,0 +1,38 @@
+name: Temporary Source Snapshot
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    name: Export repair source files
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Stage repair source files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p repair-source/app repair-source/functions/report repair-source/functions/validation repair-source/lib/validation
+          cp 'app/(workspace)/cases/[caseId]/CaseWizardClient.tsx' repair-source/app/CaseWizardClient.tsx
+          cp functions/src/cbam/report/verifier-package-builder.ts repair-source/functions/report/verifier-package-builder.ts
+          cp functions/src/cbam/validation/quality-controls.ts repair-source/functions/validation/quality-controls.ts
+          cp lib/cbam/validation/quality-controls.ts repair-source/lib/validation/quality-controls.ts
+          cp lib/cbam/validation/readiness-assessor.ts repair-source/lib/validation/readiness-assessor.ts
+
+      - name: Upload repair source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: temporary-repair-source-${{ github.sha }}
+          path: repair-source
+          if-no-files-found: error
+          retention-days: 1
