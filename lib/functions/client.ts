@@ -1,7 +1,6 @@
 import { httpsCallable } from "firebase/functions";
 import { firebaseFunctions } from "@/lib/firebase/client";
 
-// Core Callables
 export const getCbamCasesCallable = httpsCallable<void, { cases: any[] }>(firebaseFunctions, "getCbamCases");
 export const getCbamCaseCallable = httpsCallable<{ caseId: string }, { case: any }>(firebaseFunctions, "getCbamCase");
 export const saveCbamCaseCallable = httpsCallable<{ caseId?: string, data: any }, { caseId: string }>(firebaseFunctions, "saveCbamCase");
@@ -9,33 +8,40 @@ export const renameCbamCaseCallable = httpsCallable<{ caseId: string, newName: s
 export const archiveCbamCaseCallable = httpsCallable<{ caseId: string }, { success: boolean }>(firebaseFunctions, "archiveCbamCase");
 export const deleteCbamCaseCallable = httpsCallable<{ caseId: string }, { success: boolean }>(firebaseFunctions, "deleteCbamCase");
 
-export const calculateCbamCallable = httpsCallable<any, any>(firebaseFunctions, "calculateCbam");
-export const sealCbamReportCallable = httpsCallable<{ caseId: string, entitlementId: string }, any>(firebaseFunctions, "sealCbamReport");
+export const calculateCbamCallable = httpsCallable<{ caseId: string }, any>(firebaseFunctions, "calculateCbam");
+export const sealCbamReportCallable = httpsCallable<{
+  caseId: string;
+  entitlementId: string;
+  requestId: string;
+}, any>(firebaseFunctions, "sealCbamReport");
 
 export const getCbamReportsCallable = httpsCallable<void, { reports: any[] }>(firebaseFunctions, "getCbamReports");
 export const getCbamReportCallable = httpsCallable<{ reportId: string }, { report: any }>(firebaseFunctions, "getCbamReport");
-export const getReportDownloadUrlCallable = httpsCallable<{ reportId: string, format: string }, { url: string }>(firebaseFunctions, "getReportDownloadUrl");
+export const getReportDownloadUrlCallable = httpsCallable<{
+  reportId: string;
+  format: "zip" | "manifest";
+}, { url: string }>(firebaseFunctions, "getReportDownloadUrl");
 
 export const getEntitlementsCallable = httpsCallable<void, { entitlements: any[] }>(firebaseFunctions, "getEntitlements");
-export const createCheckoutSessionCallable = httpsCallable<{ productCode: string, caseId: string }, { transactionId: string, error?: string }>(firebaseFunctions, "createCheckoutSession");
+export const createCheckoutSessionCallable = httpsCallable<{
+  productCode: "CBAM_CREDIT_PACK_5";
+  caseId: string;
+}, { transactionId: string; error?: string }>(firebaseFunctions, "createCheckoutSession");
 export const unlockCbamUsesCallable = httpsCallable<{ requestId: string }, any>(firebaseFunctions, "unlockCbamUses");
 
 export const adminSetUserTokensCallable = httpsCallable<{ targetUserId: string, tokensToSet: number }, { success: boolean }>(firebaseFunctions, "adminSetUserTokens");
 export const getSourcesStatusCallable = httpsCallable<void, any>(firebaseFunctions, "getSourcesStatus");
 export const verifyDocumentCallable = httpsCallable<{ documentHash: string }, any>(firebaseFunctions, "verifyDocument");
 
-// Account Callables
 export const getAccountOverviewCallable = httpsCallable<void, any>(firebaseFunctions, "getAccountOverview");
 export const updateOwnProfileCallable = httpsCallable<any, any>(firebaseFunctions, "updateOwnProfile");
 export const listCreditLedgerCallable = httpsCallable<{ limit?: number }, any>(firebaseFunctions, "listCreditLedger");
 export const listPurchaseHistoryCallable = httpsCallable<{ limit?: number }, any>(firebaseFunctions, "listPurchaseHistory");
 export const requestAccountClosureCallable = httpsCallable<void, any>(firebaseFunctions, "requestAccountClosure");
 
-// Admin Callables
 export const listAllUsersCallable = httpsCallable<{ limit?: number, pageToken?: string }, any>(firebaseFunctions, "listAllUsers");
 export const listAllTransactionsCallable = httpsCallable<{ limit?: number }, any>(firebaseFunctions, "listAllTransactions");
 
-// Service Layer functions that abstract the Callables
 export async function getCases() {
   const result = await getCbamCasesCallable();
   return result.data.cases;
@@ -66,13 +72,13 @@ export async function deleteCase(caseId: string) {
   return result.data.success;
 }
 
-export async function calculateReport(data: any) {
-  const result = await calculateCbamCallable(data);
+export async function calculateReport(caseId: string) {
+  const result = await calculateCbamCallable({ caseId });
   return result.data;
 }
 
-export async function sealReport(caseId: string, entitlementId: string) {
-  const result = await sealCbamReportCallable({ caseId, entitlementId });
+export async function sealReport(caseId: string, entitlementId: string, requestId: string) {
+  const result = await sealCbamReportCallable({ caseId, entitlementId, requestId });
   return result.data;
 }
 
@@ -86,7 +92,7 @@ export async function getReport(reportId: string) {
   return result.data.report;
 }
 
-export async function getReportDownloadUrl(reportId: string, format: string) {
+export async function getReportDownloadUrl(reportId: string, format: "zip" | "manifest") {
   const result = await getReportDownloadUrlCallable({ reportId, format });
   return result.data.url;
 }
@@ -96,7 +102,7 @@ export async function getEntitlements() {
   return result.data.entitlements;
 }
 
-export async function createCheckout(productCode: string, caseId: string) {
+export async function createCheckout(productCode: "CBAM_CREDIT_PACK_5", caseId: string) {
   const result = await createCheckoutSessionCallable({ productCode, caseId });
   return result.data;
 }
