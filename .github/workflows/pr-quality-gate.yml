@@ -18,7 +18,7 @@ jobs:
   quality:
     name: Typecheck, tests and production build
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 45
     env:
       CI: "true"
       NEXT_TELEMETRY_DISABLED: "1"
@@ -33,15 +33,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
 
-      - name: Install locked dependencies
+      - name: Install locked application dependencies
         run: npm ci
+
+      - name: Install locked Functions dependencies
+        run: npm --prefix functions ci --ignore-scripts --no-audit --no-fund
 
       - name: Prepare evidence directory
         run: mkdir -p artifacts/ci
@@ -52,11 +60,23 @@ jobs:
           set -o pipefail
           node scripts/guard-workspace-navigation.mjs 2>&1 | tee artifacts/ci/navigation-contract.log
 
-      - name: Typecheck
+      - name: Verify release truth contract
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/guard-release-truth.mjs 2>&1 | tee artifacts/ci/release-truth.log
+
+      - name: Typecheck application
         shell: bash
         run: |
           set -o pipefail
           npm run typecheck 2>&1 | tee artifacts/ci/typecheck.log
+
+      - name: Compile Firebase Functions
+        shell: bash
+        run: |
+          set -o pipefail
+          npm --prefix functions run build 2>&1 | tee artifacts/ci/functions-build.log
 
       - name: Lint
         shell: bash
@@ -88,7 +108,7 @@ jobs:
           set -o pipefail
           npm run test:reports 2>&1 | tee artifacts/ci/test-reports.log
 
-      - name: Production build
+      - name: Production application build
         shell: bash
         run: |
           set -o pipefail

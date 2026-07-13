@@ -1,352 +1,185 @@
-import React from "react";
 import Link from "next/link";
-import { Metadata } from "next";
-import { 
-  FileText, ShieldCheck, Scale, AlertTriangle, Cpu, HelpCircle, 
-  ArrowRight, Download, Eye, Layers, CheckCircle2, ChevronRight 
+import {
+  ArrowRight,
+  FileArchive,
+  FileCheck2,
+  FolderSearch2,
+  ShieldCheck,
 } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "CBAMValid Product | Evidence-Linked CBAM Dossier Software",
-  description: "Prepare structured CBAM cases, connect supporting evidence, resolve quality-control findings and generate sealed dossier packages.",
+export const metadata = {
+  title: "Exporter Verification Preparation Pack | CBAMValid",
+  description: "Prepare one installation-year CBAM dossier with evidence traceability, quality findings, calculations and a sealed verifier-preparation package.",
 };
 
+const workflow = [
+  ["1", "Case & Reporting Scope", "Define the exporter, declarant, installation and reporting year."],
+  ["2", "Goods & Customs Data", "Record linked goods, CN codes, production quantities and shipment data."],
+  ["3", "Installation & Production Route", "Document monitored processes, boundaries and production routes."],
+  ["4", "Embedded Emissions", "Calculate direct, indirect and product-specific embedded emissions."],
+  ["5", "Precursors & Adjustments", "Document relevant precursors and supported carbon-price adjustments."],
+  ["6", "Evidence Register", "Upload, hash and link source documents to material data fields."],
+  ["7", "Quality Review", "Resolve missing evidence, inconsistencies, blockers and methodology findings."],
+  ["8", "Seal & Deliverables", "Generate an immutable package with a data-integrity manifest."],
+] as const;
+
+const deliverables = [
+  "Product Scope Assessment",
+  "CN Code Reasoning",
+  "Required Data Checklist",
+  "Installation Monitoring Plan",
+  "Production Process Map",
+  "System Boundary Register",
+  "Source Stream Register",
+  "Emission Source Register",
+  "Measurement and Meter Register",
+  "Activity Data Ledger",
+  "Evidence Register",
+  "Field-to-Evidence Matrix",
+  "Methodology Decision Log",
+  "Embedded Emissions Calculation Annex",
+  "Operator Emissions Report",
+  "Operator Summary Emissions Report",
+  "Verification Readiness Assessment",
+  "Misstatement and Non-Conformity Register",
+  "Corrective Action Log",
+  "O3CI Field-Mapped Structured Export",
+  "Calculation Trace",
+  "Data Integrity Manifest",
+  "Supporting Evidence Folder",
+] as const;
+
 export default function ProductPage() {
-  const workflowSteps = [
-    { num: "01", title: "Initialize Case", desc: "Define reporting period, scope, and manufacturing installation details." },
-    { num: "02", title: "Map CN Codes", desc: "Import list of goods and automatically match to official EU CBAM product categories." },
-    { num: "03", title: "Upload Production Data", desc: "Enter activity levels, direct emissions, energy usage, and precursor allocations." },
-    { num: "04", title: "Link Document Evidence", desc: "Attach raw invoices, utility bills, lab tests, and purchase ledger sheets." },
-    { num: "05", title: "Run Quality Controls", desc: "Trigger the validation engine to scan for arithmetic gaps or missing records." },
-    { num: "06", title: "Resolve Blockers", desc: "Rectify flagged compliance inconsistencies with direct system feedback." },
-    { num: "07", title: "Purchase Seal Credit", desc: "Review the finalized package and purchase report credits." },
-    { num: "08", title: "Export Sealed Dossier", desc: "Generate and download the tamper-proof PDF, XML, and verified ZIP package." }
-  ];
-
   return (
-    <div className="flex-1 bg-surface text-foreground font-sans">
-      
-      {/* SECTION 1: Product Overview */}
-      <section className="relative py-20 overflow-hidden bg-gradient-to-b from-neutral-soft/50 to-surface">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-accent/10 text-accent uppercase tracking-wider">
-              Product Overview
-            </span>
-            <h1 className="text-4xl md:text-5xl font-serif font-black tracking-tight leading-tight">
-              Evidence-Linked CBAM Compliance Software
+    <main className="bg-background text-foreground">
+      <section className="mx-auto max-w-6xl px-6 pb-20 pt-24 md:px-10 md:pt-32">
+        <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+          <div>
+            <p className="mb-4 text-xs font-bold uppercase tracking-[0.22em] text-accent">
+              CBAMValid Exporter Verification Preparation Pack
+            </p>
+            <h1 className="max-w-4xl font-serif text-4xl font-bold tracking-tight md:text-6xl">
+              Turn installation, emissions and evidence data into a verifier-preparation dossier.
             </h1>
-            <p className="text-muted text-lg leading-relaxed">
-              CBAMValid is an enterprise platform enabling industrial exporters and EU importers to collaborate, validate, and prepare deterministic carbon emissions data for official registry declarations.
+            <p className="mt-6 max-w-3xl text-lg leading-relaxed text-muted">
+              Built for non-EU producers and exporters of CBAM-covered goods. Prepare one installation and one reporting year, link supporting evidence, resolve quality findings and generate a sealed 23-component package.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Link 
-                href="/register?next=/cases/new" 
-                className="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-accent px-8 font-medium text-surface transition-all hover:bg-accent-hover shadow-sm"
-              >
-                Start a Dossier
-                <ArrowRight className="w-5 h-5" />
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link href="/register?next=/cases/new" className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-accent px-6 font-semibold text-surface hover:bg-accent-hover">
+                Create Your Draft Dossier <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link 
-                href="/how-it-works" 
-                className="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-surface border border-border px-8 font-medium hover:bg-border/30 transition-colors shadow-sm"
-              >
-                Watch the Workflow
+              <Link href="/sample-dossier" className="inline-flex h-12 items-center justify-center rounded-md border border-border-strong px-6 font-semibold hover:bg-neutral-soft">
+                View Sample Dossier
               </Link>
             </div>
+            <p className="mt-4 text-sm text-muted">
+              Draft preparation is free. Purchase the $150 Preparation Pack only before sealing and downloading final deliverables.
+            </p>
           </div>
-          <div className="relative">
-            <div className="absolute inset-0 bg-accent/5 rounded-3xl blur-3xl -z-10"></div>
-            <div className="bg-surface/80 backdrop-blur-md border border-border/80 rounded-3xl p-8 shadow-xl space-y-6">
-              <div className="flex items-center justify-between border-b border-border/50 pb-4">
-                <span className="text-xs font-bold text-muted uppercase tracking-wider">System State</span>
-                <span className="inline-flex items-center gap-1.5 text-accent text-xs font-bold bg-accent/10 px-2.5 py-1 rounded-full">
-                  <ShieldCheck className="w-4 h-4" /> Ready to Seal
-                </span>
-              </div>
-              <div className="space-y-4">
-                <div className="h-6 bg-border/20 rounded w-3/4"></div>
-                <div className="h-6 bg-border/20 rounded w-1/2"></div>
-                <div className="h-6 bg-border/20 rounded w-5/6"></div>
-              </div>
+
+          <div className="rounded-3xl border border-border bg-surface p-7 shadow-sm">
+            <p className="text-sm font-bold text-accent">Commercial scope</p>
+            <div className="mt-5 space-y-4 text-sm">
+              <ScopeRow label="Installation" value="1" />
+              <ScopeRow label="Reporting year" value="1" />
+              <ScopeRow label="Production processes" value="Defined in the dossier" />
+              <ScopeRow label="Linked goods / CN groups" value="Included in the selected case" />
+              <ScopeRow label="Successful sealed versions" value="5" />
+              <ScopeRow label="Price" value="$150 USD" strong />
             </div>
           </div>
         </div>
       </section>
 
-      {/* SECTION 2: Eight-Step Case Workflow */}
-      <section className="py-20 border-t border-border/50 bg-background">
-        <div className="max-w-7xl mx-auto px-6 space-y-12">
-          <div className="text-center max-w-xl mx-auto space-y-4">
-            <h2 className="text-3xl font-serif font-black tracking-tight">Structured Exporter Workflow</h2>
-            <p className="text-muted leading-relaxed">
-              Our step-by-step case compilation maps your production operations directly to compliant EU reporting outcomes.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {workflowSteps.map((step) => (
-              <div key={step.num} className="bg-surface border border-border rounded-2xl p-6 space-y-4 shadow-sm hover:shadow-md transition-shadow">
-                <span className="text-2xl font-black text-accent/25 font-mono block">{step.num}</span>
-                <h3 className="font-bold text-lg text-foreground">{step.title}</h3>
-                <p className="text-muted text-sm leading-relaxed">{step.desc}</p>
-              </div>
-            ))}
-          </div>
+      <section className="border-y border-border bg-surface">
+        <div className="mx-auto grid max-w-6xl gap-8 px-6 py-16 md:grid-cols-3 md:px-10">
+          <ValueCard icon={<FolderSearch2 />} title="Field-to-evidence lineage" text="Material inputs are linked to source files, page references, SHA-256 hashes and review status." />
+          <ValueCard icon={<ShieldCheck />} title="Fail-closed quality review" text="Open blockers prevent sealing. Failed generation consumes no report version." />
+          <ValueCard icon={<FileArchive />} title="Immutable release package" text="Each successful version receives a release ID, calculation hash, manifest hash and package hash." />
         </div>
       </section>
 
-      {/* SECTION 3: Evidence-Linked Input Model */}
-      <section className="py-20 border-t border-border/50 bg-surface">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-accent/10 text-accent uppercase tracking-wider">
-              Traceability
-            </span>
-            <h2 className="text-3xl font-serif font-black tracking-tight">Evidence-Linked Input Model</h2>
-            <p className="text-muted leading-relaxed">
-              Every carbon intensity data point entered must be linked back to direct administrative or engineering records. This prevents empty declarations and ensures that importers hold auditable verification packages before submission.
-            </p>
-            <ul className="space-y-3 font-medium">
-              <li className="flex items-center gap-3 text-sm text-foreground">
-                <CheckCircle2 className="w-5 h-5 text-accent shrink-0" />
-                Linked utility bills, lab assays, and purchase invoices.
-              </li>
-              <li className="flex items-center gap-3 text-sm text-foreground">
-                <CheckCircle2 className="w-5 h-5 text-accent shrink-0" />
-                Precursor certificates and grid allocation worksheets.
-              </li>
-            </ul>
-          </div>
-          <div className="bg-surface/80 border border-border rounded-3xl p-8 shadow-md">
-            <div className="space-y-4">
-              <div className="flex justify-between text-xs font-bold text-muted border-b border-border/40 pb-2">
-                <span>INPUT PARAMETER</span>
-                <span>LINKED EVIDENCE</span>
-              </div>
-              <div className="flex justify-between items-center text-sm py-2 border-b border-border/20">
-                <span>Electricity consumption</span>
-                <span className="text-accent font-mono text-xs select-all">utility_bill_q1.pdf</span>
-              </div>
-              <div className="flex justify-between items-center text-sm py-2 border-b border-border/20">
-                <span>CN 730890 Steel Precursors</span>
-                <span className="text-accent font-mono text-xs select-all">supplier_mill_test.pdf</span>
-              </div>
-            </div>
-          </div>
+      <section className="mx-auto max-w-6xl px-6 py-20 md:px-10">
+        <div className="max-w-3xl">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Workflow</p>
+          <h2 className="mt-3 font-serif text-3xl font-bold md:text-4xl">A structured eight-step preparation process</h2>
+          <p className="mt-4 leading-relaxed text-muted">The workflow separates data collection, evidence linkage, quality remediation and final sealing so users can see exactly what remains incomplete.</p>
         </div>
-      </section>
-
-      {/* SECTION 4: Decimal-Safe Calculations */}
-      <section className="py-20 border-t border-border/50 bg-background">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="order-2 lg:order-1 bg-surface/80 border border-border rounded-3xl p-8 shadow-md">
-            <div className="flex items-center justify-between border-b border-border/40 pb-4 mb-4">
-              <span className="font-bold text-sm text-foreground">Arithmetic Precision Engine</span>
-              <Cpu className="w-5 h-5 text-accent" />
-            </div>
-            <pre className="font-mono text-xs text-muted leading-relaxed bg-neutral-soft p-4 rounded-xl overflow-x-auto">
-{`// Exact decimal math execution
-const directEmissions = new Decimal("1240.239485");
-const totalProduction = new Decimal("850.150000");
-const intensity = directEmissions.dividedBy(totalProduction);
-
-console.log(intensity.toFixed(6));
-// Output: 1.458848`}
-            </pre>
-          </div>
-          <div className="order-1 lg:order-2 space-y-6">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-accent/10 text-accent uppercase tracking-wider">
-              Precision
-            </span>
-            <h2 className="text-3xl font-serif font-black tracking-tight">Decimal-Safe Calculations</h2>
-            <p className="text-muted leading-relaxed">
-              Standard JavaScript binary float calculations create precision errors (e.g. 0.1 + 0.2 = 0.30000000000000004). CBAMValid runs isolated, decimal-safe calculations using Decimal.js. This guarantees exact compliance calculations, ensuring zero variance when data is cross-referenced by authorities.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 5: Quality Control & Blocker Model */}
-      <section className="py-20 border-t border-border/50 bg-surface">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-accent/10 text-accent uppercase tracking-wider">
-              Validation
-            </span>
-            <h2 className="text-3xl font-serif font-black tracking-tight">Quality Control & Blocker Model</h2>
-            <p className="text-muted leading-relaxed">
-              Our QA engine scans your CBAM case for missing files, illogical mathematical values, or gaps in your precursors. Errors are classified as **Blockers** (which prevent sealing) or **Warnings** (non-critical guidance).
-            </p>
-          </div>
-          <div className="space-y-4">
-            <div className="bg-red-500/[0.03] border border-red-500/20 rounded-2xl p-6 flex gap-4">
-              <AlertTriangle className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
-              <div>
-                <h4 className="font-bold text-foreground text-sm">BLOCKER: Missing utility invoices</h4>
-                <p className="text-muted text-xs mt-1">Electricity entries must link to a valid verification attachment to authorize report sealing.</p>
-              </div>
-            </div>
-            <div className="bg-rose-500/[0.03] border border-rose-500/20 rounded-2xl p-6 flex gap-4">
-              <HelpCircle className="w-6 h-6 text-rose-600 shrink-0 mt-0.5" />
-              <div>
-                <h4 className="font-bold text-foreground text-sm">WARNING: Outdated factor snapshot</h4>
-                <p className="text-muted text-xs mt-1">You are referencing a previous methodology snapshot. Ensure this aligns with the targeted quarter.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 6: Calculation Trace */}
-      <section className="py-20 border-t border-border/50 bg-background">
-        <div className="max-w-7xl mx-auto px-6 space-y-12">
-          <div className="text-center max-w-xl mx-auto space-y-4">
-            <h2 className="text-3xl font-serif font-black tracking-tight">Full Calculation Trace</h2>
-            <p className="text-muted leading-relaxed">
-              Every value on your export dossiers is accompanied by a calculation trace that details the source variables, equations, and conversions.
-            </p>
-          </div>
-          <div className="max-w-3xl mx-auto bg-surface border border-border rounded-2xl p-6 space-y-4 font-mono text-xs text-muted shadow-sm">
-            <div className="flex items-center justify-between border-b border-border/50 pb-2">
-              <span className="font-bold text-foreground">FORMULA REGISTRY MATCH</span>
-              <span className="text-accent">FORMULA_CBAM_STEEL_DIRECT_INTENSITY</span>
-            </div>
-            <div className="space-y-1 text-foreground font-medium">
-              <p>Formula: Intensity = Direct Emissions / Production Yield</p>
-              <p>Values: Intensity = 1,458.848 / 850.150</p>
-              <p>Result: 1.715989 t CO2e / t steel</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 7: Sample Dossier */}
-      <section className="py-20 border-t border-border/50 bg-surface">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-accent/10 text-accent uppercase tracking-wider">
-              Transparency
-            </span>
-            <h2 className="text-3xl font-serif font-black tracking-tight">Review a Sample Dossier</h2>
-            <p className="text-muted leading-relaxed">
-              See what an official compiled evidence package looks like. Our dossier covers embedded greenhouse gas emissions reports, precursors mapping, and digital signature records.
-            </p>
-            <div>
-              <Link 
-                href="/sample-dossier" 
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-surface border border-border px-6 font-medium hover:bg-border/30 transition-colors shadow-sm"
-              >
-                <Eye className="w-4 h-4" /> View Sample Dossier
-              </Link>
-            </div>
-          </div>
-          <div className="flex justify-center">
-            <div className="relative border border-border bg-surface rounded-2xl p-6 shadow-md w-72 h-96 flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="w-8 h-8 rounded bg-accent/10 flex items-center justify-center text-accent">
-                  <FileText className="w-5 h-5" />
+        <div className="mt-10 grid gap-5 md:grid-cols-2">
+          {workflow.map(([number, title, description]) => (
+            <div key={number} className="rounded-2xl border border-border bg-surface p-6">
+              <div className="flex gap-4">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-surface">{number}</span>
+                <div>
+                  <h3 className="font-bold">{title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted">{description}</p>
                 </div>
-                <div className="h-4 bg-border/30 rounded w-5/6"></div>
-                <div className="h-4 bg-border/30 rounded w-2/3"></div>
               </div>
-              <div className="border-t border-border pt-4">
-                <span className="text-[10px] font-mono text-muted uppercase">Crypto seal verified</span>
-              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="bg-surface">
+        <div className="mx-auto max-w-6xl px-6 py-20 md:px-10">
+          <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr]">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Final delivery</p>
+              <h2 className="mt-3 font-serif text-3xl font-bold md:text-4xl">23 top-level components in one verifier-preparation package</h2>
+              <p className="mt-4 leading-relaxed text-muted">PDF reports, CSV registers, calculation trace, O3CI field mapping, integrity manifest and the linked supporting evidence are assembled into one downloadable ZIP.</p>
+              <Link href="/sample-dossier" className="mt-6 inline-flex items-center gap-2 font-semibold text-accent hover:underline">
+                Review the sample structure <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {deliverables.map((item, index) => (
+                <div key={item} className="flex items-start gap-3 rounded-xl border border-border bg-background p-4 text-sm">
+                  <FileCheck2 className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                  <span><strong>{String(index + 1).padStart(2, "0")}.</strong> {item}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* SECTION 8: Credits & Sealing */}
-      <section className="py-20 border-t border-border/50 bg-background">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="order-2 lg:order-1 flex justify-center">
-            <div className="bg-surface border border-border rounded-2xl p-6 shadow-md max-w-sm space-y-4 text-center">
-              <div className="w-12 h-12 rounded-full bg-accent/10 text-accent flex items-center justify-center mx-auto">
-                <ShieldCheck className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-foreground text-lg">Cryptographic Sealing</h3>
-              <p className="text-muted text-xs leading-relaxed">Sealing locks the dossier, increments the transaction log, and generates public verification signatures.</p>
-            </div>
-          </div>
-          <div className="order-1 lg:order-2 space-y-6">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-accent/10 text-accent uppercase tracking-wider">
-              Sealing
-            </span>
-            <h2 className="text-3xl font-serif font-black tracking-tight">Credits and Sealing</h2>
-            <p className="text-muted leading-relaxed">
-              Unlock finalized reports securely using account credits. 100 account credits translates exactly to 5 report seals (1 seal = 20 credits). Unlocking draft cases locks down the database records, creates a public seal record, and generates the definitive deliverables.
-            </p>
-          </div>
+      <section className="mx-auto max-w-5xl px-6 py-20 text-center md:px-10">
+        <h2 className="font-serif text-3xl font-bold md:text-4xl">Prepare the case before you pay.</h2>
+        <p className="mx-auto mt-4 max-w-3xl leading-relaxed text-muted">
+          Create and review a draft without charge. The $150 pack is linked to one dossier and unlocks five successful sealed versions. Failed or blocked seals and re-downloads consume no version.
+        </p>
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+          <Link href="/register?next=/cases/new" className="inline-flex h-12 items-center justify-center rounded-md bg-accent px-7 font-semibold text-surface hover:bg-accent-hover">
+            Start Your Verification Preparation Pack
+          </Link>
+          <Link href="/pricing" className="inline-flex h-12 items-center justify-center rounded-md border border-border-strong px-7 font-semibold hover:bg-neutral-soft">
+            View Pricing
+          </Link>
         </div>
       </section>
 
-      {/* SECTION 9: Deliverables */}
-      <section className="py-20 border-t border-border/50 bg-surface">
-        <div className="max-w-7xl mx-auto px-6 space-y-12">
-          <div className="text-center max-w-xl mx-auto space-y-4">
-            <h2 className="text-3xl font-serif font-black tracking-tight">Comprehensive Deliverables</h2>
-            <p className="text-muted leading-relaxed">
-              Every sealed CBAMValid case generates a unified ZIP file containing compliance-ready assets.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-surface border border-border rounded-2xl p-6 space-y-3 shadow-sm">
-              <h3 className="font-bold text-foreground text-lg">1. PDF Dossier Report</h3>
-              <p className="text-muted text-sm leading-relaxed">A human-readable dossier document containing emissions calculations, linked evidence tables, and digital signature logs.</p>
-            </div>
-            <div className="bg-surface border border-border rounded-2xl p-6 space-y-3 shadow-sm">
-              <h3 className="font-bold text-foreground text-lg">2. XML Reporting Payload</h3>
-              <p className="text-muted text-sm leading-relaxed">Structured data payload mapping to the official European Commission CBAM Registry format for instant import.</p>
-            </div>
-            <div className="bg-surface border border-border rounded-2xl p-6 space-y-3 shadow-sm">
-              <h3 className="font-bold text-foreground text-lg">3. Cryptographic Signatures</h3>
-              <p className="text-muted text-sm leading-relaxed">SHA-256 validation seal hashes recorded on the public registry ledger to allow third-party document integrity checks.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 10: Verification Boundary */}
-      <section className="py-20 border-t border-border/50 bg-background text-sm leading-relaxed">
-        <div className="max-w-4xl mx-auto px-6 bg-surface border border-border rounded-3xl p-8 space-y-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent shrink-0">
-              <Layers className="w-5 h-5" />
-            </div>
-            <h3 className="text-lg font-bold text-foreground">Mandatory Limitation & Verification Boundary</h3>
-          </div>
-          <p className="text-muted">
-            CBAMValid prepares calculation worksheets, precursor evidence matrices, and standardized XML/PDF dossiers. We are not an official EU institution, government customs authority, or accredited CBAM verifier. CBAMValid helps exporters compile compliance packages, but official verification remains the user’s legal responsibility.
+      <section className="border-t border-border bg-neutral-soft">
+        <div className="mx-auto max-w-5xl px-6 py-10 text-sm leading-relaxed text-muted md:px-10">
+          <p className="font-bold text-foreground">Verification and regulatory boundary</p>
+          <p className="mt-2">
+            CBAMValid prepares data and evidence for independent verification. It does not issue an accredited verification opinion, customs approval, EU approval or acceptance guarantee. The O3CI field-mapped structured export is not an official CBAM Registry submission file. Users remain responsible for source-data accuracy and professional review where required.
           </p>
         </div>
       </section>
+    </main>
+  );
+}
 
-      {/* SECTION 11: Commercial CTA */}
-      <section className="py-20 border-t border-border bg-gradient-to-t from-neutral-soft/30 to-surface">
-        <div className="max-w-4xl mx-auto px-6 text-center space-y-8">
-          <h2 className="text-3xl md:text-4xl font-serif font-black tracking-tight">Ready to compile compliant CBAM evidence?</h2>
-          <p className="text-muted max-w-xl mx-auto leading-relaxed">
-            Start preparing structured carbon emission dossiers now. Run quality checks, link support records, and finalize report XMLs.
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
-            <Link 
-              href="/register?next=/cases/new" 
-              className="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-accent px-8 font-medium text-surface hover:bg-accent-hover transition-all shadow-sm"
-            >
-              Start a Dossier
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link 
-              href="/pricing" 
-              className="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-surface border border-border px-8 font-medium hover:bg-border/30 transition-colors shadow-sm"
-            >
-              View Pricing
-            </Link>
-          </div>
-        </div>
-      </section>
+function ScopeRow({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
+  return <div className="flex items-start justify-between gap-4 border-b border-border pb-3"><span className="text-muted">{label}</span><span className={`text-right ${strong ? "text-lg font-bold text-accent" : "font-semibold"}`}>{value}</span></div>;
+}
 
+function ValueCard({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
+  return (
+    <div>
+      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 text-accent">{icon}</div>
+      <h3 className="mt-4 font-bold">{title}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-muted">{text}</p>
     </div>
   );
 }

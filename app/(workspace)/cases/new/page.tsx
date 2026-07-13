@@ -13,7 +13,10 @@ export default function NewCaseRedirectPage() {
   useEffect(() => {
     if (loading || !user) return;
 
+    let started = false;
     const initializeNewCase = async () => {
+      if (started) return;
+      started = true;
       try {
         const emptyCase: AuditReadyCase = {
           status: "DRAFT",
@@ -35,6 +38,7 @@ export default function NewCaseRedirectPage() {
             name: createEmptyInput(),
             country: createEmptyInput(),
             productionRoute: createEmptyInput(),
+            systemBoundaries: "",
           },
           directEmissions: createEmptyInput("tCO2e"),
           electricityConsumed: createEmptyInput("MWh"),
@@ -44,15 +48,20 @@ export default function NewCaseRedirectPage() {
           evidenceRegister: [],
           calculationTrace: [],
           gapAssessment: [],
-          auditEvents: []
+          methodologyDecisions: [],
+          auditEvents: [{
+            eventId: crypto.randomUUID(),
+            timestamp: new Date().toISOString(),
+            actor: user.uid,
+            action: "CASE_CREATED",
+          }]
         };
 
         const newCaseId = await saveCase(emptyCase);
-        router.push(`/cases/${newCaseId}`);
-      } catch (e) {
-        console.error("Failed to initialize new case", e);
-        // Fallback to dashboard on error
-        router.push("/dashboard");
+        router.replace(`/cases/${newCaseId}`);
+      } catch (error) {
+        console.error("Failed to initialize new case", error);
+        router.replace("/cbam");
       }
     };
 
@@ -60,11 +69,11 @@ export default function NewCaseRedirectPage() {
   }, [user, loading, router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-kil-base px-6">
+    <div className="min-h-screen flex items-center justify-center bg-background px-6">
       <div className="flex flex-col items-center">
-        <div className="w-8 h-8 border-2 border-kil-text/20 border-t-kil-accent rounded-full animate-spin mb-6"></div>
-        <p className="font-mono text-sm text-kil-text/60 tracking-widest uppercase">
-          Initializing Case...
+        <div className="w-8 h-8 border-2 border-border border-t-accent rounded-full animate-spin mb-6"></div>
+        <p className="font-mono text-sm text-muted tracking-widest uppercase">
+          Creating Your Draft Dossier…
         </p>
       </div>
     </div>

@@ -66,7 +66,7 @@ export default function HowItWorksPage() {
               aria-label="CBAMValid product workflow walkthrough"
               className="w-full h-full object-cover"
             >
-              <source src="/media/cbamvalid-product-walkthrough.mp4" type="video/mp4" />
+              <source src="/media/cbamvalid-product-walkthrough.mp4#t=3" type="video/mp4" />
               <p className="text-white p-4">Your browser does not support the video tag.</p>
             </video>
           </div>

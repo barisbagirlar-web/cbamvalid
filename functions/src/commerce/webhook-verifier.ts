@@ -2,13 +2,14 @@ import { paddle } from "./paddle-client";
 import { InvalidWebhookSignatureError } from "./commerce-errors";
 
 /**
- * Validates the raw request body against the signature header using the Paddle SDK
+ * Validates the raw request body against the Paddle-Signature header.
+ * The canonical secret name is PADDLE_WEBHOOK_SECRET across every runtime.
  */
 export async function verifyWebhookSignature(rawBody: string, signature: string): Promise<any> {
-  const secretKey = process.env.PADDLE_WEBHOOK_SECRET_KEY || "";
+  const secretKey = process.env.PADDLE_WEBHOOK_SECRET || "";
   if (!secretKey) {
-    console.error("[PADDLE] Error: PADDLE_WEBHOOK_SECRET_KEY is not configured.");
-    throw new Error("PADDLE_WEBHOOK_SECRET_KEY missing.");
+    console.error("[PADDLE] PADDLE_WEBHOOK_SECRET is not configured.");
+    throw new Error("PADDLE_WEBHOOK_SECRET missing.");
   }
 
   try {

@@ -1,233 +1,388 @@
 import crypto from "crypto";
 import { adminDb } from "../../firebase-admin";
+import { getStorage } from "firebase-admin/storage";
+import { getApp } from "firebase-admin/app";
 import { performDossierCalculations } from "../calculator";
 import { runQualityControls } from "../validation/quality-controls";
-import { reserveEntitlement, consumeEntitlement, releaseEntitlementReservation } from "../../commerce/entitlement-service";
-import { AuditReadyCase } from "../schema";
+import {
+  reserveEntitlement,
+  consumeEntitlement,
+  releaseEntitlementReservation,
+  Entitlement,
+} from "../../commerce/entitlement-service";
+import { AuditReadyCase, AuditReadyCaseSchema } from "../schema";
+import {
+  buildVerifierPreparationPackage,
+  PackageEvidenceFile,
+} from "./verifier-package-builder";
 
 export interface SealingResult {
   reportId: string;
+  releaseVersion: number;
   documentHash: string;
-  xmlContent: string;
-  jsonContent: string;
-  signature: string;
+  manifestHash: string;
+  packageTopLevelComponentCount: number;
+  verifiedFileCount: number;
+  status: "SEALED";
 }
 
-export type SealState = 
+export type SealState =
   | "SEAL_REQUESTED"
-  | "ENTITLEMENT_RESERVED"
   | "QC_VALIDATED"
+  | "EVIDENCE_VERIFIED"
+  | "ENTITLEMENT_RESERVED"
   | "DATA_FROZEN"
   | "CALCULATION_COMPLETE"
   | "ARTIFACTS_GENERATED"
-  | "KMS_SIGNED"
+  | "PACKAGE_VERIFIED"
   | "OUTBOX_WRITTEN"
   | "ENTITLEMENT_CONSUMED"
   | "SEAL_ACTIVATED"
   | "COMPLETION_NOTIFIED"
   | "FAILED";
 
+type SealedReportRecord = SealingResult & {
+  releaseId: string;
+  requestId: string;
+  entitlementId: string;
+  uid: string;
+  caseId: string;
+  caseSnapshotHash: string;
+  evidenceRootHash: string;
+  calculationRootHash: string;
+  ruleset: string;
+  engineVersion: string;
+  storagePath: string;
+  manifestStoragePath: string;
+  calculation: ReturnType<typeof performDossierCalculations>;
+  qualityControls: ReturnType<typeof runQualityControls>;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export function calculateSha256(content: Buffer | string): string {
   return crypto.createHash("sha256").update(content).digest("hex");
 }
 
-export function signManifest(content: string): string {
-  // If we had the Google Cloud KMS dependency and IAM set up, we'd do it here.
-  // Fallback to exactly what the mandate requested when unimplemented.
-  return "ASYMMETRIC_MANIFEST_SIGNATURE=NOT_IMPLEMENTED";
+function canonicalize(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value && typeof value === "object") {
+    return Object.keys(value as Record<string, unknown>)
+      .sort()
+      .reduce<Record<string, unknown>>((result, key) => {
+        result[key] = canonicalize((value as Record<string, unknown>)[key]);
+        return result;
+      }, {});
+  }
+  return value;
+}
+
+function deterministicReportId(uid: string, caseId: string, requestId: string): string {
+  return `rel_${calculateSha256(`${uid}:${caseId}:${requestId}`).slice(0, 32)}`;
+}
+
+function toResult(record: SealedReportRecord): SealingResult {
+  return {
+    reportId: record.reportId,
+    releaseVersion: record.releaseVersion,
+    documentHash: record.documentHash,
+    manifestHash: record.manifestHash,
+    packageTopLevelComponentCount: record.packageTopLevelComponentCount,
+    verifiedFileCount: record.verifiedFileCount,
+    status: "SEALED",
+  };
+}
+
+async function loadEvidenceFiles(caseData: AuditReadyCase): Promise<PackageEvidenceFile[]> {
+  const bucket = getStorage(getApp()).bucket();
+  const files: PackageEvidenceFile[] = [];
+
+  for (const evidence of caseData.evidenceRegister) {
+    if (!evidence.storagePath.startsWith(`evidence/${caseData.ownerId}/${caseData.caseId}/`)) {
+      throw new Error(`EVIDENCE_STORAGE_PATH_OWNERSHIP_MISMATCH:${evidence.evidenceId}`);
+    }
+
+    const file = bucket.file(evidence.storagePath);
+    const [exists] = await file.exists();
+    if (!exists) throw new Error(`EVIDENCE_FILE_MISSING:${evidence.evidenceId}`);
+
+    const [buffer] = await file.download();
+    if (buffer.byteLength !== evidence.sizeBytes) {
+      throw new Error(`EVIDENCE_FILE_SIZE_MISMATCH:${evidence.evidenceId}`);
+    }
+    if (calculateSha256(buffer) !== evidence.fileHash.toLowerCase()) {
+      throw new Error(`EVIDENCE_FILE_HASH_MISMATCH:${evidence.evidenceId}`);
+    }
+
+    files.push({
+      evidenceId: evidence.evidenceId,
+      fileName: evidence.fileName,
+      buffer,
+      mimeType: evidence.mimeType,
+      sourceHash: evidence.fileHash.toLowerCase(),
+    });
+  }
+
+  return files;
+}
+
+async function writeState(
+  reportId: string,
+  state: SealState,
+  extra: Record<string, unknown> = {}
+): Promise<void> {
+  const timestamp = new Date().toISOString();
+  const summaryRef = adminDb.collection("seal_log").doc(reportId);
+  const eventId = `${timestamp.replace(/[^0-9]/g, "")}_${crypto.randomUUID()}`;
+  const event = { reportId, state, timestamp, ...extra };
+
+  await Promise.all([
+    summaryRef.set({
+      reportId,
+      currentState: state,
+      updatedAt: timestamp,
+      ...extra,
+    }, { merge: true }),
+    summaryRef.collection("events").doc(eventId).set(event),
+  ]);
+}
+
+async function activateOutbox(record: SealedReportRecord): Promise<SealingResult> {
+  const reportRef = adminDb.collection("cbam_reports").doc(record.reportId);
+
+  await adminDb.runTransaction(async (dbTransaction) => {
+    await consumeEntitlement(dbTransaction, {
+      entitlementId: record.entitlementId,
+      uid: record.uid,
+      caseId: record.caseId,
+      reportId: record.reportId,
+      reportHash: record.documentHash,
+    });
+
+    dbTransaction.set(adminDb.collection("document_seals").doc(record.documentHash), {
+      valid: true,
+      documentHash: record.documentHash,
+      manifestHash: record.manifestHash,
+      reportId: record.reportId,
+      caseId: record.caseId,
+      releaseVersion: record.releaseVersion,
+      issuedAt: record.createdAt,
+      commercialStatus: "ACTIVE",
+      verificationBoundary: "PREPARATION_FOR_INDEPENDENT_VERIFICATION",
+    });
+    dbTransaction.set(reportRef, record);
+    dbTransaction.set(adminDb.collection("cbam_cases").doc(record.caseId), {
+      latestReleaseId: record.reportId,
+      latestReleaseVersion: record.releaseVersion,
+      updatedAt: record.updatedAt,
+    }, { merge: true });
+  });
+
+  await writeState(record.reportId, "ENTITLEMENT_CONSUMED");
+  await writeState(record.reportId, "SEAL_ACTIVATED");
+  await adminDb.collection("seal_outbox").doc(record.reportId).delete();
+  await writeState(record.reportId, "COMPLETION_NOTIFIED");
+  return toResult(record);
 }
 
 export async function sealReport(params: {
   uid: string;
   caseId: string;
   entitlementId: string;
-  inputData: any; // Mapped to AuditReadyCase
+  requestId: string;
+  inputData: unknown;
 }): Promise<SealingResult> {
-  const reportRef = adminDb.collection("cbam_reports").doc();
-  const reportId = reportRef.id;
+  const reportId = deterministicReportId(params.uid, params.caseId, params.requestId);
+  const reportRef = adminDb.collection("cbam_reports").doc(reportId);
+  const outboxRef = adminDb.collection("seal_outbox").doc(reportId);
 
-  // State: SEAL_REQUESTED
-  await adminDb.collection("seal_log").doc(reportId).set({ state: "SEAL_REQUESTED", timestamp: new Date().toISOString() });
+  const existingReport = await reportRef.get();
+  if (existingReport.exists) {
+    const existing = existingReport.data() as SealedReportRecord;
+    if (
+      existing.uid !== params.uid ||
+      existing.caseId !== params.caseId ||
+      existing.requestId !== params.requestId
+    ) {
+      throw new Error("SEAL_REQUEST_ID_COLLISION");
+    }
+    if (existing.status !== "SEALED") {
+      throw new Error("SEAL_EXISTING_REPORT_NOT_FINAL");
+    }
+    return toResult(existing);
+  }
 
-  await adminDb.runTransaction(async (dbTransaction: any) => {
-    await reserveEntitlement(dbTransaction, {
-      entitlementId: params.entitlementId,
-      uid: params.uid,
-      reportId,
-    });
+  const pendingOutbox = await outboxRef.get();
+  if (pendingOutbox.exists) {
+    const record = pendingOutbox.data() as SealedReportRecord;
+    if (
+      record.uid !== params.uid ||
+      record.caseId !== params.caseId ||
+      record.requestId !== params.requestId ||
+      record.entitlementId !== params.entitlementId
+    ) {
+      throw new Error("SEAL_OUTBOX_IDEMPOTENCY_MISMATCH");
+    }
+    return activateOutbox(record);
+  }
+
+  await writeState(reportId, "SEAL_REQUESTED", {
+    uid: params.uid,
+    caseId: params.caseId,
+    requestId: params.requestId,
   });
 
-  // State: ENTITLEMENT_RESERVED
-  await adminDb.collection("seal_log").doc(reportId).set({ state: "ENTITLEMENT_RESERVED", timestamp: new Date().toISOString() });
+  let reservationCreated = false;
 
   try {
-    const caseData = params.inputData as AuditReadyCase;
-    
-    // 1. Enforce Quality Controls (Fail-Closed)
-    const qcs = runQualityControls(caseData);
-    const blockers = qcs.filter(q => q.status === "BLOCKER");
-    if (blockers.length > 0) {
-      throw new Error(`Sealing blocked due to strict quality controls: ${blockers.map(b => b.name).join(", ")}`);
+    const parsed = AuditReadyCaseSchema.safeParse({
+      ...(params.inputData as Record<string, unknown>),
+      caseId: params.caseId,
+      ownerId: params.uid,
+    });
+    if (!parsed.success) {
+      throw new Error(`CASE_SCHEMA_INVALID:${parsed.error.issues.map((issue) => issue.path.join(".")).join(",")}`);
     }
+    const caseData = parsed.data;
 
-    // State: QC_VALIDATED
-    await adminDb.collection("seal_log").doc(reportId).set({ state: "QC_VALIDATED", timestamp: new Date().toISOString() });
+    const qualityControls = runQualityControls(caseData);
+    const unresolved = qualityControls.filter((item) => item.status === "BLOCKER" || item.status === "WARNING");
+    if (unresolved.length > 0) {
+      throw new Error(`SEALING_BLOCKED:${unresolved.map((item) => item.ruleId).join(",")}`);
+    }
+    await writeState(reportId, "QC_VALIDATED", { qualityControls });
 
-    // Data Freeze
-    // State: DATA_FROZEN
-    await adminDb.collection("seal_log").doc(reportId).set({ state: "DATA_FROZEN", timestamp: new Date().toISOString() });
-
-    // 2. Run deterministic calculation
-    const calcResult = performDossierCalculations(caseData);
-
-    // State: CALCULATION_COMPLETE
-    await adminDb.collection("seal_log").doc(reportId).set({ state: "CALCULATION_COMPLETE", timestamp: new Date().toISOString() });
-
-    // 3. Generate JSON
-    const jsonContent = JSON.stringify({ data: caseData, calculation: calcResult }, null, 2);
-
-    // 4. Generate XML
-    const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
-<CBAMValidDossier xmlns="urn:cbamvalid:schema:v2" format="PROPRIETARY_EXCHANGE_FORMAT">
-  <Disclaimer>This XML is a proprietary data export of the CBAMValid system and does not constitute an official European Commission CBAM Registry submission file.</Disclaimer>
-  <CaseData>
-    <CaseId>${caseData.caseId || ""}</CaseId>
-    <Status>SEALED</Status>
-    <Version>${caseData.version}</Version>
-  </CaseData>
-  <Calculations>
-    <TotalEmbeddedEmissions unit="tCO2e">${calcResult.totalEmbeddedEmissions}</TotalEmbeddedEmissions>
-  </Calculations>
-</CBAMValidDossier>`;
-    
-    // 5. Generate PDF
-    const { buildPdfDossier } = await import("./pdf-builder");
-    const pdfBuffer = buildPdfDossier(caseData, calcResult as any, undefined, false);
-
-    // 6. Generate CSV
-    const { buildCsvDossier } = await import("./csv-builder");
-    const csvContent = buildCsvDossier(caseData, calcResult);
-    
-    // State: ARTIFACTS_GENERATED
-    await adminDb.collection("seal_log").doc(reportId).set({ state: "ARTIFACTS_GENERATED", timestamp: new Date().toISOString() });
-
-    const xmlHash = calculateSha256(xmlContent);
-    const jsonHash = calculateSha256(jsonContent);
-
-    const manifestData = JSON.stringify({
-      reportId,
-      xmlHash,
-      jsonHash,
-      timestamp: new Date().toISOString(),
-    });
-    
-    const documentHash = calculateSha256(manifestData);
-    
-    // 7. Sign Manifest (KMS mocked)
-    const signature = signManifest(manifestData);
-
-    // 8. Generate ZIP
-    const { buildZipDossier } = await import("./zip-builder");
-    const zipBuffer = await buildZipDossier({
-      pdfBuffer,
-      xmlContent,
-      jsonContent,
-      csvContent,
-      signature,
-      reportId
+    const evidenceFiles = await loadEvidenceFiles(caseData);
+    const evidenceRootHash = calculateSha256(
+      JSON.stringify(caseData.evidenceRegister.map((record) => record.fileHash.toLowerCase()).sort())
+    );
+    await writeState(reportId, "EVIDENCE_VERIFIED", {
+      evidenceCount: evidenceFiles.length,
+      evidenceRootHash,
     });
 
-    // 9. Upload to Firebase Storage
-    const { getStorage } = await import("firebase-admin/storage");
-    const { getApp } = await import("firebase-admin/app");
+    let reservedEntitlement: Entitlement | null = null;
+    await adminDb.runTransaction(async (dbTransaction) => {
+      reservedEntitlement = await reserveEntitlement(dbTransaction, {
+        entitlementId: params.entitlementId,
+        uid: params.uid,
+        caseId: params.caseId,
+        reportId,
+      });
+    });
+    reservationCreated = true;
+
+    const releaseVersion = Number(reservedEntitlement?.versionSequence);
+    if (!Number.isInteger(releaseVersion) || releaseVersion < 1 || releaseVersion > 5) {
+      throw new Error("ENTITLEMENT_VERSION_SEQUENCE_INVALID");
+    }
+    await writeState(reportId, "ENTITLEMENT_RESERVED", { releaseVersion });
+
+    const caseSnapshot = JSON.stringify(canonicalize(caseData));
+    const caseSnapshotHash = calculateSha256(caseSnapshot);
+    await writeState(reportId, "DATA_FROZEN", { caseSnapshotHash });
+
+    const calculation = performDossierCalculations(caseData);
+    if (
+      calculation.trace.length === 0 ||
+      calculation.trace.some((node) => node.outputValue === "NOT_CALCULATED") ||
+      !/^[a-f0-9]{64}$/i.test(calculation.calculationRootHash)
+    ) {
+      throw new Error("CALCULATION_TRACE_INCOMPLETE");
+    }
+    await writeState(reportId, "CALCULATION_COMPLETE", {
+      calculationRootHash: calculation.calculationRootHash,
+      ruleset: calculation.ruleset,
+      engineVersion: calculation.engineVersion,
+    });
+
+    const packageResult = await buildVerifierPreparationPackage({
+      releaseId: reportId,
+      caseData: { ...caseData, version: releaseVersion },
+      calculation,
+      qualityControls,
+      evidenceFiles,
+    });
+    await writeState(reportId, "ARTIFACTS_GENERATED");
+
+    const documentHash = calculateSha256(packageResult.zipBuffer);
+    const verifiedFileCount = packageResult.manifest.files.length;
+    if (verifiedFileCount < 22 || packageResult.manifest.topLevelComponentCount !== 23) {
+      throw new Error("VERIFIER_PACKAGE_MANIFEST_INCOMPLETE");
+    }
+    await writeState(reportId, "PACKAGE_VERIFIED", {
+      documentHash,
+      manifestHash: packageResult.manifestHash,
+      packageTopLevelComponentCount: 23,
+      verifiedFileCount,
+    });
+
     const bucket = getStorage(getApp()).bucket();
-
     const basePath = `reports/${params.uid}/${reportId}`;
-    
-    await bucket.file(`${basePath}/dossier.pdf`).save(pdfBuffer, { contentType: 'application/pdf' });
-    await bucket.file(`${basePath}/dossier.json`).save(jsonContent, { contentType: 'application/json' });
-    await bucket.file(`${basePath}/dossier.xml`).save(xmlContent, { contentType: 'application/xml' });
-    await bucket.file(`${basePath}/dossier.csv`).save(csvContent, { contentType: 'text/csv' });
-    await bucket.file(`${basePath}/dossier.zip`).save(zipBuffer, { contentType: 'application/zip' });
-
-    // State: KMS_SIGNED (Reusing this state broadly to mean cryptographic completion and artifact persisting)
-    await adminDb.collection("seal_log").doc(reportId).set({ state: "KMS_SIGNED", timestamp: new Date().toISOString() });
+    await Promise.all([
+      bucket.file(`${basePath}/verifier-preparation-package.zip`).save(packageResult.zipBuffer, {
+        contentType: "application/zip",
+        resumable: false,
+        metadata: { cacheControl: "private, max-age=0, no-store" },
+      }),
+      bucket.file(`${basePath}/data-integrity-manifest.json`).save(
+        JSON.stringify(packageResult.manifest, null, 2),
+        {
+          contentType: "application/json",
+          resumable: false,
+          metadata: { cacheControl: "private, max-age=0, no-store" },
+        }
+      ),
+    ]);
 
     const now = new Date().toISOString();
-    const sealedReport = {
+    const sealedReport: SealedReportRecord = {
       reportId,
+      releaseId: reportId,
+      releaseVersion,
+      requestId: params.requestId,
+      entitlementId: params.entitlementId,
       uid: params.uid,
       caseId: params.caseId,
       status: "SEALED",
       documentHash,
-      signature,
+      manifestHash: packageResult.manifestHash,
+      caseSnapshotHash,
+      evidenceRootHash,
+      calculationRootHash: calculation.calculationRootHash,
+      ruleset: calculation.ruleset,
+      engineVersion: calculation.engineVersion,
+      packageTopLevelComponentCount: 23,
+      verifiedFileCount,
+      storagePath: `${basePath}/verifier-preparation-package.zip`,
+      manifestStoragePath: `${basePath}/data-integrity-manifest.json`,
+      calculation,
+      qualityControls,
       createdAt: now,
       updatedAt: now,
-      calculation: calcResult,
-      xmlHash,
-      jsonHash,
     };
 
-    // State: OUTBOX_WRITTEN
-    await adminDb.collection("seal_outbox").doc(reportId).set(sealedReport);
-    await adminDb.collection("seal_log").doc(reportId).set({ state: "OUTBOX_WRITTEN", timestamp: now });
-
-    // Phase 2: Consume entitlement and Finalize
-    await adminDb.runTransaction(async (dbTransaction: any) => {
-      await consumeEntitlement(dbTransaction, {
-        entitlementId: params.entitlementId,
-        uid: params.uid,
-        reportId,
-        reportHash: documentHash,
-      });
-
-      // State: ENTITLEMENT_CONSUMED (Implicit inside transaction)
-
-      const sealRef = adminDb.collection("document_seals").doc(documentHash);
-      dbTransaction.set(sealRef, {
-        valid: true,
-        documentHash,
-        reportId,
-        version: caseData.version,
-        issuedAt: now,
-        signature,
-        commercialStatus: "ACTIVE",
-      });
-
-      dbTransaction.set(reportRef, sealedReport);
-    });
-
-    // State: SEAL_ACTIVATED
-    await adminDb.collection("seal_log").doc(reportId).set({ state: "SEAL_ACTIVATED", timestamp: new Date().toISOString() });
-    
-    // Remove from outbox
-    await adminDb.collection("seal_outbox").doc(reportId).delete();
-
-    // State: COMPLETION_NOTIFIED
-    await adminDb.collection("seal_log").doc(reportId).set({ state: "COMPLETION_NOTIFIED", timestamp: new Date().toISOString() });
-
-    return {
-      reportId,
-      documentHash,
-      xmlContent,
-      jsonContent,
-      signature,
-    };
-
+    await outboxRef.set(sealedReport);
+    await writeState(reportId, "OUTBOX_WRITTEN");
+    return activateOutbox(sealedReport);
   } catch (error) {
+    const message = error instanceof Error ? error.message : "SEALING_FAILED";
     console.error(`[SEALING-ENGINE] Sealing failed for report ${reportId}.`, error);
-    await adminDb.collection("seal_log").doc(reportId).set({ state: "FAILED", error: (error as Error).message, timestamp: new Date().toISOString() });
-    
-    try {
-      await adminDb.runTransaction(async (dbTransaction: any) => {
-        await releaseEntitlementReservation(dbTransaction, {
-          entitlementId: params.entitlementId,
-          uid: params.uid,
-          reportId,
+    await writeState(reportId, "FAILED", { error: message });
+
+    if (reservationCreated) {
+      try {
+        await adminDb.runTransaction(async (dbTransaction) => {
+          await releaseEntitlementReservation(dbTransaction, {
+            entitlementId: params.entitlementId,
+            uid: params.uid,
+            caseId: params.caseId,
+            reportId,
+          });
         });
-      });
-    } catch (releaseError) {
-      console.error("[SEALING-ENGINE] Failed to release entitlement reservation:", releaseError);
+      } catch (releaseError) {
+        console.error("[SEALING-ENGINE] Failed to release entitlement reservation:", releaseError);
+      }
     }
     throw error;
   }

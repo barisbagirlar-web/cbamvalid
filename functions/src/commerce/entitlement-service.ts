@@ -8,9 +8,11 @@ export interface Entitlement {
   entitlementId: string;
   uid: string;
   orderId: string;
+  caseId?: string;
   productCode: string;
   status: "AVAILABLE" | "RESERVED" | "CONSUMED" | "REVOKED";
-  quantity: number; // typically 1 for CBAM dossiers
+  quantity: number;
+  versionSequence?: number;
   createdAt: string;
   updatedAt: string;
   reservedReportId?: string;
@@ -20,7 +22,8 @@ export interface Entitlement {
 }
 
 /**
- * Creates a new entitlement after a successful payment transaction
+ * Legacy single-document issuer. New Preparation Pack purchases use
+ * issuePreparationPack(), which emits five case-bound quantity-one documents.
  */
 export async function createEntitlement(
   dbTransaction: admin.firestore.Transaction,
@@ -31,6 +34,7 @@ export async function createEntitlement(
     eventId: string;
     productCode: string;
     quantity: number;
+    caseId?: string;
   }
 ): Promise<Entitlement> {
   validateIdentifier("uid", params.uid);
@@ -38,13 +42,12 @@ export async function createEntitlement(
   validateIdentifier("transactionId", params.transactionId);
 
   const entitlementRef = adminDb.collection("entitlements").doc();
-  const entitlementId = entitlementRef.id;
   const now = new Date().toISOString();
-
   const entitlement: Entitlement = {
-    entitlementId,
+    entitlementId: entitlementRef.id,
     uid: params.uid,
     orderId: params.orderId,
+    caseId: params.caseId,
     productCode: params.productCode,
     status: "AVAILABLE",
     quantity: params.quantity,
@@ -52,9 +55,7 @@ export async function createEntitlement(
     updatedAt: now,
   };
 
-  dbTransaction.set(entitlementRef, entitlement);
-
-  // Write to ledger
+  // writeLedgerEntry performs reads before its write; call it before any other write.
   await writeLedgerEntry(dbTransaction, {
     uid: params.uid,
     orderId: params.orderId,
@@ -64,41 +65,50 @@ export async function createEntitlement(
     quantity: params.quantity,
     idempotencyKey: `entitlement:${params.transactionId}:${params.productCode}`,
   });
+  dbTransaction.set(entitlementRef, entitlement);
 
   return entitlement;
 }
 
-/**
- * Phase 1: Reserve Entitlement (Double-Spend Protection)
- */
 export async function reserveEntitlement(
   dbTransaction: admin.firestore.Transaction,
   params: {
     entitlementId: string;
     uid: string;
+    caseId: string;
     reportId: string;
     expiresInSeconds?: number;
   }
 ): Promise<Entitlement> {
   validateIdentifier("entitlementId", params.entitlementId);
   validateIdentifier("uid", params.uid);
+  validateIdentifier("caseId", params.caseId);
   validateIdentifier("reportId", params.reportId);
 
   const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
-  const snapshot: any = await dbTransaction.get(entitlementRef as any);
-
+  const snapshot = await dbTransaction.get(entitlementRef);
   if (!snapshot.exists) {
     throw new EntitlementUnavailableError(`Entitlement with ID ${params.entitlementId} was not found.`);
   }
 
   const entitlement = snapshot.data() as Entitlement;
-
   if (entitlement.uid !== params.uid) {
     throw new EntitlementUnavailableError("Ownership mismatch on requested entitlement.");
   }
+  if (!entitlement.caseId || entitlement.caseId !== params.caseId) {
+    throw new EntitlementUnavailableError("This report version belongs to a different dossier.");
+  }
+  if (entitlement.quantity !== 1) {
+    throw new EntitlementUnavailableError("Entitlement quantity is invalid for a sealed version.");
+  }
 
-  // Handle expired reservation auto-recovery
   const now = new Date();
+  const isSameReservation =
+    entitlement.status === "RESERVED" && entitlement.reservedReportId === params.reportId;
+  if (isSameReservation) {
+    return entitlement;
+  }
+
   const isExpired =
     entitlement.status === "RESERVED" &&
     entitlement.reservationExpiresAt &&
@@ -108,9 +118,7 @@ export async function reserveEntitlement(
     throw new DoubleSpendViolationError(params.entitlementId);
   }
 
-  const defaultDuration = params.expiresInSeconds || 300; // 5 minutes default
-  const expiresAt = new Date(now.getTime() + defaultDuration * 1000).toISOString();
-
+  const expiresAt = new Date(now.getTime() + (params.expiresInSeconds || 900) * 1000).toISOString();
   const updatedEntitlement: Partial<Entitlement> = {
     status: "RESERVED",
     reservedReportId: params.reportId,
@@ -118,51 +126,48 @@ export async function reserveEntitlement(
     updatedAt: now.toISOString(),
   };
 
-  dbTransaction.update(entitlementRef, updatedEntitlement);
-
-  // Write to ledger
   await writeLedgerEntry(dbTransaction, {
     uid: entitlement.uid,
     orderId: entitlement.orderId,
     transactionId: entitlement.orderId,
-    eventId: `reserve_${params.reportId}_${new Date().getTime()}`,
+    eventId: `reserve_${params.reportId}`,
     type: "ENTITLEMENT_RESERVED",
-    quantity: entitlement.quantity,
+    quantity: 1,
     idempotencyKey: `reserve:${params.entitlementId}:${params.reportId}`,
   });
+  dbTransaction.update(entitlementRef, updatedEntitlement);
 
   return { ...entitlement, ...updatedEntitlement };
 }
 
-/**
- * Phase 2: Seal and Consume Entitlement (Finalizes consumption after report is built successfully)
- */
 export async function consumeEntitlement(
   dbTransaction: admin.firestore.Transaction,
   params: {
     entitlementId: string;
     uid: string;
+    caseId: string;
     reportId: string;
     reportHash: string;
   }
 ): Promise<Entitlement> {
   validateIdentifier("entitlementId", params.entitlementId);
   validateIdentifier("uid", params.uid);
+  validateIdentifier("caseId", params.caseId);
   validateIdentifier("reportId", params.reportId);
 
   const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
-  const snapshot: any = await dbTransaction.get(entitlementRef as any);
-
+  const snapshot = await dbTransaction.get(entitlementRef);
   if (!snapshot.exists) {
     throw new EntitlementUnavailableError(`Entitlement with ID ${params.entitlementId} was not found.`);
   }
 
   const entitlement = snapshot.data() as Entitlement;
-
-  if (entitlement.uid !== params.uid) {
-    throw new EntitlementUnavailableError("Ownership mismatch on requested entitlement.");
+  if (entitlement.uid !== params.uid || entitlement.caseId !== params.caseId) {
+    throw new EntitlementUnavailableError("Ownership or dossier mismatch on requested entitlement.");
   }
-
+  if (entitlement.status === "CONSUMED" && entitlement.consumedReportId === params.reportId) {
+    return entitlement;
+  }
   if (entitlement.status !== "RESERVED" || entitlement.reservedReportId !== params.reportId) {
     throw new DoubleSpendViolationError(params.entitlementId);
   }
@@ -172,115 +177,95 @@ export async function consumeEntitlement(
     status: "CONSUMED",
     consumedReportId: params.reportId,
     consumedAt: now,
+    reservationExpiresAt: undefined,
     updatedAt: now,
   };
 
-  dbTransaction.update(entitlementRef, updatedEntitlement);
-
-  // Write to ledger
   await writeLedgerEntry(dbTransaction, {
     uid: entitlement.uid,
     orderId: entitlement.orderId,
     transactionId: entitlement.orderId,
-    eventId: `consume_${params.reportId}_${new Date().getTime()}`,
+    eventId: `consume_${params.reportId}`,
     type: "ENTITLEMENT_CONSUMED",
-    quantity: entitlement.quantity,
+    quantity: 1,
     idempotencyKey: `consume:${params.entitlementId}:${params.reportId}`,
+  });
+  dbTransaction.update(entitlementRef, {
+    ...updatedEntitlement,
+    reservationExpiresAt: null,
   });
 
   return { ...entitlement, ...updatedEntitlement };
 }
 
-/**
- * Reverts an active reservation to AVAILABLE in case of report generation errors
- */
 export async function releaseEntitlementReservation(
   dbTransaction: admin.firestore.Transaction,
   params: {
     entitlementId: string;
     uid: string;
+    caseId: string;
     reportId: string;
   }
 ): Promise<Entitlement> {
   validateIdentifier("entitlementId", params.entitlementId);
   validateIdentifier("uid", params.uid);
+  validateIdentifier("caseId", params.caseId);
   validateIdentifier("reportId", params.reportId);
 
   const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
-  const snapshot: any = await dbTransaction.get(entitlementRef as any);
-
-  if (!snapshot.exists) {
-    throw new EntitlementUnavailableError();
-  }
+  const snapshot = await dbTransaction.get(entitlementRef);
+  if (!snapshot.exists) throw new EntitlementUnavailableError();
 
   const entitlement = snapshot.data() as Entitlement;
-
-  if (entitlement.uid !== params.uid) {
-    throw new EntitlementUnavailableError("Ownership mismatch.");
+  if (entitlement.uid !== params.uid || entitlement.caseId !== params.caseId) {
+    throw new EntitlementUnavailableError("Ownership or dossier mismatch.");
   }
-
+  if (entitlement.status === "AVAILABLE") {
+    return entitlement;
+  }
   if (entitlement.status !== "RESERVED" || entitlement.reservedReportId !== params.reportId) {
-    return entitlement; // No-op if not reserved by this report
+    return entitlement;
   }
 
   const now = new Date().toISOString();
-  const updatedEntitlement: Partial<Entitlement> = {
+  await writeLedgerEntry(dbTransaction, {
+    uid: entitlement.uid,
+    orderId: entitlement.orderId,
+    transactionId: entitlement.orderId,
+    eventId: `release_${params.reportId}`,
+    type: "ENTITLEMENT_RELEASED",
+    quantity: 1,
+    idempotencyKey: `release:${params.entitlementId}:${params.reportId}`,
+  });
+  dbTransaction.update(entitlementRef, {
+    status: "AVAILABLE",
+    reservedReportId: null,
+    reservationExpiresAt: null,
+    updatedAt: now,
+  });
+
+  return {
+    ...entitlement,
     status: "AVAILABLE",
     reservedReportId: undefined,
     reservationExpiresAt: undefined,
     updatedAt: now,
   };
-
-  dbTransaction.update(entitlementRef, {
-    status: "AVAILABLE",
-    reservedReportId: null,
-    reservationExpiresAt: null,
-    updatedAt: now,
-  });
-
-  // Write to ledger
-  await writeLedgerEntry(dbTransaction, {
-    uid: entitlement.uid,
-    orderId: entitlement.orderId,
-    transactionId: entitlement.orderId,
-    eventId: `release_${params.reportId}_${new Date().getTime()}`,
-    type: "ENTITLEMENT_RELEASED",
-    quantity: entitlement.quantity,
-    idempotencyKey: `release:${params.entitlementId}:${params.reportId}`,
-  });
-
-  return { ...entitlement, ...updatedEntitlement };
 }
 
-/**
- * Revokes an entitlement entirely (e.g. during a checkout refund process)
- */
 export async function revokeEntitlement(
   dbTransaction: admin.firestore.Transaction,
-  params: {
-    entitlementId: string;
-    eventId: string;
-  }
+  params: { entitlementId: string; eventId: string }
 ): Promise<Entitlement> {
   validateIdentifier("entitlementId", params.entitlementId);
-
   const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
-  const snapshot: any = await dbTransaction.get(entitlementRef as any);
-
-  if (!snapshot.exists) {
-    throw new EntitlementUnavailableError();
-  }
+  const snapshot = await dbTransaction.get(entitlementRef);
+  if (!snapshot.exists) throw new EntitlementUnavailableError();
 
   const entitlement = snapshot.data() as Entitlement;
+  if (entitlement.status === "REVOKED") return entitlement;
+
   const now = new Date().toISOString();
-
-  dbTransaction.update(entitlementRef, {
-    status: "REVOKED",
-    reservedReportId: null,
-    reservationExpiresAt: null,
-    updatedAt: now,
-  });
-
   await writeLedgerEntry(dbTransaction, {
     uid: entitlement.uid,
     orderId: entitlement.orderId,
@@ -289,6 +274,12 @@ export async function revokeEntitlement(
     type: "ENTITLEMENT_REVOKED",
     quantity: entitlement.quantity,
     idempotencyKey: `revoke:${params.entitlementId}:${params.eventId}`,
+  });
+  dbTransaction.update(entitlementRef, {
+    status: "REVOKED",
+    reservedReportId: null,
+    reservationExpiresAt: null,
+    updatedAt: now,
   });
 
   return { ...entitlement, status: "REVOKED", updatedAt: now };
