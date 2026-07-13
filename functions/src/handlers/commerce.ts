@@ -2,15 +2,20 @@ import { createCallable } from "../wrapper";
 import { z } from "zod";
 import { HttpsError } from "firebase-functions/v2/https";
 import { adminDb } from "../firebase-admin";
+import { verifyCaseOwner } from "../cbam/storage/case-repository";
 
 const PREPARATION_PACK_PRODUCT = "CBAM_CREDIT_PACK_5" as const;
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
 
 export const getEntitlements = createCallable({}, async (_, { auth }) => {
   const snapshot = await adminDb.collection("entitlements")
     .where("uid", "==", auth.uid)
     .where("status", "==", "AVAILABLE")
     .get();
-  const entitlements = snapshot.docs.map(doc => doc.data());
+  const entitlements = snapshot.docs.map((doc) => doc.data());
   return { entitlements, status: "success" };
 });
 
@@ -32,29 +37,34 @@ export const createCheckoutSession = createCallable(
         { caseId }
       );
       return { transactionId, status: "success" };
-    } catch (err: any) {
-      console.error("[CHECKOUT] Server-side checkout creation failed:", err?.message || err);
-      throw new HttpsError("failed-precondition", err?.message || "Checkout could not be started.");
+    } catch (error: unknown) {
+      const message = errorMessage(error, "Checkout could not be started.");
+      console.error("[CHECKOUT] Server-side checkout creation failed:", message);
+      throw new HttpsError("failed-precondition", message);
     }
   }
 );
 
 /**
- * Legacy account-credit conversion endpoint.
- * Kept for backward compatibility with historical balances, but it remains
- * server-authenticated, atomic and idempotent. New purchases use the single
- * Exporter Verification Preparation Pack checkout above.
+ * Backward-compatible conversion of historical account credits. The resulting
+ * five versions are bound to one owned draft dossier, matching new purchases.
  */
 export const unlockCbamUses = createCallable(
   {
     schema: z.object({
       requestId: z.string().min(1),
+      caseId: z.string().min(1),
     })
   },
-  async ({ requestId }, { auth }) => {
+  async ({ requestId, caseId }, { auth }) => {
     try {
+      const cbamCase = await verifyCaseOwner(caseId, auth.uid);
+      if (cbamCase.status !== "DRAFT") {
+        throw new HttpsError("failed-precondition", "Historical credits can only unlock an active draft dossier.");
+      }
+
       return await adminDb.runTransaction(async (dbTransaction) => {
-        const idempotencyRef = adminDb.collection("idempotency").doc(`unlock_${requestId}`);
+        const idempotencyRef = adminDb.collection("idempotency").doc(`unlock_${auth.uid}_${caseId}_${requestId}`);
         const idempotencyDoc = await dbTransaction.get(idempotencyRef);
         if (idempotencyDoc.exists) {
           return { status: "success", message: "Already unlocked" };
@@ -67,37 +77,40 @@ export const unlockCbamUses = createCallable(
         if (availableCredits < 100) {
           throw new HttpsError(
             "failed-precondition",
-            "Insufficient account balance. 100 historical account credits are required to unlock five report versions."
+            "Insufficient historical account balance. 100 credits are required to unlock five report versions."
           );
         }
 
+        const now = new Date().toISOString();
         dbTransaction.set(creditRef, {
           availableCredits: availableCredits - 100,
           lifetimeConsumed: Number(creditDoc.data()?.lifetimeConsumed || 0) + 100,
-          updatedAt: new Date().toISOString()
+          updatedAt: now
         }, { merge: true });
 
-        const now = new Date().toISOString();
         const ledgerRef = adminDb.collection("users").doc(auth.uid).collection("creditLedger").doc();
         dbTransaction.set(ledgerRef, {
           uid: auth.uid,
+          caseId,
           amount: -100,
-          reason: "CBAM_UNLOCK",
+          reason: "CBAM_PREPARATION_PACK_UNLOCK",
           requestId,
           createdAt: now,
           balanceAfter: availableCredits - 100
         });
 
-        for (let i = 0; i < 5; i++) {
-          const entitlementRef = adminDb.collection("entitlements").doc();
+        for (let sequence = 1; sequence <= 5; sequence += 1) {
+          const entitlementId = `ent_unlock_${requestId}_${sequence}`;
+          const entitlementRef = adminDb.collection("entitlements").doc(entitlementId);
           dbTransaction.set(entitlementRef, {
-            entitlementId: entitlementRef.id,
+            entitlementId,
             uid: auth.uid,
             orderId: `UNLOCK_${requestId}`,
+            caseId,
             productCode: PREPARATION_PACK_PRODUCT,
             status: "AVAILABLE",
             quantity: 1,
-            versionSequence: i + 1,
+            versionSequence: sequence,
             createdAt: now,
             updatedAt: now,
           });
@@ -105,14 +118,16 @@ export const unlockCbamUses = createCallable(
 
         dbTransaction.set(idempotencyRef, {
           processedAt: now,
-          uid: auth.uid
+          uid: auth.uid,
+          caseId,
+          requestId,
         });
 
-        return { status: "success", message: "Successfully unlocked five report versions." };
+        return { status: "success", message: "Successfully unlocked five case-bound report versions." };
       });
-    } catch (err: any) {
-      if (err instanceof HttpsError) throw err;
-      throw new HttpsError("internal", err.message);
+    } catch (error: unknown) {
+      if (error instanceof HttpsError) throw error;
+      throw new HttpsError("internal", errorMessage(error, "Historical credit unlock failed."));
     }
   }
 );
