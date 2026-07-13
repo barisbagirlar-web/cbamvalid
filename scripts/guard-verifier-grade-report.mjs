@@ -65,13 +65,21 @@ requireText(qualityContract, "REPORT_MATERIAL_FINDINGS_OPEN", "Report quality co
 requireText(packageBuilder, "assessVerifierGradeReport", "Package builder is not connected to the report quality contract");
 requirePattern(
   packageBuilder,
-  /if\s*\(\s*reportQualityAssessment\.status\s*!==\s*["']PASS["']\s*\)\s*\{[\s\S]{0,500}?throw\s+new\s+Error\s*\(/,
+  /reportQualityAssessment\.status\s*!==\s*["']PASS["'][\s\S]{0,300}?throw\s+new\s+Error\s*\(/,
   "Package builder does not fail closed on report-quality failure"
 );
 requireText(packageBuilder, "Operator Emissions Report", "Operator emissions report is missing");
-requireText(packageBuilder, "Verifier completion section", "Operator report lacks accredited-verifier completion fields");
+requirePattern(
+  packageBuilder,
+  /OPERATOR PREPARATION\s+—\s+VERIFIER COMPLETION REQUIRED[\s\S]{0,5000}?independent accredited verification/i,
+  "Operator report lacks an explicit accredited-verifier completion boundary"
+);
 requireText(packageBuilder, "Per-good reportable results", "Calculation annex lacks per-good reportable results");
-requireText(packageBuilder, "Professional-scepticism checklist", "Readiness report lacks external-verifier challenge framing");
+requirePattern(
+  packageBuilder,
+  /Verification Readiness Assessment[\s\S]{0,2500}?(?:Quality controls|Report-quality issues)[\s\S]{0,2500}?(?:Remediation|Required remediation)/i,
+  "Readiness report lacks a structured external-verifier challenge and remediation frame"
+);
 requireText(packageBuilder, "topLevelComponentCount: 23", "Manifest does not lock 23 top-level components");
 requireText(packageBuilder, "reportQualityAssessment.status", "Package verification does not require report-quality PASS");
 
