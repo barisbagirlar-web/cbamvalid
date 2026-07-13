@@ -16,6 +16,7 @@ export const getEntitlements = createCallable({}, async (_, { auth }) => {
 
 export const createCheckoutSession = createCallable(
   {
+    secrets: ["PADDLE_API_KEY"],
     schema: z.object({
       productCode: z.literal(PREPARATION_PACK_PRODUCT),
       caseId: z.string().min(1)
