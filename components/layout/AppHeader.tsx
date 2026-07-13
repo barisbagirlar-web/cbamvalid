@@ -84,7 +84,7 @@ export function AppHeader() {
     return (
       <nav className="hidden md:flex items-center gap-7 lg:gap-9" aria-label="Main Navigation">
         {APP_NAV.map((link) => {
-          const isActive = pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(link.href));
+          const isActive = pathname === link.href || (link.href !== "/cbam" && pathname.startsWith(link.href));
           return (
             <Link 
               key={link.label}
@@ -230,7 +230,7 @@ export function AppHeader() {
             ) : (
               <>
                 {APP_NAV.map((link) => {
-                  const isActive = pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(link.href));
+                  const isActive = pathname === link.href || (link.href !== "/cbam" && pathname.startsWith(link.href));
                   return (
                     <Link 
                       key={link.label}
