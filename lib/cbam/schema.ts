@@ -12,7 +12,8 @@ export const UnitCodeSchema = z.enum([
   "USD",
   "GBP",
   "TRY",
-  "tCO2e/MWh"
+  "tCO2e/MWh",
+  "fraction"
 ]);
 
 export type UnitCode = z.infer<typeof UnitCodeSchema>;
@@ -163,7 +164,8 @@ export const AuditReadyCaseSchema = z.object({
     cnCode: InputDatumSchema,
     sector: z.string(),
     productionVolume: InputDatumSchema,
-    shipmentRecords: InputDatumSchema
+    shipmentRecords: InputDatumSchema,
+    allocationShare: InputDatumSchema.optional()
   })),
   installation: z.object({
     name: InputDatumSchema,
