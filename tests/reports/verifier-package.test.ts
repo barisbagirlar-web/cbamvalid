@@ -53,7 +53,7 @@ function fixture(): AuditReadyCase {
       issuer: "Example Utility",
       issueDate: "2026-12-31",
       reportingPeriod: "2026",
-      fileHash: "1ae05b29d9665fc15122a8aa99ff7df22466eaf34cd6ba541220573dc1cead51",
+      fileHash: "e775744da9af6520849c0c1ed66948f60ff137cb8df0db89f7e2a2530ce3cecd",
       uploadTimestamp: "2026-12-31T00:00:00.000Z",
       uploader: "user_fixture_001",
       reviewStatus: "APPROVED",
