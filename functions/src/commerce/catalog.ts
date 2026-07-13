@@ -9,8 +9,8 @@ export interface ProductDefinition {
   maxInstallations: number;
   maxCnCodes: number;
   active: boolean;
-  paddlePriceIdSandbox: string;
-  paddlePriceIdProduction: string;
+  readonly paddlePriceIdSandbox: string;
+  readonly paddlePriceIdProduction: string;
 }
 
 export const PREPARATION_PACK_PRODUCT_CODE = "CBAM_CREDIT_PACK_5" as const;
@@ -27,17 +27,18 @@ export const PRODUCT_CATALOG: Record<string, ProductDefinition> = {
     maxInstallations: 1,
     maxCnCodes: 25,
     active: true,
-    paddlePriceIdSandbox: process.env.PADDLE_PRICE_ID_SANDBOX || "",
-    paddlePriceIdProduction: process.env.PADDLE_PRICE_ID_PRODUCTION || "",
+    get paddlePriceIdSandbox() {
+      return process.env.PADDLE_PRICE_ID_SANDBOX || "";
+    },
+    get paddlePriceIdProduction() {
+      return process.env.PADDLE_PRICE_ID_PRODUCTION || "";
+    },
   },
 } as const;
 
 export function getPriceIdForProduct(productCode: string, isSandbox: boolean): string | null {
   const product = PRODUCT_CATALOG[productCode];
-  if (!product || !product.active) {
-    return null;
-  }
-
+  if (!product || !product.active) return null;
   const priceId = isSandbox ? product.paddlePriceIdSandbox : product.paddlePriceIdProduction;
   return priceId || null;
 }
