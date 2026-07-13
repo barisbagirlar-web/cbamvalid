@@ -1,0 +1,126 @@
+name: Release Readiness Agent
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1"
+  push:
+    branches:
+      - feat/exporter-verification-platform-v1
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: release-readiness-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Evidence-based source release audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_FIREBASE_API_KEY: "ci-placeholder-not-a-secret"
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "cbamvalid-ci.invalid"
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: "cbamvalid-ci"
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "cbamvalid-ci.appspot.com"
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+      NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:0000000000000000000000"
+      ADMIN_USE_ADC: "true"
+      GCLOUD_PROJECT: "cbamvalid-ci"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run release readiness agent
+        id: readiness
+        continue-on-error: true
+        run: node scripts/run-release-readiness-agent.mjs artifacts/release-readiness
+
+      - name: Upload readiness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-readiness-${{ github.sha }}
+          path: artifacts/release-readiness
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Open or update failure issue
+        if: steps.readiness.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          title="[Automation] Release readiness failure"
+          issue_number="$(
+            gh api \
+              -H "Accept: application/vnd.github+json" \
+              "repos/${GITHUB_REPOSITORY}/issues?state=open&per_page=100" \
+              --jq '.[] | select(.title == "[Automation] Release readiness failure") | .number' \
+              | head -n 1
+          )"
+          body="$(cat artifacts/release-readiness/summary.md)"
+
+          if [[ -n "${issue_number}" ]]; then
+            gh api \
+              --method POST \
+              -H "Accept: application/vnd.github+json" \
+              "repos/${GITHUB_REPOSITORY}/issues/${issue_number}/comments" \
+              --raw-field body="${body}" > /dev/null
+          else
+            gh api \
+              --method POST \
+              -H "Accept: application/vnd.github+json" \
+              "repos/${GITHUB_REPOSITORY}/issues" \
+              --raw-field title="${title}" \
+              --raw-field body="${body}" > /dev/null
+          fi
+
+      - name: Close resolved failure issue
+        if: steps.readiness.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          issue_number="$(
+            gh api \
+              -H "Accept: application/vnd.github+json" \
+              "repos/${GITHUB_REPOSITORY}/issues?state=open&per_page=100" \
+              --jq '.[] | select(.title == "[Automation] Release readiness failure") | .number' \
+              | head -n 1
+          )"
+
+          if [[ -n "${issue_number}" ]]; then
+            gh api \
+              --method POST \
+              -H "Accept: application/vnd.github+json" \
+              "repos/${GITHUB_REPOSITORY}/issues/${issue_number}/comments" \
+              --raw-field body="Resolved by release readiness run ${GITHUB_RUN_ID} at commit ${GITHUB_SHA}." > /dev/null
+            gh api \
+              --method PATCH \
+              -H "Accept: application/vnd.github+json" \
+              "repos/${GITHUB_REPOSITORY}/issues/${issue_number}" \
+              --raw-field state="closed" > /dev/null
+          fi
+
+      - name: Enforce readiness result
+        if: steps.readiness.outcome == 'failure'
+        run: exit 1
