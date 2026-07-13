@@ -123,13 +123,6 @@ async function handleTransactionCompleted(eventId: string, transaction: any): Pr
   const orderRef = adminDb.collection("commerce_orders").doc(orderId);
   const expectedOrder = { uid, caseId, productCode, currency, amountMinor: actualAmountMinor, transactionId };
 
-  /*
-   * Stage 1: capture payment and bind the Paddle transaction to the order.
-   * This stage intentionally runs in its own transaction so every read occurs
-   * before the first write. It also self-heals the narrow race where Paddle
-   * creates the transaction but the checkout service loses its subsequent
-   * Firestore update.
-   */
   await adminDb.runTransaction(async (dbTransaction: any) => {
     const orderSnapshot = await dbTransaction.get(orderRef);
     if (!orderSnapshot.exists) throw new Error("PADDLE_ORDER_NOT_FOUND");
@@ -161,11 +154,6 @@ async function handleTransactionCompleted(eventId: string, transaction: any): Pr
     }
   });
 
-  /*
-   * Stage 2: issue exactly five deterministic, case-bound entitlements.
-   * If this stage fails, the webhook remains retryable. Stage 1 is safe to
-   * replay because its ledger key and order binding are idempotent.
-   */
   await adminDb.runTransaction(async (dbTransaction: any) => {
     const orderSnapshot = await dbTransaction.get(orderRef);
     if (!orderSnapshot.exists) throw new Error("PADDLE_ORDER_NOT_FOUND_AFTER_CAPTURE");
@@ -227,16 +215,14 @@ async function handleAdjustmentUpdated(eventId: string, adjustment: any): Promis
     order.amountMinor
   );
 
-  await adminDb.runTransaction(async (dbTransaction: any) => {
-    await processRefund(dbTransaction, {
-      uid: order.uid,
-      orderId: order.orderId,
-      transactionId,
-      eventId,
-      adjustmentId,
-      amountMinor: Number.isFinite(amountMinor) ? amountMinor : order.amountMinor,
-      currency: asString(adjustment?.currencyCode || adjustment?.currency_code) || order.currency,
-    });
+  await processRefund({
+    uid: order.uid,
+    orderId: order.orderId,
+    transactionId,
+    eventId,
+    adjustmentId,
+    amountMinor: Number.isFinite(amountMinor) ? amountMinor : order.amountMinor,
+    currency: asString(adjustment?.currencyCode || adjustment?.currency_code) || order.currency,
   });
 
   console.log(`[PADDLE-PROCESSOR] Completed refund processing for order ${order.orderId}.`);
