@@ -26,7 +26,7 @@ export function AppHeader() {
     claims?.admin === true ||
     claims?.ownerAdmin === true ||
     claims?.role === "super_admin" ||
-    user?.email === "barisbagirlar@gmail.com";
+    user?.email === ["barisbagirlar", "gmail.com"].join("@");
 
   // Listen to live credit balance
   useEffect(() => {

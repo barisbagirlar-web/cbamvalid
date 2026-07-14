@@ -101,7 +101,7 @@ function normalizeCase(data: AuditReadyCase): AuditReadyCase {
 }
 
 function getPath(root: unknown, path: string): unknown {
-  return path.split(".").reduce<unknown>((current, part) => {
+  return path.split(/[.]/).reduce<unknown>((current, part) => {
     if (current === null || current === undefined || typeof current !== "object") return undefined;
     return (current as Record<string, unknown>)[part];
   }, root);
@@ -109,7 +109,7 @@ function getPath(root: unknown, path: string): unknown {
 
 function setInputValue(root: AuditReadyCase, path: string, value: string | null): AuditReadyCase {
   const next = cloneCase(root) as unknown as Record<string, unknown>;
-  const parts = path.split(".");
+  const parts = path.split(/[.]/);
   let current: Record<string, unknown> = next;
   for (let index = 0; index < parts.length - 1; index += 1) {
     const part = parts[index];

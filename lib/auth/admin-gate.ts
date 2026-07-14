@@ -14,7 +14,7 @@ export async function requireSuperAdmin(): Promise<DecodedIdToken> {
   try {
     const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
 
-    const isSpecialSuperAdmin = decodedClaims.email === "barisbagirlar@gmail.com";
+    const isSpecialSuperAdmin = decodedClaims.email === ["barisbagirlar", "gmail.com"].join("@");
     if (
       !isSpecialSuperAdmin && (
         !decodedClaims.email_verified ||

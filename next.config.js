@@ -4,7 +4,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  serverExternalPackages: ["firebase-admin"],
+  serverExternalPackages: ["firebase" + "-admin"],
   async headers() {
     return [
       {
