@@ -79,6 +79,10 @@ const requiredPackageFiles = [
   "21_Calculation_Trace.json",
   "22_Data_Integrity_Manifest.json",
   "23_Supporting_Evidence/",
+  "24_Executive_Verification_Readiness_Summary.pdf",
+  "25_Per_Good_Embedded_Emissions_Schedule.csv",
+  "26_Carbon_Price_Paid_Schedule.csv",
+  "27_Read_Me_and_Verifier_Navigation_Guide.pdf",
 ];
 
 for (const filename of requiredPackageFiles) {
@@ -132,7 +136,7 @@ if (productCatalog.includes("CBAM_EXPORTER_FINAL_REPORT")) failures.push("Retire
 if (/pri_01j2f(xyz|abc)\.\.\./.test(productCatalog)) failures.push("Placeholder Paddle price ID remains in the production catalog");
 
 if (!sealService.includes("buildVerifierPreparationPackage")) failures.push("Seal path is not connected to the verifier package builder");
-if (!sealService.includes("packageTopLevelComponentCount: 23")) failures.push("Sealed report does not record 23 top-level components");
+if (!sealService.includes("packageTopLevelComponentCount: 27")) failures.push("Sealed report does not record 27 top-level components");
 if (!reportsHandler.includes('z.enum(["zip", "manifest"])')) failures.push("Download endpoint exposes unsupported or non-existent report formats");
 if (sealService.includes("ASYMMETRIC_MANIFEST_SIGNATURE=NOT_IMPLEMENTED")) failures.push("Mock cryptographic signature remains in production seal path");
 
