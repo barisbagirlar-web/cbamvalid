@@ -1,7 +1,7 @@
-import React from "react";
 import Link from "next/link";
-import { PlayCircle, ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
+import { WalkthroughVideo } from "@/components/media/WalkthroughVideo";
 
 export const metadata: Metadata = {
   title: "How CBAMValid Works | CBAM Dossier Workflow",
@@ -23,7 +23,6 @@ export default function HowItWorksPage() {
   return (
     <main className="min-h-screen bg-background pt-24 pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
         {/* Hero Section */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h1 className="text-4xl md:text-5xl font-extrabold font-serif text-foreground tracking-tight mb-6">
@@ -33,14 +32,14 @@ export default function HowItWorksPage() {
             Follow the complete workflow from account access and structured data entry to evidence linking, quality control and sealed report delivery.
           </p>
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-            <Link 
-              href="/register?next=/cases/new" 
+            <Link
+              href="/register?next=/cases/new"
               className="bg-accent text-surface px-8 py-3 rounded-full font-medium hover:bg-accent-hover transition-colors flex items-center justify-center w-full sm:w-auto"
             >
               Start a Dossier <ArrowRight className="ml-2 w-4 h-4" />
             </Link>
-            <Link 
-              href="/sample-dossier" 
+            <Link
+              href="/sample-dossier"
               className="bg-surface border border-border text-foreground px-8 py-3 rounded-full font-medium hover:bg-muted/10 transition-colors flex items-center justify-center w-full sm:w-auto"
             >
               View Sample Dossier
@@ -57,19 +56,10 @@ export default function HowItWorksPage() {
             </p>
           </div>
 
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-border bg-black aspect-video group">
-            <video
-              controls
-              playsInline
-              preload="metadata"
-              poster="/media/cbamvalid-product-walkthrough-poster.webp"
-              aria-label="CBAMValid product workflow walkthrough"
-              className="w-full h-full object-cover"
-            >
-              <source src="/media/cbamvalid-product-walkthrough.mp4#t=3" type="video/mp4" />
-              <p className="text-white p-4">Your browser does not support the video tag.</p>
-            </video>
-          </div>
+          <WalkthroughVideo
+            ariaLabel="CBAMValid complete product workflow walkthrough"
+            className="rounded-2xl"
+          />
         </div>
 
         {/* Workflow Stages */}
@@ -91,7 +81,6 @@ export default function HowItWorksPage() {
             ))}
           </div>
         </div>
-
       </div>
     </main>
   );
