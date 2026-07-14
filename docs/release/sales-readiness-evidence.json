@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-14T00:00:00.000Z",
+  "startingSha": "802fc37300a669ab833eb192af4c86e9bc49819d",
+  "finalSha": null,
+  "deployedSha": "a2dbe68b97a4053cf4c7c1a3fca4e6d974bbea0e",
+  "workingTreeClean": false,
+  "productionRuntimeErrors": null,
+  "counts": {
+    "requirementMatrixOpen": 50,
+    "productionTodoPlaceholder": null,
+    "unsafeCoreAny": 39,
+    "zipComponents": 5,
+    "failedSealConsumption": null
+  },
+  "gates": {
+    "authoritativeCaseServerLoad": false,
+    "clientIsVerifiedAbsent": false,
+    "approvedEvidenceRequired": false,
+    "evidenceByteHashVerification": false,
+    "tenantIsolationFirestore": false,
+    "tenantIsolationStorage": false,
+    "fiveReleaseConcurrency": false,
+    "sixthReleaseDenied": false,
+    "sixIndependentSectorEngines": false,
+    "rulesetFailClosed": false,
+    "immutableStorageCreateOnly": false,
+    "storageReadbackHash": false,
+    "immutableRedownload": false,
+    "manifestSignatureVerification": false,
+    "zip27ComponentContract": false,
+    "pdfVisualQa": false,
+    "realXlsxValidation": false,
+    "verifierWorkspace": false,
+    "fullBrowserE2e": false,
+    "deployedShaEqualsRepositoryHead": false,
+    "paddleCredentialsRotated": false
+  },
+  "evidenceArtifacts": [],
+  "salesReady": false
+}
