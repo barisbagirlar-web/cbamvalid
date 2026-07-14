@@ -8,6 +8,42 @@ exports.getCasesForUser = getCasesForUser;
 const firebase_admin_1 = require("../../firebase-admin");
 const commerce_errors_1 = require("../../commerce/commerce-errors");
 const firestore_validator_1 = require("../../firestore-validator");
+const schema_1 = require("../schema");
+/**
+ * Helper to sanitize case data on write (Phase 2 & Phase 3 evidence status verification)
+ */
+function sanitizeCaseData(submittedData, existingData) {
+    // Parse with schema
+    const parsed = schema_1.AuditReadyCaseSchema.parse(submittedData);
+    // Sanitize evidence records
+    const existingEvidences = (existingData === null || existingData === void 0 ? void 0 : existingData.evidenceRegister) || [];
+    const existingMap = new Map(existingEvidences.map((e) => [e.evidenceId, e]));
+    parsed.evidenceRegister = parsed.evidenceRegister.map(ev => {
+        const existing = existingMap.get(ev.evidenceId);
+        if (existing) {
+            // Force status back to PENDING if they try to escalate it without admin approval
+            const reviewStatus = ev.reviewStatus === "APPROVED" && existing.reviewStatus !== "APPROVED" ? "PENDING" : ev.reviewStatus;
+            const supportStatus = ev.supportStatus === "SUPPORTED" && existing.supportStatus !== "SUPPORTED" ? "PENDING" : ev.supportStatus;
+            return Object.assign(Object.assign({}, ev), { reviewStatus,
+                supportStatus });
+        }
+        else {
+            // New evidence must start as PENDING
+            return Object.assign(Object.assign({}, ev), { reviewStatus: "PENDING", supportStatus: "PENDING" });
+        }
+    });
+    // Recalculate carbon price reduction based on approved evidence records
+    const approvedEvidenceIds = new Set(parsed.evidenceRegister
+        .filter(e => e.reviewStatus === "APPROVED" && e.supportStatus === "SUPPORTED")
+        .map(e => e.evidenceId));
+    parsed.carbonPriceRecords = parsed.carbonPriceRecords.map(rec => {
+        if (!rec.proofOfPaymentEvidenceId || !approvedEvidenceIds.has(rec.proofOfPaymentEvidenceId)) {
+            return Object.assign(Object.assign({}, rec), { eligibleCertificateReduction: 0 });
+        }
+        return rec;
+    });
+    return parsed;
+}
 /**
  * Retrieve case data by ID
  */
@@ -39,16 +75,16 @@ async function verifyCaseOwner(caseId, uid) {
  */
 async function createCase(uid, data) {
     (0, firestore_validator_1.validateIdentifier)("uid", uid);
-    if (data === null || data === void 0 ? void 0 : data.cnCode) {
-        (0, firestore_validator_1.validateIdentifier)("cnCode", data.cnCode);
-    }
     const caseRef = firebase_admin_1.adminDb.collection("cbam_cases").doc();
     const caseId = `case_${caseRef.id}`;
     const now = new Date().toISOString();
+    // Attach generated caseId to data
+    const caseData = Object.assign(Object.assign({}, data), { caseId, ownerId: uid });
+    const sanitized = sanitizeCaseData(caseData);
     const cbamCase = {
         caseId,
         uid,
-        data,
+        data: sanitized,
         status: "DRAFT",
         createdAt: now,
         updatedAt: now,
@@ -62,13 +98,13 @@ async function createCase(uid, data) {
 async function updateCase(caseId, uid, data) {
     (0, firestore_validator_1.validateIdentifier)("caseId", caseId);
     (0, firestore_validator_1.validateIdentifier)("uid", uid);
-    if (data === null || data === void 0 ? void 0 : data.cnCode) {
-        (0, firestore_validator_1.validateIdentifier)("cnCode", data.cnCode);
-    }
     const cbamCase = await verifyCaseOwner(caseId, uid);
     const now = new Date().toISOString();
+    // Ensure caseId is bound correctly
+    const caseData = Object.assign(Object.assign({}, data), { caseId, ownerId: uid });
+    const sanitized = sanitizeCaseData(caseData, cbamCase.data);
     const updated = {
-        data,
+        data: sanitized,
         updatedAt: now,
     };
     await firebase_admin_1.adminDb.collection("cbam_cases").doc(caseId).update(updated);

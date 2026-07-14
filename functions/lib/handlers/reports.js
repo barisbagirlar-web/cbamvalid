@@ -41,20 +41,33 @@ const firebase_admin_1 = require("../firebase-admin");
 exports.sealCbamReport = (0, wrapper_1.createCallable)({
     schema: zod_1.z.object({
         caseId: zod_1.z.string(),
-        entitlementId: zod_1.z.string()
+        entitlementId: zod_1.z.string(),
+        correctionReason: zod_1.z.string().optional()
     })
-}, async ({ caseId, entitlementId }, { auth }) => {
+}, async ({ caseId, entitlementId, correctionReason }, { auth }) => {
     const { sealReport } = await Promise.resolve().then(() => __importStar(require("../cbam/report/seal-service")));
     try {
+        // Load authoritative case revision on the server
+        const caseDoc = await firebase_admin_1.adminDb.collection("cbam_cases").doc(caseId).get();
+        if (!caseDoc.exists) {
+            throw new https_1.HttpsError("not-found", "Case not found.");
+        }
+        const cbamCase = caseDoc.data();
+        if (!cbamCase || cbamCase.uid !== auth.uid) {
+            throw new https_1.HttpsError("permission-denied", "Access denied to case.");
+        }
         const report = await sealReport({
             uid: auth.uid,
             caseId,
             entitlementId,
-            inputData: undefined
+            inputData: cbamCase.data,
+            correctionReason
         });
         return { report, status: "success" };
     }
     catch (err) {
+        if (err instanceof https_1.HttpsError)
+            throw err;
         throw new https_1.HttpsError("internal", err.message);
     }
 });

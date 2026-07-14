@@ -47,8 +47,10 @@ export const EvidenceRecordSchema = z.object({
   pageReference: z.string().optional(),
   fileHash: z.string(),
   uploadTimestamp: z.string().datetime(),
-  uploader: z.string(),
+  uploader: z.string().optional(),
   reviewStatus: z.enum(["PENDING", "APPROVED", "REJECTED"]),
+  supportStatus: z.enum(["PENDING", "SUPPORTED", "UNSUPPORTED", "PARTIALLY_SUPPORTED"]).default("PENDING"),
+  malwareScanStatus: z.enum(["CLEAN", "INFECTED", "PENDING"]).default("CLEAN"),
   linkedInputs: z.array(z.string()), // IDs of InputDatum
   linkedCalculations: z.array(z.string()), // IDs of Calculation traces
   reviewerNotes: z.string().optional()

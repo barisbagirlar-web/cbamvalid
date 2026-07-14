@@ -1,39 +1,57 @@
-# Rebuild Walkthrough - Authentication & UI Logo Sizing
+# Sealing & Entitlement Correctness Walkthrough (Phases 1-5, 7)
 
-This document summarizes the changes applied to resolve the B2B SaaS authentication issues, satisfy security requirements, and visually optimize the logo presentation on the landing page, login/registration views, and the dashboard.
+This walkthrough documents the design, implementation, and verification of the CBAM Sealing Runtime, Evidence Validation, and 5-Release Commercial Entitlement workflows.
 
-## Overview of Changes
+## Overview of Completed Work
 
-### 1. Unified Authentication Architecture
-- Converted all cookies to the canonical name `__Host-cbam_session`.
-- Replaced popup-based login workflows with direct redirect-based logic (`signInWithRedirect` and `getRedirectResult`).
-- Structured a secure, single-level session verification pipeline (`verifySessionCookie()`) to handle production security. For local development and E2E testing, a strictly conditional mock runner bypass is permitted under test/development interlocks (production environment excludes any mock/fallback routes).
-- Encapsulated page protection server-side by converting `app/dashboard/page.tsx`, `app/dashboard/wizard/page.tsx`, and `app/admin/page.tsx` into Server Components calling a unified `requireSession()` routine.
+### 1. Sealing Runtime Correctness (Phase 1)
+- **Authoritative Case Loading**: Modified the Firebase Cloud Function callable `sealCbamReport` in [reports.ts](file:///Users/macair1/projects/cbam-paddle-app/functions/src/handlers/reports.ts) to resolve and load the case snapshot from the server-side database (`cbam_cases`) using `auth.uid` ownership checks, rather than relying on browser-asserted data.
+- **Strict Schema Validation**: Integrated `AuditReadyCaseSchema` safely inside the sealing handler [seal-service.ts](file:///Users/macair1/projects/cbam-paddle-app/functions/src/cbam/report/seal-service.ts) to parse incoming database records and prevent dynamic `any` type poisoning.
 
-### 2. Guard Scripts & Validation
-- Created `scripts/guard-auth-env.mjs` to validate the environment configuration (Base64 credential decode and payload checks) before build/deployment.
-- Created `scripts/guard-auth-architecture.mjs` to statically inspect the workspace and verify zero usage of banned popup logins, Auth.js dependencies, client components importing `firebase-admin`, or legacy cookie names.
-- Configured verification hooks directly into `package.json` to enforce checks during build compilation.
+### 2. Elimination of User-Controlled Verification (Phase 2)
+- **Client Sanitization**: Implemented server-side data sanitization inside [case-repository.ts](file:///Users/macair1/projects/cbam-paddle-app/functions/src/cbam/storage/case-repository.ts) during all case creations or updates.
+- **Review Status Protection**: Forces any newly uploaded or user-modified evidence record statuses back to `PENDING`, preventing customers from declaring their own documents as `APPROVED` or `SUPPORTED`.
+- **Deduction Controls**: Overrides user-submitted certificate reductions back to `0` unless backed by an evidence record that has been approved and supported by a verified system reviewer.
 
-### 3. Visual Sizing Cleanups
-- Sized all logos in the header to a clean, proportional height of `h-7 md:h-8` (height: 28px/32px) to prevent vertical layout compression inside the 64px header container.
-- Cleaned up page-specific title duplication next to the text layers inside `/cbam_logo.svg`.
+### 3. Production Evidence Lifecycle (Phase 3)
+- **Status Validation Rules**: Configured sealing engine checks ensuring all attached documents are explicitly `APPROVED` (review status) and `SUPPORTED` (support status), aborting immediately if any document is missing or not validated.
+- **Malware Scanner Integration**: Rejects sealing requests if any evidence record has a `malwareScanStatus` set to `INFECTED`.
+
+### 4. 5-Release Commercial Entitlement (Phase 4)
+- **State Machine Integration**: Refactored [entitlement-service.ts](file:///Users/macair1/projects/cbam-paddle-app/functions/src/commerce/entitlement-service.ts) to replace the one-use consumption with a state machine allowing up to exactly 5 successful sealed releases per purchase.
+- **Scope Locking**: Automatically binds the purchased entitlement to the user's `caseId` upon the first release. Any subsequent releases using this entitlement are restricted to the same case.
+- **Correction Reasons**: Enforces a non-empty `correctionReason` parameter for sequence numbers 2 through 5.
+- **Fail-Closed Protection**: Entitlement reservation is performed atomically inside Firestore transactions, and released back to `AVAILABLE` on sealing failures, avoiding package oversubscription.
+
+### 5. Ruleset Fail-Closed Behavior (Phase 5)
+- **Strict Resolution**: Removed silent fallback rules from the ruleset resolver [rulesets.ts](file:///Users/macair1/projects/cbam-paddle-app/lib/cbam/registry/rulesets.ts) and [rulesets.ts](file:///Users/macair1/projects/cbam-paddle-app/functions/src/cbam/registry/rulesets.ts), causing calculations and sealing to abort if no ruleset matches the active date range or jurisdiction.
+
+### 6. Immutable Two-Phase GCS Commit (Phase 7)
+- **Storage Read-Back Verification**: The sealing pipeline saves all report artifacts (PDF, JSON, XML, CSV, ZIP) to GCS, downloads them back over the network, computes their SHA-256 hashes, and compares them with the original in-memory buffers to guarantee GCS byte integrity before transactionally committing the Firestore document.
 
 ---
 
-## Validation & Verification Results
+## Verification & Testing Results
 
-### 1. Guard Checks
-- **Architecture Guard:** Passed successfully (`[GUARD-ARCH] [SUCCESS] Architectural validation passed successfully.`).
-- **Environment Guard:** Decoded and verified credentials successfully (`[GUARD-ENV] [SUCCESS] Environment validation passed successfully.`).
+### 1. Entitlement State Machine & Concurrency Tests
+We added a dedicated unit test suite [entitlements-and-sealing.test.ts](file:///Users/macair1/projects/cbam-paddle-app/tests/commerce/entitlements-and-sealing.test.ts) verifying the entitlement behavior:
+- **Initialization**: Verifies default 0 release count and `AVAILABLE` status.
+- **Double Spend**: Proves double spend protection blocks concurrent reservation attempts.
+- **Scope Lock**: Proves attempting a release on a different case fails validation.
+- **Correction Reasons & Limit**: Validates that correction reasons are required for versions 2–5, and that attempting a 6th release throws a strict bounds error.
 
-### 2. Next.js Build Output
-- The `npm run build` execution succeeded without errors:
-  - All protected user areas and API hooks are correctly compiled as dynamic server-side resources (`ƒ (Dynamic)`).
-  - Compilation and TypeScript static check runs succeeded cleanly.
+All tests passed successfully:
+```text
+ ✓ tests/commerce/entitlements-and-sealing.test.ts (4 tests) 6ms
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+```
 
-### 3. Tests & E2E Validation
-- **Authentication Unit Tests:** 15/15 passed successfully (`npm run test:auth`).
-- **Integration Tests:** 7/7 passed successfully (`npm run test:integration`).
-- **Playwright E2E Browser Suite:** 6/6 tests passed successfully across Chromium, Webkit (Safari), and Firefox (`npm run test:e2e:auth`).
-- **Unified Release Gate:** Running `npm run release:auth` completes successfully (exit code 0), validating the entire authentication and authorization architecture rebuild.
+### 2. Full Release Gate (ci:gate)
+All unified codebase checks, linter rules, type checking, functions compilation, and Vitest runs passed cleanly:
+- **Typecheck**: `PASS`
+- **Functions Build**: `PASS`
+- **CBAM Engine Tests**: `PASS`
+- **Reports/Builders Tests**: `PASS`
+- **Sales-Ready Mandate Guard**: `PASS` (fails closed, `PRODUCTION_SALES_READY=NO` confirmed)
+- **Next.js Production Compilation**: `PASS`

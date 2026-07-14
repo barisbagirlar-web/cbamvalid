@@ -13,10 +13,20 @@ export interface Entitlement {
   quantity: number; // typically 1 for CBAM dossiers
   createdAt: string;
   updatedAt: string;
+  releasesCount: number; // Track release count (0 to 5)
+  scopeCaseId?: string; // locked to this caseId after the first release
   reservedReportId?: string;
   reservationExpiresAt?: string;
   consumedReportId?: string;
   consumedAt?: string;
+  releasesList: Array<{
+    reportId: string;
+    version: number;
+    sequence: number;
+    correctionReason?: string;
+    documentHash: string;
+    sealedAt: string;
+  }>;
 }
 
 /**
@@ -50,6 +60,8 @@ export async function createEntitlement(
     quantity: params.quantity,
     createdAt: now,
     updatedAt: now,
+    releasesCount: 0,
+    releasesList: [],
   };
 
   dbTransaction.set(entitlementRef, entitlement);
@@ -69,7 +81,7 @@ export async function createEntitlement(
 }
 
 /**
- * Phase 1: Reserve Entitlement (Double-Spend Protection)
+ * Phase 1: Reserve Entitlement (Double-Spend Protection & Scope Locking)
  */
 export async function reserveEntitlement(
   dbTransaction: admin.firestore.Transaction,
@@ -77,12 +89,14 @@ export async function reserveEntitlement(
     entitlementId: string;
     uid: string;
     reportId: string;
+    caseId: string;
     expiresInSeconds?: number;
   }
 ): Promise<Entitlement> {
   validateIdentifier("entitlementId", params.entitlementId);
   validateIdentifier("uid", params.uid);
   validateIdentifier("reportId", params.reportId);
+  validateIdentifier("caseId", params.caseId);
 
   const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
   const snapshot: any = await dbTransaction.get(entitlementRef as any);
@@ -95,6 +109,17 @@ export async function reserveEntitlement(
 
   if (entitlement.uid !== params.uid) {
     throw new EntitlementUnavailableError("Ownership mismatch on requested entitlement.");
+  }
+
+  // Prevent sixth release
+  const currentCount = entitlement.releasesCount || 0;
+  if (currentCount >= 5 || entitlement.status === "CONSUMED") {
+    throw new EntitlementUnavailableError("Entitlement has already reached the maximum limit of 5 releases.");
+  }
+
+  // Scope Locking: if entitlement is already locked to a different caseId, throw error
+  if (entitlement.scopeCaseId && entitlement.scopeCaseId !== params.caseId) {
+    throw new EntitlementUnavailableError(`Entitlement is scope-locked to a different case: ${entitlement.scopeCaseId}`);
   }
 
   // Handle expired reservation auto-recovery
@@ -143,12 +168,16 @@ export async function consumeEntitlement(
     entitlementId: string;
     uid: string;
     reportId: string;
+    caseId: string;
     reportHash: string;
+    version: number;
+    correctionReason?: string;
   }
 ): Promise<Entitlement> {
   validateIdentifier("entitlementId", params.entitlementId);
   validateIdentifier("uid", params.uid);
   validateIdentifier("reportId", params.reportId);
+  validateIdentifier("caseId", params.caseId);
 
   const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
   const snapshot: any = await dbTransaction.get(entitlementRef as any);
@@ -167,15 +196,57 @@ export async function consumeEntitlement(
     throw new DoubleSpendViolationError(params.entitlementId);
   }
 
+  // Scope Locking check
+  if (entitlement.scopeCaseId && entitlement.scopeCaseId !== params.caseId) {
+    throw new EntitlementUnavailableError("Scope mismatch on consumption.");
+  }
+
+  const currentCount = entitlement.releasesCount || 0;
+  const newCount = currentCount + 1;
+  if (newCount > 5) {
+    throw new Error("Cannot consume more than 5 releases.");
+  }
+
+  // Correction reason verification (must be present for sequence 2-5)
+  if (newCount > 1 && (!params.correctionReason || params.correctionReason.trim().length === 0)) {
+    throw new Error("A correction reason must be supplied for releases after the first.");
+  }
+
   const now = new Date().toISOString();
+  
+  const releaseItem = {
+    reportId: params.reportId,
+    version: params.version,
+    sequence: newCount,
+    correctionReason: params.correctionReason || "",
+    documentHash: params.reportHash,
+    sealedAt: now,
+  };
+
+  const newReleasesList = [...(entitlement.releasesList || []), releaseItem];
+  const finalStatus = newCount === 5 ? "CONSUMED" : "AVAILABLE";
+
   const updatedEntitlement: Partial<Entitlement> = {
-    status: "CONSUMED",
+    status: finalStatus,
+    releasesCount: newCount,
+    scopeCaseId: params.caseId,
+    releasesList: newReleasesList,
     consumedReportId: params.reportId,
     consumedAt: now,
     updatedAt: now,
   };
 
-  dbTransaction.update(entitlementRef, updatedEntitlement);
+  dbTransaction.update(entitlementRef, {
+    status: finalStatus,
+    releasesCount: newCount,
+    scopeCaseId: params.caseId,
+    releasesList: newReleasesList,
+    consumedReportId: params.reportId,
+    consumedAt: now,
+    updatedAt: now,
+    reservedReportId: null,
+    reservationExpiresAt: null,
+  });
 
   // Write to ledger
   await writeLedgerEntry(dbTransaction, {
@@ -185,7 +256,7 @@ export async function consumeEntitlement(
     eventId: `consume_${params.reportId}_${new Date().getTime()}`,
     type: "ENTITLEMENT_CONSUMED",
     quantity: entitlement.quantity,
-    idempotencyKey: `consume:${params.entitlementId}:${params.reportId}`,
+    idempotencyKey: `consume:${params.entitlementId}:${params.reportId}:${newCount}`,
   });
 
   return { ...entitlement, ...updatedEntitlement };
@@ -224,15 +295,18 @@ export async function releaseEntitlementReservation(
   }
 
   const now = new Date().toISOString();
+  const currentCount = entitlement.releasesCount || 0;
+  const finalStatus = currentCount >= 5 ? "CONSUMED" : "AVAILABLE";
+
   const updatedEntitlement: Partial<Entitlement> = {
-    status: "AVAILABLE",
+    status: finalStatus,
     reservedReportId: undefined,
     reservationExpiresAt: undefined,
     updatedAt: now,
   };
 
   dbTransaction.update(entitlementRef, {
-    status: "AVAILABLE",
+    status: finalStatus,
     reservedReportId: null,
     reservationExpiresAt: null,
     updatedAt: now,

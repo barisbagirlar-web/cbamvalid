@@ -14,6 +14,39 @@ if (!check) {
 console.log(`[GUARD-MANDATE] Running check: ${check}...`);
 
 switch (check) {
+  case "sales-ready-guard": {
+    const reportPath = path.join(rootDir, "release_report.md");
+    if (!fs.existsSync(reportPath)) {
+      console.error("[FAIL] release_report.md not found.");
+      process.exit(1);
+    }
+    const reportContent = fs.readFileSync(reportPath, "utf-8");
+    const isSalesReady = reportContent.includes("PRODUCTION_SALES_READY=YES");
+    if (isSalesReady) {
+      const requiredEvidenceFiles = [
+        "docs/audit/BASELINE.md",
+        "docs/audit/REQUIREMENT_TRACEABILITY_MATRIX.md",
+        "docs/audit/FAILURE_MODE_REGISTER.md",
+        "docs/release/FINAL_EVIDENCE.md"
+      ];
+      for (const file of requiredEvidenceFiles) {
+        if (!fs.existsSync(path.join(rootDir, file))) {
+          console.error(`[FAIL] Mandatory evidence file ${file} is missing but PRODUCTION_SALES_READY=YES is declared.`);
+          process.exit(1);
+        }
+      }
+      const blockerSection = reportContent.substring(reportContent.indexOf("FINAL_BLOCKERS:"));
+      if (!blockerSection.includes("- NONE") && blockerSection.trim().length > 25) {
+        console.error("[FAIL] PRODUCTION_SALES_READY=YES is declared but active blockers are listed in release_report.md.");
+        process.exit(1);
+      }
+      console.log("[PASS] Sales readiness guard verified successfully.");
+    } else {
+      console.log("[PASS] Repository is not marked sales-ready; guard skipped.");
+    }
+    break;
+  }
+
   case "single-product": {
     // Verify product mappings in checkout route
     const checkoutRoutePath = path.join(rootDir, "app/api/checkout/cbam/route.ts");

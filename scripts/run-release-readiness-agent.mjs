@@ -6,6 +6,7 @@ const outputDir = path.resolve(process.argv[2] || "artifacts/release-readiness")
 fs.mkdirSync(outputDir, { recursive: true });
 
 const checks = [
+  ["hosting-architecture", "npm run guard:hosting-architecture"],
   ["workspace-navigation", "npm run guard:workspace-navigation"],
   ["github-actions-policy", "npm run guard:github-actions"],
   ["typecheck", "npm run typecheck"],

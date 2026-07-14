@@ -27,8 +27,10 @@ exports.EvidenceRecordSchema = zod_1.z.object({
     pageReference: zod_1.z.string().optional(),
     fileHash: zod_1.z.string(),
     uploadTimestamp: zod_1.z.string().datetime(),
-    uploader: zod_1.z.string(),
+    uploader: zod_1.z.string().optional(),
     reviewStatus: zod_1.z.enum(["PENDING", "APPROVED", "REJECTED"]),
+    supportStatus: zod_1.z.enum(["PENDING", "SUPPORTED", "UNSUPPORTED", "PARTIALLY_SUPPORTED"]).default("PENDING"),
+    malwareScanStatus: zod_1.z.enum(["CLEAN", "INFECTED", "PENDING"]).default("CLEAN"),
     linkedInputs: zod_1.z.array(zod_1.z.string()), // IDs of InputDatum
     linkedCalculations: zod_1.z.array(zod_1.z.string()), // IDs of Calculation traces
     reviewerNotes: zod_1.z.string().optional()

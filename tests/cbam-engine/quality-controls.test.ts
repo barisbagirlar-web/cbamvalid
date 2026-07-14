@@ -44,6 +44,8 @@ describe("CBAM Quality Controls Traceability", () => {
         uploadTimestamp: "2024-01-01T00:00:00Z",
         fileHash: "hash123",
         reviewStatus: "PENDING",
+        supportStatus: "SUPPORTED",
+        malwareScanStatus: "CLEAN",
         issuer: "Auditor",
         issueDate: "2024-01-01",
         reportingPeriod: "2024",

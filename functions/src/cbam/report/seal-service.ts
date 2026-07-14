@@ -1,9 +1,10 @@
 import crypto from "crypto";
-import { adminDb } from "../../firebase-admin";
+import { adminDb, getStorageBucket } from "../../firebase-admin";
 import { performDossierCalculations } from "../calculator";
 import { runQualityControls } from "../validation/quality-controls";
 import { reserveEntitlement, consumeEntitlement, releaseEntitlementReservation } from "../../commerce/entitlement-service";
-import { AuditReadyCase } from "../schema";
+import { AuditReadyCaseSchema } from "../schema";
+import { getActiveRuleset } from "../registry/rulesets";
 
 export interface SealingResult {
   reportId: string;
@@ -41,7 +42,8 @@ export async function sealReport(params: {
   uid: string;
   caseId: string;
   entitlementId: string;
-  inputData: any; // Mapped to AuditReadyCase
+  inputData: any;
+  correctionReason?: string;
 }): Promise<SealingResult> {
   const reportRef = adminDb.collection("cbam_reports").doc();
   const reportId = reportRef.id;
@@ -54,6 +56,7 @@ export async function sealReport(params: {
       entitlementId: params.entitlementId,
       uid: params.uid,
       reportId,
+      caseId: params.caseId
     });
   });
 
@@ -61,13 +64,47 @@ export async function sealReport(params: {
   await adminDb.collection("seal_log").doc(reportId).set({ state: "ENTITLEMENT_RESERVED", timestamp: new Date().toISOString() });
 
   try {
-    const caseData = params.inputData as AuditReadyCase;
+    if (!params.inputData) {
+      throw new Error("Case data is missing.");
+    }
+    const parseResult = AuditReadyCaseSchema.safeParse(params.inputData);
+    if (!parseResult.success) {
+      throw new Error(`Invalid case data schema: ${parseResult.error.message}`);
+    }
+    const caseData = parseResult.data;
+
+    // Validate ruleset (Fail-Closed)
+    const reportYear = caseData.reportingPeriod?.year?.value;
+    let checkDate = new Date();
+    if (reportYear) {
+      checkDate = new Date(`${reportYear}-01-01`);
+    }
+    const activeRuleset = getActiveRuleset(checkDate);
+    if (!activeRuleset) {
+      throw new Error("Active ruleset is missing or expired.");
+    }
     
     // 1. Enforce Quality Controls (Fail-Closed)
     const qcs = runQualityControls(caseData);
     const blockers = qcs.filter(q => q.status === "BLOCKER");
     if (blockers.length > 0) {
       throw new Error(`Sealing blocked due to strict quality controls: ${blockers.map(b => b.name).join(", ")}`);
+    }
+
+    // Strict evidence check: must be APPROVED, SUPPORTED, and CLEAN
+    if (caseData.evidenceRegister.length === 0) {
+      throw new Error("Sealing blocked: Evidence register is completely empty.");
+    }
+    for (const doc of caseData.evidenceRegister) {
+      if (doc.reviewStatus !== "APPROVED") {
+        throw new Error(`Sealing blocked: Evidence ${doc.fileName} (${doc.evidenceId}) is not APPROVED.`);
+      }
+      if (doc.supportStatus !== "SUPPORTED") {
+        throw new Error(`Sealing blocked: Evidence ${doc.fileName} (${doc.evidenceId}) is not SUPPORTED.`);
+      }
+      if (doc.malwareScanStatus !== "CLEAN") {
+        throw new Error(`Sealing blocked: Evidence ${doc.fileName} (${doc.evidenceId}) is flagged as: ${doc.malwareScanStatus}.`);
+      }
     }
 
     // State: QC_VALIDATED
@@ -138,17 +175,48 @@ export async function sealReport(params: {
     });
 
     // 9. Upload to Firebase Storage
-    const { getStorage } = await import("firebase-admin/storage");
-    const { getApp } = await import("firebase-admin/app");
-    const bucket = getStorage(getApp()).bucket();
+    const bucket = getStorageBucket();
 
     const basePath = `reports/${params.uid}/${reportId}`;
     
+    // Save all files
     await bucket.file(`${basePath}/dossier.pdf`).save(pdfBuffer, { contentType: 'application/pdf' });
     await bucket.file(`${basePath}/dossier.json`).save(jsonContent, { contentType: 'application/json' });
     await bucket.file(`${basePath}/dossier.xml`).save(xmlContent, { contentType: 'application/xml' });
     await bucket.file(`${basePath}/dossier.csv`).save(csvContent, { contentType: 'text/csv' });
     await bucket.file(`${basePath}/dossier.zip`).save(zipBuffer, { contentType: 'application/zip' });
+
+    // Recalculate and verify hashes of all uploaded files via byte read-back
+    const pdfHash = calculateSha256(pdfBuffer);
+    const jsonHashValue = calculateSha256(jsonContent);
+    const xmlHashValue = calculateSha256(xmlContent);
+    const csvHash = calculateSha256(csvContent);
+    const zipHash = calculateSha256(zipBuffer);
+
+    const [readBackPdf] = await bucket.file(`${basePath}/dossier.pdf`).download();
+    if (calculateSha256(readBackPdf) !== pdfHash) {
+      throw new Error("Storage integrity validation failed: PDF hash mismatch on GCS read-back.");
+    }
+
+    const [readBackJson] = await bucket.file(`${basePath}/dossier.json`).download();
+    if (calculateSha256(readBackJson) !== jsonHashValue) {
+      throw new Error("Storage integrity validation failed: JSON hash mismatch on GCS read-back.");
+    }
+
+    const [readBackXml] = await bucket.file(`${basePath}/dossier.xml`).download();
+    if (calculateSha256(readBackXml) !== xmlHashValue) {
+      throw new Error("Storage integrity validation failed: XML hash mismatch on GCS read-back.");
+    }
+
+    const [readBackCsv] = await bucket.file(`${basePath}/dossier.csv`).download();
+    if (calculateSha256(readBackCsv) !== csvHash) {
+      throw new Error("Storage integrity validation failed: CSV hash mismatch on GCS read-back.");
+    }
+
+    const [readBackZip] = await bucket.file(`${basePath}/dossier.zip`).download();
+    if (calculateSha256(readBackZip) !== zipHash) {
+      throw new Error("Storage integrity validation failed: ZIP hash mismatch on GCS read-back.");
+    }
 
     // State: KMS_SIGNED (Reusing this state broadly to mean cryptographic completion and artifact persisting)
     await adminDb.collection("seal_log").doc(reportId).set({ state: "KMS_SIGNED", timestamp: new Date().toISOString() });
@@ -178,7 +246,10 @@ export async function sealReport(params: {
         entitlementId: params.entitlementId,
         uid: params.uid,
         reportId,
+        caseId: params.caseId,
         reportHash: documentHash,
+        version: caseData.version,
+        correctionReason: params.correctionReason,
       });
 
       // State: ENTITLEMENT_CONSUMED (Implicit inside transaction)

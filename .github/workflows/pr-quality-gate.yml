@@ -46,6 +46,12 @@ jobs:
       - name: Prepare evidence directory
         run: mkdir -p artifacts/ci
 
+      - name: Verify hosting architecture and tracked-secret policy
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run guard:hosting-architecture 2>&1 | tee artifacts/ci/hosting-architecture.log
+
       - name: Verify workspace navigation contract
         shell: bash
         run: |

@@ -7,20 +7,33 @@ export const sealCbamReport = createCallable(
   {
     schema: z.object({
       caseId: z.string(),
-      entitlementId: z.string()
+      entitlementId: z.string(),
+      correctionReason: z.string().optional()
     })
   },
-  async ({ caseId, entitlementId }, { auth }) => {
+  async ({ caseId, entitlementId, correctionReason }, { auth }) => {
     const { sealReport } = await import("../cbam/report/seal-service");
     try {
+      // Load authoritative case revision on the server
+      const caseDoc = await adminDb.collection("cbam_cases").doc(caseId).get();
+      if (!caseDoc.exists) {
+        throw new HttpsError("not-found", "Case not found.");
+      }
+      const cbamCase = caseDoc.data();
+      if (!cbamCase || cbamCase.uid !== auth.uid) {
+        throw new HttpsError("permission-denied", "Access denied to case.");
+      }
+      
       const report = await sealReport({
         uid: auth.uid,
         caseId,
         entitlementId,
-        inputData: undefined
+        inputData: cbamCase.data,
+        correctionReason
       });
       return { report, status: "success" };
     } catch (err: any) {
+      if (err instanceof HttpsError) throw err;
       throw new HttpsError("internal", err.message);
     }
   }
