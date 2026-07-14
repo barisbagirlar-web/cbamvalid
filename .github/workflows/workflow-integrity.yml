@@ -1,0 +1,51 @@
+name: Workflow Integrity
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+      - "scripts/guard-github-actions.mjs"
+  push:
+    branches:
+      - main
+      - feat/exporter-verification-platform-v1
+    paths:
+      - ".github/workflows/**"
+      - "scripts/guard-github-actions.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workflow-integrity-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: actionlint and policy guard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Enforce repository workflow policy
+        run: node scripts/guard-github-actions.mjs
+
+      - name: Download and verify actionlint
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="1.7.12"
+          archive="actionlint_${version}_linux_amd64.tar.gz"
+          url="https://github.com/rhysd/actionlint/releases/download/v${version}/${archive}"
+          curl --fail --silent --show-error --location "$url" --output "/tmp/${archive}"
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  /tmp/${archive}" | sha256sum --check --strict
+          tar -xzf "/tmp/${archive}" -C /tmp actionlint
+          /tmp/actionlint -version
+
+      - name: Validate all GitHub Actions workflows
+        run: /tmp/actionlint -color

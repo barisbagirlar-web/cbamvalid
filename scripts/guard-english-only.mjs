@@ -28,6 +28,12 @@ const forbiddenTurkishSubstrings = [
   "ürünler",
   "hammadde",
   "emisyon",
+  "PLACEHOLDER",
+  "TODO_LEGAL",
+  "TODO_COMPANY",
+  "YOUR COMPANY",
+  "YOUR ADDRESS",
+  "EXAMPLE EMAIL"
 ];
 
 // Scan files
