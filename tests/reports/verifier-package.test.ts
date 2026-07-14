@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
+import crypto from "crypto";
 import {
   buildVerifierPreparationPackage,
   REQUIRED_TOP_LEVEL_COMPONENTS,
@@ -8,17 +9,21 @@ import { verifyVerifierPreparationPackage } from "../../functions/src/cbam/repor
 import { performDossierCalculations } from "../../functions/src/cbam/calculator";
 import { runQualityControls } from "../../functions/src/cbam/validation/quality-controls";
 import { assessVerifierGradeReport, REPORT_STANDARD_VERSION } from "../../functions/src/cbam/report/report-quality-contract";
+import { validatePackageContract } from "../../functions/src/cbam/report/package-contract-validator";
 import type { AuditReadyCase } from "../../functions/src/cbam/schema";
 
-const EVIDENCE_BYTES = Buffer.from("fixture-pdf-content");
-const EVIDENCE_HASH = "e775744da9af6520849c0c1ed66948f60ff137cb8df0db89f7e2a2530ce3cecd";
+const EVIDENCE_BYTES = Buffer.concat([
+  Buffer.from("%PDF-1.4\nmock-evidence-content"),
+  Buffer.alloc(200, 32)
+]);
+const EVIDENCE_HASH = crypto.createHash("sha256").update(EVIDENCE_BYTES).digest("hex");
 
 function input(value: string, unit?: string, evidenceId?: string) {
   return {
     value,
     canonicalUnit: unit,
-    sourceType: evidenceId ? "PRIMARY" as const : "REGULATORY" as const,
-    confidenceStatus: evidenceId ? "HIGH_VERIFIED" as const : "MEDIUM_DOCUMENTED" as const,
+    sourceType: evidenceId ? ("PRIMARY" as const) : ("REGULATORY" as const),
+    confidenceStatus: evidenceId ? ("HIGH_VERIFIED" as const) : ("MEDIUM_DOCUMENTED" as const),
     evidenceId,
   };
 }
@@ -99,7 +104,7 @@ function fixture(): AuditReadyCase {
 }
 
 describe("verifier-grade preparation package", () => {
-  it("generates and independently verifies all 23 top-level components under a PASS quality contract", async () => {
+  it("generates and independently verifies all 27 top-level components under a PASS quality contract", async () => {
     const caseData = fixture();
     const calculation = performDossierCalculations(caseData);
     const qualityControls = runQualityControls(caseData);
@@ -124,8 +129,8 @@ describe("verifier-grade preparation package", () => {
     });
 
     const verified = await verifyVerifierPreparationPackage(result.zipBuffer);
-    expect(REQUIRED_TOP_LEVEL_COMPONENTS).toHaveLength(23);
-    expect(verified.topLevelComponentCount).toBe(23);
+    expect(REQUIRED_TOP_LEVEL_COMPONENTS).toHaveLength(27);
+    expect(verified.topLevelComponentCount).toBe(27);
     expect(verified.verifiedFileCount).toBe(verified.manifest.files.length);
     expect(verified.manifestHash).toMatch(/^[a-f0-9]{64}$/);
     expect(result.manifest.reportStandardVersion).toBe(REPORT_STANDARD_VERSION);
@@ -183,5 +188,154 @@ describe("verifier-grade preparation package", () => {
         buffer: EVIDENCE_BYTES,
       }],
     })).rejects.toThrow("REPORT_QUALITY_BLOCKED");
+  });
+
+  // Regression: Deterministic 2x build verification
+  it("produces byte-identical ZIP output from two runs with identical inputs", async () => {
+    const caseData = fixture();
+    const calculation = performDossierCalculations(caseData);
+    const qualityControls = runQualityControls(caseData);
+
+    const run1 = await buildVerifierPreparationPackage({
+      releaseId: "rel_deterministic_001",
+      caseData,
+      calculation,
+      qualityControls,
+      evidenceFiles: [{
+        evidenceId: caseData.evidenceRegister[0].evidenceId,
+        fileName: caseData.evidenceRegister[0].fileName,
+        mimeType: "application/pdf",
+        sourceHash: EVIDENCE_HASH,
+        buffer: EVIDENCE_BYTES,
+      }],
+    });
+
+    const run2 = await buildVerifierPreparationPackage({
+      releaseId: "rel_deterministic_001",
+      caseData,
+      calculation,
+      qualityControls,
+      evidenceFiles: [{
+        evidenceId: caseData.evidenceRegister[0].evidenceId,
+        fileName: caseData.evidenceRegister[0].fileName,
+        mimeType: "application/pdf",
+        sourceHash: EVIDENCE_HASH,
+        buffer: EVIDENCE_BYTES,
+      }],
+    });
+
+    expect(run1.zipBuffer.equals(run2.zipBuffer)).toBe(true);
+  });
+
+  // Regression: Unknown extra files in zip
+  it("fails contract validation if there are unknown files in the zip", async () => {
+    const caseData = fixture();
+    const calculation = performDossierCalculations(caseData);
+    const qualityControls = runQualityControls(caseData);
+    const result = await buildVerifierPreparationPackage({
+      releaseId: "rel_fixture_extra",
+      caseData,
+      calculation,
+      qualityControls,
+      evidenceFiles: [{
+        evidenceId: caseData.evidenceRegister[0].evidenceId,
+        fileName: caseData.evidenceRegister[0].fileName,
+        mimeType: "application/pdf",
+        sourceHash: EVIDENCE_HASH,
+        buffer: EVIDENCE_BYTES,
+      }],
+    });
+
+    const zip = await JSZip.loadAsync(result.zipBuffer);
+    zip.file("99_Hack_Attempt.txt", "unauthorized content");
+    const tamperedBuffer = await zip.generateAsync({ type: "nodebuffer" });
+
+    const validation = await validatePackageContract(tamperedBuffer, result.manifest);
+    expect(validation.success).toBe(false);
+    expect(validation.failures.some(f => f.includes("PACKAGE_COMPONENT_UNKNOWN"))).toBe(true);
+  });
+
+  // Regression: Empty required components
+  it("fails contract validation if a required component is empty", async () => {
+    const caseData = fixture();
+    const calculation = performDossierCalculations(caseData);
+    const qualityControls = runQualityControls(caseData);
+    const result = await buildVerifierPreparationPackage({
+      releaseId: "rel_fixture_empty",
+      caseData,
+      calculation,
+      qualityControls,
+      evidenceFiles: [{
+        evidenceId: caseData.evidenceRegister[0].evidenceId,
+        fileName: caseData.evidenceRegister[0].fileName,
+        mimeType: "application/pdf",
+        sourceHash: EVIDENCE_HASH,
+        buffer: EVIDENCE_BYTES,
+      }],
+    });
+
+    const zip = await JSZip.loadAsync(result.zipBuffer);
+    zip.file("07_Source_Stream_Register.csv", ""); // Overwrite with empty
+    const tamperedBuffer = await zip.generateAsync({ type: "nodebuffer" });
+
+    const validation = await validatePackageContract(tamperedBuffer, result.manifest);
+    expect(validation.success).toBe(false);
+    expect(validation.failures.some(f => f.includes("PACKAGE_COMPONENT_EMPTY") || f.includes("PACKAGE_COMPONENT_SIZE_MISMATCH"))).toBe(true);
+  });
+
+  // Regression: Manifest hash mutations / tampered manifest
+  it("fails contract validation if a file's content hash is tampered with", async () => {
+    const caseData = fixture();
+    const calculation = performDossierCalculations(caseData);
+    const qualityControls = runQualityControls(caseData);
+    const result = await buildVerifierPreparationPackage({
+      releaseId: "rel_fixture_tamper",
+      caseData,
+      calculation,
+      qualityControls,
+      evidenceFiles: [{
+        evidenceId: caseData.evidenceRegister[0].evidenceId,
+        fileName: caseData.evidenceRegister[0].fileName,
+        mimeType: "application/pdf",
+        sourceHash: EVIDENCE_HASH,
+        buffer: EVIDENCE_BYTES,
+      }],
+    });
+
+    const zip = await JSZip.loadAsync(result.zipBuffer);
+    zip.file("07_Source_Stream_Register.csv", "tampered,data\n");
+    const tamperedBuffer = await zip.generateAsync({ type: "nodebuffer" });
+
+    const validation = await validatePackageContract(tamperedBuffer, result.manifest);
+    expect(validation.success).toBe(false);
+    expect(validation.failures.some(f => f.includes("PACKAGE_COMPONENT_HASH_MISMATCH"))).toBe(true);
+  });
+
+  // Regression: Manifest/physical file parity mismatches
+  it("fails contract validation if manifest entries do not match physical files", async () => {
+    const caseData = fixture();
+    const calculation = performDossierCalculations(caseData);
+    const qualityControls = runQualityControls(caseData);
+    const result = await buildVerifierPreparationPackage({
+      releaseId: "rel_fixture_parity",
+      caseData,
+      calculation,
+      qualityControls,
+      evidenceFiles: [{
+        evidenceId: caseData.evidenceRegister[0].evidenceId,
+        fileName: caseData.evidenceRegister[0].fileName,
+        mimeType: "application/pdf",
+        sourceHash: EVIDENCE_HASH,
+        buffer: EVIDENCE_BYTES,
+      }],
+    });
+
+    const zip = await JSZip.loadAsync(result.zipBuffer);
+    zip.remove("07_Source_Stream_Register.csv");
+    const tamperedBuffer = await zip.generateAsync({ type: "nodebuffer" });
+
+    const validation = await validatePackageContract(tamperedBuffer, result.manifest);
+    expect(validation.success).toBe(false);
+    expect(validation.failures.some(f => f.includes("PHYSICAL_MANIFEST_PARITY_ERROR") || f.includes("PACKAGE_COMPONENT_MISSING"))).toBe(true);
   });
 });

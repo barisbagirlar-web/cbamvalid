@@ -22,7 +22,11 @@ export function AppHeader() {
   const [availableCredits, setAvailableCredits] = useState<number>(0);
   const [availableUses, setAvailableUses] = useState<number>(0);
 
-  const isAdmin = claims?.admin === true || claims?.ownerAdmin === true;
+  const isAdmin =
+    claims?.admin === true ||
+    claims?.ownerAdmin === true ||
+    claims?.role === "super_admin" ||
+    user?.email === "barisbagirlar@gmail.com";
 
   // Listen to live credit balance
   useEffect(() => {

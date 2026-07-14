@@ -71,7 +71,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          node scripts/guard-verifier-grade-report.mjs 2>&1 | tee artifacts/ci/verifier-grade-report.log
+          npm run guard:verifier-grade-report 2>&1 | tee artifacts/ci/verifier-grade-report.log
 
       - name: Typecheck application
         shell: bash
