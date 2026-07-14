@@ -1,9 +1,16 @@
 import crypto from "crypto";
 import JSZip from "jszip";
 import { jsPDF } from "jspdf";
-import { AuditReadyCase } from "../schema";
+import { AuditReadyCase, EvidenceRecord, InputDatum } from "../schema";
 import { DossierCalculationResult } from "../calculator";
 import { QualityControlResult } from "../validation/quality-controls";
+import {
+  assessVerifierGradeReport,
+  REPORT_BASIS,
+  REPORT_LIMITATIONS,
+  REPORT_STANDARD_VERSION,
+  ReportQualityAssessment,
+} from "./report-quality-contract";
 
 export const REQUIRED_TOP_LEVEL_COMPONENTS = [
   "01_Product_Scope_Assessment.pdf",
@@ -48,14 +55,16 @@ type ManifestFile = {
   generatedAt: string;
   ruleset: string;
   engineVersion: string;
+  reportStandardVersion: string;
   sha256: string;
   sizeBytes: number;
   confidentiality: "CONFIDENTIAL" | "INTERNAL" | "PUBLIC";
 };
 
 export type DataIntegrityManifest = {
-  manifestVersion: "1.0";
+  manifestVersion: "2.0";
   product: "CBAMValid Exporter Verification Preparation Pack";
+  reportStandardVersion: string;
   releaseId: string;
   caseId: string;
   caseVersion: number;
@@ -64,8 +73,17 @@ export type DataIntegrityManifest = {
   engineVersion: string;
   calculationRootHash: string;
   topLevelComponentCount: 23;
+  regulatoryBasis: readonly string[];
+  reportQualityAssessment: ReportQualityAssessment;
   files: ManifestFile[];
-  limitations: string[];
+  limitations: readonly string[];
+};
+
+type PdfSection = {
+  heading: string;
+  paragraphs?: string[];
+  keyValues?: Array<[string, string]>;
+  table?: { headers: string[]; rows: string[][]; widths?: number[] };
 };
 
 function sha256(value: Buffer | string): string {
@@ -75,6 +93,10 @@ function sha256(value: Buffer | string): string {
 function text(value: unknown, fallback = "Not provided"): string {
   if (value === null || value === undefined || value === "") return fallback;
   return String(value);
+}
+
+function datumText(datum: InputDatum | undefined, fallback = "Not provided"): string {
+  return datum ? text(datum.value, fallback) : fallback;
 }
 
 function csvCell(value: unknown): string {
@@ -91,92 +113,171 @@ function sanitizeArchiveName(fileName: string): string {
   return base.replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 160) || "evidence.bin";
 }
 
+function evidenceById(caseData: AuditReadyCase, evidenceId?: string): EvidenceRecord | undefined {
+  return evidenceId ? caseData.evidenceRegister.find((item) => item.evidenceId === evidenceId) : undefined;
+}
+
+function evidenceStatus(caseData: AuditReadyCase, datum: InputDatum | undefined): string {
+  const evidence = evidenceById(caseData, datum?.evidenceId);
+  if (!evidence) return "NO EVIDENCE";
+  return `${evidence.reviewStatus} / ${evidence.supportStatus}`;
+}
+
+function methodologyText(caseData: AuditReadyCase, topic: string, fallback = "Not documented"): string {
+  const decision = caseData.methodologyDecisions.find((item) => item.topic === topic);
+  if (!decision) return fallback;
+  return `${decision.selectedMethod}: ${decision.reason}`;
+}
+
+function wrapText(doc: jsPDF, value: string, maxWidth: number): string[] {
+  return doc.splitTextToSize(value, maxWidth) as string[];
+}
+
 function renderPdf(params: {
   title: string;
+  subtitle?: string;
+  documentStatus?: string;
   releaseId: string;
   caseId: string;
+  caseVersion: number;
   generatedAt: string;
-  sections: Array<{ heading: string; lines: string[] }>;
+  ruleset: string;
+  engineVersion: string;
+  sections: PdfSection[];
 }): Buffer {
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
   const pageWidth = 210;
+  const pageHeight = 297;
   const margin = 16;
-  let y = 18;
+  const contentWidth = pageWidth - margin * 2;
+  let y = margin;
 
-  const addHeader = () => {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text(params.title, margin, y);
-    y += 7;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.text(`Release ID: ${params.releaseId}`, margin, y);
-    y += 4;
-    doc.text(`Case ID: ${params.caseId} | Generated: ${params.generatedAt}`, margin, y);
-    y += 6;
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 7;
-  };
-
-  const ensureSpace = (required = 24) => {
-    if (y + required > 275) {
-      doc.addPage();
-      y = 18;
-      addHeader();
-    }
-  };
-
-  addHeader();
-  for (const section of params.sections) {
-    ensureSpace();
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text(section.heading, margin, y);
-    y += 5;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-
-    for (const line of section.lines) {
-      const wrapped = doc.splitTextToSize(line, pageWidth - margin * 2);
-      ensureSpace(wrapped.length * 4 + 2);
-      doc.text(wrapped, margin, y);
-      y += wrapped.length * 4 + 2;
-    }
-    y += 3;
-  }
-
-  const pages = doc.getNumberOfPages();
-  for (let page = 1; page <= pages; page++) {
-    doc.setPage(page);
+  const footer = () => {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7);
-    doc.setTextColor(110, 110, 110);
-    doc.text("CBAMValid verifier-preparation output — not an accredited verification opinion", margin, 288);
-    doc.text(`Page ${page} of ${pages}`, pageWidth - margin, 288, { align: "right" });
+    doc.setTextColor(90, 90, 90);
+    doc.text(`CBAMValid · ${params.releaseId} · Page ${doc.getNumberOfPages()}`, margin, pageHeight - 7);
+    doc.text("CONFIDENTIAL — OPERATOR/EXPORTER VERIFIER-PREPARATION DOSSIER", pageWidth - margin, pageHeight - 7, { align: "right" });
+  };
+
+  const addPage = () => {
+    footer();
+    doc.addPage();
+    y = margin;
+  };
+
+  const ensureSpace = (height: number) => {
+    if (y + height > pageHeight - 18) addPage();
+  };
+
+  doc.setFillColor(20, 37, 63);
+  doc.rect(0, 0, pageWidth, 46, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(19);
+  doc.text(params.title, margin, 20);
+  if (params.subtitle) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(wrapText(doc, params.subtitle, contentWidth), margin, 28);
+  }
+  if (params.documentStatus) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.text(params.documentStatus, margin, 40);
+  }
+  y = 54;
+  doc.setTextColor(25, 25, 25);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  const metadataRows: Array<[string, string]> = [
+    ["Release ID", params.releaseId],
+    ["Case ID / version", `${params.caseId} / ${params.caseVersion}`],
+    ["Generated", params.generatedAt],
+    ["Ruleset / engine", `${params.ruleset} / ${params.engineVersion}`],
+    ["Report standard", REPORT_STANDARD_VERSION],
+  ];
+  metadataRows.forEach(([key, value]) => {
+    doc.setFont("helvetica", "bold");
+    doc.text(key, margin, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(wrapText(doc, value, contentWidth - 42), margin + 42, y);
+    y += 5;
+  });
+  y += 3;
+
+  for (const section of params.sections) {
+    ensureSpace(16);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(20, 37, 63);
+    doc.text(section.heading, margin, y);
+    y += 7;
+    doc.setTextColor(30, 30, 30);
+    doc.setFontSize(8);
+
+    for (const paragraph of section.paragraphs || []) {
+      const lines = wrapText(doc, paragraph, contentWidth);
+      ensureSpace(lines.length * 4 + 4);
+      doc.setFont("helvetica", "normal");
+      doc.text(lines, margin, y);
+      y += lines.length * 4 + 3;
+    }
+
+    for (const [key, value] of section.keyValues || []) {
+      const valueLines = wrapText(doc, value, contentWidth - 52);
+      ensureSpace(Math.max(5, valueLines.length * 4));
+      doc.setFont("helvetica", "bold");
+      doc.text(key, margin, y);
+      doc.setFont("helvetica", "normal");
+      doc.text(valueLines, margin + 52, y);
+      y += Math.max(5, valueLines.length * 4);
+    }
+
+    if (section.table) {
+      const { headers, rows } = section.table;
+      const widths = section.table.widths || headers.map(() => contentWidth / headers.length);
+      const drawRow = (cells: string[], header: boolean) => {
+        const wrapped = cells.map((cell, index) => wrapText(doc, cell, widths[index] - 3));
+        const rowHeight = Math.max(...wrapped.map((lines) => lines.length), 1) * 4 + 3;
+        ensureSpace(rowHeight + (header ? 0 : 1));
+        let x = margin;
+        cells.forEach((_, index) => {
+          doc.setDrawColor(180, 188, 197);
+          if (header) doc.setFillColor(232, 237, 243);
+          doc.rect(x, y - 3, widths[index], rowHeight, header ? "FD" : "D");
+          doc.setFont("helvetica", header ? "bold" : "normal");
+          doc.text(wrapped[index], x + 1.5, y);
+          x += widths[index];
+        });
+        y += rowHeight;
+      };
+      drawRow(headers, true);
+      rows.forEach((row) => drawRow(row, false));
+      y += 3;
+    }
+
+    y += 4;
   }
 
+  ensureSpace(24);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(120, 45, 35);
+  doc.text("Important limitations", margin, y);
+  y += 5;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(60, 60, 60);
+  for (const limitation of REPORT_LIMITATIONS) {
+    const lines = wrapText(doc, `• ${limitation}`, contentWidth);
+    ensureSpace(lines.length * 4 + 2);
+    doc.text(lines, margin, y);
+    y += lines.length * 4 + 1;
+  }
+
+  footer();
   return Buffer.from(doc.output("arraybuffer"));
-}
-
-function caseFacts(caseData: AuditReadyCase) {
-  return {
-    exporter: text(caseData.exporterIdentity.legalName.value),
-    importer: text(caseData.importerIdentity.legalName.value),
-    eori: text(caseData.importerIdentity.eoriNumber.value),
-    year: text(caseData.reportingPeriod.year.value),
-    quarter: text(caseData.reportingPeriod.quarter.value),
-    installation: text(caseData.installation.name.value),
-    country: text(caseData.installation.country.value),
-    route: text(caseData.installation.productionRoute.value),
-    boundaries: text(caseData.installation.systemBoundaries),
-    cnCodes: caseData.goods.map((good) => text(good.cnCode.value)).join(", ") || "None",
-  };
-}
-
-function qualityStatus(qc: QualityControlResult[]): "READY" | "READY_WITH_WARNINGS" | "BLOCKED" {
-  if (qc.some((item) => item.status === "BLOCKER")) return "BLOCKED";
-  if (qc.some((item) => item.status === "WARNING")) return "READY_WITH_WARNINGS";
-  return "READY";
 }
 
 export async function buildVerifierPreparationPackage(params: {
@@ -187,349 +288,363 @@ export async function buildVerifierPreparationPackage(params: {
   evidenceFiles: PackageEvidenceFile[];
 }): Promise<{ zipBuffer: Buffer; manifest: DataIntegrityManifest; manifestHash: string }> {
   const { releaseId, caseData, calculation, qualityControls, evidenceFiles } = params;
-  const caseId = caseData.caseId || "UNASSIGNED";
   const generatedAt = new Date().toISOString();
-  const facts = caseFacts(caseData);
+  const common = {
+    releaseId,
+    caseId: caseData.caseId || "UNASSIGNED",
+    caseVersion: caseData.version,
+    generatedAt,
+    ruleset: calculation.ruleset,
+    engineVersion: calculation.engineVersion,
+  };
 
-  if (caseData.evidenceRegister.length === 0) {
-    throw new Error("VERIFIER_PACKAGE_EVIDENCE_REQUIRED");
-  }
-  if (evidenceFiles.length !== caseData.evidenceRegister.length) {
-    throw new Error("VERIFIER_PACKAGE_EVIDENCE_FILE_COUNT_MISMATCH");
+  const reportQualityAssessment = assessVerifierGradeReport({ caseData, calculation, qualityControls });
+  if (reportQualityAssessment.status !== "PASS") {
+    throw new Error(`REPORT_QUALITY_BLOCKED:${reportQualityAssessment.issues.map((issue) => issue.code).join(",")}`);
   }
 
   const zip = new JSZip();
-  const manifestFiles: ManifestFile[] = [];
-
-  const addFile = (
-    filename: string,
-    content: Buffer | string,
-    documentType: string,
-    confidentiality: ManifestFile["confidentiality"] = "CONFIDENTIAL"
-  ) => {
+  const filesForManifest: ManifestFile[] = [];
+  const addFile = (filename: string, content: Buffer | string, documentType: string) => {
     const buffer = Buffer.isBuffer(content) ? content : Buffer.from(content, "utf8");
     zip.file(filename, buffer);
-    manifestFiles.push({
+    filesForManifest.push({
       filename,
       documentType,
       version: caseData.version,
       releaseId,
-      caseId,
+      caseId: caseData.caseId || "UNASSIGNED",
       generatedAt,
       ruleset: calculation.ruleset,
       engineVersion: calculation.engineVersion,
+      reportStandardVersion: REPORT_STANDARD_VERSION,
       sha256: sha256(buffer),
       sizeBytes: buffer.byteLength,
-      confidentiality,
+      confidentiality: "CONFIDENTIAL",
     });
   };
 
+  const facts = {
+    exporter: datumText(caseData.exporterIdentity.legalName),
+    importer: datumText(caseData.importerIdentity.legalName),
+    eori: datumText(caseData.importerIdentity.eoriNumber),
+    installation: datumText(caseData.installation.name),
+    country: datumText(caseData.installation.country),
+    route: datumText(caseData.installation.productionRoute),
+    boundaries: text(caseData.installation.systemBoundaries),
+    year: datumText(caseData.reportingPeriod.year),
+    period: datumText(caseData.reportingPeriod.quarter, "Annual"),
+  };
+
+  const goodsTable = {
+    headers: ["CN code", "Sector", "Production t", "Allocation", "Embedded tCO2e", "Intensity tCO2e/t"],
+    widths: [22, 30, 30, 24, 35, 37],
+    rows: calculation.perGoodResults.map((result) => [result.cnCode, result.sector, result.productionVolume, result.allocationShare, result.allocatedEmbeddedEmissions, result.specificEmbeddedEmissions]),
+  };
+
+  const evidenceRows = caseData.evidenceRegister.map((evidence) => [
+    evidence.evidenceId,
+    evidence.documentType,
+    evidence.fileName,
+    evidence.issuer,
+    evidence.issueDate,
+    evidence.reviewStatus,
+    evidence.supportStatus,
+    evidence.fileHash,
+    evidence.linkedInputs.join(";"),
+    evidence.linkedCalculations.join(";"),
+  ]);
+
+  const materialDatums: Array<[string, InputDatum | undefined]> = [
+    ["importerIdentity.eoriNumber", caseData.importerIdentity.eoriNumber],
+    ["installation.name", caseData.installation.name],
+    ["installation.country", caseData.installation.country],
+    ["installation.productionRoute", caseData.installation.productionRoute],
+    ["directEmissions", caseData.directEmissions],
+    ["electricityConsumed", caseData.electricityConsumed],
+    ["gridEmissionFactor", caseData.gridEmissionFactor],
+  ];
+  caseData.goods.forEach((good, index) => {
+    materialDatums.push(
+      [`goods.${index}.cnCode`, good.cnCode],
+      [`goods.${index}.productionVolume`, good.productionVolume],
+      [`goods.${index}.allocationShare`, good.allocationShare]
+    );
+  });
+  caseData.precursors.forEach((precursor, index) => {
+    materialDatums.push(
+      [`precursors.${index}.quantity`, precursor.quantity],
+      [`precursors.${index}.directEmissions`, precursor.directEmissions],
+      [`precursors.${index}.indirectEmissions`, precursor.indirectEmissions]
+    );
+  });
+  const fieldRows = materialDatums.map(([path, datum]) => [path, datumText(datum), datum?.canonicalUnit || datum?.unit || datum?.rawUnit || "", datum?.sourceType || "", datum?.evidenceId || "", evidenceStatus(caseData, datum), datum?.documentReference || ""]);
+
   addFile("01_Product_Scope_Assessment.pdf", renderPdf({
+    ...common,
     title: "Product Scope Assessment",
-    releaseId, caseId, generatedAt,
+    subtitle: "CBAM goods and installation scope decision record",
     sections: [
-      { heading: "Commercial Scope", lines: [`One installation: ${facts.installation}`, `Reporting year: ${facts.year}`, `Linked CN codes: ${facts.cnCodes}`] },
-      { heading: "Assessment Boundary", lines: [`Production route: ${facts.route}`, `System boundaries: ${facts.boundaries}`, "This output supports preparation for independent verification and does not determine customs acceptance."] },
+      { heading: "Covered operator and installation", keyValues: [["Operator/exporter", facts.exporter], ["Installation", facts.installation], ["Country", facts.country], ["Production route", facts.route], ["System boundary", facts.boundaries]] },
+      { heading: "Covered goods", table: goodsTable },
+      { heading: "Scope basis", paragraphs: REPORT_BASIS.map((basis) => basis), keyValues: [["Precursor scope", methodologyText(caseData, "PRECURSOR_SCOPE")], ["Allocation method", methodologyText(caseData, "GOODS_EMISSIONS_ALLOCATION", caseData.goods.length === 1 ? "Single good receives full installation emissions" : "Not documented")], ["Excluded or non-associated flows", methodologyText(caseData, "NON_ASSOCIATED_FLOWS")]] },
     ],
   }), "PRODUCT_SCOPE_ASSESSMENT");
 
   addFile("02_CN_Code_Reasoning.pdf", renderPdf({
+    ...common,
     title: "CN Code Reasoning",
-    releaseId, caseId, generatedAt,
+    subtitle: "Evidence-linked tariff classification record",
     sections: caseData.goods.map((good, index) => ({
-      heading: `Good ${index + 1}`,
-      lines: [
-        `CN code: ${text(good.cnCode.value)}`,
-        `Sector classification: ${text(good.sector)}`,
-        `Production quantity: ${text(good.productionVolume.value)} ${good.productionVolume.canonicalUnit || good.productionVolume.unit || "t"}`,
-        "The user remains responsible for confirming customs classification with competent advisers or authorities.",
-      ],
+      heading: `Good ${index + 1} — CN ${datumText(good.cnCode)}`,
+      keyValues: [["Sector", good.sector], ["Description / shipment record", datumText(good.shipmentRecords)], ["Evidence ID", good.cnCode.evidenceId || "None"], ["Evidence status", evidenceStatus(caseData, good.cnCode)], ["Document reference", good.cnCode.documentReference || "None"]],
     })),
   }), "CN_CODE_REASONING");
 
   addFile("03_Required_Data_Checklist.pdf", renderPdf({
+    ...common,
     title: "Required Data Checklist",
-    releaseId, caseId, generatedAt,
-    sections: [{
-      heading: "Case Data",
-      lines: [
-        `Exporter identity: ${facts.exporter}`,
-        `Importer/declarant identity: ${facts.importer}`,
-        `EORI: ${facts.eori}`,
-        `Installation and route: ${facts.installation} / ${facts.route}`,
-        `Evidence records supplied: ${caseData.evidenceRegister.length}`,
-        `Open findings: ${caseData.gapAssessment.filter((gap) => gap.resolutionStatus !== "RESOLVED").length}`,
-      ],
-    }],
+    subtitle: "Material field completion and evidence coverage",
+    sections: [
+      { heading: "Report quality status", keyValues: [["Standard", reportQualityAssessment.standardVersion], ["Status", reportQualityAssessment.status], ["Evidence coverage", `${reportQualityAssessment.evidenceCoverage.supportedFields}/${reportQualityAssessment.evidenceCoverage.requiredFields} (${reportQualityAssessment.evidenceCoverage.percentage}%)`], ["Calculation hash coverage", `${reportQualityAssessment.calculationIntegrity.hashCoveragePercentage}%`], ["Allocation reconciled", reportQualityAssessment.calculationIntegrity.allocationReconciled ? "Yes" : "No"]] },
+      { heading: "Material fields", table: { headers: ["Field", "Value", "Unit", "Source", "Evidence", "Review"], widths: [45, 28, 24, 25, 30, 26], rows: fieldRows.map((row) => [row[0], row[1], row[2], row[3], row[4], row[5]]) } },
+    ],
   }), "REQUIRED_DATA_CHECKLIST");
 
   addFile("04_Installation_Monitoring_Plan.pdf", renderPdf({
+    ...common,
     title: "Installation Monitoring Plan",
-    releaseId, caseId, generatedAt,
+    subtitle: "Operator data collection, control and evidence plan",
     sections: [
-      { heading: "Installation", lines: [`Name: ${facts.installation}`, `Country: ${facts.country}`, `Reporting period: ${facts.year} ${facts.quarter}`] },
-      { heading: "Monitoring Boundary", lines: [`Production route: ${facts.route}`, `System boundaries: ${facts.boundaries}`] },
-      { heading: "Controls", lines: ["Activity data must be traceable to source documents, meters or production records.", "Changes after sealing require a new immutable release version."] },
+      { heading: "Installation profile", keyValues: [["Installation", facts.installation], ["Country", facts.country], ["Route", facts.route], ["Reporting period", `${facts.year} / ${facts.period}`], ["System boundary", facts.boundaries]] },
+      { heading: "Monitoring data points", table: { headers: ["Field", "Value", "Unit", "Measurement method", "Responsible person", "Evidence"], widths: [42, 27, 23, 36, 26, 24], rows: materialDatums.map(([path, datum]) => [path, datumText(datum), datum?.canonicalUnit || datum?.unit || datum?.rawUnit || "", datum?.measurementMethod || "Not documented", datum?.responsiblePerson || "Not assigned", datum?.evidenceId || "None"]) } },
+      { heading: "Control principles", paragraphs: ["Maintain source records at installation level, preserve original units, document conversions, identify responsible personnel and retain hashes and immutable release references.", "Changes after sealing require a new release version; prior sealed versions remain immutable and independently verifiable by their manifest hashes."] },
     ],
   }), "INSTALLATION_MONITORING_PLAN");
 
   addFile("05_Production_Process_Map.pdf", renderPdf({
+    ...common,
     title: "Production Process Map",
-    releaseId, caseId, generatedAt,
+    subtitle: "Documented route, goods and precursor flow overview",
     sections: [
-      { heading: "Route", lines: [`Installation: ${facts.installation}`, `Production route: ${facts.route}`, `Goods/CN groups: ${facts.cnCodes}`] },
-      { heading: "Precursor Chain", lines: caseData.precursors.length > 0 ? caseData.precursors.map((p, index) => `${index + 1}. ${text(p.name.value)} — ${text(p.quantity.value)} ${p.quantity.canonicalUnit || p.quantity.unit || ""}`) : ["No precursor records were declared."] },
+      { heading: "Route and boundary", keyValues: [["Route", facts.route], ["Boundary statement", facts.boundaries], ["Non-associated flows", methodologyText(caseData, "NON_ASSOCIATED_FLOWS")]] },
+      { heading: "Goods flow", table: goodsTable },
+      { heading: "Precursor flow", table: { headers: ["Precursor", "Origin", "Quantity", "Direct tCO2e", "Indirect tCO2e"], rows: caseData.precursors.map((item) => [datumText(item.name), datumText(item.countryOfOrigin), `${datumText(item.quantity)} ${item.quantity.canonicalUnit || item.quantity.unit || item.quantity.rawUnit || "t"}`, datumText(item.directEmissions), datumText(item.indirectEmissions)]) } },
     ],
   }), "PRODUCTION_PROCESS_MAP");
 
   addFile("06_System_Boundary_Register.pdf", renderPdf({
+    ...common,
     title: "System Boundary Register",
-    releaseId, caseId, generatedAt,
-    sections: [{ heading: "Defined Boundary", lines: [`Installation: ${facts.installation}`, `Boundary statement: ${facts.boundaries}`, `Direct-emission input: ${text(caseData.directEmissions.value)} tCO2e`, `Electricity input: ${text(caseData.electricityConsumed.value)} MWh`] }],
+    subtitle: "Included and excluded installation activities and flows",
+    sections: [
+      { heading: "Boundary definition", paragraphs: [facts.boundaries] },
+      { heading: "Associated goods", table: goodsTable },
+      { heading: "Boundary governance", keyValues: [["Non-associated flows decision", methodologyText(caseData, "NON_ASSOCIATED_FLOWS")], ["Precursor scope decision", methodologyText(caseData, "PRECURSOR_SCOPE")]] },
+    ],
   }), "SYSTEM_BOUNDARY_REGISTER");
 
   addFile("07_Source_Stream_Register.csv", csv(
-    ["source_stream_id", "description", "value", "unit", "source_type", "evidence_id"],
-    [
-      ["DIRECT_EMISSIONS", "Installation direct emissions", caseData.directEmissions.value, caseData.directEmissions.canonicalUnit || caseData.directEmissions.unit || "tCO2e", caseData.directEmissions.sourceType, caseData.directEmissions.evidenceId || ""],
-      ["ELECTRICITY", "Electricity consumed", caseData.electricityConsumed.value, caseData.electricityConsumed.canonicalUnit || caseData.electricityConsumed.unit || "MWh", caseData.electricityConsumed.sourceType, caseData.electricityConsumed.evidenceId || ""],
-      ["GRID_FACTOR", "Grid emission factor", caseData.gridEmissionFactor.value, caseData.gridEmissionFactor.canonicalUnit || caseData.gridEmissionFactor.unit || "tCO2e/MWh", caseData.gridEmissionFactor.sourceType, caseData.gridEmissionFactor.evidenceId || ""],
-    ]
+    ["source_stream", "value", "unit", "source_type", "evidence_id", "document_reference", "measurement_method", "responsible_person"],
+    [["direct_emissions", datumText(caseData.directEmissions), caseData.directEmissions.canonicalUnit || "tCO2e", caseData.directEmissions.sourceType, caseData.directEmissions.evidenceId || "", caseData.directEmissions.documentReference || "", caseData.directEmissions.measurementMethod || "", caseData.directEmissions.responsiblePerson || ""]]
   ), "SOURCE_STREAM_REGISTER");
 
   addFile("08_Emission_Source_Register.csv", csv(
-    ["source_id", "category", "direct_tco2e", "indirect_tco2e", "evidence_id"],
-    [
-      ["INSTALLATION", "Installation", caseData.directEmissions.value, calculation.totalIndirectEmissions, caseData.directEmissions.evidenceId || ""],
-      ...caseData.precursors.map((p, index) => [`PRECURSOR_${index + 1}`, text(p.name.value), p.directEmissions.value, p.indirectEmissions.value, p.directEmissions.evidenceId || p.indirectEmissions.evidenceId || ""]),
-    ]
+    ["source", "value", "unit", "factor", "factor_unit", "calculated_emissions", "evidence_status"],
+    [["installation_direct", datumText(caseData.directEmissions), caseData.directEmissions.canonicalUnit || "tCO2e", "", "", calculation.installationDirectEmissions, evidenceStatus(caseData, caseData.directEmissions)], ["purchased_electricity", datumText(caseData.electricityConsumed), caseData.electricityConsumed.canonicalUnit || "MWh", datumText(caseData.gridEmissionFactor), caseData.gridEmissionFactor.canonicalUnit || "tCO2e/MWh", calculation.electricityIndirectEmissions, `${evidenceStatus(caseData, caseData.electricityConsumed)}; ${evidenceStatus(caseData, caseData.gridEmissionFactor)}`]]
   ), "EMISSION_SOURCE_REGISTER");
 
   addFile("09_Measurement_and_Meter_Register.csv", csv(
-    ["field", "measurement_method", "responsible_person", "confidence_status", "document_reference"],
-    [
-      ["directEmissions", caseData.directEmissions.measurementMethod || "", caseData.directEmissions.responsiblePerson || "", caseData.directEmissions.confidenceStatus, caseData.directEmissions.documentReference || ""],
-      ["electricityConsumed", caseData.electricityConsumed.measurementMethod || "", caseData.electricityConsumed.responsiblePerson || "", caseData.electricityConsumed.confidenceStatus, caseData.electricityConsumed.documentReference || ""],
-      ["gridEmissionFactor", caseData.gridEmissionFactor.measurementMethod || "", caseData.gridEmissionFactor.responsiblePerson || "", caseData.gridEmissionFactor.confidenceStatus, caseData.gridEmissionFactor.documentReference || ""],
-    ]
+    ["field", "measurement_method", "responsible_person", "raw_unit", "canonical_unit", "source_type", "evidence_id"],
+    materialDatums.map(([path, datum]) => [path, datum?.measurementMethod || "", datum?.responsiblePerson || "", datum?.rawUnit || datum?.unit || "", datum?.canonicalUnit || "", datum?.sourceType || "", datum?.evidenceId || ""])
   ), "MEASUREMENT_AND_METER_REGISTER");
 
   addFile("10_Activity_Data_Ledger.csv", csv(
-    ["activity_id", "field", "raw_value", "canonical_unit", "reporting_period", "source_type", "evidence_id"],
-    [
-      ["ACT_001", "directEmissions", caseData.directEmissions.value, caseData.directEmissions.canonicalUnit || "tCO2e", caseData.directEmissions.reportingPeriod || facts.year, caseData.directEmissions.sourceType, caseData.directEmissions.evidenceId || ""],
-      ["ACT_002", "electricityConsumed", caseData.electricityConsumed.value, caseData.electricityConsumed.canonicalUnit || "MWh", caseData.electricityConsumed.reportingPeriod || facts.year, caseData.electricityConsumed.sourceType, caseData.electricityConsumed.evidenceId || ""],
-      ...caseData.goods.map((good, index) => [`ACT_GOOD_${index + 1}`, `goods.${index}.productionVolume`, good.productionVolume.value, good.productionVolume.canonicalUnit || "t", good.productionVolume.reportingPeriod || facts.year, good.productionVolume.sourceType, good.productionVolume.evidenceId || ""]),
-    ]
+    ["field", "entered_value", "raw_unit", "canonical_unit", "source_type", "reporting_period", "evidence_id", "document_reference", "confidence"],
+    materialDatums.map(([path, datum]) => [path, datumText(datum), datum?.rawUnit || datum?.unit || "", datum?.canonicalUnit || "", datum?.sourceType || "", datum?.reportingPeriod || facts.year, datum?.evidenceId || "", datum?.documentReference || "", datum?.confidenceStatus || ""])
   ), "ACTIVITY_DATA_LEDGER");
 
   addFile("11_Evidence_Register.csv", csv(
-    ["evidence_id", "document_type", "file_name", "issuer", "issue_date", "reporting_period", "page_reference", "sha256", "review_status", "support_status", "linked_inputs", "confidentiality"],
-    caseData.evidenceRegister.map((e) => [e.evidenceId, e.documentType, e.fileName, e.issuer, e.issueDate, e.reportingPeriod, e.pageReference || "", e.fileHash, e.reviewStatus, e.supportStatus, e.linkedInputs.join(";"), e.confidentiality])
+    ["evidence_id", "document_type", "file_name", "issuer", "issue_date", "review_status", "support_status", "sha256", "linked_inputs", "linked_calculations"],
+    evidenceRows
   ), "EVIDENCE_REGISTER");
 
   addFile("12_Field_to_Evidence_Matrix.csv", csv(
-    ["field", "entered_value", "unit", "source_type", "evidence_id", "support_status", "document_reference"],
-    [
-      ["directEmissions", caseData.directEmissions.value, caseData.directEmissions.canonicalUnit || "tCO2e", caseData.directEmissions.sourceType, caseData.directEmissions.evidenceId || "", caseData.directEmissions.evidenceId ? "SUPPORTED" : "UNSUPPORTED", caseData.directEmissions.documentReference || ""],
-      ["electricityConsumed", caseData.electricityConsumed.value, caseData.electricityConsumed.canonicalUnit || "MWh", caseData.electricityConsumed.sourceType, caseData.electricityConsumed.evidenceId || "", caseData.electricityConsumed.evidenceId ? "SUPPORTED" : "UNSUPPORTED", caseData.electricityConsumed.documentReference || ""],
-      ["gridEmissionFactor", caseData.gridEmissionFactor.value, caseData.gridEmissionFactor.canonicalUnit || "tCO2e/MWh", caseData.gridEmissionFactor.sourceType, caseData.gridEmissionFactor.evidenceId || "", caseData.gridEmissionFactor.evidenceId ? "SUPPORTED" : "UNSUPPORTED", caseData.gridEmissionFactor.documentReference || ""],
-      ...caseData.goods.map((good, index) => [`goods.${index}.productionVolume`, good.productionVolume.value, good.productionVolume.canonicalUnit || "t", good.productionVolume.sourceType, good.productionVolume.evidenceId || "", good.productionVolume.evidenceId ? "SUPPORTED" : "UNSUPPORTED", good.productionVolume.documentReference || ""]),
-    ]
+    ["field", "entered_value", "unit", "source_type", "evidence_id", "review_and_support_status", "document_reference"],
+    fieldRows
   ), "FIELD_TO_EVIDENCE_MATRIX");
 
   addFile("13_Methodology_Decision_Log.pdf", renderPdf({
+    ...common,
     title: "Methodology Decision Log",
-    releaseId, caseId, generatedAt,
-    sections: caseData.methodologyDecisions.length > 0 ? caseData.methodologyDecisions.map((decision) => ({
+    subtitle: "Versioned operator decisions, bases, alternatives and evidence references",
+    sections: caseData.methodologyDecisions.map<PdfSection>((decision) => ({
       heading: decision.topic,
-      lines: [`Selected method: ${decision.selectedMethod}`, `Reason: ${decision.reason}`, `Basis: ${decision.legalOrTechnicalBasis}`, `Evidence: ${decision.evidenceIds.join(", ") || "None"}`, `Review status: ${decision.reviewStatus}`],
-    })) : [{ heading: "No Recorded Decisions", lines: ["No methodology decisions were recorded by the user. Review is required before relying on this output."] }],
+      keyValues: [["Selected method", decision.selectedMethod], ["Reason", decision.reason], ["Legal or technical basis", decision.legalOrTechnicalBasis], ["Ruleset version", decision.rulesetVersion], ["Evidence IDs", decision.evidenceIds.join(", ") || "None"], ["Rejected alternative", decision.rejectedAlternativeReason || "Not recorded"], ["Internal review status", decision.reviewStatus]],
+    })),
   }), "METHODOLOGY_DECISION_LOG");
 
   addFile("14_Embedded_Emissions_Calculation_Annex.pdf", renderPdf({
+    ...common,
     title: "Embedded Emissions Calculation Annex",
-    releaseId, caseId, generatedAt,
+    subtitle: "Deterministic formula trace, per-good allocation and reconciliation",
     sections: [
-      { heading: "Results", lines: [`Total direct emissions: ${calculation.totalDirectEmissions} tCO2e`, `Total indirect emissions: ${calculation.totalIndirectEmissions} tCO2e`, `Total embedded emissions: ${calculation.totalEmbeddedEmissions} tCO2e`, `Production volume: ${calculation.productionVolume} t`, `Specific embedded emissions: ${calculation.specificEmbeddedEmissions} tCO2e/t`] },
-      { heading: "Ruleset and Integrity", lines: [`Ruleset: ${calculation.ruleset}`, `Engine version: ${calculation.engineVersion}`, `Calculation root hash: ${calculation.calculationRootHash}`, "Rounding is applied only at the final specific-emissions stage to six decimal places using ROUND_HALF_UP."] },
-      ...calculation.trace.map((node) => ({ heading: node.formulaId, lines: [`Inputs: ${JSON.stringify(node.inputs)}`, `Output: ${node.outputValue} ${node.outputUnit}`, `Hash: ${node.calculationHash}`, `Warnings: ${node.warnings.join("; ") || "None"}`] })),
+      { heading: "Installation totals", keyValues: [["Direct emissions including precursor direct", `${calculation.totalDirectEmissions} tCO2e`], ["Indirect emissions including precursor indirect", `${calculation.totalIndirectEmissions} tCO2e`], ["Total precursor emissions", `${calculation.totalPrecursorEmissions} tCO2e`], ["Total embedded emissions", `${calculation.totalEmbeddedEmissions} tCO2e`], ["Aggregate production volume", `${calculation.productionVolume} t`], ["Aggregate diagnostic intensity", `${calculation.specificEmbeddedEmissions} tCO2e/t`]] },
+      { heading: "Per-good reportable results", table: goodsTable },
+      { heading: "Allocation reconciliation", keyValues: [["Allocation share total", calculation.allocationShareTotal], ["Allocation reconciliation delta", calculation.allocationReconciliationDelta], ["Tolerance", "0.000001"], ["Method", methodologyText(caseData, "GOODS_EMISSIONS_ALLOCATION", caseData.goods.length === 1 ? "Single good receives 100%" : "Not documented")]] },
+      { heading: "Ruleset and integrity", keyValues: [["Ruleset", calculation.ruleset], ["Engine version", calculation.engineVersion], ["Calculation root hash", calculation.calculationRootHash], ["Rounding", "ROUND_HALF_UP, six decimal places, applied at final per-good intensity stage"]] },
+      ...calculation.trace.map<PdfSection>((trace) => ({ heading: trace.formulaId, keyValues: [["Inputs", JSON.stringify(trace.inputs)], ["Conversions", JSON.stringify(trace.conversions || {})], ["Intermediate calculations", JSON.stringify(trace.intermediateCalculations || {})], ["Output", `${trace.outputValue} ${trace.outputUnit}`], ["Assumptions", trace.assumptions.join("; ") || "None"], ["Warnings", trace.warnings.join("; ") || "None"], ["Node hash", trace.calculationHash]] })),
     ],
   }), "EMBEDDED_EMISSIONS_CALCULATION_ANNEX");
 
   addFile("15_Operator_Emissions_Report.pdf", renderPdf({
+    ...common,
     title: "Operator Emissions Report",
-    releaseId, caseId, generatedAt,
+    subtitle: "Annex VI-aligned operator dossier prepared for completion and challenge by an accredited verifier",
+    documentStatus: "OPERATOR PREPARATION — VERIFIER COMPLETION REQUIRED",
     sections: [
-      { heading: "Operator and Installation", lines: [`Exporter/operator: ${facts.exporter}`, `Installation: ${facts.installation}`, `Country: ${facts.country}`, `Reporting year: ${facts.year}`] },
-      { heading: "Emissions", lines: [`Total direct emissions: ${calculation.totalDirectEmissions} tCO2e`, `Total indirect emissions: ${calculation.totalIndirectEmissions} tCO2e`, `Total precursor emissions: ${calculation.totalPrecursorEmissions} tCO2e`, `Specific embedded emissions: ${calculation.specificEmbeddedEmissions} tCO2e/t`] },
-      { heading: "Evidence and Findings", lines: [`Evidence records: ${caseData.evidenceRegister.length}`, `Readiness: ${qualityStatus(qualityControls)}`, `Open findings: ${caseData.gapAssessment.filter((gap) => gap.resolutionStatus !== "RESOLVED").length}`] },
+      { heading: "1. Installation and operator identification", keyValues: [["Operator/exporter", facts.exporter], ["Installation", facts.installation], ["Country", facts.country], ["Production route", facts.route], ["System boundary", facts.boundaries]] },
+      { heading: "2. Reporting period", keyValues: [["Year", facts.year], ["Quarter or period", facts.period], ["Release timestamp", generatedAt]] },
+      { heading: "3. Goods quantities and embedded emissions", table: goodsTable },
+      { heading: "4. Direct and indirect emissions", keyValues: [["Installation direct emissions", `${calculation.installationDirectEmissions} tCO2e`], ["Electricity indirect emissions", `${calculation.electricityIndirectEmissions} tCO2e`], ["Precursor direct emissions", `${calculation.precursorDirectEmissions} tCO2e`], ["Precursor indirect emissions", `${calculation.precursorIndirectEmissions} tCO2e`], ["Total embedded emissions", `${calculation.totalEmbeddedEmissions} tCO2e`]] },
+      { heading: "5. Monitoring and methodology", keyValues: [["Precursor scope", methodologyText(caseData, "PRECURSOR_SCOPE")], ["Allocation method", methodologyText(caseData, "GOODS_EMISSIONS_ALLOCATION", caseData.goods.length === 1 ? "Single-good full allocation" : "Not documented")], ["Ruleset", calculation.ruleset], ["Engine", calculation.engineVersion]] },
+      { heading: "6. Evidence and control", keyValues: [["Approved evidence records", String(caseData.evidenceRegister.filter((item) => item.reviewStatus === "APPROVED").length)], ["Evidence coverage", `${reportQualityAssessment.evidenceCoverage.percentage}%`], ["Calculation trace nodes", String(reportQualityAssessment.calculationIntegrity.traceNodeCount)], ["Calculation hash coverage", `${reportQualityAssessment.calculationIntegrity.hashCoveragePercentage}%`], ["Calculation root hash", calculation.calculationRootHash]] },
+      { heading: "7. Operator responsibility statement", paragraphs: ["The operator/exporter remains responsible for the completeness, accuracy and lawful presentation of source data and evidence. This package preserves the declared basis and is designed to support, not replace, independent accredited verification."] },
     ],
   }), "OPERATOR_EMISSIONS_REPORT");
 
   addFile("16_Operator_Summary_Emissions_Report.pdf", renderPdf({
+    ...common,
     title: "Operator Summary Emissions Report",
-    releaseId, caseId, generatedAt,
-    sections: [{ heading: "Summary", lines: [`Installation: ${facts.installation}`, `Reporting year: ${facts.year}`, `CN codes: ${facts.cnCodes}`, `Total embedded emissions: ${calculation.totalEmbeddedEmissions} tCO2e`, `Specific embedded emissions: ${calculation.specificEmbeddedEmissions} tCO2e/t`, `Readiness status: ${qualityStatus(qualityControls)}`] }],
+    subtitle: "Executive overview for importer, verifier and internal approval",
+    documentStatus: "VERIFIER-PREPARATION SUMMARY — NOT A VERIFICATION OPINION",
+    sections: [
+      { heading: "Executive identity", keyValues: [["Operator/exporter", facts.exporter], ["Importer/declarant", facts.importer], ["EORI", facts.eori], ["Installation", facts.installation], ["Country", facts.country], ["Reporting period", `${facts.year} / ${facts.period}`]] },
+      { heading: "Reportable goods results", table: goodsTable },
+      { heading: "Readiness and integrity", keyValues: [["Report quality", reportQualityAssessment.status], ["Evidence coverage", `${reportQualityAssessment.evidenceCoverage.percentage}%`], ["Allocation reconciled", reportQualityAssessment.calculationIntegrity.allocationReconciled ? "Yes" : "No"], ["Calculation root hash", calculation.calculationRootHash], ["Package standard", reportQualityAssessment.standardVersion]] },
+    ],
   }), "OPERATOR_SUMMARY_EMISSIONS_REPORT");
 
   addFile("17_Verification_Readiness_Assessment.pdf", renderPdf({
+    ...common,
     title: "Verification Readiness Assessment",
-    releaseId, caseId, generatedAt,
+    subtitle: "Fail-closed quality review before independent verifier engagement",
+    documentStatus: "INTERNAL READINESS ASSESSMENT",
     sections: [
-      { heading: "Overall Status", lines: [`Status: ${qualityStatus(qualityControls)}`, `Evidence coverage records: ${caseData.evidenceRegister.length}`, `Calculation trace nodes: ${calculation.trace.length}`] },
-      ...qualityControls.map((item) => ({ heading: `${item.ruleId} — ${item.name}`, lines: [`Status: ${item.status}`, `Finding: ${item.message || "No exception recorded."}`] })),
+      { heading: "Overall assessment", keyValues: [["Status", reportQualityAssessment.status], ["Evidence coverage", `${reportQualityAssessment.evidenceCoverage.supportedFields}/${reportQualityAssessment.evidenceCoverage.requiredFields}`], ["Trace hash coverage", `${reportQualityAssessment.calculationIntegrity.hashCoveragePercentage}%`], ["Allocation reconciled", reportQualityAssessment.calculationIntegrity.allocationReconciled ? "Yes" : "No"]] },
+      { heading: "Quality controls", table: { headers: ["Rule", "Control", "Status", "Message", "Remediation"], widths: [22, 35, 20, 58, 43], rows: qualityControls.map((item) => [item.ruleId, item.name, item.status, item.message || "", item.remediationCode || ""]) } },
+      { heading: "Report-quality issues", table: { headers: ["Code", "Severity", "Issue", "Required remediation"], rows: reportQualityAssessment.issues.map((item) => [item.code, item.severity, item.message, item.remediation]) } },
     ],
   }), "VERIFICATION_READINESS_ASSESSMENT");
 
   addFile("18_Misstatement_and_Non_Conformity_Register.csv", csv(
-    ["gap_id", "issue_type", "requirement", "severity", "affected_result", "is_blocking", "status"],
-    caseData.gapAssessment.map((gap) => [gap.gapId, gap.issueType || "", gap.requirement, gap.severity, gap.affectedResult || "", gap.isBlocking, gap.resolutionStatus])
+    ["finding_id", "issue_type", "requirement", "severity", "affected_result", "why_it_matters", "blocking", "resolution_status", "closure_note"],
+    caseData.gapAssessment.map((gap) => [gap.gapId, gap.issueType || "", gap.requirement, gap.severity, gap.affectedResult || "", gap.whyItMatters, gap.isBlocking, gap.resolutionStatus, gap.closureNote || ""])
   ), "MISSTATEMENT_AND_NON_CONFORMITY_REGISTER");
 
   addFile("19_Corrective_Action_Log.csv", csv(
-    ["gap_id", "suggested_action", "responsible_party", "deadline", "resolution_status", "resolution_evidence_ids", "closure_note"],
+    ["finding_id", "suggested_action", "responsible_party", "deadline", "resolution_status", "resolution_evidence_ids", "closure_note"],
     caseData.gapAssessment.map((gap) => [gap.gapId, gap.suggestedAction, gap.responsibleParty || "", gap.deadline || "", gap.resolutionStatus, (gap.resolutionEvidenceIds || []).join(";"), gap.closureNote || ""])
   ), "CORRECTIVE_ACTION_LOG");
 
   addFile("20_O3CI_Field_Mapping.csv", csv(
-    ["o3ci_field", "case_value", "unit", "source_reference", "status"],
+    ["field_group", "mapped_field", "value", "unit", "evidence_id", "calculation_or_method_reference"],
     [
-      ["installation.name", facts.installation, "", "case.installation.name", "MAPPED"],
-      ["reporting.year", facts.year, "year", "case.reportingPeriod.year", "MAPPED"],
-      ["goods.cn_codes", facts.cnCodes, "CN", "case.goods", "MAPPED"],
-      ["emissions.total_embedded", calculation.totalEmbeddedEmissions, "tCO2e", "calculation.totalEmbeddedEmissions", "MAPPED"],
-      ["emissions.specific_embedded", calculation.specificEmbeddedEmissions, "tCO2e/t", "calculation.specificEmbeddedEmissions", "MAPPED"],
-      ["integrity.calculation_root_hash", calculation.calculationRootHash, "SHA-256", "calculation.calculationRootHash", "MAPPED"],
+      ["installation", "operator_name", facts.exporter, "", caseData.exporterIdentity.legalName.evidenceId || "", "Operator evidence"],
+      ["installation", "installation_name", facts.installation, "", caseData.installation.name.evidenceId || "", "Installation evidence"],
+      ["installation", "country", facts.country, "", caseData.installation.country.evidenceId || "", "Installation evidence"],
+      ["reporting_period", "year", facts.year, "", caseData.reportingPeriod.year.evidenceId || "", "Reporting period"],
+      ...calculation.perGoodResults.map((result) => ["goods", `CN_${result.cnCode}`, result.specificEmbeddedEmissions, "tCO2e/t", caseData.goods[result.goodIndex]?.productionVolume.evidenceId || "", result.traceCalculationId]),
+      ["integrity", "calculation_root_hash", calculation.calculationRootHash, "sha256", "", "Calculation trace"],
     ]
   ), "O3CI_FIELD_MAPPING");
 
   addFile("21_Calculation_Trace.json", JSON.stringify({
     releaseId,
-    caseId,
+    caseId: common.caseId,
     ruleset: calculation.ruleset,
     engineVersion: calculation.engineVersion,
     calculationRootHash: calculation.calculationRootHash,
     trace: calculation.trace,
+    perGoodResults: calculation.perGoodResults,
+    reconciliation: {
+      allocationShareTotal: calculation.allocationShareTotal,
+      allocationReconciliationDelta: calculation.allocationReconciliationDelta,
+      totalEmbeddedEmissions: calculation.totalEmbeddedEmissions,
+      allocatedEmbeddedEmissionsTotal: calculation.perGoodResults.reduce((sum, result) => sum + Number(result.allocatedEmbeddedEmissions), 0).toFixed(6),
+    },
   }, null, 2), "CALCULATION_TRACE");
 
-  const evidenceFolder = zip.folder("23_Supporting_Evidence");
-  if (!evidenceFolder) throw new Error("VERIFIER_PACKAGE_EVIDENCE_FOLDER_CREATION_FAILED");
-
-  const usedNames = new Set<string>();
+  const supportingFolder = zip.folder("23_Supporting_Evidence");
+  if (!supportingFolder) throw new Error("EVIDENCE_FOLDER_CREATION_FAILED");
   for (const evidence of evidenceFiles) {
-    const calculatedHash = sha256(evidence.buffer);
-    if (calculatedHash !== evidence.sourceHash.toLowerCase()) {
-      throw new Error(`VERIFIER_PACKAGE_EVIDENCE_HASH_MISMATCH:${evidence.evidenceId}`);
+    if (sha256(evidence.buffer) !== evidence.sourceHash.toLowerCase()) {
+      throw new Error(`EVIDENCE_HASH_MISMATCH:${evidence.evidenceId}`);
     }
-    let archiveName = `${evidence.evidenceId}_${sanitizeArchiveName(evidence.fileName)}`;
-    let suffix = 1;
-    while (usedNames.has(archiveName)) {
-      archiveName = `${evidence.evidenceId}_${suffix}_${sanitizeArchiveName(evidence.fileName)}`;
-      suffix += 1;
-    }
-    usedNames.add(archiveName);
-    const path = `23_Supporting_Evidence/${archiveName}`;
-    evidenceFolder.file(archiveName, evidence.buffer);
-    manifestFiles.push({
-      filename: path,
-      documentType: `SUPPORTING_EVIDENCE:${evidence.mimeType}`,
+    const archiveName = `${evidence.evidenceId}_${sanitizeArchiveName(evidence.fileName)}`;
+    supportingFolder.file(archiveName, evidence.buffer);
+    filesForManifest.push({
+      filename: `23_Supporting_Evidence/${archiveName}`,
+      documentType: "SUPPORTING_EVIDENCE",
       version: caseData.version,
       releaseId,
-      caseId,
+      caseId: common.caseId,
       generatedAt,
       ruleset: calculation.ruleset,
       engineVersion: calculation.engineVersion,
-      sha256: calculatedHash,
+      reportStandardVersion: REPORT_STANDARD_VERSION,
+      sha256: evidence.sourceHash.toLowerCase(),
       sizeBytes: evidence.buffer.byteLength,
       confidentiality: "CONFIDENTIAL",
     });
   }
+  if (evidenceFiles.length === 0) supportingFolder.file("README.txt", "No evidence files were included. Sealing should have been blocked by the report-quality contract.");
 
-  const manifest: DataIntegrityManifest = {
-    manifestVersion: "1.0",
+  const manifestBase: Omit<DataIntegrityManifest, "files"> & { files: ManifestFile[] } = {
+    manifestVersion: "2.0",
     product: "CBAMValid Exporter Verification Preparation Pack",
+    reportStandardVersion: REPORT_STANDARD_VERSION,
     releaseId,
-    caseId,
+    caseId: common.caseId,
     caseVersion: caseData.version,
     generatedAt,
     ruleset: calculation.ruleset,
     engineVersion: calculation.engineVersion,
     calculationRootHash: calculation.calculationRootHash,
     topLevelComponentCount: 23,
-    files: manifestFiles.sort((a, b) => a.filename.localeCompare(b.filename)),
-    limitations: [
-      "This package supports preparation for independent verification.",
-      "It is not an accredited verification opinion, customs approval, EU approval or acceptance guarantee.",
-      "O3CI_Field_Mapping.csv is a field-mapped structured export, not an official Registry submission file.",
-    ],
+    regulatoryBasis: REPORT_BASIS,
+    reportQualityAssessment,
+    files: [],
+    limitations: REPORT_LIMITATIONS,
   };
 
-  const manifestContent = JSON.stringify(manifest, null, 2);
+  const manifestDraft = { ...manifestBase, files: filesForManifest } as DataIntegrityManifest;
+  const manifestContent = Buffer.from(JSON.stringify(manifestDraft, null, 2), "utf8");
   zip.file("22_Data_Integrity_Manifest.json", manifestContent);
-  const manifestHash = sha256(manifestContent);
+  filesForManifest.push({
+    filename: "22_Data_Integrity_Manifest.json",
+    documentType: "DATA_INTEGRITY_MANIFEST",
+    version: caseData.version,
+    releaseId,
+    caseId: common.caseId,
+    generatedAt,
+    ruleset: calculation.ruleset,
+    engineVersion: calculation.engineVersion,
+    reportStandardVersion: REPORT_STANDARD_VERSION,
+    sha256: sha256(manifestContent),
+    sizeBytes: manifestContent.byteLength,
+    confidentiality: "CONFIDENTIAL",
+  });
 
+  const manifest: DataIntegrityManifest = { ...manifestBase, files: filesForManifest };
+  const manifestHash = sha256(JSON.stringify(manifest));
   const zipBuffer = await zip.generateAsync({
     type: "nodebuffer",
     compression: "DEFLATE",
     compressionOptions: { level: 9 },
     platform: "UNIX",
+    streamFiles: false,
   });
 
-  const verification = await verifyVerifierPreparationPackage(zipBuffer);
-  if (verification.manifestHash !== manifestHash || verification.topLevelComponentCount !== 23) {
-    throw new Error("VERIFIER_PACKAGE_POST_BUILD_VERIFICATION_FAILED");
-  }
-
   return { zipBuffer, manifest, manifestHash };
-}
-
-export async function verifyVerifierPreparationPackage(zipBuffer: Buffer): Promise<{
-  manifestHash: string;
-  topLevelComponentCount: number;
-  verifiedFileCount: number;
-}> {
-  const zip = await JSZip.loadAsync(zipBuffer);
-  const names = Object.keys(zip.files);
-  const topLevelNames = new Set(names.map((name) => {
-    const slashIndex = name.indexOf("/");
-    return slashIndex === -1 ? name : `${name.slice(0, slashIndex)}/`;
-  }));
-
-  for (const required of REQUIRED_TOP_LEVEL_COMPONENTS) {
-    if (!topLevelNames.has(required)) {
-      throw new Error(`VERIFIER_PACKAGE_REQUIRED_COMPONENT_MISSING:${required}`);
-    }
-  }
-  if (topLevelNames.size !== REQUIRED_TOP_LEVEL_COMPONENTS.length) {
-    throw new Error(`VERIFIER_PACKAGE_TOP_LEVEL_COUNT_INVALID:${topLevelNames.size}`);
-  }
-
-  const manifestEntry = zip.file("22_Data_Integrity_Manifest.json");
-  if (!manifestEntry) throw new Error("VERIFIER_PACKAGE_MANIFEST_MISSING");
-  const manifestBuffer = await manifestEntry.async("nodebuffer");
-  const manifest = JSON.parse(manifestBuffer.toString("utf8")) as DataIntegrityManifest;
-  if (manifest.topLevelComponentCount !== 23) {
-    throw new Error("VERIFIER_PACKAGE_MANIFEST_COMPONENT_COUNT_INVALID");
-  }
-
-  let verifiedFileCount = 0;
-  for (const fileRecord of manifest.files) {
-    const entry = zip.file(fileRecord.filename);
-    if (!entry) throw new Error(`VERIFIER_PACKAGE_MANIFEST_FILE_MISSING:${fileRecord.filename}`);
-    const bytes = await entry.async("nodebuffer");
-    if (sha256(bytes) !== fileRecord.sha256) {
-      throw new Error(`VERIFIER_PACKAGE_MANIFEST_HASH_MISMATCH:${fileRecord.filename}`);
-    }
-    if (bytes.byteLength !== fileRecord.sizeBytes) {
-      throw new Error(`VERIFIER_PACKAGE_MANIFEST_SIZE_MISMATCH:${fileRecord.filename}`);
-    }
-    verifiedFileCount += 1;
-  }
-
-  return {
-    manifestHash: sha256(manifestBuffer),
-    topLevelComponentCount: topLevelNames.size,
-    verifiedFileCount,
-  };
 }

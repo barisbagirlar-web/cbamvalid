@@ -4,15 +4,14 @@ import { AuditReadyCase, CalculationTraceNode } from "./schema";
 Decimal.set({ precision: 28, rounding: Decimal.ROUND_HALF_UP });
 
 export const PREVIEW_RULESET = "EU-CBAM-DEFINITIVE-2026";
-export const PREVIEW_ENGINE_VERSION = "2.0.0-preview";
-export const PREVIEW_SOURCE = "Commission Implementing Regulation (EU) 2025/2547";
+export const PREVIEW_ENGINE_VERSION = "3.0.0-preview";
+export const PREVIEW_SOURCE = "Regulation (EU) 2023/956, Annex IV; preview only";
+const ALLOCATION_TOLERANCE = new Decimal("0.000001");
 
 type JsonLike = null | boolean | number | string | JsonLike[] | { [key: string]: JsonLike };
 
 function canonicalize(value: unknown): JsonLike {
-  if (value === null || typeof value === "boolean" || typeof value === "number" || typeof value === "string") {
-    return value;
-  }
+  if (value === null || typeof value === "boolean" || typeof value === "number" || typeof value === "string") return value;
   if (Array.isArray(value)) return value.map(canonicalize);
   if (typeof value === "object") {
     return Object.keys(value as Record<string, unknown>)
@@ -25,21 +24,15 @@ function canonicalize(value: unknown): JsonLike {
   return String(value);
 }
 
-/**
- * Stable, synchronous preview identifier that works with the application's
- * current JavaScript target. Production releases use server-side SHA-256.
- */
 function previewHash(value: unknown): string {
   const source = JSON.stringify(canonicalize(value));
   let first = 0x811c9dc5;
   let second = 0x9e3779b9;
-
   for (let index = 0; index < source.length; index += 1) {
     const codePoint = source.charCodeAt(index);
     first = Math.imul(first ^ codePoint, 0x01000193) >>> 0;
     second = Math.imul(second ^ (codePoint + index), 0x85ebca6b) >>> 0;
   }
-
   return `preview_${first.toString(16).padStart(8, "0")}${second.toString(16).padStart(8, "0")}`;
 }
 
@@ -72,13 +65,12 @@ function node(params: {
     warnings: params.warnings || [],
     ruleset: PREVIEW_RULESET,
   };
-
   return {
     calculationId: previewHash(payload),
     formulaId: params.formulaId,
     formulaVersion: PREVIEW_RULESET,
     officialSource: PREVIEW_SOURCE,
-    sourceVersion: "2026 definitive period",
+    sourceVersion: "definitive period preview",
     effectiveDate: "2026-01-01",
     inputs: normalizedInputs,
     roundingApplied: params.roundingApplied,
@@ -90,14 +82,27 @@ function node(params: {
   };
 }
 
+export type GoodCalculationPreview = {
+  goodIndex: number;
+  cnCode: string;
+  sector: string;
+  allocationShare: string;
+  productionVolume: string;
+  allocatedEmbeddedEmissions: string;
+  specificEmbeddedEmissions: string;
+};
+
 export type DossierCalculationPreview = {
   trace: CalculationTraceNode[];
+  goods: GoodCalculationPreview[];
   totalDirectEmissions: string;
   totalIndirectEmissions: string;
   totalPrecursorEmissions: string;
   totalEmbeddedEmissions: string;
   productionVolume: string;
   specificEmbeddedEmissions: string;
+  allocationShareTotal: string;
+  allocationReconciliationDelta: string;
 };
 
 export function performDossierCalculations(caseData: AuditReadyCase): DossierCalculationPreview {
@@ -106,38 +111,25 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
   const electricity = decimal(caseData.electricityConsumed.value, "electricityConsumed");
   const gridFactor = decimal(caseData.gridEmissionFactor.value, "gridEmissionFactor");
 
-  const production = caseData.goods.reduce<Decimal | null>((total, good, index) => {
-    if (total === null) return null;
-    const amount = decimal(good.productionVolume.value, `goods.${index}.productionVolume`);
-    return amount === null ? null : total.plus(amount);
-  }, new Decimal(0));
+  const productionRecords = caseData.goods.map((good, index) => ({
+    good,
+    production: decimal(good.productionVolume.value, `goods.${index}.productionVolume`),
+  }));
+  const productionComplete = productionRecords.every((record) => record.production !== null && record.production.gt(0));
+  const production = productionComplete
+    ? productionRecords.reduce((total, record) => total.plus(record.production!), new Decimal(0))
+    : null;
 
-  if ([direct, electricity, gridFactor, production].some((value) => value?.isNegative())) {
-    throw new Error("CALCULATION_NEGATIVE_INPUT");
-  }
-
-  if (electricity === null || gridFactor === null) {
-    trace.push(node({
-      formulaId: "CBAM_INDIRECT_EMISSIONS",
-      inputs: { electricityConsumed: electricity?.toString() ?? null, gridEmissionFactor: gridFactor?.toString() ?? null },
-      outputValue: "NOT_CALCULATED",
-      outputUnit: "tCO2e",
-      warnings: ["Electricity consumption and grid emission factor are required."],
-    }));
-  }
+  if ([direct, electricity, gridFactor].some((value) => value?.isNegative())) throw new Error("CALCULATION_NEGATIVE_INPUT");
 
   const indirect = electricity !== null && gridFactor !== null ? electricity.times(gridFactor) : null;
-  if (indirect !== null && electricity !== null && gridFactor !== null) {
-    trace.push(node({
-      formulaId: "CBAM_INDIRECT_EMISSIONS",
-      inputs: {
-        electricityConsumed: electricity.toString(),
-        gridEmissionFactor: gridFactor.toString(),
-      },
-      outputValue: indirect,
-      outputUnit: "tCO2e",
-    }));
-  }
+  trace.push(node({
+    formulaId: "CBAM_INDIRECT_EMISSIONS",
+    inputs: { electricityConsumed: electricity?.toString() ?? null, gridEmissionFactor: gridFactor?.toString() ?? null },
+    outputValue: indirect ?? "NOT_CALCULATED",
+    outputUnit: "tCO2e",
+    warnings: indirect === null ? ["Electricity consumption and grid emission factor are required."] : [],
+  }));
 
   let precursorDirect = new Decimal(0);
   let precursorIndirect = new Decimal(0);
@@ -166,7 +158,6 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
   const totalDirect = direct !== null && precursorComplete ? direct.plus(precursorDirect) : null;
   const totalIndirect = indirect !== null && precursorComplete ? indirect.plus(precursorIndirect) : null;
   const totalEmbedded = totalDirect !== null && totalIndirect !== null ? totalDirect.plus(totalIndirect) : null;
-
   trace.push(node({
     formulaId: "CBAM_TOTAL_EMBEDDED_EMISSIONS",
     inputs: {
@@ -180,31 +171,61 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
     warnings: totalEmbedded === null ? ["Required emissions values are incomplete."] : [],
   }));
 
-  let specific: Decimal | null = null;
-  if (totalEmbedded !== null && production !== null) {
-    if (production.lte(0)) throw new Error("CALCULATION_PRODUCTION_VOLUME_REQUIRED");
-    specific = totalEmbedded.dividedBy(production).toDecimalPlaces(6, Decimal.ROUND_HALF_UP);
+  const shares = caseData.goods.length === 1
+    ? [new Decimal(1)]
+    : caseData.goods.map((good, index) => decimal(good.allocationShare?.value, `goods.${index}.allocationShare`));
+  const sharesComplete = shares.length > 0 && shares.every((share) => share !== null && share.gt(0) && share.lte(1));
+  const allocationShareTotal = sharesComplete
+    ? (shares as Decimal[]).reduce((total, share) => total.plus(share), new Decimal(0))
+    : null;
+  const allocationReconciliationDelta = allocationShareTotal === null
+    ? null
+    : allocationShareTotal.minus(1).abs();
+  const allocationReady = allocationReconciliationDelta !== null && allocationReconciliationDelta.lte(ALLOCATION_TOLERANCE);
+
+  const goods: GoodCalculationPreview[] = [];
+  if (totalEmbedded !== null && productionComplete && allocationReady) {
+    productionRecords.forEach((record, index) => {
+      const share = (shares as Decimal[])[index];
+      const allocated = totalEmbedded.times(share);
+      const specific = allocated.dividedBy(record.production!).toDecimalPlaces(6, Decimal.ROUND_HALF_UP);
+      goods.push({
+        goodIndex: index + 1,
+        cnCode: String(record.good.cnCode.value || ""),
+        sector: record.good.sector,
+        allocationShare: share.toString(),
+        productionVolume: record.production!.toString(),
+        allocatedEmbeddedEmissions: allocated.toString(),
+        specificEmbeddedEmissions: specific.toString(),
+      });
+      trace.push(node({
+        formulaId: `CBAM_GOOD_EMISSIONS_ALLOCATION_${index + 1}`,
+        inputs: {
+          totalEmbeddedEmissions: totalEmbedded.toString(),
+          allocationShare: share.toString(),
+          productionVolume: record.production!.toString(),
+        },
+        outputValue: specific,
+        outputUnit: "tCO2e/t",
+        roundingApplied: { decimalPlaces: 6, mode: "ROUND_HALF_UP", stage: "per-good specific embedded emissions" },
+      }));
+    });
   }
 
-  trace.push(node({
-    formulaId: "CBAM_SPECIFIC_EMBEDDED_EMISSIONS",
-    inputs: {
-      totalEmbeddedEmissions: totalEmbedded?.toString() ?? null,
-      productionVolume: production?.toString() ?? null,
-    },
-    outputValue: specific ?? "NOT_CALCULATED",
-    outputUnit: "tCO2e/t",
-    warnings: specific === null ? ["Total embedded emissions and positive production volume are required."] : [],
-    roundingApplied: { decimalPlaces: 6, mode: "ROUND_HALF_UP", stage: "final specific emissions" },
-  }));
+  const aggregateSpecific = totalEmbedded !== null && production !== null
+    ? totalEmbedded.dividedBy(production).toDecimalPlaces(6, Decimal.ROUND_HALF_UP)
+    : null;
 
   return {
     trace,
+    goods,
     totalDirectEmissions: totalDirect?.toString() ?? "NOT_CALCULATED",
     totalIndirectEmissions: totalIndirect?.toString() ?? "NOT_CALCULATED",
     totalPrecursorEmissions: precursorTotal?.toString() ?? "NOT_CALCULATED",
     totalEmbeddedEmissions: totalEmbedded?.toString() ?? "NOT_CALCULATED",
     productionVolume: production?.toString() ?? "NOT_CALCULATED",
-    specificEmbeddedEmissions: specific?.toString() ?? "NOT_CALCULATED",
+    specificEmbeddedEmissions: aggregateSpecific?.toString() ?? "NOT_CALCULATED",
+    allocationShareTotal: allocationShareTotal?.toString() ?? "NOT_CALCULATED",
+    allocationReconciliationDelta: allocationReconciliationDelta?.toString() ?? "NOT_CALCULATED",
   };
 }

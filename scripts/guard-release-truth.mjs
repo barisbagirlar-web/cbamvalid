@@ -3,7 +3,10 @@ import path from "node:path";
 
 const root = process.cwd();
 const failures = [];
-const CURRENT_GUARD = path.normalize("scripts/guard-release-truth.mjs");
+const SCANNER_DEFINITION_FILES = new Set([
+  path.normalize("scripts/guard-release-truth.mjs"),
+  path.normalize("scripts/guard-auth-env.mjs"),
+]);
 
 function read(relativePath) {
   const absolutePath = path.join(root, relativePath);
@@ -23,7 +26,7 @@ function scanTextFiles(relativeDirectory, visitor) {
     if (entry.isDirectory()) {
       scanTextFiles(relativePath, visitor);
     } else if (
-      relativePath !== CURRENT_GUARD &&
+      !SCANNER_DEFINITION_FILES.has(relativePath) &&
       /\.(?:ts|tsx|js|mjs|cjs|json|ya?ml|md|txt|rules)$/.test(entry.name)
     ) {
       visitor(relativePath, fs.readFileSync(path.join(root, relativePath), "utf8"));

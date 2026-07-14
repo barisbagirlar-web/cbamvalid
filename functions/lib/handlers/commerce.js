@@ -38,18 +38,24 @@ const wrapper_1 = require("../wrapper");
 const zod_1 = require("zod");
 const https_1 = require("firebase-functions/v2/https");
 const firebase_admin_1 = require("../firebase-admin");
+const case_repository_1 = require("../cbam/storage/case-repository");
+const PREPARATION_PACK_PRODUCT = "CBAM_CREDIT_PACK_5";
+function errorMessage(error, fallback) {
+    return error instanceof Error ? error.message : fallback;
+}
 exports.getEntitlements = (0, wrapper_1.createCallable)({}, async (_, { auth }) => {
     const snapshot = await firebase_admin_1.adminDb.collection("entitlements")
         .where("uid", "==", auth.uid)
         .where("status", "==", "AVAILABLE")
         .get();
-    const entitlements = snapshot.docs.map(doc => doc.data());
+    const entitlements = snapshot.docs.map((doc) => doc.data());
     return { entitlements, status: "success" };
 });
 exports.createCheckoutSession = (0, wrapper_1.createCallable)({
+    secrets: ["PADDLE_API_KEY"],
     schema: zod_1.z.object({
-        productCode: zod_1.z.string(),
-        caseId: zod_1.z.string()
+        productCode: zod_1.z.literal(PREPARATION_PACK_PRODUCT),
+        caseId: zod_1.z.string().min(1)
     })
 }, async ({ productCode, caseId }, { auth }) => {
     const { createCheckout } = await Promise.resolve().then(() => __importStar(require("../commerce/paddle/checkout-service")));
@@ -57,78 +63,85 @@ exports.createCheckoutSession = (0, wrapper_1.createCallable)({
         const transactionId = await createCheckout(auth.uid, auth.token.email || "", productCode, { caseId });
         return { transactionId, status: "success" };
     }
-    catch (err) {
-        throw new https_1.HttpsError("internal", err.message);
+    catch (error) {
+        const message = errorMessage(error, "Checkout could not be started.");
+        console.error("[CHECKOUT] Server-side checkout creation failed:", message);
+        throw new https_1.HttpsError("failed-precondition", message);
     }
 });
+/**
+ * Backward-compatible conversion of historical account credits. The resulting
+ * five versions are bound to one owned draft dossier, matching new purchases.
+ */
 exports.unlockCbamUses = (0, wrapper_1.createCallable)({
     schema: zod_1.z.object({
-        requestId: zod_1.z.string(), // Idempotency key
+        requestId: zod_1.z.string().min(1),
+        caseId: zod_1.z.string().min(1),
     })
-}, async ({ requestId }, { auth }) => {
+}, async ({ requestId, caseId }, { auth }) => {
     try {
+        const cbamCase = await (0, case_repository_1.verifyCaseOwner)(caseId, auth.uid);
+        if (cbamCase.status !== "DRAFT") {
+            throw new https_1.HttpsError("failed-precondition", "Historical credits can only unlock an active draft dossier.");
+        }
         return await firebase_admin_1.adminDb.runTransaction(async (dbTransaction) => {
             var _a, _b;
-            // 1. Check idempotency
-            const idempotencyRef = firebase_admin_1.adminDb.collection("idempotency").doc(`unlock_${requestId}`);
+            const idempotencyRef = firebase_admin_1.adminDb.collection("idempotency").doc(`unlock_${auth.uid}_${caseId}_${requestId}`);
             const idempotencyDoc = await dbTransaction.get(idempotencyRef);
             if (idempotencyDoc.exists) {
                 return { status: "success", message: "Already unlocked" };
             }
-            // 2. Read user credit summary
             const creditRef = firebase_admin_1.adminDb.collection("users").doc(auth.uid).collection("creditSummary").doc("current");
             const creditDoc = await dbTransaction.get(creditRef);
-            let availableCredits = 0;
-            if (creditDoc.exists) {
-                availableCredits = ((_a = creditDoc.data()) === null || _a === void 0 ? void 0 : _a.availableCredits) || 0;
-            }
-            // 3. Ensure sufficient credits (100 credits = 5 uses)
+            const availableCredits = creditDoc.exists ? Number(((_a = creditDoc.data()) === null || _a === void 0 ? void 0 : _a.availableCredits) || 0) : 0;
             if (availableCredits < 100) {
-                throw new https_1.HttpsError("failed-precondition", "Insufficient general account credits. 100 credits are required to unlock 5 CBAM report uses.");
+                throw new https_1.HttpsError("failed-precondition", "Insufficient historical account balance. 100 credits are required to unlock five report versions.");
             }
-            // 4. Deduct 100 credits
+            const now = new Date().toISOString();
             dbTransaction.set(creditRef, {
                 availableCredits: availableCredits - 100,
-                lifetimeConsumed: (((_b = creditDoc.data()) === null || _b === void 0 ? void 0 : _b.lifetimeConsumed) || 0) + 100,
-                updatedAt: new Date().toISOString()
+                lifetimeConsumed: Number(((_b = creditDoc.data()) === null || _b === void 0 ? void 0 : _b.lifetimeConsumed) || 0) + 100,
+                updatedAt: now
             }, { merge: true });
-            const now = new Date().toISOString();
-            // 5. Write to credit ledger
             const ledgerRef = firebase_admin_1.adminDb.collection("users").doc(auth.uid).collection("creditLedger").doc();
             dbTransaction.set(ledgerRef, {
                 uid: auth.uid,
+                caseId,
                 amount: -100,
-                reason: "CBAM_UNLOCK",
+                reason: "CBAM_PREPARATION_PACK_UNLOCK",
                 requestId,
                 createdAt: now,
                 balanceAfter: availableCredits - 100
             });
-            // 6. Issue exactly 5 CBAM report entitlements
-            for (let i = 0; i < 5; i++) {
-                const entitlementRef = firebase_admin_1.adminDb.collection("entitlements").doc();
+            for (let sequence = 1; sequence <= 5; sequence += 1) {
+                const entitlementId = `ent_unlock_${requestId}_${sequence}`;
+                const entitlementRef = firebase_admin_1.adminDb.collection("entitlements").doc(entitlementId);
                 dbTransaction.set(entitlementRef, {
-                    entitlementId: entitlementRef.id,
+                    entitlementId,
                     uid: auth.uid,
                     orderId: `UNLOCK_${requestId}`,
-                    productCode: "CBAM_EXPORTER_FINAL_REPORT",
+                    caseId,
+                    productCode: PREPARATION_PACK_PRODUCT,
                     status: "AVAILABLE",
                     quantity: 1,
+                    versionSequence: sequence,
                     createdAt: now,
                     updatedAt: now,
                 });
             }
-            // 7. Record idempotency
             dbTransaction.set(idempotencyRef, {
                 processedAt: now,
-                uid: auth.uid
+                uid: auth.uid,
+                caseId,
+                requestId,
             });
-            return { status: "success", message: "Successfully unlocked 5 CBAM report uses." };
+            return { status: "success", message: "Successfully unlocked five case-bound report versions." };
         });
     }
-    catch (err) {
-        if (err instanceof https_1.HttpsError)
-            throw err;
-        throw new https_1.HttpsError("internal", err.message);
+    catch (error) {
+        if (error instanceof https_1.HttpsError)
+            throw error;
+        throw new https_1.HttpsError("internal", errorMessage(error, "Historical credit unlock failed."));
     }
 });
 //# sourceMappingURL=commerce.js.map

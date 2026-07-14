@@ -261,9 +261,8 @@ export async function sealReport(params: {
       evidenceRootHash,
     });
 
-    let reservedEntitlement: Entitlement | null = null;
-    await adminDb.runTransaction(async (dbTransaction) => {
-      reservedEntitlement = await reserveEntitlement(dbTransaction, {
+    const reservedEntitlement: Entitlement = await adminDb.runTransaction(async (dbTransaction) => {
+      return reserveEntitlement(dbTransaction, {
         entitlementId: params.entitlementId,
         uid: params.uid,
         caseId: params.caseId,

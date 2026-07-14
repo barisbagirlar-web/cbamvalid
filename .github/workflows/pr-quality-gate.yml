@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feat/exporter-verification-platform-v1
+      - fix/final-revenue-release-blockers-v1
   workflow_dispatch:
 
 permissions:
@@ -65,6 +66,12 @@ jobs:
         run: |
           set -o pipefail
           node scripts/guard-release-truth.mjs 2>&1 | tee artifacts/ci/release-truth.log
+
+      - name: Verify verifier-grade report contract
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/guard-verifier-grade-report.mjs 2>&1 | tee artifacts/ci/verifier-grade-report.log
 
       - name: Typecheck application
         shell: bash
