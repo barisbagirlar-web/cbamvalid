@@ -34,6 +34,9 @@ export const metadata: Metadata = {
       { url: "/favicon.svg", type: "image/svg+xml" }
     ]
   },
+  openGraph: {
+    images: ["/og.jpg"],
+  },
   verification: {
     google: "OR4qV6cIsxrAyqd6NZBv4kOsQ3F5bJl79yDrxZW4iII"
   }
