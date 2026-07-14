@@ -35,7 +35,10 @@
       }
     ],
     "frameworksBackend": {
-      "region": "europe-west1"
+      "region": "europe-west1",
+      "minInstances": 1,
+      "maxInstances": 10,
+      "memory": "2GB"
     }
   }
 }

@@ -69,3 +69,9 @@ env:
     value: "pws_sandbox_xxxxxx"
     availability:
       - RUNTIME
+
+run:
+  concurrency: 80
+  cpu: 2
+  memoryMiB: 2048
+  minInstances: 1
