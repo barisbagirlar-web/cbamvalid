@@ -55,35 +55,8 @@ if (!firebaseConfig.includes('"source": "functions"')) {
   failures.push("Canonical Firebase Functions source configuration is missing");
 }
 
-const requiredPackageFiles = [
-  "01_Product_Scope_Assessment.pdf",
-  "02_CN_Code_Reasoning.pdf",
-  "03_Required_Data_Checklist.pdf",
-  "04_Installation_Monitoring_Plan.pdf",
-  "05_Production_Process_Map.pdf",
-  "06_System_Boundary_Register.pdf",
-  "07_Source_Stream_Register.csv",
-  "08_Emission_Source_Register.csv",
-  "09_Measurement_and_Meter_Register.csv",
-  "10_Activity_Data_Ledger.csv",
-  "11_Evidence_Register.csv",
-  "12_Field_to_Evidence_Matrix.csv",
-  "13_Methodology_Decision_Log.pdf",
-  "14_Embedded_Emissions_Calculation_Annex.pdf",
-  "15_Operator_Emissions_Report.pdf",
-  "16_Operator_Summary_Emissions_Report.pdf",
-  "17_Verification_Readiness_Assessment.pdf",
-  "18_Misstatement_and_Non_Conformity_Register.csv",
-  "19_Corrective_Action_Log.csv",
-  "20_O3CI_Field_Mapping.csv",
-  "21_Calculation_Trace.json",
-  "22_Data_Integrity_Manifest.json",
-  "23_Supporting_Evidence/",
-  "24_Executive_Verification_Readiness_Summary.pdf",
-  "25_Per_Good_Embedded_Emissions_Schedule.csv",
-  "26_Carbon_Price_Paid_Schedule.csv",
-  "27_Read_Me_and_Verifier_Navigation_Guide.pdf",
-];
+const manifestContent = read("functions/src/cbam/report/package-manifest.ts");
+const requiredPackageFiles = [...manifestContent.matchAll(/filename:\s*["']([^"']+)["']/g)].map(m => m[1]);
 
 for (const filename of requiredPackageFiles) {
   if (!packageBuilder.includes(filename)) failures.push(`Verifier package contract missing: ${filename}`);

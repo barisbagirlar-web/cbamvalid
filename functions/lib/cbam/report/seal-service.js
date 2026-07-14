@@ -13,6 +13,7 @@ const calculator_1 = require("../calculator");
 const quality_controls_1 = require("../validation/quality-controls");
 const entitlement_service_1 = require("../../commerce/entitlement-service");
 const schema_1 = require("../schema");
+const package_contract_validator_1 = require("./package-contract-validator");
 const verifier_package_builder_1 = require("./verifier-package-builder");
 function calculateSha256(content) {
     return crypto_1.default.createHash("sha256").update(content).digest("hex");
@@ -206,13 +207,14 @@ async function sealReport(params) {
         await writeState(reportId, "ARTIFACTS_GENERATED");
         const documentHash = calculateSha256(packageResult.zipBuffer);
         const verifiedFileCount = packageResult.manifest.files.length;
-        if (verifiedFileCount < 22 || packageResult.manifest.topLevelComponentCount !== 23) {
-            throw new Error("VERIFIER_PACKAGE_MANIFEST_INCOMPLETE");
+        const validation = await (0, package_contract_validator_1.validatePackageContract)(packageResult.zipBuffer, packageResult.manifest);
+        if (!validation.success) {
+            throw new Error(`VERIFIER_PACKAGE_CONTRACT_VIOLATION:${validation.failures.join(",")}`);
         }
         await writeState(reportId, "PACKAGE_VERIFIED", {
             documentHash,
             manifestHash: packageResult.manifestHash,
-            packageTopLevelComponentCount: 23,
+            packageTopLevelComponentCount: 27,
             verifiedFileCount,
         });
         const bucket = (0, storage_1.getStorage)((0, app_1.getApp)()).bucket();
@@ -246,7 +248,7 @@ async function sealReport(params) {
             calculationRootHash: calculation.calculationRootHash,
             ruleset: calculation.ruleset,
             engineVersion: calculation.engineVersion,
-            packageTopLevelComponentCount: 23,
+            packageTopLevelComponentCount: 27,
             verifiedFileCount,
             storagePath: `${basePath}/verifier-preparation-package.zip`,
             manifestStoragePath: `${basePath}/data-integrity-manifest.json`,

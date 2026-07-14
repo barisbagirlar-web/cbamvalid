@@ -11,10 +11,13 @@ import {
   Entitlement,
 } from "../../commerce/entitlement-service";
 import { AuditReadyCase, AuditReadyCaseSchema } from "../schema";
+import { validatePackageContract } from "./package-contract-validator";
 import {
   buildVerifierPreparationPackage,
   PackageEvidenceFile,
 } from "./verifier-package-builder";
+
+
 
 export interface SealingResult {
   reportId: string;
@@ -306,13 +309,14 @@ export async function sealReport(params: {
 
     const documentHash = calculateSha256(packageResult.zipBuffer);
     const verifiedFileCount = packageResult.manifest.files.length;
-    if (verifiedFileCount < 22 || packageResult.manifest.topLevelComponentCount !== 23) {
-      throw new Error("VERIFIER_PACKAGE_MANIFEST_INCOMPLETE");
+    const validation = await validatePackageContract(packageResult.zipBuffer, packageResult.manifest);
+    if (!validation.success) {
+      throw new Error(`VERIFIER_PACKAGE_CONTRACT_VIOLATION:${validation.failures.join(",")}`);
     }
     await writeState(reportId, "PACKAGE_VERIFIED", {
       documentHash,
       manifestHash: packageResult.manifestHash,
-      packageTopLevelComponentCount: 23,
+      packageTopLevelComponentCount: 27,
       verifiedFileCount,
     });
 
@@ -351,7 +355,7 @@ export async function sealReport(params: {
       calculationRootHash: calculation.calculationRootHash,
       ruleset: calculation.ruleset,
       engineVersion: calculation.engineVersion,
-      packageTopLevelComponentCount: 23,
+      packageTopLevelComponentCount: 27,
       verifiedFileCount,
       storagePath: `${basePath}/verifier-preparation-package.zip`,
       manifestStoragePath: `${basePath}/data-integrity-manifest.json`,

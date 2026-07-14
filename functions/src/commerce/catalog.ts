@@ -28,10 +28,10 @@ export const PRODUCT_CATALOG: Record<string, ProductDefinition> = {
     maxCnCodes: 25,
     active: true,
     get paddlePriceIdSandbox() {
-      return process.env.PADDLE_PRICE_ID_SANDBOX || "";
+      return process.env.PADDLE_PRICE_ID_SANDBOX || process.env.NEXT_PUBLIC_PADDLE_PRICE_ID || "";
     },
     get paddlePriceIdProduction() {
-      return process.env.PADDLE_PRICE_ID_PRODUCTION || "";
+      return process.env.PADDLE_PRICE_ID_PRODUCTION || process.env.NEXT_PUBLIC_PADDLE_PRICE_ID || "";
     },
   },
 } as const;

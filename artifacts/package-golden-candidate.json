@@ -1,0 +1,147 @@
+{
+  "GOLDEN_REFRESH_APPROVAL_REQUIRED": "YES",
+  "zipHash": "1c434e44136d831a1d654f0a57352321045ef153ab6a9ed8b4c2c4d888d5bdce",
+  "manifestHash": "b6c8756b2b07919e7866a72e99a1c8577b5611be0c7405451ecd4c5882ff8fe1",
+  "files": [
+    {
+      "filename": "01_Product_Scope_Assessment.pdf",
+      "sha256": "645fc9558d6d49403a7a1a287ca48d445cbac6de8d38f1eedcdc72ea9e16da7b",
+      "sizeBytes": 5317
+    },
+    {
+      "filename": "02_CN_Code_Reasoning.pdf",
+      "sha256": "07450342ce269780b3b0a57b7e47436b45d892fb6c491a1e2c684218ae081f27",
+      "sizeBytes": 4433
+    },
+    {
+      "filename": "03_Required_Data_Checklist.pdf",
+      "sha256": "f9679bdb445d3ce2b203ab841cc021233a2362a581b5d586c9ccb2fe8ea7c9c2",
+      "sizeBytes": 6037
+    },
+    {
+      "filename": "04_Installation_Monitoring_Plan.pdf",
+      "sha256": "abe9c3f348c718fa637f8267cdd8a730717ebb6b438c93bbb61287937bf5af37",
+      "sizeBytes": 6914
+    },
+    {
+      "filename": "05_Production_Process_Map.pdf",
+      "sha256": "00c759f7290144d54b89c0f0108190775d19d947eba272c5fdd931588ea09f32",
+      "sizeBytes": 5056
+    },
+    {
+      "filename": "06_System_Boundary_Register.pdf",
+      "sha256": "5038e38b96ad52d90fe00eabd1f12a3ad60259d38cf4c79be113d1a08596e653",
+      "sizeBytes": 4976
+    },
+    {
+      "filename": "07_Source_Stream_Register.csv",
+      "sha256": "b266f2bd1c31e4ad2d1d86d20d9e569e9f7d4d6865cbe6475b63bea20da52e14",
+      "sizeBytes": 212
+    },
+    {
+      "filename": "08_Emission_Source_Register.csv",
+      "sha256": "0c75c0e2c9a9ad5f5514845c95efb945aa067a25db7e69db69b9e1742727a509",
+      "sizeBytes": 261
+    },
+    {
+      "filename": "09_Measurement_and_Meter_Register.csv",
+      "sha256": "8cc2beb11f70bb6240422660528cef868edfba455d946925be3f2571898d431a",
+      "sizeBytes": 827
+    },
+    {
+      "filename": "10_Activity_Data_Ledger.csv",
+      "sha256": "4262864b14d3a62c8cc9f242f45a85c28722e0ceb24acb41716c4783239e197a",
+      "sizeBytes": 1170
+    },
+    {
+      "filename": "11_Evidence_Register.csv",
+      "sha256": "9c617cb919f94d4996fbb4233837ab5012659acdaccd679131e14b6970cac9e2",
+      "sizeBytes": 498
+    },
+    {
+      "filename": "12_Field_to_Evidence_Matrix.csv",
+      "sha256": "d4e4753ea086ee7168587d29a2ede9fd7dfc2876b6a57e71ad352dc20e97444a",
+      "sizeBytes": 1080
+    },
+    {
+      "filename": "13_Methodology_Decision_Log.pdf",
+      "sha256": "aa5cecaa63e3eff57a5c77bab22cb8497b2b59ba39625cef5ff445a2e5b44f8e",
+      "sizeBytes": 4599
+    },
+    {
+      "filename": "14_Embedded_Emissions_Calculation_Annex.pdf",
+      "sha256": "68f92f8621d2ab7c28b268eab47bafb8110b988ae741028f3fd58cb6836f53fd",
+      "sizeBytes": 8438
+    },
+    {
+      "filename": "15_Operator_Emissions_Report.pdf",
+      "sha256": "2cc3b228a06cfa95c6dec52df0e6d0c4cfe2f9fa6604a19889930c75e2269497",
+      "sizeBytes": 6490
+    },
+    {
+      "filename": "16_Operator_Summary_Emissions_Report.pdf",
+      "sha256": "f278ba928721337c5dfd7cf263e3feecacc256fac252b95e849d9f75c573767f",
+      "sizeBytes": 5202
+    },
+    {
+      "filename": "17_Verification_Readiness_Assessment.pdf",
+      "sha256": "7da1bc44862d83c67b851b6aa554c816121d9b155997c500d0873a68b2871b64",
+      "sizeBytes": 7066
+    },
+    {
+      "filename": "18_Misstatement_and_Non_Conformity_Register.csv",
+      "sha256": "9fff3c99cf2a42b1339fb2cf179713cea31d50dd503c2cac6b6d31f7d24a4d36",
+      "sizeBytes": 240
+    },
+    {
+      "filename": "19_Corrective_Action_Log.csv",
+      "sha256": "9b50669ffb72ae1f0046e179003dbb913380de54707027727fed5e4c901791c5",
+      "sizeBytes": 208
+    },
+    {
+      "filename": "20_O3CI_Field_Mapping.csv",
+      "sha256": "33b4080acb554a15cec986dfcf248394d5d8bae1e50d53ce247d65ab75beb1cc",
+      "sizeBytes": 582
+    },
+    {
+      "filename": "21_Calculation_Trace.json",
+      "sha256": "5a6434661827b21cde516b5c60c931768299368ca0921f052f8bbf34e65d7ff6",
+      "sizeBytes": 6783
+    },
+    {
+      "filename": "22_Data_Integrity_Manifest.json",
+      "sha256": "3d31ca51fa527b9c8089c2690f65c605e68ea1135bb33255626656617afb75fe",
+      "sizeBytes": 16579
+    },
+    {
+      "filename": "23_Supporting_Evidence/_index.csv",
+      "sha256": "b5388c68b6e8a0e09b3e12a572ad7031f5068f9a201382534552fa488a8a3cae",
+      "sizeBytes": 167
+    },
+    {
+      "filename": "23_Supporting_Evidence/d81bb1d1-7f34-4ec9-a168-0cbe184cb037_monitoring-evidence.pdf",
+      "sha256": "cbbf0e1afed75037607f3d6b0cda1e066c068f064cbd017c91754cce936b8895",
+      "sizeBytes": 230
+    },
+    {
+      "filename": "24_Executive_Verification_Readiness_Summary.pdf",
+      "sha256": "d7a04be22e4c1a66302481b88d7861d2b4ae4f2dd9a2a0ac8471120c545da717",
+      "sizeBytes": 5134
+    },
+    {
+      "filename": "25_Per_Good_Embedded_Emissions_Schedule.csv",
+      "sha256": "52f2874161e91fbcfe590d93af566f097cf95149e0376b573cad7402ba7b74b1",
+      "sizeBytes": 536
+    },
+    {
+      "filename": "26_Carbon_Price_Paid_Schedule.csv",
+      "sha256": "6067ddff4c979863335a93f2b3b3a7d17502ac6a30eeea3201be3967b73e4cf5",
+      "sizeBytes": 826
+    },
+    {
+      "filename": "27_Read_Me_and_Verifier_Navigation_Guide.pdf",
+      "sha256": "fd30e59cfd169ec05776658fa28197abfe8343e50eda76005240cf1ec00d877e",
+      "sizeBytes": 7587
+    }
+  ]
+}

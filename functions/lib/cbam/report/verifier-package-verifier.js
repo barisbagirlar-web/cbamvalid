@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.verifyVerifierPreparationPackage = verifyVerifierPreparationPackage;
 const crypto_1 = __importDefault(require("crypto"));
 const jszip_1 = __importDefault(require("jszip"));
-const verifier_package_builder_1 = require("./verifier-package-builder");
+const package_contract_validator_1 = require("./package-contract-validator");
 function sha256(value) {
     return crypto_1.default.createHash("sha256").update(value).digest("hex");
 }
@@ -31,38 +31,15 @@ async function verifyVerifierPreparationPackage(zipBuffer) {
     if (manifest.manifestVersion !== "2.0") {
         throw new Error("VERIFIER_PACKAGE_MANIFEST_VERSION_INVALID");
     }
-    if (manifest.topLevelComponentCount !== 23) {
+    if (manifest.topLevelComponentCount !== 27) {
         throw new Error("VERIFIER_PACKAGE_COMPONENT_COUNT_INVALID");
     }
     if (manifest.reportQualityAssessment.status !== "PASS") {
         throw new Error("VERIFIER_PACKAGE_REPORT_QUALITY_NOT_PASS");
     }
-    for (const required of verifier_package_builder_1.REQUIRED_TOP_LEVEL_COMPONENTS) {
-        if (required.endsWith("/")) {
-            const prefixExists = Object.keys(zip.files).some((name) => name.startsWith(required));
-            if (!prefixExists)
-                throw new Error(`VERIFIER_PACKAGE_COMPONENT_MISSING:${required}`);
-        }
-        else if (!zip.file(required)) {
-            throw new Error(`VERIFIER_PACKAGE_COMPONENT_MISSING:${required}`);
-        }
-    }
-    const seen = new Set();
-    for (const file of manifest.files) {
-        if (seen.has(file.filename)) {
-            throw new Error(`VERIFIER_PACKAGE_MANIFEST_DUPLICATE_FILE:${file.filename}`);
-        }
-        seen.add(file.filename);
-        const entry = zip.file(file.filename);
-        if (!entry)
-            throw new Error(`VERIFIER_PACKAGE_FILE_MISSING:${file.filename}`);
-        const bytes = await entry.async("nodebuffer");
-        if (bytes.byteLength !== file.sizeBytes) {
-            throw new Error(`VERIFIER_PACKAGE_FILE_SIZE_MISMATCH:${file.filename}`);
-        }
-        if (sha256(bytes) !== file.sha256.toLowerCase()) {
-            throw new Error(`VERIFIER_PACKAGE_FILE_HASH_MISMATCH:${file.filename}`);
-        }
+    const validation = await (0, package_contract_validator_1.validatePackageContract)(zipBuffer, manifest);
+    if (!validation.success) {
+        throw new Error(`VERIFIER_PACKAGE_CONTRACT_VIOLATION:${validation.failures.join(",")}`);
     }
     return {
         manifest,
