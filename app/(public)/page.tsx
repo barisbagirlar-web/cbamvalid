@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Shield, ArrowRight, CheckCircle2, Globe2 } from "lucide-react";
+import { WalkthroughVideo } from "@/components/media/WalkthroughVideo";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 import { generateOrganizationSchema, generateWebSiteSchema, generateWebApplicationSchema, generateFAQSchema } from "@/lib/seo/schema";
 
@@ -29,47 +30,46 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-
       {/* 2. Hero Section */}
       <main className="flex-1">
         <section className="max-w-7xl mx-auto px-6 py-20 lg:py-28">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div className="max-w-2xl space-y-6">
               <div className="inline-flex items-center space-x-2 border border-border bg-accent-soft px-3 py-1.5 rounded-full text-xs font-semibold tracking-wider text-accent uppercase">
-                <Globe2 className="w-4 h-4 mr-1" strokeWidth={1.75} /> 
+                <Globe2 className="w-4 h-4 mr-1" strokeWidth={1.75} />
                 EU Regulatory Method Alignment
               </div>
-              
+
               <h1 className="text-4xl lg:text-6xl font-bold tracking-tight leading-[1.1]">
                 CBAM Exporter <br />
                 <span className="text-accent">Final Evidence Report</span>
               </h1>
-              
+
               <p className="text-base md:text-lg text-muted leading-relaxed">
-                Prepare a buyer-ready CBAM emissions and evidence package in one guided workflow. 
-                Enter your product, shipment, installation and emissions data. Review missing evidence, 
+                Prepare a buyer-ready CBAM emissions and evidence package in one guided workflow.
+                Enter your product, shipment, installation and emissions data. Review missing evidence,
                 pay once, and download your final report in PDF, JSON and XML formats.
               </p>
 
               <div className="text-sm text-subtle font-semibold font-mono">
                 USD 150 per final report. No subscription. No credits.
               </div>
-              
+
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-                <Link 
-                  href="/register?next=/cases/new" 
+                <Link
+                  href="/register?next=/cases/new"
                   className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent px-5 py-3 font-medium text-surface transition-colors hover:bg-accent-hover active:bg-accent-active cursor-pointer"
                 >
                   Start a Dossier <ArrowRight size={18} strokeWidth={1.75} />
                 </Link>
-                <Link 
-                  href="/how-it-works" 
+                <Link
+                  href="/how-it-works"
                   className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-strong bg-transparent px-5 py-3 font-medium text-foreground transition-colors hover:bg-neutral-soft"
                 >
                   Watch the Workflow
                 </Link>
-                <Link 
-                  href="/sample-dossier" 
+                <Link
+                  href="/sample-dossier"
                   className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-strong bg-transparent px-5 py-3 font-medium text-foreground transition-colors hover:bg-neutral-soft"
                 >
                   View the Sample Dossier
@@ -115,23 +115,12 @@ export default function HomePage() {
             <p className="text-muted text-lg mb-10 max-w-2xl mx-auto">
               Review the full evidence-linked workflow before creating your first case.
             </p>
-            <div className="relative max-w-4xl mx-auto rounded-xl overflow-hidden shadow-2xl border border-border bg-black group block">
-              <div className="aspect-video relative">
-                <img 
-                  src="/media/cbamvalid-product-walkthrough-poster.webp" 
-                  alt="Video Walkthrough Poster" 
-                  className="w-full h-full object-cover opacity-80"
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-16 h-16 bg-accent/90 rounded-full flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
-                    <div className="w-0 h-0 border-y-8 border-y-transparent border-l-12 border-l-white ml-2" />
-                  </div>
-                </div>
-              </div>
+            <div className="max-w-4xl mx-auto">
+              <WalkthroughVideo ariaLabel="CBAMValid evidence-linked workflow walkthrough" />
             </div>
             <div className="mt-8">
-              <Link 
-                href="/how-it-works" 
+              <Link
+                href="/how-it-works"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-accent px-8 py-3 font-medium text-surface transition-colors hover:bg-accent-hover"
               >
                 Open Full Walkthrough <ArrowRight className="w-4 h-4" />
@@ -190,7 +179,7 @@ export default function HomePage() {
               <div>
                 <h3 className="font-bold text-lg text-foreground">Trust Statement</h3>
                 <p className="mt-2 text-sm text-muted leading-relaxed">
-                  Built around current published EU CBAM rules and official source data. 
+                  Built around current published EU CBAM rules and official source data.
                   Designed for exporter-to-importer evidence transfer and verification readiness.
                 </p>
               </div>
@@ -198,7 +187,7 @@ export default function HomePage() {
             <div className="border-t border-border pt-6 space-y-2">
               <span className="text-xs font-bold text-subtle uppercase tracking-wider block">Mandatory Limitation & Regulatory Disclaimer</span>
               <p className="text-xs text-subtle leading-relaxed">
-                CBAMValid prepares calculation and evidence packages. It is not an EU institution, customs authority, 
+                CBAMValid prepares calculation and evidence packages. It is not an EU institution, customs authority,
                 or accredited CBAM verifier. Actual emissions must be independently verified where verification is legally required.
               </p>
             </div>
