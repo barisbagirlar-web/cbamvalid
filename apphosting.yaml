@@ -1,0 +1,43 @@
+env:
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "AIzaSyD719QlNheW-iiRLbCU9TGk0yymm3QS90Q"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "cbam-desk.firebaseapp.com"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "cbam-desk"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:89463138012:web:88738908b8f9eb5659f619"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "cbam-desk.firebasestorage.app"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "89463138012"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  # Firebase Admin SDK — mounted from Secret Manager at runtime
+  # Never stored in plaintext; bound via IAM to App Hosting service account
+  - variable: FIREBASE_ADMIN_SERVICE_ACCOUNT_B64
+    secret: FIREBASE_ADMIN_SERVICE_ACCOUNT_B64
+    availability:
+      - RUNTIME
