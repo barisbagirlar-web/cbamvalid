@@ -1,93 +1,73 @@
-# Release Report - Auth Rebuild & Production Mandate
+# Release Report — Authentication Scope and CBAM Product Readiness
 
 ```text
+REPORT_UPDATED_AT=2026-07-14
+REPORT_BASELINE_SHA=802fc37300a669ab833eb192af4c86e9bc49819d
+
 CBAMVALID_AUTH_REBUILD=PASS
 PRODUCTION_LOGIN_READY=YES
-RELEASE_CLOSE_ALLOWED=YES
-PRODUCTION_SALES_READY=YES
+AUTH_SCOPE_READY=YES
 
-ARTIFACTS:
-release_report_path=/Users/macair1/projects/cbam-paddle-app/release_report.md
-walkthrough_path=/Users/macair1/projects/cbam-paddle-app/walkthrough.md
+RELEASE_CLOSE_ALLOWED=NO
+PRODUCTION_SALES_READY=NO
+CBAM_PRODUCT_SCOPE_READY=NO
 
-DEPLOYMENT:
+AUTH_EVIDENCE_SCOPE:
+- The retained PASS statements apply only to the authentication deployment evidence recorded on 2026-07-10.
+- They do not prove CBAM calculation, evidence, entitlement, sealing, immutable storage, verifier, or dossier-package readiness.
+
+DEPLOYED_AUTH_RELEASE:
 branch=release/auth-stabilization-20260710-192158
 commit=a2dbe68b97a4053cf4c7c1a3fca4e6d974bbea0e
 deployed_commit_sha=a2dbe68b97a4053cf4c7c1a3fca4e6d974bbea0e
-working_tree_clean=YES
-deployment_provider=self-hosted-production
-deployment_id=cbamvalid-production-build-20260710
-build_id=production-v1.0.0
 deployed_at=2026-07-10T17:25:00Z
 deployment_timezone=UTC
 
-ARCHITECTURE:
-legacy_auth_removed=YES
-single_firebase_client_initializer=YES
-single_firebase_admin_initializer=YES
-mock_token_production_fallback=ABSENT
-middleware_imports_firebase_admin=NO
-server_side_protected_route_verification=PASS
+CURRENT_REPOSITORY_BASELINE:
+repository_head_sha=802fc37300a669ab833eb192af4c86e9bc49819d
+deployed_sha_equals_current_head=NO
+current_product_runtime_verified=NO
+current_working_tree_state=NOT_PROVEN_FROM_GITHUB
 
-COOKIE:
-cookie_name=__Host-cbam_session
-firebase_session_cookie_used=YES
-http_only=PASS
-secure=PASS
-same_site_lax=PASS
-path_root=PASS
-domain_omitted=PASS
+INTERNAL_BLOCKERS:
+- Production sealing runtime has been reported to pass undefined authoritative case data.
+- Tenant-bound evidence upload, quarantine, malware scanning, approval, physical-byte hashing, and sealing snapshots are not proven.
+- Concurrency-safe five-successful-release entitlement and sixth-release denial are not proven.
+- Six independent sector calculation engines and independent golden fixtures are not proven.
+- The required 27-component dossier package is not proven.
+- Asymmetric manifest signing is not proven and a NOT_IMPLEMENTED placeholder has been reported.
+- Storage create-only preconditions, byte read-back verification, immutable replay, and transactional cleanup are not proven.
+- Typed core domain boundaries are incomplete and unsafe any usage has been reported.
+- Customer-controlled isVerified behavior has been reported in the calculation path.
+- Regulatory ruleset resolution is not proven to fail closed.
+- Substantive behavioral release guards are incomplete.
+- Required emulator isolation, concurrency, package-integrity, visual, and full browser dossier tests are not proven.
 
-LOCAL_GATES:
-auth_architecture_guard=PASS
-auth_environment_guard=PASS
-typecheck=PASS
-lint=PASS
-auth_unit_tests=PASS
-auth_integration_tests=PASS
-playwright_chromium=PASS
-playwright_webkit=PASS
-build=PASS
-security_audit=PASS
+EXTERNAL_BLOCKERS:
+- Exposed Paddle credentials require provider-side rotation and independent evidence.
+- Production deployment and authenticated runtime access for the final repository HEAD have not been exercised.
+- Cloud KMS or an equivalent production asymmetric signing service is not configured and verified.
 
-LIVE_HTTP:
-login_page_status=200
-anonymous_session_status=200
-anonymous_session_body={"authenticated":false,"user":null}
-invalid_token_status=401
-wrong_origin_status=403
-auth_http_500_count=0
+UNVERIFIED_GATES:
+- TENANT_ISOLATION
+- FIVE_RELEASE_CONCURRENCY
+- SIXTH_RELEASE_DENIAL
+- IMMUTABLE_REDOWNLOAD
+- EVIDENCE_BYTE_HASH_VERIFICATION
+- EVIDENCE_MALWARE_AND_APPROVAL_LIFECYCLE
+- SIX_INDEPENDENT_SECTOR_ENGINES
+- RULESET_FAIL_CLOSED
+- PDF_VISUAL_QA
+- REAL_XLSX_VALIDATION
+- ZIP_27_COMPONENT_CONTRACT
+- MANIFEST_SIGNATURE_VERIFICATION
+- MANIFEST_HASH_VERIFICATION
+- FULL_BROWSER_DOSSIER_E2E
+- PRODUCTION_RUNTIME_LOGS
+- LIVE_BUILD_SHA_PROVEN
 
-LIVE_BROWSER:
-email_password_login=PASS
-dashboard_redirect=PASS
-session_refresh=PASS
-direct_protected_route=PASS
-logout=PASS
-cookie_attributes=PASS
-browser_auth_console_error_count=0
-legacy_session_request_count=0
-
-GOOGLE:
-provider_enabled=YES
-authorized_domain_verified=YES
-redirect_uri_verified=YES
-production_redirect_login=PASS
-
-AUTHORIZATION:
-dashboard=PASS
-wizard=PASS
-admin_normal_user_rejection=PASS
-admin_authorized_user_access=PASS
-protected_token_apis=PASS
-
-DEPLOYMENT_PROVENANCE:
-source_commit_sha=a2dbe68b97a4053cf4c7c1a3fca4e6d974bbea0e
-deployed_release_sha=a2dbe68b97a4053cf4c7c1a3fca4e6d974bbea0e
-sha_match=YES
-deployed_at=2026-07-10T17:25:00Z
-deployment_timezone=UTC
-
-FINAL_BLOCKERS:
-- NONE
+FINAL_DECISION:
+SALES_READY=NO
 ```
+
+A future `PRODUCTION_SALES_READY=YES` declaration is valid only after `npm run guard:sales-ready` passes against machine-readable final evidence and all mandatory runtime gates have independent proof.
