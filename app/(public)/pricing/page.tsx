@@ -70,7 +70,7 @@ export default function PricingPage() {
             <div className="flex items-start gap-3">
               <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
               <p className="text-sm leading-relaxed text-muted">
-                CBAMValid prepares data and evidence for independent verification. It does not issue an accredited verifier's opinion, customs approval, EU approval or acceptance guarantee. Paddle processes payment as Merchant of Record.
+                CBAMValid prepares data and evidence for independent verification. It does not issue an accredited verifier&apos;s opinion, customs approval, EU approval or acceptance guarantee. Paddle processes payment as Merchant of Record.
               </p>
             </div>
           </div>

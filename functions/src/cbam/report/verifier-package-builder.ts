@@ -127,7 +127,24 @@ function renderPdf(params: {
   sections: PdfSection[];
   deterministicDate: Date;
 }): Buffer {
-  const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
+  const OriginalDate = global.Date;
+  // @ts-ignore
+  global.Date = class extends OriginalDate {
+    constructor(...args: any[]) {
+      if (args.length === 0) {
+        super(params.deterministicDate.getTime());
+      } else {
+        // @ts-ignore
+        super(...args);
+      }
+    }
+    static now() {
+      return params.deterministicDate.getTime();
+    }
+  };
+
+  try {
+    const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
   doc.setProperties({
     author: "CBAMValid",
     creator: "CBAMValid Report Engine",
@@ -274,23 +291,6 @@ function renderPdf(params: {
 
   footer();
 
-  const OriginalDate = global.Date;
-  // @ts-ignore
-  global.Date = class extends OriginalDate {
-    constructor(...args: any[]) {
-      if (args.length === 0) {
-        super(params.deterministicDate.getTime());
-      } else {
-        // @ts-ignore
-        super(...args);
-      }
-    }
-    static now() {
-      return params.deterministicDate.getTime();
-    }
-  };
-
-  try {
     const rawBuffer = Buffer.from(doc.output("arraybuffer"));
     const pdfString = rawBuffer.toString("binary").replace(
       /\/ID\s*\[\s*<[0-9a-fA-F]{32}>\s*<[0-9a-fA-F]{32}>\s*\]/g,
@@ -622,7 +622,7 @@ const COMPONENT_PRODUCERS: Record<PackageComponentId, ComponentProducer> = {
           { heading: "4. Direct and indirect emissions", keyValues: [["Installation direct emissions", `${ctx.calculation.installationDirectEmissions} tCO2e`], ["Electricity indirect emissions", `${ctx.calculation.electricityIndirectEmissions} tCO2e`], ["Precursor direct emissions", `${ctx.calculation.precursorDirectEmissions} tCO2e`], ["Precursor indirect emissions", `${ctx.calculation.precursorIndirectEmissions} tCO2e`], ["Total embedded emissions", `${ctx.calculation.totalEmbeddedEmissions} tCO2e`]] },
           { heading: "5. Monitoring and methodology", keyValues: [["Precursor scope", methodologyText(ctx.caseData, "PRECURSOR_SCOPE")], ["Allocation method", methodologyText(ctx.caseData, "GOODS_EMISSIONS_ALLOCATION", ctx.caseData.goods.length === 1 ? "Single-good full allocation" : "Not documented")], ["Ruleset", ctx.calculation.ruleset], ["Engine", ctx.calculation.engineVersion]] },
           { heading: "6. Evidence and control", keyValues: [["Approved evidence records", String(ctx.caseData.evidenceRegister.filter((item) => item.reviewStatus === "APPROVED").length)], ["Evidence coverage", `${reportQualityAssessment.evidenceCoverage.percentage}%`], ["Calculation trace nodes", String(reportQualityAssessment.calculationIntegrity.traceNodeCount)], ["Calculation hash coverage", `${reportQualityAssessment.calculationIntegrity.hashCoveragePercentage}%`], ["Calculation root hash", ctx.calculation.calculationRootHash]] },
-          { heading: "7. Operator responsibility statement", paragraphs: ["The operator/exporter remains responsible for the completeness, accuracy and lawful presentation of source data and evidence. This package preserves the declared basis and is designed to support, not replace, independent accredited verification."] },
+          { heading: "7. Operator responsibility statement", paragraphs: ["The operator/exporter remains responsible for the completeness, accuracy and lawful presentation of source data and evidence. This package preserves the declared basis and is designed to support, not replace, independent accredited verifier review."] },
         ],
       }),
       documentType: "OPERATOR_EMISSIONS_REPORT",
@@ -843,7 +843,7 @@ const COMPONENT_PRODUCERS: Record<PackageComponentId, ComponentProducer> = {
           },
           {
             heading: "5. Important Disclaimer",
-            paragraphs: ["This readiness summary is an internal tool to prepare for accredited verification and does not constitute a formal, accredited verification opinion under EU regulations."]
+            paragraphs: ["This readiness summary is an internal tool to prepare for accredited verifier review and does not constitute a formal, accredited verifier's opinion under EU regulations."]
           }
         ]
       }),

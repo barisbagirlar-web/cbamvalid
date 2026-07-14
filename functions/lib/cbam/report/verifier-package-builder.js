@@ -53,142 +53,6 @@ function wrapText(doc, value, maxWidth) {
     return doc.splitTextToSize(value, maxWidth);
 }
 function renderPdf(params) {
-    const doc = new jspdf_1.jsPDF({ unit: "mm", format: "a4", compress: true });
-    doc.setProperties({
-        author: "CBAMValid",
-        creator: "CBAMValid Report Engine",
-        title: params.title,
-    });
-    const pageWidth = 210;
-    const pageHeight = 297;
-    const margin = 16;
-    const contentWidth = pageWidth - margin * 2;
-    let y = margin;
-    const footer = () => {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(7);
-        doc.setTextColor(90, 90, 90);
-        doc.text(`CBAMValid · ${params.releaseId} · Page ${doc.getNumberOfPages()}`, margin, pageHeight - 7);
-        doc.text("CONFIDENTIAL — OPERATOR/EXPORTER VERIFIER-PREPARATION DOSSIER", pageWidth - margin, pageHeight - 7, { align: "right" });
-    };
-    const addPage = () => {
-        footer();
-        doc.addPage();
-        y = margin;
-    };
-    const ensureSpace = (height) => {
-        if (y + height > pageHeight - 18)
-            addPage();
-    };
-    doc.setFillColor(20, 37, 63);
-    doc.rect(0, 0, pageWidth, 46, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(19);
-    doc.text(params.title, margin, 20);
-    if (params.subtitle) {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
-        doc.text(wrapText(doc, params.subtitle, contentWidth), margin, 28);
-    }
-    if (params.documentStatus) {
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(8);
-        doc.text(params.documentStatus, margin, 40);
-    }
-    y = 54;
-    doc.setTextColor(25, 25, 25);
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    const metadataRows = [
-        ["Release ID", params.releaseId],
-        ["Case ID / version", `${params.caseId} / ${params.caseVersion}`],
-        ["Generated", params.generatedAt],
-        ["Ruleset / engine", `${params.ruleset} / ${params.engineVersion}`],
-        ["Report standard", report_quality_contract_1.REPORT_STANDARD_VERSION],
-    ];
-    metadataRows.forEach(([key, value]) => {
-        doc.setFont("helvetica", "bold");
-        doc.text(key, margin, y);
-        doc.setFont("helvetica", "normal");
-        doc.text(wrapText(doc, value, contentWidth - 42), margin + 42, y);
-        y += 5;
-    });
-    y += 3;
-    for (const section of params.sections) {
-        ensureSpace(16);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(11);
-        doc.setTextColor(20, 37, 63);
-        doc.text(section.heading, margin, y);
-        y += 7;
-        doc.setTextColor(30, 30, 30);
-        doc.setFontSize(8);
-        for (const paragraph of section.paragraphs || []) {
-            const lines = wrapText(doc, paragraph, contentWidth);
-            ensureSpace(lines.length * 4 + 4);
-            doc.setFont("helvetica", "normal");
-            doc.text(lines, margin, y);
-            y += lines.length * 4 + 3;
-        }
-        for (const [key, value] of section.keyValues || []) {
-            const valueLines = wrapText(doc, value, contentWidth - 52);
-            ensureSpace(Math.max(5, valueLines.length * 4));
-            doc.setFont("helvetica", "bold");
-            doc.text(key, margin, y);
-            doc.setFont("helvetica", "normal");
-            doc.text(valueLines, margin + 52, y);
-            y += Math.max(5, valueLines.length * 4);
-        }
-        if (section.table) {
-            const { headers, rows } = section.table;
-            const widths = section.table.widths || headers.map(() => contentWidth / headers.length);
-            const drawRow = (cells, header) => {
-                const wrapped = cells.map((cell, index) => wrapText(doc, cell, widths[index] - 3));
-                const rowHeight = Math.max(...wrapped.map((lines) => lines.length), 1) * 4 + 3;
-                ensureSpace(rowHeight + (header ? 0 : 1));
-                let x = margin;
-                cells.forEach((_, index) => {
-                    doc.setDrawColor(180, 188, 197);
-                    if (header)
-                        doc.setFillColor(232, 237, 243);
-                    doc.rect(x, y - 3, widths[index], rowHeight, header ? "FD" : "D");
-                    doc.setFont("helvetica", header ? "bold" : "normal");
-                    doc.setTextColor(header ? 20 : 60, header ? 37 : 60, header ? 63 : 60);
-                    let textY = y - 1 + (rowHeight - 3) / 2;
-                    const lines = wrapped[index];
-                    if (lines.length > 1) {
-                        textY = y - 1 + (rowHeight - lines.length * 4) / 2;
-                    }
-                    lines.forEach((line, lineIndex) => {
-                        doc.text(line, x + 1.5, textY + lineIndex * 4);
-                    });
-                    x += widths[index];
-                });
-                y += rowHeight;
-            };
-            drawRow(headers, true);
-            rows.forEach((row) => drawRow(row, false));
-            y += 3;
-        }
-        y += 4;
-    }
-    ensureSpace(24);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(120, 45, 35);
-    doc.text("Important limitations", margin, y);
-    y += 5;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
-    doc.setTextColor(60, 60, 60);
-    for (const limitation of report_quality_contract_1.REPORT_LIMITATIONS) {
-        const lines = wrapText(doc, `• ${limitation}`, contentWidth);
-        ensureSpace(lines.length * 4 + 2);
-        doc.text(lines, margin, y);
-        y += lines.length * 4 + 1;
-    }
-    footer();
     const OriginalDate = global.Date;
     // @ts-ignore
     global.Date = class extends OriginalDate {
@@ -206,6 +70,142 @@ function renderPdf(params) {
         }
     };
     try {
+        const doc = new jspdf_1.jsPDF({ unit: "mm", format: "a4", compress: true });
+        doc.setProperties({
+            author: "CBAMValid",
+            creator: "CBAMValid Report Engine",
+            title: params.title,
+        });
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const margin = 16;
+        const contentWidth = pageWidth - margin * 2;
+        let y = margin;
+        const footer = () => {
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(7);
+            doc.setTextColor(90, 90, 90);
+            doc.text(`CBAMValid · ${params.releaseId} · Page ${doc.getNumberOfPages()}`, margin, pageHeight - 7);
+            doc.text("CONFIDENTIAL — OPERATOR/EXPORTER VERIFIER-PREPARATION DOSSIER", pageWidth - margin, pageHeight - 7, { align: "right" });
+        };
+        const addPage = () => {
+            footer();
+            doc.addPage();
+            y = margin;
+        };
+        const ensureSpace = (height) => {
+            if (y + height > pageHeight - 18)
+                addPage();
+        };
+        doc.setFillColor(20, 37, 63);
+        doc.rect(0, 0, pageWidth, 46, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(19);
+        doc.text(params.title, margin, 20);
+        if (params.subtitle) {
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            doc.text(wrapText(doc, params.subtitle, contentWidth), margin, 28);
+        }
+        if (params.documentStatus) {
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(8);
+            doc.text(params.documentStatus, margin, 40);
+        }
+        y = 54;
+        doc.setTextColor(25, 25, 25);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        const metadataRows = [
+            ["Release ID", params.releaseId],
+            ["Case ID / version", `${params.caseId} / ${params.caseVersion}`],
+            ["Generated", params.generatedAt],
+            ["Ruleset / engine", `${params.ruleset} / ${params.engineVersion}`],
+            ["Report standard", report_quality_contract_1.REPORT_STANDARD_VERSION],
+        ];
+        metadataRows.forEach(([key, value]) => {
+            doc.setFont("helvetica", "bold");
+            doc.text(key, margin, y);
+            doc.setFont("helvetica", "normal");
+            doc.text(wrapText(doc, value, contentWidth - 42), margin + 42, y);
+            y += 5;
+        });
+        y += 3;
+        for (const section of params.sections) {
+            ensureSpace(16);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(11);
+            doc.setTextColor(20, 37, 63);
+            doc.text(section.heading, margin, y);
+            y += 7;
+            doc.setTextColor(30, 30, 30);
+            doc.setFontSize(8);
+            for (const paragraph of section.paragraphs || []) {
+                const lines = wrapText(doc, paragraph, contentWidth);
+                ensureSpace(lines.length * 4 + 4);
+                doc.setFont("helvetica", "normal");
+                doc.text(lines, margin, y);
+                y += lines.length * 4 + 3;
+            }
+            for (const [key, value] of section.keyValues || []) {
+                const valueLines = wrapText(doc, value, contentWidth - 52);
+                ensureSpace(Math.max(5, valueLines.length * 4));
+                doc.setFont("helvetica", "bold");
+                doc.text(key, margin, y);
+                doc.setFont("helvetica", "normal");
+                doc.text(valueLines, margin + 52, y);
+                y += Math.max(5, valueLines.length * 4);
+            }
+            if (section.table) {
+                const { headers, rows } = section.table;
+                const widths = section.table.widths || headers.map(() => contentWidth / headers.length);
+                const drawRow = (cells, header) => {
+                    const wrapped = cells.map((cell, index) => wrapText(doc, cell, widths[index] - 3));
+                    const rowHeight = Math.max(...wrapped.map((lines) => lines.length), 1) * 4 + 3;
+                    ensureSpace(rowHeight + (header ? 0 : 1));
+                    let x = margin;
+                    cells.forEach((_, index) => {
+                        doc.setDrawColor(180, 188, 197);
+                        if (header)
+                            doc.setFillColor(232, 237, 243);
+                        doc.rect(x, y - 3, widths[index], rowHeight, header ? "FD" : "D");
+                        doc.setFont("helvetica", header ? "bold" : "normal");
+                        doc.setTextColor(header ? 20 : 60, header ? 37 : 60, header ? 63 : 60);
+                        let textY = y - 1 + (rowHeight - 3) / 2;
+                        const lines = wrapped[index];
+                        if (lines.length > 1) {
+                            textY = y - 1 + (rowHeight - lines.length * 4) / 2;
+                        }
+                        lines.forEach((line, lineIndex) => {
+                            doc.text(line, x + 1.5, textY + lineIndex * 4);
+                        });
+                        x += widths[index];
+                    });
+                    y += rowHeight;
+                };
+                drawRow(headers, true);
+                rows.forEach((row) => drawRow(row, false));
+                y += 3;
+            }
+            y += 4;
+        }
+        ensureSpace(24);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(120, 45, 35);
+        doc.text("Important limitations", margin, y);
+        y += 5;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.5);
+        doc.setTextColor(60, 60, 60);
+        for (const limitation of report_quality_contract_1.REPORT_LIMITATIONS) {
+            const lines = wrapText(doc, `• ${limitation}`, contentWidth);
+            ensureSpace(lines.length * 4 + 2);
+            doc.text(lines, margin, y);
+            y += lines.length * 4 + 1;
+        }
+        footer();
         const rawBuffer = Buffer.from(doc.output("arraybuffer"));
         const pdfString = rawBuffer.toString("binary").replace(/\/ID\s*\[\s*<[0-9a-fA-F]{32}>\s*<[0-9a-fA-F]{32}>\s*\]/g, "/ID [ <00000000000000000000000000000000> <00000000000000000000000000000000> ]");
         return Buffer.from(pdfString, "binary");
@@ -455,7 +455,7 @@ const COMPONENT_PRODUCERS = {
                     { heading: "4. Direct and indirect emissions", keyValues: [["Installation direct emissions", `${ctx.calculation.installationDirectEmissions} tCO2e`], ["Electricity indirect emissions", `${ctx.calculation.electricityIndirectEmissions} tCO2e`], ["Precursor direct emissions", `${ctx.calculation.precursorDirectEmissions} tCO2e`], ["Precursor indirect emissions", `${ctx.calculation.precursorIndirectEmissions} tCO2e`], ["Total embedded emissions", `${ctx.calculation.totalEmbeddedEmissions} tCO2e`]] },
                     { heading: "5. Monitoring and methodology", keyValues: [["Precursor scope", methodologyText(ctx.caseData, "PRECURSOR_SCOPE")], ["Allocation method", methodologyText(ctx.caseData, "GOODS_EMISSIONS_ALLOCATION", ctx.caseData.goods.length === 1 ? "Single-good full allocation" : "Not documented")], ["Ruleset", ctx.calculation.ruleset], ["Engine", ctx.calculation.engineVersion]] },
                     { heading: "6. Evidence and control", keyValues: [["Approved evidence records", String(ctx.caseData.evidenceRegister.filter((item) => item.reviewStatus === "APPROVED").length)], ["Evidence coverage", `${reportQualityAssessment.evidenceCoverage.percentage}%`], ["Calculation trace nodes", String(reportQualityAssessment.calculationIntegrity.traceNodeCount)], ["Calculation hash coverage", `${reportQualityAssessment.calculationIntegrity.hashCoveragePercentage}%`], ["Calculation root hash", ctx.calculation.calculationRootHash]] },
-                    { heading: "7. Operator responsibility statement", paragraphs: ["The operator/exporter remains responsible for the completeness, accuracy and lawful presentation of source data and evidence. This package preserves the declared basis and is designed to support, not replace, independent accredited verification."] },
+                    { heading: "7. Operator responsibility statement", paragraphs: ["The operator/exporter remains responsible for the completeness, accuracy and lawful presentation of source data and evidence. This package preserves the declared basis and is designed to support, not replace, independent accredited verifier review."] },
                 ],
             }),
             documentType: "OPERATOR_EMISSIONS_REPORT",
@@ -656,7 +656,7 @@ const COMPONENT_PRODUCERS = {
                     },
                     {
                         heading: "5. Important Disclaimer",
-                        paragraphs: ["This readiness summary is an internal tool to prepare for accredited verification and does not constitute a formal, accredited verification opinion under EU regulations."]
+                        paragraphs: ["This readiness summary is an internal tool to prepare for accredited verifier review and does not constitute a formal, accredited verifier's opinion under EU regulations."]
                     }
                 ]
             }),

@@ -37,6 +37,6 @@ describe("Dimensional Safety and Decimal Engine", () => {
     };
 
     const result = performDossierCalculations(validPayload as AuditReadyCase);
-    expect(result.totalEmbeddedEmissions).toBe("1.7555"); // (150.55 + 25) / 100 = 175.55 / 100 = 1.7555
+    expect(result.specificEmbeddedEmissions).toBe("1.7555"); // (150.55 + 25) / 100 = 175.55 / 100 = 1.7555
   });
 });

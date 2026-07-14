@@ -184,7 +184,7 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
         <section className="rounded-2xl border border-amber-300 bg-amber-50 p-6 text-sm text-amber-950">
           <h2 className="font-bold">Verification boundary</h2>
           <p className="mt-2 leading-relaxed">
-            This immutable release prepares installation, emissions and evidence data for independent verification. It is not an accredited verifier's opinion, customs approval, EU approval or acceptance guarantee. The O3CI field mapping in the package is not an official Registry submission file.
+            This immutable release prepares installation, emissions and evidence data for independent verification. It is not an accredited verifier&apos;s opinion, customs approval, EU approval or acceptance guarantee. The O3CI field mapping in the package is not an official Registry submission file.
           </p>
         </section>
       </div>

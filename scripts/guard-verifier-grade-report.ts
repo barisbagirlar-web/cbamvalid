@@ -78,7 +78,7 @@ requireText(packageBuilder, "Executive Verification Readiness Summary", "Executi
 requireText(packageBuilder, "Operator Emissions Report", "Operator emissions report is missing");
 requirePattern(
   packageBuilder,
-  /OPERATOR PREPARATION\s+—\s+VERIFIER COMPLETION REQUIRED[\s\S]{0,5000}?independent accredited verification/i,
+  /OPERATOR PREPARATION\s+—\s+VERIFIER COMPLETION REQUIRED[\s\S]{0,5000}?independent accredited verifier/i,
   "Operator report lacks an explicit accredited-verifier completion boundary"
 );
 requireText(packageBuilder, "Per-Good Embedded Emissions Schedule", "Dedicated per-good embedded emissions schedule is missing");
