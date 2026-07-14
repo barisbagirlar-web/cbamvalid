@@ -1,0 +1,56 @@
+name: Final Revenue Source Gate
+
+on:
+  pull_request:
+    branches:
+      - feat/exporter-verification-platform-v1
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: final-revenue-source-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-contract:
+    name: Release truth and package contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+
+      - name: Install locked application dependencies
+        run: npm ci
+
+      - name: Install locked Functions dependencies
+        run: npm --prefix functions ci --ignore-scripts --no-audit --no-fund
+
+      - name: Compile Firebase Functions
+        run: npm --prefix functions run build
+
+      - name: Enforce release truth contract
+        run: node scripts/guard-release-truth.mjs
+
+      - name: Verify report package and release-truth tests
+        run: npx vitest run tests/reports/verifier-package.test.ts tests/release/release-truth.test.ts
+
+      - name: Verify Preparation Pack tests
+        run: npx vitest run tests/commerce/preparation-pack.test.ts

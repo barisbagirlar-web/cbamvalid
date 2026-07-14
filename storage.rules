@@ -1,0 +1,39 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsCase(userId, caseId) {
+      return signedIn()
+        && request.auth.uid == userId
+        && firestore.get(/databases/(default)/documents/cbam_cases/$(caseId)).data.uid == request.auth.uid;
+    }
+
+    function allowedEvidenceContentType() {
+      return request.resource.contentType.matches(
+        'application/pdf|text/csv|application/vnd.ms-excel|application/vnd.openxmlformats-officedocument.spreadsheetml.sheet|image/png|image/jpeg|text/plain'
+      );
+    }
+
+    match /evidence/{userId}/{caseId}/{evidenceId}/{fileName} {
+      allow read: if ownsCase(userId, caseId);
+      allow create, update: if ownsCase(userId, caseId)
+        && request.resource.size > 0
+        && request.resource.size <= 20 * 1024 * 1024
+        && allowedEvidenceContentType();
+      allow delete: if ownsCase(userId, caseId);
+    }
+
+    match /reports/{userId}/{reportId}/{allPaths=**} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

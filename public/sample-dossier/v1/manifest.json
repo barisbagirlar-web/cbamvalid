@@ -1,0 +1,121 @@
+{
+  "version": "v1",
+  "title": "CBAMValid Sample Dossier",
+  "language": "en",
+  "pageCount": 16,
+  "canonicalSha256": "8bd533a30efa50a098394fd4a968ee3f325d8afea2a14424ae5b3bf92e79eecc",
+  "pages": [
+    {
+      "page": 1,
+      "src": "/sample-dossier/v1/pages/page-001.webp",
+      "width": 1190.5512,
+      "height": 1683.7796,
+      "sha256": "8bcc492b7ccfbf57459c8b57be5790884558b3a19043dfa0322b92186da661d0"
+    },
+    {
+      "page": 2,
+      "src": "/sample-dossier/v1/pages/page-002.webp",
+      "width": 1190.5512,
+      "height": 1683.7796,
+      "sha256": "b6e13c2d84ec804a68aa6599696d72dddf251f842db8fec3385d348bd38251d5"
+    },
+    {
+      "page": 3,
+      "src": "/sample-dossier/v1/pages/page-003.webp",
+      "width": 1190.5512,
+      "height": 1683.7796,
+      "sha256": "507219f002a0489602da063fcd6663baa6bfd20fd085686eff3be666a0b167b8"
+    },
+    {
+      "page": 4,
+      "src": "/sample-dossier/v1/pages/page-004.webp",
+      "width": 1190.5512,
+      "height": 1683.7796,
+      "sha256": "c22e5953c414e4dee6556a7d0e0a1f7e5f72f44ca645663fdd0b0f9493e5df76"
+    },
+    {
+      "page": 5,
+      "src": "/sample-dossier/v1/pages/page-005.webp",
+      "width": 1190.5512,
+      "height": 1683.7796,
+      "sha256": "021f02e87923b96157191fcecb60afd2189e4c1b10c097c45b22d54309cfbf0b"
+    },
+    {
+      "page": 6,
+      "src": "/sample-dossier/v1/pages/page-006.webp",
+      "width": 1190.5512,
+      "height": 1683.7796,
+      "sha256": "b13fdc83dfcc75471fafe30824a56f4e22b043ddfa0d04071c4738e0b2ea666c"
+    },
+    {
+      "page": 7,
+      "src": "/sample-dossier/v1/pages/page-007.webp",
+      "width": 1190.5512,
+      "height": 1683.7796,
+      "sha256": "3c246a5585f67aa5eae135aa68055f346c6910ffe14c3287c51fe2f794d7d1b8"
+    },
+    {
+      "page": 8,
+      "src": "/sample-dossier/v1/pages/page-008.webp",
+      "width": 1190.5512,
+      "height": 1683.7796,
+      "sha256": "87e860fdc372b4eeee3cd5148442f0ec4c21a2065465b8efc57a8614c895da49"
+    },
+    {
+      "page": 9,
+      "src": "/sample-dossier/v1/pages/page-009.webp",
+      "width": 1190.5512,
+      "height": 1683.7796,
+      "sha256": "b958f4e807c2466c3b296ec7b86d30849c739d2a18301eae50494f84784673a5"
+    },
+    {
+      "page": 10,
+      "src": "/sample-dossier/v1/pages/page-010.webp",
+      "width": 1190.5512,
+      "height": 1683.7796,
+      "sha256": "60b9f65780561c56b3a5c63e51d53206737ade54660089565dc29f7c2b7fe515"
+    },
+    {
+      "page": 11,
+      "src": "/sample-dossier/v1/pages/page-011.webp",
+      "width": 1190.5512,
+      "height": 1683.7796,
+      "sha256": "ca6097734e142ce9f5844c78ae22e696b87aee61861675b0e92f5f93ccdee7c6"
+    },
+    {
+      "page": 12,
+      "src": "/sample-dossier/v1/pages/page-012.webp",
+      "width": 1190.5512,
+      "height": 1683.7796,
+      "sha256": "8e01723d79eb9d19a0a0a29a3b57afafe96d5d3e89337f00823241639f1b4b5e"
+    },
+    {
+      "page": 13,
+      "src": "/sample-dossier/v1/pages/page-013.webp",
+      "width": 1190.5512,
+      "height": 1683.7796,
+      "sha256": "10391fd73f2e61f7233264f84825886c38ea5662812a978758b1014f6684ef3e"
+    },
+    {
+      "page": 14,
+      "src": "/sample-dossier/v1/pages/page-014.webp",
+      "width": 1190.5512,
+      "height": 1683.7796,
+      "sha256": "759957cb361fdc778d2efa49ae0ceabb770d382554153604f38526a3d7d1d6f6"
+    },
+    {
+      "page": 15,
+      "src": "/sample-dossier/v1/pages/page-015.webp",
+      "width": 1190.5512,
+      "height": 1683.7796,
+      "sha256": "4ffc90286ec2b91dcb60bf1c754d78513d3118f7bb202018ba4ee8a24f774d7b"
+    },
+    {
+      "page": 16,
+      "src": "/sample-dossier/v1/pages/page-016.webp",
+      "width": 1190.5512,
+      "height": 1683.7796,
+      "sha256": "484d95da763fe591f7204038e6af04b212d4d39c75f041e6353a86cc1dd17236"
+    }
+  ]
+}

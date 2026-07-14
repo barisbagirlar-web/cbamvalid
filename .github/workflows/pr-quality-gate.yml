@@ -1,0 +1,143 @@
+name: PR Quality Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+      - feat/exporter-verification-platform-v1
+      - fix/final-revenue-release-blockers-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Typecheck, tests and production build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_FIREBASE_API_KEY: "ci-placeholder-not-a-secret"
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "cbamvalid-ci.invalid"
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: "cbamvalid-ci"
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "cbamvalid-ci.appspot.com"
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+      NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:0000000000000000000000"
+      ADMIN_USE_ADC: "true"
+      GCLOUD_PROJECT: "cbamvalid-ci"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+
+      - name: Install locked application dependencies
+        run: npm ci
+
+      - name: Install locked Functions dependencies
+        run: npm --prefix functions ci --ignore-scripts --no-audit --no-fund
+
+      - name: Prepare evidence directory
+        run: mkdir -p artifacts/ci
+
+      - name: Verify workspace navigation contract
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/guard-workspace-navigation.mjs 2>&1 | tee artifacts/ci/navigation-contract.log
+
+      - name: Verify release truth contract
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/guard-release-truth.mjs 2>&1 | tee artifacts/ci/release-truth.log
+
+      - name: Verify verifier-grade report contract
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/guard-verifier-grade-report.mjs 2>&1 | tee artifacts/ci/verifier-grade-report.log
+
+      - name: Typecheck application
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee artifacts/ci/typecheck.log
+
+      - name: Compile Firebase Functions
+        shell: bash
+        run: |
+          set -o pipefail
+          npm --prefix functions run build 2>&1 | tee artifacts/ci/functions-build.log
+
+      - name: Lint
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run lint 2>&1 | tee artifacts/ci/lint.log
+
+      - name: Authentication tests
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:auth 2>&1 | tee artifacts/ci/test-auth.log
+
+      - name: Commerce tests
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:commerce 2>&1 | tee artifacts/ci/test-commerce.log
+
+      - name: CBAM engine tests
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:cbam-engine 2>&1 | tee artifacts/ci/test-cbam-engine.log
+
+      - name: Report tests
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:reports 2>&1 | tee artifacts/ci/test-reports.log
+
+      - name: Production application build
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee artifacts/ci/build.log
+
+      - name: Record evidence manifest
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "COMMIT_SHA=${GITHUB_SHA}"
+            echo "WORKFLOW_RUN_ID=${GITHUB_RUN_ID}"
+            echo "WORKFLOW_RUN_ATTEMPT=${GITHUB_RUN_ATTEMPT}"
+            echo "GENERATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            find artifacts/ci -type f -maxdepth 1 -print0 | sort -z | xargs -0 sha256sum
+          } > artifacts/ci/evidence-manifest.txt
+
+      - name: Upload quality evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-quality-evidence-${{ github.sha }}
+          path: artifacts/ci
+          if-no-files-found: error
+          retention-days: 30

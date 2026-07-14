@@ -1,0 +1,145 @@
+{
+  "caseId": "cbam-sample-001",
+  "status": "APPROVED",
+  "version": "1.0",
+  "dataClassification": "FICTIONAL_DEMONSTRATION_DATA",
+  "importer": {
+    "name": {
+      "value": "Fictional Demonstration Co.",
+      "sourceType": "REGULATORY",
+      "confidenceStatus": "HIGH_VERIFIED"
+    },
+    "eori": {
+      "value": "FICTIONAL_DEMONSTRATION_DATA",
+      "sourceType": "REGULATORY",
+      "confidenceStatus": "HIGH_VERIFIED"
+    },
+    "address": {
+      "value": "123 Demo St, Demonstration City, DE",
+      "sourceType": "REGULATORY",
+      "confidenceStatus": "HIGH_VERIFIED"
+    }
+  },
+  "reportingPeriod": {
+    "year": {
+      "value": 2026,
+      "sourceType": "REGULATORY",
+      "confidenceStatus": "HIGH_VERIFIED"
+    },
+    "quarter": {
+      "value": 1,
+      "sourceType": "REGULATORY",
+      "confidenceStatus": "HIGH_VERIFIED"
+    }
+  },
+  "goods": [
+    {
+      "cnCode": {
+        "value": "72085120",
+        "sourceType": "REGULATORY",
+        "confidenceStatus": "HIGH_VERIFIED"
+      },
+      "sector": "STEEL",
+      "productionVolume": {
+        "value": 15000,
+        "canonicalUnit": "t",
+        "sourceType": "PRIMARY",
+        "confidenceStatus": "HIGH_VERIFIED"
+      },
+      "shipmentRecords": {
+        "value": null,
+        "sourceType": "ESTIMATED",
+        "confidenceStatus": "LOW_ESTIMATE"
+      }
+    }
+  ],
+  "installation": {
+    "name": {
+      "value": "FICTIONAL_DEMONSTRATION_DATA",
+      "sourceType": "PRIMARY",
+      "confidenceStatus": "HIGH_VERIFIED"
+    },
+    "country": {
+      "value": "US",
+      "sourceType": "PRIMARY",
+      "confidenceStatus": "HIGH_VERIFIED"
+    },
+    "productionRoute": {
+      "value": "BOF",
+      "sourceType": "PRIMARY",
+      "confidenceStatus": "HIGH_VERIFIED"
+    }
+  },
+  "directEmissions": {
+    "value": 27750,
+    "canonicalUnit": "tCO2e",
+    "sourceType": "PRIMARY",
+    "confidenceStatus": "HIGH_VERIFIED"
+  },
+  "electricityConsumed": {
+    "value": 12000,
+    "canonicalUnit": "MWh",
+    "sourceType": "PRIMARY",
+    "confidenceStatus": "HIGH_VERIFIED"
+  },
+  "gridEmissionFactor": {
+    "value": 0.45,
+    "canonicalUnit": "tCO2e/MWh",
+    "sourceType": "DEFAULT",
+    "confidenceStatus": "DEFAULT_ASSIGNED"
+  },
+  "precursors": [
+    {
+      "name": {
+        "value": "Pig Iron",
+        "sourceType": "PRIMARY",
+        "confidenceStatus": "HIGH_VERIFIED"
+      },
+      "quantity": {
+        "value": 14000,
+        "canonicalUnit": "t",
+        "sourceType": "PRIMARY",
+        "confidenceStatus": "HIGH_VERIFIED"
+      },
+      "directEmissions": {
+        "value": 1200,
+        "canonicalUnit": "tCO2e",
+        "sourceType": "PRIMARY",
+        "confidenceStatus": "HIGH_VERIFIED"
+      },
+      "indirectEmissions": {
+        "value": 350,
+        "canonicalUnit": "tCO2e",
+        "sourceType": "PRIMARY",
+        "confidenceStatus": "HIGH_VERIFIED"
+      },
+      "countryOfOrigin": {
+        "value": "US",
+        "sourceType": "PRIMARY",
+        "confidenceStatus": "HIGH_VERIFIED"
+      }
+    }
+  ],
+  "carbonPriceRecords": [
+    {
+      "recordId": "cpr-demo-001",
+      "amountPaid": {
+        "value": 25.5,
+        "canonicalUnit": "EUR",
+        "sourceType": "PRIMARY",
+        "confidenceStatus": "HIGH_VERIFIED"
+      },
+      "emissionCoverage": {
+        "value": 25000,
+        "canonicalUnit": "tCO2e",
+        "sourceType": "PRIMARY",
+        "confidenceStatus": "HIGH_VERIFIED"
+      },
+      "evidenceReference": "invoice-001"
+    }
+  ],
+  "evidenceRegister": [],
+  "calculationTrace": [],
+  "gapAssessment": [],
+  "auditEvents": []
+}

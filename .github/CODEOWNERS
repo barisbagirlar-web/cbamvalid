@@ -1,0 +1,30 @@
+# CBAMValid ownership map
+# The sole repository owner reviews changes to release-critical surfaces.
+
+* @barisbagirlar-web
+
+# Authentication, authorization and Firebase runtime
+/app/api/auth/ @barisbagirlar-web
+/lib/auth/ @barisbagirlar-web
+/lib/firebase/ @barisbagirlar-web
+/firestore.rules @barisbagirlar-web
+/firebase.json @barisbagirlar-web
+/apphosting.yaml @barisbagirlar-web
+
+# Commerce and entitlement chain
+/app/api/checkout/ @barisbagirlar-web
+/app/api/webhooks/ @barisbagirlar-web
+/lib/commerce/ @barisbagirlar-web
+/functions/src/commerce/ @barisbagirlar-web
+
+# Calculation, evidence, reports and sealing
+/lib/cbam/ @barisbagirlar-web
+/functions/src/cbam/ @barisbagirlar-web
+/tests/cbam-engine/ @barisbagirlar-web
+/tests/reports/ @barisbagirlar-web
+
+# CI, security and release controls
+/.github/ @barisbagirlar-web
+/scripts/guard-* @barisbagirlar-web
+/package.json @barisbagirlar-web
+/package-lock.json @barisbagirlar-web
