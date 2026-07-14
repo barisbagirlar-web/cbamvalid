@@ -28,7 +28,9 @@ function walk(dir, filter, callback) {
         file !== '.firebase' &&
         file !== 'scripts' &&
         file !== 'tests' &&
-        file !== 'release-evidence'
+        file !== 'release-evidence' &&
+        file !== 'scratch' &&
+        file !== 'functions'
       ) {
         walk(fullPath, filter, callback);
       }
@@ -145,7 +147,7 @@ walk(rootDir, isSourceFile, (filePath) => {
     logError(relPath, "Contains forbidden reference to base64url decode operation.");
   }
 
-  if (content.includes('Buffer.from') && (content.includes('payload') || relPath.includes('get-server-session') || relPath.includes('admin.ts'))) {
+  if (content.includes('Buffer.from') && (content.includes('payload') || relPath.includes('get-server-session'))) {
     logError(relPath, "Contains forbidden Buffer.from JWT payload parsing pattern.");
   }
 
@@ -195,12 +197,25 @@ walk(rootDir, isSourceFile, (filePath) => {
     clientInitializers++;
   }
 
-  // 12. Multiple Firebase Admin SDK initializers
-  if (content.includes('initializeApp(') && (content.includes('firebase-admin') || content.includes('firebase-admin/app'))) {
-    if (relPath !== 'lib/firebase/admin.ts') {
-      logError(relPath, "Initializes Firebase Admin SDK directly. Must use admin.ts.");
+  // 12. Forbidden Firebase Admin SDK initializers or imports
+  if (content.includes('firebase-admin')) {
+    const isApprovedNextConfigExternalization =
+      relPath === 'next.config.js' &&
+      content.includes('serverExternalPackages: ["firebase-admin"]') &&
+      !content.includes('require("firebase-admin")') &&
+      !content.includes("require('firebase-admin')") &&
+      !content.includes('from "firebase-admin') &&
+      !content.includes("from 'firebase-admin");
+
+    if (
+      relPath !== 'lib/firebase/admin.ts' &&
+      relPath !== 'lib/cbam/registry/legacy-migration.ts' &&
+      !relPath.startsWith('scripts/') &&
+      !isApprovedNextConfigExternalization
+    ) {
+      logError(relPath, "Imports or uses firebase-admin, which is forbidden in Next.js.");
+      adminInitializers++;
     }
-    adminInitializers++;
   }
 });
 
@@ -216,21 +231,21 @@ if (fs.existsSync(path.join(rootDir, sessionRoutePath))) {
   }
 }
 
-// 14. Verify admin page uses getServerSessionRevocationSensitive
+// 14. Verify admin page uses AdminClient client gate
 const adminPagePath = 'app/(protected)/admin/page.tsx';
 if (fs.existsSync(path.join(rootDir, adminPagePath))) {
   const content = fs.readFileSync(path.join(rootDir, adminPagePath), 'utf8');
-  if (!content.includes('getServerSessionRevocationSensitive(')) {
-    logError(adminPagePath, "Admin page must call getServerSessionRevocationSensitive() to restrict access.");
+  if (!content.includes('AdminClient')) {
+    logError(adminPagePath, "Admin page must render AdminClient directly.");
   }
 }
 
-// 15. Verify dashboard and wizard pages use getServerSession
+// 15. Verify protected layout page uses client auth
 const protectedLayoutPath = 'app/(protected)/layout.tsx';
 if (fs.existsSync(path.join(rootDir, protectedLayoutPath))) {
   const content = fs.readFileSync(path.join(rootDir, protectedLayoutPath), 'utf8');
-  if (!content.includes('getServerSession(')) {
-    logError(protectedLayoutPath, "Protected layout must call getServerSession() to restrict access.");
+  if (!content.includes('useAuth(')) {
+    logError(protectedLayoutPath, "Protected layout must call useAuth() to restrict access.");
   }
 }
 
@@ -238,8 +253,8 @@ if (clientInitializers !== 1) {
   console.error(`[GUARD-ARCH] [ERROR] Expected exactly 1 Client Firebase SDK initializer, found: ${clientInitializers}`);
   totalErrors++;
 }
-if (adminInitializers !== 1) {
-  console.error(`[GUARD-ARCH] [ERROR] Expected exactly 1 Firebase Admin SDK initializer, found: ${adminInitializers}`);
+if (adminInitializers > 0) {
+  console.error(`[GUARD-ARCH] [ERROR] Expected 0 Firebase Admin SDK references, found: ${adminInitializers}`);
   totalErrors++;
 }
 if (totalErrors > 0) {

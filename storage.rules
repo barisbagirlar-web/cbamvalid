@@ -1,0 +1,16 @@
+rules_version = '2';
+
+// Craft rules based on data in your Firestore database
+// allow write: if firestore.get(
+//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Only Admin SDK (backend) can write files
+    allow write: if false; 
+
+    // Users can read dossiers matching their uid folder
+    match /reports/{userId}/{reportId}/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

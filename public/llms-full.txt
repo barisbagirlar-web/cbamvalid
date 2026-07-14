@@ -1,0 +1,48 @@
+# CBAMValid Full Content Catalog for LLMs
+
+## Homepage
+**Canonical URL:** https://cbamvalid.com/
+**Title:** CBAMValid — CBAM Evidence Validation and Report Preparation
+**Audience:** EU importers, third-country operators, declarants.
+**Problem:** Incomplete data, calculation errors, uncertainty regarding scope and formula.
+**Outcome:** Generates validated evidence packages and reports.
+**Methodology:** Applies deterministic algorithms against Implementing Regulation (EU) 2023/1773.
+**Official Source:** European Commission Implementing Regulation (EU) 2023/1773.
+**Limitations:** Output relies entirely on user-provided data truthfulness. Not official EU software.
+
+## Methodology
+**Canonical URL:** https://cbamvalid.com/methodology
+**Title:** Methodology & Regulatory Sources | CBAMValid
+**Audience:** Technical preparers, verifiers.
+**Problem:** Understanding exactly how emissions are calculated.
+**Outcome:** Transparent documentation of our internal logic and rounding handling.
+**Methodology:** Deterministic calculation of direct/indirect emissions, tracking system boundaries per Annex IV.
+**Official Source:** DG TAXUD Transitional Guidance.
+**Limitations:** Transitional phase logic only (until end of 2025).
+
+## CN-Code Hub
+**Canonical URL:** https://cbamvalid.com/cn-code
+**Title:** CBAM CN-Code Hub | Validate Product Scope
+**Audience:** Importers.
+**Problem:** Not knowing if a product needs to be reported.
+**Outcome:** Accurate matching of products to Annex I scope limits.
+**Methodology:** Cross-referencing user CN code against Annex I of the CBAM regulation.
+**Official Source:** Annex I of Regulation (EU) 2023/956.
+**Limitations:** Certain codes require specific condition checks (e.g. polymers).
+
+## About
+**Canonical URL:** https://cbamvalid.com/about
+**Title:** About Us | CBAMValid
+**Audience:** All users.
+**Problem:** Need to verify the independence of the service provider.
+**Outcome:** Clear understanding of corporate identity and mission.
+**Methodology:** Transparency in terms of operation.
+**Official Source:** N/A.
+**Limitations:** None.
+
+## Legal Policies
+- **Privacy:** https://cbamvalid.com/privacy
+- **Terms:** https://cbamvalid.com/terms
+- **Refunds:** https://cbamvalid.com/refund-policy
+
+*(Private user reports and data are strictly excluded from AI indexing.)*

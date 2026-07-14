@@ -3,34 +3,70 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, signOut, onAuthStateChanged } from "firebase/auth";
 import { firebaseAuth as auth } from "@/lib/firebase/client";
-import { CSRF_HEADER_NAME } from "@/lib/auth/session-constants";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  error: Error | null;
+  claims: Record<string, any> | null;
   signOutUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  error: null,
+  claims: null,
   signOutUser: async () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [claims, setClaims] = useState<Record<string, any> | null>(null);
 
   useEffect(() => {
     // Set up the single unified auth state listener
     const unsubscribe = onAuthStateChanged(
       auth,
-      (currentUser) => {
+      async (currentUser) => {
+        if (currentUser) {
+          try {
+            const tokenResult = await currentUser.getIdTokenResult();
+            setClaims(tokenResult.claims);
+            
+            // Only exchange token if it was authenticated recently (within 5 minutes)
+            // and has not already been established via finalizeServerSession.
+            const authTimeMs = Date.parse(tokenResult.authTime);
+            const nowMs = Date.now();
+            const isFresh = nowMs - authTimeMs < 5 * 60 * 1000;
+            const alreadyEstablished = typeof window !== "undefined" && (window as any).__sessionEstablished;
+            
+            if (isFresh && !alreadyEstablished) {
+              const token = await currentUser.getIdToken(true);
+              await fetch("/api/auth/session", {
+                method: "POST",
+                headers: {
+                  "content-type": "application/json",
+                },
+                body: JSON.stringify({ idToken: token }),
+              });
+            }
+          } catch (e) {
+            console.error("Failed to establish auth session:", e);
+            setClaims(null);
+          }
+        } else {
+          setClaims(null);
+        }
         setUser(currentUser);
+        setError(null);
         setLoading(false);
       },
-      (error) => {
-        console.error("Auth state listener error:", error);
+      (err) => {
+        console.error("Auth state listener error:", err);
+        setError(err);
         setLoading(false);
       }
     );
@@ -40,39 +76,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOutUser = async () => {
     try {
-      console.log("signOutUser: fetching CSRF...");
-      const csrfRes = await fetch("/api/auth/csrf", {
-        method: "GET",
-        credentials: "same-origin",
-      });
-      
-      let csrfToken = "";
-      if (csrfRes.ok) {
-        const payload = await csrfRes.json();
-        csrfToken = payload.csrfToken;
-        console.log("signOutUser: CSRF token fetched successfully");
-      } else {
-        console.error("signOutUser: CSRF token fetch failed with status:", csrfRes.status);
+      if (typeof window !== "undefined") {
+        delete (window as any).__sessionEstablished;
       }
-
-      console.log("signOutUser: sending DELETE session request...");
-      const deleteRes = await fetch("/api/auth/session", {
-        method: "DELETE",
-        headers: csrfToken ? { [CSRF_HEADER_NAME]: csrfToken } : {},
-        credentials: "same-origin",
-      });
-      console.log("signOutUser: DELETE session response status:", deleteRes.status);
-    } catch (err) {
-      console.error("Server session deletion error:", err);
-    } finally {
-      // 3. Clear client auth and redirect
+      await fetch("/api/auth/session", { method: "DELETE" });
       await signOut(auth);
+    } catch (err: any) {
+      console.error("Firebase signOut error:", err);
+    } finally {
       window.location.replace("/login");
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signOutUser }}>
+    <AuthContext.Provider value={{ user, loading, error, claims, signOutUser }}>
       {children}
     </AuthContext.Provider>
   );

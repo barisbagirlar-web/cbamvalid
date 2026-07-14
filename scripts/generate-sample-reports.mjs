@@ -2,8 +2,8 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { orchestrateCalculation } from "../lib/cbam/engine/calculation-orchestrator.ts";
-import { buildPdfDossier } from "../lib/cbam/report/pdf-builder.ts";
-import { buildXml } from "../lib/cbam/report/xml-builder.ts";
+import { buildPdfDossier } from "../functions/src/cbam/report/pdf-builder.ts";
+import { buildXml } from "../functions/src/cbam/report/xml-builder.ts";
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 const rootDir = path.resolve(__dirname, "..");
@@ -82,4 +82,28 @@ fs.writeFileSync(
 const xmlString = buildXml(fixture, calc, docHash);
 fs.writeFileSync(path.join(publicSampleDir, "cbam-exporter-final-evidence-report-sample.xml"), xmlString);
 
-console.log("[SAMPLE-GEN] Public sample reports successfully generated and verified.");
+// 7. Generate & Save Manifest
+const manifestData = {
+  name: "cbam-exporter-final-evidence-report-sample",
+  version: "1.0",
+  files: [
+    {
+      name: "cbam-exporter-final-evidence-report-sample.pdf",
+      sha256: crypto.createHash("sha256").update(pdfBuffer).digest("hex")
+    },
+    {
+      name: "cbam-exporter-final-evidence-report-sample.json",
+      sha256: crypto.createHash("sha256").update(fs.readFileSync(path.join(publicSampleDir, "cbam-exporter-final-evidence-report-sample.json"))).digest("hex")
+    },
+    {
+      name: "cbam-exporter-final-evidence-report-sample.xml",
+      sha256: crypto.createHash("sha256").update(xmlString).digest("hex")
+    }
+  ]
+};
+fs.writeFileSync(
+  path.join(publicSampleDir, "cbam-exporter-final-evidence-report-sample-manifest.json"),
+  JSON.stringify(manifestData, null, 2)
+);
+
+console.log("[SAMPLE-GEN] Public sample reports and manifest successfully generated and verified.");

@@ -3,8 +3,10 @@
 ```text
 CBAMVALID_AUTH_REBUILD=PASS
 PRODUCTION_LOGIN_READY=YES
-RELEASE_CLOSE_ALLOWED=YES
-PRODUCTION_SALES_READY=YES
+RELEASE_CLOSE_ALLOWED=NO
+PRODUCTION_SALES_READY=NO
+AUTH_SCOPE_READY=YES
+CBAM_PRODUCT_SCOPE_READY=NO
 
 ARTIFACTS:
 release_report_path=/Users/macair1/projects/cbam-paddle-app/release_report.md
@@ -89,5 +91,10 @@ deployed_at=2026-07-10T17:25:00Z
 deployment_timezone=UTC
 
 FINAL_BLOCKERS:
-- NONE
+- Generic engines instead of 6 independent sector engines (Phase 6)
+- Manifest signature KMS mocked (Phase 8)
+- Missing ZIP 27 components (Phase 9)
+- XLSX workbook format missing (Phase 10)
+- Tenant-authorized verifier workspace missing (Phase 11)
+- Playwright E2E and unit test coverage gaps (Phases 12-14)
 ```

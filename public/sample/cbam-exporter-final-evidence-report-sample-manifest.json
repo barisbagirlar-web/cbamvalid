@@ -4,15 +4,15 @@
   "files": [
     {
       "name": "cbam-exporter-final-evidence-report-sample.pdf",
-      "sha256": "02b8dc342c5d33386eca629d90eacaa06747d7ed175282e5436e1d667ad5b734"
+      "sha256": "3295778c58c9bd58627b430653a63a33995ecbfc94d5190b7128a58c5b021b83"
     },
     {
       "name": "cbam-exporter-final-evidence-report-sample.json",
-      "sha256": "a12b1942c4b30648afb115ce0996b60dd6d1fc1bfa5fe74e2881287a1c1ba3e5"
+      "sha256": "2fd701dfd8550344c7872adadadab050a217ef401ec7b81d9287723f7049e2e4"
     },
     {
       "name": "cbam-exporter-final-evidence-report-sample.xml",
-      "sha256": "4f8270f0a3d04bd9c291c299ae283ae5e7809bfd6afc5dd5a47f2434ca015535"
+      "sha256": "cb6905480961d908ae39955c35f3530eb3405e39ad72da3791325ebe38875a42"
     }
   ]
 }
