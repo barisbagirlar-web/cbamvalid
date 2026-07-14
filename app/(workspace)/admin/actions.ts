@@ -67,7 +67,11 @@ export async function grantCredits(uid: string, amount: number, reason: string) 
   const transactionId = `admin_grant_${Date.now()}`;
   
   await adminDb.runTransaction(async (transaction) => {
-    // 1. Add ledger entry
+    // 1. Fetch current credit summary (Read)
+    const summaryRef = adminDb.doc(`users/${uid}/creditSummary/current`);
+    const summarySnap = await transaction.get(summaryRef);
+
+    // 2. Add ledger entry (Write)
     const ledgerRef = adminDb.collection("users").doc(uid).collection("creditLedger").doc(transactionId);
     transaction.set(ledgerRef, {
       type: "ADMIN_GRANT",
@@ -77,10 +81,7 @@ export async function grantCredits(uid: string, amount: number, reason: string) 
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // 2. Update credit summary
-    const summaryRef = adminDb.doc(`users/${uid}/creditSummary/current`);
-    const summarySnap = await transaction.get(summaryRef);
-    
+    // 3. Update credit summary (Write)
     if (!summarySnap.exists) {
       transaction.set(summaryRef, { availableCredits: amount, updatedAt: FieldValue.serverTimestamp() });
     } else {
