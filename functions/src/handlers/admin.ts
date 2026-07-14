@@ -13,7 +13,7 @@ export const listAllUsers = createCallable({
   schema: z.object({
     limit: z.number().max(500).default(100),
     pageToken: z.string().optional()
-  }).optional()
+  }).nullish()
 }, async (data, { auth }) => {
   requireAdmin(auth);
 
@@ -45,7 +45,7 @@ export const listAllUsers = createCallable({
 export const listAllTransactions = createCallable({
   schema: z.object({
     limit: z.number().max(500).default(100)
-  }).optional()
+  }).nullish()
 }, async (data, { auth }) => {
   requireAdmin(auth);
 

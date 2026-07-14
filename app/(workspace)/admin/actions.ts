@@ -68,7 +68,7 @@ export async function grantCredits(uid: string, amount: number, reason: string) 
   
   await adminDb.runTransaction(async (transaction) => {
     // 1. Add ledger entry
-    const ledgerRef = adminDb.collection("users").doc(uid).collection("ledger").doc(transactionId);
+    const ledgerRef = adminDb.collection("users").doc(uid).collection("creditLedger").doc(transactionId);
     transaction.set(ledgerRef, {
       type: "ADMIN_GRANT",
       amount,
@@ -105,12 +105,12 @@ export async function reverseCreditGrant(uid: string, amount: number, originalTr
 
   await adminDb.runTransaction(async (transaction) => {
     // 1. Verify original transaction exists
-    const origRef = adminDb.doc(`users/${uid}/ledger/${originalTransactionId}`);
+    const origRef = adminDb.doc(`users/${uid}/creditLedger/${originalTransactionId}`);
     const origSnap = await transaction.get(origRef);
     if (!origSnap.exists) throw new Error("Original transaction not found in ledger");
 
     // 2. Write reversal ledger entry
-    const revRef = adminDb.collection("users").doc(uid).collection("ledger").doc(reversalId);
+    const revRef = adminDb.collection("users").doc(uid).collection("creditLedger").doc(reversalId);
     transaction.set(revRef, {
       type: "ADMIN_REVERSAL",
       amount: -amount,

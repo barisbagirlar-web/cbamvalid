@@ -52,7 +52,7 @@ export const updateOwnProfile = createCallable({
 export const listCreditLedger = createCallable({
   schema: z.object({
     limit: z.number().max(100).default(50)
-  }).optional()
+  }).nullish()
 }, async (data, { auth }) => {
   const limitCount = data?.limit || 50;
   const snapshot = await adminDb.collection("users").doc(auth.uid)
@@ -67,7 +67,7 @@ export const listCreditLedger = createCallable({
 export const listPurchaseHistory = createCallable({
   schema: z.object({
     limit: z.number().max(100).default(50)
-  }).optional()
+  }).nullish()
 }, async (data, { auth }) => {
   const limitCount = data?.limit || 50;
   const snapshot = await adminDb.collection("paddle_events")

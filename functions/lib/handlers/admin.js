@@ -14,7 +14,7 @@ exports.listAllUsers = (0, wrapper_1.createCallable)({
     schema: zod_1.z.object({
         limit: zod_1.z.number().max(500).default(100),
         pageToken: zod_1.z.string().optional()
-    }).optional()
+    }).nullish()
 }, async (data, { auth }) => {
     requireAdmin(auth);
     let query = firebase_admin_1.adminDb.collection("users").orderBy("email").limit((data === null || data === void 0 ? void 0 : data.limit) || 100);
@@ -40,7 +40,7 @@ exports.listAllUsers = (0, wrapper_1.createCallable)({
 exports.listAllTransactions = (0, wrapper_1.createCallable)({
     schema: zod_1.z.object({
         limit: zod_1.z.number().max(500).default(100)
-    }).optional()
+    }).nullish()
 }, async (data, { auth }) => {
     requireAdmin(auth);
     const snapshot = await firebase_admin_1.adminDb.collection("paddle_events")

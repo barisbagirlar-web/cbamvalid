@@ -51,7 +51,7 @@ exports.updateOwnProfile = (0, wrapper_1.createCallable)({
 exports.listCreditLedger = (0, wrapper_1.createCallable)({
     schema: zod_1.z.object({
         limit: zod_1.z.number().max(100).default(50)
-    }).optional()
+    }).nullish()
 }, async (data, { auth }) => {
     const limitCount = (data === null || data === void 0 ? void 0 : data.limit) || 50;
     const snapshot = await firebase_admin_1.adminDb.collection("users").doc(auth.uid)
@@ -64,7 +64,7 @@ exports.listCreditLedger = (0, wrapper_1.createCallable)({
 exports.listPurchaseHistory = (0, wrapper_1.createCallable)({
     schema: zod_1.z.object({
         limit: zod_1.z.number().max(100).default(50)
-    }).optional()
+    }).nullish()
 }, async (data, { auth }) => {
     const limitCount = (data === null || data === void 0 ? void 0 : data.limit) || 50;
     const snapshot = await firebase_admin_1.adminDb.collection("paddle_events")
