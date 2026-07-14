@@ -339,7 +339,7 @@ export async function buildVerifierPreparationPackage(params: {
   const goodsTable = {
     headers: ["CN code", "Sector", "Production t", "Allocation", "Embedded tCO2e", "Intensity tCO2e/t"],
     widths: [22, 30, 30, 24, 35, 37],
-    rows: calculation.perGoodResults.map((result) => [result.cnCode, result.sector, result.productionVolumeTonnes, result.allocationShare, result.allocatedEmbeddedEmissions, result.specificEmbeddedEmissions]),
+    rows: calculation.perGoodResults.map((result) => [result.cnCode, result.sector, result.productionVolume, result.allocationShare, result.allocatedEmbeddedEmissions, result.specificEmbeddedEmissions]),
   };
 
   const evidenceRows = caseData.evidenceRegister.map((evidence) => [

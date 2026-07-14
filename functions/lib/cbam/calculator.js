@@ -1,151 +1,342 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ALLOCATION_TOLERANCE = exports.CALCULATION_SOURCE = exports.CALCULATION_ENGINE_VERSION = exports.CALCULATION_RULESET = void 0;
 exports.performDossierCalculations = performDossierCalculations;
+const crypto_1 = __importDefault(require("crypto"));
 const decimal_js_1 = require("decimal.js");
-// Set strict precision rules for CBAM
-decimal_js_1.Decimal.set({ precision: 20, rounding: decimal_js_1.Decimal.ROUND_HALF_UP });
-function hashObject(obj) {
-    // Mock cryptographic hash for client-side trace building
-    // In production, this would use WebCrypto or crypto module
-    return "hash_" + Math.random().toString(36).substring(2, 10);
+decimal_js_1.Decimal.set({ precision: 34, rounding: decimal_js_1.Decimal.ROUND_HALF_UP });
+exports.CALCULATION_RULESET = "EU-CBAM-DEFINITIVE-2026";
+exports.CALCULATION_ENGINE_VERSION = "3.0.0";
+exports.CALCULATION_SOURCE = "Regulation (EU) 2023/956, Annex IV; active definitive-period implementing rules";
+exports.ALLOCATION_TOLERANCE = new decimal_js_1.Decimal("0.000001");
+function canonicalize(value) {
+    if (value === null || typeof value === "boolean" || typeof value === "number" || typeof value === "string") {
+        return value;
+    }
+    if (Array.isArray(value))
+        return value.map(canonicalize);
+    if (typeof value === "object") {
+        return Object.keys(value)
+            .sort()
+            .reduce((result, key) => {
+            result[key] = canonicalize(value[key]);
+            return result;
+        }, {});
+    }
+    return String(value);
+}
+function hashObject(value) {
+    return crypto_1.default.createHash("sha256").update(JSON.stringify(canonicalize(value))).digest("hex");
+}
+function calculationId(formulaId, inputs) {
+    return `calc_${hashObject({ formulaId, inputs, ruleset: exports.CALCULATION_RULESET }).slice(0, 32)}`;
+}
+function decimalRequired(value, field) {
+    if (value === null || value === undefined || value === "") {
+        throw new Error(`CALCULATION_INPUT_REQUIRED:${field}`);
+    }
+    try {
+        const parsed = new decimal_js_1.Decimal(value);
+        if (!parsed.isFinite())
+            throw new Error("not finite");
+        return parsed;
+    }
+    catch (_a) {
+        throw new Error(`CALCULATION_INPUT_INVALID:${field}`);
+    }
+}
+function decimalOptional(value, field, fallback = "0") {
+    if (value === null || value === undefined || value === "")
+        return new decimal_js_1.Decimal(fallback);
+    return decimalRequired(value, field);
+}
+function unitOf(datum, fallback) {
+    return datum.canonicalUnit || datum.unit || datum.rawUnit || fallback;
+}
+function requireUnit(datum, field, accepted, fallback) {
+    const unit = unitOf(datum, fallback);
+    if (!accepted.includes(unit))
+        throw new Error(`CALCULATION_UNIT_UNSUPPORTED:${field}:${unit}`);
+    return unit;
+}
+function tonnes(value, datum, field) {
+    const unit = requireUnit(datum, field, ["t", "kg", "metric_tonne"], "t");
+    if (unit === "kg") {
+        return { value: value.dividedBy(1000), conversion: { fromUnit: "kg", toUnit: "t", divisor: "1000" } };
+    }
+    return { value, conversion: unit === "metric_tonne" ? { fromUnit: "metric_tonne", toUnit: "t", factor: "1" } : undefined };
+}
+function traceNode(params) {
+    const normalizedInputs = canonicalize(params.inputs);
+    const payload = {
+        formulaId: params.formulaId,
+        formulaVersion: exports.CALCULATION_RULESET,
+        officialSource: exports.CALCULATION_SOURCE,
+        sourceVersion: "definitive period",
+        effectiveDate: "2026-01-01",
+        inputs: normalizedInputs,
+        conversions: params.conversions,
+        intermediateCalculations: params.intermediateCalculations,
+        assumptions: params.assumptions || [],
+        warnings: params.warnings || [],
+        outputValue: params.outputValue.toString(),
+        outputUnit: params.outputUnit,
+        roundingApplied: params.rounding,
+    };
+    return {
+        calculationId: calculationId(params.formulaId, normalizedInputs),
+        formulaId: params.formulaId,
+        formulaVersion: exports.CALCULATION_RULESET,
+        officialSource: exports.CALCULATION_SOURCE,
+        sourceVersion: "definitive period",
+        effectiveDate: "2026-01-01",
+        inputs: normalizedInputs,
+        conversions: params.conversions,
+        intermediateCalculations: params.intermediateCalculations,
+        roundingApplied: params.rounding,
+        assumptions: params.assumptions || [],
+        warnings: params.warnings || [],
+        outputValue: params.outputValue.toString(),
+        outputUnit: params.outputUnit,
+        calculationHash: hashObject(payload),
+    };
+}
+function resolveAllocationShares(caseData) {
+    if (caseData.goods.length === 0)
+        throw new Error("CALCULATION_GOODS_REQUIRED");
+    if (caseData.goods.length === 1)
+        return [new decimal_js_1.Decimal(1)];
+    const shares = caseData.goods.map((good, index) => {
+        var _a;
+        const share = decimalRequired((_a = good.allocationShare) === null || _a === void 0 ? void 0 : _a.value, `goods.${index}.allocationShare`);
+        requireUnit(good.allocationShare || { value: share.toString(), sourceType: "ESTIMATED", confidenceStatus: "LOW_ESTIMATE" }, `goods.${index}.allocationShare`, ["fraction"], "fraction");
+        if (share.lte(0) || share.gt(1)) {
+            throw new Error(`CALCULATION_ALLOCATION_SHARE_OUT_OF_RANGE:goods.${index}.allocationShare`);
+        }
+        return share;
+    });
+    const total = shares.reduce((sum, share) => sum.plus(share), new decimal_js_1.Decimal(0));
+    if (total.minus(1).abs().gt(exports.ALLOCATION_TOLERANCE)) {
+        throw new Error(`CALCULATION_ALLOCATION_NOT_RECONCILED:${total.toString()}`);
+    }
+    return shares;
 }
 function performDossierCalculations(caseData) {
+    const directEmissions = decimalRequired(caseData.directEmissions.value, "directEmissions");
+    const electricityConsumed = decimalRequired(caseData.electricityConsumed.value, "electricityConsumed");
+    const gridFactor = decimalRequired(caseData.gridEmissionFactor.value, "gridEmissionFactor");
+    requireUnit(caseData.directEmissions, "directEmissions", ["tCO2e"], "tCO2e");
+    requireUnit(caseData.electricityConsumed, "electricityConsumed", ["MWh"], "MWh");
+    requireUnit(caseData.gridEmissionFactor, "gridEmissionFactor", ["tCO2e/MWh"], "tCO2e/MWh");
+    if (directEmissions.isNegative() || electricityConsumed.isNegative() || gridFactor.isNegative()) {
+        throw new Error("CALCULATION_NEGATIVE_INPUT");
+    }
+    const productionRecords = caseData.goods.map((good, index) => {
+        const raw = decimalRequired(good.productionVolume.value, `goods.${index}.productionVolume`);
+        if (raw.lte(0))
+            throw new Error(`CALCULATION_PRODUCTION_VOLUME_REQUIRED:goods.${index}`);
+        const normalized = tonnes(raw, good.productionVolume, `goods.${index}.productionVolume`);
+        return { good, normalized: normalized.value, conversion: normalized.conversion };
+    });
+    const productionVolume = productionRecords.reduce((total, record) => total.plus(record.normalized), new decimal_js_1.Decimal(0));
+    if (productionVolume.lte(0))
+        throw new Error("CALCULATION_PRODUCTION_VOLUME_REQUIRED");
     const trace = [];
-    const getDec = (val) => {
-        if (val === null || val === undefined)
-            return new decimal_js_1.Decimal(0);
-        try {
-            return new decimal_js_1.Decimal(val);
-        }
-        catch (_a) {
-            return new decimal_js_1.Decimal(0);
-        }
-    };
-    const directEmissions = getDec(caseData.directEmissions.value);
-    const electricityConsumed = getDec(caseData.electricityConsumed.value);
-    const gridFactor = getDec(caseData.gridEmissionFactor.value);
-    let productionVolume = new decimal_js_1.Decimal(0);
-    for (const good of caseData.goods) {
-        productionVolume = productionVolume.plus(getDec(good.productionVolume.value));
-    }
-    // 1. Indirect Emissions Calculation
     const indirectEmissions = electricityConsumed.times(gridFactor);
-    trace.push({
-        calculationId: crypto.randomUUID(),
-        formulaId: "EU_CBAM_INDIRECT_01",
-        formulaVersion: "2023/1773 v1.0",
-        officialSource: "Implementing Regulation (EU) 2023/1773",
-        sourceVersion: "1.0",
-        effectiveDate: "2023-10-01",
-        inputs: { electricityConsumed: electricityConsumed.toString(), gridFactor: gridFactor.toString() },
-        assumptions: ["Grid factor represents regional average if actual PPA not verified"],
-        warnings: [],
-        outputValue: indirectEmissions.toNumber(),
-        outputUnit: "tCO2e",
-        calculationHash: hashObject({ electricityConsumed: electricityConsumed.toString(), gridFactor: gridFactor.toString() })
-    });
-    // 2. Precursor Emissions
-    let precursorDirectTotal = new decimal_js_1.Decimal(0);
-    let precursorIndirectTotal = new decimal_js_1.Decimal(0);
-    if (caseData.precursors.length > 0) {
-        for (const prec of caseData.precursors) {
-            precursorDirectTotal = precursorDirectTotal.plus(getDec(prec.directEmissions.value));
-            precursorIndirectTotal = precursorIndirectTotal.plus(getDec(prec.indirectEmissions.value));
-        }
-        trace.push({
-            calculationId: crypto.randomUUID(),
-            formulaId: "EU_CBAM_PRECURSOR_SUM",
-            formulaVersion: "2023/1773 v1.0",
-            officialSource: "Implementing Regulation (EU) 2023/1773",
-            sourceVersion: "1.0",
-            effectiveDate: "2023-10-01",
-            inputs: { count: caseData.precursors.length },
-            assumptions: [],
-            warnings: [],
-            outputValue: precursorDirectTotal.plus(precursorIndirectTotal).toNumber(),
-            outputUnit: "tCO2e",
-            calculationHash: hashObject({ precursorDirectTotal: precursorDirectTotal.toString(), precursorIndirectTotal: precursorIndirectTotal.toString() })
-        });
-    }
-    // 3. Total Attributed Emissions
-    const totalDirect = directEmissions.plus(precursorDirectTotal);
-    const totalIndirect = indirectEmissions.plus(precursorIndirectTotal);
-    const totalEmissions = totalDirect.plus(totalIndirect);
-    trace.push({
-        calculationId: crypto.randomUUID(),
-        formulaId: "EU_CBAM_TOTAL_ATTRIBUTED",
-        formulaVersion: "2023/1773 v1.0",
-        officialSource: "Implementing Regulation (EU) 2023/1773",
-        sourceVersion: "1.0",
-        effectiveDate: "2023-10-01",
+    trace.push(traceNode({
+        formulaId: "CBAM_INDIRECT_EMISSIONS",
         inputs: {
-            directEmissions: directEmissions.toString(),
-            indirectEmissions: indirectEmissions.toString(),
-            precursorDirectTotal: precursorDirectTotal.toString(),
-            precursorIndirectTotal: precursorIndirectTotal.toString()
+            electricityConsumed: electricityConsumed.toString(),
+            electricityUnit: "MWh",
+            gridEmissionFactor: gridFactor.toString(),
+            gridFactorUnit: "tCO2e/MWh",
         },
-        assumptions: [],
-        warnings: [],
-        outputValue: totalEmissions.toNumber(),
+        outputValue: indirectEmissions,
         outputUnit: "tCO2e",
-        calculationHash: hashObject({ totalDirect: totalDirect.toString(), totalIndirect: totalIndirect.toString() })
-    });
-    // 4. Specific Embedded Emissions
-    let specificEmissions = new decimal_js_1.Decimal(0);
-    if (productionVolume.greaterThan(0)) {
-        specificEmissions = totalEmissions.dividedBy(productionVolume);
-        trace.push({
-            calculationId: crypto.randomUUID(),
-            formulaId: "EU_CBAM_SPECIFIC_EMISSIONS",
-            formulaVersion: "2023/1773 v1.0",
-            officialSource: "Implementing Regulation (EU) 2023/1773",
-            sourceVersion: "1.0",
-            effectiveDate: "2023-10-01",
-            inputs: { totalEmissions: totalEmissions.toString(), productionVolume: productionVolume.toString() },
-            assumptions: [],
-            warnings: productionVolume.lessThan(1) ? ["Production volume is very low, specific emissions may be distorted"] : [],
-            outputValue: specificEmissions.toDecimalPlaces(4).toNumber(),
-            outputUnit: "tCO2e/tonne",
-            calculationHash: hashObject({ totalEmissions: totalEmissions.toString(), productionVolume: productionVolume.toString() })
-        });
-    }
-    else {
-        trace.push({
-            calculationId: crypto.randomUUID(),
-            formulaId: "EU_CBAM_SPECIFIC_EMISSIONS",
-            formulaVersion: "2023/1773 v1.0",
-            officialSource: "Implementing Regulation (EU) 2023/1773",
-            sourceVersion: "1.0",
-            effectiveDate: "2023-10-01",
-            inputs: { totalEmissions: totalEmissions.toString(), productionVolume: productionVolume.toString() },
-            assumptions: [],
-            warnings: ["Production volume is zero or invalid. Cannot calculate specific emissions."],
-            outputValue: 0,
-            outputUnit: "tCO2e/tonne",
-            calculationHash: hashObject({ totalEmissions: totalEmissions.toString(), productionVolume: productionVolume.toString() })
-        });
-    }
-    // 5. Carbon Price Deductions
-    let totalRebate = new decimal_js_1.Decimal(0);
-    if (caseData.carbonPriceRecords.length > 0) {
-        for (const rec of caseData.carbonPriceRecords) {
-            totalRebate = totalRebate.plus(getDec(rec.eligibleCertificateReduction));
+        intermediateCalculations: { multiplication: `${electricityConsumed.toString()} × ${gridFactor.toString()}` },
+    }));
+    let precursorDirect = new decimal_js_1.Decimal(0);
+    let precursorIndirect = new decimal_js_1.Decimal(0);
+    caseData.precursors.forEach((precursor, index) => {
+        const direct = decimalRequired(precursor.directEmissions.value, `precursors.${index}.directEmissions`);
+        const indirect = decimalRequired(precursor.indirectEmissions.value, `precursors.${index}.indirectEmissions`);
+        const quantity = decimalRequired(precursor.quantity.value, `precursors.${index}.quantity`);
+        requireUnit(precursor.directEmissions, `precursors.${index}.directEmissions`, ["tCO2e"], "tCO2e");
+        requireUnit(precursor.indirectEmissions, `precursors.${index}.indirectEmissions`, ["tCO2e"], "tCO2e");
+        tonnes(quantity, precursor.quantity, `precursors.${index}.quantity`);
+        if (direct.isNegative() || indirect.isNegative() || quantity.lte(0)) {
+            throw new Error(`CALCULATION_INVALID_PRECURSOR_INPUT:${index}`);
         }
-        trace.push({
-            calculationId: crypto.randomUUID(),
-            formulaId: "EU_CBAM_CARBON_PRICE_REBATE",
-            formulaVersion: "2023/1773 v1.0",
-            officialSource: "Implementing Regulation (EU) 2023/1773",
-            sourceVersion: "1.0",
-            effectiveDate: "2023-10-01",
-            inputs: { records: caseData.carbonPriceRecords.length },
-            assumptions: ["Carbon price paid is fully eligible and not otherwise compensated"],
-            warnings: [],
-            outputValue: totalRebate.toNumber(),
-            outputUnit: "CBAM Certificates Equivalent",
-            calculationHash: hashObject({ totalRebate: totalRebate.toString() })
+        precursorDirect = precursorDirect.plus(direct);
+        precursorIndirect = precursorIndirect.plus(indirect);
+    });
+    const totalPrecursor = precursorDirect.plus(precursorIndirect);
+    trace.push(traceNode({
+        formulaId: "CBAM_PRECURSOR_EMISSIONS_SUM",
+        inputs: {
+            precursorCount: caseData.precursors.length,
+            precursorDirect: precursorDirect.toString(),
+            precursorIndirect: precursorIndirect.toString(),
+        },
+        outputValue: totalPrecursor,
+        outputUnit: "tCO2e",
+        warnings: [],
+    }));
+    const totalDirect = directEmissions.plus(precursorDirect);
+    const totalIndirect = indirectEmissions.plus(precursorIndirect);
+    const totalEmbedded = totalDirect.plus(totalIndirect);
+    trace.push(traceNode({
+        formulaId: "CBAM_TOTAL_EMBEDDED_EMISSIONS",
+        inputs: {
+            installationDirectEmissions: directEmissions.toString(),
+            electricityIndirectEmissions: indirectEmissions.toString(),
+            precursorDirectEmissions: precursorDirect.toString(),
+            precursorIndirectEmissions: precursorIndirect.toString(),
+        },
+        outputValue: totalEmbedded,
+        outputUnit: "tCO2e",
+    }));
+    const allocationShares = resolveAllocationShares(caseData);
+    const allocationShareTotal = allocationShares.reduce((total, share) => total.plus(share), new decimal_js_1.Decimal(0));
+    const allocationReconciliationDelta = allocationShareTotal.minus(1).abs();
+    const goods = productionRecords.map((record, index) => {
+        const share = allocationShares[index];
+        const allocatedDirect = totalDirect.times(share);
+        const allocatedIndirect = totalIndirect.times(share);
+        const allocatedPrecursor = totalPrecursor.times(share);
+        const allocatedEmbedded = totalEmbedded.times(share);
+        const specific = allocatedEmbedded.dividedBy(record.normalized).toDecimalPlaces(6, decimal_js_1.Decimal.ROUND_HALF_UP);
+        const cnCode = String(record.good.cnCode.value || "");
+        const formulaId = `CBAM_GOOD_EMISSIONS_ALLOCATION_${index + 1}`;
+        const goodTrace = traceNode({
+            formulaId,
+            inputs: {
+                goodIndex: index + 1,
+                cnCode,
+                sector: record.good.sector,
+                totalEmbeddedEmissions: totalEmbedded.toString(),
+                allocationShare: share.toString(),
+                productionVolume: record.normalized.toString(),
+                productionUnit: "t",
+            },
+            conversions: record.conversion,
+            intermediateCalculations: {
+                allocatedEmbeddedEmissions: `${totalEmbedded.toString()} × ${share.toString()}`,
+                specificEmbeddedEmissions: `${allocatedEmbedded.toString()} ÷ ${record.normalized.toString()}`,
+            },
+            outputValue: specific,
+            outputUnit: "tCO2e/t",
+            rounding: { decimalPlaces: 6, mode: "ROUND_HALF_UP", stage: "per-good specific embedded emissions" },
         });
+        trace.push(goodTrace);
+        return {
+            goodIndex: index + 1,
+            cnCode,
+            sector: record.good.sector,
+            productionVolume: record.normalized.toString(),
+            productionUnit: "t",
+            allocationShare: share.toString(),
+            allocationMethod: caseData.goods.length === 1 ? "SINGLE_GOOD_100_PERCENT" : "USER_DOCUMENTED_SHARE",
+            allocatedDirectEmissions: allocatedDirect.toString(),
+            allocatedIndirectEmissions: allocatedIndirect.toString(),
+            allocatedPrecursorEmissions: allocatedPrecursor.toString(),
+            allocatedEmbeddedEmissions: allocatedEmbedded.toString(),
+            specificEmbeddedEmissions: specific.toString(),
+            traceCalculationId: goodTrace.calculationId,
+        };
+    });
+    const allocatedTotal = goods.reduce((sum, good) => sum.plus(good.allocatedEmbeddedEmissions), new decimal_js_1.Decimal(0));
+    if (allocatedTotal.minus(totalEmbedded).abs().gt("0.000000000001")) {
+        throw new Error(`CALCULATION_ALLOCATED_EMISSIONS_NOT_RECONCILED:${allocatedTotal.toString()}`);
     }
-    return { trace, totalEmbeddedEmissions: specificEmissions.toDecimalPlaces(4).toNumber() };
+    trace.push(traceNode({
+        formulaId: "CBAM_GOODS_ALLOCATION_RECONCILIATION",
+        inputs: {
+            allocationShares: goods.map((good) => good.allocationShare),
+            allocatedEmbeddedEmissions: goods.map((good) => good.allocatedEmbeddedEmissions),
+            totalEmbeddedEmissions: totalEmbedded.toString(),
+        },
+        outputValue: allocatedTotal.minus(totalEmbedded).abs(),
+        outputUnit: "tCO2e",
+        assumptions: caseData.goods.length === 1 ? ["A single good receives 100% of installation emissions."] : [],
+    }));
+    const aggregateSpecific = totalEmbedded.dividedBy(productionVolume).toDecimalPlaces(6, decimal_js_1.Decimal.ROUND_HALF_UP);
+    trace.push(traceNode({
+        formulaId: "CBAM_AGGREGATE_SPECIFIC_EMBEDDED_EMISSIONS",
+        inputs: {
+            totalEmbeddedEmissions: totalEmbedded.toString(),
+            aggregateProductionVolume: productionVolume.toString(),
+        },
+        outputValue: aggregateSpecific,
+        outputUnit: "tCO2e/t",
+        rounding: { decimalPlaces: 6, mode: "ROUND_HALF_UP", stage: "aggregate diagnostic only" },
+        assumptions: ["The aggregate intensity is a portfolio diagnostic; the reportable values are the per-good intensities."],
+    }));
+    const eligibleCertificateReduction = caseData.carbonPriceRecords.reduce((total, record, index) => {
+        const value = decimalOptional(record.eligibleCertificateReduction, `carbonPriceRecords.${index}.eligibleCertificateReduction`);
+        if (value.isNegative())
+            throw new Error("CALCULATION_NEGATIVE_CARBON_PRICE_REDUCTION");
+        return total.plus(value);
+    }, new decimal_js_1.Decimal(0));
+    trace.push(traceNode({
+        formulaId: "CBAM_CARBON_PRICE_REDUCTION_RECORD_TOTAL",
+        inputs: {
+            records: caseData.carbonPriceRecords.map((record) => ({
+                id: record.id,
+                eligibleCertificateReduction: String(record.eligibleCertificateReduction),
+                currency: record.currency,
+            })),
+        },
+        outputValue: eligibleCertificateReduction,
+        outputUnit: "certificate-equivalent",
+        assumptions: caseData.carbonPriceRecords.length > 0
+            ? ["Recognition remains subject to documentary evidence and the applicable CBAM rules."]
+            : [],
+    }));
+    const calculationRootHash = hashObject({
+        ruleset: exports.CALCULATION_RULESET,
+        engineVersion: exports.CALCULATION_ENGINE_VERSION,
+        trace: trace.map((node) => node.calculationHash),
+        totals: {
+            installationDirect: directEmissions.toString(),
+            electricityIndirect: indirectEmissions.toString(),
+            precursorDirect: precursorDirect.toString(),
+            precursorIndirect: precursorIndirect.toString(),
+            totalDirect: totalDirect.toString(),
+            totalIndirect: totalIndirect.toString(),
+            totalPrecursor: totalPrecursor.toString(),
+            totalEmbedded: totalEmbedded.toString(),
+            productionVolume: productionVolume.toString(),
+            aggregateSpecific: aggregateSpecific.toString(),
+            eligibleCertificateReduction: eligibleCertificateReduction.toString(),
+            allocationShareTotal: allocationShareTotal.toString(),
+            allocationReconciliationDelta: allocationReconciliationDelta.toString(),
+        },
+        goods,
+    });
+    return {
+        trace,
+        goods,
+        perGoodResults: goods,
+        installationDirectEmissions: directEmissions.toString(),
+        electricityIndirectEmissions: indirectEmissions.toString(),
+        precursorDirectEmissions: precursorDirect.toString(),
+        precursorIndirectEmissions: precursorIndirect.toString(),
+        totalDirectEmissions: totalDirect.toString(),
+        totalIndirectEmissions: totalIndirect.toString(),
+        totalPrecursorEmissions: totalPrecursor.toString(),
+        totalEmbeddedEmissions: totalEmbedded.toString(),
+        productionVolume: productionVolume.toString(),
+        specificEmbeddedEmissions: aggregateSpecific.toString(),
+        eligibleCertificateReduction: eligibleCertificateReduction.toString(),
+        allocationShareTotal: allocationShareTotal.toString(),
+        allocationReconciliationDelta: allocationReconciliationDelta.toString(),
+        calculationRootHash,
+        ruleset: exports.CALCULATION_RULESET,
+        engineVersion: exports.CALCULATION_ENGINE_VERSION,
+    };
 }
 //# sourceMappingURL=calculator.js.map
