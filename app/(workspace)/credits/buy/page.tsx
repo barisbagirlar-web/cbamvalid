@@ -222,7 +222,7 @@ export default function BuyPreparationPackPage() {
       <div className="mt-10 max-w-xl rounded-xl border border-border bg-background p-5 text-left">
         <h3 className="mb-2 text-sm font-bold text-foreground">Commercial and verification boundary</h3>
         <p className="text-xs leading-relaxed text-muted">
-          Draft preparation remains free. Payment is required only before sealing and downloading final deliverables. CBAMValid prepares the dossier for independent verification; it does not issue an accredited verification opinion, customs approval, EU approval or acceptance guarantee.
+          Draft preparation remains free. Payment is required only before sealing and downloading final deliverables. CBAMValid prepares the dossier for independent verification; it does not issue an accredited verifier's opinion, customs approval, EU approval or acceptance guarantee.
         </p>
       </div>
 

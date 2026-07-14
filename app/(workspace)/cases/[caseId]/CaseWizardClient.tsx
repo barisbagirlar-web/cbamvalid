@@ -805,6 +805,6 @@ function ValueCard({ icon, title, text }: { icon: React.ReactNode; title: string
   return <div className="rounded-xl border border-border bg-background p-5">{icon}<h3 className="mt-3 font-bold">{title}</h3><p className="mt-2 text-sm text-muted">{text}</p></div>;
 }
 
-function BoundaryNotice({ text = "CBAMValid prepares the operator/exporter dossier for independent verification. It does not issue an accredited verification opinion, customs decision, EU approval or Registry acceptance guarantee." }: { text?: string }) {
+function BoundaryNotice({ text = "CBAMValid prepares the operator/exporter dossier for independent verification. It does not issue an accredited verifier's opinion, customs decision, EU approval or Registry acceptance guarantee." }: { text?: string }) {
   return <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm leading-relaxed text-blue-950"><strong>Verification boundary:</strong> {text}</div>;
 }

@@ -8,14 +8,18 @@ describe("Dimensional Safety and Decimal Engine", () => {
       directEmissions: { value: "invalid_string", unit: "tCO2e" },
       electricityConsumed: { value: 100, unit: "MWh" },
       gridEmissionFactor: { value: 0.25, unit: "tCO2e/MWh" },
-      goods: [{ productionVolume: { value: 100, unit: "t" } }],
+      goods: [{ 
+        cnCode: { value: "72081000" },
+        sector: "IRON_AND_STEEL",
+        productionVolume: { value: 100, unit: "t" } 
+      }],
       precursors: [],
       carbonPriceRecords: [],
     };
 
     expect(() => {
       performDossierCalculations(maliciousPayload as AuditReadyCase);
-    }).toThrow("Invalid argument: invalid_string");
+    }).toThrow("CALCULATION_INPUT_INVALID:directEmissions");
   });
 
   it("should calculate correctly with Decimal strings", () => {
@@ -23,7 +27,11 @@ describe("Dimensional Safety and Decimal Engine", () => {
       directEmissions: { value: "150.55", unit: "tCO2e" },
       electricityConsumed: { value: "100.0", unit: "MWh" },
       gridEmissionFactor: { value: "0.25", unit: "tCO2e/MWh" },
-      goods: [{ productionVolume: { value: "100", unit: "t" } }],
+      goods: [{ 
+        cnCode: { value: "72081000" },
+        sector: "IRON_AND_STEEL",
+        productionVolume: { value: "100", unit: "t" } 
+      }],
       precursors: [],
       carbonPriceRecords: [],
     };

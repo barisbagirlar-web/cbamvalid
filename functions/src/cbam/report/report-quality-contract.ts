@@ -12,7 +12,7 @@ export const REPORT_BASIS = [
 
 export const REPORT_LIMITATIONS = [
   "This package is an operator/exporter evidence and calculation dossier prepared for independent verification.",
-  "It is not an accredited verification opinion and does not replace the work, professional scepticism or installation-visit decisions of an accredited verifier.",
+  "It is not an accredited verifier's opinion and does not replace the work, professional scepticism or installation-visit decisions of an accredited verifier.",
   "It is not customs advice, an EU authority decision, a CBAM Registry acceptance guarantee or an official Registry submission file.",
   "Legal and technical rules may change; the ruleset and engine version printed in the sealed release define the basis applied.",
 ] as const;

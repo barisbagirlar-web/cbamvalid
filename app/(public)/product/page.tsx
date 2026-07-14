@@ -162,7 +162,7 @@ export default function ProductPage() {
         <div className="mx-auto max-w-5xl px-6 py-10 text-sm leading-relaxed text-muted md:px-10">
           <p className="font-bold text-foreground">Verification and regulatory boundary</p>
           <p className="mt-2">
-            CBAMValid prepares data and evidence for independent verification. It does not issue an accredited verification opinion, customs approval, EU approval or acceptance guarantee. The O3CI field-mapped structured export is not an official CBAM Registry submission file. Users remain responsible for source-data accuracy and professional review where required.
+            CBAMValid prepares data and evidence for independent verification. It does not issue an accredited verifier's opinion, customs approval, EU approval or acceptance guarantee. The O3CI field-mapped structured export is not an official CBAM Registry submission file. Users remain responsible for source-data accuracy and professional review where required.
           </p>
         </div>
       </section>
