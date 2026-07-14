@@ -50,20 +50,32 @@ function createBaseCase(): AuditReadyCase {
         sizeBytes: 123,
         uploadTimestamp: "2026-01-01T00:00:00.000Z",
         fileHash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        reviewStatus: "PENDING",
+        reviewStatus: "APPROVED",
         supportStatus: "SUPPORTED",
         confidentiality: "CONFIDENTIAL",
         issuer: "Auditor",
         issueDate: "2026-01-01",
         reportingPeriod: "2026",
         uploader: "user123",
-        linkedInputs: ["directEmissions"],
+        linkedInputs: ["importerIdentity.eoriNumber", "goods.0.cnCode", "goods.0.productionVolume", "directEmissions", "electricityConsumed", "gridEmissionFactor"],
         linkedCalculations: []
       }
     ],
     calculationTrace: [],
     gapAssessment: [],
-    methodologyDecisions: [],
+    methodologyDecisions: [
+      {
+        decisionId: "decision_precursor_scope",
+        topic: "PRECURSOR_SCOPE",
+        selectedMethod: "No precursor inputs cross the declared system boundary for this installation.",
+        reason: "The installation consumes no precursor materials within CBAM scope for this reporting period.",
+        legalOrTechnicalBasis: "CBAM Implementing Regulation Annex IV, system boundary definition.",
+        evidenceIds: [],
+        rejectedAlternativeReason: "Not applicable.",
+        reviewStatus: "ACCEPTED",
+        rulesetVersion: "CBAM-IR-2025/2547",
+      }
+    ],
     auditEvents: []
   };
 }
@@ -86,8 +98,16 @@ describe("CBAM Quality Controls Traceability", () => {
   });
 
   it("should yield NOT_APPLICABLE when rule context does not apply", () => {
+    // NOTE: this previously asserted NOT_APPLICABLE for QC_10 driven by
+    // caseData.carbonPriceRecords. Neither claim is true of the current
+    // engine: QC_10 governs evidence-register integrity only (PASS/BLOCKER,
+    // no NOT_APPLICABLE branch), and no QC rule reads carbonPriceRecords at
+    // all. QC_05A (goods emissions allocation) is the one rule in
+    // quality-controls.ts that genuinely yields NOT_APPLICABLE, and it does
+    // so precisely when there is no allocation question to answer: zero
+    // goods declared.
     const caseData = createBaseCase();
-    caseData.carbonPriceRecords = [];
-    expect(runQualityControls(caseData).find((result) => result.ruleId === "QC_10")?.status).toBe("NOT_APPLICABLE");
+    caseData.goods = [];
+    expect(runQualityControls(caseData).find((result) => result.ruleId === "QC_05A")?.status).toBe("NOT_APPLICABLE");
   });
 });
