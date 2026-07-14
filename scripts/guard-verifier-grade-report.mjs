@@ -68,23 +68,27 @@ requirePattern(
   /reportQualityAssessment\.status\s*!==\s*["']PASS["'][\s\S]{0,300}?throw\s+new\s+Error\s*\(/,
   "Package builder does not fail closed on report-quality failure"
 );
+requireText(packageBuilder, "Executive Verification Readiness Summary", "Executive verification readiness summary is missing");
 requireText(packageBuilder, "Operator Emissions Report", "Operator emissions report is missing");
 requirePattern(
   packageBuilder,
   /OPERATOR PREPARATION\s+—\s+VERIFIER COMPLETION REQUIRED[\s\S]{0,5000}?independent accredited verification/i,
   "Operator report lacks an explicit accredited-verifier completion boundary"
 );
-requireText(packageBuilder, "Per-good reportable results", "Calculation annex lacks per-good reportable results");
+requireText(packageBuilder, "Per-Good Embedded Emissions Schedule", "Dedicated per-good embedded emissions schedule is missing");
+requireText(packageBuilder, "Carbon Price Paid Schedule", "Carbon price paid schedule is missing");
+requireText(packageBuilder, "Read-Me and Verifier Navigation Guide", "Verifier navigation guide is missing");
 requirePattern(
   packageBuilder,
   /Verification Readiness Assessment[\s\S]{0,2500}?(?:Quality controls|Report-quality issues)[\s\S]{0,2500}?(?:Remediation|Required remediation)/i,
   "Readiness report lacks a structured external-verifier challenge and remediation frame"
 );
-requireText(packageBuilder, "topLevelComponentCount: 23", "Manifest does not lock 23 top-level components");
+requireText(packageBuilder, "topLevelComponentCount: 27", "Manifest does not lock 27 top-level components");
 requireText(packageBuilder, "reportQualityAssessment.status", "Package verification does not require report-quality PASS");
 
 requireText(sealService, "buildVerifierPreparationPackage", "Seal service is not integrated with the verifier package builder");
 requireText(sealService, "CALCULATION_TRACE_INCOMPLETE", "Seal service does not validate calculation trace completeness");
+requireText(sealService, "packageTopLevelComponentCount: 27", "Seal metadata does not record the 27-component package contract");
 
 requireText(wizard, "Emissions allocation share", "User workflow does not expose per-good allocation shares");
 requireText(wizard, "Approve for Internal Dossier Use", "User workflow lacks explicit evidence review and approval");
@@ -93,7 +97,7 @@ requireText(wizard, "allocationReconciliationDelta", "User workflow lacks alloca
 requireText(wizard, "per-good results", "User workflow lacks per-good result framing");
 
 requireText(reportTest, "reportQualityAssessment.status", "Report tests do not assert report-quality PASS");
-requireText(reportTest, "23", "Report tests do not assert the 23-component contract");
+requireText(reportTest, "27", "Report tests do not assert the 27-component contract");
 requireText(calculationTest, "CALCULATION_ALLOCATION_NOT_RECONCILED", "Calculation tests do not cover allocation mismatch");
 requireText(calculationTest, "exactly once", "Calculation tests do not document double-counting protection");
 requireText(calculationTest, "deterministic", "Calculation tests do not cover deterministic hashes");
@@ -124,5 +128,5 @@ console.log("PER_GOOD_ALLOCATION=PASS");
 console.log("EVIDENCE_APPROVAL_GATE=PASS");
 console.log("METHODOLOGY_GOVERNANCE=PASS");
 console.log("CALCULATION_RECONCILIATION=PASS");
-console.log("PREMIUM_23_COMPONENT_DOSSIER=PASS");
+console.log("PREMIUM_27_COMPONENT_DOSSIER=PASS");
 console.log("ACCREDITED_VERIFIER_BOUNDARY=PASS");
