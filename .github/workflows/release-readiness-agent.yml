@@ -6,6 +6,7 @@ on:
     - cron: "17 3 * * 1"
   push:
     branches:
+      - main
       - feat/exporter-verification-platform-v1
 
 permissions:
@@ -20,7 +21,7 @@ jobs:
   audit:
     name: Evidence-based source release audit
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       CI: "true"
       NEXT_TELEMETRY_DISABLED: "1"
