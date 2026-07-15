@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { firebaseAuth as auth } from "@/lib/firebase/client";
@@ -95,9 +96,15 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-6 py-12 font-sans">
       <div className="w-full max-w-md animate-in fade-in">
-        
         <div className="mb-12 text-center flex flex-col items-center">
-          <img src="/cbam_logo.svg" alt="CBAM Valid Logo" className="h-8 w-auto object-contain mb-4" />
+          <Image
+            src="/cbam_logo.svg"
+            alt="CBAM Valid Logo"
+            width={196}
+            height={48}
+            priority
+            className="mb-4 h-8 w-auto object-contain"
+          />
           <h1 className="font-serif text-3xl text-foreground mb-3 tracking-tight">New Account</h1>
           <p className="text-sm font-mono text-muted">Create Corporate Profile</p>
         </div>
