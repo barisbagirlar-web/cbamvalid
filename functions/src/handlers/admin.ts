@@ -1,96 +1,173 @@
-import { createCallable } from "../wrapper";
-import { z } from "zod";
+import { FieldPath } from "firebase-admin/firestore";
 import { HttpsError } from "firebase-functions/v2/https";
+import { z } from "zod";
+import { normalizeCreditSummary, type CreditLedgerEntry } from "../commerce/credit-service";
 import { adminDb } from "../firebase-admin";
+import { validateIdentifier } from "../firestore-validator";
+import { createCallable } from "../wrapper";
 
-function requireAdmin(auth: any) {
-  if (auth.token.admin !== true && auth.token.ownerAdmin !== true) {
-    throw new HttpsError("permission-denied", "Requires administrator privileges.");
+type AdminAuth = {
+  uid: string;
+  token: {
+    admin?: unknown;
+    ownerAdmin?: unknown;
+    email_verified?: unknown;
+    email?: unknown;
+  };
+};
+
+function requireAdmin(auth: AdminAuth): void {
+  if (
+    auth.token.admin !== true ||
+    auth.token.ownerAdmin !== true ||
+    auth.token.email_verified !== true
+  ) {
+    throw new HttpsError("permission-denied", "Verified owner-administrator privileges are required.");
+  }
+}
+
+function encodeCursor(email: string, id: string): string {
+  return Buffer.from(JSON.stringify({ email, id }), "utf8").toString("base64url");
+}
+
+function decodeCursor(value: string): { email: string; id: string } {
+  try {
+    const parsed = JSON.parse(Buffer.from(value, "base64url").toString("utf8")) as Record<string, unknown>;
+    if (typeof parsed.email !== "string" || typeof parsed.id !== "string") throw new Error("INVALID_CURSOR");
+    validateIdentifier("uid", parsed.id);
+    return { email: parsed.email, id: parsed.id };
+  } catch {
+    throw new HttpsError("invalid-argument", "Invalid user pagination cursor.");
   }
 }
 
 export const listAllUsers = createCallable({
   schema: z.object({
-    limit: z.number().max(500).nullish().transform(v => v ?? 100),
-    pageToken: z.string().optional()
-  }).optional()
+    limit: z.number().int().min(1).max(100).optional().default(50),
+    pageToken: z.string().max(1024).optional(),
+  }).strict().optional(),
 }, async (data, { auth }) => {
   requireAdmin(auth);
-
-  let query = adminDb.collection("users").orderBy("email").limit(data?.limit || 100);
-  
+  const limit = data?.limit || 50;
+  let query = adminDb.collection("users")
+    .orderBy("email", "asc")
+    .orderBy(FieldPath.documentId(), "asc")
+    .limit(limit + 1);
   if (data?.pageToken) {
-    // Basic pagination mock (replace with real document reference in production)
-    // For simplicity, we assume we just return the first set.
+    const cursor = decodeCursor(data.pageToken);
+    query = query.startAfter(cursor.email, cursor.id);
   }
 
   const snapshot = await query.get();
-  const users = await Promise.all(snapshot.docs.map(async (doc) => {
-    const profile = doc.data();
-    const creditSnap = await adminDb.collection("users").doc(doc.id).collection("creditSummary").doc("current").get();
-    const credits = creditSnap.exists ? creditSnap.data() : { availableCredits: 0 };
-
+  const pageDocs = snapshot.docs.slice(0, limit);
+  const users = await Promise.all(pageDocs.map(async (document) => {
+    const profile = document.data() as Record<string, unknown>;
+    const creditSnapshot = await adminDb.collection("users").doc(document.id)
+      .collection("creditSummary").doc("current").get();
+    const credits = normalizeCreditSummary(creditSnapshot.exists ? creditSnapshot.data() : undefined);
     return {
-      id: doc.id,
-      email: profile.email || "",
-      displayName: profile.displayName || "",
-      credits: credits?.availableCredits || 0,
-      role: profile.role || "user"
+      id: document.id,
+      email: typeof profile.email === "string" ? profile.email : "",
+      displayName: typeof profile.displayName === "string" ? profile.displayName : "",
+      company: typeof profile.company === "string" ? profile.company : "",
+      credits: credits.availableCredits,
+      createdAt: typeof profile.createdAt === "string" ? profile.createdAt : "",
+      role: typeof profile.role === "string" ? profile.role : "user",
     };
   }));
-
-  return { users };
+  const last = pageDocs.at(-1);
+  const nextPageToken = snapshot.docs.length > limit && last
+    ? encodeCursor(String(last.data().email || ""), last.id)
+    : undefined;
+  return { users, nextPageToken };
 });
 
 export const listAllTransactions = createCallable({
   schema: z.object({
-    limit: z.number().max(500).nullish().transform(v => v ?? 100)
-  }).optional()
+    limit: z.number().int().min(1).max(100).optional().default(50),
+  }).strict().optional(),
 }, async (data, { auth }) => {
   requireAdmin(auth);
-
-  const snapshot = await adminDb.collection("paddle_events")
-    .orderBy("occurredAt", "desc")
-    .limit(data?.limit || 100)
+  const snapshot = await adminDb.collection("commerce_orders")
+    .orderBy("createdAt", "desc")
+    .limit(data?.limit || 50)
     .get();
-
-  return { transactions: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) };
+  const transactions = snapshot.docs.map((document) => {
+    const order = document.data() as Record<string, unknown>;
+    return {
+      orderId: document.id,
+      uid: String(order.uid || ""),
+      productCode: String(order.productCode || ""),
+      status: String(order.status || ""),
+      currency: String(order.currency || ""),
+      amountMinor: Number(order.amountMinor || 0),
+      paddleTransactionId: typeof order.paddleTransactionId === "string"
+        ? order.paddleTransactionId
+        : undefined,
+      createdAt: String(order.createdAt || ""),
+      updatedAt: String(order.updatedAt || ""),
+    };
+  });
+  return { transactions };
 });
 
 export const adminSetUserTokens = createCallable({
   schema: z.object({
-    targetUserId: z.string(),
-    tokensToSet: z.number()
-  })
-}, async ({ targetUserId, tokensToSet }, { auth }) => {
+    targetUserId: z.string().min(1).max(256),
+    tokensToSet: z.number().int().min(0).max(1_000_000),
+    reason: z.string().trim().min(10).max(500).optional().default("Owner administrator absolute credit correction"),
+  }).strict(),
+}, async ({ targetUserId, tokensToSet, reason }, { auth }) => {
   requireAdmin(auth);
+  validateIdentifier("uid", targetUserId);
 
-  const creditRef = adminDb.collection("users").doc(targetUserId).collection("creditSummary").doc("current");
-  const ledgerRef = adminDb.collection("users").doc(targetUserId).collection("creditLedger").doc();
+  const summaryRef = adminDb.collection("users").doc(targetUserId)
+    .collection("creditSummary").doc("current");
+  const ledgerRef = adminDb.collection("users").doc(targetUserId)
+    .collection("creditLedger").doc();
+  const auditRef = adminDb.collection("admin_audit").doc();
 
-  await adminDb.runTransaction(async (t) => {
-    const doc = await t.get(creditRef);
-    let currentCredits = 0;
-    if (doc.exists) {
-      currentCredits = doc.data()?.availableCredits || 0;
+  const result = await adminDb.runTransaction(async (transaction) => {
+    const summarySnapshot = await transaction.get(summaryRef);
+    const current = normalizeCreditSummary(summarySnapshot.exists ? summarySnapshot.data() : undefined);
+    const difference = tokensToSet - current.availableCredits;
+    if (difference === 0) {
+      return { changed: false, balanceAfter: current.availableCredits, ledgerEntryId: null };
     }
 
-    const diff = tokensToSet - currentCredits;
-    if (diff === 0) return;
-
-    t.set(creditRef, {
+    const now = new Date().toISOString();
+    const nextSummary = {
+      ...current,
       availableCredits: tokensToSet,
-      updatedAt: new Date().toISOString()
-    }, { merge: true });
-
-    t.set(ledgerRef, {
-      amount: diff,
-      type: diff > 0 ? "ADMIN_ADJUSTMENT_ADD" : "ADMIN_ADJUSTMENT_SUBTRACT",
-      createdAt: new Date().toISOString(),
+      lifetimeAdjusted: current.lifetimeAdjusted + Math.abs(difference),
+      updatedAt: now,
+    };
+    const ledgerEntry: CreditLedgerEntry = {
+      entryId: ledgerRef.id,
+      uid: targetUserId,
+      amount: difference,
+      type: "ADMIN_ADJUSTMENT",
+      reason,
+      createdAt: now,
       balanceAfter: tokensToSet,
-      reason: `Manual adjustment by admin ${auth.token.email}`
+    };
+
+    transaction.set(summaryRef, nextSummary, { merge: true });
+    transaction.create(ledgerRef, ledgerEntry);
+    transaction.create(auditRef, {
+      auditId: auditRef.id,
+      actorUid: auth.uid,
+      actorEmail: typeof auth.token.email === "string" ? auth.token.email : "",
+      action: "SET_USER_CREDIT_BALANCE",
+      targetUid: targetUserId,
+      previousBalance: current.availableCredits,
+      balanceAfter: tokensToSet,
+      difference,
+      reason,
+      createdAt: now,
     });
+    return { changed: true, balanceAfter: tokensToSet, ledgerEntryId: ledgerRef.id };
   });
 
-  return { success: true };
+  return { success: true as const, ...result };
 });
