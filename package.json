@@ -73,8 +73,8 @@
     "react-dom": "19.2.4",
     "react-hook-form": "^7.81.0",
     "server-only": "^0.0.1",
-    "xmlbuilder2": "^4.0.3",
     "sharp": "^0.35.3",
+    "xmlbuilder2": "^4.0.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -88,6 +88,7 @@
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "yaml": "^2.9.0"
   }
 }

@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import yaml from "yaml";
 
 const rootDir = process.cwd();
 const failures = [];
@@ -10,35 +11,34 @@ function fail(message) {
 }
 
 const appHostingConfigPath = path.join(rootDir, "apphosting.yaml");
-if (fs.existsSync(appHostingConfigPath)) {
-  fail("apphosting.yaml is prohibited; CBAMValid uses Firebase Framework-Aware Hosting");
+if (!fs.existsSync(appHostingConfigPath)) {
+  fail("apphosting.yaml is required; CBAMValid uses Firebase App Hosting");
+} else {
+  try {
+    const raw = fs.readFileSync(appHostingConfigPath, "utf8");
+    const config = yaml.parse(raw);
+
+    if (Object.hasOwn(config ?? {}, "run")) {
+      fail('apphosting.yaml must use "runConfig", not "run" (schema typo - silently ignored by App Hosting)');
+    }
+
+    if (!config?.runConfig || typeof config.runConfig !== "object") {
+      fail("apphosting.yaml must define a runConfig block (cpu/memoryMiB/minInstances/concurrency)");
+    }
+  } catch {
+    fail("apphosting.yaml must contain valid YAML");
+  }
 }
 
 const firebaseConfigPath = path.join(rootDir, "firebase.json");
 if (!fs.existsSync(firebaseConfigPath)) {
-  fail("firebase.json is required for Firebase Framework-Aware Hosting");
+  fail("firebase.json is required (firestore/storage rules)");
 } else {
   try {
     const firebaseConfig = JSON.parse(fs.readFileSync(firebaseConfigPath, "utf8"));
-    const hosting = firebaseConfig.hosting;
 
-    if (!hosting || typeof hosting !== "object" || Array.isArray(hosting)) {
-      fail("firebase.json must define a hosting object");
-    } else {
-      if (hosting.source !== ".") {
-        fail('firebase.json hosting.source must be "."');
-      }
-
-      const backend = hosting.frameworksBackend;
-      if (!backend || typeof backend !== "object" || Array.isArray(backend)) {
-        fail("firebase.json must define hosting.frameworksBackend");
-      } else if (backend.region !== "europe-west1") {
-        fail('firebase.json hosting.frameworksBackend.region must be "europe-west1"');
-      }
-    }
-
-    if (Object.hasOwn(firebaseConfig, "apphosting")) {
-      fail("firebase.json must not define Firebase App Hosting configuration");
+    if (Object.hasOwn(firebaseConfig, "hosting")) {
+      fail("firebase.json must not define a hosting block; App Hosting owns hosting, not classic Firebase Hosting");
     }
   } catch {
     fail("firebase.json must contain valid JSON");
@@ -116,6 +116,5 @@ if (failures.length > 0) {
 }
 
 console.log("HOSTING_ARCHITECTURE_GUARD=PASS");
-console.log("HOSTING_PROVIDER=FIREBASE_FRAMEWORK_AWARE_HOSTING");
-console.log("HOSTING_REGION=europe-west1");
+console.log("HOSTING_PROVIDER=FIREBASE_APP_HOSTING");
 console.log("TRACKED_SECRET_SCAN=PASS");
