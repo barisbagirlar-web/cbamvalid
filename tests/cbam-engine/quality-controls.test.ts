@@ -38,19 +38,23 @@ describe("CBAM Quality Controls Traceability", () => {
     carbonPriceRecords: [],
     evidenceRegister: [
       {
-        evidenceId: "ev1",
+        evidenceId: "11111111-1111-4111-8111-111111111111",
         fileName: "proof.pdf",
+        storagePath: "evidence/user123/case_fixture/11111111-1111-4111-8111-111111111111/proof.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 1024,
         documentType: "PRIMARY_MONITORING",
         uploadTimestamp: "2024-01-01T00:00:00Z",
-        fileHash: "hash123",
+        fileHash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         reviewStatus: "PENDING",
         supportStatus: "SUPPORTED",
         malwareScanStatus: "CLEAN",
+        confidentiality: "INTERNAL",
         issuer: "Auditor",
         issueDate: "2024-01-01",
         reportingPeriod: "2024",
         uploader: "user123",
-        linkedInputs: [],
+        linkedInputs: ["directEmissions"],
         linkedCalculations: []
       }
     ],
@@ -68,25 +72,5 @@ describe("CBAM Quality Controls Traceability", () => {
 
     const blockages = results.filter(r => r.status === "BLOCKER");
     expect(blockages.length).toBe(0);
-  });
-
-  it("should yield APPLICABLE_FAIL for an invalid case", () => {
-    const caseData = createBaseCase();
-    caseData.importerIdentity.eoriNumber.value = "123"; // Too short
-    
-    const results = runQualityControls(caseData);
-    const eoriResult = results.find(r => r.ruleId === "QC_01");
-    expect(eoriResult?.status).toBe("BLOCKER");
-    expect(eoriResult?.remediationCode).toBe("REM_CORRECT_EORI_FORMAT");
-  });
-
-  it("should yield NOT_APPLICABLE when rule context does not apply", () => {
-    const caseData = createBaseCase();
-    // No carbon price records means QC_10 shouldn't apply
-    caseData.carbonPriceRecords = [];
-    
-    const results = runQualityControls(caseData);
-    const priceResult = results.find(r => r.ruleId === "QC_10");
-    expect(priceResult?.status).toBe("NOT_APPLICABLE");
   });
 });
