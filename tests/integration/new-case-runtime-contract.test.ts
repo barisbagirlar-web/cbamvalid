@@ -8,6 +8,7 @@ import { buildCaseRecord, toCaseWorkspaceView } from "../../functions/src/cbam/s
 
 const OWNER_ID = "user_case_contract_123";
 const EVENT_ID = "11111111-1111-4111-8111-111111111111";
+const REQUEST_ID = "22222222-2222-4222-8222-222222222222";
 const TIMESTAMP = "2026-07-15T12:00:00.000Z";
 
 function validDraft() {
@@ -38,17 +39,26 @@ describe("new case runtime contract", () => {
     expect("data" in workspace).toBe(false);
   });
 
-  it("omits caseId for creation and includes it for edits", () => {
+  it("requires one stable requestId for creation and no requestId for edits", () => {
     const draft = validDraft();
-    const createRequest = createCaseSaveRequest(draft);
-    expect(createRequest).toEqual({ data: draft });
+    const createRequest = createCaseSaveRequest(draft, undefined, REQUEST_ID);
+    expect(createRequest).toEqual({ data: draft, requestId: REQUEST_ID });
     expect(Object.prototype.hasOwnProperty.call(createRequest, "caseId")).toBe(false);
+    expect(createCaseSaveRequest(draft, undefined, REQUEST_ID)).toEqual(createRequest);
+
+    expect(() => createCaseSaveRequest(draft)).toThrow("CASE_CREATION_REQUEST_ID_REQUIRED");
 
     const editRequest = createCaseSaveRequest(
       { ...draft, caseId: "case_FirestoreAutoId123" },
       "case_FirestoreAutoId123"
     );
-    expect(editRequest.caseId).toBe("case_FirestoreAutoId123");
+    expect(editRequest).toEqual({
+      caseId: "case_FirestoreAutoId123",
+      data: { ...draft, caseId: "case_FirestoreAutoId123" },
+    });
+    expect(() =>
+      createCaseSaveRequest(draft, "case_FirestoreAutoId123", REQUEST_ID)
+    ).toThrow("AMBIGUOUS_CASE_SAVE_REQUEST");
   });
 });
 
