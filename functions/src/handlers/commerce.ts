@@ -2,6 +2,7 @@ import { createCallable } from "../wrapper";
 import { z } from "zod";
 import { HttpsError } from "firebase-functions/v2/https";
 import { adminDb } from "../firebase-admin";
+import { requireVerifiedUser } from "../auth/verified-user";
 import { PREPARATION_PACK } from "../commerce/preparation-pack";
 
 export type PreparationPackEntitlementView = {
@@ -76,6 +77,7 @@ export const createCheckoutSession = createCallable(
     }),
   },
   async ({ productCode, requestId, caseId }, { auth }) => {
+    requireVerifiedUser(auth);
     const { createCheckout } = await import("../commerce/paddle/checkout-service");
     try {
       const transactionId = await createCheckout({
@@ -86,6 +88,7 @@ export const createCheckoutSession = createCallable(
       });
       return { transactionId, status: "success" as const };
     } catch (error: unknown) {
+      if (error instanceof HttpsError) throw error;
       const message = error instanceof Error ? error.message : "CHECKOUT_CREATION_FAILED";
       if (
         message.includes("INVALID") ||
