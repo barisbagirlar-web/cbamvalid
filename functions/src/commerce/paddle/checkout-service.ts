@@ -30,6 +30,8 @@ export async function createCheckout(params: {
 }): Promise<string> {
   const productCode = normalizeProductCode(params.productCode);
   const product = getProductDefinition(productCode);
+  const sandbox = isSandboxMode();
+  const priceId = getPriceIdForProduct(productCode, sandbox);
   const digest = checkoutDigest(params.uid, params.requestId);
   const orderId = `ord_${digest.slice(0, 48)}`;
   const markerRef = adminDb.collection("checkout_requests").doc(digest);
@@ -48,11 +50,17 @@ export async function createCheckout(params: {
         throw new Error("CHECKOUT_IDEMPOTENCY_COLLISION");
       }
       if (marker.state === "COMPLETE" && marker.paddleTransactionId && orderSnapshot.exists) {
+        const order = orderSnapshot.data() as CommerceOrder;
+        if (
+          order.paddleTransactionId !== marker.paddleTransactionId ||
+          order.productCode !== productCode ||
+          order.paddlePriceId !== priceId ||
+          order.amountMinor !== product.expectedUnitAmount ||
+          order.currency !== product.currency
+        ) throw new Error("CHECKOUT_COMPLETE_STATE_MISMATCH");
         return { existingTransactionId: marker.paddleTransactionId };
       }
-      if (marker.state === "CREATING") {
-        throw new HttpsError("aborted", "CHECKOUT_REQUEST_IN_PROGRESS");
-      }
+      if (marker.state === "CREATING") throw new HttpsError("aborted", "CHECKOUT_REQUEST_IN_PROGRESS");
       throw new HttpsError("failed-precondition", "CHECKOUT_RECOVERY_REQUIRED");
     }
     if (orderSnapshot.exists) throw new Error("CHECKOUT_ORDER_PARTIAL_STATE");
@@ -61,6 +69,7 @@ export async function createCheckout(params: {
       orderId,
       uid: params.uid,
       productCode,
+      paddlePriceId: priceId,
       currency: product.currency,
       amountMinor: product.expectedUnitAmount,
       checkoutRequestId: params.requestId,
@@ -82,8 +91,6 @@ export async function createCheckout(params: {
   if (preparation.existingTransactionId) return preparation.existingTransactionId;
 
   try {
-    const sandbox = isSandboxMode();
-    const priceId = getPriceIdForProduct(productCode, sandbox);
     const paddleTransaction = await getPaddleClient().transactions.create({
       items: [{ priceId, quantity: 1 }],
       customData: {
@@ -104,9 +111,11 @@ export async function createCheckout(params: {
       if (!markerSnapshot.exists || !orderSnapshot.exists) throw new Error("CHECKOUT_COMMIT_STATE_MISSING");
       const marker = markerSnapshot.data() as CheckoutMarker;
       const order = orderSnapshot.data() as CommerceOrder;
-      if (marker.state !== "CREATING" || order.status !== "CHECKOUT_CREATED") {
-        throw new Error("CHECKOUT_COMMIT_STATE_INVALID");
-      }
+      if (
+        marker.state !== "CREATING" ||
+        order.status !== "CHECKOUT_CREATED" ||
+        order.paddlePriceId !== priceId
+      ) throw new Error("CHECKOUT_COMMIT_STATE_INVALID");
       transaction.update(orderRef, {
         paddleTransactionId: paddleTransaction.id,
         status: "PAYMENT_PENDING",
