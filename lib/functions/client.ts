@@ -1,6 +1,10 @@
 import { httpsCallable } from "firebase/functions";
 import { firebaseFunctions } from "@/lib/firebase/client";
-import { AuditReadyCaseSchema, type AuditReadyCase } from "@/lib/cbam/schema";
+import {
+  AuditReadyCaseSchema,
+  type AuditReadyCase,
+  type EvidenceSupportStatus,
+} from "@/lib/cbam/schema";
 import { createCaseSaveRequest } from "@/lib/functions/case-save-contract";
 
 type UnknownRecord = Record<string, unknown>;
@@ -24,6 +28,18 @@ export type PreparationPackEntitlement = {
   [key: string]: unknown;
 };
 
+export type SealResponse = {
+  report?: {
+    reportId?: string;
+    releaseVersion?: number;
+    documentHash?: string;
+    manifestHash?: string;
+    status?: string;
+  };
+  status?: string;
+  [key: string]: unknown;
+};
+
 export const getCbamCasesCallable = httpsCallable<void, { cases: CbamCaseRecord[] }>(firebaseFunctions, "getCbamCases");
 export const getCbamCaseCallable = httpsCallable<{ caseId: string }, { case: unknown }>(firebaseFunctions, "getCbamCase");
 export const saveCbamCaseCallable = httpsCallable<{
@@ -31,12 +47,29 @@ export const saveCbamCaseCallable = httpsCallable<{
   requestId?: string;
   data: AuditReadyCase;
 }, { caseId: string }>(firebaseFunctions, "saveCbamCase");
+export const reviewCbamEvidenceCallable = httpsCallable<{
+  caseId: string;
+  evidenceId: string;
+  decision: "APPROVED" | "REJECTED";
+  supportStatus: EvidenceSupportStatus;
+  reviewerNotes: string;
+}, { case: unknown }>(firebaseFunctions, "reviewCbamEvidence");
+export const recordCbamEvidenceScanCallable = httpsCallable<{
+  caseId: string;
+  evidenceId: string;
+  status: "CLEAN" | "INFECTED";
+  scannerReference: string;
+}, { case: unknown }>(firebaseFunctions, "recordCbamEvidenceScan");
 export const renameCbamCaseCallable = httpsCallable<{ caseId: string; newName: string }, { success: boolean }>(firebaseFunctions, "renameCbamCase");
 export const archiveCbamCaseCallable = httpsCallable<{ caseId: string }, { success: boolean }>(firebaseFunctions, "archiveCbamCase");
 export const deleteCbamCaseCallable = httpsCallable<{ caseId: string }, { success: boolean }>(firebaseFunctions, "deleteCbamCase");
 
 export const calculateCbamCallable = httpsCallable<{ caseId: string }, UnknownRecord>(firebaseFunctions, "calculateCbam");
-export const sealCbamReportCallable = httpsCallable<{ caseId: string; entitlementId: string }, UnknownRecord>(firebaseFunctions, "sealCbamReport");
+export const sealCbamReportCallable = httpsCallable<{
+  caseId: string;
+  entitlementId: string;
+  requestId: string;
+}, SealResponse>(firebaseFunctions, "sealCbamReport");
 
 export const getCbamReportsCallable = httpsCallable<void, { reports: UnknownRecord[] }>(firebaseFunctions, "getCbamReports");
 export const getCbamReportCallable = httpsCallable<{ reportId: string }, { report: UnknownRecord }>(firebaseFunctions, "getCbamReport");
@@ -78,6 +111,27 @@ export async function saveCase(
   return result.data.caseId;
 }
 
+export async function reviewEvidence(params: {
+  caseId: string;
+  evidenceId: string;
+  decision: "APPROVED" | "REJECTED";
+  supportStatus: EvidenceSupportStatus;
+  reviewerNotes: string;
+}): Promise<AuditReadyCase> {
+  const result = await reviewCbamEvidenceCallable(params);
+  return AuditReadyCaseSchema.parse(result.data.case);
+}
+
+export async function recordEvidenceScan(params: {
+  caseId: string;
+  evidenceId: string;
+  status: "CLEAN" | "INFECTED";
+  scannerReference: string;
+}): Promise<AuditReadyCase> {
+  const result = await recordCbamEvidenceScanCallable(params);
+  return AuditReadyCaseSchema.parse(result.data.case);
+}
+
 export async function renameCase(caseId: string, newName: string): Promise<boolean> {
   const result = await renameCbamCaseCallable({ caseId, newName });
   return result.data.success;
@@ -98,8 +152,12 @@ export async function calculateReport(caseId: string) {
   return result.data;
 }
 
-export async function sealReport(caseId: string, entitlementId: string) {
-  const result = await sealCbamReportCallable({ caseId, entitlementId });
+export async function sealReport(
+  caseId: string,
+  entitlementId: string,
+  requestId: string
+): Promise<SealResponse> {
+  const result = await sealCbamReportCallable({ caseId, entitlementId, requestId });
   return result.data;
 }
 
