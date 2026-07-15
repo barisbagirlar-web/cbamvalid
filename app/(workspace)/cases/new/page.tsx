@@ -17,11 +17,16 @@ export default function NewCasePage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const requestInFlight = useRef(false);
+  const creationRequestId = useRef<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (loading || !user || requestInFlight.current) return;
+
+    if (!creationRequestId.current) {
+      creationRequestId.current = crypto.randomUUID();
+    }
 
     requestInFlight.current = true;
     setError("");
@@ -29,7 +34,7 @@ export default function NewCasePage() {
     const createAndOpenCase = async () => {
       try {
         const draft = createNewCaseDraft(user.uid);
-        const newCaseId = await saveCase(draft);
+        const newCaseId = await saveCase(draft, undefined, creationRequestId.current ?? undefined);
         router.replace(`/cases/${newCaseId}`);
       } catch (creationError) {
         console.error("Failed to create and open a new case", creationError);
@@ -53,7 +58,7 @@ export default function NewCasePage() {
               <h1 className="font-serif text-2xl font-bold">New case could not be opened</h1>
               <p className="mt-3 text-sm leading-relaxed text-muted">{error}</p>
               <p className="mt-2 text-xs leading-relaxed text-muted">
-                The failure is kept on this page instead of silently returning to Dashboard. Retry once or return to Cases without creating another duplicate request.
+                Retry uses the same protected creation request, so a lost network response cannot create another duplicate draft.
               </p>
             </div>
           </div>
@@ -87,7 +92,7 @@ export default function NewCasePage() {
         <Loader2 className="h-8 w-8 animate-spin text-accent" aria-hidden="true" />
         <h1 className="mt-5 font-serif text-2xl font-bold">Creating and opening your case</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          CBAMValid is creating one clean draft and loading the eight-step dossier workspace.
+          CBAMValid is creating one idempotent draft and loading the eight-step dossier workspace.
         </p>
       </section>
     </main>
