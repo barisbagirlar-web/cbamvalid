@@ -80,7 +80,6 @@ export const createCheckoutSession = createCallable(
     try {
       const transactionId = await createCheckout({
         uid: auth.uid,
-        email: typeof auth.token.email === "string" ? auth.token.email : "",
         productCode,
         requestId,
         ...(caseId ? { caseId } : {}),
