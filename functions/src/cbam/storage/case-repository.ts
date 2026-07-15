@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { adminDb } from "../../firebase-admin";
 import { CaseOwnershipViolationError } from "../../commerce/commerce-errors";
 import { validateIdentifier } from "../../firestore-validator";
@@ -11,6 +12,38 @@ type ResolvedCaseDocument = {
   documentId: string;
   record: CbamCaseRecord;
 };
+
+type CaseCreationMarker = {
+  uid: string;
+  requestId: string;
+  caseId: string;
+  createdAt: string;
+};
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function creationDigest(uid: string, requestId: string): string {
+  return createHash("sha256").update(`${uid}\u0000${requestId}`).digest("hex");
+}
+
+function parseCreationMarker(data: unknown): CaseCreationMarker {
+  if (!data || typeof data !== "object") throw new Error("CASE_CREATION_MARKER_INVALID");
+  const source = data as Partial<CaseCreationMarker>;
+  if (
+    typeof source.uid !== "string" ||
+    typeof source.requestId !== "string" ||
+    typeof source.caseId !== "string" ||
+    typeof source.createdAt !== "string"
+  ) {
+    throw new Error("CASE_CREATION_MARKER_INVALID");
+  }
+  return {
+    uid: source.uid,
+    requestId: source.requestId,
+    caseId: createCanonicalCaseId(source.caseId),
+    createdAt: source.createdAt,
+  };
+}
 
 function parseStoredCase(data: unknown, documentId: string): CbamCaseRecord {
   if (!data || typeof data !== "object") throw new Error("CASE_RECORD_INVALID");
@@ -121,19 +154,68 @@ export async function verifyCaseOwner(caseId: string, uid: string): Promise<Cbam
   return cbamCase;
 }
 
-export async function createCase(uid: string, data: unknown): Promise<CbamCaseRecord> {
-  validateIdentifier("uid", uid);
-  const collection = adminDb.collection("cbam_cases");
-  const rawDocumentId = collection.doc().id;
-  const timestamp = new Date().toISOString();
-  const record = buildCaseRecord({ rawDocumentId, uid, data, timestamp });
-  const sanitizedData = sanitizeCaseData(record.data);
-  const persistedRecord: CbamCaseRecord = { ...record, data: sanitizedData };
+export async function createCase(
+  uid: string,
+  data: unknown,
+  requestId: string
+): Promise<CbamCaseRecord> {
+  const normalizedUid = validateIdentifier("uid", uid);
+  const normalizedRequestId = requestId.trim();
+  if (!UUID_PATTERN.test(normalizedRequestId)) {
+    throw new Error("CASE_CREATION_REQUEST_ID_INVALID");
+  }
 
-  // The Firestore document ID and public caseId must be identical. This is the
-  // invariant that prevents create-success/read-failure redirect loops.
-  await collection.doc(persistedRecord.caseId).create(persistedRecord);
-  return persistedRecord;
+  const digest = creationDigest(normalizedUid, normalizedRequestId);
+  const timestamp = new Date().toISOString();
+  const record = buildCaseRecord({
+    rawDocumentId: digest,
+    uid: normalizedUid,
+    data,
+    timestamp,
+  });
+  const persistedRecord: CbamCaseRecord = {
+    ...record,
+    data: sanitizeCaseData(record.data),
+  };
+
+  const caseRef = adminDb.collection("cbam_cases").doc(persistedRecord.caseId);
+  const markerRef = adminDb.collection("case_creation_requests").doc(digest);
+
+  return adminDb.runTransaction(async (transaction) => {
+    // Every read occurs before any write. Concurrent calls with the same
+    // requestId conflict on markerRef and converge on the first committed case.
+    const markerSnapshot = await transaction.get(markerRef);
+    const caseSnapshot = await transaction.get(caseRef);
+
+    if (markerSnapshot.exists) {
+      const marker = parseCreationMarker(markerSnapshot.data());
+      if (
+        marker.uid !== normalizedUid ||
+        marker.requestId !== normalizedRequestId ||
+        marker.caseId !== persistedRecord.caseId
+      ) {
+        throw new Error("CASE_CREATION_IDEMPOTENCY_COLLISION");
+      }
+      if (!caseSnapshot.exists) {
+        throw new Error("CASE_CREATION_IDEMPOTENCY_BROKEN");
+      }
+      return parseStoredCase(caseSnapshot.data(), caseSnapshot.id);
+    }
+
+    if (caseSnapshot.exists) {
+      throw new Error("CASE_CREATION_IDEMPOTENCY_BROKEN");
+    }
+
+    const marker: CaseCreationMarker = {
+      uid: normalizedUid,
+      requestId: normalizedRequestId,
+      caseId: persistedRecord.caseId,
+      createdAt: timestamp,
+    };
+    transaction.create(caseRef, persistedRecord);
+    transaction.create(markerRef, marker);
+    return persistedRecord;
+  });
 }
 
 export async function updateCase(caseId: string, uid: string, data: unknown): Promise<CbamCaseRecord> {
