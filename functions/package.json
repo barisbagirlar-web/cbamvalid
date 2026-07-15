@@ -2,9 +2,9 @@
   "name": "functions",
   "version": "1.0.0",
   "description": "",
-  "main": "lib/index.js",
+  "main": "build/index.js",
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
