@@ -61,9 +61,7 @@ export async function POST(request: Request) {
       transaction.set(userRef, {
         uid: decodedIdToken.uid,
         email: decodedIdToken.email || "",
-        displayName: typeof existing.displayName === "string"
-          ? existing.displayName
-          : decodedIdToken.name || "",
+        displayName: typeof existing.displayName === "string" ? existing.displayName : decodedIdToken.name || "",
         company: typeof existing.company === "string" ? existing.company : "",
         country: typeof existing.country === "string" ? existing.country : "",
         role: typeof existing.role === "string" ? existing.role : "user",
@@ -89,7 +87,7 @@ export async function POST(request: Request) {
       sameSite: "lax",
       path: "/",
     });
-    return apiSuccess({ status: "success" }, { headers: { "Cache-Control": "no-store" } });
+    return apiSuccess({ status: "success" }, 200, { "Cache-Control": "no-store" });
   } catch (error: unknown) {
     console.error(`[SESSION] Unexpected failure: ${errorText(error)}`);
     return apiFailure("INTERNAL_SERVER_ERROR", "Session could not be established.", 500);
@@ -108,7 +106,7 @@ export async function DELETE(request: Request) {
       sameSite: "lax",
       path: "/",
     });
-    return apiSuccess({ status: "success" }, { headers: { "Cache-Control": "no-store" } });
+    return apiSuccess({ status: "success" }, 200, { "Cache-Control": "no-store" });
   } catch (error: unknown) {
     console.error(`[SESSION] Logout failure: ${errorText(error)}`);
     return apiFailure("INTERNAL_SERVER_ERROR", "Session logout failed.", 500);
