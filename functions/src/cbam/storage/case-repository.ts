@@ -1,149 +1,190 @@
 import { adminDb } from "../../firebase-admin";
 import { CaseOwnershipViolationError } from "../../commerce/commerce-errors";
 import { validateIdentifier } from "../../firestore-validator";
-import { AuditReadyCaseSchema } from "../schema";
+import { AuditReadyCaseSchema, type AuditReadyCase } from "../schema";
+import { createCanonicalCaseId } from "../case-id";
+import { buildCaseRecord, type CbamCaseRecord } from "./case-contract";
 
-export interface CbamCase {
-  caseId: string;
-  uid: string;
-  data: any;
-  status: "DRAFT" | "COMPLETED" | "REFUNDED" | "ARCHIVED";
-  createdAt: string;
-  updatedAt: string;
-}
+export type CbamCase = CbamCaseRecord;
 
-/**
- * Helper to sanitize case data on write (Phase 2 & Phase 3 evidence status verification)
- */
-function sanitizeCaseData(submittedData: any, existingData?: any): any {
-  // Parse with schema
-  const parsed = AuditReadyCaseSchema.parse(submittedData);
-  
-  // Sanitize evidence records
-  const existingEvidences = existingData?.evidenceRegister || [];
-  const existingMap = new Map<string, any>(existingEvidences.map((e: any) => [e.evidenceId, e]));
-  
-  parsed.evidenceRegister = parsed.evidenceRegister.map(ev => {
-    const existing = existingMap.get(ev.evidenceId);
-    if (existing) {
-      // Force status back to PENDING if they try to escalate it without admin approval
-      const reviewStatus = ev.reviewStatus === "APPROVED" && existing.reviewStatus !== "APPROVED" ? "PENDING" : ev.reviewStatus;
-      const supportStatus = ev.supportStatus === "SUPPORTED" && existing.supportStatus !== "SUPPORTED" ? "PENDING" : ev.supportStatus;
-      return {
-        ...ev,
-        reviewStatus,
-        supportStatus
-      };
-    } else {
-      // New evidence must start as PENDING
-      return {
-        ...ev,
-        reviewStatus: "PENDING",
-        supportStatus: "PENDING"
-      };
-    }
+type ResolvedCaseDocument = {
+  documentId: string;
+  record: CbamCaseRecord;
+};
+
+function parseStoredCase(data: unknown, documentId: string): CbamCaseRecord {
+  if (!data || typeof data !== "object") throw new Error("CASE_RECORD_INVALID");
+  const source = data as Partial<CbamCaseRecord>;
+  const uid = typeof source.uid === "string" ? source.uid : "";
+  validateIdentifier("uid", uid);
+
+  const caseId = createCanonicalCaseId(
+    typeof source.caseId === "string" && source.caseId.trim() ? source.caseId : documentId
+  );
+  const parsedData = AuditReadyCaseSchema.parse({
+    ...(source.data as Record<string, unknown>),
+    caseId,
+    ownerId: uid,
   });
 
-  // Recalculate carbon price reduction based on approved evidence records
-  const approvedEvidenceIds = new Set(
-    parsed.evidenceRegister
-      .filter(e => e.reviewStatus === "APPROVED" && e.supportStatus === "SUPPORTED")
-      .map(e => e.evidenceId)
-  );
+  return {
+    caseId,
+    uid,
+    data: parsedData,
+    status: source.status ?? "DRAFT",
+    latestReleaseId: source.latestReleaseId,
+    latestReleaseVersion: source.latestReleaseVersion,
+    createdAt: typeof source.createdAt === "string" ? source.createdAt : new Date(0).toISOString(),
+    updatedAt: typeof source.updatedAt === "string" ? source.updatedAt : new Date(0).toISOString(),
+  };
+}
 
-  parsed.carbonPriceRecords = parsed.carbonPriceRecords.map(rec => {
-    if (!rec.proofOfPaymentEvidenceId || !approvedEvidenceIds.has(rec.proofOfPaymentEvidenceId)) {
+async function resolveCaseDocument(caseId: string): Promise<ResolvedCaseDocument | null> {
+  const normalizedCaseId = validateIdentifier("caseId", caseId);
+  const collection = adminDb.collection("cbam_cases");
+
+  const canonicalSnapshot = await collection.doc(normalizedCaseId).get();
+  if (canonicalSnapshot.exists) {
+    return {
+      documentId: canonicalSnapshot.id,
+      record: parseStoredCase(canonicalSnapshot.data(), canonicalSnapshot.id),
+    };
+  }
+
+  // Backward compatibility for historical records written under the raw
+  // Firestore auto-ID while storing a prefixed caseId inside the document.
+  const legacySnapshot = await collection.where("caseId", "==", normalizedCaseId).limit(2).get();
+  if (legacySnapshot.empty) return null;
+  if (legacySnapshot.docs.length !== 1) throw new Error("CASE_ID_COLLISION");
+
+  const legacyDocument = legacySnapshot.docs[0];
+  return {
+    documentId: legacyDocument.id,
+    record: parseStoredCase(legacyDocument.data(), legacyDocument.id),
+  };
+}
+
+function sanitizeCaseData(submittedData: unknown, existingData?: AuditReadyCase): AuditReadyCase {
+  const parsed = AuditReadyCaseSchema.parse(submittedData);
+  const existingEvidence = existingData?.evidenceRegister ?? [];
+  const existingMap = new Map(existingEvidence.map((evidence) => [evidence.evidenceId, evidence]));
+
+  parsed.evidenceRegister = parsed.evidenceRegister.map((evidence) => {
+    const existing = existingMap.get(evidence.evidenceId);
+    if (!existing) {
       return {
-        ...rec,
-        eligibleCertificateReduction: 0
+        ...evidence,
+        reviewStatus: "PENDING" as const,
+        supportStatus: "PENDING" as const,
       };
     }
-    return rec;
+
+    return {
+      ...evidence,
+      reviewStatus:
+        evidence.reviewStatus === "APPROVED" && existing.reviewStatus !== "APPROVED"
+          ? "PENDING"
+          : evidence.reviewStatus,
+      supportStatus:
+        evidence.supportStatus === "SUPPORTED" && existing.supportStatus !== "SUPPORTED"
+          ? "PENDING"
+          : evidence.supportStatus,
+    };
+  });
+
+  const approvedEvidenceIds = new Set(
+    parsed.evidenceRegister
+      .filter((evidence) => evidence.reviewStatus === "APPROVED" && evidence.supportStatus === "SUPPORTED")
+      .map((evidence) => evidence.evidenceId)
+  );
+
+  parsed.carbonPriceRecords = parsed.carbonPriceRecords.map((record) => {
+    if (!record.proofOfPaymentEvidenceId || !approvedEvidenceIds.has(record.proofOfPaymentEvidenceId)) {
+      return { ...record, eligibleCertificateReduction: 0 };
+    }
+    return record;
   });
 
   return parsed;
 }
 
-/**
- * Retrieve case data by ID
- */
-export async function getCase(caseId: string): Promise<CbamCase | null> {
-  validateIdentifier("caseId", caseId);
-  const doc = await adminDb.collection("cbam_cases").doc(caseId).get();
-  if (!doc.exists) {
-    return null;
-  }
-  return doc.data() as CbamCase;
+export async function getCase(caseId: string): Promise<CbamCaseRecord | null> {
+  const resolved = await resolveCaseDocument(caseId);
+  return resolved?.record ?? null;
 }
 
-/**
- * Verify if the case belongs to the given user UID
- */
-export async function verifyCaseOwner(caseId: string, uid: string): Promise<CbamCase> {
-  validateIdentifier("caseId", caseId);
+export async function verifyCaseOwner(caseId: string, uid: string): Promise<CbamCaseRecord> {
   validateIdentifier("uid", uid);
   const cbamCase = await getCase(caseId);
-  if (!cbamCase) {
-    throw new Error(`Case with ID ${caseId} was not found.`);
-  }
-  if (cbamCase.uid !== uid) {
-    throw new CaseOwnershipViolationError(caseId);
-  }
+  if (!cbamCase) throw new Error(`Case with ID ${caseId} was not found.`);
+  if (cbamCase.uid !== uid) throw new CaseOwnershipViolationError(caseId);
   return cbamCase;
 }
 
-/**
- * Create a new draft case document
- */
-export async function createCase(uid: string, data: any): Promise<CbamCase> {
+export async function createCase(uid: string, data: unknown): Promise<CbamCaseRecord> {
   validateIdentifier("uid", uid);
-  
-  const caseRef = adminDb.collection("cbam_cases").doc();
-  const caseId = `case_${caseRef.id}`;
-  const now = new Date().toISOString();
+  const collection = adminDb.collection("cbam_cases");
+  const rawDocumentId = collection.doc().id;
+  const timestamp = new Date().toISOString();
+  const record = buildCaseRecord({ rawDocumentId, uid, data, timestamp });
+  const sanitizedData = sanitizeCaseData(record.data);
+  const persistedRecord: CbamCaseRecord = { ...record, data: sanitizedData };
 
-  // Attach generated caseId to data
-  const caseData = { ...data, caseId, ownerId: uid };
-  const sanitized = sanitizeCaseData(caseData);
-
-  const cbamCase: CbamCase = {
-    caseId,
-    uid,
-    data: sanitized,
-    status: "DRAFT",
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  await caseRef.set(cbamCase);
-  return cbamCase;
+  // The Firestore document ID and public caseId must be identical. This is the
+  // invariant that prevents create-success/read-failure redirect loops.
+  await collection.doc(persistedRecord.caseId).create(persistedRecord);
+  return persistedRecord;
 }
 
-/**
- * Update an existing draft case document
- */
-export async function updateCase(caseId: string, uid: string, data: any): Promise<CbamCase> {
-  validateIdentifier("caseId", caseId);
+export async function updateCase(caseId: string, uid: string, data: unknown): Promise<CbamCaseRecord> {
   validateIdentifier("uid", uid);
+  const resolved = await resolveCaseDocument(caseId);
+  if (!resolved) throw new Error("CASE_NOT_FOUND");
+  if (resolved.record.uid !== uid) throw new CaseOwnershipViolationError(caseId);
+  if (resolved.record.status !== "DRAFT") throw new Error("CASE_NOT_EDITABLE");
 
-  const cbamCase = await verifyCaseOwner(caseId, uid);
-  const now = new Date().toISOString();
-
-  // Ensure caseId is bound correctly
-  const caseData = { ...data, caseId, ownerId: uid };
-  const sanitized = sanitizeCaseData(caseData, cbamCase.data);
-
-  const updated: Partial<CbamCase> = {
-    data: sanitized,
-    updatedAt: now,
-  };
-
-  await adminDb.collection("cbam_cases").doc(caseId).update(updated);
-  return { ...cbamCase, ...updated };
+  const timestamp = new Date().toISOString();
+  const sanitizedData = sanitizeCaseData(
+    { ...(data as Record<string, unknown>), caseId: resolved.record.caseId, ownerId: uid },
+    resolved.record.data
+  );
+  const update = { data: sanitizedData, updatedAt: timestamp };
+  await adminDb.collection("cbam_cases").doc(resolved.documentId).update(update);
+  return { ...resolved.record, ...update };
 }
 
-export async function getCasesForUser(uid: string): Promise<CbamCase[]> {
+export async function archiveCase(caseId: string, uid: string): Promise<void> {
+  const resolved = await resolveCaseDocument(caseId);
+  if (!resolved || resolved.record.uid !== uid) throw new CaseOwnershipViolationError(caseId);
+  await adminDb.collection("cbam_cases").doc(resolved.documentId).update({
+    status: "ARCHIVED",
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function deleteCase(caseId: string, uid: string): Promise<void> {
+  const resolved = await resolveCaseDocument(caseId);
+  if (!resolved || resolved.record.uid !== uid) throw new CaseOwnershipViolationError(caseId);
+  if (resolved.record.latestReleaseId) throw new Error("CASE_WITH_RELEASE_CANNOT_BE_DELETED");
+  await adminDb.collection("cbam_cases").doc(resolved.documentId).delete();
+}
+
+export async function getCasesForUser(uid: string): Promise<CbamCaseRecord[]> {
   validateIdentifier("uid", uid);
   const snapshot = await adminDb.collection("cbam_cases").where("uid", "==", uid).get();
-  return snapshot.docs.map((doc: any) => ({ caseId: doc.id, ...doc.data() })) as CbamCase[];
+  const byCaseId = new Map<string, { documentId: string; record: CbamCaseRecord }>();
+
+  for (const document of snapshot.docs) {
+    const record = parseStoredCase(document.data(), document.id);
+    const existing = byCaseId.get(record.caseId);
+    const shouldReplace =
+      !existing ||
+      document.id === record.caseId ||
+      (existing.documentId !== record.caseId && record.updatedAt > existing.record.updatedAt);
+    if (shouldReplace) byCaseId.set(record.caseId, { documentId: document.id, record });
+  }
+
+  return [...byCaseId.values()]
+    .map(({ record }) => record)
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
 }
