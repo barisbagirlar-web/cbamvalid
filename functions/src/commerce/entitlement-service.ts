@@ -15,7 +15,8 @@ export interface Entitlement {
   productCode: string;
   status: "AVAILABLE" | "RESERVED" | "CONSUMED" | "REVOKED";
   quantity: number;
-  maxReleases?: number;
+  maxReleases: number;
+  creditsRemaining: number;
   createdAt: string;
   updatedAt: string;
   releasesCount: number;
@@ -40,11 +41,15 @@ function normalizeEntitlement(data: unknown, documentId: string): Entitlement {
   const quantity = Number(source.quantity ?? 1);
   const maxReleases = Number(source.maxReleases ?? DEFAULT_MAX_RELEASES);
   const releasesCount = Number(source.releasesCount ?? 0);
+  const expectedCredits = (DEFAULT_MAX_RELEASES - releasesCount) * PREPARATION_PACK.creditsPerRelease;
+  const creditsRemaining = Number(source.creditsRemaining ?? expectedCredits);
   if (
     !Number.isSafeInteger(quantity) || quantity <= 0 ||
     !Number.isSafeInteger(maxReleases) || maxReleases !== DEFAULT_MAX_RELEASES ||
-    !Number.isSafeInteger(releasesCount) || releasesCount < 0 || releasesCount > maxReleases
-  ) throw new EntitlementUnavailableError("Entitlement counters are invalid.");
+    !Number.isSafeInteger(releasesCount) || releasesCount < 0 || releasesCount > maxReleases ||
+    !Number.isSafeInteger(creditsRemaining) || creditsRemaining < 0 ||
+    creditsRemaining !== expectedCredits
+  ) throw new EntitlementUnavailableError("Entitlement counters or credit conservation are invalid.");
 
   return {
     entitlementId: source.entitlementId || documentId,
@@ -54,6 +59,7 @@ function normalizeEntitlement(data: unknown, documentId: string): Entitlement {
     status: source.status || "REVOKED",
     quantity,
     maxReleases,
+    creditsRemaining,
     createdAt: String(source.createdAt || new Date(0).toISOString()),
     updatedAt: String(source.updatedAt || new Date(0).toISOString()),
     releasesCount,
@@ -71,8 +77,9 @@ async function assertCanonicalOrderEntitlement(
   entitlement: Entitlement
 ): Promise<void> {
   if (!entitlement.orderId) throw new EntitlementUnavailableError("Entitlement order scope is missing.");
-  const query = adminDb.collection("entitlements").where("orderId", "==", entitlement.orderId);
-  const snapshot = await transaction.get(query);
+  const snapshot = await transaction.get(
+    adminDb.collection("entitlements").where("orderId", "==", entitlement.orderId)
+  );
   const siblings = snapshot.docs
     .map((document) => normalizeEntitlement(document.data(), document.id))
     .filter((candidate) =>
@@ -114,6 +121,7 @@ export async function createEntitlement(
     status: "AVAILABLE",
     quantity: 1,
     maxReleases: DEFAULT_MAX_RELEASES,
+    creditsRemaining: PREPARATION_PACK.accountCredits,
     createdAt: now,
     updatedAt: now,
     releasesCount: 0,
@@ -148,7 +156,11 @@ export async function reserveEntitlement(
   if (entitlement.uid !== params.uid) throw new EntitlementUnavailableError("Ownership mismatch on requested entitlement.");
   await assertCanonicalOrderEntitlement(transaction, entitlement);
 
-  if (entitlement.releasesCount >= DEFAULT_MAX_RELEASES || entitlement.status === "CONSUMED") {
+  if (
+    entitlement.releasesCount >= DEFAULT_MAX_RELEASES ||
+    entitlement.creditsRemaining < PREPARATION_PACK.creditsPerRelease ||
+    entitlement.status === "CONSUMED"
+  ) {
     throw new EntitlementUnavailableError(`The pack has reached its ${DEFAULT_MAX_RELEASES}-release limit.`);
   }
   if (entitlement.scopeCaseId && entitlement.scopeCaseId !== params.caseId) {
@@ -232,7 +244,10 @@ export async function consumeEntitlement(
   ]);
   if (creditMarkerSnapshot.exists) throw new Error("SEAL_CREDIT_PARTIAL_STATE");
   const creditSummary = normalizeCreditSummary(creditSnapshot.data());
-  if (creditSummary.availableCredits < PREPARATION_PACK.creditsPerRelease) {
+  if (
+    creditSummary.availableCredits < PREPARATION_PACK.creditsPerRelease ||
+    entitlement.creditsRemaining < PREPARATION_PACK.creditsPerRelease
+  ) {
     throw new EntitlementUnavailableError(
       `${PREPARATION_PACK.creditsPerRelease} credits are required for a successful seal.`
     );
@@ -248,6 +263,7 @@ export async function consumeEntitlement(
     sealedAt: now,
   };
   const releasesList = [...entitlement.releasesList, releaseItem];
+  const creditsRemaining = entitlement.creditsRemaining - PREPARATION_PACK.creditsPerRelease;
   const status: Entitlement["status"] = newCount === DEFAULT_MAX_RELEASES ? "CONSUMED" : "AVAILABLE";
   const balanceAfter = creditSummary.availableCredits - PREPARATION_PACK.creditsPerRelease;
 
@@ -255,6 +271,7 @@ export async function consumeEntitlement(
     status,
     releasesCount: newCount,
     maxReleases: DEFAULT_MAX_RELEASES,
+    creditsRemaining,
     scopeCaseId: params.caseId,
     releasesList,
     consumedReportId: params.reportId,
@@ -275,6 +292,7 @@ export async function consumeEntitlement(
     amount: -PREPARATION_PACK.creditsPerRelease,
     reason: "SUCCESSFUL_REPORT_SEAL",
     orderId: entitlement.orderId,
+    entitlementId: entitlement.entitlementId,
     reportId: params.reportId,
     createdAt: now,
     balanceAfter,
@@ -299,7 +317,7 @@ export async function consumeEntitlement(
     ...entitlement,
     status,
     releasesCount: newCount,
-    maxReleases: DEFAULT_MAX_RELEASES,
+    creditsRemaining,
     scopeCaseId: params.caseId,
     releasesList,
     consumedReportId: params.reportId,
