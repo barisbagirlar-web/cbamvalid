@@ -40,9 +40,7 @@ export async function fulfillPreparationPackPurchase(
     order.currency !== transaction.currency ||
     order.amountMinor !== transaction.totalMinor ||
     order.caseId !== transaction.caseId
-  ) {
-    throw new Error("PURCHASE_ORDER_CONTRACT_MISMATCH");
-  }
+  ) throw new Error("PURCHASE_ORDER_CONTRACT_MISMATCH");
   if (order.paddleTransactionId && order.paddleTransactionId !== transaction.transactionId) {
     throw new Error("PURCHASE_TRANSACTION_ID_MISMATCH");
   }
@@ -50,6 +48,10 @@ export async function fulfillPreparationPackPurchase(
   const completed = order.status === "ENTITLED" && entitlementSnapshot.exists && markerSnapshot.exists;
   if (completed) {
     const current = normalizeCreditSummary(creditSummarySnapshot.data());
+    const entitlement = entitlementSnapshot.data() as Record<string, unknown>;
+    if (entitlement.creditsRemaining !== PREPARATION_PACK.accountCredits) {
+      throw new Error("PURCHASE_COMPLETED_ENTITLEMENT_INVALID");
+    }
     return { entitlementId: entitlementRef.id, balanceAfter: current.availableCredits, idempotent: true };
   }
   if (order.status === "ENTITLED" || entitlementSnapshot.exists || markerSnapshot.exists) {
@@ -78,6 +80,7 @@ export async function fulfillPreparationPackPurchase(
     status: "AVAILABLE",
     quantity: 1,
     maxReleases: PREPARATION_PACK.maxReleases,
+    creditsRemaining: PREPARATION_PACK.accountCredits,
     createdAt: now,
     updatedAt: now,
     releasesCount: 0,
