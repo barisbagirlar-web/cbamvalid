@@ -14,6 +14,10 @@ export function createCaseSaveRequest(
   caseId?: string,
   requestId?: string
 ): CaseSaveRequest {
+  if (caseId !== undefined && requestId !== undefined) {
+    throw new Error("AMBIGUOUS_CASE_SAVE_REQUEST");
+  }
+
   if (caseId !== undefined) {
     const normalizedCaseId = caseId.trim();
     if (!isCaseId(normalizedCaseId)) throw new Error("INVALID_CASE_ID");
