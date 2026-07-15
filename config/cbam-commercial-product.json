@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "CBAMVALID-COMMERCE-1.0",
+  "productCode": "CBAM_EXPORTER_FINAL_REPORT",
+  "slug": "cbam-verifier-preparation-pack-5",
+  "displayName": "CBAM Verifier-Preparation Pack",
+  "currency": "USD",
+  "priceMinor": 14900,
+  "creditsGranted": 100,
+  "creditsRequiredToUnlock": 100,
+  "releasesPerPack": 5,
+  "subscription": false,
+  "correctionWindowDays": 14,
+  "maxCustomsLines": 100,
+  "maxInstallations": 1,
+  "maxCnCodes": 25,
+  "active": true
+}
