@@ -6,7 +6,9 @@ This document separates executed source evidence from unproven production behavi
 
 - Verified PR: `#23`
 - Verified PR head: `2ba3e3ff12390dc9ddcbe6726058a7a27e9b71c6`
-- Merged main commit: `11d3e7a0a40a844227724ec9c2ee7e3e17a1fc79`
+- Verifier-grade implementation merge: `11d3e7a0a40a844227724ec9c2ee7e3e17a1fc79`
+- Release-governance PR: `#24`
+- Deployment source: resolve `origin/main` immediately before build and deploy
 - Regulatory source fingerprint: implemented and tested
 - Professional PDF package: implemented and tested
 - Controlled verifier XLSX: implemented and tested
@@ -39,8 +41,8 @@ This document separates executed source evidence from unproven production behavi
 
 | Evidence | Status |
 |---|---|
-| Current main SHA deployed to Firebase | NOT_PROVEN |
-| Deployed SHA matches `11d3e7a0...` | FAIL — last recorded live SHA is older |
+| SHA resolved from `origin/main` deployed to Firebase | NOT_PROVEN |
+| Deployed SHA equals the deployment-time `origin/main` SHA | FAIL — last recorded live SHA is older |
 | Production KMS and Secret Manager bindings | NOT_PROVEN |
 | Authenticated case create/save/reload | NOT_PROVEN |
 | Failed seal consumes zero entitlement | NOT_PROVEN |
@@ -48,6 +50,10 @@ This document separates executed source evidence from unproven production behavi
 | Production ZIP/PDF/XLSX downloads | NOT_PROVEN |
 | Production ZIP contains 27 components with valid hashes/signature | NOT_PROVEN |
 | Live custom-domain browser E2E and runtime logs | NOT_PROVEN |
+
+## Deployment SHA rule
+
+A tracked file cannot safely hardcode its own future merge SHA. Deployment evidence must therefore record the immutable value returned by `git rev-parse origin/main` immediately before build/deploy and prove that the live runtime/build revision matches that value.
 
 ## Closure truth
 
@@ -60,4 +66,4 @@ PRODUCTION_RUNTIME_VALIDATION_COMPLETE=NO
 PRODUCTION_SALES_READY=NO
 ```
 
-No production completion claim is permitted until the production evidence table is executed against the deployed main commit.
+No production completion claim is permitted until the production evidence table is executed against the deployment-time `origin/main` SHA.
