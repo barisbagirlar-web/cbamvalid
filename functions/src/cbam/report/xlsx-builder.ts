@@ -371,7 +371,15 @@ export async function buildVerifierWorkbook(params: {
   for (const path of required) if (!validation.file(path)) throw new Error(`XLSX_COMPONENT_MISSING:${path}`);
   const workbookXml = await validation.file("xl/workbook.xml")?.async("string");
   const styles = await validation.file("xl/styles.xml")?.async("string");
-  if (!workbookXml?.includes("VERIFIER_SIGN_OFF") || !styles?.includes("conditionalFormatting")) {
+  const worksheetXml = (await Promise.all(
+    sheets.map((_, index) => validation.file(`xl/worksheets/sheet${index + 1}.xml`)!.async("string"))
+  )).join("\n");
+  if (
+    !workbookXml?.includes("VERIFIER_SIGN_OFF") ||
+    !styles?.includes('<dxfs count="3">') ||
+    !worksheetXml.includes("<conditionalFormatting") ||
+    !worksheetXml.includes("<dataValidations")
+  ) {
     throw new Error("XLSX_VERIFIER_STRUCTURE_INVALID");
   }
   return buffer;
