@@ -15,30 +15,20 @@ export default async function CbamLandingPage() {
     redirect("/login");
   }
 
-  // Load cases and reports
-  const casesSnapshot = await getAdminDb()
-    .collection("cbam_cases")
-    .where("uid", "==", session.uid)
-    .get();
+  // Load cases, reports and entitlements in parallel (independent queries, no shared dependency)
+  const [casesSnapshot, reportsSnapshot, entitlementsSnapshot] = await Promise.all([
+    getAdminDb().collection("cbam_cases").where("uid", "==", session.uid).get(),
+    getAdminDb().collection("cbam_reports").where("uid", "==", session.uid).get(),
+    getAdminDb().collection("entitlements").where("uid", "==", session.uid).where("status", "==", "AVAILABLE").get(),
+  ]);
 
   const cases = casesSnapshot.docs
     .map((doc: any) => doc.data())
     .sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
-  const reportsSnapshot = await getAdminDb()
-    .collection("cbam_reports")
-    .where("uid", "==", session.uid)
-    .get();
-
   const reports = reportsSnapshot.docs
     .map((doc: any) => doc.data())
     .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-  const entitlementsSnapshot = await getAdminDb()
-    .collection("entitlements")
-    .where("uid", "==", session.uid)
-    .where("status", "==", "AVAILABLE")
-    .get();
 
   const availableEntitlementsCount = entitlementsSnapshot.size;
 

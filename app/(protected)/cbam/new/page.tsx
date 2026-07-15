@@ -18,20 +18,13 @@ export default async function NewCbamCasePage(props: PageProps) {
   }
   const caseId = searchParams.caseId;
 
-  let initialCase = null;
-  if (caseId) {
-    const cbamCase = await getCase(caseId);
-    if (cbamCase && cbamCase.uid === session.uid) {
-      initialCase = cbamCase;
-    }
-  }
+  // caseId lookup (conditional) and entitlements query are independent - run in parallel
+  const [cbamCase, entitlementsSnapshot] = await Promise.all([
+    caseId ? getCase(caseId) : Promise.resolve(null),
+    getAdminDb().collection("entitlements").where("uid", "==", session.uid).where("status", "==", "AVAILABLE").get(),
+  ]);
 
-  // Fetch available entitlements for the user
-  const entitlementsSnapshot = await getAdminDb()
-    .collection("entitlements")
-    .where("uid", "==", session.uid)
-    .where("status", "==", "AVAILABLE")
-    .get();
+  const initialCase = cbamCase && cbamCase.uid === session.uid ? cbamCase : null;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const availableEntitlements = entitlementsSnapshot.docs.map((doc: any) => doc.data());

@@ -1,3 +1,7 @@
+runConfig:
+  minInstances: 1
+  concurrency: 80
+
 env:
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     value: "AIzaSyD719QlNheW-iiRLbCU9TGk0yymm3QS90Q"
