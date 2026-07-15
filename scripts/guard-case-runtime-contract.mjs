@@ -22,6 +22,7 @@ function rejectText(source, rejected, label) {
 }
 
 const repository = read("functions/src/cbam/storage/case-repository.ts");
+const idempotency = read("functions/src/cbam/storage/case-creation-idempotency.ts");
 const caseHandler = read("functions/src/handlers/cases.ts");
 const reportHandler = read("functions/src/handlers/reports.ts");
 const browserSchema = read("lib/cbam/schema.ts");
@@ -32,16 +33,21 @@ const newCasePage = read("app/(workspace)/cases/new/page.tsx");
 const casePage = read("app/(workspace)/cases/[caseId]/page.tsx");
 const firebaseConfig = read("firebase.json");
 
-requireText(repository, 'collection("case_creation_requests").doc(digest)', "Case creation idempotency collection");
+requireText(repository, 'collection("case_creation_requests").doc(identity.digest)', "Case creation idempotency collection");
 requireText(repository, "adminDb.runTransaction", "Atomic case creation transaction");
 requireText(repository, "await transaction.get(markerRef)", "Idempotency marker read before write");
 requireText(repository, "await transaction.get(caseRef)", "Case existence read before write");
 requireText(repository, "transaction.create(caseRef, persistedRecord)", "Canonical case create");
-requireText(repository, "transaction.create(markerRef, marker)", "Atomic idempotency marker create");
-requireText(repository, "CASE_CREATION_IDEMPOTENCY_BROKEN", "Broken idempotency fail-closed state");
+requireText(repository, "transaction.create(markerRef, creationMarker)", "Atomic idempotency marker create");
 requireText(repository, '.where("caseId", "==", normalizedCaseId).limit(2)', "Legacy case lookup");
 requireText(repository, "document.id === record.caseId", "Canonical record deduplication");
 rejectText(repository, "await caseRef.set(cbamCase)", "Raw auto-ID write pattern");
+
+requireText(idempotency, "deriveCaseCreationIdentity", "Deterministic creation identity");
+requireText(idempotency, 'return "RETURN_EXISTING"', "Idempotent retry state");
+requireText(idempotency, 'return "CREATE"', "First creation state");
+requireText(idempotency, "CASE_CREATION_IDEMPOTENCY_BROKEN", "Partial-state fail-closed contract");
+requireText(idempotency, "CASE_CREATION_IDEMPOTENCY_COLLISION", "Collision fail-closed contract");
 
 requireText(caseHandler, "requestId: z.string().uuid().optional()", "Callable request ID validation");
 requireText(caseHandler, "createCase(auth.uid, parsedData, requestId)", "Idempotent repository invocation");
