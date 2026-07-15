@@ -18,6 +18,7 @@ export interface CommerceOrder {
   orderId: string;
   uid: string;
   productCode: string;
+  paddlePriceId: string;
   status: CommerceOrderStatus;
   currency: string;
   amountMinor: number;
@@ -53,6 +54,7 @@ export async function createOrder(
     orderId: string;
     uid: string;
     productCode: string;
+    paddlePriceId: string;
     currency: string;
     amountMinor: number;
     checkoutRequestId: string;
@@ -62,6 +64,7 @@ export async function createOrder(
 ): Promise<CommerceOrder> {
   validateIdentifier("orderId", params.orderId);
   validateIdentifier("uid", params.uid);
+  if (!/^pri_[A-Za-z0-9]+$/.test(params.paddlePriceId)) throw new Error("ORDER_PADDLE_PRICE_ID_INVALID");
   const orderRef = adminDb.collection("commerce_orders").doc(params.orderId);
   const existing = await transaction.get(orderRef);
   if (existing.exists) throw new Error("ORDER_ID_COLLISION");
@@ -69,6 +72,7 @@ export async function createOrder(
     orderId: params.orderId,
     uid: params.uid,
     productCode: params.productCode,
+    paddlePriceId: params.paddlePriceId,
     status: "CHECKOUT_CREATED",
     currency: params.currency,
     amountMinor: params.amountMinor,
