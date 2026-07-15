@@ -1,107 +1,133 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createEntitlement, reserveEntitlement, consumeEntitlement, releaseEntitlementReservation } from "../../functions/src/commerce/entitlement-service";
+import { createEntitlement, reserveEntitlement, consumeEntitlement } from "../../functions/src/commerce/entitlement-service";
 import { DoubleSpendViolationError, EntitlementUnavailableError } from "../../functions/src/commerce/commerce-errors";
 
-// Mock Firebase Admin SDK
-const mockDocs: Record<string, any> = {};
+const mockDocs: Record<string, Record<string, unknown>> = {};
 
-const mockDbTransaction: any = {
-  get: vi.fn(async (ref: any) => {
-    // If it's a query (with where/limit methods), return empty query result
-    if (ref && typeof ref.get === "function" && ref !== mockDbTransaction) {
-      return await ref.get();
+type QueryFilter = {
+  field: string;
+  operator: string;
+  value: unknown;
+};
+
+function documentSnapshot(path: string, data: Record<string, unknown>) {
+  const id = path.split("/").at(-1) || path;
+  return {
+    id,
+    exists: true,
+    data: () => data,
+  };
+}
+
+const mockDbTransaction = {
+  get: vi.fn(async (reference: { path?: string; get?: () => Promise<unknown> }) => {
+    if (reference && typeof reference.get === "function" && !reference.path) {
+      return reference.get();
     }
-    const path = ref?.path;
+
+    const path = reference?.path || "";
     const data = mockDocs[path];
     return {
-      exists: !!data,
+      id: path.split("/").at(-1) || path,
+      exists: Boolean(data),
       data: () => data,
     };
   }),
-  set: vi.fn((ref: any, data: any) => {
-    mockDocs[ref.path] = data;
+  set: vi.fn((reference: { path: string }, data: Record<string, unknown>) => {
+    mockDocs[reference.path] = data;
   }),
-  update: vi.fn((ref: any, data: any) => {
-    mockDocs[ref.path] = { ...mockDocs[ref.path], ...data };
+  update: vi.fn((reference: { path: string }, data: Record<string, unknown>) => {
+    mockDocs[reference.path] = { ...mockDocs[reference.path], ...data };
   }),
 };
 
-vi.mock("../../functions/src/firebase-admin", () => {
-  return {
-    adminDb: {
-      collection: (colName: string) => {
-        const colObj: any = {
-          where: vi.fn(() => colObj),
-          limit: vi.fn(() => colObj),
-          orderBy: vi.fn(() => colObj),
-          get: vi.fn(async () => {
-            return {
-              empty: true,
-              docs: [],
-            };
-          }),
-          doc: (docId?: string) => {
-            const id = docId || Math.random().toString(36).substring(7);
-            const path = `${colName}/${id}`;
-            return {
-              id,
-              path,
-              get: async () => {
-                const data = mockDocs[path];
-                return {
-                  exists: !!data,
-                  data: () => data,
-                };
-              },
-              set: async (d: any) => {
-                mockDocs[path] = d;
-              },
-              update: async (d: any) => {
-                mockDocs[path] = { ...mockDocs[path], ...d };
-              },
-              delete: async () => {
-                delete mockDocs[path];
-              }
-            };
-          }
-        };
-        return colObj;
-      },
-      runTransaction: async (callback: any) => {
-        return await callback(mockDbTransaction);
-      }
-    },
-    getStorageBucket: () => {
-      return {
-        file: (filePath: string) => {
-          let fileData: Buffer = Buffer.from("");
+vi.mock("../../functions/src/firebase-admin", () => ({
+  adminDb: {
+    collection: (collectionName: string) => {
+      const filters: QueryFilter[] = [];
+      let resultLimit: number | undefined;
+
+      const collection = {
+        where: vi.fn((field: string, operator: string, value: unknown) => {
+          filters.push({ field, operator, value });
+          return collection;
+        }),
+        limit: vi.fn((value: number) => {
+          resultLimit = value;
+          return collection;
+        }),
+        orderBy: vi.fn(() => collection),
+        get: vi.fn(async () => {
+          const prefix = `${collectionName}/`;
+          let documents = Object.entries(mockDocs)
+            .filter(([path]) => path.startsWith(prefix) && !path.slice(prefix.length).includes("/"))
+            .filter(([, data]) => filters.every((filter) => {
+              if (filter.operator !== "==") throw new Error(`UNSUPPORTED_MOCK_QUERY_OPERATOR:${filter.operator}`);
+              return data[filter.field] === filter.value;
+            }))
+            .map(([path, data]) => documentSnapshot(path, data));
+
+          if (resultLimit !== undefined) documents = documents.slice(0, resultLimit);
           return {
-            name: filePath,
-            save: async (buf: Buffer) => {
-              fileData = buf;
-            },
-            download: async () => {
-              return [fileData];
-            },
-            delete: async () => {}
+            empty: documents.length === 0,
+            docs: documents,
           };
-        }
+        }),
+        doc: (documentId?: string) => {
+          const id = documentId || Math.random().toString(36).substring(2, 15);
+          const path = `${collectionName}/${id}`;
+          return {
+            id,
+            path,
+            get: async () => {
+              const data = mockDocs[path];
+              return {
+                id,
+                exists: Boolean(data),
+                data: () => data,
+              };
+            },
+            set: async (data: Record<string, unknown>) => {
+              mockDocs[path] = data;
+            },
+            update: async (data: Record<string, unknown>) => {
+              mockDocs[path] = { ...mockDocs[path], ...data };
+            },
+            delete: async () => {
+              delete mockDocs[path];
+            },
+          };
+        },
       };
-    }
-  };
-});
+
+      return collection;
+    },
+    runTransaction: async (callback: (transaction: typeof mockDbTransaction) => Promise<unknown>) =>
+      callback(mockDbTransaction),
+  },
+  getStorageBucket: () => ({
+    file: (filePath: string) => {
+      let fileData = Buffer.from("");
+      return {
+        name: filePath,
+        save: async (buffer: Buffer) => {
+          fileData = buffer;
+        },
+        download: async () => [fileData],
+        delete: async () => undefined,
+      };
+    },
+  }),
+}));
 
 describe("5-Release Commercial Entitlement State Machine", () => {
   beforeEach(() => {
-    // Clear mock DB
-    for (const key in mockDocs) {
-      delete mockDocs[key];
-    }
+    for (const key of Object.keys(mockDocs)) delete mockDocs[key];
     vi.clearAllMocks();
   });
 
   it("1. Initializes with 0 releases and status AVAILABLE", async () => {
-    const ent = await createEntitlement(mockDbTransaction, {
+    const entitlement = await createEntitlement(mockDbTransaction as never, {
       uid: "user-123",
       orderId: "ord-1",
       transactionId: "txn-1",
@@ -110,13 +136,13 @@ describe("5-Release Commercial Entitlement State Machine", () => {
       quantity: 1,
     });
 
-    expect(ent.releasesCount).toBe(0);
-    expect(ent.status).toBe("AVAILABLE");
-    expect(ent.releasesList).toEqual([]);
+    expect(entitlement.releasesCount).toBe(0);
+    expect(entitlement.status).toBe("AVAILABLE");
+    expect(entitlement.releasesList).toEqual([]);
   });
 
   it("2. Reserves and locks case scope successfully, preventing double spend", async () => {
-    const ent = await createEntitlement(mockDbTransaction, {
+    const entitlement = await createEntitlement(mockDbTransaction as never, {
       uid: "user-123",
       orderId: "ord-1",
       transactionId: "txn-1",
@@ -125,8 +151,8 @@ describe("5-Release Commercial Entitlement State Machine", () => {
       quantity: 1,
     });
 
-    const reserved = await reserveEntitlement(mockDbTransaction, {
-      entitlementId: ent.entitlementId,
+    const reserved = await reserveEntitlement(mockDbTransaction as never, {
+      entitlementId: entitlement.entitlementId,
       uid: "user-123",
       reportId: "rep-1",
       caseId: "case-999",
@@ -135,10 +161,9 @@ describe("5-Release Commercial Entitlement State Machine", () => {
     expect(reserved.status).toBe("RESERVED");
     expect(reserved.reservedReportId).toBe("rep-1");
 
-    // Second reservation attempt should trigger double-spend protection
     await expect(
-      reserveEntitlement(mockDbTransaction, {
-        entitlementId: ent.entitlementId,
+      reserveEntitlement(mockDbTransaction as never, {
+        entitlementId: entitlement.entitlementId,
         uid: "user-123",
         reportId: "rep-2",
         caseId: "case-999",
@@ -147,7 +172,7 @@ describe("5-Release Commercial Entitlement State Machine", () => {
   });
 
   it("3. Enforces scope locking to the same caseId across multiple releases", async () => {
-    const ent = await createEntitlement(mockDbTransaction, {
+    const entitlement = await createEntitlement(mockDbTransaction as never, {
       uid: "user-123",
       orderId: "ord-1",
       transactionId: "txn-1",
@@ -156,16 +181,15 @@ describe("5-Release Commercial Entitlement State Machine", () => {
       quantity: 1,
     });
 
-    // 1st Release on case-999
-    await reserveEntitlement(mockDbTransaction, {
-      entitlementId: ent.entitlementId,
+    await reserveEntitlement(mockDbTransaction as never, {
+      entitlementId: entitlement.entitlementId,
       uid: "user-123",
       reportId: "rep-1",
       caseId: "case-999",
     });
 
-    await consumeEntitlement(mockDbTransaction, {
-      entitlementId: ent.entitlementId,
+    await consumeEntitlement(mockDbTransaction as never, {
+      entitlementId: entitlement.entitlementId,
       uid: "user-123",
       reportId: "rep-1",
       caseId: "case-999",
@@ -173,10 +197,9 @@ describe("5-Release Commercial Entitlement State Machine", () => {
       version: 1,
     });
 
-    // Attempting reservation for a different caseId (case-888) must fail scope lock
     await expect(
-      reserveEntitlement(mockDbTransaction, {
-        entitlementId: ent.entitlementId,
+      reserveEntitlement(mockDbTransaction as never, {
+        entitlementId: entitlement.entitlementId,
         uid: "user-123",
         reportId: "rep-2",
         caseId: "case-888",
@@ -185,7 +208,7 @@ describe("5-Release Commercial Entitlement State Machine", () => {
   });
 
   it("4. Consumes releases sequentially, requires correctionReason for sequence 2-5, and fully consumes at 5", async () => {
-    const ent = await createEntitlement(mockDbTransaction, {
+    const entitlement = await createEntitlement(mockDbTransaction as never, {
       uid: "user-123",
       orderId: "ord-1",
       transactionId: "txn-1",
@@ -194,10 +217,14 @@ describe("5-Release Commercial Entitlement State Machine", () => {
       quantity: 1,
     });
 
-    // Release 1: no correction reason required
-    await reserveEntitlement(mockDbTransaction, { entitlementId: ent.entitlementId, uid: "user-123", reportId: "rep-1", caseId: "case-1" });
-    let updated = await consumeEntitlement(mockDbTransaction, {
-      entitlementId: ent.entitlementId,
+    await reserveEntitlement(mockDbTransaction as never, {
+      entitlementId: entitlement.entitlementId,
+      uid: "user-123",
+      reportId: "rep-1",
+      caseId: "case-1",
+    });
+    let updated = await consumeEntitlement(mockDbTransaction as never, {
+      entitlementId: entitlement.entitlementId,
       uid: "user-123",
       reportId: "rep-1",
       caseId: "case-1",
@@ -207,11 +234,15 @@ describe("5-Release Commercial Entitlement State Machine", () => {
     expect(updated.releasesCount).toBe(1);
     expect(updated.status).toBe("AVAILABLE");
 
-    // Release 2: correction reason is required!
-    await reserveEntitlement(mockDbTransaction, { entitlementId: ent.entitlementId, uid: "user-123", reportId: "rep-2", caseId: "case-1" });
+    await reserveEntitlement(mockDbTransaction as never, {
+      entitlementId: entitlement.entitlementId,
+      uid: "user-123",
+      reportId: "rep-2",
+      caseId: "case-1",
+    });
     await expect(
-      consumeEntitlement(mockDbTransaction, {
-        entitlementId: ent.entitlementId,
+      consumeEntitlement(mockDbTransaction as never, {
+        entitlementId: entitlement.entitlementId,
         uid: "user-123",
         reportId: "rep-2",
         caseId: "case-1",
@@ -220,9 +251,8 @@ describe("5-Release Commercial Entitlement State Machine", () => {
       })
     ).rejects.toThrow("A correction reason must be supplied");
 
-    // Re-attempt with correction reason
-    updated = await consumeEntitlement(mockDbTransaction, {
-      entitlementId: ent.entitlementId,
+    updated = await consumeEntitlement(mockDbTransaction as never, {
+      entitlementId: entitlement.entitlementId,
       uid: "user-123",
       reportId: "rep-2",
       caseId: "case-1",
@@ -232,27 +262,30 @@ describe("5-Release Commercial Entitlement State Machine", () => {
     });
     expect(updated.releasesCount).toBe(2);
 
-    // Consume releases 3, 4, 5
-    for (let seq = 3; seq <= 5; seq++) {
-      await reserveEntitlement(mockDbTransaction, { entitlementId: ent.entitlementId, uid: "user-123", reportId: `rep-${seq}`, caseId: "case-1" });
-      updated = await consumeEntitlement(mockDbTransaction, {
-        entitlementId: ent.entitlementId,
+    for (let sequence = 3; sequence <= 5; sequence += 1) {
+      await reserveEntitlement(mockDbTransaction as never, {
+        entitlementId: entitlement.entitlementId,
         uid: "user-123",
-        reportId: `rep-${seq}`,
+        reportId: `rep-${sequence}`,
         caseId: "case-1",
-        reportHash: `hash-${seq}`,
-        version: seq,
-        correctionReason: `Correction version ${seq}`,
+      });
+      updated = await consumeEntitlement(mockDbTransaction as never, {
+        entitlementId: entitlement.entitlementId,
+        uid: "user-123",
+        reportId: `rep-${sequence}`,
+        caseId: "case-1",
+        reportHash: `hash-${sequence}`,
+        version: sequence,
+        correctionReason: `Correction version ${sequence}`,
       });
     }
 
     expect(updated.releasesCount).toBe(5);
     expect(updated.status).toBe("CONSUMED");
 
-    // Release 6: must be prevented
     await expect(
-      reserveEntitlement(mockDbTransaction, {
-        entitlementId: ent.entitlementId,
+      reserveEntitlement(mockDbTransaction as never, {
+        entitlementId: entitlement.entitlementId,
         uid: "user-123",
         reportId: "rep-6",
         caseId: "case-1",
