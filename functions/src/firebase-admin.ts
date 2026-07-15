@@ -17,17 +17,23 @@ export const adminStorage = getStorage(app);
 
 type RawBucket = ReturnType<typeof adminStorage.bucket>;
 type RawFile = ReturnType<RawBucket["file"]>;
-type RawMetadataResult = Awaited<ReturnType<RawFile["getMetadata"]>>;
-type RawMetadata = RawMetadataResult[0];
-type SafeMetadata = Omit<RawMetadata, "metadata"> & { metadata: Record<string, string> };
-type SafeMetadataResult = RawMetadataResult extends [unknown, ...infer Rest]
-  ? [SafeMetadata, ...Rest]
-  : [SafeMetadata];
-type SafeFile = Omit<RawFile, "getMetadata"> & {
-  getMetadata(...args: Parameters<RawFile["getMetadata"]>): Promise<SafeMetadataResult>;
+
+type SafeFileMetadata = {
+  size?: string | number;
+  contentType?: string;
+  metadata: Record<string, string>;
+  [key: string]: unknown;
 };
+
+type SafeFile = Omit<RawFile, "exists" | "getMetadata" | "download" | "save"> & {
+  exists(): Promise<[boolean]>;
+  getMetadata(): Promise<[SafeFileMetadata, unknown]>;
+  download(options?: Record<string, unknown>): Promise<[Buffer]>;
+  save(data: Buffer | string, options?: Record<string, unknown>): Promise<void>;
+};
+
 type SafeBucket = Omit<RawBucket, "file"> & {
-  file(...args: Parameters<RawBucket["file"]>): SafeFile;
+  file(name: string, options?: Record<string, unknown>): SafeFile;
 };
 
 export function normalizeStorageCustomMetadata(value: unknown): Record<string, string> {
@@ -40,25 +46,30 @@ export function normalizeStorageCustomMetadata(value: unknown): Record<string, s
   return normalized;
 }
 
+function bindMember(target: object, property: string | symbol): unknown {
+  const member = Reflect.get(target, property, target) as unknown;
+  return typeof member === "function" ? member.bind(target) : member;
+}
+
 function wrapStorageFile(file: RawFile): SafeFile {
   return new Proxy(file, {
     get(target, property) {
       if (property === "getMetadata") {
-        return async (...args: Parameters<RawFile["getMetadata"]>): Promise<SafeMetadataResult> => {
-          const result = await target.getMetadata(...args);
-          const [metadata, ...rest] = result;
-          const safeMetadata: SafeMetadata = {
-            ...metadata,
-            metadata: normalizeStorageCustomMetadata(metadata.metadata),
-          };
-          return [safeMetadata, ...rest] as SafeMetadataResult;
+        return async (): Promise<[SafeFileMetadata, unknown]> => {
+          const [metadata, response] = await target.getMetadata();
+          return [
+            {
+              ...metadata,
+              metadata: normalizeStorageCustomMetadata(metadata.metadata),
+            },
+            response,
+          ];
         };
       }
 
-      const member = Reflect.get(target, property, target) as unknown;
-      return typeof member === "function" ? member.bind(target) : member;
+      return bindMember(target, property);
     },
-  }) as SafeFile;
+  }) as unknown as SafeFile;
 }
 
 export const getStorageBucket = (): SafeBucket => {
@@ -66,13 +77,13 @@ export const getStorageBucket = (): SafeBucket => {
   return new Proxy(bucket, {
     get(target, property) {
       if (property === "file") {
-        return (...args: Parameters<RawBucket["file"]>) => wrapStorageFile(target.file(...args));
+        return (name: string, options?: Record<string, unknown>) =>
+          wrapStorageFile(target.file(name, options));
       }
 
-      const member = Reflect.get(target, property, target) as unknown;
-      return typeof member === "function" ? member.bind(target) : member;
+      return bindMember(target, property);
     },
-  }) as SafeBucket;
+  }) as unknown as SafeBucket;
 };
 
 // Use a custom setting for firestore to ignore undefined properties
