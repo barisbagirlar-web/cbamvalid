@@ -121,7 +121,7 @@ requireText(cleanNextTypes, 'path.join(root, ".next", "dev", "types")', "Develop
 requireText(cleanNextTypes, "fs.rmSync", "Generated type cache deletion");
 
 requireText(functionsPackage, '"main": "build/index.js"', "Generated Functions runtime entry");
-requireText(functionsPackage, '"node": "20"', "Lock-compatible local Functions engine metadata");
+requireText(functionsPackage, '"node": "22"', "Functions engine metadata aligned with production runtime");
 requireText(functionsPackage, '"build": "node scripts/clean-build.mjs && tsc"', "Clean Functions build command");
 requireText(functionsTsConfig, '"outDir": "build"', "Untracked Functions build output");
 requireText(functionsTsConfig, '"target": "es2022"', "Node.js 22-compatible compilation target");
@@ -157,7 +157,7 @@ console.log("CASE_SUMMARY_SCHEMA_PATHS=PASS");
 console.log("CASE_CREATION_MARKER_RULES=PASS");
 console.log("NEXT_TYPEGEN_CONTRACT=PASS");
 console.log("FUNCTIONS_PRODUCTION_NODE22_RUNTIME=PASS");
-console.log("FUNCTIONS_LOCAL_LOCK_COMPATIBILITY=PASS");
+console.log("FUNCTIONS_ENGINE_NODE22=PASS");
 console.log("FUNCTIONS_LOCKED_DEPENDENCY_INSTALL=PASS");
 console.log("FUNCTIONS_GENERATED_OUTPUT_ISOLATION=PASS");
 console.log("FUNCTIONS_CLEAN_BUILD=PASS");
