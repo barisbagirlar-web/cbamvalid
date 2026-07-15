@@ -1,6 +1,7 @@
 import { httpsCallable } from "firebase/functions";
 import { firebaseFunctions } from "@/lib/firebase/client";
 import type { AuditReadyCase } from "@/lib/cbam/schema";
+import { buildSaveCasePayload } from "@/lib/functions/save-case-payload";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -107,7 +108,7 @@ export async function getCase(caseId: string): Promise<AuditReadyCase> {
 }
 
 export async function saveCase(data: AuditReadyCase, caseId?: string): Promise<string> {
-  const result = await saveCbamCaseCallable({ caseId, data });
+  const result = await saveCbamCaseCallable(buildSaveCasePayload(data, caseId));
   return result.data.caseId;
 }
 
