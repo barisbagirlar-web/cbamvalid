@@ -8,10 +8,14 @@ fs.mkdirSync(outputDir, { recursive: true });
 const checks = [
   ["hosting-architecture", "npm run guard:hosting-architecture"],
   ["workspace-navigation", "npm run guard:workspace-navigation"],
+  ["case-runtime-contract", "npm run guard:case-runtime-contract"],
+  ["verifier-grade-deliverables", "npm run guard:verifier-grade-deliverables"],
   ["github-actions-policy", "npm run guard:github-actions"],
   ["typecheck", "npm run typecheck"],
+  ["functions-clean-build", "npm run build:functions"],
   ["lint", "npm run lint"],
   ["auth-tests", "npm run test:auth"],
+  ["integration-tests", "npm run test:integration"],
   ["commerce-tests", "npm run test:commerce"],
   ["cbam-engine-tests", "npm run test:cbam-engine"],
   ["report-tests", "npm run test:reports"],
@@ -40,10 +44,13 @@ for (const [id, command] of checks) {
 
 const failed = results.filter((result) => result.exitCode !== 0);
 const summary = {
+  schemaVersion: "CBAMVALID-SOURCE-READINESS-2.0",
   generatedAt: new Date().toISOString(),
   commitSha: process.env.GITHUB_SHA || "LOCAL",
   runId: process.env.GITHUB_RUN_ID || "LOCAL",
   result: failed.length === 0 ? "PASS" : "FAIL",
+  scope: "SOURCE_LEVEL_ONLY",
+  productionStatus: "NOT_PROVEN",
   checks: results
 };
 
@@ -53,6 +60,8 @@ const markdown = [
   "# CBAMValid Release Readiness Agent",
   "",
   `- Result: **${summary.result}**`,
+  `- Scope: **${summary.scope}**`,
+  `- Production status: **${summary.productionStatus}**`,
   `- Commit: \`${summary.commitSha}\``,
   `- Generated: ${summary.generatedAt}`,
   "",
@@ -62,7 +71,7 @@ const markdown = [
   "",
   failed.length ? `Failed checks: ${failed.map((item) => `\`${item.id}\``).join(", ")}` : "All configured source-level readiness checks passed.",
   "",
-  "This source-level audit does not prove deployment, live payment, browser E2E, live build SHA or production runtime logs.",
+  "This audit proves source-level readiness only. It does not prove deployment, live payment, authenticated browser E2E, live build SHA, KMS runtime access, Secret Manager configuration, webhook delivery, persistent production writes or runtime logs.",
   ""
 ].join("\n");
 fs.writeFileSync(path.join(outputDir, "summary.md"), markdown, "utf8");
