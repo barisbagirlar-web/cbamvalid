@@ -26,7 +26,11 @@ export type PreparationPackEntitlement = {
 
 export const getCbamCasesCallable = httpsCallable<void, { cases: CbamCaseRecord[] }>(firebaseFunctions, "getCbamCases");
 export const getCbamCaseCallable = httpsCallable<{ caseId: string }, { case: unknown }>(firebaseFunctions, "getCbamCase");
-export const saveCbamCaseCallable = httpsCallable<{ caseId?: string; data: AuditReadyCase }, { caseId: string }>(firebaseFunctions, "saveCbamCase");
+export const saveCbamCaseCallable = httpsCallable<{
+  caseId?: string;
+  requestId?: string;
+  data: AuditReadyCase;
+}, { caseId: string }>(firebaseFunctions, "saveCbamCase");
 export const renameCbamCaseCallable = httpsCallable<{ caseId: string; newName: string }, { success: boolean }>(firebaseFunctions, "renameCbamCase");
 export const archiveCbamCaseCallable = httpsCallable<{ caseId: string }, { success: boolean }>(firebaseFunctions, "archiveCbamCase");
 export const deleteCbamCaseCallable = httpsCallable<{ caseId: string }, { success: boolean }>(firebaseFunctions, "deleteCbamCase");
@@ -65,8 +69,12 @@ export async function getCase(caseId: string): Promise<AuditReadyCase> {
   return AuditReadyCaseSchema.parse(result.data.case);
 }
 
-export async function saveCase(data: AuditReadyCase, caseId?: string): Promise<string> {
-  const result = await saveCbamCaseCallable(createCaseSaveRequest(data, caseId));
+export async function saveCase(
+  data: AuditReadyCase,
+  caseId?: string,
+  requestId?: string
+): Promise<string> {
+  const result = await saveCbamCaseCallable(createCaseSaveRequest(data, caseId, requestId));
   return result.data.caseId;
 }
 
