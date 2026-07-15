@@ -32,6 +32,11 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
       - name: Enforce repository workflow policy
         run: node scripts/guard-github-actions.mjs
 

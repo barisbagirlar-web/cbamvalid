@@ -1,5 +1,9 @@
+import { createHash } from "node:crypto";
 import JSZip from "jszip";
-import { calculateSha256 } from "./seal-service";
+
+function calculateSha256(content: Buffer | string): string {
+  return createHash("sha256").update(content).digest("hex");
+}
 
 /**
  * Builds a ZIP dossier containing all output formats with manifest checksums
@@ -45,20 +49,16 @@ export async function buildZipDossier(params: {
       "data.json": jsonHash,
       "data.csv": csvHash,
     },
-    // Adding path-traversal warning for compliance
     securityNotice: "All paths in this archive are flat. Any extraction tool should enforce path-traversal prevention (e.g. no ../ extraction)."
   };
 
   zip.file(`${basePath}/manifest.json`, JSON.stringify(manifest, null, 2));
 
-  // Generate the zip buffer
-  const zipBuffer = await zip.generateAsync({
+  return zip.generateAsync({
     type: "nodebuffer",
     compression: "DEFLATE",
     compressionOptions: {
       level: 9
     }
   });
-
-  return zipBuffer;
 }

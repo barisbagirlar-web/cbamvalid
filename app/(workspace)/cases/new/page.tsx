@@ -1,72 +1,100 @@
 "use client";
 
-import React, { useEffect } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthProvider";
+import { createNewCaseDraft } from "@/lib/cbam/new-case";
 import { saveCase } from "@/lib/functions/client";
-import { createEmptyInput, AuditReadyCase } from "@/lib/cbam/schema";
 
-export default function NewCaseRedirectPage() {
+function errorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  return "The new case could not be created. No existing dossier was changed.";
+}
+
+export default function NewCasePage() {
   const router = useRouter();
   const { user, loading } = useAuth();
+  const requestInFlight = useRef(false);
+  const creationRequestId = useRef<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (loading || !user) return;
+    if (loading || !user || requestInFlight.current) return;
 
-    const initializeNewCase = async () => {
+    if (!creationRequestId.current) {
+      creationRequestId.current = crypto.randomUUID();
+    }
+
+    requestInFlight.current = true;
+    setError("");
+
+    const createAndOpenCase = async () => {
       try {
-        const emptyCase: AuditReadyCase = {
-          status: "DRAFT",
-          version: 1,
-          ownerId: user.uid,
-          importerIdentity: {
-            legalName: createEmptyInput(),
-            eoriNumber: createEmptyInput(),
-          },
-          exporterIdentity: {
-            legalName: createEmptyInput(),
-          },
-          reportingPeriod: {
-            year: createEmptyInput(),
-            quarter: createEmptyInput(),
-          },
-          goods: [],
-          installation: {
-            name: createEmptyInput(),
-            country: createEmptyInput(),
-            productionRoute: createEmptyInput(),
-          },
-          directEmissions: createEmptyInput("tCO2e"),
-          electricityConsumed: createEmptyInput("MWh"),
-          gridEmissionFactor: createEmptyInput("tCO2e/MWh"),
-          precursors: [],
-          carbonPriceRecords: [],
-          evidenceRegister: [],
-          calculationTrace: [],
-          gapAssessment: [],
-          auditEvents: []
-        };
-
-        const newCaseId = await saveCase(emptyCase);
-        router.push(`/cases/${newCaseId}`);
-      } catch (e) {
-        console.error("Failed to initialize new case", e);
-        // Fallback to dashboard on error
-        router.push("/dashboard");
+        const draft = createNewCaseDraft(user.uid);
+        const newCaseId = await saveCase(draft, undefined, creationRequestId.current ?? undefined);
+        router.replace(`/cases/${newCaseId}`);
+      } catch (creationError) {
+        console.error("Failed to create and open a new case", creationError);
+        requestInFlight.current = false;
+        setError(errorMessage(creationError));
       }
     };
 
-    initializeNewCase();
-  }, [user, loading, router]);
+    void createAndOpenCase();
+  }, [attempt, loading, router, user]);
+
+  if (!loading && !user) return null;
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-background px-6 py-16 text-foreground">
+        <section className="mx-auto max-w-xl rounded-2xl border border-red-300 bg-surface p-8 shadow-sm">
+          <div className="flex items-start gap-4">
+            <AlertCircle className="mt-0.5 h-6 w-6 shrink-0 text-red-700" aria-hidden="true" />
+            <div>
+              <h1 className="font-serif text-2xl font-bold">New case could not be opened</h1>
+              <p className="mt-3 text-sm leading-relaxed text-muted">{error}</p>
+              <p className="mt-2 text-xs leading-relaxed text-muted">
+                Retry uses the same protected creation request, so a lost network response cannot create another duplicate draft.
+              </p>
+            </div>
+          </div>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => setAttempt((current) => current + 1)}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent px-5 text-sm font-semibold text-surface hover:bg-accent-hover"
+            >
+              <RefreshCw className="h-4 w-4" aria-hidden="true" /> Retry New Case
+            </button>
+            <Link
+              href="/cases"
+              className="inline-flex h-11 items-center justify-center rounded-md border border-border bg-surface px-5 text-sm font-semibold hover:bg-neutral-soft"
+            >
+              Back to Cases
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-kil-base px-6">
-      <div className="flex flex-col items-center">
-        <div className="w-8 h-8 border-2 border-kil-text/20 border-t-kil-accent rounded-full animate-spin mb-6"></div>
-        <p className="font-mono text-sm text-kil-text/60 tracking-widest uppercase">
-          Initializing Case...
+    <main className="min-h-screen bg-background px-6 py-16 text-foreground">
+      <section
+        className="mx-auto flex max-w-xl flex-col items-center rounded-2xl border border-border bg-surface p-10 text-center shadow-sm"
+        role="status"
+        aria-live="polite"
+      >
+        <Loader2 className="h-8 w-8 animate-spin text-accent" aria-hidden="true" />
+        <h1 className="mt-5 font-serif text-2xl font-bold">Creating and opening your case</h1>
+        <p className="mt-2 text-sm leading-relaxed text-muted">
+          CBAMValid is creating one idempotent draft and loading the eight-step dossier workspace.
         </p>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

@@ -2,103 +2,93 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper function to check if the user is the Super Admin
     function isSuperAdmin() {
       return request.auth != null && (request.auth.token.admin == true || request.auth.token.ownerAdmin == true);
     }
 
-    // Rules for the users collection
     match /users/{userId} {
-      // Users can read their own profile; Super Admin can read all
       allow read: if (request.auth != null && request.auth.uid == userId) || isSuperAdmin();
-      
-      // Users can create their own profile, but must start with 0 tokens and role 'user'
-      allow create: if request.auth != null 
-                    && request.auth.uid == userId 
-                    && request.resource.data.tokens == 0 
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.tokens == 0
                     && request.resource.data.role == 'user';
-      
-      // Users can update their profile but CANNOT mutate 'role'. They can mutate 'tokens' ONLY if it is a decrement of exactly 1.
-      allow update: if request.auth != null 
-                    && request.auth.uid == userId 
+      allow update: if request.auth != null
+                    && request.auth.uid == userId
                     && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])
                     && (
                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['tokens'])
                       || (request.resource.data.tokens == resource.data.tokens - 1)
                     );
-                    
-      // Server SDK (Admin SDK) bypasses these rules completely, allowing it to mutate tokens and roles.
-      // Super Admin can edit from client if needed (optional, but let's restrict to keep strict consistency)
       allow delete: if isSuperAdmin();
-      
-      // Credit Summary (Publicly readable by the user themselves, no writes allowed)
+
       match /creditSummary/{docId} {
         allow read: if (request.auth != null && request.auth.uid == userId) || isSuperAdmin();
-        allow write: if false; // Only backend functions mutate creditSummary
+        allow write: if false;
       }
 
-      // Credit Ledger (Readable by the user, no writes allowed)
       match /creditLedger/{docId} {
         allow read: if (request.auth != null && request.auth.uid == userId) || isSuperAdmin();
-        allow write: if false; // Only backend functions mutate creditLedger
+        allow write: if false;
       }
     }
-    
-    // Rules for the cbam_reports collection
+
     match /cbam_reports/{reportId} {
       allow read: if (request.auth != null && resource.data.uid == request.auth.uid) || isSuperAdmin();
-      allow create: if false; // Only backend functions create reports
+      allow create: if false;
       allow update, delete: if isSuperAdmin();
     }
 
-    // Rules for cbam_cases
     match /cbam_cases/{caseId} {
       allow read: if (request.auth != null && resource.data.uid == request.auth.uid) || isSuperAdmin();
-      allow create: if false; // Managed by backend functions
+      allow create: if false;
       allow update, delete: if isSuperAdmin();
     }
 
-    // Rules for commerce_orders
+    match /case_creation_requests/{requestDigest} {
+      allow read, write: if false;
+    }
+
+    // Seal request documents contain deterministic request identifiers,
+    // in-progress leases and retry state. They are backend-only controls.
+    match /report_requests/{requestDigest} {
+      allow read, write: if false;
+    }
+
     match /commerce_orders/{orderId} {
       allow read: if (request.auth != null && resource.data.uid == request.auth.uid) || isSuperAdmin();
-      allow create, update, delete: if false; // Strictly backend only
+      allow create, update, delete: if false;
     }
 
-    // Rules for entitlements (Legacy, replaced by creditSummary)
     match /entitlements/{entitlementId} {
       allow read: if (request.auth != null && resource.data.uid == request.auth.uid) || isSuperAdmin();
-      allow create, update, delete: if false; // Strictly backend only
+      allow create, update, delete: if false;
     }
 
-    // Rules for account closures
     match /account_closures/{closureId} {
-      allow read, write: if false; // Backend/Admin only
+      allow read, write: if false;
     }
 
-    // Rules for paddle_events
     match /paddle_events/{eventId} {
-      allow read, write: if false; // Webhook logs are strictly backend only
+      allow read, write: if false;
     }
 
-    // Rules for document_seals
     match /document_seals/{documentHash} {
-      allow read: if true; // Publicly verifiable signatures
-      allow create, update, delete: if false; // Only backend functions seal documents
+      allow read: if true;
+      allow create, update, delete: if false;
     }
 
-    // Rules for seal workflows (Strictly Backend)
     match /seal_outbox/{reportId} {
-      allow read, write: if false; 
-    }
-    match /seal_log/{reportId} {
-      allow read, write: if false; 
+      allow read, write: if false;
     }
 
-    // Rules for Source Watchers and System Logs (Strictly Backend)
+    match /seal_log/{reportId} {
+      allow read, write: if false;
+    }
+
     match /source_registry_snapshots/{docId} {
       allow read, write: if false;
     }
+
     match /audit_events/{docId} {
       allow read, write: if false;
     }

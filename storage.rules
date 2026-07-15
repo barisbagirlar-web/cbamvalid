@@ -1,16 +1,48 @@
 rules_version = '2';
 
-// Craft rules based on data in your Firestore database
-// allow write: if firestore.get(
-//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
 service firebase.storage {
   match /b/{bucket}/o {
-    // Only Admin SDK (backend) can write files
-    allow write: if false; 
+    function signedIn() {
+      return request.auth != null;
+    }
 
-    // Users can read dossiers matching their uid folder
+    function ownsCase(userId, caseId) {
+      return signedIn()
+        && request.auth.uid == userId
+        && firestore.get(/databases/(default)/documents/cbam_cases/$(caseId)).data.uid == userId;
+    }
+
+    function allowedEvidenceContentType() {
+      return request.resource.contentType.matches(
+        'application/pdf|text/csv|application/vnd.ms-excel|application/vnd.openxmlformats-officedocument.spreadsheetml.sheet|image/png|image/jpeg|text/plain'
+      );
+    }
+
+    function validEvidenceMetadata(userId, caseId, evidenceId) {
+      return request.resource.metadata.ownerId == userId
+        && request.resource.metadata.caseId == caseId
+        && request.resource.metadata.evidenceId == evidenceId
+        && request.resource.metadata.sha256.matches('^[a-f0-9]{64}$');
+    }
+
+    match /evidence/{userId}/{caseId}/{evidenceId}/{fileName} {
+      allow read: if ownsCase(userId, caseId);
+      allow create: if ownsCase(userId, caseId)
+        && request.resource.size > 0
+        && request.resource.size <= 20 * 1024 * 1024
+        && allowedEvidenceContentType()
+        && validEvidenceMetadata(userId, caseId, evidenceId);
+      allow update: if false;
+      allow delete: if ownsCase(userId, caseId);
+    }
+
     match /reports/{userId}/{reportId}/{allPaths=**} {
-      allow read: if request.auth != null && request.auth.uid == userId;
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }

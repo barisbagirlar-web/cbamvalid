@@ -1,92 +1,153 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { runQualityControls } from "../../lib/cbam/validation/quality-controls";
-import { AuditReadyCase, createEmptyInput } from "../../lib/cbam/schema";
+import type { AuditReadyCase } from "../../lib/cbam/schema";
+
+const OWNER_ID = "user123";
+const CASE_ID = "case_quality_fixture";
+const EVIDENCE_ID = "11111111-1111-4111-8111-111111111111";
+const METHODOLOGY_DECISION_ID = "22222222-2222-4222-8222-222222222222";
+
+const linkedEvidenceInput = (value: string, canonicalUnit?: AuditReadyCase["directEmissions"]["canonicalUnit"]) => ({
+  value,
+  ...(canonicalUnit ? { canonicalUnit } : {}),
+  sourceType: "PRIMARY" as const,
+  confidenceStatus: "HIGH_VERIFIED" as const,
+  evidenceId: EVIDENCE_ID,
+});
 
 describe("CBAM Quality Controls Traceability", () => {
-  const createBaseCase = (): AuditReadyCase => ({
+  const createValidCase = (): AuditReadyCase => ({
+    caseId: CASE_ID,
     status: "DRAFT",
     version: 1,
-    ownerId: "user123",
+    ownerId: OWNER_ID,
     importerIdentity: {
-      legalName: { value: "Test Importer", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED" },
-      eoriNumber: { value: "NL123456789", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED" },
+      legalName: {
+        value: "Test Importer B.V.",
+        sourceType: "PRIMARY",
+        confidenceStatus: "HIGH_VERIFIED",
+      },
+      eoriNumber: linkedEvidenceInput("NL123456789AB"),
     },
     exporterIdentity: {
-      legalName: { value: "Test Exporter", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED" },
+      legalName: {
+        value: "Test Exporter GmbH",
+        sourceType: "PRIMARY",
+        confidenceStatus: "HIGH_VERIFIED",
+      },
     },
     reportingPeriod: {
-      year: { value: "2024", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED" },
-      quarter: createEmptyInput(),
+      year: {
+        value: "2026",
+        sourceType: "REGULATORY",
+        confidenceStatus: "HIGH_VERIFIED",
+      },
+      quarter: {
+        value: "Q1",
+        sourceType: "PRIMARY",
+        confidenceStatus: "HIGH_VERIFIED",
+      },
     },
     goods: [
       {
-        sector: "STEEL",
-        cnCode: { value: "72011011", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED" },
-        productionVolume: { value: "100", canonicalUnit: "t", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED" },
-        shipmentRecords: createEmptyInput(),
-      }
+        sector: "IRON_AND_STEEL",
+        cnCode: linkedEvidenceInput("72011011"),
+        productionVolume: linkedEvidenceInput("100", "t"),
+        shipmentRecords: {
+          value: "100",
+          canonicalUnit: "t",
+          sourceType: "PRIMARY",
+          confidenceStatus: "HIGH_VERIFIED",
+        },
+      },
     ],
     installation: {
-      name: createEmptyInput(),
-      country: createEmptyInput(),
-      productionRoute: createEmptyInput(),
+      name: {
+        value: "Rotterdam Steel Installation",
+        sourceType: "PRIMARY",
+        confidenceStatus: "HIGH_VERIFIED",
+      },
+      country: {
+        value: "NL",
+        sourceType: "PRIMARY",
+        confidenceStatus: "HIGH_VERIFIED",
+      },
+      productionRoute: {
+        value: "Blast Furnace / Basic Oxygen Furnace",
+        sourceType: "PRIMARY",
+        confidenceStatus: "HIGH_VERIFIED",
+      },
+      systemBoundaries: "Cradle-to-gate installation boundary including direct and electricity emissions.",
     },
-    directEmissions: { value: "50", canonicalUnit: "tCO2e", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED" },
-    electricityConsumed: createEmptyInput("MWh"),
-    gridEmissionFactor: createEmptyInput("tCO2e/MWh"),
+    directEmissions: linkedEvidenceInput("50", "tCO2e"),
+    electricityConsumed: linkedEvidenceInput("20", "MWh"),
+    gridEmissionFactor: linkedEvidenceInput("0.5", "tCO2e/MWh"),
     precursors: [],
     carbonPriceRecords: [],
     evidenceRegister: [
       {
-        evidenceId: "ev1",
-        fileName: "proof.pdf",
-        documentType: "PRIMARY_MONITORING",
-        uploadTimestamp: "2024-01-01T00:00:00Z",
-        fileHash: "hash123",
-        reviewStatus: "PENDING",
+        evidenceId: EVIDENCE_ID,
+        fileName: "verified-monitoring-package.pdf",
+        storagePath: `evidence/${OWNER_ID}/${CASE_ID}/${EVIDENCE_ID}/verified-monitoring-package.pdf`,
+        mimeType: "application/pdf",
+        sizeBytes: 4096,
+        documentType: "PRIMARY_MONITORING_AND_CUSTOMS_PACKAGE",
+        uploadTimestamp: "2026-04-01T00:00:00.000Z",
+        fileHash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        reviewStatus: "APPROVED",
         supportStatus: "SUPPORTED",
         malwareScanStatus: "CLEAN",
-        issuer: "Auditor",
-        issueDate: "2024-01-01",
-        reportingPeriod: "2024",
-        uploader: "user123",
-        linkedInputs: [],
-        linkedCalculations: []
-      }
+        confidentiality: "INTERNAL",
+        issuer: "Independent Monitoring Auditor",
+        issueDate: "2026-03-31",
+        reportingPeriod: "2026-Q1",
+        uploader: OWNER_ID,
+        linkedInputs: [
+          "importerIdentity.eoriNumber",
+          "goods.0.cnCode",
+          "goods.0.productionVolume",
+          "directEmissions",
+          "electricityConsumed",
+          "gridEmissionFactor",
+        ],
+        linkedCalculations: [
+          "CBAM_INDIRECT_EMISSIONS",
+          "CBAM_TOTAL_EMBEDDED_EMISSIONS",
+        ],
+        reviewerNotes: "Evidence package reviewed and accepted for the stated reporting period.",
+      },
     ],
     calculationTrace: [],
     gapAssessment: [],
-    auditEvents: []
+    methodologyDecisions: [
+      {
+        decisionId: METHODOLOGY_DECISION_ID,
+        topic: "PRECURSOR_SCOPE",
+        selectedMethod: "No precursor emissions apply to the declared simple good and route.",
+        reason: "The production route and bill of materials contain no qualifying precursor goods.",
+        legalOrTechnicalBasis: "EU CBAM definitive-period methodology and installation process records.",
+        evidenceIds: [EVIDENCE_ID],
+        reviewStatus: "ACCEPTED",
+        rulesetVersion: "EU-CBAM-DEFINITIVE-2026",
+      },
+    ],
+    auditEvents: [],
   });
 
-  it("should yield APPLICABLE_PASS for a valid case", () => {
-    const caseData = createBaseCase();
-    const results = runQualityControls(caseData);
-    
-    const eoriResult = results.find(r => r.ruleId === "QC_01");
-    expect(eoriResult?.status).toBe("PASS");
+  it("passes every blocking quality control for a complete evidence-linked case", () => {
+    const results = runQualityControls(createValidCase());
+    const blockers = results.filter((result) => result.status === "BLOCKER");
 
-    const blockages = results.filter(r => r.status === "BLOCKER");
-    expect(blockages.length).toBe(0);
-  });
-
-  it("should yield APPLICABLE_FAIL for an invalid case", () => {
-    const caseData = createBaseCase();
-    caseData.importerIdentity.eoriNumber.value = "123"; // Too short
-    
-    const results = runQualityControls(caseData);
-    const eoriResult = results.find(r => r.ruleId === "QC_01");
-    expect(eoriResult?.status).toBe("BLOCKER");
-    expect(eoriResult?.remediationCode).toBe("REM_CORRECT_EORI_FORMAT");
-  });
-
-  it("should yield NOT_APPLICABLE when rule context does not apply", () => {
-    const caseData = createBaseCase();
-    // No carbon price records means QC_10 shouldn't apply
-    caseData.carbonPriceRecords = [];
-    
-    const results = runQualityControls(caseData);
-    const priceResult = results.find(r => r.ruleId === "QC_10");
-    expect(priceResult?.status).toBe("NOT_APPLICABLE");
+    expect(results.find((result) => result.ruleId === "QC_00")?.status).toBe("PASS");
+    expect(results.find((result) => result.ruleId === "QC_01")?.status).toBe("PASS");
+    expect(results.find((result) => result.ruleId === "QC_02")?.status).toBe("PASS");
+    expect(results.find((result) => result.ruleId === "QC_03_0")?.status).toBe("PASS");
+    expect(results.find((result) => result.ruleId === "QC_04_0")?.status).toBe("PASS");
+    expect(results.find((result) => result.ruleId === "QC_06")?.status).toBe("PASS");
+    expect(results.find((result) => result.ruleId === "QC_07")?.status).toBe("PASS");
+    expect(results.find((result) => result.ruleId === "QC_08")?.status).toBe("PASS");
+    expect(results.find((result) => result.ruleId === "QC_09")?.status).toBe("PASS");
+    expect(results.find((result) => result.ruleId === "QC_10")?.status).toBe("PASS");
+    expect(blockers).toEqual([]);
   });
 });

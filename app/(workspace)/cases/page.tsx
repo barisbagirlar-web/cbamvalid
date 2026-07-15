@@ -1,36 +1,60 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { AlertCircle, ArrowRight, Clock, Plus, RefreshCw } from "lucide-react";
 import { useAuth } from "@/context/AuthProvider";
-import { getCases } from "@/lib/functions/client";
-import { Plus, ArrowRight, Clock } from "lucide-react";
+import {
+  formatCaseUpdatedDate,
+  getCaseDisplayName,
+  getPrimaryCnCode,
+} from "@/lib/cbam/case-summary";
+import { getCases, type CbamCaseRecord } from "@/lib/functions/client";
+
+function describeError(error: unknown): string {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  return "Cases could not be loaded.";
+}
 
 export default function CasesPage() {
   const { user, loading } = useAuth();
-  const [cases, setCases] = useState<any[]>([]);
+  const [cases, setCases] = useState<CbamCaseRecord[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (loading || !user) return;
 
-    const fetchCases = async () => {
-      setDataLoading(true);
-      try {
-        const res = await getCases();
-        if (res) {
-          setCases(res || []);
-        }
-      } catch (err) {
-        console.error("Error fetching cases:", err);
-      } finally {
-        setDataLoading(false);
-      }
-    };
+    let cancelled = false;
 
-    fetchCases();
-  }, [user, loading]);
+    void getCases()
+      .then((result) => {
+        if (cancelled) return;
+        setCases(result);
+        setError("");
+        setDataLoading(false);
+      })
+      .catch((loadError: unknown) => {
+        if (cancelled) return;
+        console.error("Error fetching cases", loadError);
+        setCases([]);
+        setError(describeError(loadError));
+        setDataLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [attempt, loading, user]);
+
+  const retryLoading = () => {
+    setDataLoading(true);
+    setError("");
+    setAttempt((current) => current + 1);
+  };
+
+  if (!loading && !user) return null;
 
   if (loading || dataLoading) {
     return (
@@ -43,7 +67,28 @@ export default function CasesPage() {
     );
   }
 
-  if (!user) return null;
+  if (error) {
+    return (
+      <main className="min-h-screen bg-background px-6 py-16 text-foreground">
+        <section className="mx-auto max-w-xl rounded-2xl border border-red-300 bg-surface p-8 shadow-sm">
+          <div className="flex items-start gap-4">
+            <AlertCircle className="mt-0.5 h-6 w-6 shrink-0 text-red-700" aria-hidden="true" />
+            <div>
+              <h1 className="font-serif text-2xl font-bold">Cases could not be loaded</h1>
+              <p className="mt-3 text-sm leading-relaxed text-muted">{error}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={retryLoading}
+            className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent px-5 text-sm font-semibold text-surface hover:bg-accent-hover"
+          >
+            <RefreshCw className="h-4 w-4" aria-hidden="true" /> Retry Loading
+          </button>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground px-4 py-8 md:px-8">
@@ -78,15 +123,15 @@ export default function CasesPage() {
         ) : (
           <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
             <div className="space-y-4">
-              {cases.map((c: any) => (
-                <div 
-                  key={c.caseId} 
+              {cases.map((cbamCase) => (
+                <div
+                  key={cbamCase.caseId}
                   className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors"
                 >
                   <div>
-                    <p className="font-semibold text-sm">{c.data?.installationName || "Unnamed Installation"}</p>
+                    <p className="font-semibold text-sm">{getCaseDisplayName(cbamCase.data)}</p>
                     <p className="text-xs text-muted mt-1 font-mono">
-                      CN Code: {c.data?.cnCode || "Pending"} | Updated: {new Date(c.updatedAt).toLocaleDateString()}
+                      CN Code: {getPrimaryCnCode(cbamCase.data)} | Updated: {formatCaseUpdatedDate(cbamCase.updatedAt)}
                     </p>
                     <div className="mt-2 flex items-center gap-2">
                       <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-neutral-soft text-foreground border border-border">
@@ -95,7 +140,7 @@ export default function CasesPage() {
                     </div>
                   </div>
                   <Link
-                    href={`/cases/${c.caseId}`}
+                    href={`/cases/${cbamCase.caseId}`}
                     className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center gap-1 self-end sm:self-auto"
                   >
                     Resume Draft <ArrowRight className="w-3 h-3" />

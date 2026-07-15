@@ -1,8 +1,14 @@
 import { CallableRequest, HttpsError, onCall, CallableOptions } from "firebase-functions/v2/https";
 import { z } from "zod";
 
-export interface AuthenticatedCallableRequest<T = any> extends CallableRequest<T> {
+export interface AuthenticatedCallableRequest<T = unknown> extends CallableRequest<T> {
   auth: NonNullable<CallableRequest<T>["auth"]>;
+}
+
+function shouldEnforceAppCheck(): boolean {
+  if (process.env.FUNCTIONS_EMULATOR === "true") return false;
+  if (process.env.CBAM_ENFORCE_APP_CHECK === "false") return false;
+  return true;
 }
 
 export function createCallable<T, Res>(
@@ -12,45 +18,40 @@ export function createCallable<T, Res>(
   return onCall<T>(
     {
       region: "europe-west1",
-      enforceAppCheck: false,
+      enforceAppCheck: shouldEnforceAppCheck(),
+      consumeAppCheckToken: true,
       cors: true,
       ...options,
     },
     async (request) => {
       try {
-        // 1. App Check validation (temporarily disabled for E2E tests)
-
-        // 2. Auth extraction
         if (!request.auth) {
           throw new HttpsError("unauthenticated", "User must be authenticated.");
         }
 
-        // 3. Input validation
         let validatedData = request.data;
         if (options.schema) {
           const parseResult = options.schema.safeParse(request.data);
           if (!parseResult.success) {
-            console.error("Validation error:", parseResult.error);
+            console.error("[CALLABLE VALIDATION ERROR]", {
+              uid: request.auth.uid,
+              issues: parseResult.error.issues.map((issue) => ({ path: issue.path.join("."), code: issue.code })),
+            });
             throw new HttpsError("invalid-argument", "Invalid input data format.");
           }
           validatedData = parseResult.data;
         }
 
-        // 4. Execution with correlation logging
         const startTime = Date.now();
         console.log(`[CALLABLE START] uid=${request.auth.uid}`);
-        
         const result = await handler(validatedData, request as AuthenticatedCallableRequest<T>);
-        
         console.log(`[CALLABLE END] uid=${request.auth.uid} duration=${Date.now() - startTime}ms`);
         return result;
-
-      } catch (error: any) {
-        console.error(`[CALLABLE ERROR] uid=${request.auth?.uid}`, error);
-        if (error instanceof HttpsError) {
-          throw error;
-        }
-        throw new HttpsError("internal", error.message || "An internal error occurred.");
+      } catch (error: unknown) {
+        console.error(`[CALLABLE ERROR] uid=${request.auth?.uid || "unauthenticated"}`, error);
+        if (error instanceof HttpsError) throw error;
+        const message = error instanceof Error ? error.message : "An internal error occurred.";
+        throw new HttpsError("internal", message);
       }
     }
   );

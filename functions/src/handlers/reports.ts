@@ -1,91 +1,122 @@
 import { createCallable } from "../wrapper";
 import { z } from "zod";
 import { HttpsError } from "firebase-functions/v2/https";
-import { adminDb } from "../firebase-admin";
+import { adminDb, getStorageBucket } from "../firebase-admin";
+import { getCase } from "../cbam/storage/case-repository";
+import { CaseIdSchema } from "../cbam/case-id";
+import { assertKmsSigningConfigured } from "../cbam/report/kms-signature";
+
+function sealError(error: unknown): HttpsError {
+  if (error instanceof HttpsError) return error;
+  const message = error instanceof Error ? error.message : "REPORT_GENERATION_FAILED";
+  if (message === "SEAL_REQUEST_IN_PROGRESS") return new HttpsError("aborted", message);
+  if (message.includes("NOT_FOUND") || message.includes("MISSING")) return new HttpsError("not-found", message);
+  if (
+    message.includes("REQUIRED") ||
+    message.includes("BLOCKED") ||
+    message.includes("MISMATCH") ||
+    message.includes("INVALID") ||
+    message.includes("NOT_ACTIVE") ||
+    message.includes("NOT_CLEAN") ||
+    message.includes("NOT_RECONCILED") ||
+    message.includes("LIMIT") ||
+    message.includes("CONFIGURED") ||
+    message.includes("KMS_")
+  ) return new HttpsError("failed-precondition", message);
+  if (message.includes("COLLISION") || message.includes("INPUT_CHANGED")) return new HttpsError("already-exists", message);
+  return new HttpsError("internal", message);
+}
 
 export const sealCbamReport = createCallable(
   {
     schema: z.object({
-      caseId: z.string(),
-      entitlementId: z.string(),
-      correctionReason: z.string().optional()
-    })
+      caseId: CaseIdSchema,
+      entitlementId: z.string().trim().min(1).max(128),
+      requestId: z.string().uuid(),
+      correctionReason: z.string().trim().min(10).max(2000).optional(),
+    }),
   },
-  async ({ caseId, entitlementId, correctionReason }, { auth }) => {
-    const { sealReport } = await import("../cbam/report/seal-service");
+  async ({ caseId, entitlementId, requestId, correctionReason }, { auth }) => {
     try {
-      // Load authoritative case revision on the server
-      const caseDoc = await adminDb.collection("cbam_cases").doc(caseId).get();
-      if (!caseDoc.exists) {
-        throw new HttpsError("not-found", "Case not found.");
-      }
-      const cbamCase = caseDoc.data();
-      if (!cbamCase || cbamCase.uid !== auth.uid) {
-        throw new HttpsError("permission-denied", "Access denied to case.");
-      }
-      
+      assertKmsSigningConfigured();
+      const cbamCase = await getCase(caseId);
+      if (!cbamCase) throw new HttpsError("not-found", "Case not found.");
+      if (cbamCase.uid !== auth.uid) throw new HttpsError("permission-denied", "Access denied to case.");
+      if (cbamCase.status !== "DRAFT") throw new HttpsError("failed-precondition", "Only an active draft can be sealed.");
+
+      const { sealReport } = await import("../cbam/report/seal-service");
       const report = await sealReport({
         uid: auth.uid,
-        caseId,
+        caseId: cbamCase.caseId,
         entitlementId,
+        requestId,
         inputData: cbamCase.data,
-        correctionReason
+        correctionReason,
       });
       return { report, status: "success" };
-    } catch (err: any) {
-      if (err instanceof HttpsError) throw err;
-      throw new HttpsError("internal", err.message);
+    } catch (error) {
+      throw sealError(error);
     }
   }
 );
 
 export const getCbamReports = createCallable({}, async (_, { auth }) => {
-  const snapshot = await adminDb.collection("cbam_reports").where("uid", "==", auth.uid).get();
-  const reports = snapshot.docs.map(doc => doc.data());
+  const snapshot = await adminDb.collection("cbam_reports")
+    .where("uid", "==", auth.uid)
+    .where("status", "==", "SEALED")
+    .get();
+  const reports = snapshot.docs
+    .map((document) => document.data())
+    .sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")));
   return { reports, status: "success" };
 });
 
 export const getCbamReport = createCallable(
-  {
-    schema: z.object({ reportId: z.string() })
-  },
+  { schema: z.object({ reportId: z.string().regex(/^report_[a-f0-9]{64}$/) }) },
   async ({ reportId }, { auth }) => {
-    const doc = await adminDb.collection("cbam_reports").doc(reportId).get();
-    const report = doc.data() as any;
-    if (!report || report.uid !== auth.uid) {
+    const document = await adminDb.collection("cbam_reports").doc(reportId).get();
+    const report = document.data() as Record<string, unknown> | undefined;
+    if (!report || report.uid !== auth.uid || report.status !== "SEALED") {
       throw new HttpsError("not-found", "Report not found or access denied.");
     }
     return { report, status: "success" };
   }
 );
 
+const DOWNLOADS = {
+  zip: { file: "dossier.zip", downloadName: "CBAMValid-Dossier.zip" },
+  pdf: { file: "dossier.pdf", downloadName: "Operator-Emissions-Report.pdf" },
+  xlsx: { file: "dossier.xlsx", downloadName: "Verifier-Workspace.xlsx" },
+  manifest: { file: "manifest.json", downloadName: "Data-Integrity-Manifest.json" },
+  signature: { file: "manifest.sig", downloadName: "Manifest-Signature.sig" },
+  snapshot: { file: "case-snapshot.json", downloadName: "Case-Snapshot.json" },
+} as const;
+
 export const getReportDownloadUrl = createCallable(
   {
-    schema: z.object({ reportId: z.string(), format: z.string() })
+    schema: z.object({
+      reportId: z.string().regex(/^report_[a-f0-9]{64}$/),
+      format: z.enum(["zip", "pdf", "xlsx", "manifest", "signature", "snapshot"]),
+    }),
   },
   async ({ reportId, format }, { auth }) => {
-    const doc = await adminDb.collection("cbam_reports").doc(reportId).get();
-    const report = doc.data() as any;
-    if (!report || report.uid !== auth.uid) {
+    const document = await adminDb.collection("cbam_reports").doc(reportId).get();
+    const report = document.data() as Record<string, unknown> | undefined;
+    if (!report || report.uid !== auth.uid || report.status !== "SEALED") {
       throw new HttpsError("not-found", "Report not found or access denied.");
     }
-    
-    const { getStorage } = await import("firebase-admin/storage");
-    const { getApp } = await import("firebase-admin/app");
-    
-    let ext = format;
-    if (format === "xlsx") ext = "xls";
-    
-    const filePath = `reports/${auth.uid}/${reportId}/dossier.${ext}`;
-    const bucket = getStorage(getApp()).bucket();
-    const file = bucket.file(filePath);
-    
+
+    const target = DOWNLOADS[format];
+    const filePath = `reports/${auth.uid}/${reportId}/${target.file}`;
+    const file = getStorageBucket().file(filePath);
+    const [exists] = await file.exists();
+    if (!exists) throw new HttpsError("not-found", "Requested immutable report artifact is missing.");
     const [url] = await file.getSignedUrl({
-      version: 'v4',
-      action: 'read',
+      version: "v4",
+      action: "read",
       expires: Date.now() + 15 * 60 * 1000,
+      responseDisposition: `attachment; filename="${target.downloadName}"`,
     });
-    
-    return { url, status: "success" };
+    return { url, fileName: target.downloadName, status: "success" };
   }
 );
