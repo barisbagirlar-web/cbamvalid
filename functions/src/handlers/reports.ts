@@ -2,6 +2,7 @@ import { createCallable } from "../wrapper";
 import { z } from "zod";
 import { HttpsError } from "firebase-functions/v2/https";
 import { adminDb, getStorageBucket } from "../firebase-admin";
+import { requireVerifiedUser } from "../auth/verified-user";
 import { getCase } from "../cbam/storage/case-repository";
 import { CaseIdSchema } from "../cbam/case-id";
 import { assertKmsSigningConfigured } from "../cbam/report/kms-signature";
@@ -39,6 +40,7 @@ export const sealCbamReport = createCallable(
   },
   async ({ caseId, entitlementId, requestId, correctionReason }, { auth }) => {
     try {
+      requireVerifiedUser(auth);
       assertKmsSigningConfigured();
       const cbamCase = await getCase(caseId);
       if (!cbamCase) throw new HttpsError("not-found", "Case not found.");
