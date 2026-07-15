@@ -39,6 +39,7 @@ export function createNewCaseDraft(ownerId: string, options: NewCaseDraftOptions
     evidenceRegister: [],
     calculationTrace: [],
     gapAssessment: [],
+    methodologyDecisions: [],
     auditEvents: [{
       eventId: options.eventId ?? crypto.randomUUID(),
       timestamp: options.timestamp ?? new Date().toISOString(),
