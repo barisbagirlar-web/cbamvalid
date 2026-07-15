@@ -32,6 +32,10 @@ const saveContract = read("lib/functions/case-save-contract.ts");
 const newCasePage = read("app/(workspace)/cases/new/page.tsx");
 const casePage = read("app/(workspace)/cases/[caseId]/page.tsx");
 const firebaseConfig = read("firebase.json");
+const rootPackage = read("package.json");
+const functionsPackage = read("functions/package.json");
+const functionsTsConfig = read("functions/tsconfig.json");
+const cleanNextTypes = read("scripts/clean-next-types.mjs");
 
 requireText(repository, 'collection("case_creation_requests").doc(identity.digest)', "Case creation idempotency collection");
 requireText(repository, "adminDb.runTransaction", "Atomic case creation transaction");
@@ -78,13 +82,29 @@ rejectText(newCasePage, 'router.push("/dashboard")', "Silent new-case dashboard 
 rejectText(newCasePage, 'router.replace("/dashboard")', "Silent new-case dashboard fallback");
 
 requireText(casePage, "Promise.allSettled", "Case and entitlement failure isolation");
+requireText(casePage, "let cancelled = false", "Workspace request cancellation guard");
+requireText(casePage, "cancelled = true", "Workspace stale-response cancellation");
+requireText(casePage, "const retryLoading = () =>", "Event-owned retry state reset");
 requireText(casePage, "Retry Loading", "Observable workspace load failure");
+rejectText(casePage, "useCallback", "Effect-owned synchronous state loader");
+rejectText(casePage, "void loadWorkspace()", "Effect-owned synchronous state loader invocation");
 rejectText(casePage, 'router.push("/dashboard")', "Silent workspace dashboard fallback");
 rejectText(casePage, 'router.replace("/dashboard")', "Silent workspace dashboard fallback");
 
+requireText(rootPackage, "node scripts/clean-next-types.mjs && next typegen && tsc --noEmit", "Fresh Next route type generation");
+requireText(cleanNextTypes, 'path.join(root, ".next", "types")', "Production route type cache cleanup");
+requireText(cleanNextTypes, 'path.join(root, ".next", "dev", "types")', "Development route type cache cleanup");
+requireText(cleanNextTypes, "fs.rmSync", "Generated type cache deletion");
+
+requireText(functionsPackage, '"main": "build/index.js"', "Generated Functions runtime entry");
+requireText(functionsPackage, '"node": "22"', "Functions Node.js 22 runtime");
+requireText(functionsTsConfig, '"outDir": "build"', "Untracked Functions build output");
+requireText(functionsTsConfig, '"target": "es2022"', "Functions Node.js 22 compilation target");
+requireText(firebaseConfig, '"runtime": "nodejs22"', "Firebase Functions runtime pin");
 requireText(firebaseConfig, '"predeploy"', "Functions predeploy declaration");
 requireText(firebaseConfig, '$RESOURCE_DIR', "Functions predeploy resource directory");
 requireText(firebaseConfig, "run build", "Functions predeploy compiler command");
+requireText(firebaseConfig, '"lib"', "Stale compiled Functions exclusion");
 
 if (failures.length) {
   console.error("CASE_RUNTIME_CONTRACT_GUARD=FAIL");
@@ -100,5 +120,9 @@ console.log("CASE_CREATE_SINGLE_FLIGHT=PASS");
 console.log("CASE_CREATE_IDEMPOTENCY=PASS");
 console.log("CASE_ROLLING_DEPLOY_COMPATIBILITY=PASS");
 console.log("CASE_LOAD_FAILURE_ISOLATION=PASS");
+console.log("CASE_LOAD_CANCELLATION=PASS");
 console.log("CASE_SEALING_RESOLVER=PASS");
+console.log("NEXT_TYPEGEN_CONTRACT=PASS");
+console.log("FUNCTIONS_NODE22_RUNTIME=PASS");
+console.log("FUNCTIONS_GENERATED_OUTPUT_ISOLATION=PASS");
 console.log("FUNCTIONS_PREDEPLOY_BUILD=PASS");
