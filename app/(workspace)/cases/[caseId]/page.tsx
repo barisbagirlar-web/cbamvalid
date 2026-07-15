@@ -106,6 +106,8 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
     );
   }
 
+  if (!user) return null;
+
   const effectiveError = malformedCaseError || error;
 
   if (effectiveError || !initialCase) {
