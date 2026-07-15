@@ -1,49 +1,62 @@
-import crypto from "node:crypto";
 import { createCallable } from "../wrapper";
 import { z } from "zod";
 import { HttpsError } from "firebase-functions/v2/https";
 import { adminDb } from "../firebase-admin";
-
-const MAX_RELEASES_PER_PACK = 5;
+import { CaseIdSchema } from "../cbam/case-id";
+import { COMMERCIAL_CONTRACT } from "../commerce/commercial-contract";
+import { unlockPreparationPack } from "../commerce/credit-service";
 
 export const getEntitlements = createCallable({}, async (_, { auth }) => {
   const snapshot = await adminDb.collection("entitlements")
     .where("uid", "==", auth.uid)
-    .where("status", "==", "AVAILABLE")
     .get();
 
-  const grouped = new Map<string, Record<string, unknown>>();
-  for (const document of snapshot.docs) {
-    const data: Record<string, unknown> = { entitlementId: document.id, ...document.data() };
-    const releasesCount = Number(data.releasesCount || 0);
-    const releasesRemaining = Math.max(0, MAX_RELEASES_PER_PACK - releasesCount);
-    if (releasesRemaining === 0) continue;
-    const orderId = typeof data.orderId === "string" ? data.orderId : document.id;
-    const productCode = typeof data.productCode === "string" ? data.productCode : "UNKNOWN";
-    const groupKey = `${orderId}:${productCode}`;
-    const candidate: Record<string, unknown> = { ...data, releasesCount, releasesRemaining };
-    const existing = grouped.get(groupKey);
-    const candidateId = typeof candidate.entitlementId === "string" ? candidate.entitlementId : "";
-    const existingId = typeof existing?.entitlementId === "string" ? existing.entitlementId : "";
-    if (!existing || candidateId.localeCompare(existingId) < 0) grouped.set(groupKey, candidate);
-  }
+  const entitlements = snapshot.docs
+    .map((document) => ({ entitlementId: document.id, ...document.data() } as Record<string, unknown>))
+    .filter((data) => {
+      const status = String(data.status || "");
+      const releasesCount = Number(data.releasesCount || 0);
+      const maxReleases = Number(data.maxReleases || COMMERCIAL_CONTRACT.releasesPerPack);
+      return (
+        data.productCode === COMMERCIAL_CONTRACT.productCode &&
+        ["AVAILABLE", "RESERVED"].includes(status) &&
+        Number.isSafeInteger(releasesCount) &&
+        Number.isSafeInteger(maxReleases) &&
+        releasesCount >= 0 &&
+        maxReleases === COMMERCIAL_CONTRACT.releasesPerPack &&
+        releasesCount < maxReleases
+      );
+    })
+    .map((data) => ({
+      ...data,
+      releasesCount: Number(data.releasesCount || 0),
+      maxReleases: COMMERCIAL_CONTRACT.releasesPerPack,
+      releasesRemaining: COMMERCIAL_CONTRACT.releasesPerPack - Number(data.releasesCount || 0),
+    }))
+    .sort((left, right) => String(left.entitlementId).localeCompare(String(right.entitlementId)));
 
-  return { entitlements: [...grouped.values()], status: "success" };
+  return { entitlements, status: "success" as const };
 });
 
 export const createCheckoutSession = createCallable(
   {
     schema: z.object({
-      productCode: z.string(),
-      caseId: z.string(),
+      productCode: z.literal(COMMERCIAL_CONTRACT.productCode),
+      requestId: z.string().uuid(),
     }),
   },
-  async ({ productCode, caseId }, { auth }) => {
-    const { createCheckout } = await import("../commerce/paddle/checkout-service");
+  async ({ productCode, requestId }, { auth }) => {
     try {
-      const transactionId = await createCheckout(auth.uid, auth.token.email || "", productCode, { caseId });
-      return { transactionId, status: "success" };
+      const { createCheckout } = await import("../commerce/paddle/checkout-service");
+      const transactionId = await createCheckout({
+        uid: auth.uid,
+        email: auth.token.email || "",
+        productCode,
+        requestId,
+      });
+      return { transactionId, status: "success" as const };
     } catch (error: unknown) {
+      if (error instanceof HttpsError) throw error;
       const message = error instanceof Error ? error.message : "CHECKOUT_CREATION_FAILED";
       throw new HttpsError("internal", message);
     }
@@ -51,73 +64,29 @@ export const createCheckoutSession = createCallable(
 );
 
 export const unlockCbamUses = createCallable(
-  { schema: z.object({ requestId: z.string().uuid() }) },
-  async ({ requestId }, { auth }) => {
+  {
+    schema: z.object({
+      requestId: z.string().uuid(),
+      caseId: CaseIdSchema,
+    }),
+  },
+  async ({ requestId, caseId }, { auth }) => {
     try {
-      return await adminDb.runTransaction(async (transaction) => {
-        const digest = crypto.createHash("sha256").update(`${auth.uid}\u0000${requestId}`).digest("hex");
-        const idempotencyRef = adminDb.collection("idempotency").doc(`unlock_${digest}`);
-        const idempotencyDoc = await transaction.get(idempotencyRef);
-        if (idempotencyDoc.exists) {
-          return { status: "success", message: "The five-release pack was already unlocked." };
-        }
-
-        const creditRef = adminDb.collection("users").doc(auth.uid).collection("creditSummary").doc("current");
-        const creditDoc = await transaction.get(creditRef);
-        const availableCredits = Number(creditDoc.data()?.availableCredits || 0);
-        if (!Number.isFinite(availableCredits) || availableCredits < 100) {
-          throw new HttpsError("failed-precondition", "100 account credits are required to unlock one five-release CBAM pack.");
-        }
-
-        const now = new Date().toISOString();
-        transaction.set(creditRef, {
-          availableCredits: availableCredits - 100,
-          lifetimeConsumed: Number(creditDoc.data()?.lifetimeConsumed || 0) + 100,
-          updatedAt: now,
-        }, { merge: true });
-
-        const ledgerRef = adminDb.collection("users").doc(auth.uid).collection("creditLedger").doc();
-        transaction.set(ledgerRef, {
+      const result = await adminDb.runTransaction((transaction) =>
+        unlockPreparationPack(transaction, {
           uid: auth.uid,
-          amount: -100,
-          reason: "CBAM_UNLOCK",
+          caseId,
           requestId,
-          createdAt: now,
-          balanceAfter: availableCredits - 100,
-        });
-
-        const entitlementId = `ent_${digest.slice(0, 48)}`;
-        const entitlementRef = adminDb.collection("entitlements").doc(entitlementId);
-        transaction.create(entitlementRef, {
-          entitlementId,
-          uid: auth.uid,
-          orderId: `UNLOCK_${requestId}`,
-          productCode: "CBAM_EXPORTER_FINAL_REPORT",
-          status: "AVAILABLE",
-          quantity: 1,
-          maxReleases: MAX_RELEASES_PER_PACK,
-          releasesCount: 0,
-          releasesList: [],
-          createdAt: now,
-          updatedAt: now,
-        });
-
-        transaction.create(idempotencyRef, {
-          processedAt: now,
-          uid: auth.uid,
-          requestId,
-          entitlementId,
-          creditsConsumed: 100,
-          releasesGranted: MAX_RELEASES_PER_PACK,
-        });
-
-        return {
-          status: "success",
-          message: "One CBAM pack with five successful releases was unlocked.",
-          entitlementId,
-          releasesGranted: MAX_RELEASES_PER_PACK,
-        };
-      });
+          now: new Date().toISOString(),
+        })
+      );
+      return {
+        ...result,
+        status: "success" as const,
+        message: result.idempotentReplay
+          ? "The Preparation Pack was already unlocked for this case."
+          : "One Preparation Pack with five sealed versions was unlocked for this case.",
+      };
     } catch (error: unknown) {
       if (error instanceof HttpsError) throw error;
       const message = error instanceof Error ? error.message : "CBAM_UNLOCK_FAILED";
