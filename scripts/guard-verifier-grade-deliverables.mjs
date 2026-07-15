@@ -63,20 +63,22 @@ requireText(rootLegal, "8463233359d67185a513ca34427861be034b17937b9e7259b01fbf7a
 requireText(rootRulesets, "VERIFICATION_MATERIALITY_RATE = 0.05", "Five-percent materiality contract");
 requireText(rootRulesets, "verificationTemplateRequired: true", "Electronic verification template requirement");
 requireText(rootSectors, 'legalStatus: "PROPOSAL_ONLY"', "Proposal-only downstream scope");
-requireText(rootSectors, 'sealingAllowed: false', "Non-binding downstream seal block");
+requireText(rootSectors, "sealingAllowed: false", "Non-binding downstream seal block");
 
 requireText(model, "buildVerifierPackageModel", "Verifier package model");
 requireText(model, "READY_FOR_INDEPENDENT_VERIFICATION", "Automated readiness state");
 requireText(model, 'independentVerifierStatus: "NOT_REVIEWED"', "Independent verifier default state");
 requireText(model, "materialityThresholdSpecific", "Per-good materiality calculation");
-requireText(model, "MONITORING_PLAN", "Monitoring-plan concept");
+requireText(model, "monitoringPlan", "Monitoring-plan model");
+requireText(model, "CONFIDENTIAL - VERIFIER PREPARATION WORKSPACE", "Document classification boundary");
+requireText(model, "independent accredited verification", "Independent verifier disclaimer");
 
 for (const text of [
   "document.setFileId",
   "document.setCreationDate",
   "Page ${pageNumber} of ${pageCount}",
-  "CONFIDENTIAL - VERIFIER PREPARATION WORKSPACE",
-  "independent accredited verification",
+  "input.model.documentClassification",
+  "input.model.disclaimer",
 ]) requireText(pdf, text, "Professional PDF contract");
 
 for (const text of [
