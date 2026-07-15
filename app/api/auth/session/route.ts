@@ -21,6 +21,28 @@ function errorText(error: unknown): string {
   return error instanceof Error ? error.message : "UNKNOWN_ERROR";
 }
 
+export async function GET() {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get("__session")?.value;
+  if (!sessionCookie) {
+    return apiFailure("SESSION_MISSING", "No active server session.", 401);
+  }
+  try {
+    const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
+    return apiSuccess({ authenticated: true as const, uid: decoded.uid }, 200, { "Cache-Control": "no-store" });
+  } catch (error: unknown) {
+    console.error(`[SESSION] Status verification failed: ${errorText(error)}`);
+    cookieStore.set("__session", "", {
+      maxAge: 0,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+    });
+    return apiFailure("SESSION_INVALID", "The server session is invalid or expired.", 401);
+  }
+}
+
 export async function POST(request: Request) {
   if (!trustedOrigin(request)) {
     return apiFailure("ORIGIN_REJECTED", "Session requests must originate from this site.", 403);
