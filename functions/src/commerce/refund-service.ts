@@ -26,8 +26,6 @@ export async function processRefund(
 
   const orderRef = adminDb.collection("commerce_orders").doc(params.orderId);
   const entitlementQuery = adminDb.collection("entitlements").where("orderId", "==", params.orderId);
-  const reportsQuery = adminDb.collection("cbam_reports").where("entitlementId", "!=", "").where("entitlementId", "in", []);
-  void reportsQuery;
   const creditSummaryRef = adminDb.collection("users").doc(params.uid).collection("creditSummary").doc("current");
   const refundMarkerRef = adminDb.collection("credit_events").doc(`refund_${params.adjustmentId}`);
   const [orderSnapshot, entitlementSnapshot, creditSummarySnapshot, markerSnapshot] = await Promise.all([
@@ -57,27 +55,39 @@ export async function processRefund(
     if (!Number.isSafeInteger(creditsReversed) || creditsReversed < 0) throw new Error("REFUND_MARKER_INVALID");
     return { status: order.status, creditsReversed, idempotent: true };
   }
+  if (order.status === "REFUNDED_UNUSED" || order.status === "REFUNDED_AFTER_DELIVERY") {
+    throw new Error("REFUND_TERMINAL_ORDER_WITHOUT_MARKER");
+  }
 
   const entitlements = entitlementSnapshot.docs
-    .map((document) => ({ id: document.id, ...(document.data() as Omit<Entitlement, "entitlementId">) }))
+    .map((document) => ({ entitlementId: document.id, ...document.data() } as Entitlement))
     .filter((item) => item.uid === params.uid && item.productCode === PREPARATION_PACK.productCode);
   if (entitlements.length !== 1) throw new Error(`REFUND_ENTITLEMENT_CARDINALITY_INVALID:${entitlements.length}`);
-  const entitlement = entitlements[0] as Entitlement;
+  const entitlement = entitlements[0];
   if (entitlement.status === "REVOKED") throw new Error("REFUND_ENTITLEMENT_ALREADY_REVOKED_WITHOUT_MARKER");
   if (entitlement.status === "RESERVED") throw new Error("REFUND_BLOCKED_BY_ACTIVE_SEAL_RESERVATION");
-  const expectedCreditsRemaining = (PREPARATION_PACK.maxReleases - Number(entitlement.releasesCount || 0)) * PREPARATION_PACK.creditsPerRelease;
+  const releasesCount = Number(entitlement.releasesCount || 0);
+  const expectedCreditsRemaining = (PREPARATION_PACK.maxReleases - releasesCount) * PREPARATION_PACK.creditsPerRelease;
   if (
-    !Number.isSafeInteger(entitlement.releasesCount) ||
-    entitlement.releasesCount < 0 ||
-    entitlement.releasesCount > PREPARATION_PACK.maxReleases ||
+    !Number.isSafeInteger(releasesCount) ||
+    releasesCount < 0 ||
+    releasesCount > PREPARATION_PACK.maxReleases ||
     entitlement.creditsRemaining !== expectedCreditsRemaining
   ) throw new Error("REFUND_ENTITLEMENT_CONSERVATION_INVALID");
+
+  const reportsSnapshot = await transaction.get(
+    adminDb.collection("cbam_reports").where("entitlementId", "==", entitlement.entitlementId)
+  );
+  const sealedReports = reportsSnapshot.docs.filter((document) => document.data()?.status === "SEALED");
+  if (sealedReports.length !== releasesCount) {
+    throw new Error(`REFUND_REPORT_RECONCILIATION_INVALID:${releasesCount}:${sealedReports.length}`);
+  }
 
   const summary = normalizeCreditSummary(creditSummarySnapshot.data());
   if (summary.availableCredits < entitlement.creditsRemaining) {
     throw new Error("REFUND_ACCOUNT_BALANCE_CONSERVATION_INVALID");
   }
-  const status = entitlement.releasesCount > 0 ? "REFUNDED_AFTER_DELIVERY" : "REFUNDED_UNUSED";
+  const status = releasesCount > 0 ? "REFUNDED_AFTER_DELIVERY" : "REFUNDED_UNUSED";
   assertOrderTransition(order.status, status);
   const balanceAfter = summary.availableCredits - entitlement.creditsRemaining;
   const now = new Date().toISOString();
@@ -96,6 +106,16 @@ export async function processRefund(
     refundAdjustmentId: params.adjustmentId,
     updatedAt: now,
   });
+  for (const report of sealedReports) {
+    const data = report.data() as Record<string, unknown>;
+    const documentHash = typeof data.documentHash === "string" ? data.documentHash : "";
+    if (!/^[a-f0-9]{64}$/i.test(documentHash)) throw new Error("REFUND_SEALED_REPORT_HASH_INVALID");
+    transaction.update(adminDb.collection("document_seals").doc(documentHash), {
+      commercialStatus: "REFUNDED_AFTER_DELIVERY",
+      refundAdjustmentId: params.adjustmentId,
+      refundedAt: now,
+    });
+  }
   transaction.set(creditSummaryRef, {
     ...summary,
     availableCredits: balanceAfter,
