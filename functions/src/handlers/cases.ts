@@ -7,6 +7,8 @@ import {
   deleteCase,
   getCase,
   getCasesForUser,
+  recordEvidenceMalwareScan,
+  reviewCaseEvidence,
   updateCase,
 } from "../cbam/storage/case-repository";
 import { toCaseWorkspaceView } from "../cbam/storage/case-contract";
@@ -47,6 +49,32 @@ function resolveCreationRequestId(
     );
   }
   return parsed.data;
+}
+
+function requireAdmin(auth: { token: Record<string, unknown> }): void {
+  if (auth.token.admin !== true && auth.token.ownerAdmin !== true) {
+    throw new HttpsError("permission-denied", "Requires administrator privileges.");
+  }
+}
+
+function translateEvidenceError(error: unknown): never {
+  const message = error instanceof Error ? error.message : "EVIDENCE_OPERATION_FAILED";
+  if (message === "CASE_NOT_FOUND" || message === "EVIDENCE_NOT_FOUND") {
+    throw new HttpsError("not-found", message);
+  }
+  if (message.includes("OWNERSHIP") || message.includes("access denied")) {
+    throw new HttpsError("permission-denied", message);
+  }
+  if (
+    message === "CASE_NOT_EDITABLE" ||
+    message.startsWith("EVIDENCE_FILE_") ||
+    message.startsWith("EVIDENCE_STORAGE_") ||
+    message.startsWith("EVIDENCE_MALWARE_") ||
+    message.startsWith("EVIDENCE_SUPPORT_")
+  ) {
+    throw new HttpsError("failed-precondition", message);
+  }
+  throw error;
 }
 
 export const saveCbamCase = createCallable(
@@ -94,6 +122,54 @@ export const getCbamCase = createCallable(
       throw new HttpsError("not-found", "Case not found or access denied.");
     }
     return { case: toCaseWorkspaceView(cbamCase), status: "success" };
+  }
+);
+
+export const reviewCbamEvidence = createCallable(
+  {
+    schema: z.object({
+      caseId: CaseIdSchema,
+      evidenceId: z.string().uuid(),
+      decision: z.enum(["APPROVED", "REJECTED"]),
+      supportStatus: z.enum([
+        "SUPPORTED",
+        "PARTIALLY_SUPPORTED",
+        "UNSUPPORTED",
+        "NOT_REQUIRED",
+      ]),
+      reviewerNotes: z.string().trim().min(5).max(2000),
+    }),
+  },
+  async (data, { auth }) => {
+    try {
+      const updated = await reviewCaseEvidence({ ...data, uid: auth.uid });
+      return { case: toCaseWorkspaceView(updated), status: "success" };
+    } catch (error) {
+      translateEvidenceError(error);
+    }
+  }
+);
+
+export const recordCbamEvidenceScan = createCallable(
+  {
+    schema: z.object({
+      caseId: CaseIdSchema,
+      evidenceId: z.string().uuid(),
+      status: z.enum(["CLEAN", "INFECTED"]),
+      scannerReference: z.string().trim().min(8).max(500),
+    }),
+  },
+  async (data, { auth }) => {
+    requireAdmin(auth);
+    try {
+      const updated = await recordEvidenceMalwareScan({
+        ...data,
+        actorUid: auth.uid,
+      });
+      return { case: toCaseWorkspaceView(updated), status: "success" };
+    } catch (error) {
+      translateEvidenceError(error);
+    }
   }
 );
 
