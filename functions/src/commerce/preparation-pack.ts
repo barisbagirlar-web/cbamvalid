@@ -4,7 +4,7 @@ export const PREPARATION_PACK = {
   displayName: "CBAM Verifier-Preparation Pack",
   currency: "USD",
   priceMinor: 14900,
-  accountCredits: 100,
+  accountCredits: 100 as number,
   maxReleases: 5,
   creditsPerRelease: 20,
   correctionWindowDays: 14,
