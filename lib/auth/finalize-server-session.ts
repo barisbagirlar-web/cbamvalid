@@ -10,6 +10,10 @@ export function hasServerSessionMarker(): boolean {
   return typeof window !== "undefined" && sessionStorage.getItem(SESSION_MARKER) === "true";
 }
 
+function markServerSession(): void {
+  if (typeof window !== "undefined") sessionStorage.setItem(SESSION_MARKER, "true");
+}
+
 export async function finalizeServerSession(user: User): Promise<void> {
   const idToken = await user.getIdToken(true);
   const response = await fetch("/api/auth/session", {
@@ -26,5 +30,25 @@ export async function finalizeServerSession(user: User): Promise<void> {
       : undefined;
     throw new Error(typeof message === "string" ? message : "Failed to finalize server session.");
   }
-  if (typeof window !== "undefined") sessionStorage.setItem(SESSION_MARKER, "true");
+  markServerSession();
+}
+
+export async function ensureServerSession(user: User): Promise<void> {
+  if (hasServerSessionMarker()) return;
+  const statusResponse = await fetch("/api/auth/session", {
+    method: "GET",
+    credentials: "same-origin",
+    cache: "no-store",
+  });
+  if (statusResponse.ok) {
+    const payload: unknown = await statusResponse.json().catch(() => null);
+    const uid = payload && typeof payload === "object"
+      ? (payload as { data?: { uid?: unknown } }).data?.uid
+      : undefined;
+    if (uid === user.uid) {
+      markServerSession();
+      return;
+    }
+  }
+  await finalizeServerSession(user);
 }
