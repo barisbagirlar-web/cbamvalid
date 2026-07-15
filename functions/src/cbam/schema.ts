@@ -1,27 +1,37 @@
 import { z } from "zod";
+import { CaseIdSchema } from "./case-id";
 
-// Base Input Standard
 export const InputDatumSchema = z.object({
   id: z.string().uuid().optional(),
   value: z.union([z.number(), z.string(), z.null()]),
-  unit: z.string(),
+  rawUnit: z.string().optional(),
+  canonicalUnit: z.string().optional(),
+  unit: z.string().optional(),
   reportingPeriod: z.string().optional(),
-  sourceType: z.enum(["PRIMARY", "DEFAULT", "SECONDARY", "ESTIMATED"]),
-  evidenceId: z.string().optional(), // Links to EvidenceRegister
+  sourceType: z.enum(["PRIMARY", "DEFAULT", "SECONDARY", "ESTIMATED", "REGULATORY"]),
+  evidenceId: z.string().optional(),
   documentReference: z.string().optional(),
   measurementMethod: z.string().optional(),
-  confidenceStatus: z.enum(["HIGH_VERIFIED", "MEDIUM_DOCUMENTED", "LOW_ESTIMATE", "DEFAULT"]),
+  confidenceStatus: z.enum([
+    "HIGH_VERIFIED",
+    "MEDIUM_DOCUMENTED",
+    "LOW_ESTIMATE",
+    "DEFAULT",
+    "DEFAULT_ASSIGNED",
+  ]),
   responsiblePerson: z.string().optional(),
   reviewerNote: z.string().optional(),
 });
 
 export type InputDatum = z.infer<typeof InputDatumSchema>;
 
-// Evidence Record System
 export const EvidenceRecordSchema = z.object({
   evidenceId: z.string().uuid(),
-  documentType: z.string(), // e.g. "CUSTOMS_DECLARATION", "SUPPLIER_INVOICE", "LAB_REPORT"
-  fileName: z.string(),
+  documentType: z.string().min(1),
+  fileName: z.string().min(1),
+  storagePath: z.string().optional(),
+  mimeType: z.string().optional(),
+  sizeBytes: z.number().int().nonnegative().optional(),
   issuer: z.string(),
   issueDate: z.string(),
   reportingPeriod: z.string(),
@@ -30,66 +40,58 @@ export const EvidenceRecordSchema = z.object({
   uploadTimestamp: z.string().datetime(),
   uploader: z.string().optional(),
   reviewStatus: z.enum(["PENDING", "APPROVED", "REJECTED"]),
-  supportStatus: z.enum(["PENDING", "SUPPORTED", "UNSUPPORTED", "PARTIALLY_SUPPORTED"]).default("PENDING"),
+  supportStatus: z.enum(["PENDING", "SUPPORTED", "UNSUPPORTED", "PARTIALLY_SUPPORTED", "NOT_REQUIRED"]).default("PENDING"),
   malwareScanStatus: z.enum(["CLEAN", "INFECTED", "PENDING"]).default("CLEAN"),
-  linkedInputs: z.array(z.string()), // IDs of InputDatum
-  linkedCalculations: z.array(z.string()), // IDs of Calculation traces
-  reviewerNotes: z.string().optional()
+  confidentiality: z.enum(["CONFIDENTIAL", "INTERNAL", "PUBLIC"]).optional(),
+  linkedInputs: z.array(z.string()),
+  linkedCalculations: z.array(z.string()),
+  reviewerNotes: z.string().optional(),
 });
 
 export type EvidenceRecord = z.infer<typeof EvidenceRecordSchema>;
 
-// Carbon Price Paid Module
 export const CarbonPricePaidSchema = z.object({
-  id: z.string().uuid(),
-  amountPaid: z.number().min(0),
-  applicableEmissions: z.number().min(0),
-  currency: z.string().length(3),
+  id: z.string(),
+  amountPaid: z.union([z.number(), z.string()]),
+  applicableEmissions: z.union([z.number(), z.string()]),
+  currency: z.string().min(3).max(3),
   paymentPeriod: z.string(),
   legislationReference: z.string(),
-  proofOfPaymentEvidenceId: z.string().uuid(),
+  proofOfPaymentEvidenceId: z.string().optional(),
   rebateInformation: z.string().optional(),
-  independentCertificationEvidenceId: z.string().uuid().optional(),
+  independentCertificationEvidenceId: z.string().optional(),
   conversionMethod: z.string().optional(),
-  eligibleCertificateReduction: z.number().min(0)
+  eligibleCertificateReduction: z.union([z.number(), z.string()]),
 });
 
 export type CarbonPricePaidRecord = z.infer<typeof CarbonPricePaidSchema>;
 
-// Calculation Trace Node
 export const CalculationTraceNodeSchema = z.object({
-  calculationId: z.string().uuid(),
+  calculationId: z.string(),
   formulaId: z.string(),
   formulaVersion: z.string(),
   officialSource: z.string(),
   sourceVersion: z.string(),
   effectiveDate: z.string(),
-  inputs: z.record(z.string(), z.any()), // Raw inputs mapped
+  inputs: z.record(z.string(), z.any()),
   conversions: z.record(z.string(), z.any()).optional(),
   intermediateCalculations: z.record(z.string(), z.any()).optional(),
   roundingApplied: z.record(z.string(), z.any()).optional(),
   assumptions: z.array(z.string()),
   warnings: z.array(z.string()),
-  outputValue: z.number(),
+  outputValue: z.union([z.number(), z.string()]),
   outputUnit: z.string(),
-  calculationHash: z.string()
+  calculationHash: z.string(),
 });
 
 export type CalculationTraceNode = z.infer<typeof CalculationTraceNodeSchema>;
 
-// Gap Assessment Severity
-export const GapSeveritySchema = z.enum([
-  "BLOCKER",
-  "CRITICAL",
-  "MAJOR",
-  "MINOR",
-  "ADVISORY"
-]);
-
+export const GapSeveritySchema = z.enum(["BLOCKER", "CRITICAL", "MAJOR", "MINOR", "ADVISORY"]);
 export type GapSeverity = z.infer<typeof GapSeveritySchema>;
 
 export const GapRecordSchema = z.object({
-  gapId: z.string().uuid(),
+  gapId: z.string(),
+  issueType: z.string().optional(),
   requirement: z.string(),
   severity: GapSeveritySchema,
   affectedResult: z.string().optional(),
@@ -99,63 +101,54 @@ export const GapRecordSchema = z.object({
   responsibleParty: z.string().optional(),
   deadline: z.string().optional(),
   isBlocking: z.boolean(),
-  resolutionStatus: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED"])
+  resolutionStatus: z.enum(["OPEN", "IN_PROGRESS", "EVIDENCE_REQUESTED", "CORRECTED", "RECALCULATED", "REVIEWED", "RESOLVED"]),
+  resolutionEvidenceIds: z.array(z.string()).optional(),
+  closureNote: z.string().optional(),
 });
 
 export type GapRecord = z.infer<typeof GapRecordSchema>;
 
-// Global Case Status
 export const CaseStatusSchema = z.enum([
   "DRAFT",
   "REVIEW_REQUIRED",
   "VERIFICATION_READY",
   "SEALED",
   "SUPERSEDED",
-  "REVOKED"
+  "REVOKED",
 ]);
 
-// Main Case Payload
 export const AuditReadyCaseSchema = z.object({
-  caseId: z.string().uuid().optional(),
+  caseId: CaseIdSchema.optional(),
   status: CaseStatusSchema.default("DRAFT"),
-  version: z.number().default(1),
-  
-  // 1. Case Identity
-  ownerId: z.string(),
+  version: z.number().int().positive().default(1),
+  ownerId: z.string().min(1),
   importerIdentity: z.object({
     legalName: InputDatumSchema,
     eoriNumber: InputDatumSchema,
-    address: InputDatumSchema.optional()
+    address: InputDatumSchema.optional(),
   }),
   exporterIdentity: z.object({
     legalName: InputDatumSchema,
-    address: InputDatumSchema.optional()
+    address: InputDatumSchema.optional(),
   }),
-  
-  // 2. Reporting Profile
   reportingPeriod: z.object({
     year: InputDatumSchema,
     quarter: InputDatumSchema,
   }),
-  
-  // 3. Products
   goods: z.array(z.object({
     cnCode: InputDatumSchema,
     sector: z.string(),
     productionVolume: InputDatumSchema,
-    shipmentRecords: InputDatumSchema
+    shipmentRecords: InputDatumSchema,
+    allocationShare: InputDatumSchema.optional(),
   })),
-  
-  // 4. Installation & Boundaries
   installation: z.object({
     name: InputDatumSchema,
     unloCode: InputDatumSchema.optional(),
     country: InputDatumSchema,
     productionRoute: InputDatumSchema,
-    systemBoundaries: z.string().optional()
+    systemBoundaries: z.string().optional(),
   }),
-  
-  // 5. Emissions
   directEmissions: InputDatumSchema,
   electricityConsumed: InputDatumSchema,
   gridEmissionFactor: InputDatumSchema,
@@ -164,31 +157,30 @@ export const AuditReadyCaseSchema = z.object({
     quantity: InputDatumSchema,
     directEmissions: InputDatumSchema,
     indirectEmissions: InputDatumSchema,
-    countryOfOrigin: InputDatumSchema
+    countryOfOrigin: InputDatumSchema,
   })),
-
-  // 6. Sub-Systems
   carbonPriceRecords: z.array(CarbonPricePaidSchema),
   evidenceRegister: z.array(EvidenceRecordSchema),
   calculationTrace: z.array(CalculationTraceNodeSchema),
   gapAssessment: z.array(GapRecordSchema),
-  
-  // 7. Audit Manifest
+  methodologyDecisions: z.array(z.object({
+    decisionId: z.string(),
+    topic: z.string(),
+    selectedMethod: z.string(),
+    reason: z.string(),
+    legalOrTechnicalBasis: z.string(),
+    evidenceIds: z.array(z.string()),
+    rejectedAlternativeReason: z.string().optional(),
+    reviewStatus: z.enum(["PENDING", "ACCEPTED", "REVIEW_REQUIRED"]),
+    rulesetVersion: z.string(),
+  })).default([]),
   auditEvents: z.array(z.object({
-    eventId: z.string().uuid(),
+    eventId: z.string(),
     timestamp: z.string().datetime(),
     actor: z.string(),
     action: z.string(),
-    metadata: z.record(z.string(), z.any()).optional()
-  }))
+    metadata: z.record(z.string(), z.any()).optional(),
+  })),
 });
 
 export type AuditReadyCase = z.infer<typeof AuditReadyCaseSchema>;
-
-// Helper function to create an empty InputDatum
-export const createEmptyInput = (unit: string = ""): InputDatum => ({
-  value: null,
-  unit,
-  sourceType: "ESTIMATED",
-  confidenceStatus: "LOW_ESTIMATE"
-});
