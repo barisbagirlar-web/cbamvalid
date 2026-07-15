@@ -2,13 +2,35 @@ import React from "react";
 import { requireSuperAdmin } from "@/lib/auth/admin-gate";
 import { fetchUserDetails } from "../../actions";
 import Link from "next/link";
-import { ArrowLeft, Key, Plus, RotateCcw } from "lucide-react";
+import { ArrowLeft, Key, Plus, RotateCcw, UserX } from "lucide-react";
 
 export default async function AdminUserDetailPage({ params }: { params: Promise<{ uid: string }> }) {
   await requireSuperAdmin();
   const { uid } = await params;
-  
-  const user = await fetchUserDetails(uid);
+
+  let user: Awaited<ReturnType<typeof fetchUserDetails>> | null = null;
+  try {
+    user = await fetchUserDetails(uid);
+  } catch {
+    user = null;
+  }
+
+  if (!user) {
+    return (
+      <div className="space-y-6 max-w-4xl">
+        <Link href="/admin/users" className="text-xs font-semibold text-muted hover:text-foreground flex items-center gap-2">
+          <ArrowLeft className="w-3 h-3" /> Back to Users
+        </Link>
+        <div className="p-8 bg-surface border border-border rounded-lg shadow-sm text-center space-y-3">
+          <UserX className="w-8 h-8 text-muted mx-auto" />
+          <h1 className="text-lg font-bold font-serif text-foreground">User not found</h1>
+          <p className="text-muted text-sm">
+            No Firebase Auth account exists for UID <span className="font-mono">{uid}</span>. It may have been deleted, or the link is stale.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl">
