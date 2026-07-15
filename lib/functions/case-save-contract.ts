@@ -1,11 +1,28 @@
 import type { AuditReadyCase } from "@/lib/cbam/schema";
 import { isCaseId } from "@/lib/cbam/case-id";
 
-export type CaseSaveRequest = { data: AuditReadyCase; caseId?: string };
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export function createCaseSaveRequest(data: AuditReadyCase, caseId?: string): CaseSaveRequest {
-  if (caseId === undefined) return { data };
-  const normalized = caseId.trim();
-  if (!isCaseId(normalized)) throw new Error("INVALID_CASE_ID");
-  return { caseId: normalized, data };
+export type CaseSaveRequest = {
+  data: AuditReadyCase;
+  caseId?: string;
+  requestId?: string;
+};
+
+export function createCaseSaveRequest(
+  data: AuditReadyCase,
+  caseId?: string,
+  requestId?: string
+): CaseSaveRequest {
+  if (caseId !== undefined) {
+    const normalizedCaseId = caseId.trim();
+    if (!isCaseId(normalizedCaseId)) throw new Error("INVALID_CASE_ID");
+    return { caseId: normalizedCaseId, data };
+  }
+
+  const normalizedRequestId = requestId?.trim() ?? "";
+  if (!UUID_PATTERN.test(normalizedRequestId)) {
+    throw new Error("CASE_CREATION_REQUEST_ID_REQUIRED");
+  }
+  return { requestId: normalizedRequestId, data };
 }
