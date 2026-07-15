@@ -29,8 +29,11 @@ const browserSchema = read("lib/cbam/schema.ts");
 const functionsSchema = read("functions/src/cbam/schema.ts");
 const client = read("lib/functions/client.ts");
 const saveContract = read("lib/functions/case-save-contract.ts");
+const caseSummary = read("lib/cbam/case-summary.ts");
 const newCasePage = read("app/(workspace)/cases/new/page.tsx");
 const casePage = read("app/(workspace)/cases/[caseId]/page.tsx");
+const casesPage = read("app/(workspace)/cases/page.tsx");
+const dashboardPage = read("app/(workspace)/cbam/page.tsx");
 const firebaseConfig = read("firebase.json");
 const rootPackage = read("package.json");
 const functionsPackage = read("functions/package.json");
@@ -91,16 +94,29 @@ rejectText(casePage, "void loadWorkspace()", "Effect-owned synchronous state loa
 rejectText(casePage, 'router.push("/dashboard")', "Silent workspace dashboard fallback");
 rejectText(casePage, 'router.replace("/dashboard")', "Silent workspace dashboard fallback");
 
+requireText(caseSummary, "caseData.installation.name", "Canonical installation summary path");
+requireText(caseSummary, "caseData.goods[0]?.cnCode", "Canonical CN-code summary path");
+requireText(caseSummary, "Number.isFinite", "Non-finite summary protection");
+for (const [source, label] of [
+  [casesPage, "Cases page"],
+  [dashboardPage, "Dashboard page"],
+]) {
+  requireText(source, "getCaseDisplayName", `${label} shared installation projection`);
+  requireText(source, "getPrimaryCnCode", `${label} shared CN-code projection`);
+  rejectText(source, "data?.installationName", `${label} legacy installation path`);
+  rejectText(source, "data?.cnCode", `${label} legacy CN-code path`);
+}
+
 requireText(rootPackage, "node scripts/clean-next-types.mjs && next typegen && tsc --noEmit", "Fresh Next route type generation");
 requireText(cleanNextTypes, 'path.join(root, ".next", "types")', "Production route type cache cleanup");
 requireText(cleanNextTypes, 'path.join(root, ".next", "dev", "types")', "Development route type cache cleanup");
 requireText(cleanNextTypes, "fs.rmSync", "Generated type cache deletion");
 
 requireText(functionsPackage, '"main": "build/index.js"', "Generated Functions runtime entry");
-requireText(functionsPackage, '"node": "22"', "Functions Node.js 22 runtime");
+requireText(functionsPackage, '"node": "20"', "Lock-compatible local Functions engine metadata");
 requireText(functionsTsConfig, '"outDir": "build"', "Untracked Functions build output");
-requireText(functionsTsConfig, '"target": "es2022"', "Functions Node.js 22 compilation target");
-requireText(firebaseConfig, '"runtime": "nodejs22"', "Firebase Functions runtime pin");
+requireText(functionsTsConfig, '"target": "es2022"', "Node.js 22-compatible compilation target");
+requireText(firebaseConfig, '"runtime": "nodejs22"', "Firebase Functions production runtime pin");
 requireText(firebaseConfig, '"predeploy"', "Functions predeploy declaration");
 requireText(firebaseConfig, '$RESOURCE_DIR', "Functions predeploy resource directory");
 requireText(firebaseConfig, "run build", "Functions predeploy compiler command");
@@ -122,7 +138,9 @@ console.log("CASE_ROLLING_DEPLOY_COMPATIBILITY=PASS");
 console.log("CASE_LOAD_FAILURE_ISOLATION=PASS");
 console.log("CASE_LOAD_CANCELLATION=PASS");
 console.log("CASE_SEALING_RESOLVER=PASS");
+console.log("CASE_SUMMARY_SCHEMA_PATHS=PASS");
 console.log("NEXT_TYPEGEN_CONTRACT=PASS");
-console.log("FUNCTIONS_NODE22_RUNTIME=PASS");
+console.log("FUNCTIONS_PRODUCTION_NODE22_RUNTIME=PASS");
+console.log("FUNCTIONS_LOCAL_LOCK_COMPATIBILITY=PASS");
 console.log("FUNCTIONS_GENERATED_OUTPUT_ISOLATION=PASS");
 console.log("FUNCTIONS_PREDEPLOY_BUILD=PASS");
