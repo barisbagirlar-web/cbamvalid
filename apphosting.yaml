@@ -70,7 +70,7 @@ env:
     availability:
       - RUNTIME
 
-run:
+runConfig:
   concurrency: 80
   cpu: 2
   memoryMiB: 2048
