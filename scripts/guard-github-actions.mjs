@@ -42,6 +42,23 @@ for (const file of files) {
   if (/persist-credentials:\s*true/.test(content)) {
     failures.push(`${relativePath}: checkout credentials must not be explicitly persisted`);
   }
+
+  const runsNodeCommands =
+    /run:\s*(?:node|npm|npx)\b/.test(content) ||
+    /\n\s+(?:node|npm|npx)\s/.test(content);
+
+  if (runsNodeCommands) {
+    if (!/uses:\s*actions\/setup-node@v4\b/.test(content)) {
+      failures.push(`${relativePath}: Node commands require actions/setup-node@v4`);
+    }
+    if (!/node-version:\s*["']?22["']?\s*$/m.test(content)) {
+      failures.push(`${relativePath}: Node commands must run on Node 22`);
+    }
+  }
+
+  if (/node-version:\s*["']?20["']?\s*$/m.test(content)) {
+    failures.push(`${relativePath}: Node 20 is prohibited; production runtime is Node 22`);
+  }
 }
 
 if (files.length === 0) {
@@ -57,3 +74,4 @@ if (failures.length > 0) {
 console.log("GITHUB_ACTIONS_GUARD=PASS");
 console.log(`WORKFLOW_COUNT=${files.length}`);
 console.log(`WORKFLOWS=${files.join(",")}`);
+console.log("WORKFLOW_NODE22_RUNTIME_CONTRACT=PASS");
