@@ -1,9 +1,9 @@
 import type admin from "firebase-admin";
 import { adminDb } from "../firebase-admin";
-import { DoubleSpendViolationError, EntitlementUnavailableError } from "./commerce-errors";
-import { writeLedgerEntry } from "./ledger-service";
 import { validateIdentifier } from "../firestore-validator";
 import { COMMERCIAL_CONTRACT } from "./commercial-contract";
+import { DoubleSpendViolationError, EntitlementUnavailableError } from "./commerce-errors";
+import { writeLedgerEntry } from "./ledger-service";
 
 export interface Entitlement {
   entitlementId: string;
@@ -68,6 +68,16 @@ function normalizeEntitlement(data: unknown, documentId: string): Entitlement {
     consumedAt: source.consumedAt,
     releasesList: Array.isArray(source.releasesList) ? source.releasesList : [],
   };
+}
+
+function commerceHoldRef(uid: string): admin.firestore.DocumentReference {
+  return adminDb.collection("users").doc(uid).collection("commerceHold").doc("current");
+}
+
+function assertNoActiveCommerceHold(snapshot: admin.firestore.DocumentSnapshot): void {
+  if (snapshot.exists && snapshot.data()?.active === true) {
+    throw new EntitlementUnavailableError("COMMERCE_HOLD_ACTIVE");
+  }
 }
 
 async function assertCanonicalOrderEntitlement(
@@ -154,7 +164,11 @@ export async function reserveEntitlement(
   validateIdentifier("caseId", params.caseId);
 
   const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
-  const snapshot = await transaction.get(entitlementRef);
+  const [snapshot, holdSnapshot] = await Promise.all([
+    transaction.get(entitlementRef),
+    transaction.get(commerceHoldRef(params.uid)),
+  ]);
+  assertNoActiveCommerceHold(holdSnapshot);
   if (!snapshot.exists) throw new EntitlementUnavailableError(`Entitlement ${params.entitlementId} was not found.`);
   const entitlement = normalizeEntitlement(snapshot.data(), snapshot.id);
   if (entitlement.uid !== params.uid) throw new EntitlementUnavailableError("Ownership mismatch on requested entitlement.");
@@ -217,7 +231,11 @@ export async function consumeEntitlement(
   if (!/^[a-f0-9]{64}$/i.test(params.reportHash)) throw new EntitlementUnavailableError("Report hash is invalid.");
 
   const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
-  const snapshot = await transaction.get(entitlementRef);
+  const [snapshot, holdSnapshot] = await Promise.all([
+    transaction.get(entitlementRef),
+    transaction.get(commerceHoldRef(params.uid)),
+  ]);
+  assertNoActiveCommerceHold(holdSnapshot);
   if (!snapshot.exists) throw new EntitlementUnavailableError(`Entitlement ${params.entitlementId} was not found.`);
   const entitlement = normalizeEntitlement(snapshot.data(), snapshot.id);
   if (entitlement.uid !== params.uid) throw new EntitlementUnavailableError("Ownership mismatch on requested entitlement.");
