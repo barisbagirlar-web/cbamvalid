@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { adminDb } from "../firebase-admin";
+import { PREPARATION_PACK } from "./preparation-pack";
 import { processRefund } from "./refund-service";
 import { isSandboxMode } from "./paddle-client";
 import { validateCompletedTransaction } from "./transaction-contract";
@@ -20,12 +21,32 @@ const AdjustmentSchema = z.object({
   totals: z.object({ subtotal: z.union([z.string(), z.number()]) }).passthrough(),
 }).passthrough();
 
-function positiveMinor(value: string | number): number {
+function absoluteMinor(value: string | number): number {
   const text = String(value).trim();
-  if (!/^\d+$/.test(text)) throw new Error("PADDLE_ADJUSTMENT_AMOUNT_INVALID");
-  const amount = Number(text);
-  if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error("PADDLE_ADJUSTMENT_AMOUNT_INVALID");
+  if (!/^-?\d+$/.test(text)) throw new Error("PADDLE_ADJUSTMENT_AMOUNT_INVALID");
+  const amount = Math.abs(Number(text));
+  if (!Number.isSafeInteger(amount) || amount <= 0) {
+    throw new Error("PADDLE_ADJUSTMENT_AMOUNT_INVALID");
+  }
   return amount;
+}
+
+async function recordManualAdjustmentReview(params: {
+  adjustmentId: string;
+  eventId: string;
+  transactionId: string;
+  orderId: string;
+  uid: string;
+  amountMinor: number;
+  currency: string;
+  reason: string;
+}): Promise<void> {
+  await adminDb.collection("commerce_manual_reviews").doc(params.adjustmentId).set({
+    ...params,
+    reviewType: "PADDLE_ADJUSTMENT",
+    reviewState: "OPEN",
+    updatedAt: new Date().toISOString(),
+  }, { merge: true });
 }
 
 export async function processWebhookEvent(input: unknown): Promise<void> {
@@ -53,13 +74,33 @@ export async function processWebhookEvent(input: unknown): Promise<void> {
     const orderId = typeof order.orderId === "string" ? order.orderId : "";
     if (!uid || !orderId) throw new Error("REFUND_ORDER_INVALID");
 
+    const amountMinor = absoluteMinor(adjustment.totals.subtotal);
+    if (
+      adjustment.currencyCode !== PREPARATION_PACK.currency ||
+      amountMinor !== PREPARATION_PACK.priceMinor
+    ) {
+      await recordManualAdjustmentReview({
+        adjustmentId: adjustment.id,
+        eventId: event.eventId,
+        transactionId: adjustment.transactionId,
+        orderId,
+        uid,
+        amountMinor,
+        currency: adjustment.currencyCode,
+        reason: adjustment.currencyCode !== PREPARATION_PACK.currency
+          ? "CURRENCY_MISMATCH"
+          : "PARTIAL_OR_EXCESS_ADJUSTMENT",
+      });
+      return;
+    }
+
     await adminDb.runTransaction((dbTransaction) => processRefund(dbTransaction, {
       uid,
       orderId,
       transactionId: adjustment.transactionId,
       eventId: event.eventId,
       adjustmentId: adjustment.id,
-      amountMinor: positiveMinor(adjustment.totals.subtotal),
+      amountMinor,
       currency: adjustment.currencyCode,
     }));
     return;
