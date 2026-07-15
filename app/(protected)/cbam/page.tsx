@@ -3,6 +3,7 @@ import { getServerSession } from "@/lib/auth/get-server-session";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getAdminDb } from "@/lib/firebase/admin";
+import { FileText, ArrowRight } from "lucide-react";
 
 import SignOutButton from "./SignOutButton";
 
@@ -65,13 +66,38 @@ export default async function CbamLandingPage() {
           </div>
         </header>
 
+        {/* First-time onboarding banner: unmissable start point for brand-new accounts */}
+        {cases.length === 0 && reports.length === 0 && (
+          <section className="mb-8 rounded-xl border border-accent/40 bg-accent-soft px-6 py-8 md:px-10 md:py-10 text-center">
+            <FileText className="w-10 h-10 text-accent mx-auto mb-4" strokeWidth={1.5} aria-hidden="true" />
+            <h2 className="text-lg md:text-xl font-bold text-foreground">Start your first CBAM report here</h2>
+            <p className="text-sm text-muted mt-2 max-w-xl mx-auto">
+              You have {availableEntitlementsCount} entitlement{availableEntitlementsCount === 1 ? "" : "s"} available. Create a case to begin entering exporter, product, and emissions data.
+            </p>
+            <Link
+              href="/cbam/new"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent px-6 py-3 text-sm font-semibold text-surface transition-colors hover:bg-accent-hover active:bg-accent-active mt-5"
+            >
+              Start New CBAM Case <ArrowRight className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
+            </Link>
+          </section>
+        )}
+
         {/* Dashboard grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Active cases */}
           <section className="bg-surface border border-border rounded-xl p-6 shadow-[var(--shadow-card)]">
             <h2 className="text-lg font-bold mb-4">Draft Cases</h2>
             {cases.length === 0 ? (
-              <p className="text-sm text-subtle">No draft cases found. Click &quot;Create New Case&quot; to get started.</p>
+              <div className="text-center py-8 space-y-3">
+                <p className="text-sm text-subtle">No draft cases found.</p>
+                <Link
+                  href="/cbam/new"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-xs font-semibold text-surface transition-colors hover:bg-accent-hover active:bg-accent-active"
+                >
+                  Create New Case
+                </Link>
+              </div>
             ) : (
               <div className="space-y-4">
                 {cases.map((c: any) => (
