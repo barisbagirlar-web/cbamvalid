@@ -18,7 +18,7 @@ jobs:
   quality:
     name: Typecheck, tests and production build
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 45
     env:
       CI: "true"
       NEXT_TELEMETRY_DISABLED: "1"
@@ -68,6 +68,12 @@ jobs:
         run: |
           set -o pipefail
           npm run guard:case-runtime-contract 2>&1 | tee artifacts/ci/case-runtime-contract.log
+
+      - name: Verify verifier-grade deliverables contract
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run guard:verifier-grade-deliverables 2>&1 | tee artifacts/ci/verifier-grade-deliverables.log
 
       - name: Typecheck
         shell: bash

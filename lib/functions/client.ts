@@ -5,9 +5,15 @@ import {
   type AuditReadyCase,
   type EvidenceSupportStatus,
 } from "@/lib/cbam/schema";
+import {
+  ReportDownloadFormatSchema,
+  parseSealedReportView,
+  type ReportDownloadFormat,
+  type SealedReportView,
+} from "@/lib/cbam/report-contract";
 import { createCaseSaveRequest } from "@/lib/functions/case-save-contract";
 
-type UnknownRecord = Record<string, unknown>;
+export type UnknownRecord = Record<string, unknown>;
 
 export type CbamCaseRecord = {
   caseId: string;
@@ -25,19 +31,29 @@ export type PreparationPackEntitlement = {
   caseId?: string;
   status?: string;
   versionSequence?: number;
+  releasesCount?: number;
+  releasesRemaining?: number;
   [key: string]: unknown;
 };
 
 export type SealResponse = {
-  report?: {
-    reportId?: string;
-    releaseVersion?: number;
-    documentHash?: string;
-    manifestHash?: string;
-    status?: string;
+  report: {
+    reportId: string;
+    releaseVersion: number;
+    documentHash: string;
+    manifestHash: string;
+    packageHash: string;
+    status: "SEALED";
   };
-  status?: string;
-  [key: string]: unknown;
+  status: "success";
+};
+
+export type ReportDownloadDescriptor = {
+  url: string;
+  fileName: string;
+  sha256: string;
+  sizeBytes: number;
+  status: "success";
 };
 
 export const getCbamCasesCallable = httpsCallable<void, { cases: CbamCaseRecord[] }>(firebaseFunctions, "getCbamCases");
@@ -69,11 +85,15 @@ export const sealCbamReportCallable = httpsCallable<{
   caseId: string;
   entitlementId: string;
   requestId: string;
+  correctionReason?: string;
 }, SealResponse>(firebaseFunctions, "sealCbamReport");
 
-export const getCbamReportsCallable = httpsCallable<void, { reports: UnknownRecord[] }>(firebaseFunctions, "getCbamReports");
-export const getCbamReportCallable = httpsCallable<{ reportId: string }, { report: UnknownRecord }>(firebaseFunctions, "getCbamReport");
-export const getReportDownloadUrlCallable = httpsCallable<{ reportId: string; format: string }, { url: string }>(firebaseFunctions, "getReportDownloadUrl");
+export const getCbamReportsCallable = httpsCallable<void, { reports: unknown[] }>(firebaseFunctions, "getCbamReports");
+export const getCbamReportCallable = httpsCallable<{ reportId: string }, { report: unknown }>(firebaseFunctions, "getCbamReport");
+export const getReportDownloadUrlCallable = httpsCallable<{
+  reportId: string;
+  format: ReportDownloadFormat;
+}, ReportDownloadDescriptor>(firebaseFunctions, "getReportDownloadUrl");
 
 export const getEntitlementsCallable = httpsCallable<void, { entitlements: PreparationPackEntitlement[] }>(firebaseFunctions, "getEntitlements");
 export const createCheckoutSessionCallable = httpsCallable<{ productCode: string; caseId: string }, { transactionId: string; error?: string }>(firebaseFunctions, "createCheckoutSession");
@@ -147,7 +167,7 @@ export async function deleteCase(caseId: string): Promise<boolean> {
   return result.data.success;
 }
 
-export async function calculateReport(caseId: string) {
+export async function calculateReport(caseId: string): Promise<UnknownRecord> {
   const result = await calculateCbamCallable({ caseId });
   return result.data;
 }
@@ -155,25 +175,38 @@ export async function calculateReport(caseId: string) {
 export async function sealReport(
   caseId: string,
   entitlementId: string,
-  requestId: string
+  requestId: string,
+  correctionReason?: string
 ): Promise<SealResponse> {
-  const result = await sealCbamReportCallable({ caseId, entitlementId, requestId });
+  const result = await sealCbamReportCallable({ caseId, entitlementId, requestId, correctionReason });
   return result.data;
 }
 
-export async function getReports() {
+export async function getReports(): Promise<SealedReportView[]> {
   const result = await getCbamReportsCallable();
-  return result.data.reports;
+  return result.data.reports.map(parseSealedReportView);
 }
 
-export async function getReport(reportId: string) {
+export async function getReport(reportId: string): Promise<SealedReportView> {
   const result = await getCbamReportCallable({ reportId });
-  return result.data.report;
+  return parseSealedReportView(result.data.report);
 }
 
-export async function getReportDownloadUrl(reportId: string, format: string) {
-  const result = await getReportDownloadUrlCallable({ reportId, format });
-  return result.data.url;
+export async function getReportDownload(
+  reportId: string,
+  format: ReportDownloadFormat
+): Promise<ReportDownloadDescriptor> {
+  const parsedFormat = ReportDownloadFormatSchema.parse(format);
+  const result = await getReportDownloadUrlCallable({ reportId, format: parsedFormat });
+  return result.data;
+}
+
+export async function getReportDownloadUrl(
+  reportId: string,
+  format: ReportDownloadFormat
+): Promise<string> {
+  const result = await getReportDownload(reportId, format);
+  return result.url;
 }
 
 export async function getEntitlements(): Promise<PreparationPackEntitlement[]> {

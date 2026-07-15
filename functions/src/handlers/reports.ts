@@ -5,6 +5,7 @@ import { adminDb, getStorageBucket } from "../firebase-admin";
 import { getCase } from "../cbam/storage/case-repository";
 import { CaseIdSchema } from "../cbam/case-id";
 import { assertKmsSigningConfigured } from "../cbam/report/kms-signature";
+import { toSealedReportView } from "../cbam/report/report-contract";
 
 function sealError(error: unknown): HttpsError {
   if (error instanceof HttpsError) return error;
@@ -66,8 +67,8 @@ export const getCbamReports = createCallable({}, async (_, { auth }) => {
     .where("status", "==", "SEALED")
     .get();
   const reports = snapshot.docs
-    .map((document) => document.data())
-    .sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")));
+    .map((document) => toSealedReportView(document.data()))
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
   return { reports, status: "success" };
 });
 
@@ -75,21 +76,20 @@ export const getCbamReport = createCallable(
   { schema: z.object({ reportId: z.string().regex(/^report_[a-f0-9]{64}$/) }) },
   async ({ reportId }, { auth }) => {
     const document = await adminDb.collection("cbam_reports").doc(reportId).get();
-    const report = document.data() as Record<string, unknown> | undefined;
-    if (!report || report.uid !== auth.uid || report.status !== "SEALED") {
-      throw new HttpsError("not-found", "Report not found or access denied.");
-    }
+    if (!document.exists) throw new HttpsError("not-found", "Report not found or access denied.");
+    const report = toSealedReportView(document.data());
+    if (report.uid !== auth.uid) throw new HttpsError("not-found", "Report not found or access denied.");
     return { report, status: "success" };
   }
 );
 
 const DOWNLOADS = {
-  zip: { file: "dossier.zip", downloadName: "CBAMValid-Dossier.zip" },
+  zip: { file: "dossier.zip", downloadName: "CBAMValid-Verifier-Preparation-Dossier.zip" },
   pdf: { file: "dossier.pdf", downloadName: "Operator-Emissions-Report.pdf" },
   xlsx: { file: "dossier.xlsx", downloadName: "Verifier-Workspace.xlsx" },
   manifest: { file: "manifest.json", downloadName: "Data-Integrity-Manifest.json" },
   signature: { file: "manifest.sig", downloadName: "Manifest-Signature.sig" },
-  snapshot: { file: "case-snapshot.json", downloadName: "Case-Snapshot.json" },
+  snapshot: { file: "case-snapshot.json", downloadName: "Immutable-Case-Snapshot.json" },
 } as const;
 
 export const getReportDownloadUrl = createCallable(
@@ -101,22 +101,32 @@ export const getReportDownloadUrl = createCallable(
   },
   async ({ reportId, format }, { auth }) => {
     const document = await adminDb.collection("cbam_reports").doc(reportId).get();
-    const report = document.data() as Record<string, unknown> | undefined;
-    if (!report || report.uid !== auth.uid || report.status !== "SEALED") {
-      throw new HttpsError("not-found", "Report not found or access denied.");
-    }
+    if (!document.exists) throw new HttpsError("not-found", "Report not found or access denied.");
+    const report = toSealedReportView(document.data());
+    if (report.uid !== auth.uid) throw new HttpsError("not-found", "Report not found or access denied.");
 
     const target = DOWNLOADS[format];
-    const filePath = `reports/${auth.uid}/${reportId}/${target.file}`;
-    const file = getStorageBucket().file(filePath);
+    const entry = report.storage[target.file];
+    const expectedPath = `reports/${auth.uid}/${reportId}/${target.file}`;
+    if (!entry || entry.path !== expectedPath) {
+      throw new HttpsError("failed-precondition", "Immutable report storage index is missing or inconsistent.");
+    }
+
+    const file = getStorageBucket().file(expectedPath);
     const [exists] = await file.exists();
     if (!exists) throw new HttpsError("not-found", "Requested immutable report artifact is missing.");
+    const [metadata] = await file.getMetadata();
+    const storedHash = metadata.metadata.sha256?.toLowerCase() || "";
+    if (Number(metadata.size) !== entry.sizeBytes || storedHash !== entry.sha256.toLowerCase()) {
+      throw new HttpsError("failed-precondition", "Immutable report artifact metadata does not match the sealed index.");
+    }
+
     const [url] = await file.getSignedUrl({
       version: "v4",
       action: "read",
       expires: Date.now() + 15 * 60 * 1000,
       responseDisposition: `attachment; filename="${target.downloadName}"`,
     });
-    return { url, fileName: target.downloadName, status: "success" };
+    return { url, fileName: target.downloadName, sha256: entry.sha256, sizeBytes: entry.sizeBytes, status: "success" };
   }
 );
