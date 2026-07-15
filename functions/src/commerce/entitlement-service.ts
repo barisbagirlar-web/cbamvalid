@@ -3,8 +3,10 @@ import { adminDb } from "../firebase-admin";
 import { DoubleSpendViolationError, EntitlementUnavailableError } from "./commerce-errors";
 import { writeLedgerEntry } from "./ledger-service";
 import { validateIdentifier } from "../firestore-validator";
+import { PREPARATION_PACK } from "./preparation-pack";
+import { normalizeCreditSummary } from "./credit-service";
 
-const DEFAULT_MAX_RELEASES = 5;
+const DEFAULT_MAX_RELEASES = PREPARATION_PACK.maxReleases;
 
 export interface Entitlement {
   entitlementId: string;
@@ -35,17 +37,26 @@ export interface Entitlement {
 function normalizeEntitlement(data: unknown, documentId: string): Entitlement {
   if (!data || typeof data !== "object") throw new EntitlementUnavailableError("Entitlement payload is invalid.");
   const source = data as Partial<Entitlement>;
+  const quantity = Number(source.quantity ?? 1);
+  const maxReleases = Number(source.maxReleases ?? DEFAULT_MAX_RELEASES);
+  const releasesCount = Number(source.releasesCount ?? 0);
+  if (
+    !Number.isSafeInteger(quantity) || quantity <= 0 ||
+    !Number.isSafeInteger(maxReleases) || maxReleases !== DEFAULT_MAX_RELEASES ||
+    !Number.isSafeInteger(releasesCount) || releasesCount < 0 || releasesCount > maxReleases
+  ) throw new EntitlementUnavailableError("Entitlement counters are invalid.");
+
   return {
     entitlementId: source.entitlementId || documentId,
     uid: String(source.uid || ""),
     orderId: String(source.orderId || ""),
     productCode: String(source.productCode || ""),
     status: source.status || "REVOKED",
-    quantity: Number(source.quantity || 1),
-    maxReleases: Number(source.maxReleases || DEFAULT_MAX_RELEASES),
+    quantity,
+    maxReleases,
     createdAt: String(source.createdAt || new Date(0).toISOString()),
     updatedAt: String(source.updatedAt || new Date(0).toISOString()),
-    releasesCount: Number(source.releasesCount || 0),
+    releasesCount,
     scopeCaseId: source.scopeCaseId,
     reservedReportId: source.reservedReportId,
     reservationExpiresAt: source.reservationExpiresAt,
@@ -91,6 +102,7 @@ export async function createEntitlement(
   validateIdentifier("uid", params.uid);
   validateIdentifier("orderId", params.orderId);
   validateIdentifier("transactionId", params.transactionId);
+  if (params.productCode !== PREPARATION_PACK.productCode) throw new Error("ENTITLEMENT_PRODUCT_INVALID");
 
   const entitlementRef = adminDb.collection("entitlements").doc();
   const now = new Date().toISOString();
@@ -100,21 +112,21 @@ export async function createEntitlement(
     orderId: params.orderId,
     productCode: params.productCode,
     status: "AVAILABLE",
-    quantity: params.quantity,
+    quantity: 1,
     maxReleases: DEFAULT_MAX_RELEASES,
     createdAt: now,
     updatedAt: now,
     releasesCount: 0,
     releasesList: [],
   };
-  transaction.set(entitlementRef, entitlement);
+  transaction.create(entitlementRef, entitlement);
   await writeLedgerEntry(transaction, {
     uid: params.uid,
     orderId: params.orderId,
     transactionId: params.transactionId,
     eventId: params.eventId,
     type: "ENTITLEMENT_ISSUED",
-    quantity: params.quantity,
+    quantity: 1,
     idempotencyKey: `entitlement:${params.transactionId}:${params.productCode}`,
   });
   return entitlement;
@@ -136,9 +148,8 @@ export async function reserveEntitlement(
   if (entitlement.uid !== params.uid) throw new EntitlementUnavailableError("Ownership mismatch on requested entitlement.");
   await assertCanonicalOrderEntitlement(transaction, entitlement);
 
-  const maxReleases = entitlement.maxReleases || DEFAULT_MAX_RELEASES;
-  if (entitlement.releasesCount >= maxReleases || entitlement.status === "CONSUMED") {
-    throw new EntitlementUnavailableError(`The pack has reached its ${maxReleases}-release limit.`);
+  if (entitlement.releasesCount >= DEFAULT_MAX_RELEASES || entitlement.status === "CONSUMED") {
+    throw new EntitlementUnavailableError(`The pack has reached its ${DEFAULT_MAX_RELEASES}-release limit.`);
   }
   if (entitlement.scopeCaseId && entitlement.scopeCaseId !== params.caseId) {
     throw new EntitlementUnavailableError(`The pack is scope-locked to case ${entitlement.scopeCaseId}.`);
@@ -152,9 +163,11 @@ export async function reserveEntitlement(
     throw new DoubleSpendViolationError(params.entitlementId);
   }
 
-  const reservationExpiresAt = new Date(
-    now.getTime() + (params.expiresInSeconds || 300) * 1000
-  ).toISOString();
+  const expiresInSeconds = params.expiresInSeconds ?? 300;
+  if (!Number.isSafeInteger(expiresInSeconds) || expiresInSeconds < 30 || expiresInSeconds > 3600) {
+    throw new Error("ENTITLEMENT_RESERVATION_DURATION_INVALID");
+  }
+  const reservationExpiresAt = new Date(now.getTime() + expiresInSeconds * 1000).toISOString();
   transaction.update(entitlementRef, {
     status: "RESERVED",
     reservedReportId: params.reportId,
@@ -195,6 +208,7 @@ export async function consumeEntitlement(
   if (!snapshot.exists) throw new EntitlementUnavailableError(`Entitlement ${params.entitlementId} was not found.`);
   const entitlement = normalizeEntitlement(snapshot.data(), snapshot.id);
   if (entitlement.uid !== params.uid) throw new EntitlementUnavailableError("Ownership mismatch on requested entitlement.");
+  await assertCanonicalOrderEntitlement(transaction, entitlement);
   if (entitlement.status !== "RESERVED" || entitlement.reservedReportId !== params.reportId) {
     throw new DoubleSpendViolationError(params.entitlementId);
   }
@@ -202,11 +216,26 @@ export async function consumeEntitlement(
     throw new EntitlementUnavailableError("Scope mismatch on consumption.");
   }
 
-  const maxReleases = entitlement.maxReleases || DEFAULT_MAX_RELEASES;
   const newCount = entitlement.releasesCount + 1;
-  if (newCount > maxReleases) throw new EntitlementUnavailableError("Release limit exceeded.");
+  if (newCount > DEFAULT_MAX_RELEASES) throw new EntitlementUnavailableError("Release limit exceeded.");
+  if (params.version !== newCount) throw new EntitlementUnavailableError(`Release version mismatch. Expected ${newCount}.`);
   if (newCount > 1 && !params.correctionReason?.trim()) {
     throw new EntitlementUnavailableError("A correction reason is required after the first release.");
+  }
+
+  const creditSummaryRef = adminDb.collection("users").doc(params.uid).collection("creditSummary").doc("current");
+  const creditMarkerRef = adminDb.collection("credit_events").doc(`seal_${params.reportId}`);
+  const creditLedgerRef = adminDb.collection("users").doc(params.uid).collection("creditLedger").doc(`seal_${params.reportId}`);
+  const [creditSnapshot, creditMarkerSnapshot] = await Promise.all([
+    transaction.get(creditSummaryRef),
+    transaction.get(creditMarkerRef),
+  ]);
+  if (creditMarkerSnapshot.exists) throw new Error("SEAL_CREDIT_PARTIAL_STATE");
+  const creditSummary = normalizeCreditSummary(creditSnapshot.data());
+  if (creditSummary.availableCredits < PREPARATION_PACK.creditsPerRelease) {
+    throw new EntitlementUnavailableError(
+      `${PREPARATION_PACK.creditsPerRelease} credits are required for a successful seal.`
+    );
   }
 
   const now = new Date().toISOString();
@@ -219,11 +248,13 @@ export async function consumeEntitlement(
     sealedAt: now,
   };
   const releasesList = [...entitlement.releasesList, releaseItem];
-  const status: Entitlement["status"] = newCount === maxReleases ? "CONSUMED" : "AVAILABLE";
+  const status: Entitlement["status"] = newCount === DEFAULT_MAX_RELEASES ? "CONSUMED" : "AVAILABLE";
+  const balanceAfter = creditSummary.availableCredits - PREPARATION_PACK.creditsPerRelease;
+
   transaction.update(entitlementRef, {
     status,
     releasesCount: newCount,
-    maxReleases,
+    maxReleases: DEFAULT_MAX_RELEASES,
     scopeCaseId: params.caseId,
     releasesList,
     consumedReportId: params.reportId,
@@ -231,6 +262,29 @@ export async function consumeEntitlement(
     updatedAt: now,
     reservedReportId: null,
     reservationExpiresAt: null,
+  });
+  transaction.set(creditSummaryRef, {
+    ...creditSummary,
+    availableCredits: balanceAfter,
+    lifetimeConsumed: creditSummary.lifetimeConsumed + PREPARATION_PACK.creditsPerRelease,
+    updatedAt: now,
+  }, { merge: true });
+  transaction.create(creditLedgerRef, {
+    uid: params.uid,
+    type: "SEAL_CONSUMPTION",
+    amount: -PREPARATION_PACK.creditsPerRelease,
+    reason: "SUCCESSFUL_REPORT_SEAL",
+    orderId: entitlement.orderId,
+    reportId: params.reportId,
+    createdAt: now,
+    balanceAfter,
+  });
+  transaction.create(creditMarkerRef, {
+    uid: params.uid,
+    entitlementId: params.entitlementId,
+    reportId: params.reportId,
+    creditsConsumed: PREPARATION_PACK.creditsPerRelease,
+    createdAt: now,
   });
   await writeLedgerEntry(transaction, {
     uid: entitlement.uid,
@@ -241,7 +295,19 @@ export async function consumeEntitlement(
     quantity: 1,
     idempotencyKey: `consume:${params.entitlementId}:${params.reportId}:${newCount}`,
   });
-  return { ...entitlement, status, releasesCount: newCount, maxReleases, scopeCaseId: params.caseId, releasesList, consumedReportId: params.reportId, consumedAt: now, updatedAt: now, reservedReportId: undefined, reservationExpiresAt: undefined };
+  return {
+    ...entitlement,
+    status,
+    releasesCount: newCount,
+    maxReleases: DEFAULT_MAX_RELEASES,
+    scopeCaseId: params.caseId,
+    releasesList,
+    consumedReportId: params.reportId,
+    consumedAt: now,
+    updatedAt: now,
+    reservedReportId: undefined,
+    reservationExpiresAt: undefined,
+  };
 }
 
 export async function releaseEntitlementReservation(
@@ -258,8 +324,7 @@ export async function releaseEntitlementReservation(
   if (entitlement.uid !== params.uid) throw new EntitlementUnavailableError("Ownership mismatch.");
   if (entitlement.status !== "RESERVED" || entitlement.reservedReportId !== params.reportId) return entitlement;
 
-  const maxReleases = entitlement.maxReleases || DEFAULT_MAX_RELEASES;
-  const status: Entitlement["status"] = entitlement.releasesCount >= maxReleases ? "CONSUMED" : "AVAILABLE";
+  const status: Entitlement["status"] = entitlement.releasesCount >= DEFAULT_MAX_RELEASES ? "CONSUMED" : "AVAILABLE";
   const now = new Date().toISOString();
   transaction.update(entitlementRef, { status, reservedReportId: null, reservationExpiresAt: null, updatedAt: now });
   await writeLedgerEntry(transaction, {
