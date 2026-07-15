@@ -130,15 +130,18 @@ const listPurchaseHistoryCallable = httpsCallable<{ limit?: number }, { history:
 const requestAccountClosureCallable = httpsCallable<void, { success: true; requestedAt: string }>(firebaseFunctions, "requestAccountClosure");
 
 export async function getCases(): Promise<CbamCaseRecord[]> {
-  return (await getCbamCasesCallable()).data.cases;
+  const result = await getCbamCasesCallable();
+  return result.data.cases;
 }
 
 export async function getCase(caseId: string): Promise<AuditReadyCase> {
-  return AuditReadyCaseSchema.parse((await getCbamCaseCallable({ caseId })).data.case);
+  const result = await getCbamCaseCallable({ caseId });
+  return AuditReadyCaseSchema.parse(result.data.case);
 }
 
 export async function saveCase(data: AuditReadyCase, caseId?: string, requestId?: string): Promise<string> {
-  return (await saveCbamCaseCallable(createCaseSaveRequest(data, caseId, requestId))).data.caseId;
+  const result = await saveCbamCaseCallable(createCaseSaveRequest(data, caseId, requestId));
+  return result.data.caseId;
 }
 
 export async function reviewEvidence(params: {
@@ -148,7 +151,8 @@ export async function reviewEvidence(params: {
   supportStatus: EvidenceSupportStatus;
   reviewerNotes: string;
 }): Promise<AuditReadyCase> {
-  return AuditReadyCaseSchema.parse((await reviewCbamEvidenceCallable(params)).data.case);
+  const result = await reviewCbamEvidenceCallable(params);
+  return AuditReadyCaseSchema.parse(result.data.case);
 }
 
 export async function recordEvidenceScan(params: {
@@ -157,71 +161,88 @@ export async function recordEvidenceScan(params: {
   status: "CLEAN" | "INFECTED";
   scannerReference: string;
 }): Promise<AuditReadyCase> {
-  return AuditReadyCaseSchema.parse((await recordCbamEvidenceScanCallable(params)).data.case);
+  const result = await recordCbamEvidenceScanCallable(params);
+  return AuditReadyCaseSchema.parse(result.data.case);
 }
 
 export async function renameCase(caseId: string, newName: string): Promise<boolean> {
-  return (await renameCbamCaseCallable({ caseId, newName })).data.success;
+  const result = await renameCbamCaseCallable({ caseId, newName });
+  return result.data.success;
 }
 
 export async function archiveCase(caseId: string): Promise<boolean> {
-  return (await archiveCbamCaseCallable({ caseId })).data.success;
+  const result = await archiveCbamCaseCallable({ caseId });
+  return result.data.success;
 }
 
 export async function deleteCase(caseId: string): Promise<boolean> {
-  return (await deleteCbamCaseCallable({ caseId })).data.success;
+  const result = await deleteCbamCaseCallable({ caseId });
+  return result.data.success;
 }
 
 export async function calculateReport(caseId: string): Promise<UnknownRecord> {
-  return (await calculateCbamCallable({ caseId })).data;
+  const result = await calculateCbamCallable({ caseId });
+  return result.data;
 }
 
 export async function sealReport(caseId: string, entitlementId: string, requestId: string, correctionReason?: string): Promise<SealResponse> {
-  return (await sealCbamReportCallable({ caseId, entitlementId, requestId, correctionReason })).data;
+  const result = await sealCbamReportCallable({ caseId, entitlementId, requestId, correctionReason });
+  return result.data;
 }
 
 export async function getReports(): Promise<SealedReportView[]> {
-  return (await getCbamReportsCallable()).data.reports.map(parseSealedReportView);
+  const result = await getCbamReportsCallable();
+  return result.data.reports.map(parseSealedReportView);
 }
 
 export async function getReport(reportId: string): Promise<SealedReportView> {
-  return parseSealedReportView((await getCbamReportCallable({ reportId })).data.report);
+  const result = await getCbamReportCallable({ reportId });
+  return parseSealedReportView(result.data.report);
 }
 
 export async function getReportDownload(reportId: string, format: ReportDownloadFormat): Promise<ReportDownloadDescriptor> {
-  return (await getReportDownloadUrlCallable({ reportId, format: ReportDownloadFormatSchema.parse(format) })).data;
+  const parsedFormat = ReportDownloadFormatSchema.parse(format);
+  const result = await getReportDownloadUrlCallable({ reportId, format: parsedFormat });
+  return result.data;
 }
 
 export async function getReportDownloadUrl(reportId: string, format: ReportDownloadFormat): Promise<string> {
-  return (await getReportDownload(reportId, format)).url;
+  const result = await getReportDownload(reportId, format);
+  return result.url;
 }
 
 export async function getEntitlements(): Promise<PreparationPackEntitlement[]> {
-  return (await getEntitlementsCallable()).data.entitlements;
+  const result = await getEntitlementsCallable();
+  return result.data.entitlements;
 }
 
 export async function getEntitlementSummary(): Promise<EntitlementsResponse> {
-  return (await getEntitlementsCallable()).data;
+  const result = await getEntitlementsCallable();
+  return result.data;
 }
 
 export async function createCheckout(requestId: string, caseId?: string) {
-  return (await createCheckoutSessionCallable({
+  const result = await createCheckoutSessionCallable({
     productCode: PREPARATION_PACK.productCode,
     requestId,
     ...(caseId ? { caseId } : {}),
-  })).data;
+  });
+  return result.data;
 }
 
 export async function getSourcesStatus() {
-  return (await getSourcesStatusCallable()).data;
+  const result = await getSourcesStatusCallable();
+  return result.data;
 }
 
 export async function verifyDocument(documentHash: string) {
-  return (await verifyDocumentCallable({ documentHash })).data;
+  const result = await verifyDocumentCallable({ documentHash });
+  return result.data;
 }
 
 export async function getAccountOverview(): Promise<AccountOverview> {
-  return AccountOverviewSchema.parse((await getAccountOverviewCallable()).data);
+  const result = await getAccountOverviewCallable();
+  return AccountOverviewSchema.parse(result.data);
 }
 
 export async function updateOwnProfile(data: {
@@ -230,17 +251,21 @@ export async function updateOwnProfile(data: {
   phone?: string;
   country?: string;
 }) {
-  return (await updateOwnProfileCallable(data)).data;
+  const result = await updateOwnProfileCallable(data);
+  return result.data;
 }
 
 export async function listCreditLedger(limit?: number): Promise<CreditLedgerEntry[]> {
-  return (await listCreditLedgerCallable({ limit })).data.ledger.map((entry) => CreditLedgerEntrySchema.parse(entry));
+  const result = await listCreditLedgerCallable({ limit });
+  return result.data.ledger.map((entry) => CreditLedgerEntrySchema.parse(entry));
 }
 
 export async function listPurchaseHistory(limit?: number): Promise<PurchaseHistoryEntry[]> {
-  return (await listPurchaseHistoryCallable({ limit })).data.history.map((entry) => PurchaseHistoryEntrySchema.parse(entry));
+  const result = await listPurchaseHistoryCallable({ limit });
+  return result.data.history.map((entry) => PurchaseHistoryEntrySchema.parse(entry));
 }
 
 export async function requestAccountClosure() {
-  return (await requestAccountClosureCallable()).data;
+  const result = await requestAccountClosureCallable();
+  return result.data;
 }
