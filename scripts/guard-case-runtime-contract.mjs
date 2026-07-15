@@ -35,6 +35,7 @@ const casePage = read("app/(workspace)/cases/[caseId]/page.tsx");
 const casesPage = read("app/(workspace)/cases/page.tsx");
 const dashboardPage = read("app/(workspace)/cbam/page.tsx");
 const firebaseConfig = read("firebase.json");
+const firestoreRules = read("firestore.rules");
 const rootPackage = read("package.json");
 const functionsPackage = read("functions/package.json");
 const functionsTsConfig = read("functions/tsconfig.json");
@@ -107,6 +108,9 @@ for (const [source, label] of [
   rejectText(source, "data?.cnCode", `${label} legacy CN-code path`);
 }
 
+requireText(firestoreRules, "match /case_creation_requests/{requestDigest}", "Explicit idempotency marker rule");
+requireText(firestoreRules, "allow read, write: if false;", "Backend-only idempotency marker access");
+
 requireText(rootPackage, "node scripts/clean-next-types.mjs && next typegen && tsc --noEmit", "Fresh Next route type generation");
 requireText(cleanNextTypes, 'path.join(root, ".next", "types")', "Production route type cache cleanup");
 requireText(cleanNextTypes, 'path.join(root, ".next", "dev", "types")', "Development route type cache cleanup");
@@ -139,6 +143,7 @@ console.log("CASE_LOAD_FAILURE_ISOLATION=PASS");
 console.log("CASE_LOAD_CANCELLATION=PASS");
 console.log("CASE_SEALING_RESOLVER=PASS");
 console.log("CASE_SUMMARY_SCHEMA_PATHS=PASS");
+console.log("CASE_CREATION_MARKER_RULES=PASS");
 console.log("NEXT_TYPEGEN_CONTRACT=PASS");
 console.log("FUNCTIONS_PRODUCTION_NODE22_RUNTIME=PASS");
 console.log("FUNCTIONS_LOCAL_LOCK_COMPATIBILITY=PASS");
