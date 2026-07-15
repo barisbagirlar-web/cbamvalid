@@ -44,10 +44,13 @@ service cloud.firestore {
       allow update, delete: if isSuperAdmin();
     }
 
-    // Idempotency markers define whether a case-creation request has already
-    // committed. Client visibility or mutation could disclose request IDs or
-    // break exactly-once creation guarantees. Admin SDK access bypasses rules.
     match /case_creation_requests/{requestDigest} {
+      allow read, write: if false;
+    }
+
+    // Seal request documents contain deterministic request identifiers,
+    // in-progress leases and retry state. They are backend-only controls.
+    match /report_requests/{requestDigest} {
       allow read, write: if false;
     }
 
