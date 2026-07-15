@@ -23,7 +23,6 @@ export interface ProfessionalPdfInput {
 }
 
 const PAGE_WIDTH = 210;
-const PAGE_HEIGHT = 297;
 const MARGIN = 15;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
 const BODY_TOP = 45;
