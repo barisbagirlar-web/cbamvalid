@@ -29,6 +29,14 @@ export interface CreditLedgerEntry {
   balanceAfter: number;
 }
 
+export interface PreparedPurchasedCreditGrant {
+  summaryRef: admin.firestore.DocumentReference;
+  ledgerRef: admin.firestore.DocumentReference;
+  nextSummary: CreditSummary;
+  ledgerEntry: CreditLedgerEntry;
+  idempotentReplay: boolean;
+}
+
 function integer(value: unknown, field: string): number {
   const parsed = Number(value ?? 0);
   if (!Number.isSafeInteger(parsed) || parsed < 0) throw new Error(`CREDIT_SUMMARY_INVALID:${field}`);
@@ -51,7 +59,7 @@ function digest(parts: string[]): string {
   return crypto.createHash("sha256").update(parts.join("\u0000")).digest("hex");
 }
 
-export async function grantPurchasedCredits(
+export async function preparePurchasedCreditGrant(
   transaction: admin.firestore.Transaction,
   params: {
     uid: string;
@@ -61,7 +69,7 @@ export async function grantPurchasedCredits(
     credits: number;
     occurredAt: string;
   }
-): Promise<CreditSummary> {
+): Promise<PreparedPurchasedCreditGrant> {
   validateIdentifier("uid", params.uid);
   validateIdentifier("orderId", params.orderId);
   validateIdentifier("transactionId", params.transactionId);
@@ -77,25 +85,32 @@ export async function grantPurchasedCredits(
   const current = normalizeCreditSummary(summarySnapshot.exists ? summarySnapshot.data() : undefined);
 
   if (ledgerSnapshot.exists) {
-    const existing = ledgerSnapshot.data() as Partial<CreditLedgerEntry>;
+    const existing = ledgerSnapshot.data() as CreditLedgerEntry;
     if (
       existing.uid !== params.uid ||
       existing.transactionId !== params.transactionId ||
+      existing.orderId !== params.orderId ||
       existing.amount !== params.credits ||
       existing.balanceAfter !== current.availableCredits
     ) throw new Error("PURCHASE_CREDIT_IDEMPOTENCY_COLLISION");
-    return current;
+    return {
+      summaryRef,
+      ledgerRef,
+      nextSummary: current,
+      ledgerEntry: existing,
+      idempotentReplay: true,
+    };
   }
 
   const balanceAfter = current.availableCredits + params.credits;
   if (!Number.isSafeInteger(balanceAfter)) throw new Error("CREDIT_BALANCE_OVERFLOW");
-  const next: CreditSummary = {
+  const nextSummary: CreditSummary = {
     ...current,
     availableCredits: balanceAfter,
     lifetimePurchased: current.lifetimePurchased + params.credits,
     updatedAt: params.occurredAt,
   };
-  const entry: CreditLedgerEntry = {
+  const ledgerEntry: CreditLedgerEntry = {
     entryId,
     uid: params.uid,
     amount: params.credits,
@@ -106,9 +121,32 @@ export async function grantPurchasedCredits(
     createdAt: params.occurredAt,
     balanceAfter,
   };
-  transaction.set(summaryRef, next, { merge: true });
-  transaction.create(ledgerRef, entry);
-  return next;
+  return { summaryRef, ledgerRef, nextSummary, ledgerEntry, idempotentReplay: false };
+}
+
+export function commitPurchasedCreditGrant(
+  transaction: admin.firestore.Transaction,
+  prepared: PreparedPurchasedCreditGrant
+): void {
+  if (prepared.idempotentReplay) return;
+  transaction.set(prepared.summaryRef, prepared.nextSummary, { merge: true });
+  transaction.create(prepared.ledgerRef, prepared.ledgerEntry);
+}
+
+export async function grantPurchasedCredits(
+  transaction: admin.firestore.Transaction,
+  params: {
+    uid: string;
+    orderId: string;
+    transactionId: string;
+    eventId: string;
+    credits: number;
+    occurredAt: string;
+  }
+): Promise<CreditSummary> {
+  const prepared = await preparePurchasedCreditGrant(transaction, params);
+  commitPurchasedCreditGrant(transaction, prepared);
+  return prepared.nextSummary;
 }
 
 export async function unlockPreparationPack(
