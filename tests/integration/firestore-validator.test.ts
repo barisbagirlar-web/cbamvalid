@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
-import { validateIdentifier, InvalidIdentifierError } from "../../lib/firebase/firestore-validator";
-import { getCase } from "../../lib/cbam/storage/case-repository";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { validateIdentifier, InvalidIdentifierError } from "../../functions/src/firestore-validator";
+import { getCase } from "../../functions/src/cbam/storage/case-repository";
 
 // Mock firebase admin DB
 vi.mock("server-only", () => ({}));

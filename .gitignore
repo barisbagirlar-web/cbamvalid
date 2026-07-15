@@ -22,3 +22,19 @@ service-account*.json
 firebase-adminsdk*.json
 .DS_Store
 tsconfig.tsbuildinfo
+
+# Firebase Admin credentials
+firebase-admin-key.json
+**/firebase-admin-key.json
+firebase-adminsdk*.json
+service-account*.json
+
+# Local test artifacts
+test-out.pdf
+test-page-*.png
+test-page-0.png
+test-page-1.png
+test_sips.png
+test-raster.ts
+CBAMValid_English_A_to_Z_Walkthrough.mp4.png
+create-admin-routes.sh

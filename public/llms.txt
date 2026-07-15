@@ -1,0 +1,25 @@
+# CBAMValid — CBAM Evidence Validation and Report Preparation
+
+> CBAMValid is an independent software service that helps EU importers, third-country operators, and authorised declarants prepare structured evidence, identify documentation gaps, calculate embedded emissions deterministically according to EU rules, and generate auditable compliance dossiers.
+
+## Core Product
+- [Homepage](https://cbamvalid.com/)
+- [Methodology](https://cbamvalid.com/methodology)
+- [Regulatory Sources](https://cbamvalid.com/regulatory-sources)
+- [CN-Code Hub](https://cbamvalid.com/cn-code)
+
+## Compliance Preparation
+- Evidence Readiness: Evaluates completeness of actual vs default emissions data.
+- Calculation Traceability: Provides a cryptographic-style audit trail mapping inputs to the exact EU formula.
+- Report Preparation: Compiles sealed XML and PDF versions for registry upload.
+
+## Trust and Policies
+- [About](https://cbamvalid.com/about)
+- [Contact](https://cbamvalid.com/contact)
+- [Privacy Notice](https://cbamvalid.com/privacy)
+- [Terms of Service](https://cbamvalid.com/terms)
+- [Refund Policy](https://cbamvalid.com/refund-policy)
+
+## About
+CBAMValid is operated independently. Not EU certified. Not an official European Commission or CBAM Registry service.
+Last updated: 2024-01-01

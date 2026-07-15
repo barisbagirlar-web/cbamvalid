@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { PRODUCT_CATALOG, getPriceIdForProduct } from "../../lib/commerce/catalog";
-import { verifyWebhookSignature } from "../../lib/commerce/webhook-verifier";
-import { InvalidWebhookSignatureError } from "../../lib/commerce/commerce-errors";
+import { PRODUCT_CATALOG, getPriceIdForProduct } from "../../functions/src/commerce/catalog";
+import { verifyWebhookSignature } from "../../functions/src/commerce/webhook-verifier";
+import { InvalidWebhookSignatureError } from "../../functions/src/commerce/commerce-errors";
 
-vi.mock("../../lib/commerce/paddle-client", () => {
+vi.mock("../../functions/src/commerce/paddle-client", () => {
   return {
     paddle: {
       webhooks: {
@@ -14,7 +14,7 @@ vi.mock("../../lib/commerce/paddle-client", () => {
   };
 });
 
-import { paddle } from "../../lib/commerce/paddle-client";
+import { paddle } from "../../functions/src/commerce/paddle-client";
 
 describe("Catalog & Pricing Mappings", () => {
   it("Resolves sandbox and production price IDs correctly", () => {
