@@ -8,14 +8,20 @@ function errorMessage(error: unknown): string {
   return error instanceof Error && error.message ? error.message : "WEBHOOK_PROCESSING_FAILED";
 }
 
-function eventUid(event: unknown): string | null {
-  if (!event || typeof event !== "object") return null;
-  const data = (event as Record<string, unknown>).data;
-  if (!data || typeof data !== "object") return null;
+function eventUid(event: Record<string, unknown>): string | null {
+  const data = event.data;
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
   const customData = (data as Record<string, unknown>).customData;
-  if (!customData || typeof customData !== "object") return null;
+  if (!customData || typeof customData !== "object" || Array.isArray(customData)) return null;
   const uid = (customData as Record<string, unknown>).uid;
-  return typeof uid === "string" && uid.trim() ? uid : null;
+  return typeof uid === "string" && uid.trim() ? uid.trim() : null;
+}
+
+function eventDate(value: unknown): string | null {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
+  if (typeof value !== "string" || !value.trim()) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
 export const paddleWebhook = onRequest(
@@ -35,20 +41,36 @@ export const paddleWebhook = onRequest(
       return;
     }
 
+    let verifiedEvent: Record<string, unknown>;
     try {
-      const verifiedEvent = await verifyWebhookSignature(rawBody, signature);
-      const eventId = String(verifiedEvent.eventId || "");
-      const eventType = String(verifiedEvent.eventType || "");
-      const occurredAt = verifiedEvent.occurredAt instanceof Date
-        ? verifiedEvent.occurredAt.toISOString()
-        : String(verifiedEvent.occurredAt || "");
-      if (!eventId || !eventType || !occurredAt) throw new Error("PADDLE_EVENT_ENVELOPE_INVALID");
+      verifiedEvent = await verifyWebhookSignature(rawBody, signature);
+    } catch (verificationError) {
+      const code = errorMessage(verificationError);
+      console.error("[PADDLE-WEBHOOK] Verification failure", verificationError);
+      if (code === "PADDLE_WEBHOOK_SECRET_MISSING") {
+        response.status(500).json({ error: "WEBHOOK_CONFIGURATION_ERROR", code });
+      } else {
+        response.status(401).json({ error: "WEBHOOK_VERIFICATION_FAILED" });
+      }
+      return;
+    }
 
-      const payloadSha256 = createHash("sha256").update(rawBody).digest("hex");
-      const eventRef = adminDb.collection("paddle_events").doc(eventId);
-      const now = new Date();
-      const leaseExpiresAt = new Date(now.getTime() + 5 * 60 * 1000).toISOString();
-      const acquisition = await adminDb.runTransaction(async (transaction) => {
+    const eventId = typeof verifiedEvent.eventId === "string" ? verifiedEvent.eventId.trim() : "";
+    const eventType = typeof verifiedEvent.eventType === "string" ? verifiedEvent.eventType.trim() : "";
+    const occurredAt = eventDate(verifiedEvent.occurredAt);
+    if (!eventId || eventId.length > 128 || !eventType || eventType.length > 128 || !occurredAt) {
+      response.status(400).json({ error: "PADDLE_EVENT_ENVELOPE_INVALID" });
+      return;
+    }
+
+    const payloadSha256 = createHash("sha256").update(rawBody).digest("hex");
+    const eventRef = adminDb.collection("paddle_events").doc(eventId);
+    const now = new Date();
+    const leaseExpiresAt = new Date(now.getTime() + 5 * 60 * 1000).toISOString();
+
+    let acquisition: "PROCESS" | "PAYLOAD_MISMATCH" | "ACKNOWLEDGE" | "IN_PROGRESS" | "RETRY_LIMIT";
+    try {
+      acquisition = await adminDb.runTransaction(async (transaction) => {
         const snapshot = await transaction.get(eventRef);
         if (!snapshot.exists) {
           transaction.create(eventRef, {
@@ -79,7 +101,9 @@ export const paddleWebhook = onRequest(
         }
 
         const attempts = Number(existing.attempts || 0);
-        if (!Number.isSafeInteger(attempts) || attempts >= 10) return "RETRY_LIMIT" as const;
+        if (!Number.isSafeInteger(attempts) || attempts < 0 || attempts >= 10) {
+          return "RETRY_LIMIT" as const;
+        }
         transaction.update(eventRef, {
           processingState: "PROCESSING",
           attempts: attempts + 1,
@@ -89,47 +113,52 @@ export const paddleWebhook = onRequest(
         });
         return "PROCESS" as const;
       });
+    } catch (ingestionError) {
+      console.error(`[PADDLE-WEBHOOK] Event lease acquisition failed for ${eventId}`, ingestionError);
+      response.status(500).json({ error: "WEBHOOK_INGESTION_FAILED" });
+      return;
+    }
 
-      if (acquisition === "ACKNOWLEDGE") {
-        response.status(200).json({ status: "acknowledged", duplicate: true });
-        return;
-      }
-      if (acquisition === "PAYLOAD_MISMATCH") {
-        response.status(409).json({ error: "PAYLOAD_MISMATCH" });
-        return;
-      }
-      if (acquisition === "IN_PROGRESS") {
-        response.status(409).json({ error: "EVENT_PROCESSING_IN_PROGRESS" });
-        return;
-      }
-      if (acquisition === "RETRY_LIMIT") {
-        response.status(500).json({ error: "WEBHOOK_RETRY_LIMIT_EXCEEDED" });
-        return;
-      }
+    if (acquisition === "ACKNOWLEDGE") {
+      response.status(200).json({ status: "acknowledged", duplicate: true });
+      return;
+    }
+    if (acquisition === "PAYLOAD_MISMATCH") {
+      response.status(409).json({ error: "PAYLOAD_MISMATCH" });
+      return;
+    }
+    if (acquisition === "IN_PROGRESS") {
+      response.status(409).json({ error: "EVENT_PROCESSING_IN_PROGRESS" });
+      return;
+    }
+    if (acquisition === "RETRY_LIMIT") {
+      response.status(500).json({ error: "WEBHOOK_RETRY_LIMIT_EXCEEDED" });
+      return;
+    }
 
+    try {
+      await processWebhookEvent(verifiedEvent);
+      await eventRef.update({
+        processingState: "PROCESSED",
+        processedAt: new Date().toISOString(),
+        leaseExpiresAt: new Date().toISOString(),
+        lastErrorCode: null,
+      });
+      response.status(200).json({ status: "success", eventId });
+    } catch (processingError) {
+      const code = errorMessage(processingError);
+      console.error(`[PADDLE-WEBHOOK] Processing failed for ${eventId}`, processingError);
       try {
-        await processWebhookEvent(verifiedEvent);
-        await eventRef.update({
-          processingState: "PROCESSED",
-          processedAt: new Date().toISOString(),
-          leaseExpiresAt: new Date().toISOString(),
-          lastErrorCode: null,
-        });
-        response.status(200).json({ status: "success", eventId });
-      } catch (processingError) {
-        const message = errorMessage(processingError);
-        console.error(`[PADDLE-WEBHOOK] Processing failed for ${eventId}`, processingError);
         await eventRef.update({
           processingState: "FAILED_RETRYABLE",
-          lastErrorCode: message,
+          lastErrorCode: code,
           leaseExpiresAt: new Date().toISOString(),
           failedAt: new Date().toISOString(),
         });
-        response.status(500).json({ error: "PROCESSING_FAILED", code: message });
+      } catch (stateError) {
+        console.error(`[PADDLE-WEBHOOK] Failure state persistence failed for ${eventId}`, stateError);
       }
-    } catch (error) {
-      console.error("[PADDLE-WEBHOOK] Ingestion failure", error);
-      response.status(401).json({ error: "WEBHOOK_VERIFICATION_FAILED" });
+      response.status(500).json({ error: "PROCESSING_FAILED", code });
     }
   }
 );
