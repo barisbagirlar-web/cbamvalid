@@ -6,6 +6,13 @@ service firebase.storage {
       return request.auth != null;
     }
 
+    function isOwnerAdmin() {
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.admin == true
+        && request.auth.token.ownerAdmin == true;
+    }
+
     function ownsCase(userId, caseId) {
       return signedIn()
         && request.auth.uid == userId
@@ -25,19 +32,26 @@ service firebase.storage {
         && request.resource.metadata.sha256.matches('^[a-f0-9]{64}$');
     }
 
+    function validEvidencePath(evidenceId, fileName) {
+      return evidenceId.matches('^[0-9a-f-]{36}$')
+        && fileName.matches('^[A-Za-z0-9._-]{1,160}$');
+    }
+
     match /evidence/{userId}/{caseId}/{evidenceId}/{fileName} {
-      allow read: if ownsCase(userId, caseId);
+      allow read: if ownsCase(userId, caseId) || isOwnerAdmin();
       allow create: if ownsCase(userId, caseId)
+        && validEvidencePath(evidenceId, fileName)
         && request.resource.size > 0
         && request.resource.size <= 20 * 1024 * 1024
         && allowedEvidenceContentType()
         && validEvidenceMetadata(userId, caseId, evidenceId);
       allow update: if false;
-      allow delete: if ownsCase(userId, caseId);
+      allow delete: if ownsCase(userId, caseId)
+        && request.time < resource.timeCreated + duration.value(15, 'm');
     }
 
     match /reports/{userId}/{reportId}/{allPaths=**} {
-      allow read: if signedIn() && request.auth.uid == userId;
+      allow read: if (signedIn() && request.auth.uid == userId) || isOwnerAdmin();
       allow write: if false;
     }
 
