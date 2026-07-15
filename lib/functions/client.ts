@@ -41,6 +41,7 @@ export type PreparationPackEntitlement = {
   productCode: typeof PREPARATION_PACK.productCode;
   status: "AVAILABLE" | "RESERVED";
   scopeCaseId?: string;
+  caseId?: string;
   releasesCount: number;
   releasesRemaining: number;
   maxReleases: typeof PREPARATION_PACK.maxReleases;
@@ -213,12 +214,21 @@ export async function getReportDownloadUrl(reportId: string, format: ReportDownl
 
 export async function getEntitlements(): Promise<PreparationPackEntitlement[]> {
   const result = await getEntitlementsCallable();
-  return result.data.entitlements;
+  return result.data.entitlements.map((entitlement) => ({
+    ...entitlement,
+    caseId: entitlement.scopeCaseId,
+  }));
 }
 
 export async function getEntitlementSummary(): Promise<EntitlementsResponse> {
   const result = await getEntitlementsCallable();
-  return result.data;
+  return {
+    ...result.data,
+    entitlements: result.data.entitlements.map((entitlement) => ({
+      ...entitlement,
+      caseId: entitlement.scopeCaseId,
+    })),
+  };
 }
 
 export async function createCheckout(requestId: string, caseId?: string) {
