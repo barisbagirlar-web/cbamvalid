@@ -249,7 +249,7 @@ describe("5-Release Commercial Entitlement State Machine", () => {
         reportHash: "hash-2",
         version: 2,
       })
-    ).rejects.toThrow("A correction reason must be supplied");
+    ).rejects.toThrow("A correction reason is required after the first release.");
 
     updated = await consumeEntitlement(mockDbTransaction as never, {
       entitlementId: entitlement.entitlementId,
