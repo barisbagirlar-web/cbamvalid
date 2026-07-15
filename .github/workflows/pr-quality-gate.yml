@@ -33,6 +33,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -40,11 +42,14 @@ jobs:
           node-version: "22"
           cache: npm
 
-      - name: Install locked dependencies
-        run: npm ci
-
       - name: Prepare evidence directory
         run: mkdir -p artifacts/ci
+
+      - name: Install locked dependencies
+        shell: bash
+        run: |
+          set -o pipefail
+          npm ci 2>&1 | tee artifacts/ci/npm-ci.log
 
       - name: Verify hosting architecture and tracked-secret policy
         shell: bash
@@ -122,19 +127,22 @@ jobs:
         if: always()
         shell: bash
         run: |
+          mkdir -p artifacts/ci
           {
             echo "COMMIT_SHA=${GITHUB_SHA}"
             echo "WORKFLOW_RUN_ID=${GITHUB_RUN_ID}"
             echo "WORKFLOW_RUN_ATTEMPT=${GITHUB_RUN_ATTEMPT}"
             echo "GENERATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            find artifacts/ci -type f -maxdepth 1 -print0 | sort -z | xargs -0 sha256sum
+            find artifacts/ci -maxdepth 1 -type f ! -name evidence-manifest.txt -print0 \
+              | sort -z \
+              | xargs -0 -r sha256sum
           } > artifacts/ci/evidence-manifest.txt
 
       - name: Upload quality evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pr-quality-evidence-${{ github.sha }}
+          name: pr-quality-evidence-${{ github.sha }}-${{ github.run_attempt }}
           path: artifacts/ci
           if-no-files-found: error
           retention-days: 30
