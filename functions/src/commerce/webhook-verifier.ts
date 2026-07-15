@@ -1,24 +1,23 @@
 import { paddle } from "./paddle-client";
 import { InvalidWebhookSignatureError } from "./commerce-errors";
 
-/**
- * Validates the raw request body against the signature header using the Paddle SDK
- */
-export async function verifyWebhookSignature(rawBody: string, signature: string): Promise<any> {
-  const secretKey = process.env.PADDLE_WEBHOOK_SECRET_KEY || "";
-  if (!secretKey) {
-    console.error("[PADDLE] Error: PADDLE_WEBHOOK_SECRET_KEY is not configured.");
-    throw new Error("PADDLE_WEBHOOK_SECRET_KEY missing.");
-  }
+export async function verifyWebhookSignature(rawBody: string, signature: string): Promise<unknown> {
+  if (!rawBody) throw new InvalidWebhookSignatureError();
+  if (!signature.trim()) throw new InvalidWebhookSignatureError();
+  const secretKey = (
+    process.env.PADDLE_WEBHOOK_SECRET?.trim() ||
+    process.env.PADDLE_WEBHOOK_SECRET_KEY?.trim() ||
+    ""
+  );
+  if (!secretKey) throw new Error("PADDLE_WEBHOOK_SECRET_MISSING");
 
   try {
     const event = await paddle.webhooks.unmarshal(rawBody, secretKey, signature);
-    if (!event) {
-      throw new InvalidWebhookSignatureError();
-    }
+    if (!event) throw new InvalidWebhookSignatureError();
     return event;
   } catch (error) {
-    console.error("[PADDLE] Signature verification check failed:", error);
+    if (error instanceof Error && error.message === "PADDLE_WEBHOOK_SECRET_MISSING") throw error;
+    console.error("[PADDLE] Signature verification failed", error);
     throw new InvalidWebhookSignatureError();
   }
 }
