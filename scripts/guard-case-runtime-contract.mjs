@@ -27,15 +27,25 @@ const reportHandler = read("functions/src/handlers/reports.ts");
 const browserSchema = read("lib/cbam/schema.ts");
 const functionsSchema = read("functions/src/cbam/schema.ts");
 const client = read("lib/functions/client.ts");
+const saveContract = read("lib/functions/case-save-contract.ts");
 const newCasePage = read("app/(workspace)/cases/new/page.tsx");
 const casePage = read("app/(workspace)/cases/[caseId]/page.tsx");
 const firebaseConfig = read("firebase.json");
 
-requireText(repository, "collection.doc(persistedRecord.caseId).create(persistedRecord)", "Canonical Firestore document identity");
+requireText(repository, 'collection("case_creation_requests").doc(digest)', "Case creation idempotency collection");
+requireText(repository, "adminDb.runTransaction", "Atomic case creation transaction");
+requireText(repository, "await transaction.get(markerRef)", "Idempotency marker read before write");
+requireText(repository, "await transaction.get(caseRef)", "Case existence read before write");
+requireText(repository, "transaction.create(caseRef, persistedRecord)", "Canonical case create");
+requireText(repository, "transaction.create(markerRef, marker)", "Atomic idempotency marker create");
+requireText(repository, "CASE_CREATION_IDEMPOTENCY_BROKEN", "Broken idempotency fail-closed state");
 requireText(repository, '.where("caseId", "==", normalizedCaseId).limit(2)', "Legacy case lookup");
 requireText(repository, "document.id === record.caseId", "Canonical record deduplication");
 rejectText(repository, "await caseRef.set(cbamCase)", "Raw auto-ID write pattern");
 
+requireText(caseHandler, "requestId: z.string().uuid().optional()", "Callable request ID validation");
+requireText(caseHandler, "createCase(auth.uid, parsedData, requestId)", "Idempotent repository invocation");
+rejectText(caseHandler, "createCase(auth.uid, parsedData)", "Non-idempotent case creation invocation");
 requireText(caseHandler, "toCaseWorkspaceView(cbamCase)", "Workspace DTO boundary");
 rejectText(caseHandler, "return { case: cbamCase", "Envelope leakage to wizard");
 requireText(caseHandler, "AuditReadyCaseSchema.safeParse", "Server-side case validation");
@@ -48,9 +58,13 @@ requireText(functionsSchema, "caseId: CaseIdSchema.optional()", "Functions case 
 requireText(functionsSchema, "canonicalUnit: z.string().optional()", "Functions canonical unit compatibility");
 
 requireText(client, "AuditReadyCaseSchema.parse(result.data.case)", "Client workspace response validation");
-requireText(client, "createCaseSaveRequest(data, caseId)", "Undefined-free save request");
+requireText(client, "createCaseSaveRequest(data, caseId, requestId)", "Idempotent save request");
+requireText(saveContract, "AMBIGUOUS_CASE_SAVE_REQUEST", "Create/edit payload separation");
+requireText(saveContract, "CASE_CREATION_REQUEST_ID_REQUIRED", "Mandatory create request ID");
 
+requireText(newCasePage, "creationRequestId.current", "Stable creation request ID");
 requireText(newCasePage, "requestInFlight.current", "Single-flight creation");
+requireText(newCasePage, "saveCase(draft, undefined, creationRequestId.current", "Idempotent new-case call");
 requireText(newCasePage, "Retry New Case", "Observable creation failure");
 rejectText(newCasePage, 'router.push("/dashboard")', "Silent new-case dashboard fallback");
 rejectText(newCasePage, 'router.replace("/dashboard")', "Silent new-case dashboard fallback");
@@ -75,6 +89,7 @@ console.log("CASE_DOCUMENT_IDENTITY=PASS");
 console.log("CASE_WORKSPACE_DTO=PASS");
 console.log("CASE_SCHEMA_PARITY=PASS");
 console.log("CASE_CREATE_SINGLE_FLIGHT=PASS");
+console.log("CASE_CREATE_IDEMPOTENCY=PASS");
 console.log("CASE_LOAD_FAILURE_ISOLATION=PASS");
 console.log("CASE_SEALING_RESOLVER=PASS");
 console.log("FUNCTIONS_PREDEPLOY_BUILD=PASS");
