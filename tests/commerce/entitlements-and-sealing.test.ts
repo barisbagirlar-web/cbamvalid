@@ -107,10 +107,10 @@ vi.mock("../../functions/src/firebase-admin", () => ({
   },
   getStorageBucket: () => ({
     file: (filePath: string) => {
-      let fileData = Buffer.from("");
+      let fileData: Buffer<ArrayBufferLike> = Buffer.from("");
       return {
         name: filePath,
-        save: async (buffer: Buffer) => {
+        save: async (buffer: Buffer<ArrayBufferLike>) => {
           fileData = buffer;
         },
         download: async () => [fileData],
