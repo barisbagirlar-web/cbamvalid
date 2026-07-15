@@ -1,10 +1,84 @@
-import { createCallable } from "../wrapper";
-import { z } from "zod";
 import { HttpsError } from "firebase-functions/v2/https";
-import { adminDb } from "../firebase-admin";
+import { z } from "zod";
 import { CaseIdSchema } from "../cbam/case-id";
 import { COMMERCIAL_CONTRACT } from "../commerce/commercial-contract";
 import { unlockPreparationPack } from "../commerce/credit-service";
+import { adminDb } from "../firebase-admin";
+import { createCallable } from "../wrapper";
+
+type PreparationPackEntitlementView = {
+  entitlementId: string;
+  uid: string;
+  orderId: string;
+  productCode: typeof COMMERCIAL_CONTRACT.productCode;
+  status: "AVAILABLE" | "RESERVED";
+  quantity: number;
+  maxReleases: typeof COMMERCIAL_CONTRACT.releasesPerPack;
+  releasesCount: number;
+  releasesRemaining: number;
+  scopeCaseId?: string;
+  reservedReportId?: string;
+  reservationExpiresAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+function stringField(source: Record<string, unknown>, field: string): string {
+  const value = source[field];
+  return typeof value === "string" ? value : "";
+}
+
+function entitlementView(documentId: string, value: unknown): PreparationPackEntitlementView | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const source = value as Record<string, unknown>;
+  const status = stringField(source, "status");
+  const releasesCount = Number(source.releasesCount ?? 0);
+  const maxReleases = Number(source.maxReleases ?? COMMERCIAL_CONTRACT.releasesPerPack);
+  if (
+    source.productCode !== COMMERCIAL_CONTRACT.productCode ||
+    !["AVAILABLE", "RESERVED"].includes(status) ||
+    !Number.isSafeInteger(releasesCount) ||
+    releasesCount < 0 ||
+    maxReleases !== COMMERCIAL_CONTRACT.releasesPerPack ||
+    releasesCount >= maxReleases
+  ) return null;
+
+  return {
+    entitlementId: documentId,
+    uid: stringField(source, "uid"),
+    orderId: stringField(source, "orderId"),
+    productCode: COMMERCIAL_CONTRACT.productCode,
+    status: status as "AVAILABLE" | "RESERVED",
+    quantity: Number.isSafeInteger(Number(source.quantity)) && Number(source.quantity) > 0
+      ? Number(source.quantity)
+      : 1,
+    maxReleases: COMMERCIAL_CONTRACT.releasesPerPack,
+    releasesCount,
+    releasesRemaining: COMMERCIAL_CONTRACT.releasesPerPack - releasesCount,
+    ...(stringField(source, "scopeCaseId") ? { scopeCaseId: stringField(source, "scopeCaseId") } : {}),
+    ...(stringField(source, "reservedReportId") ? { reservedReportId: stringField(source, "reservedReportId") } : {}),
+    ...(stringField(source, "reservationExpiresAt") ? { reservationExpiresAt: stringField(source, "reservationExpiresAt") } : {}),
+    createdAt: stringField(source, "createdAt"),
+    updatedAt: stringField(source, "updatedAt"),
+  };
+}
+
+function commerceError(error: unknown, fallback: string): HttpsError {
+  if (error instanceof HttpsError) return error;
+  const message = error instanceof Error ? error.message : fallback;
+  if (message === "CHECKOUT_REQUEST_IN_PROGRESS") return new HttpsError("aborted", message);
+  if (
+    message.includes("REQUIRED") ||
+    message.includes("MISSING") ||
+    message.includes("INVALID") ||
+    message.includes("MISMATCH") ||
+    message.includes("RECOVERY_REQUIRED") ||
+    message.includes("COMMERCE_HOLD") ||
+    message.includes("PARTIAL_STATE")
+  ) return new HttpsError("failed-precondition", message);
+  if (message.includes("COLLISION")) return new HttpsError("already-exists", message);
+  return new HttpsError("internal", message);
+}
 
 export const getEntitlements = createCallable({}, async (_, { auth }) => {
   const snapshot = await adminDb.collection("entitlements")
@@ -12,28 +86,9 @@ export const getEntitlements = createCallable({}, async (_, { auth }) => {
     .get();
 
   const entitlements = snapshot.docs
-    .map((document) => ({ entitlementId: document.id, ...document.data() } as Record<string, unknown>))
-    .filter((data) => {
-      const status = String(data.status || "");
-      const releasesCount = Number(data.releasesCount || 0);
-      const maxReleases = Number(data.maxReleases || COMMERCIAL_CONTRACT.releasesPerPack);
-      return (
-        data.productCode === COMMERCIAL_CONTRACT.productCode &&
-        ["AVAILABLE", "RESERVED"].includes(status) &&
-        Number.isSafeInteger(releasesCount) &&
-        Number.isSafeInteger(maxReleases) &&
-        releasesCount >= 0 &&
-        maxReleases === COMMERCIAL_CONTRACT.releasesPerPack &&
-        releasesCount < maxReleases
-      );
-    })
-    .map((data) => ({
-      ...data,
-      releasesCount: Number(data.releasesCount || 0),
-      maxReleases: COMMERCIAL_CONTRACT.releasesPerPack,
-      releasesRemaining: COMMERCIAL_CONTRACT.releasesPerPack - Number(data.releasesCount || 0),
-    }))
-    .sort((left, right) => String(left.entitlementId).localeCompare(String(right.entitlementId)));
+    .map((document) => entitlementView(document.id, document.data()))
+    .filter((item): item is PreparationPackEntitlementView => item !== null)
+    .sort((left, right) => left.entitlementId.localeCompare(right.entitlementId));
 
   return { entitlements, status: "success" as const };
 });
@@ -43,7 +98,7 @@ export const createCheckoutSession = createCallable(
     schema: z.object({
       productCode: z.literal(COMMERCIAL_CONTRACT.productCode),
       requestId: z.string().uuid(),
-    }),
+    }).strict(),
   },
   async ({ productCode, requestId }, { auth }) => {
     try {
@@ -56,9 +111,7 @@ export const createCheckoutSession = createCallable(
       });
       return { transactionId, status: "success" as const };
     } catch (error: unknown) {
-      if (error instanceof HttpsError) throw error;
-      const message = error instanceof Error ? error.message : "CHECKOUT_CREATION_FAILED";
-      throw new HttpsError("internal", message);
+      throw commerceError(error, "CHECKOUT_CREATION_FAILED");
     }
   }
 );
@@ -68,7 +121,7 @@ export const unlockCbamUses = createCallable(
     schema: z.object({
       requestId: z.string().uuid(),
       caseId: CaseIdSchema,
-    }),
+    }).strict(),
   },
   async ({ requestId, caseId }, { auth }) => {
     try {
@@ -85,12 +138,10 @@ export const unlockCbamUses = createCallable(
         status: "success" as const,
         message: result.idempotentReplay
           ? "The Preparation Pack was already unlocked for this case."
-          : "One Preparation Pack with five sealed versions was unlocked for this case.",
+          : `One Preparation Pack with ${COMMERCIAL_CONTRACT.releasesPerPack} sealed versions was unlocked for this case.`,
       };
     } catch (error: unknown) {
-      if (error instanceof HttpsError) throw error;
-      const message = error instanceof Error ? error.message : "CBAM_UNLOCK_FAILED";
-      throw new HttpsError("internal", message);
+      throw commerceError(error, "CBAM_UNLOCK_FAILED");
     }
   }
 );
