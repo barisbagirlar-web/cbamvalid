@@ -12,9 +12,12 @@ node_modules/
 **/.firebase/
 out/
 dist/
+build/
+functions/build/
 coverage/
 playwright-report/
 test-results/
+.gemini/
 *.log
 *.pem
 *.key
