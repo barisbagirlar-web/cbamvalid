@@ -1,56 +1,60 @@
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
+import { COMMERCIAL_CONTRACT } from "../lib/billing/commercial-contract";
 
-function loadEnvFile(filePath: string) {
+function loadEnvFile(filePath: string): void {
   if (!fs.existsSync(filePath)) return;
-  const content = fs.readFileSync(filePath, "utf8");
-  content.split("\n").forEach(line => {
+  for (const line of fs.readFileSync(filePath, "utf8").split(/\r?\n/)) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) return;
-    const parts = trimmed.split("=");
-    if (parts.length >= 2) {
-      const key = parts[0].trim();
-      let val = parts.slice(1).join("=").trim();
-      if (val.startsWith('"') && val.endsWith('"')) {
-        val = val.substring(1, val.length - 1);
-      } else if (val.startsWith("'") && val.endsWith("'")) {
-        val = val.substring(1, val.length - 1);
-      }
-      process.env[key] = val;
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const separator = trimmed.indexOf("=");
+    if (separator < 1) continue;
+    const key = trimmed.slice(0, separator).trim();
+    let value = trimmed.slice(separator + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
     }
-  });
+    if (!(key in process.env)) process.env[key] = value;
+  }
+}
+
+function required(name: string): string {
+  const value = process.env[name]?.trim();
+  if (!value) throw new Error(`${name}_MISSING`);
+  return value;
+}
+
+function priceId(name: string): string {
+  const value = required(name);
+  if (!/^pri_[A-Za-z0-9]+$/.test(value)) throw new Error(`${name}_INVALID`);
+  return value;
 }
 
 loadEnvFile(path.join(process.cwd(), ".env"));
 loadEnvFile(path.join(process.cwd(), ".env.local"));
 
-import { getPaddleConfig } from "../lib/billing/paddle-config.server";
-import { CREDIT_PACKAGES } from "../lib/billing/catalog";
-
 try {
-  const config = getPaddleConfig();
-  
-  console.log("PADDLE_ENV=CONFIGURED");
-  console.log("PADDLE_API_KEY=CONFIGURED");
-  console.log("PADDLE_CLIENT_TOKEN=CONFIGURED");
-  
-  if (config.webhookSecret) {
-    console.log("PADDLE_WEBHOOK_SECRET=CONFIGURED");
-  } else {
-    console.log("PADDLE_WEBHOOK_SECRET=MISSING");
-  }
-  
-  let validPricesCount = 0;
-  CREDIT_PACKAGES.forEach(pkg => {
-    if (pkg.paddlePriceId) {
-      validPricesCount++;
-    }
-  });
-  
-  console.log("PADDLE_PRICE_IDS=CONFIGURED");
-  
-  process.exit(0);
-} catch (error: any) {
-  console.error("PADDLE_CONFIGURATION_ERROR:", error.message || error);
-  process.exit(1);
+  const environment = required("PADDLE_ENVIRONMENT");
+  if (!new Set(["sandbox", "production"]).has(environment)) throw new Error("PADDLE_ENVIRONMENT_INVALID");
+  const apiKey = required("PADDLE_API_KEY");
+  const clientToken = required("NEXT_PUBLIC_PADDLE_CLIENT_TOKEN");
+  required("PADDLE_WEBHOOK_SECRET");
+  const sandboxPriceId = priceId("PADDLE_PRICE_ID_SANDBOX");
+  const productionPriceId = priceId("PADDLE_PRICE_ID_PRODUCTION");
+
+  if (environment === "sandbox" && !apiKey.startsWith("pdl_sdbx_")) throw new Error("PADDLE_SANDBOX_API_KEY_INVALID");
+  if (environment === "production" && apiKey.startsWith("pdl_sdbx_")) throw new Error("PADDLE_PRODUCTION_API_KEY_INVALID");
+  if (environment === "sandbox" && !clientToken.startsWith("test_")) throw new Error("PADDLE_SANDBOX_CLIENT_TOKEN_INVALID");
+  if (sandboxPriceId === productionPriceId) throw new Error("PADDLE_PRICE_ENVIRONMENTS_COLLIDE");
+
+  console.log("PADDLE_CONFIGURATION=PASS");
+  console.log(`PADDLE_ENVIRONMENT=${environment}`);
+  console.log(`PRODUCT_CODE=${COMMERCIAL_CONTRACT.productCode}`);
+  console.log(`PRICE_MINOR=${COMMERCIAL_CONTRACT.priceMinor}`);
+  console.log(`CREDITS_GRANTED=${COMMERCIAL_CONTRACT.creditsGranted}`);
+  console.log(`RELEASES_PER_PACK=${COMMERCIAL_CONTRACT.releasesPerPack}`);
+} catch (error: unknown) {
+  console.error("PADDLE_CONFIGURATION=FAIL");
+  console.error(error instanceof Error ? error.message : "PADDLE_CONFIGURATION_UNKNOWN_FAILURE");
+  process.exitCode = 1;
 }
