@@ -60,6 +60,7 @@ describe("CBAM Quality Controls Traceability", () => {
     ],
     calculationTrace: [],
     gapAssessment: [],
+    methodologyDecisions: [],
     auditEvents: []
   });
 
