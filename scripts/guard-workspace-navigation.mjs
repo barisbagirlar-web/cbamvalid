@@ -31,7 +31,10 @@ const workspaceLayout = read("app/(workspace)/layout.tsx");
 const dashboard = read("app/(workspace)/cbam/page.tsx");
 const legacyDashboard = read("app/(workspace)/dashboard/page.tsx");
 const cases = read("app/(workspace)/cases/page.tsx");
+const newCase = read("app/(workspace)/cases/new/page.tsx");
 const reports = read("app/(workspace)/reports/page.tsx");
+const functionsClient = read("lib/functions/client.ts");
+const saveCasePayload = read("lib/functions/save-case-payload.ts");
 const workspaceMethodology = read("app/(workspace)/cbam/methodology/page.tsx");
 const publicMethodology = read("app/(public)/methodology/page.tsx");
 
@@ -67,6 +70,13 @@ requireText(reports, "reports.map((", "Reports page owns the complete report lis
 requireText(workspaceMethodology, "MethodologyContent", "Workspace methodology content");
 requireText(publicMethodology, "MethodologyContent", "Public methodology content");
 
+requireText(newCase, "Retry Draft Creation", "New-case retry state");
+requireText(newCase, "saveCase(createInitialDraft(user.uid))", "New-case creation request");
+rejectText(newCase, 'router.replace("/cbam")', "New-case failures must remain visible");
+requireText(functionsClient, "buildSaveCasePayload(data, caseId)", "New-case callable payload builder");
+rejectText(functionsClient, "saveCbamCaseCallable({ caseId, data })", "Undefined caseId must not be serialized");
+requireText(saveCasePayload, "normalizedCaseId ? { caseId: normalizedCaseId, data } : { data }", "Undefined-free new-case payload contract");
+
 requireText(legacyDashboard, 'redirect("/cbam")', "Legacy dashboard canonical redirect");
 rejectText(legacyDashboard, "useRouter", "Legacy dashboard must not use a client redirect");
 rejectText(cases, 'router.replace("/cbam")', "Cases must not redirect to Dashboard");
@@ -88,5 +98,7 @@ console.log("WORKSPACE_NAVIGATION_GUARD=PASS");
 console.log(`APP_NAV_ROUTES=${hrefs.join(",")}`);
 console.log("HEADER_LAYOUT_ISOLATION=PASS");
 console.log("DASHBOARD_CASES_REPORTS_SEPARATION=PASS");
+console.log("NEW_CASE_ENTRY_CONTRACT=PASS");
+console.log("NEW_CASE_UNDEFINED_PAYLOAD_GUARD=PASS");
 console.log("LEGACY_DASHBOARD_REDIRECT=PASS");
 console.log("NEW_USER_ONBOARDING_CONTRACT=PASS");
