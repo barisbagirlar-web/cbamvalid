@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-export const CASE_ID_PATTERN = /^case_[A-Za-z0-9_-]{1,128}$/;
+// Keep this total-length boundary identical to the Firestore identifier guard.
+export const CASE_ID_PATTERN = /^case_[A-Za-z0-9_-]{1,123}$/;
 export const CaseIdSchema = z.string().regex(CASE_ID_PATTERN, "Invalid CBAM case identifier");
 
 export function createCanonicalCaseId(documentId: string): string {
