@@ -75,6 +75,12 @@ jobs:
           set -o pipefail
           npm run guard:verifier-grade-deliverables 2>&1 | tee artifacts/ci/verifier-grade-deliverables.log
 
+      - name: Verify end-to-end system DNA contract
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run guard:system-dna 2>&1 | tee artifacts/ci/system-dna.log
+
       - name: Typecheck
         shell: bash
         run: |
