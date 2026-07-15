@@ -39,6 +39,12 @@ async function kmsRequest<T>(url: string, init: RequestInit, token: string): Pro
   return payload;
 }
 
+function assertDeterministicAlgorithm(algorithm: string): void {
+  if (!/^RSA_SIGN_PKCS1_(2048|3072|4096)_SHA256$/.test(algorithm)) {
+    throw new Error(`KMS_ALGORITHM_NOT_DETERMINISTIC_FOR_IDEMPOTENT_SEALING:${algorithm}`);
+  }
+}
+
 export function assertKmsSigningConfigured(): string {
   return requiredKeyVersion();
 }
@@ -49,19 +55,19 @@ export async function signManifestWithKms(manifest: Buffer): Promise<KmsSignatur
   const baseUrl = `https://cloudkms.googleapis.com/v1/${keyVersion}`;
   const publicKey = await kmsRequest<{ pem: string; algorithm: string }>(`${baseUrl}/publicKey`, { method: "GET" }, token);
   if (!publicKey.pem || !publicKey.algorithm) throw new Error("KMS_PUBLIC_KEY_INVALID");
+  assertDeterministicAlgorithm(publicKey.algorithm);
 
   const manifestHash = crypto.createHash("sha256").update(manifest).digest("hex");
   const signed = await kmsRequest<{ signature: string }>(`${baseUrl}:asymmetricSign`, {
     method: "POST",
-    body: JSON.stringify({
-      digest: { sha256: Buffer.from(manifestHash, "hex").toString("base64") },
-    }),
+    body: JSON.stringify({ digest: { sha256: Buffer.from(manifestHash, "hex").toString("base64") } }),
   }, token);
   if (!signed.signature) throw new Error("KMS_SIGNATURE_MISSING");
 
   const signature = Buffer.from(signed.signature, "base64");
-  const verified = crypto.verify("sha256", manifest, publicKey.pem, signature);
-  if (!verified) throw new Error("KMS_SIGNATURE_VERIFICATION_FAILED");
+  if (!crypto.verify("sha256", manifest, publicKey.pem, signature)) {
+    throw new Error("KMS_SIGNATURE_VERIFICATION_FAILED");
+  }
 
   return {
     keyVersion,
