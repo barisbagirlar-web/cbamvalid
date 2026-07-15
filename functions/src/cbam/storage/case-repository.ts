@@ -167,13 +167,17 @@ async function verifyEvidenceObject(
 
   const [metadata] = await file.getMetadata();
   const customMetadata = metadata.metadata ?? {};
+  const storedSha256 =
+    typeof customMetadata.sha256 === "string"
+      ? customMetadata.sha256.toLowerCase()
+      : "";
   if (
     Number(metadata.size) !== evidence.sizeBytes ||
     metadata.contentType !== evidence.mimeType ||
     customMetadata.ownerId !== uid ||
     customMetadata.caseId !== caseId ||
     customMetadata.evidenceId !== evidence.evidenceId ||
-    customMetadata.sha256?.toLowerCase() !== evidence.fileHash.toLowerCase()
+    storedSha256 !== evidence.fileHash.toLowerCase()
   ) {
     throw new Error("EVIDENCE_STORAGE_METADATA_MISMATCH");
   }
