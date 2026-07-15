@@ -10,10 +10,12 @@ import {
   updateCase,
 } from "../cbam/storage/case-repository";
 import { toCaseWorkspaceView } from "../cbam/storage/case-contract";
-import { AuditReadyCaseSchema } from "../cbam/schema";
+import { AuditReadyCaseSchema, type AuditReadyCase } from "../cbam/schema";
 import { CaseIdSchema } from "../cbam/case-id";
 
-function parseCaseData(data: unknown, uid: string, caseId?: string) {
+const CreationRequestIdSchema = z.string().uuid();
+
+function parseCaseData(data: unknown, uid: string, caseId?: string): AuditReadyCase {
   const parsed = AuditReadyCaseSchema.safeParse({
     ...(data as Record<string, unknown>),
     ownerId: uid,
@@ -30,11 +32,28 @@ function parseCaseData(data: unknown, uid: string, caseId?: string) {
   return parsed.data;
 }
 
+function resolveCreationRequestId(
+  explicitRequestId: string | undefined,
+  caseData: AuditReadyCase
+): string {
+  const legacyAuditEventId = caseData.auditEvents.find(
+    (event) => event.action === "CASE_CREATED"
+  )?.eventId;
+  const parsed = CreationRequestIdSchema.safeParse(explicitRequestId ?? legacyAuditEventId);
+  if (!parsed.success) {
+    throw new HttpsError(
+      "invalid-argument",
+      "A UUID request ID is required to create a case safely."
+    );
+  }
+  return parsed.data;
+}
+
 export const saveCbamCase = createCallable(
   {
     schema: z.object({
       caseId: CaseIdSchema.optional(),
-      requestId: z.string().uuid().optional(),
+      requestId: CreationRequestIdSchema.optional(),
       data: z.unknown(),
     }),
   },
@@ -47,14 +66,9 @@ export const saveCbamCase = createCallable(
     }
 
     if (!caseId) {
-      if (!requestId) {
-        throw new HttpsError(
-          "invalid-argument",
-          "A request ID is required to create a case safely."
-        );
-      }
       const parsedData = parseCaseData(data, auth.uid);
-      const newCase = await createCase(auth.uid, parsedData, requestId);
+      const creationRequestId = resolveCreationRequestId(requestId, parsedData);
+      const newCase = await createCase(auth.uid, parsedData, creationRequestId);
       return { caseId: newCase.caseId, status: "success" };
     }
 
