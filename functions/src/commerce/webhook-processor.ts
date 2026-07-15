@@ -1,151 +1,69 @@
+import { z } from "zod";
 import { adminDb } from "../firebase-admin";
-import { transitionOrderStatus } from "./order-service";
-import { createEntitlement } from "./entitlement-service";
-import { writeLedgerEntry } from "./ledger-service";
 import { processRefund } from "./refund-service";
-import { PRODUCT_CATALOG } from "./catalog";
+import { isSandboxMode } from "./paddle-client";
+import { validateCompletedTransaction } from "./transaction-contract";
+import { fulfillPreparationPackPurchase } from "./purchase-fulfillment";
 
-/**
- * Main processor of verified webhook events from Paddle
- */
-export async function processWebhookEvent(event: any): Promise<void> {
-  const eventId = event.eventId;
-  const eventType = event.eventType;
-  const data = event.data;
+const WebhookEventSchema = z.object({
+  eventId: z.string().min(1).max(128),
+  eventType: z.string().min(1).max(128),
+  occurredAt: z.union([z.string(), z.date()]),
+  data: z.unknown(),
+}).passthrough();
 
-  console.log(`[PADDLE-PROCESSOR] Processing event ${eventId} of type ${eventType}`);
+const AdjustmentSchema = z.object({
+  id: z.string().min(1).max(128),
+  transactionId: z.string().min(1).max(128),
+  status: z.string(),
+  currencyCode: z.string().length(3),
+  totals: z.object({ subtotal: z.union([z.string(), z.number()]) }).passthrough(),
+}).passthrough();
 
-  if (eventType === "transaction.completed") {
-    await handleTransactionCompleted(eventId, data);
-  } else if (eventType === "adjustment.created" || eventType === "adjustment.updated") {
-    await handleAdjustmentUpdated(eventId, data);
-  } else {
-    console.log(`[PADDLE-PROCESSOR] Skipping unhandled event type: ${eventType}`);
-  }
+function positiveMinor(value: string | number): number {
+  const text = String(value).trim();
+  if (!/^\d+$/.test(text)) throw new Error("PADDLE_ADJUSTMENT_AMOUNT_INVALID");
+  const amount = Number(text);
+  if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error("PADDLE_ADJUSTMENT_AMOUNT_INVALID");
+  return amount;
 }
 
-/**
- * Handle transaction.completed event to issue entitlements and update ledger
- */
-async function handleTransactionCompleted(eventId: string, transaction: any): Promise<void> {
-  const transactionId = transaction.id;
-  const status = transaction.status;
-  const customData = transaction.customData || {};
-  const uid = customData.uid;
-  const orderId = customData.orderId;
-  const productCode = customData.productCode;
-
-  if (status !== "completed") {
-    console.log(`[PADDLE-PROCESSOR] Transaction ${transactionId} status is ${status}. Skipping fulfillment.`);
+export async function processWebhookEvent(input: unknown): Promise<void> {
+  const event = WebhookEventSchema.parse(input);
+  if (event.eventType === "transaction.completed") {
+    const transaction = validateCompletedTransaction(event.data, isSandboxMode());
+    await adminDb.runTransaction((dbTransaction) =>
+      fulfillPreparationPackPurchase(dbTransaction, transaction, event.eventId)
+    );
     return;
   }
 
-  if (!uid || !orderId || !productCode) {
-    console.error(`[PADDLE-PROCESSOR] Missing metadata in transaction completed customData:`, customData);
-    return;
-  }
+  if (event.eventType === "adjustment.created" || event.eventType === "adjustment.updated") {
+    const adjustment = AdjustmentSchema.parse(event.data);
+    if (adjustment.status !== "approved" && adjustment.status !== "completed") return;
 
-  // Cross-check transaction items against server catalog
-  const catalogProduct = PRODUCT_CATALOG[productCode];
-  if (!catalogProduct) {
-    console.error(`[PADDLE-PROCESSOR] Product code ${productCode} not found in server catalog.`);
-    return;
-  }
+    const orderQuery = await adminDb.collection("commerce_orders")
+      .where("paddleTransactionId", "==", adjustment.transactionId)
+      .limit(2)
+      .get();
+    if (orderQuery.empty) throw new Error("REFUND_ORDER_NOT_FOUND");
+    if (orderQuery.docs.length !== 1) throw new Error("REFUND_ORDER_COLLISION");
+    const order = orderQuery.docs[0].data() as Record<string, unknown>;
+    const uid = typeof order.uid === "string" ? order.uid : "";
+    const orderId = typeof order.orderId === "string" ? order.orderId : "";
+    if (!uid || !orderId) throw new Error("REFUND_ORDER_INVALID");
 
-  // Verify currency and amount (Paddle transaction details)
-  const currency = transaction.currencyCode || "";
-  if (currency !== catalogProduct.currency) {
-    console.error(`[PADDLE-PROCESSOR] Currency mismatch: expected ${catalogProduct.currency}, got ${currency}`);
-    return;
-  }
-
-  const items = transaction.items || [];
-  if (items.length === 0) {
-    console.error(`[PADDLE-PROCESSOR] Transaction has no items.`);
-    return;
-  }
-
-  // Calculate total quantity across items matching the productCode
-  // (Assuming one line item for simplicity, but summing is safer)
-  const purchasedQuantity = items.reduce((acc: number, item: any) => acc + (item.quantity || 1), 0);
-  const totalEntitlementsToGrant = catalogProduct.entitlementQuantity * purchasedQuantity;
-
-  // Execute atomic transactional updates
-  await adminDb.runTransaction(async (dbTransaction: any) => {
-    // 1. Log payment captured entry in the ledger with idempotency verification
-    await writeLedgerEntry(dbTransaction, {
+    await adminDb.runTransaction((dbTransaction) => processRefund(dbTransaction, {
       uid,
       orderId,
-      transactionId,
-      eventId,
-      type: "PAYMENT_CAPTURED",
-      quantity: purchasedQuantity,
-      currency,
-      amountMinor: catalogProduct.expectedUnitAmount * purchasedQuantity,
-      idempotencyKey: `payment:${transactionId}`,
-    });
-
-    // 2. Transition order state to PAID
-    await transitionOrderStatus(dbTransaction, orderId, "PAID", {
-      paddleTransactionId: transactionId,
-    });
-
-    // 3. Issue entitlement document and write entitlement ledger entry
-    await createEntitlement(dbTransaction, {
-      uid,
-      orderId,
-      transactionId,
-      eventId,
-      productCode,
-      quantity: totalEntitlementsToGrant,
-    });
-
-    // 4. Transition order state to ENTITLED
-    await transitionOrderStatus(dbTransaction, orderId, "ENTITLED");
-  });
-
-  console.log(`[PADDLE-PROCESSOR] Completed fulfillment for order ${orderId}, entitlement issued.`);
-}
-
-/**
- * Handle adjustment.created or adjustment.updated event (refunds)
- */
-async function handleAdjustmentUpdated(eventId: string, adjustment: any): Promise<void> {
-  const transactionId = adjustment.transactionId;
-  const status = adjustment.status;
-  const adjustmentId = adjustment.id;
-
-  // Only handle approved/completed adjustments (refunds)
-  if (status !== "approved" && status !== "completed") {
-    console.log(`[PADDLE-PROCESSOR] Adjustment ${adjustmentId} status is ${status}. Skipping.`);
+      transactionId: adjustment.transactionId,
+      eventId: event.eventId,
+      adjustmentId: adjustment.id,
+      amountMinor: positiveMinor(adjustment.totals.subtotal),
+      currency: adjustment.currencyCode,
+    }));
     return;
   }
 
-  // Retrieve transaction to extract order metadata from customData
-  const orderQuery = await adminDb
-    .collection("commerce_orders")
-    .where("paddleTransactionId", "==", transactionId)
-    .limit(1)
-    .get();
-
-  if (orderQuery.empty) {
-    console.error(`[PADDLE-PROCESSOR] Mapped order for transaction ${transactionId} not found.`);
-    return;
-  }
-
-  const order = orderQuery.docs[0].data() as any;
-
-  await adminDb.runTransaction(async (dbTransaction: any) => {
-    await processRefund(dbTransaction, {
-      uid: order.uid,
-      orderId: order.orderId,
-      transactionId,
-      eventId,
-      adjustmentId,
-      amountMinor: Number(adjustment.totals?.subtotal || 0),
-      currency: adjustment.currencyCode || "USD",
-    });
-  });
-
-  console.log(`[PADDLE-PROCESSOR] Completed refund processing for order ${order.orderId}.`);
+  console.log(`[PADDLE-PROCESSOR] Ignored unsupported event type ${event.eventType}`);
 }
