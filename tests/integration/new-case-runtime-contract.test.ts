@@ -122,7 +122,9 @@ describe("case creation idempotency state machine", () => {
 describe("new case calculation safety", () => {
   it("does not divide by zero or throw for a blank draft", () => {
     expect(() => performDossierCalculations(validDraft())).not.toThrow();
-    expect(performDossierCalculations(validDraft()).totalEmbeddedEmissions).toBe("NOT_CALCULATED");
+    const result = performDossierCalculations(validDraft());
+    expect(result.totalEmbeddedEmissions).toBe("NOT_CALCULATED");
+    expect(result.specificEmbeddedEmissions).toBe("NOT_CALCULATED");
   });
 
   it("matches the closed-form emissions identity and is monotonic", () => {
@@ -138,18 +140,28 @@ describe("new case calculation safety", () => {
     base.gridEmissionFactor = { ...createEmptyInput("tCO2e/MWh"), value: "0.5" };
 
     const baseResult = performDossierCalculations(base);
-    expect(baseResult.totalEmbeddedEmissions).toBe("0.2");
+    expect(baseResult.totalDirectEmissions).toBe("10");
+    expect(baseResult.totalIndirectEmissions).toBe("10");
+    expect(baseResult.totalEmbeddedEmissions).toBe("20");
+    expect(baseResult.productionVolume).toBe("100");
+    expect(baseResult.specificEmbeddedEmissions).toBe("0.2");
+    expect(baseResult.goods[0]?.allocatedEmbeddedEmissions).toBe("20");
+    expect(baseResult.goods[0]?.specificEmbeddedEmissions).toBe("0.2");
 
     const increased = structuredClone(base);
     increased.directEmissions.value = "20";
     const increasedResult = performDossierCalculations(increased);
-    expect(increasedResult.totalEmbeddedEmissions).toBe("0.3");
+    expect(increasedResult.totalEmbeddedEmissions).toBe("30");
+    expect(increasedResult.specificEmbeddedEmissions).toBe("0.3");
     expect(Number(increasedResult.totalEmbeddedEmissions)).toBeGreaterThan(
       Number(baseResult.totalEmbeddedEmissions)
     );
+    expect(Number(increasedResult.specificEmbeddedEmissions)).toBeGreaterThan(
+      Number(baseResult.specificEmbeddedEmissions)
+    );
   });
 
-  it("fails closed for zero production volume without Infinity or NaN", () => {
+  it("preserves total emissions and fails closed only for division by zero", () => {
     const draft = validDraft();
     draft.goods = [{
       cnCode: { ...createEmptyInput(), value: "72081000" },
@@ -162,7 +174,10 @@ describe("new case calculation safety", () => {
     draft.gridEmissionFactor = { ...createEmptyInput("tCO2e/MWh"), value: "0" };
 
     const result = performDossierCalculations(draft);
-    expect(result.totalEmbeddedEmissions).toBe("NOT_CALCULATED");
-    expect(result.totalEmbeddedEmissions).not.toMatch(/Infinity|NaN/);
+    expect(result.totalEmbeddedEmissions).toBe("10");
+    expect(result.productionVolume).toBe("NOT_CALCULATED");
+    expect(result.specificEmbeddedEmissions).toBe("NOT_CALCULATED");
+    expect(result.goods).toEqual([]);
+    expect(JSON.stringify(result)).not.toMatch(/Infinity|NaN/);
   });
 });
