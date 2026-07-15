@@ -5,10 +5,16 @@ import { createCaseSaveRequest } from "@/lib/functions/case-save-contract";
 import { performDossierCalculations } from "@/lib/cbam/calculator";
 import { AuditReadyCaseSchema as FunctionsCaseSchema } from "../../functions/src/cbam/schema";
 import { buildCaseRecord, toCaseWorkspaceView } from "../../functions/src/cbam/storage/case-contract";
+import {
+  decideCaseCreationState,
+  deriveCaseCreationIdentity,
+  type CaseCreationMarker,
+} from "../../functions/src/cbam/storage/case-creation-idempotency";
 
 const OWNER_ID = "user_case_contract_123";
 const EVENT_ID = "11111111-1111-4111-8111-111111111111";
 const REQUEST_ID = "22222222-2222-4222-8222-222222222222";
+const OTHER_REQUEST_ID = "33333333-3333-4333-8333-333333333333";
 const TIMESTAMP = "2026-07-15T12:00:00.000Z";
 
 function validDraft() {
@@ -48,17 +54,68 @@ describe("new case runtime contract", () => {
 
     expect(() => createCaseSaveRequest(draft)).toThrow("CASE_CREATION_REQUEST_ID_REQUIRED");
 
-    const editRequest = createCaseSaveRequest(
-      { ...draft, caseId: "case_FirestoreAutoId123" },
-      "case_FirestoreAutoId123"
-    );
+    const editData = { ...draft, caseId: "case_FirestoreAutoId123" };
+    const editRequest = createCaseSaveRequest(editData, "case_FirestoreAutoId123");
     expect(editRequest).toEqual({
       caseId: "case_FirestoreAutoId123",
-      data: { ...draft, caseId: "case_FirestoreAutoId123" },
+      data: editData,
     });
     expect(() =>
       createCaseSaveRequest(draft, "case_FirestoreAutoId123", REQUEST_ID)
     ).toThrow("AMBIGUOUS_CASE_SAVE_REQUEST");
+  });
+});
+
+describe("case creation idempotency state machine", () => {
+  it("derives the same case identity for the same user and request", () => {
+    const first = deriveCaseCreationIdentity(OWNER_ID, REQUEST_ID);
+    const retry = deriveCaseCreationIdentity(OWNER_ID, REQUEST_ID);
+    const different = deriveCaseCreationIdentity(OWNER_ID, OTHER_REQUEST_ID);
+
+    expect(retry).toEqual(first);
+    expect(first.digest).toMatch(/^[a-f0-9]{64}$/);
+    expect(first.caseId).toBe(`case_${first.digest}`);
+    expect(different.caseId).not.toBe(first.caseId);
+  });
+
+  it("creates only when both marker and case are absent", () => {
+    const identity = deriveCaseCreationIdentity(OWNER_ID, REQUEST_ID);
+    expect(decideCaseCreationState({ identity, marker: null, caseExists: false })).toBe("CREATE");
+  });
+
+  it("returns the existing case when marker and case agree", () => {
+    const identity = deriveCaseCreationIdentity(OWNER_ID, REQUEST_ID);
+    const marker: CaseCreationMarker = {
+      uid: identity.uid,
+      requestId: identity.requestId,
+      caseId: identity.caseId,
+      createdAt: TIMESTAMP,
+    };
+    expect(decideCaseCreationState({ identity, marker, caseExists: true })).toBe("RETURN_EXISTING");
+  });
+
+  it("fails closed for every partial or contradictory state", () => {
+    const identity = deriveCaseCreationIdentity(OWNER_ID, REQUEST_ID);
+    const marker: CaseCreationMarker = {
+      uid: identity.uid,
+      requestId: identity.requestId,
+      caseId: identity.caseId,
+      createdAt: TIMESTAMP,
+    };
+
+    expect(() =>
+      decideCaseCreationState({ identity, marker, caseExists: false })
+    ).toThrow("CASE_CREATION_IDEMPOTENCY_BROKEN");
+    expect(() =>
+      decideCaseCreationState({ identity, marker: null, caseExists: true })
+    ).toThrow("CASE_CREATION_IDEMPOTENCY_BROKEN");
+    expect(() =>
+      decideCaseCreationState({
+        identity,
+        marker: { ...marker, requestId: OTHER_REQUEST_ID },
+        caseExists: true,
+      })
+    ).toThrow("CASE_CREATION_IDEMPOTENCY_COLLISION");
   });
 });
 
