@@ -22,7 +22,8 @@ function rejectText(source, rejected, label) {
 }
 
 const repository = read("functions/src/cbam/storage/case-repository.ts");
-const handler = read("functions/src/handlers/cases.ts");
+const caseHandler = read("functions/src/handlers/cases.ts");
+const reportHandler = read("functions/src/handlers/reports.ts");
 const browserSchema = read("lib/cbam/schema.ts");
 const functionsSchema = read("functions/src/cbam/schema.ts");
 const client = read("lib/functions/client.ts");
@@ -35,9 +36,12 @@ requireText(repository, '.where("caseId", "==", normalizedCaseId).limit(2)', "Le
 requireText(repository, "document.id === record.caseId", "Canonical record deduplication");
 rejectText(repository, "await caseRef.set(cbamCase)", "Raw auto-ID write pattern");
 
-requireText(handler, "toCaseWorkspaceView(cbamCase)", "Workspace DTO boundary");
-rejectText(handler, "return { case: cbamCase", "Envelope leakage to wizard");
-requireText(handler, "AuditReadyCaseSchema.safeParse", "Server-side case validation");
+requireText(caseHandler, "toCaseWorkspaceView(cbamCase)", "Workspace DTO boundary");
+rejectText(caseHandler, "return { case: cbamCase", "Envelope leakage to wizard");
+requireText(caseHandler, "AuditReadyCaseSchema.safeParse", "Server-side case validation");
+
+requireText(reportHandler, "const cbamCase = await getCase(caseId)", "Sealing canonical case resolver");
+rejectText(reportHandler, 'collection("cbam_cases").doc(caseId)', "Direct case document assumption in sealing");
 
 requireText(browserSchema, "caseId: CaseIdSchema.optional()", "Browser case ID schema");
 requireText(functionsSchema, "caseId: CaseIdSchema.optional()", "Functions case ID schema");
@@ -56,7 +60,9 @@ requireText(casePage, "Retry Loading", "Observable workspace load failure");
 rejectText(casePage, 'router.push("/dashboard")', "Silent workspace dashboard fallback");
 rejectText(casePage, 'router.replace("/dashboard")', "Silent workspace dashboard fallback");
 
-requireText(firebaseConfig, 'npm --prefix \\"$RESOURCE_DIR\\" run build', "Functions predeploy build");
+requireText(firebaseConfig, '"predeploy"', "Functions predeploy declaration");
+requireText(firebaseConfig, '$RESOURCE_DIR', "Functions predeploy resource directory");
+requireText(firebaseConfig, "run build", "Functions predeploy compiler command");
 
 if (failures.length) {
   console.error("CASE_RUNTIME_CONTRACT_GUARD=FAIL");
@@ -70,4 +76,5 @@ console.log("CASE_WORKSPACE_DTO=PASS");
 console.log("CASE_SCHEMA_PARITY=PASS");
 console.log("CASE_CREATE_SINGLE_FLIGHT=PASS");
 console.log("CASE_LOAD_FAILURE_ISOLATION=PASS");
+console.log("CASE_SEALING_RESOLVER=PASS");
 console.log("FUNCTIONS_PREDEPLOY_BUILD=PASS");
