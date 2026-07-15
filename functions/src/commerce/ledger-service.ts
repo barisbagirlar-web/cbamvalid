@@ -34,6 +34,14 @@ interface LedgerHead {
   updatedAt: string;
 }
 
+export interface PreparedLedgerEntry {
+  entry: LedgerEntry;
+  entryRef: admin.firestore.DocumentReference;
+  headRef: admin.firestore.DocumentReference;
+  nextHead: LedgerHead;
+  idempotentReplay: boolean;
+}
+
 export function calculateEntryHash(entry: Omit<LedgerEntry, "entryHash">): string {
   const dataString = JSON.stringify({
     entryId: entry.entryId,
@@ -56,23 +64,20 @@ function deterministicEntryId(idempotencyKey: string): string {
   return `led_${crypto.createHash("sha256").update(idempotencyKey).digest("hex")}`;
 }
 
-export async function writeLedgerEntry(
+export async function prepareLedgerEntry(
   transaction: admin.firestore.Transaction,
   entryParams: Omit<LedgerEntry, "entryId" | "createdAt" | "previousEntryHash" | "entryHash"> & {
     createdAt?: string;
   }
-): Promise<LedgerEntry> {
+): Promise<PreparedLedgerEntry> {
   if (!entryParams.idempotencyKey.trim()) throw new Error("LEDGER_IDEMPOTENCY_KEY_REQUIRED");
-  if (!Number.isSafeInteger(entryParams.quantity) || entryParams.quantity <= 0) {
-    throw new Error("LEDGER_QUANTITY_INVALID");
-  }
+  if (!Number.isSafeInteger(entryParams.quantity) || entryParams.quantity <= 0) throw new Error("LEDGER_QUANTITY_INVALID");
   if (entryParams.amountMinor !== undefined && (!Number.isSafeInteger(entryParams.amountMinor) || entryParams.amountMinor < 0)) {
     throw new Error("LEDGER_AMOUNT_INVALID");
   }
 
-  const ledgerCollection = adminDb.collection("commerce_ledger");
   const entryId = deterministicEntryId(entryParams.idempotencyKey);
-  const entryRef = ledgerCollection.doc(entryId);
+  const entryRef = adminDb.collection("commerce_ledger").doc(entryId);
   const headRef = adminDb.collection("commerce_ledger_state").doc("head");
   const [existingSnapshot, headSnapshot] = await Promise.all([
     transaction.get(entryRef),
@@ -87,9 +92,22 @@ export async function writeLedgerEntry(
       existing.orderId !== entryParams.orderId ||
       existing.transactionId !== entryParams.transactionId ||
       existing.type !== entryParams.type ||
-      existing.quantity !== entryParams.quantity
+      existing.quantity !== entryParams.quantity ||
+      existing.amountMinor !== entryParams.amountMinor ||
+      existing.currency !== entryParams.currency
     ) throw new Error("LEDGER_IDEMPOTENCY_COLLISION");
-    return existing;
+    return {
+      entry: existing,
+      entryRef,
+      headRef,
+      nextHead: headSnapshot.exists ? headSnapshot.data() as LedgerHead : {
+        entryId: existing.entryId,
+        entryHash: existing.entryHash,
+        sequence: 0,
+        updatedAt: existing.createdAt,
+      },
+      idempotentReplay: true,
+    };
   }
 
   const head = headSnapshot.exists ? headSnapshot.data() as LedgerHead : null;
@@ -101,12 +119,36 @@ export async function writeLedgerEntry(
     previousEntryHash: head?.entryHash || "",
   };
   const entry: LedgerEntry = { ...entryData, entryHash: calculateEntryHash(entryData) };
-  transaction.create(entryRef, entry);
-  transaction.set(headRef, {
-    entryId,
-    entryHash: entry.entryHash,
-    sequence: (head?.sequence || 0) + 1,
-    updatedAt: createdAt,
-  } satisfies LedgerHead);
-  return entry;
+  return {
+    entry,
+    entryRef,
+    headRef,
+    nextHead: {
+      entryId,
+      entryHash: entry.entryHash,
+      sequence: (head?.sequence || 0) + 1,
+      updatedAt: createdAt,
+    },
+    idempotentReplay: false,
+  };
+}
+
+export function commitLedgerEntry(
+  transaction: admin.firestore.Transaction,
+  prepared: PreparedLedgerEntry
+): void {
+  if (prepared.idempotentReplay) return;
+  transaction.create(prepared.entryRef, prepared.entry);
+  transaction.set(prepared.headRef, prepared.nextHead);
+}
+
+export async function writeLedgerEntry(
+  transaction: admin.firestore.Transaction,
+  entryParams: Omit<LedgerEntry, "entryId" | "createdAt" | "previousEntryHash" | "entryHash"> & {
+    createdAt?: string;
+  }
+): Promise<LedgerEntry> {
+  const prepared = await prepareLedgerEntry(transaction, entryParams);
+  commitLedgerEntry(transaction, prepared);
+  return prepared.entry;
 }
