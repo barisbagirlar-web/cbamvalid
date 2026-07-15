@@ -1,30 +1,21 @@
-import { User } from "firebase/auth";
+import type { User } from "firebase/auth";
+import { resolveSafeNextRoute } from "@/lib/auth/safe-next-route";
 
 export async function resolvePostLoginRoute(user: User): Promise<string> {
-  // 1. Wait for Firebase user and call getIdTokenResult(true)
   const tokenResult = await user.getIdTokenResult(true);
   const claims = tokenResult.claims;
+  const requestedRoute = typeof window === "undefined"
+    ? null
+    : new URLSearchParams(window.location.search).get("next");
 
-  // 2. Validate internal next route
-  const params = new URLSearchParams(window.location.search);
-  let nextRoute = params.get("next");
-
-  if (nextRoute) {
-    // Reject absolute external URLs, protocol-relative URLs beginning //, javascript URLs
-    if (
-      nextRoute.includes("://") ||
-      nextRoute.startsWith("//") ||
-      nextRoute.toLowerCase().startsWith("javascript:")
-    ) {
-      nextRoute = null; // invalid, fallback
-    }
-  }
-
-  // 3. Route logic
-  if (claims.ownerAdmin === true || claims.admin === true) {
+  if (
+    user.emailVerified &&
+    claims.email_verified === true &&
+    claims.role === "super_admin" &&
+    claims.owner === true
+  ) {
     return "/admin";
   }
 
-  // Normal user
-  return nextRoute || "/cbam";
+  return resolveSafeNextRoute(requestedRoute, "/cbam");
 }
