@@ -1,7 +1,13 @@
-import { adminDb } from "../../firebase-admin";
+import { createHash } from "node:crypto";
+import { adminDb, getStorageBucket } from "../../firebase-admin";
 import { CaseOwnershipViolationError } from "../../commerce/commerce-errors";
 import { validateIdentifier } from "../../firestore-validator";
-import { AuditReadyCaseSchema, type AuditReadyCase } from "../schema";
+import {
+  AuditReadyCaseSchema,
+  type AuditReadyCase,
+  type EvidenceRecord,
+  type EvidenceSupportStatus,
+} from "../schema";
 import { createCanonicalCaseId } from "../case-id";
 import { buildCaseRecord, type CbamCaseRecord } from "./case-contract";
 import {
@@ -17,6 +23,9 @@ type ResolvedCaseDocument = {
   documentId: string;
   record: CbamCaseRecord;
 };
+
+type EvidenceReviewDecision = "APPROVED" | "REJECTED";
+type EvidenceScanStatus = "CLEAN" | "INFECTED";
 
 function parseStoredCase(data: unknown, documentId: string): CbamCaseRecord {
   if (!data || typeof data !== "object") throw new Error("CASE_RECORD_INVALID");
@@ -57,8 +66,6 @@ async function resolveCaseDocument(caseId: string): Promise<ResolvedCaseDocument
     };
   }
 
-  // Backward compatibility for historical records written under the raw
-  // Firestore auto-ID while storing a prefixed caseId inside the document.
   const legacySnapshot = await collection.where("caseId", "==", normalizedCaseId).limit(2).get();
   if (legacySnapshot.empty) return null;
   if (legacySnapshot.docs.length !== 1) throw new Error("CASE_ID_COLLISION");
@@ -82,25 +89,34 @@ function sanitizeCaseData(submittedData: unknown, existingData?: AuditReadyCase)
         ...evidence,
         reviewStatus: "PENDING" as const,
         supportStatus: "PENDING" as const,
+        malwareScanStatus: "PENDING" as const,
+        reviewerNotes: undefined,
       };
     }
 
     return {
       ...evidence,
-      reviewStatus:
-        evidence.reviewStatus === "APPROVED" && existing.reviewStatus !== "APPROVED"
-          ? "PENDING"
-          : evidence.reviewStatus,
-      supportStatus:
-        evidence.supportStatus === "SUPPORTED" && existing.supportStatus !== "SUPPORTED"
-          ? "PENDING"
-          : evidence.supportStatus,
+      storagePath: existing.storagePath,
+      fileName: existing.fileName,
+      mimeType: existing.mimeType,
+      sizeBytes: existing.sizeBytes,
+      fileHash: existing.fileHash,
+      uploadTimestamp: existing.uploadTimestamp,
+      uploader: existing.uploader,
+      reviewStatus: existing.reviewStatus,
+      supportStatus: existing.supportStatus,
+      malwareScanStatus: existing.malwareScanStatus,
+      reviewerNotes: existing.reviewerNotes,
     };
   });
 
   const approvedEvidenceIds = new Set(
     parsed.evidenceRegister
-      .filter((evidence) => evidence.reviewStatus === "APPROVED" && evidence.supportStatus === "SUPPORTED")
+      .filter((evidence) =>
+        evidence.reviewStatus === "APPROVED" &&
+        evidence.malwareScanStatus === "CLEAN" &&
+        ["SUPPORTED", "PARTIALLY_SUPPORTED"].includes(evidence.supportStatus)
+      )
       .map((evidence) => evidence.evidenceId)
   );
 
@@ -112,6 +128,74 @@ function sanitizeCaseData(submittedData: unknown, existingData?: AuditReadyCase)
   });
 
   return parsed;
+}
+
+function appendAuditEvent(
+  caseData: AuditReadyCase,
+  actor: string,
+  action: string,
+  metadata: Record<string, unknown>
+): AuditReadyCase {
+  return AuditReadyCaseSchema.parse({
+    ...caseData,
+    auditEvents: [
+      ...caseData.auditEvents,
+      {
+        eventId: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+        actor,
+        action,
+        metadata,
+      },
+    ],
+  });
+}
+
+async function verifyEvidenceObject(
+  caseId: string,
+  uid: string,
+  evidence: EvidenceRecord
+): Promise<void> {
+  const expectedPrefix = `evidence/${uid}/${caseId}/${evidence.evidenceId}/`;
+  if (!evidence.storagePath.startsWith(expectedPrefix)) {
+    throw new Error("EVIDENCE_STORAGE_PATH_OWNERSHIP_MISMATCH");
+  }
+
+  const file = getStorageBucket().file(evidence.storagePath);
+  const [exists] = await file.exists();
+  if (!exists) throw new Error("EVIDENCE_FILE_NOT_FOUND");
+
+  const [metadata] = await file.getMetadata();
+  const customMetadata = metadata.metadata ?? {};
+  if (
+    Number(metadata.size) !== evidence.sizeBytes ||
+    metadata.contentType !== evidence.mimeType ||
+    customMetadata.ownerId !== uid ||
+    customMetadata.caseId !== caseId ||
+    customMetadata.evidenceId !== evidence.evidenceId ||
+    customMetadata.sha256?.toLowerCase() !== evidence.fileHash.toLowerCase()
+  ) {
+    throw new Error("EVIDENCE_STORAGE_METADATA_MISMATCH");
+  }
+
+  const [buffer] = await file.download();
+  const actualHash = createHash("sha256").update(buffer).digest("hex");
+  if (buffer.byteLength !== evidence.sizeBytes || actualHash !== evidence.fileHash.toLowerCase()) {
+    throw new Error("EVIDENCE_FILE_INTEGRITY_MISMATCH");
+  }
+}
+
+async function persistTrustedCaseData(
+  resolved: ResolvedCaseDocument,
+  caseData: AuditReadyCase
+): Promise<CbamCaseRecord> {
+  const updatedAt = new Date().toISOString();
+  const parsed = AuditReadyCaseSchema.parse(caseData);
+  await adminDb.collection("cbam_cases").doc(resolved.documentId).update({
+    data: parsed,
+    updatedAt,
+  });
+  return { ...resolved.record, data: parsed, updatedAt };
 }
 
 export async function getCase(caseId: string): Promise<CbamCaseRecord | null> {
@@ -152,8 +236,6 @@ export async function createCase(
   const markerRef = adminDb.collection("case_creation_requests").doc(identity.digest);
 
   return adminDb.runTransaction(async (transaction) => {
-    // Every read occurs before any write. Concurrent calls with the same
-    // requestId conflict on markerRef and converge on the first committed case.
     const markerSnapshot = await transaction.get(markerRef);
     const caseSnapshot = await transaction.get(caseRef);
     const marker = markerSnapshot.exists
@@ -188,14 +270,101 @@ export async function updateCase(caseId: string, uid: string, data: unknown): Pr
   if (resolved.record.uid !== uid) throw new CaseOwnershipViolationError(caseId);
   if (resolved.record.status !== "DRAFT") throw new Error("CASE_NOT_EDITABLE");
 
-  const timestamp = new Date().toISOString();
   const sanitizedData = sanitizeCaseData(
     { ...(data as Record<string, unknown>), caseId: resolved.record.caseId, ownerId: uid },
     resolved.record.data
   );
-  const update = { data: sanitizedData, updatedAt: timestamp };
-  await adminDb.collection("cbam_cases").doc(resolved.documentId).update(update);
-  return { ...resolved.record, ...update };
+  return persistTrustedCaseData(resolved, sanitizedData);
+}
+
+export async function reviewCaseEvidence(params: {
+  caseId: string;
+  uid: string;
+  evidenceId: string;
+  decision: EvidenceReviewDecision;
+  supportStatus: EvidenceSupportStatus;
+  reviewerNotes: string;
+}): Promise<CbamCaseRecord> {
+  const resolved = await resolveCaseDocument(params.caseId);
+  if (!resolved) throw new Error("CASE_NOT_FOUND");
+  if (resolved.record.uid !== params.uid) throw new CaseOwnershipViolationError(params.caseId);
+  if (resolved.record.status !== "DRAFT") throw new Error("CASE_NOT_EDITABLE");
+
+  const evidence = resolved.record.data.evidenceRegister.find(
+    (record) => record.evidenceId === params.evidenceId
+  );
+  if (!evidence) throw new Error("EVIDENCE_NOT_FOUND");
+  await verifyEvidenceObject(resolved.record.caseId, params.uid, evidence);
+
+  if (params.decision === "APPROVED") {
+    if (evidence.malwareScanStatus !== "CLEAN") throw new Error("EVIDENCE_MALWARE_SCAN_NOT_CLEAN");
+    if (!["SUPPORTED", "PARTIALLY_SUPPORTED", "NOT_REQUIRED"].includes(params.supportStatus)) {
+      throw new Error("EVIDENCE_SUPPORT_STATUS_INVALID");
+    }
+  }
+
+  const updatedEvidence = resolved.record.data.evidenceRegister.map((record) =>
+    record.evidenceId === params.evidenceId
+      ? {
+          ...record,
+          reviewStatus: params.decision,
+          supportStatus:
+            params.decision === "APPROVED" ? params.supportStatus : "UNSUPPORTED" as const,
+          reviewerNotes: params.reviewerNotes.trim(),
+        }
+      : record
+  );
+
+  const nextData = appendAuditEvent(
+    { ...resolved.record.data, evidenceRegister: updatedEvidence },
+    params.uid,
+    "EVIDENCE_INTERNAL_REVIEWED",
+    {
+      evidenceId: params.evidenceId,
+      decision: params.decision,
+      supportStatus: params.decision === "APPROVED" ? params.supportStatus : "UNSUPPORTED",
+    }
+  );
+  return persistTrustedCaseData(resolved, nextData);
+}
+
+export async function recordEvidenceMalwareScan(params: {
+  caseId: string;
+  evidenceId: string;
+  status: EvidenceScanStatus;
+  scannerReference: string;
+  actorUid: string;
+}): Promise<CbamCaseRecord> {
+  const resolved = await resolveCaseDocument(params.caseId);
+  if (!resolved) throw new Error("CASE_NOT_FOUND");
+  const evidence = resolved.record.data.evidenceRegister.find(
+    (record) => record.evidenceId === params.evidenceId
+  );
+  if (!evidence) throw new Error("EVIDENCE_NOT_FOUND");
+  await verifyEvidenceObject(resolved.record.caseId, resolved.record.uid, evidence);
+
+  const updatedEvidence = resolved.record.data.evidenceRegister.map((record) =>
+    record.evidenceId === params.evidenceId
+      ? {
+          ...record,
+          malwareScanStatus: params.status,
+          reviewStatus: params.status === "INFECTED" ? "REJECTED" as const : record.reviewStatus,
+          supportStatus: params.status === "INFECTED" ? "UNSUPPORTED" as const : record.supportStatus,
+        }
+      : record
+  );
+
+  const nextData = appendAuditEvent(
+    { ...resolved.record.data, evidenceRegister: updatedEvidence },
+    params.actorUid,
+    "EVIDENCE_MALWARE_SCAN_RECORDED",
+    {
+      evidenceId: params.evidenceId,
+      status: params.status,
+      scannerReference: params.scannerReference,
+    }
+  );
+  return persistTrustedCaseData(resolved, nextData);
 }
 
 export async function archiveCase(caseId: string, uid: string): Promise<void> {
