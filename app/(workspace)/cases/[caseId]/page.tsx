@@ -10,6 +10,7 @@ import { getCase } from "@/lib/functions/client";
 import { getPreparationPacks } from "@/lib/functions/commerce-client";
 import { getTypedAccountOverview } from "@/lib/functions/account-client";
 import type { PreparationPackEntitlement } from "@/lib/functions/commerce-types";
+import CaseCommercialPanel from "./CaseCommercialPanel";
 import CaseWizardClient from "./CaseWizardClient";
 
 function describeError(error: unknown): string {
@@ -65,7 +66,7 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
         } else {
           console.error("Preparation Pack status could not be loaded", entitlementResult.reason);
           setAvailableEntitlements([]);
-          warnings.push("Preparation Pack status is unavailable; sealing remains disabled.");
+          warnings.push("Preparation Pack status is unavailable; unlock and sealing remain disabled.");
         }
 
         if (accountResult.status === "fulfilled") {
@@ -146,12 +147,16 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
   return (
     <>
       {commercialWarning && <div role="status" className="mx-auto mt-6 max-w-6xl rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">{commercialWarning}</div>}
+      <CaseCommercialPanel
+        caseId={caseId}
+        initialEntitlements={availableEntitlements}
+        initialAvailableCredits={availableCredits}
+        initialCommerceHoldActive={commerceHoldActive}
+      />
       <CaseWizardClient
         sessionUser={{ uid: user.uid, email: user.email || "" }}
         initialCase={initialCase}
-        availableEntitlements={availableEntitlements}
-        initialAvailableCredits={availableCredits}
-        initialCommerceHoldActive={commerceHoldActive}
+        availableEntitlements={[]}
       />
     </>
   );
