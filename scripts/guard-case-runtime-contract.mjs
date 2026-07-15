@@ -39,7 +39,9 @@ const firestoreRules = read("firestore.rules");
 const rootPackage = read("package.json");
 const functionsPackage = read("functions/package.json");
 const functionsTsConfig = read("functions/tsconfig.json");
+const functionsCleanBuild = read("functions/scripts/clean-build.mjs");
 const cleanNextTypes = read("scripts/clean-next-types.mjs");
+const gitIgnore = read(".gitignore");
 
 requireText(repository, 'collection("case_creation_requests").doc(identity.digest)', "Case creation idempotency collection");
 requireText(repository, "adminDb.runTransaction", "Atomic case creation transaction");
@@ -118,13 +120,19 @@ requireText(cleanNextTypes, "fs.rmSync", "Generated type cache deletion");
 
 requireText(functionsPackage, '"main": "build/index.js"', "Generated Functions runtime entry");
 requireText(functionsPackage, '"node": "20"', "Lock-compatible local Functions engine metadata");
+requireText(functionsPackage, '"build": "node scripts/clean-build.mjs && tsc"', "Clean Functions build command");
 requireText(functionsTsConfig, '"outDir": "build"', "Untracked Functions build output");
 requireText(functionsTsConfig, '"target": "es2022"', "Node.js 22-compatible compilation target");
+requireText(functionsCleanBuild, 'path.join(functionsRoot, "build")', "Functions build directory isolation");
+requireText(functionsCleanBuild, "fs.rmSync", "Stale Functions output removal");
+requireText(functionsCleanBuild, "FUNCTIONS_BUILD_CLEAN=PASS", "Observable Functions clean-build evidence");
 requireText(firebaseConfig, '"runtime": "nodejs22"', "Firebase Functions production runtime pin");
 requireText(firebaseConfig, '"predeploy"', "Functions predeploy declaration");
-requireText(firebaseConfig, '$RESOURCE_DIR', "Functions predeploy resource directory");
+requireText(firebaseConfig, "$RESOURCE_DIR", "Functions predeploy resource directory");
 requireText(firebaseConfig, "run build", "Functions predeploy compiler command");
 requireText(firebaseConfig, '"lib"', "Stale compiled Functions exclusion");
+requireText(gitIgnore, "functions/build/", "Current Functions output ignore rule");
+requireText(gitIgnore, "functions/lib/", "Legacy Functions output ignore rule");
 
 if (failures.length) {
   console.error("CASE_RUNTIME_CONTRACT_GUARD=FAIL");
@@ -148,4 +156,5 @@ console.log("NEXT_TYPEGEN_CONTRACT=PASS");
 console.log("FUNCTIONS_PRODUCTION_NODE22_RUNTIME=PASS");
 console.log("FUNCTIONS_LOCAL_LOCK_COMPATIBILITY=PASS");
 console.log("FUNCTIONS_GENERATED_OUTPUT_ISOLATION=PASS");
+console.log("FUNCTIONS_CLEAN_BUILD=PASS");
 console.log("FUNCTIONS_PREDEPLOY_BUILD=PASS");
