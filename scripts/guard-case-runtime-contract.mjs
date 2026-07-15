@@ -114,6 +114,8 @@ requireText(firestoreRules, "match /case_creation_requests/{requestDigest}", "Ex
 requireText(firestoreRules, "allow read, write: if false;", "Backend-only idempotency marker access");
 
 requireText(rootPackage, "node scripts/clean-next-types.mjs && next typegen && tsc --noEmit", "Fresh Next route type generation");
+requireText(rootPackage, '"install:functions": "npm --prefix functions ci --no-audit --no-fund"', "Locked nested Functions install");
+requireText(rootPackage, '"build:functions": "npm run install:functions && npm --prefix functions run build"', "Reproducible Functions build chain");
 requireText(cleanNextTypes, 'path.join(root, ".next", "types")', "Production route type cache cleanup");
 requireText(cleanNextTypes, 'path.join(root, ".next", "dev", "types")', "Development route type cache cleanup");
 requireText(cleanNextTypes, "fs.rmSync", "Generated type cache deletion");
@@ -129,6 +131,7 @@ requireText(functionsCleanBuild, "FUNCTIONS_BUILD_CLEAN=PASS", "Observable Funct
 requireText(firebaseConfig, '"runtime": "nodejs22"', "Firebase Functions production runtime pin");
 requireText(firebaseConfig, '"predeploy"', "Functions predeploy declaration");
 requireText(firebaseConfig, "$RESOURCE_DIR", "Functions predeploy resource directory");
+requireText(firebaseConfig, 'ci --no-audit --no-fund', "Functions predeploy locked dependency install");
 requireText(firebaseConfig, "run build", "Functions predeploy compiler command");
 requireText(firebaseConfig, '"lib"', "Stale compiled Functions exclusion");
 requireText(gitIgnore, "functions/build/", "Current Functions output ignore rule");
@@ -155,6 +158,7 @@ console.log("CASE_CREATION_MARKER_RULES=PASS");
 console.log("NEXT_TYPEGEN_CONTRACT=PASS");
 console.log("FUNCTIONS_PRODUCTION_NODE22_RUNTIME=PASS");
 console.log("FUNCTIONS_LOCAL_LOCK_COMPATIBILITY=PASS");
+console.log("FUNCTIONS_LOCKED_DEPENDENCY_INSTALL=PASS");
 console.log("FUNCTIONS_GENERATED_OUTPUT_ISOLATION=PASS");
 console.log("FUNCTIONS_CLEAN_BUILD=PASS");
 console.log("FUNCTIONS_PREDEPLOY_BUILD=PASS");
