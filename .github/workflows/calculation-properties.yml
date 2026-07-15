@@ -32,6 +32,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -40,25 +42,28 @@ jobs:
           cache: npm
 
       - name: Install locked project dependencies
-        run: npm ci --no-audit --no-fund --loglevel=error
+        shell: bash
+        run: |
+          set -o pipefail
+          npm ci --no-audit --no-fund --loglevel=error 2>&1 | tee dependency-install.log
 
       - name: Install pinned property-test runner without changing the lockfile
-        run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund --loglevel=error fast-check@4.9.0 tsx@4.20.6
+        shell: bash
+        run: |
+          set -o pipefail
+          npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund --loglevel=error fast-check@4.9.0 tsx@4.20.6 2>&1 | tee property-runner-install.log
 
       - name: Verify mathematical invariants
         shell: bash
         run: |
-          set +e
-          npx --no-install tsx scripts/verify-calculation-properties.mjs > property-test.log 2>&1
-          status=$?
-          cat property-test.log
-          exit "$status"
+          set -o pipefail
+          npx --no-install tsx scripts/verify-calculation-properties.mjs 2>&1 | tee property-test.log
 
       - name: Upload property-test diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: calculation-properties-${{ github.sha }}
-          path: property-test.log
+          name: calculation-properties-${{ github.sha }}-${{ github.run_attempt }}
+          path: "*.log"
           if-no-files-found: error
           retention-days: 14
