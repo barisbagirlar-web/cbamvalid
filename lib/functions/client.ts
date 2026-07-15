@@ -11,6 +11,7 @@ import {
   type ReportDownloadFormat,
   type SealedReportView,
 } from "@/lib/cbam/report-contract";
+import { PREPARATION_PACK } from "@/lib/commerce/preparation-pack";
 import { createCaseSaveRequest } from "@/lib/functions/case-save-contract";
 
 export type UnknownRecord = Record<string, unknown>;
@@ -27,13 +28,22 @@ export type CbamCaseRecord = {
 };
 
 export type PreparationPackEntitlement = {
-  entitlementId?: string;
-  caseId?: string;
-  status?: string;
-  versionSequence?: number;
-  releasesCount?: number;
-  releasesRemaining?: number;
-  [key: string]: unknown;
+  entitlementId: string;
+  orderId: string;
+  productCode: typeof PREPARATION_PACK.productCode;
+  status: "AVAILABLE" | "RESERVED";
+  scopeCaseId?: string;
+  releasesCount: number;
+  releasesRemaining: number;
+  maxReleases: typeof PREPARATION_PACK.maxReleases;
+  reservedReportId?: string;
+  reservationExpiresAt?: string;
+};
+
+export type EntitlementsResponse = {
+  entitlements: PreparationPackEntitlement[];
+  totalReleasesRemaining: number;
+  status: "success";
 };
 
 export type SealResponse = {
@@ -95,9 +105,12 @@ export const getReportDownloadUrlCallable = httpsCallable<{
   format: ReportDownloadFormat;
 }, ReportDownloadDescriptor>(firebaseFunctions, "getReportDownloadUrl");
 
-export const getEntitlementsCallable = httpsCallable<void, { entitlements: PreparationPackEntitlement[] }>(firebaseFunctions, "getEntitlements");
-export const createCheckoutSessionCallable = httpsCallable<{ productCode: string; caseId: string }, { transactionId: string; error?: string }>(firebaseFunctions, "createCheckoutSession");
-export const unlockCbamUsesCallable = httpsCallable<{ requestId: string }, UnknownRecord>(firebaseFunctions, "unlockCbamUses");
+export const getEntitlementsCallable = httpsCallable<void, EntitlementsResponse>(firebaseFunctions, "getEntitlements");
+export const createCheckoutSessionCallable = httpsCallable<{
+  productCode: typeof PREPARATION_PACK.productCode;
+  requestId: string;
+  caseId?: string;
+}, { transactionId: string; status: "success" }>(firebaseFunctions, "createCheckoutSession");
 
 export const adminSetUserTokensCallable = httpsCallable<{ targetUserId: string; tokensToSet: number }, { success: boolean }>(firebaseFunctions, "adminSetUserTokens");
 export const getSourcesStatusCallable = httpsCallable<void, UnknownRecord>(firebaseFunctions, "getSourcesStatus");
@@ -122,11 +135,7 @@ export async function getCase(caseId: string): Promise<AuditReadyCase> {
   return AuditReadyCaseSchema.parse(result.data.case);
 }
 
-export async function saveCase(
-  data: AuditReadyCase,
-  caseId?: string,
-  requestId?: string
-): Promise<string> {
+export async function saveCase(data: AuditReadyCase, caseId?: string, requestId?: string): Promise<string> {
   const result = await saveCbamCaseCallable(createCaseSaveRequest(data, caseId, requestId));
   return result.data.caseId;
 }
@@ -172,12 +181,7 @@ export async function calculateReport(caseId: string): Promise<UnknownRecord> {
   return result.data;
 }
 
-export async function sealReport(
-  caseId: string,
-  entitlementId: string,
-  requestId: string,
-  correctionReason?: string
-): Promise<SealResponse> {
+export async function sealReport(caseId: string, entitlementId: string, requestId: string, correctionReason?: string): Promise<SealResponse> {
   const result = await sealCbamReportCallable({ caseId, entitlementId, requestId, correctionReason });
   return result.data;
 }
@@ -192,19 +196,13 @@ export async function getReport(reportId: string): Promise<SealedReportView> {
   return parseSealedReportView(result.data.report);
 }
 
-export async function getReportDownload(
-  reportId: string,
-  format: ReportDownloadFormat
-): Promise<ReportDownloadDescriptor> {
+export async function getReportDownload(reportId: string, format: ReportDownloadFormat): Promise<ReportDownloadDescriptor> {
   const parsedFormat = ReportDownloadFormatSchema.parse(format);
   const result = await getReportDownloadUrlCallable({ reportId, format: parsedFormat });
   return result.data;
 }
 
-export async function getReportDownloadUrl(
-  reportId: string,
-  format: ReportDownloadFormat
-): Promise<string> {
+export async function getReportDownloadUrl(reportId: string, format: ReportDownloadFormat): Promise<string> {
   const result = await getReportDownload(reportId, format);
   return result.url;
 }
@@ -214,13 +212,17 @@ export async function getEntitlements(): Promise<PreparationPackEntitlement[]> {
   return result.data.entitlements;
 }
 
-export async function createCheckout(productCode: string, caseId: string) {
-  const result = await createCheckoutSessionCallable({ productCode, caseId });
+export async function getEntitlementSummary(): Promise<EntitlementsResponse> {
+  const result = await getEntitlementsCallable();
   return result.data;
 }
 
-export async function unlockCbamUses(requestId: string) {
-  const result = await unlockCbamUsesCallable({ requestId });
+export async function createCheckout(requestId: string, caseId?: string) {
+  const result = await createCheckoutSessionCallable({
+    productCode: PREPARATION_PACK.productCode,
+    requestId,
+    ...(caseId ? { caseId } : {}),
+  });
   return result.data;
 }
 
