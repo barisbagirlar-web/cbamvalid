@@ -1,5 +1,9 @@
 import { Decimal } from "decimal.js";
 import type { AuditReadyCase, InputDatum } from "../schema";
+import {
+  GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH,
+  GRID_EMISSION_FACTOR_SCALE_ERROR,
+} from "../input-constraints";
 
 export type QualityControlStatus = "PASS" | "WARNING" | "BLOCKER" | "NOT_APPLICABLE";
 export interface QualityControlResult { ruleId: string; name: string; status: QualityControlStatus; message?: string; remediationCode?: string; }
@@ -15,7 +19,7 @@ function unitOf(datum: InputDatum, fallback: string): string { return datum.cano
 function supportedEvidence(caseData: AuditReadyCase, path: string, datum: InputDatum): boolean {
   if (!datum.evidenceId || !caseData.caseId) return false;
   const record = caseData.evidenceRegister.find((item) => item.evidenceId === datum.evidenceId);
-  return Boolean(record && record.linkedInputs.includes(path) && record.storagePath.startsWith(`evidence/${caseData.ownerId}/${caseData.caseId}/${record.evidenceId}/`) && /^[a-f0-9]{64}$/i.test(record.fileHash) && record.sizeBytes > 0 && record.reviewStatus === "APPROVED" && record.malwareScanStatus === "CLEAN" && (record.supportStatus === "SUPPORTED" || record.supportStatus === "PARTIALLY_SUPPORTED"));
+  return Boolean(record && record.linkedInputs.includes(path) && record.storagePath.startsWith(`evidence/${caseData.ownerId}/${caseData.caseId}/${record.evidenceId}/`) && /^[a-f0-9]{64}$/i.test(record.fileHash) && record.sizeBytes > 0 && record.reviewStatus === "APPROVED" && record.malwareScanStatus === "CLEAN" && record.supportStatus === "SUPPORTED");
 }
 function acceptedMethod(caseData: AuditReadyCase, topic: string): boolean {
   return caseData.methodologyDecisions.some((decision) => decision.topic === topic && decision.reviewStatus === "ACCEPTED" && decision.reason.trim().length > 0 && decision.legalOrTechnicalBasis.trim().length > 0 && decision.rulesetVersion.trim().length > 0 && decision.evidenceIds.every((evidenceId) => caseData.evidenceRegister.some((evidence) => evidence.evidenceId === evidenceId)));
@@ -65,8 +69,10 @@ export function runQualityControls(caseData: AuditReadyCase): QualityControlResu
 
   const materialInputs: Array<[string, string, InputDatum, string[]]> = [["QC_06", "directEmissions", caseData.directEmissions, ["tCO2e"]], ["QC_07", "electricityConsumed", caseData.electricityConsumed, ["MWh"]], ["QC_08", "gridEmissionFactor", caseData.gridEmissionFactor, ["tCO2e/MWh"]]];
   for (const [ruleId, path, datum, units] of materialInputs) {
-    if (!finiteNonNegative(datum.value)) add(ruleId, path, "BLOCKER", `${path} must be finite and non-negative.`, `REM_CORRECT_${ruleId}`);
+    const parsedValue = decimal(datum.value);
+    if (parsedValue === null || parsedValue.lt(0)) add(ruleId, path, "BLOCKER", `${path} must be finite and non-negative.`, `REM_CORRECT_${ruleId}`);
     else if (!units.includes(unitOf(datum, units[0]))) add(ruleId, `${path} unit`, "BLOCKER", `${path} uses an unsupported unit.`, `REM_CORRECT_${ruleId}_UNIT`);
+    else if (path === "gridEmissionFactor" && parsedValue.gt(GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH)) add(ruleId, `${path} scale`, "BLOCKER", GRID_EMISSION_FACTOR_SCALE_ERROR, "REM_CORRECT_QC_08_SCALE");
     else if (!supportedEvidence(caseData, path, datum)) add(ruleId, `${path} evidence`, "BLOCKER", `${path} requires approved evidence.`, `REM_LINK_${ruleId}_EVIDENCE`);
     else if (datum.sourceType === "ESTIMATED" && !acceptedMethod(caseData, `ESTIMATE:${path}`)) add(ruleId, `${path} methodology`, "BLOCKER", `${path} uses an estimate without an accepted methodology decision.`, `REM_DOCUMENT_${ruleId}_METHOD`);
     else add(ruleId, `${path} value, unit and evidence`, "PASS");
@@ -84,7 +90,7 @@ export function runQualityControls(caseData: AuditReadyCase): QualityControlResu
   const hashes = new Set<string>(); let invalidEvidence = false; let duplicateHash = false;
   for (const evidence of caseData.evidenceRegister) {
     const hash = evidence.fileHash.toLowerCase(); if (hashes.has(hash)) duplicateHash = true; hashes.add(hash);
-    if (!caseData.caseId || !evidence.storagePath.startsWith(`evidence/${caseData.ownerId}/${caseData.caseId}/${evidence.evidenceId}/`) || !/^[a-f0-9]{64}$/.test(hash) || evidence.sizeBytes <= 0 || evidence.reviewStatus !== "APPROVED" || evidence.malwareScanStatus !== "CLEAN" || !["SUPPORTED", "PARTIALLY_SUPPORTED", "NOT_REQUIRED"].includes(evidence.supportStatus)) invalidEvidence = true;
+    if (!caseData.caseId || !evidence.storagePath.startsWith(`evidence/${caseData.ownerId}/${caseData.caseId}/${evidence.evidenceId}/`) || !/^[a-f0-9]{64}$/.test(hash) || evidence.sizeBytes <= 0 || evidence.reviewStatus !== "APPROVED" || evidence.malwareScanStatus !== "CLEAN" || !["SUPPORTED", "NOT_REQUIRED"].includes(evidence.supportStatus)) invalidEvidence = true;
   }
   if (caseData.evidenceRegister.length === 0) add("QC_10", "Evidence register", "BLOCKER", "Evidence register is empty.", "REM_UPLOAD_EVIDENCE");
   else if (duplicateHash || invalidEvidence) add("QC_10", "Evidence integrity", "BLOCKER", "Evidence has duplicate hashes, invalid ownership metadata, incomplete review or non-clean malware status.", "REM_REVIEW_EVIDENCE");

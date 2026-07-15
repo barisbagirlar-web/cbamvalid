@@ -1,5 +1,9 @@
 import { Decimal } from "decimal.js";
 import { AuditReadyCase, CalculationTraceNode } from "./schema";
+import {
+  GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH,
+  GRID_EMISSION_FACTOR_SCALE_ERROR,
+} from "./input-constraints";
 
 Decimal.set({ precision: 28, rounding: Decimal.ROUND_HALF_UP });
 
@@ -110,6 +114,10 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
   const direct = decimal(caseData.directEmissions.value, "directEmissions");
   const electricity = decimal(caseData.electricityConsumed.value, "electricityConsumed");
   const gridFactor = decimal(caseData.gridEmissionFactor.value, "gridEmissionFactor");
+
+  if (gridFactor?.gt(GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH)) {
+    throw new Error(`CALCULATION_GRID_FACTOR_SCALE_INVALID:${GRID_EMISSION_FACTOR_SCALE_ERROR}`);
+  }
 
   const productionRecords = caseData.goods.map((good, index) => ({
     good,
