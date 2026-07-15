@@ -1,0 +1,83 @@
+name: PR Risk Agent
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: pr-risk-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  classify:
+    name: Classify release risk and required evidence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Collect changed files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api \
+            --paginate \
+            -H "Accept: application/vnd.github+json" \
+            "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100" \
+            --jq '.[].filename' > changed-files.txt
+          test -s changed-files.txt
+
+      - name: Generate deterministic risk report
+        run: node scripts/pr-risk-agent.mjs changed-files.txt artifacts/pr-risk-report.md
+
+      - name: Publish sticky PR risk report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          comment_id="$(
+            gh api \
+              --paginate \
+              -H "Accept: application/vnd.github+json" \
+              "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" \
+              --jq '.[] | select((.body // "") | contains("<!-- cbamvalid-pr-risk-agent -->")) | .id' \
+              | head -n 1
+          )"
+
+          if [[ -n "${comment_id}" ]]; then
+            gh api \
+              --method PATCH \
+              -H "Accept: application/vnd.github+json" \
+              "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}" \
+              --raw-field body="$(cat artifacts/pr-risk-report.md)" > /dev/null
+          else
+            gh api \
+              --method POST \
+              -H "Accept: application/vnd.github+json" \
+              "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+              --raw-field body="$(cat artifacts/pr-risk-report.md)" > /dev/null
+          fi
+
+      - name: Upload risk evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-risk-${{ github.sha }}
+          path: |
+            changed-files.txt
+            artifacts/pr-risk-report.md
+          if-no-files-found: error
+          retention-days: 30

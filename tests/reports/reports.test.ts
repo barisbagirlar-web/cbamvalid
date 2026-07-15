@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { buildPdfDossier } from "../../lib/cbam/report/pdf-builder";
-import { buildWorkbook } from "../../lib/cbam/report/workbook-builder";
-import { buildXml } from "../../lib/cbam/report/xml-builder";
+import { buildPdfDossier } from "../../functions/src/cbam/report/pdf-builder";
+import { buildWorkbook } from "../../functions/src/cbam/report/workbook-builder";
+import { buildXml } from "../../functions/src/cbam/report/xml-builder";
 import { orchestrateCalculation } from "../../lib/cbam/engine/calculation-orchestrator";
 
 describe("Report Builders & Sealing Artifacts", () => {

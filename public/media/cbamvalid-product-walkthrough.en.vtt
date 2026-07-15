@@ -1,0 +1,45 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:07.800
+This English-only walkthrough explains the complete user journey and the reasoning behind every key input.
+
+00:00:08.000 --> 00:00:16.800
+Sign in first. Your account keeps every case, uploaded evidence item, credit transaction and sealed report under one verified identity.
+
+00:00:17.000 --> 00:00:25.800
+From the dashboard, create a new case or continue an existing one. The case remains editable until the final sealing step.
+
+00:00:26.000 --> 00:00:35.800
+Enter the legal identity, declarant reference and reporting period. These fields define who is responsible for the case and which ruleset applies.
+
+00:00:36.000 --> 00:00:45.800
+Classify the imported goods, record country of origin and enter the imported mass. CN code and quantity drive scope and emissions allocation.
+
+00:00:46.000 --> 00:00:55.800
+Connect the imported goods to the producing installation and route. This prevents plant-level emissions from being assigned to the wrong product.
+
+00:00:56.000 --> 00:01:06.800
+Enter total direct emissions, electricity consumption and the applicable grid factor. Values are stored as decimal strings and linked to evidence.
+
+00:01:07.000 --> 00:01:16.800
+Add precursor emissions and carbon-price information only when they apply. Rebates and compensation must be recorded to avoid overstating the deductible carbon price.
+
+00:01:17.000 --> 00:01:27.800
+Upload evidence, classify it and link it to the exact inputs it supports. A file that is merely uploaded but not linked does not complete the audit trail.
+
+00:01:28.000 --> 00:01:38.800
+Quality control converts missing or inconsistent data into explicit actions. Blockers stop sealing and consume no report use.
+
+00:01:39.000 --> 00:01:49.800
+All visitors can see pricing, but checkout requires an account. Credits are granted only after Paddle confirms the completed transaction through a verified webhook.
+
+00:01:50.000 --> 00:02:00.800
+At the final step, review the ruleset, warnings and credit balance. One report use is consumed only after the complete dossier package is successfully sealed.
+
+00:02:01.000 --> 00:02:09.800
+The Reports area contains sealed outputs only. Draft and in-progress work remains in Cases, while every published report keeps its own immutable version and integrity status.
+
+00:02:10.000 --> 00:02:17.800
+The final production recording should use a controlled test account and the live English interface, with no real customer, EORI, company or payment data.
+
+

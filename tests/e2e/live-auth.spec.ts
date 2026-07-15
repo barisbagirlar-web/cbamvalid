@@ -10,7 +10,7 @@ test("Live Production Authentication Acceptance Test", async ({ page, context })
 
   // 1. Navigate to live registration page
   console.log("Navigating to live registration...");
-  await page.goto("https://cbamvalid-prod--cbam-desk.europe-west4.hosted.app/register");
+  await page.goto("https://cbam-desk.web.app/register");
 
   // 2. Fill out registration
   console.log("Filling out registration...");
@@ -30,10 +30,10 @@ test("Live Production Authentication Acceptance Test", async ({ page, context })
   await page.waitForURL("**/cbam", { timeout: 25000 });
   expect(page.url()).toContain("/cbam");
 
-  // 5. Verify cookie __Host-cbam_session is present
+  // 5. Verify cookie __session is present
   console.log("Checking cookies...");
   const cookies = await context.cookies();
-  const sessionCookie = cookies.find(c => c.name === "__Host-cbam_session");
+  const sessionCookie = cookies.find(c => c.name === "__session");
   expect(sessionCookie).toBeDefined();
 
   // 6. Reload page and verify session is persistent
@@ -53,12 +53,12 @@ test("Live Production Authentication Acceptance Test", async ({ page, context })
 
   // 9. Verify cookie is cleared
   const cookiesAfterLogout = await context.cookies();
-  const sessionCookieAfter = cookiesAfterLogout.find(c => c.name === "__Host-cbam_session");
+  const sessionCookieAfter = cookiesAfterLogout.find(c => c.name === "__session");
   expect(sessionCookieAfter).toBeUndefined();
 
   // 10. Attempt to access protected dashboard directly -> should redirect back to /login
   console.log("Attempting direct access to /cbam...");
-  await page.goto("https://cbamvalid-prod--cbam-desk.europe-west4.hosted.app/cbam");
+  await page.goto("https://cbam-desk.web.app/cbam");
   await page.waitForURL("**/login*");
   expect(page.url()).toContain("/login");
   console.log("All live checks PASSED!");

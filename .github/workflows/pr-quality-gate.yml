@@ -1,0 +1,116 @@
+name: PR Quality Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+      - feat/exporter-verification-platform-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Typecheck, tests and production build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_FIREBASE_API_KEY: "ci-placeholder-not-a-secret"
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "cbamvalid-ci.invalid"
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: "cbamvalid-ci"
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "cbamvalid-ci.appspot.com"
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+      NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:0000000000000000000000"
+      ADMIN_USE_ADC: "true"
+      GCLOUD_PROJECT: "cbamvalid-ci"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Prepare evidence directory
+        run: mkdir -p artifacts/ci
+
+      - name: Verify workspace navigation contract
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/guard-workspace-navigation.mjs 2>&1 | tee artifacts/ci/navigation-contract.log
+
+      - name: Typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee artifacts/ci/typecheck.log
+
+      - name: Lint
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run lint 2>&1 | tee artifacts/ci/lint.log
+
+      - name: Authentication tests
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:auth 2>&1 | tee artifacts/ci/test-auth.log
+
+      - name: Commerce tests
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:commerce 2>&1 | tee artifacts/ci/test-commerce.log
+
+      - name: CBAM engine tests
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:cbam-engine 2>&1 | tee artifacts/ci/test-cbam-engine.log
+
+      - name: Report tests
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:reports 2>&1 | tee artifacts/ci/test-reports.log
+
+      - name: Production build
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee artifacts/ci/build.log
+
+      - name: Record evidence manifest
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "COMMIT_SHA=${GITHUB_SHA}"
+            echo "WORKFLOW_RUN_ID=${GITHUB_RUN_ID}"
+            echo "WORKFLOW_RUN_ATTEMPT=${GITHUB_RUN_ATTEMPT}"
+            echo "GENERATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            find artifacts/ci -type f -maxdepth 1 -print0 | sort -z | xargs -0 sha256sum
+          } > artifacts/ci/evidence-manifest.txt
+
+      - name: Upload quality evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-quality-evidence-${{ github.sha }}
+          path: artifacts/ci
+          if-no-files-found: error
+          retention-days: 30
