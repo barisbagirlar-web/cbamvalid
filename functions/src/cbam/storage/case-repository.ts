@@ -1,10 +1,15 @@
-import { createHash } from "node:crypto";
 import { adminDb } from "../../firebase-admin";
 import { CaseOwnershipViolationError } from "../../commerce/commerce-errors";
 import { validateIdentifier } from "../../firestore-validator";
 import { AuditReadyCaseSchema, type AuditReadyCase } from "../schema";
 import { createCanonicalCaseId } from "../case-id";
 import { buildCaseRecord, type CbamCaseRecord } from "./case-contract";
+import {
+  decideCaseCreationState,
+  deriveCaseCreationIdentity,
+  parseCaseCreationMarker,
+  type CaseCreationMarker,
+} from "./case-creation-idempotency";
 
 export type CbamCase = CbamCaseRecord;
 
@@ -12,38 +17,6 @@ type ResolvedCaseDocument = {
   documentId: string;
   record: CbamCaseRecord;
 };
-
-type CaseCreationMarker = {
-  uid: string;
-  requestId: string;
-  caseId: string;
-  createdAt: string;
-};
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-function creationDigest(uid: string, requestId: string): string {
-  return createHash("sha256").update(`${uid}\u0000${requestId}`).digest("hex");
-}
-
-function parseCreationMarker(data: unknown): CaseCreationMarker {
-  if (!data || typeof data !== "object") throw new Error("CASE_CREATION_MARKER_INVALID");
-  const source = data as Partial<CaseCreationMarker>;
-  if (
-    typeof source.uid !== "string" ||
-    typeof source.requestId !== "string" ||
-    typeof source.caseId !== "string" ||
-    typeof source.createdAt !== "string"
-  ) {
-    throw new Error("CASE_CREATION_MARKER_INVALID");
-  }
-  return {
-    uid: source.uid,
-    requestId: source.requestId,
-    caseId: createCanonicalCaseId(source.caseId),
-    createdAt: source.createdAt,
-  };
-}
 
 function parseStoredCase(data: unknown, documentId: string): CbamCaseRecord {
   if (!data || typeof data !== "object") throw new Error("CASE_RECORD_INVALID");
@@ -159,17 +132,11 @@ export async function createCase(
   data: unknown,
   requestId: string
 ): Promise<CbamCaseRecord> {
-  const normalizedUid = validateIdentifier("uid", uid);
-  const normalizedRequestId = requestId.trim();
-  if (!UUID_PATTERN.test(normalizedRequestId)) {
-    throw new Error("CASE_CREATION_REQUEST_ID_INVALID");
-  }
-
-  const digest = creationDigest(normalizedUid, normalizedRequestId);
+  const identity = deriveCaseCreationIdentity(validateIdentifier("uid", uid), requestId);
   const timestamp = new Date().toISOString();
   const record = buildCaseRecord({
-    rawDocumentId: digest,
-    uid: normalizedUid,
+    rawDocumentId: identity.digest,
+    uid: identity.uid,
     data,
     timestamp,
   });
@@ -177,43 +144,39 @@ export async function createCase(
     ...record,
     data: sanitizeCaseData(record.data),
   };
+  if (persistedRecord.caseId !== identity.caseId) {
+    throw new Error("CASE_CREATION_IDENTITY_MISMATCH");
+  }
 
-  const caseRef = adminDb.collection("cbam_cases").doc(persistedRecord.caseId);
-  const markerRef = adminDb.collection("case_creation_requests").doc(digest);
+  const caseRef = adminDb.collection("cbam_cases").doc(identity.caseId);
+  const markerRef = adminDb.collection("case_creation_requests").doc(identity.digest);
 
   return adminDb.runTransaction(async (transaction) => {
     // Every read occurs before any write. Concurrent calls with the same
     // requestId conflict on markerRef and converge on the first committed case.
     const markerSnapshot = await transaction.get(markerRef);
     const caseSnapshot = await transaction.get(caseRef);
+    const marker = markerSnapshot.exists
+      ? parseCaseCreationMarker(markerSnapshot.data())
+      : null;
+    const decision = decideCaseCreationState({
+      identity,
+      marker,
+      caseExists: caseSnapshot.exists,
+    });
 
-    if (markerSnapshot.exists) {
-      const marker = parseCreationMarker(markerSnapshot.data());
-      if (
-        marker.uid !== normalizedUid ||
-        marker.requestId !== normalizedRequestId ||
-        marker.caseId !== persistedRecord.caseId
-      ) {
-        throw new Error("CASE_CREATION_IDEMPOTENCY_COLLISION");
-      }
-      if (!caseSnapshot.exists) {
-        throw new Error("CASE_CREATION_IDEMPOTENCY_BROKEN");
-      }
+    if (decision === "RETURN_EXISTING") {
       return parseStoredCase(caseSnapshot.data(), caseSnapshot.id);
     }
 
-    if (caseSnapshot.exists) {
-      throw new Error("CASE_CREATION_IDEMPOTENCY_BROKEN");
-    }
-
-    const marker: CaseCreationMarker = {
-      uid: normalizedUid,
-      requestId: normalizedRequestId,
-      caseId: persistedRecord.caseId,
+    const creationMarker: CaseCreationMarker = {
+      uid: identity.uid,
+      requestId: identity.requestId,
+      caseId: identity.caseId,
       createdAt: timestamp,
     };
     transaction.create(caseRef, persistedRecord);
-    transaction.create(markerRef, marker);
+    transaction.create(markerRef, creationMarker);
     return persistedRecord;
   });
 }
