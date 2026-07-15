@@ -14,17 +14,17 @@ export const getEntitlements = createCallable({}, async (_, { auth }) => {
 
   const grouped = new Map<string, Record<string, unknown>>();
   for (const document of snapshot.docs) {
-    const data = { entitlementId: document.id, ...document.data() } as Record<string, unknown>;
+    const data: Record<string, unknown> = { entitlementId: document.id, ...document.data() };
     const releasesCount = Number(data.releasesCount || 0);
     const releasesRemaining = Math.max(0, MAX_RELEASES_PER_PACK - releasesCount);
     if (releasesRemaining === 0) continue;
     const orderId = typeof data.orderId === "string" ? data.orderId : document.id;
     const productCode = typeof data.productCode === "string" ? data.productCode : "UNKNOWN";
     const groupKey = `${orderId}:${productCode}`;
-    const candidate = { ...data, releasesCount, releasesRemaining };
+    const candidate: Record<string, unknown> = { ...data, releasesCount, releasesRemaining };
     const existing = grouped.get(groupKey);
-    const candidateId = String(candidate.entitlementId || "");
-    const existingId = String(existing?.entitlementId || "");
+    const candidateId = typeof candidate.entitlementId === "string" ? candidate.entitlementId : "";
+    const existingId = typeof existing?.entitlementId === "string" ? existing.entitlementId : "";
     if (!existing || candidateId.localeCompare(existingId) < 0) grouped.set(groupKey, candidate);
   }
 
