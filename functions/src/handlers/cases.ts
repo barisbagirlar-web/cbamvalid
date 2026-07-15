@@ -34,13 +34,27 @@ export const saveCbamCase = createCallable(
   {
     schema: z.object({
       caseId: CaseIdSchema.optional(),
+      requestId: z.string().uuid().optional(),
       data: z.unknown(),
     }),
   },
-  async ({ caseId, data }, { auth }) => {
+  async ({ caseId, requestId, data }, { auth }) => {
+    if (caseId && requestId) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Edit requests must not include a case-creation request ID."
+      );
+    }
+
     if (!caseId) {
+      if (!requestId) {
+        throw new HttpsError(
+          "invalid-argument",
+          "A request ID is required to create a case safely."
+        );
+      }
       const parsedData = parseCaseData(data, auth.uid);
-      const newCase = await createCase(auth.uid, parsedData);
+      const newCase = await createCase(auth.uid, parsedData, requestId);
       return { caseId: newCase.caseId, status: "success" };
     }
 
