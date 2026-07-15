@@ -42,7 +42,7 @@ if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true") {
 
 if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_KEY) {
   if (process.env.NODE_ENV !== "production") {
-    self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    (globalThis as typeof globalThis & { FIREBASE_APPCHECK_DEBUG_TOKEN?: boolean }).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
   }
   initializeAppCheck(app, {
     provider: new ReCaptchaEnterpriseProvider(process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_KEY),
