@@ -51,7 +51,7 @@ export const updateOwnProfile = createCallable({
 
 export const listCreditLedger = createCallable({
   schema: z.object({
-    limit: z.number().max(100).default(50)
+    limit: z.number().max(100).nullish().transform(v => v ?? 50)
   }).optional()
 }, async (data, { auth }) => {
   const limitCount = data?.limit || 50;
@@ -66,7 +66,7 @@ export const listCreditLedger = createCallable({
 
 export const listPurchaseHistory = createCallable({
   schema: z.object({
-    limit: z.number().max(100).default(50)
+    limit: z.number().max(100).nullish().transform(v => v ?? 50)
   }).optional()
 }, async (data, { auth }) => {
   const limitCount = data?.limit || 50;
