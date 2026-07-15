@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CaseIdSchema } from "./case-id";
 
 // Decimal-Safe Strings
 export const DecimalStringSchema = z.string().regex(/^-?\d*\.?\d+$/, "Must be a valid decimal string");
@@ -26,7 +27,7 @@ export const InputDatumSchema = z.object({
   canonicalUnit: UnitCodeSchema.optional(),
   reportingPeriod: z.string().optional(),
   sourceType: z.enum(["PRIMARY", "DEFAULT", "SECONDARY", "ESTIMATED", "REGULATORY"]),
-  evidenceId: z.string().optional(), // Links to EvidenceRegister
+  evidenceId: z.string().optional(),
   documentReference: z.string().optional(),
   measurementMethod: z.string().optional(),
   confidenceStatus: z.enum(["HIGH_VERIFIED", "MEDIUM_DOCUMENTED", "LOW_ESTIMATE", "DEFAULT_ASSIGNED"]),
@@ -39,7 +40,7 @@ export type InputDatum = z.infer<typeof InputDatumSchema>;
 // Evidence Record System
 export const EvidenceRecordSchema = z.object({
   evidenceId: z.string().uuid(),
-  documentType: z.string(), // e.g. "CUSTOMS_DECLARATION", "SUPPLIER_INVOICE", "LAB_REPORT"
+  documentType: z.string(),
   fileName: z.string(),
   issuer: z.string(),
   issueDate: z.string(),
@@ -51,8 +52,8 @@ export const EvidenceRecordSchema = z.object({
   reviewStatus: z.enum(["PENDING", "APPROVED", "REJECTED"]),
   supportStatus: z.enum(["PENDING", "SUPPORTED", "UNSUPPORTED", "PARTIALLY_SUPPORTED"]).default("PENDING"),
   malwareScanStatus: z.enum(["CLEAN", "INFECTED", "PENDING"]).default("CLEAN"),
-  linkedInputs: z.array(z.string()), // IDs of InputDatum
-  linkedCalculations: z.array(z.string()), // IDs of Calculation traces
+  linkedInputs: z.array(z.string()),
+  linkedCalculations: z.array(z.string()),
   reviewerNotes: z.string().optional()
 });
 
@@ -83,7 +84,7 @@ export const CalculationTraceNodeSchema = z.object({
   officialSource: z.string(),
   sourceVersion: z.string(),
   effectiveDate: z.string(),
-  inputs: z.record(z.string(), z.any()), // Raw inputs mapped
+  inputs: z.record(z.string(), z.any()),
   conversions: z.record(z.string(), z.any()).optional(),
   intermediateCalculations: z.record(z.string(), z.any()).optional(),
   roundingApplied: z.record(z.string(), z.any()).optional(),
@@ -135,12 +136,10 @@ export const CaseStatusSchema = z.enum([
 
 // Main Case Payload
 export const AuditReadyCaseSchema = z.object({
-  caseId: z.string().uuid().optional(),
+  caseId: CaseIdSchema.optional(),
   status: CaseStatusSchema.default("DRAFT"),
-  version: z.number().default(1),
-  
-  // 1. Case Identity
-  ownerId: z.string(),
+  version: z.number().int().positive().default(1),
+  ownerId: z.string().min(1),
   importerIdentity: z.object({
     legalName: InputDatumSchema,
     eoriNumber: InputDatumSchema,
@@ -150,22 +149,16 @@ export const AuditReadyCaseSchema = z.object({
     legalName: InputDatumSchema,
     address: InputDatumSchema.optional()
   }),
-  
-  // 2. Reporting Profile
   reportingPeriod: z.object({
     year: InputDatumSchema,
     quarter: InputDatumSchema,
   }),
-  
-  // 3. Products
   goods: z.array(z.object({
     cnCode: InputDatumSchema,
     sector: z.string(),
     productionVolume: InputDatumSchema,
     shipmentRecords: InputDatumSchema
   })),
-  
-  // 4. Installation & Boundaries
   installation: z.object({
     name: InputDatumSchema,
     unloCode: InputDatumSchema.optional(),
@@ -173,8 +166,6 @@ export const AuditReadyCaseSchema = z.object({
     productionRoute: InputDatumSchema,
     systemBoundaries: z.string().optional()
   }),
-  
-  // 5. Emissions
   directEmissions: InputDatumSchema,
   electricityConsumed: InputDatumSchema,
   gridEmissionFactor: InputDatumSchema,
@@ -185,14 +176,10 @@ export const AuditReadyCaseSchema = z.object({
     indirectEmissions: InputDatumSchema,
     countryOfOrigin: InputDatumSchema
   })),
-
-  // 6. Sub-Systems
   carbonPriceRecords: z.array(CarbonPricePaidSchema),
   evidenceRegister: z.array(EvidenceRecordSchema),
   calculationTrace: z.array(CalculationTraceNodeSchema),
   gapAssessment: z.array(GapRecordSchema),
-  
-  // 7. Audit Manifest
   auditEvents: z.array(z.object({
     eventId: z.string().uuid(),
     timestamp: z.string().datetime(),
@@ -204,7 +191,6 @@ export const AuditReadyCaseSchema = z.object({
 
 export type AuditReadyCase = z.infer<typeof AuditReadyCaseSchema>;
 
-// Helper function to create an empty InputDatum
 export const createEmptyInput = (canonicalUnit?: UnitCode): InputDatum => ({
   value: null,
   canonicalUnit,
