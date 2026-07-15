@@ -164,13 +164,15 @@ export async function unlockPreparationPack(
   const requestDigest = digest([params.uid, params.caseId, params.requestId]);
   const idempotencyRef = adminDb.collection("idempotency").doc(`unlock_${requestDigest}`);
   const summaryRef = adminDb.collection("users").doc(params.uid).collection("creditSummary").doc("current");
+  const holdRef = adminDb.collection("users").doc(params.uid).collection("commerceHold").doc("current");
   const entitlementId = `ent_${requestDigest.slice(0, 48)}`;
   const entitlementRef = adminDb.collection("entitlements").doc(entitlementId);
   const ledgerRef = adminDb.collection("users").doc(params.uid).collection("creditLedger").doc(`unlock_${requestDigest}`);
 
-  const [idempotencySnapshot, summarySnapshot, entitlementSnapshot, ledgerSnapshot] = await Promise.all([
+  const [idempotencySnapshot, summarySnapshot, holdSnapshot, entitlementSnapshot, ledgerSnapshot] = await Promise.all([
     transaction.get(idempotencyRef),
     transaction.get(summaryRef),
+    transaction.get(holdRef),
     transaction.get(entitlementRef),
     transaction.get(ledgerRef),
   ]);
@@ -195,6 +197,9 @@ export async function unlockPreparationPack(
     };
   }
 
+  if (holdSnapshot.exists && holdSnapshot.data()?.active === true) {
+    throw new HttpsError("failed-precondition", "COMMERCE_HOLD_ACTIVE");
+  }
   if (entitlementSnapshot.exists || ledgerSnapshot.exists) throw new Error("PACK_UNLOCK_PARTIAL_STATE");
   if (current.availableCredits < COMMERCIAL_CONTRACT.creditsRequiredToUnlock) {
     throw new HttpsError(
