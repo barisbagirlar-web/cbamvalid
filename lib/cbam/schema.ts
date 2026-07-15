@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { CaseIdSchema } from "./case-id";
 
-// Decimal-Safe Strings
-export const DecimalStringSchema = z.string().regex(/^-?\d*\.?\d+$/, "Must be a valid decimal string");
+export const DecimalStringSchema = z.string().regex(/^-?(?:\d+\.?\d*|\.\d+)$/, "Must be a valid decimal string");
 
 export const UnitCodeSchema = z.enum([
   "t",
@@ -14,20 +13,20 @@ export const UnitCodeSchema = z.enum([
   "USD",
   "GBP",
   "TRY",
-  "tCO2e/MWh"
+  "tCO2e/MWh",
+  "fraction",
 ]);
 
 export type UnitCode = z.infer<typeof UnitCodeSchema>;
 
-// Base Input Standard
 export const InputDatumSchema = z.object({
   id: z.string().uuid().optional(),
-  value: z.union([DecimalStringSchema, z.string(), z.null()]),
+  value: z.union([z.number().finite(), z.string(), z.null()]),
   rawUnit: z.string().optional(),
   canonicalUnit: UnitCodeSchema.optional(),
   reportingPeriod: z.string().optional(),
   sourceType: z.enum(["PRIMARY", "DEFAULT", "SECONDARY", "ESTIMATED", "REGULATORY"]),
-  evidenceId: z.string().optional(),
+  evidenceId: z.string().uuid().optional(),
   documentReference: z.string().optional(),
   measurementMethod: z.string().optional(),
   confidenceStatus: z.enum(["HIGH_VERIFIED", "MEDIUM_DOCUMENTED", "LOW_ESTIMATE", "DEFAULT_ASSIGNED"]),
@@ -37,79 +36,93 @@ export const InputDatumSchema = z.object({
 
 export type InputDatum = z.infer<typeof InputDatumSchema>;
 
-// Evidence Record System
+export const EvidenceReviewStatusSchema = z.enum(["PENDING", "APPROVED", "REJECTED"]);
+export const EvidenceSupportStatusSchema = z.enum([
+  "PENDING",
+  "SUPPORTED",
+  "PARTIALLY_SUPPORTED",
+  "UNSUPPORTED",
+  "NOT_REQUIRED",
+]);
+
 export const EvidenceRecordSchema = z.object({
   evidenceId: z.string().uuid(),
-  documentType: z.string(),
-  fileName: z.string(),
-  issuer: z.string(),
-  issueDate: z.string(),
-  reportingPeriod: z.string(),
-  pageReference: z.string().optional(),
-  fileHash: z.string(),
+  documentType: z.string().trim().min(1).max(120),
+  fileName: z.string().trim().min(1).max(240),
+  storagePath: z.string().trim().min(1).max(1024),
+  mimeType: z.string().trim().min(1).max(160),
+  sizeBytes: z.number().int().positive().max(20 * 1024 * 1024),
+  issuer: z.string().trim().min(1).max(240),
+  issueDate: z.string().trim().min(1).max(40),
+  reportingPeriod: z.string().trim().max(80),
+  pageReference: z.string().trim().max(160).optional(),
+  fileHash: z.string().regex(/^[a-f0-9]{64}$/i),
   uploadTimestamp: z.string().datetime(),
-  uploader: z.string().optional(),
-  reviewStatus: z.enum(["PENDING", "APPROVED", "REJECTED"]),
-  supportStatus: z.enum(["PENDING", "SUPPORTED", "UNSUPPORTED", "PARTIALLY_SUPPORTED"]).default("PENDING"),
-  malwareScanStatus: z.enum(["CLEAN", "INFECTED", "PENDING"]).default("CLEAN"),
-  linkedInputs: z.array(z.string()),
+  uploader: z.string().min(1),
+  reviewStatus: EvidenceReviewStatusSchema.default("PENDING"),
+  supportStatus: EvidenceSupportStatusSchema.default("PENDING"),
+  malwareScanStatus: z.enum(["CLEAN", "INFECTED", "PENDING"]).default("PENDING"),
+  confidentiality: z.enum(["CONFIDENTIAL", "INTERNAL", "PUBLIC"]).default("CONFIDENTIAL"),
+  linkedInputs: z.array(z.string().min(1)).min(1),
   linkedCalculations: z.array(z.string()),
-  reviewerNotes: z.string().optional()
+  reviewerNotes: z.string().trim().min(5).max(2000).optional(),
 });
 
 export type EvidenceRecord = z.infer<typeof EvidenceRecordSchema>;
+export type EvidenceReviewStatus = z.infer<typeof EvidenceReviewStatusSchema>;
+export type EvidenceSupportStatus = z.infer<typeof EvidenceSupportStatusSchema>;
 
-// Carbon Price Paid Module
 export const CarbonPricePaidSchema = z.object({
   id: z.string().uuid(),
-  amountPaid: DecimalStringSchema,
-  applicableEmissions: DecimalStringSchema,
-  currency: UnitCodeSchema,
-  paymentPeriod: z.string(),
-  legislationReference: z.string(),
-  proofOfPaymentEvidenceId: z.string().uuid(),
+  amountPaid: z.union([z.number().finite().nonnegative(), DecimalStringSchema]),
+  applicableEmissions: z.union([z.number().finite().nonnegative(), DecimalStringSchema]),
+  currency: z.enum(["EUR", "USD", "GBP", "TRY"]),
+  paymentPeriod: z.string().trim().min(1),
+  legislationReference: z.string().trim().min(1),
+  proofOfPaymentEvidenceId: z.string().uuid().optional(),
   rebateInformation: z.string().optional(),
   independentCertificationEvidenceId: z.string().uuid().optional(),
   conversionMethod: z.string().optional(),
-  eligibleCertificateReduction: DecimalStringSchema
+  eligibleCertificateReduction: z.union([z.number().finite().nonnegative(), DecimalStringSchema]),
 });
 
 export type CarbonPricePaidRecord = z.infer<typeof CarbonPricePaidSchema>;
 
-// Calculation Trace Node
 export const CalculationTraceNodeSchema = z.object({
-  calculationId: z.string().uuid(),
-  formulaId: z.string(),
-  formulaVersion: z.string(),
-  officialSource: z.string(),
-  sourceVersion: z.string(),
-  effectiveDate: z.string(),
-  inputs: z.record(z.string(), z.any()),
-  conversions: z.record(z.string(), z.any()).optional(),
-  intermediateCalculations: z.record(z.string(), z.any()).optional(),
-  roundingApplied: z.record(z.string(), z.any()).optional(),
+  calculationId: z.string().min(1),
+  formulaId: z.string().min(1),
+  formulaVersion: z.string().min(1),
+  officialSource: z.string().min(1),
+  sourceVersion: z.string().min(1),
+  effectiveDate: z.string().min(1),
+  inputs: z.record(z.string(), z.unknown()),
+  conversions: z.record(z.string(), z.unknown()).optional(),
+  intermediateCalculations: z.record(z.string(), z.unknown()).optional(),
+  roundingApplied: z.record(z.string(), z.unknown()).optional(),
   assumptions: z.array(z.string()),
   warnings: z.array(z.string()),
-  outputValue: DecimalStringSchema,
-  outputUnit: UnitCodeSchema,
-  calculationHash: z.string()
+  outputValue: z.union([z.number().finite(), DecimalStringSchema, z.literal("NOT_CALCULATED")]),
+  outputUnit: z.string().min(1),
+  calculationHash: z.string().min(1),
 });
 
 export type CalculationTraceNode = z.infer<typeof CalculationTraceNodeSchema>;
 
-// Gap Assessment Severity
-export const GapSeveritySchema = z.enum([
-  "BLOCKER",
-  "CRITICAL",
-  "MAJOR",
-  "MINOR",
-  "ADVISORY"
-]);
-
+export const GapSeveritySchema = z.enum(["BLOCKER", "CRITICAL", "MAJOR", "MINOR", "ADVISORY"]);
 export type GapSeverity = z.infer<typeof GapSeveritySchema>;
 
 export const GapRecordSchema = z.object({
-  gapId: z.string().uuid(),
+  gapId: z.string().min(1),
+  issueType: z.enum([
+    "missing evidence",
+    "data inconsistency",
+    "misstatement",
+    "non-conformity",
+    "methodology deviation",
+    "materiality risk",
+    "unresolved assumption",
+    "calculation blocker",
+  ]).optional(),
   requirement: z.string(),
   severity: GapSeveritySchema,
   affectedResult: z.string().optional(),
@@ -119,22 +132,44 @@ export const GapRecordSchema = z.object({
   responsibleParty: z.string().optional(),
   deadline: z.string().optional(),
   isBlocking: z.boolean(),
-  resolutionStatus: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED"])
+  resolutionStatus: z.enum([
+    "OPEN",
+    "IN_PROGRESS",
+    "EVIDENCE_REQUESTED",
+    "CORRECTED",
+    "RECALCULATED",
+    "REVIEWED",
+    "RESOLVED",
+  ]),
+  resolutionEvidenceIds: z.array(z.string()).optional(),
+  closureNote: z.string().optional(),
 });
 
 export type GapRecord = z.infer<typeof GapRecordSchema>;
 
-// Global Case Status
+export const MethodologyDecisionSchema = z.object({
+  decisionId: z.string().uuid(),
+  topic: z.string().trim().min(1),
+  selectedMethod: z.string().trim().min(1),
+  reason: z.string().trim().min(1),
+  legalOrTechnicalBasis: z.string().trim().min(1),
+  evidenceIds: z.array(z.string().uuid()),
+  rejectedAlternativeReason: z.string().optional(),
+  reviewStatus: z.enum(["PENDING", "ACCEPTED", "REVIEW_REQUIRED"]),
+  rulesetVersion: z.string().min(1),
+});
+
+export type MethodologyDecision = z.infer<typeof MethodologyDecisionSchema>;
+
 export const CaseStatusSchema = z.enum([
   "DRAFT",
   "REVIEW_REQUIRED",
   "VERIFICATION_READY",
   "SEALED",
   "SUPERSEDED",
-  "REVOKED"
+  "REVOKED",
 ]);
 
-// Main Case Payload
 export const AuditReadyCaseSchema = z.object({
   caseId: CaseIdSchema.optional(),
   status: CaseStatusSchema.default("DRAFT"),
@@ -143,11 +178,11 @@ export const AuditReadyCaseSchema = z.object({
   importerIdentity: z.object({
     legalName: InputDatumSchema,
     eoriNumber: InputDatumSchema,
-    address: InputDatumSchema.optional()
+    address: InputDatumSchema.optional(),
   }),
   exporterIdentity: z.object({
     legalName: InputDatumSchema,
-    address: InputDatumSchema.optional()
+    address: InputDatumSchema.optional(),
   }),
   reportingPeriod: z.object({
     year: InputDatumSchema,
@@ -155,16 +190,17 @@ export const AuditReadyCaseSchema = z.object({
   }),
   goods: z.array(z.object({
     cnCode: InputDatumSchema,
-    sector: z.string(),
+    sector: z.string().min(1),
     productionVolume: InputDatumSchema,
-    shipmentRecords: InputDatumSchema
+    shipmentRecords: InputDatumSchema,
+    allocationShare: InputDatumSchema.optional(),
   })),
   installation: z.object({
     name: InputDatumSchema,
     unloCode: InputDatumSchema.optional(),
     country: InputDatumSchema,
     productionRoute: InputDatumSchema,
-    systemBoundaries: z.string().optional()
+    systemBoundaries: z.string().optional(),
   }),
   directEmissions: InputDatumSchema,
   electricityConsumed: InputDatumSchema,
@@ -174,19 +210,20 @@ export const AuditReadyCaseSchema = z.object({
     quantity: InputDatumSchema,
     directEmissions: InputDatumSchema,
     indirectEmissions: InputDatumSchema,
-    countryOfOrigin: InputDatumSchema
+    countryOfOrigin: InputDatumSchema,
   })),
   carbonPriceRecords: z.array(CarbonPricePaidSchema),
   evidenceRegister: z.array(EvidenceRecordSchema),
   calculationTrace: z.array(CalculationTraceNodeSchema),
   gapAssessment: z.array(GapRecordSchema),
+  methodologyDecisions: z.array(MethodologyDecisionSchema).default([]),
   auditEvents: z.array(z.object({
     eventId: z.string().uuid(),
     timestamp: z.string().datetime(),
     actor: z.string(),
     action: z.string(),
-    metadata: z.record(z.string(), z.any()).optional()
-  }))
+    metadata: z.record(z.string(), z.unknown()).optional(),
+  })),
 });
 
 export type AuditReadyCase = z.infer<typeof AuditReadyCaseSchema>;
@@ -195,5 +232,5 @@ export const createEmptyInput = (canonicalUnit?: UnitCode): InputDatum => ({
   value: null,
   canonicalUnit,
   sourceType: "ESTIMATED",
-  confidenceStatus: "LOW_ESTIMATE"
+  confidenceStatus: "LOW_ESTIMATE",
 });
