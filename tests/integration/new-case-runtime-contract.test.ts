@@ -82,7 +82,7 @@ describe("new case calculation safety", () => {
     );
   });
 
-  it("handles zero production volume without Infinity or NaN", () => {
+  it("fails closed for zero production volume without Infinity or NaN", () => {
     const draft = validDraft();
     draft.goods = [{
       cnCode: { ...createEmptyInput(), value: "72081000" },
@@ -95,7 +95,7 @@ describe("new case calculation safety", () => {
     draft.gridEmissionFactor = { ...createEmptyInput("tCO2e/MWh"), value: "0" };
 
     const result = performDossierCalculations(draft);
-    expect(result.totalEmbeddedEmissions).toBe("0");
+    expect(result.totalEmbeddedEmissions).toBe("NOT_CALCULATED");
     expect(result.totalEmbeddedEmissions).not.toMatch(/Infinity|NaN/);
   });
 });
