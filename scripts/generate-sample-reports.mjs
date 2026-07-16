@@ -3,7 +3,7 @@ import path from "path";
 import crypto from "crypto";
 import { orchestrateCalculation } from "../lib/cbam/engine/calculation-orchestrator.ts";
 import { buildPdfDossier } from "../functions/src/cbam/report/pdf-builder.ts";
-import { buildXml } from "../functions/src/cbam/report/xml-builder.ts";
+import { buildXml, buildOfficialRegistryXml } from "../functions/src/cbam/report/xml-builder.ts";
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 const rootDir = path.resolve(__dirname, "..");
@@ -82,6 +82,9 @@ fs.writeFileSync(
 const xmlString = buildXml(fixture, calc, docHash);
 fs.writeFileSync(path.join(publicSampleDir, "cbam-exporter-final-evidence-report-sample.xml"), xmlString);
 
+const officialXmlString = buildOfficialRegistryXml(fixture, calc, docHash);
+fs.writeFileSync(path.join(publicSampleDir, "cbam-exporter-final-evidence-report-sample-eu.xml"), officialXmlString);
+
 // 7. Generate & Save Manifest
 const manifestData = {
   name: "cbam-exporter-final-evidence-report-sample",
@@ -98,6 +101,10 @@ const manifestData = {
     {
       name: "cbam-exporter-final-evidence-report-sample.xml",
       sha256: crypto.createHash("sha256").update(xmlString).digest("hex")
+    },
+    {
+      name: "cbam-exporter-final-evidence-report-sample-eu.xml",
+      sha256: crypto.createHash("sha256").update(officialXmlString).digest("hex")
     }
   ]
 };

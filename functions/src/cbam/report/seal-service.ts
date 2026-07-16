@@ -7,7 +7,7 @@ import { runQualityControls } from "../validation/quality-controls";
 import { assessCaseReadiness } from "../validation/readiness-assessor";
 import { getActiveRuleset } from "../registry/rulesets";
 import { assertKmsSigningConfigured, signManifestWithKms } from "./kms-signature";
-import { buildXml } from "./xml-builder";
+import { buildXml, buildOfficialRegistryXml } from "./xml-builder";
 import {
   buildDataIntegrityManifest,
   buildUnsignedVerifierArtifacts,
@@ -382,11 +382,13 @@ export async function sealReport(params: {
     const commonMetadata = { reportId: identity.reportId, caseId: params.caseId, requestId: identity.requestId };
     const documentHash = signature.manifestHash;
     const xmlBytes = Buffer.from(buildXml(caseData, calculation as any, documentHash), "utf8");
+    const officialXmlBytes = Buffer.from(buildOfficialRegistryXml(caseData, calculation as any, documentHash), "utf8");
     const storageEntries = await Promise.all([
       commitImmutableArtifact({ path: `${basePath}/dossier.zip`, bytes: packageResult.zip, contentType: "application/zip", metadata: commonMetadata }),
       commitImmutableArtifact({ path: `${basePath}/dossier.pdf`, bytes: packageResult.primaryPdf, contentType: "application/pdf", metadata: commonMetadata }),
       commitImmutableArtifact({ path: `${basePath}/dossier.xlsx`, bytes: packageResult.workbook, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", metadata: commonMetadata }),
       commitImmutableArtifact({ path: `${basePath}/dossier.xml`, bytes: xmlBytes, contentType: "application/xml", metadata: commonMetadata }),
+      commitImmutableArtifact({ path: `${basePath}/dossier_eu.xml`, bytes: officialXmlBytes, contentType: "application/xml", metadata: commonMetadata }),
       commitImmutableArtifact({ path: `${basePath}/dossier.json`, bytes: frozenJson, contentType: "application/json", metadata: commonMetadata }),
       commitImmutableArtifact({ path: `${basePath}/manifest.json`, bytes: manifest.bytes, contentType: "application/json", metadata: commonMetadata }),
       commitImmutableArtifact({ path: `${basePath}/manifest.sig`, bytes: packageResult.signatureBytes, contentType: "application/vnd.cbamvalid.kms-signature+json", metadata: commonMetadata }),

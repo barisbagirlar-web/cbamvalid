@@ -89,6 +89,7 @@ const DOWNLOADS = {
   pdf: { file: "dossier.pdf", downloadName: "Operator-Emissions-Report.pdf" },
   xlsx: { file: "dossier.xlsx", downloadName: "Verifier-Workspace.xlsx" },
   xml: { file: "dossier.xml", downloadName: "Exporter-Evidence-XML.xml" },
+  xml_eu: { file: "dossier_eu.xml", downloadName: "EU-Registry-Import-XML.xml" },
   json: { file: "dossier.json", downloadName: "Exporter-Evidence-JSON.json" },
   manifest: { file: "manifest.json", downloadName: "Data-Integrity-Manifest.json" },
   signature: { file: "manifest.sig", downloadName: "Manifest-Signature.sig" },
@@ -99,7 +100,7 @@ export const getReportDownloadUrl = createCallable(
   {
     schema: z.object({
       reportId: z.string().regex(/^report_[a-f0-9]{64}$/),
-      format: z.enum(["zip", "pdf", "xlsx", "xml", "json", "manifest", "signature", "snapshot"]),
+      format: z.enum(["zip", "pdf", "xlsx", "xml", "xml_eu", "json", "manifest", "signature", "snapshot"]),
     }),
   },
   async ({ reportId, format }, { auth }) => {
