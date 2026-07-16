@@ -1,0 +1,43 @@
+name: Apply Mandated Report Components
+
+on:
+  push:
+    branches:
+      - test/full-system-dna-stress-v1
+    paths:
+      - scripts/apply-mandated-report-components.mjs
+      - .github/workflows/apply-mandated-report-components.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-mandated-report-components-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout verification branch
+        uses: actions/checkout@v5
+        with:
+          ref: test/full-system-dna-stress-v1
+          fetch-depth: 0
+
+      - name: Apply exact package mandate
+        run: node scripts/apply-mandated-report-components.mjs
+
+      - name: Commit deterministic changes
+        run: |
+          if git diff --quiet; then
+            echo "MANDATE_CODEMOD_NO_CHANGES=PASS"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add functions/src/cbam/report/verifier-package-builder.ts tests/reports/verifier-grade-deliverables.test.ts scripts/guard-verifier-grade-deliverables.mjs
+          git commit -m "fix(report): enforce mandated verifier package components 24-27"
+          git push origin HEAD:test/full-system-dna-stress-v1
