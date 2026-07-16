@@ -31,6 +31,20 @@ const fakeFirestore = vi.hoisted(() => {
         doc(id: string): DocumentRef {
           return { collectionName: name, id };
         },
+        where(field: string, operator: string, expected: unknown) {
+          if (operator !== "==") throw new Error("FAKE_FIRESTORE_OPERATOR_UNSUPPORTED");
+          return {
+            async get() {
+              const docs = [...collectionStore(name).entries()]
+                .filter(([, value]) => value[field] === expected)
+                .map(([id, value]) => ({
+                  id,
+                  data: () => structuredClone(value),
+                }));
+              return { docs };
+            },
+          };
+        },
       };
     },
     async runTransaction<T>(
@@ -67,6 +81,9 @@ const fakeFirestore = vi.hoisted(() => {
     size(name: string) {
       return collectionStore(name).size;
     },
+    set(name: string, id: string, value: StoredDocument) {
+      collectionStore(name).set(id, structuredClone(value));
+    },
   };
 });
 
@@ -74,7 +91,10 @@ vi.mock("../../functions/src/firebase-admin", () => ({
   adminDb: fakeFirestore.adminDb,
 }));
 
-import { createCase } from "../../functions/src/cbam/storage/case-repository";
+import {
+  createCase,
+  getCasesForUser,
+} from "../../functions/src/cbam/storage/case-repository";
 
 const OWNER_ID = "repository_idempotency_user";
 const REQUEST_ID = "44444444-4444-4444-8444-444444444444";
@@ -112,5 +132,52 @@ describe("case repository idempotency", () => {
     expect(second.caseId).not.toBe(first.caseId);
     expect(fakeFirestore.size("cbam_cases")).toBe(2);
     expect(fakeFirestore.size("case_creation_requests")).toBe(2);
+  });
+
+  it("adapts recognized legacy cases and isolates an unsupported record from the dashboard list", async () => {
+    const modern = await createCase(OWNER_ID, draft(), REQUEST_ID);
+    fakeFirestore.set("cbam_cases", "legacyDocument123", {
+      caseId: "case_legacyDocument123",
+      uid: OWNER_ID,
+      status: "DRAFT",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-07-16T10:00:00.000Z",
+      data: {
+        exporterName: "Legacy Exporter",
+        declarantEORI: "DE123456789012",
+        importYear: 2026,
+        importQuarter: 1,
+        cnCode: "72085120",
+        productionVolume: 300,
+        installationName: "Legacy Plant",
+        directEmissions: 56788,
+        electricityConsumed: 456,
+        gridEmissionFactor: 4344,
+      },
+    });
+    fakeFirestore.set("cbam_cases", "unsupportedDocument123", {
+      caseId: "case_unsupportedDocument123",
+      uid: OWNER_ID,
+      status: "DRAFT",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-07-16T11:00:00.000Z",
+      data: { directEmissions: { value: 10 } },
+    });
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const cases = await getCasesForUser(OWNER_ID);
+
+    expect(cases.map((record) => record.caseId).sort()).toEqual([
+      "case_legacyDocument123",
+      modern.caseId,
+    ].sort());
+    const legacy = cases.find((record) => record.caseId === "case_legacyDocument123");
+    expect(legacy?.data.installation.name.value).toBe("Legacy Plant");
+    expect(legacy?.data.gridEmissionFactor.value).toBe(4344);
+    expect(consoleError).toHaveBeenCalledWith(
+      "Skipping unsupported CBAM case record",
+      expect.objectContaining({ documentId: "unsupportedDocument123" })
+    );
+    consoleError.mockRestore();
   });
 });

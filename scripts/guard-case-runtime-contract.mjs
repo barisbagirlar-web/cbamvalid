@@ -22,6 +22,7 @@ function rejectText(source, rejected, label) {
 }
 
 const repository = read("functions/src/cbam/storage/case-repository.ts");
+const legacyCaseAdapter = read("functions/src/cbam/storage/legacy-case-adapter.ts");
 const idempotency = read("functions/src/cbam/storage/case-creation-idempotency.ts");
 const caseHandler = read("functions/src/handlers/cases.ts");
 const reportHandler = read("functions/src/handlers/reports.ts");
@@ -51,7 +52,16 @@ requireText(repository, "transaction.create(caseRef, persistedRecord)", "Canonic
 requireText(repository, "transaction.create(markerRef, creationMarker)", "Atomic idempotency marker create");
 requireText(repository, '.where("caseId", "==", normalizedCaseId).limit(2)', "Legacy case lookup");
 requireText(repository, "document.id === record.caseId", "Canonical record deduplication");
+requireText(repository, "adaptLegacyCaseData", "Legacy case read compatibility adapter");
+requireText(repository, "Skipping unsupported CBAM case record", "Per-record dashboard failure isolation");
 rejectText(repository, "await caseRef.set(cbamCase)", "Raw auto-ID write pattern");
+
+requireText(legacyCaseAdapter, '"LEGACY_FLAT_V1"', "Legacy source schema marker");
+requireText(legacyCaseAdapter, '"READ_COMPATIBILITY_VIEW"', "Non-destructive legacy migration mode");
+requireText(legacyCaseAdapter, '"LEGACY_CASE_ADAPTED"', "Observable legacy adaptation audit event");
+requireText(legacyCaseAdapter, 'gridEmissionFactor: datum(source.gridEmissionFactor, "tCO2e/MWh")', "Legacy grid-factor preservation");
+requireText(legacyCaseAdapter, "evidenceRegister: []", "No fabricated legacy evidence");
+requireText(legacyCaseAdapter, "carbonPriceRecords: []", "No fabricated legacy carbon-price record");
 
 requireText(idempotency, "deriveCaseCreationIdentity", "Deterministic creation identity");
 requireText(idempotency, 'return "RETURN_EXISTING"', "Idempotent retry state");
@@ -151,6 +161,7 @@ console.log("CASE_CREATE_SINGLE_FLIGHT=PASS");
 console.log("CASE_CREATE_IDEMPOTENCY=PASS");
 console.log("CASE_ROLLING_DEPLOY_COMPATIBILITY=PASS");
 console.log("CASE_LOAD_FAILURE_ISOLATION=PASS");
+console.log("CASE_LEGACY_READ_COMPATIBILITY=PASS");
 console.log("CASE_LOAD_CANCELLATION=PASS");
 console.log("CASE_SEALING_RESOLVER=PASS");
 console.log("CASE_SUMMARY_SCHEMA_PATHS=PASS");
