@@ -1,46 +1,50 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
-// Routes that require authentication (Workspace)
-const workspacePrefixes = ['/dashboard', '/cases', '/reports', '/cbam', '/admin'];
+const WORKSPACE_PREFIXES = [
+  "/dashboard",
+  "/cases",
+  "/reports",
+  "/cbam",
+  "/account",
+  "/credits",
+  "/admin",
+] as const;
 
-// Routes that are only for unauthenticated users
-const authRoutes = ['/login', '/register'];
+const AUTH_ONLY_ROUTES = ["/login", "/register", "/verify-email"] as const;
+const REDIRECT_IF_AUTHENTICATED = ["/", ...AUTH_ONLY_ROUTES] as const;
 
-// Public routes that should redirect to dashboard if authenticated
-const redirectIfAuthRoutes = ['/', ...authRoutes];
+function matchesRoute(pathname: string, route: string): boolean {
+  return pathname === route || pathname.startsWith(`${route}/`);
+}
+
+function isStaticAsset(pathname: string): boolean {
+  return pathname.startsWith("/_next/") ||
+    pathname === "/favicon.ico" ||
+    /\.(?:png|svg|jpg|jpeg|gif|webp|ico|css|js|map|woff2?)$/i.test(pathname);
+}
 
 export function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  
-  // Skip proxy for static files and Next.js internals
-  if (
-    pathname.startsWith('/_next') ||
-    pathname.match(/\.(png|svg|jpg|jpeg|gif|webp|ico)$/)
-  ) {
-    return NextResponse.next();
-  }
+  const { pathname, search } = request.nextUrl;
+  if (isStaticAsset(pathname)) return NextResponse.next();
 
-  const session = request.cookies.get('__session');
-  const isAuthenticated = !!session;
+  const hasSessionCookie = Boolean(request.cookies.get("__session")?.value);
+  const workspaceRoute = WORKSPACE_PREFIXES.some((prefix) => matchesRoute(pathname, prefix));
 
-  // 1. Workspace Protection: Unauthenticated user accessing workspace routes
-  const isWorkspaceRoute = workspacePrefixes.some(prefix => pathname.startsWith(prefix));
-  if (isWorkspaceRoute && !isAuthenticated) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('next', pathname);
+  if (workspaceRoute && !hasSessionCookie) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("next", `${pathname}${search}`);
     return NextResponse.redirect(loginUrl);
   }
 
-  // 2. Auth Protection: Authenticated user accessing auth or root routes
-  const isRedirectIfAuthRoute = redirectIfAuthRoutes.includes(pathname);
-  if (isRedirectIfAuthRoute && isAuthenticated) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+  if (hasSessionCookie && REDIRECT_IF_AUTHENTICATED.some((route) => pathname === route)) {
+    return NextResponse.redirect(new URL("/cbam", request.url));
   }
 
   const response = NextResponse.next();
-  if (isWorkspaceRoute || pathname.startsWith("/account") || pathname.startsWith("/api")) {
+  if (workspaceRoute || pathname.startsWith("/api/")) {
     response.headers.set("Cache-Control", "private, no-store, no-cache, must-revalidate");
+    response.headers.set("Pragma", "no-cache");
   }
-  
   return response;
 }

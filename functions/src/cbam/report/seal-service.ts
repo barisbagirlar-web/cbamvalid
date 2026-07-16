@@ -1,6 +1,10 @@
 import crypto from "node:crypto";
 import { adminDb, getStorageBucket } from "../../firebase-admin";
-import { reserveEntitlement, consumeEntitlement, releaseEntitlementReservation } from "../../commerce/entitlement-service";
+import {
+  consumeEntitlement,
+  releaseEntitlementReservation,
+  reserveEntitlement,
+} from "../../commerce/entitlement-service";
 import { AuditReadyCaseSchema, type AuditReadyCase } from "../schema";
 import { performDossierCalculations } from "../calculator";
 import { runQualityControls } from "../validation/quality-controls";
@@ -48,7 +52,7 @@ type SealRequestMarker = {
   leaseExpiresAt: string;
   generatedAt: string;
   updatedAt: string;
-  error?: string;
+  error?: string | null;
 };
 
 type SealedReportRecord = SealingResult & {
@@ -68,6 +72,13 @@ type SealedReportRecord = SealingResult & {
   storage: Record<string, { path: string; sha256: string; sizeBytes: number }>;
 };
 
+type SealLease = {
+  identity: { requestId: string; digest: string; reportId: string };
+  leaseOwner: string;
+  generatedAt: string;
+  existing: SealingResult | null;
+};
+
 function sha256(content: Buffer | string): string {
   return crypto.createHash("sha256").update(content).digest("hex");
 }
@@ -77,7 +88,10 @@ function canonical(value: unknown): string {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
   const record = value as Record<string, unknown>;
-  return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${canonical(record[key])}`).join(",")}}`;
+  return `{${Object.keys(record)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${canonical(record[key])}`)
+    .join(",")}}`;
 }
 
 function assertRequestId(requestId: string): string {
@@ -88,9 +102,16 @@ function assertRequestId(requestId: string): string {
   return normalized;
 }
 
-function deriveSealIdentity(params: { uid: string; caseId: string; entitlementId: string; requestId: string }) {
+function deriveSealIdentity(params: {
+  uid: string;
+  caseId: string;
+  entitlementId: string;
+  requestId: string;
+}) {
   const requestId = assertRequestId(params.requestId);
-  const digest = sha256(`${params.uid}\u0000${params.caseId}\u0000${params.entitlementId}\u0000${requestId}`);
+  const digest = sha256(
+    `${params.uid}\u0000${params.caseId}\u0000${params.entitlementId}\u0000${requestId}`
+  );
   return { requestId, digest, reportId: `report_${digest}` };
 }
 
@@ -104,7 +125,9 @@ function resultFromReport(data: unknown): SealingResult {
     typeof source.documentHash !== "string" ||
     typeof source.manifestHash !== "string" ||
     typeof source.packageHash !== "string"
-  ) throw new Error("SEALED_REPORT_RECORD_INVALID");
+  ) {
+    throw new Error("SEALED_REPORT_RECORD_INVALID");
+  }
   return {
     reportId: source.reportId,
     releaseVersion: source.releaseVersion,
@@ -120,18 +143,33 @@ async function acquireSealLease(params: {
   caseId: string;
   entitlementId: string;
   requestId: string;
-  reportId: string;
-  digest: string;
   inputHash: string;
-  leaseOwner: string;
-}): Promise<{ generatedAt: string; completed?: SealingResult }> {
-  const markerRef = adminDb.collection("report_requests").doc(params.digest);
-  const reportRef = adminDb.collection("cbam_reports").doc(params.reportId);
+}): Promise<SealLease> {
+  const identity = deriveSealIdentity(params);
+  const leaseOwner = crypto.randomUUID();
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const leaseExpiresAt = new Date(now.getTime() + 15 * 60 * 1000).toISOString();
+  const markerRef = adminDb.collection("report_requests").doc(identity.digest);
+  const reportRef = adminDb.collection("cbam_reports").doc(identity.reportId);
+
   return adminDb.runTransaction(async (transaction) => {
-    const markerSnapshot = await transaction.get(markerRef);
-    const reportSnapshot = await transaction.get(reportRef);
-    const now = new Date();
-    const leaseExpiresAt = new Date(now.getTime() + 30 * 60 * 1000).toISOString();
+    const [markerSnapshot, reportSnapshot] = await Promise.all([
+      transaction.get(markerRef),
+      transaction.get(reportRef),
+    ]);
+    const reportData = reportSnapshot.exists
+      ? (reportSnapshot.data() as Record<string, unknown>)
+      : null;
+
+    if (reportData?.status === "SEALED") {
+      return {
+        identity,
+        leaseOwner: "",
+        generatedAt: "",
+        existing: resultFromReport(reportData),
+      };
+    }
 
     if (markerSnapshot.exists) {
       const marker = markerSnapshot.data() as Partial<SealRequestMarker>;
@@ -139,113 +177,126 @@ async function acquireSealLease(params: {
         marker.uid !== params.uid ||
         marker.caseId !== params.caseId ||
         marker.entitlementId !== params.entitlementId ||
-        marker.requestId !== params.requestId ||
-        marker.reportId !== params.reportId
-      ) throw new Error("SEAL_REQUEST_IDEMPOTENCY_COLLISION");
-      if (marker.inputHash !== params.inputHash) throw new Error("SEAL_REQUEST_INPUT_CHANGED");
-      if (marker.status === "COMPLETED") {
-        if (!reportSnapshot.exists) throw new Error("SEAL_REQUEST_COMPLETED_REPORT_MISSING");
-        return { generatedAt: String(marker.generatedAt), completed: resultFromReport(reportSnapshot.data()) };
+        marker.requestId !== identity.requestId
+      ) {
+        throw new Error("SEAL_REQUEST_ID_COLLISION");
       }
-      if (
+      if (marker.inputHash !== params.inputHash) throw new Error("SEAL_REQUEST_INPUT_CHANGED");
+      if (marker.status === "COMPLETED") throw new Error("SEAL_COMPLETED_REPORT_MISSING");
+
+      const leaseActive =
         marker.status === "IN_PROGRESS" &&
-        marker.leaseOwner !== params.leaseOwner &&
         typeof marker.leaseExpiresAt === "string" &&
-        new Date(marker.leaseExpiresAt).getTime() > now.getTime()
-      ) throw new Error("SEAL_REQUEST_IN_PROGRESS");
-      const generatedAt = String(marker.generatedAt || now.toISOString());
+        new Date(marker.leaseExpiresAt).getTime() > now.getTime();
+      if (leaseActive) throw new Error("SEAL_REQUEST_IN_PROGRESS");
+      if (!reportSnapshot.exists) throw new Error("SEAL_RETRY_REPORT_RECORD_MISSING");
+
+      const generatedAt = typeof marker.generatedAt === "string" && marker.generatedAt
+        ? marker.generatedAt
+        : nowIso;
       transaction.update(markerRef, {
         status: "IN_PROGRESS",
-        leaseOwner: params.leaseOwner,
+        leaseOwner,
         leaseExpiresAt,
-        updatedAt: now.toISOString(),
+        updatedAt: nowIso,
         error: null,
       });
-      if (!reportSnapshot.exists) {
-        transaction.create(reportRef, {
-          reportId: params.reportId,
-          uid: params.uid,
-          caseId: params.caseId,
-          entitlementId: params.entitlementId,
-          requestId: params.requestId,
-          status: "PROCESSING",
-          createdAt: generatedAt,
-          updatedAt: now.toISOString(),
-        });
-      } else {
-        transaction.update(reportRef, { status: "PROCESSING", updatedAt: now.toISOString(), error: null });
-      }
-      return { generatedAt };
+      transaction.update(reportRef, {
+        status: "STAGING",
+        error: null,
+        updatedAt: nowIso,
+      });
+      return { identity, leaseOwner, generatedAt, existing: null };
     }
 
     if (reportSnapshot.exists) throw new Error("SEAL_REPORT_WITHOUT_REQUEST_MARKER");
-    const generatedAt = now.toISOString();
+
     const marker: SealRequestMarker = {
       uid: params.uid,
       caseId: params.caseId,
       entitlementId: params.entitlementId,
-      requestId: params.requestId,
-      reportId: params.reportId,
+      requestId: identity.requestId,
+      reportId: identity.reportId,
       inputHash: params.inputHash,
       status: "IN_PROGRESS",
-      leaseOwner: params.leaseOwner,
+      leaseOwner,
       leaseExpiresAt,
-      generatedAt,
-      updatedAt: generatedAt,
+      generatedAt: nowIso,
+      updatedAt: nowIso,
     };
     transaction.create(markerRef, marker);
     transaction.create(reportRef, {
-      reportId: params.reportId,
+      reportId: identity.reportId,
       uid: params.uid,
       caseId: params.caseId,
       entitlementId: params.entitlementId,
-      requestId: params.requestId,
-      status: "PROCESSING",
-      createdAt: generatedAt,
-      updatedAt: generatedAt,
+      requestId: identity.requestId,
+      status: "STAGING",
+      createdAt: nowIso,
+      updatedAt: nowIso,
     });
-    return { generatedAt };
+    return { identity, leaseOwner, generatedAt: nowIso, existing: null };
   });
 }
 
-async function setState(reportId: string, state: SealState, details: Record<string, unknown> = {}): Promise<void> {
-  await adminDb.collection("seal_log").doc(reportId).set({ state, timestamp: new Date().toISOString(), ...details }, { merge: true });
+async function setState(
+  reportId: string,
+  state: SealState,
+  metadata: Record<string, unknown> = {}
+): Promise<void> {
+  await adminDb.collection("seal_log").doc(reportId).set({
+    state,
+    timestamp: new Date().toISOString(),
+    ...metadata,
+  }, { merge: true });
 }
 
-async function resolveCaseDocumentId(caseId: string): Promise<string> {
-  const collection = adminDb.collection("cbam_cases");
-  const direct = await collection.doc(caseId).get();
-  if (direct.exists) return direct.id;
-  const legacy = await collection.where("caseId", "==", caseId).limit(2).get();
-  if (legacy.docs.length !== 1) throw new Error(legacy.empty ? "CASE_NOT_FOUND" : "CASE_ID_COLLISION");
-  return legacy.docs[0].id;
+function safeFileName(fileName: string): string {
+  const normalized = fileName.trim().replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 160);
+  return normalized || "evidence.bin";
 }
 
-async function loadEvidenceFiles(caseData: AuditReadyCase): Promise<EvidenceBinary[]> {
-  if (!caseData.caseId) throw new Error("CASE_ID_REQUIRED");
-  const bucket = getStorageBucket();
-  const files: EvidenceBinary[] = [];
+async function loadEvidenceFiles(
+  caseData: AuditReadyCase,
+  uid: string,
+  caseId: string
+): Promise<EvidenceBinary[]> {
+  const evidenceFiles: EvidenceBinary[] = [];
   for (const evidence of caseData.evidenceRegister) {
-    const prefix = `evidence/${caseData.ownerId}/${caseData.caseId}/${evidence.evidenceId}/`;
-    if (!evidence.storagePath.startsWith(prefix)) throw new Error(`EVIDENCE_STORAGE_PATH_INVALID:${evidence.evidenceId}`);
-    const object = bucket.file(evidence.storagePath);
-    const [metadata] = await object.getMetadata();
-    const custom = metadata.metadata || {};
+    if (evidence.reviewStatus !== "APPROVED" || evidence.malwareScanStatus !== "CLEAN") {
+      throw new Error(`EVIDENCE_NOT_APPROVED_OR_CLEAN:${evidence.evidenceId}`);
+    }
+    const expectedPrefix = `evidence/${uid}/${caseId}/${evidence.evidenceId}/`;
+    if (!evidence.storagePath.startsWith(expectedPrefix)) {
+      throw new Error("EVIDENCE_STORAGE_PATH_OWNERSHIP_MISMATCH");
+    }
+
+    const file = getStorageBucket().file(evidence.storagePath);
+    const [exists] = await file.exists();
+    if (!exists) throw new Error(`EVIDENCE_FILE_NOT_FOUND:${evidence.evidenceId}`);
+    const [metadata] = await file.getMetadata();
     if (
       Number(metadata.size) !== evidence.sizeBytes ||
       metadata.contentType !== evidence.mimeType ||
-      custom.ownerId !== caseData.ownerId ||
-      custom.caseId !== caseData.caseId ||
-      custom.evidenceId !== evidence.evidenceId ||
-      custom.sha256?.toLowerCase() !== evidence.fileHash.toLowerCase()
-    ) throw new Error(`EVIDENCE_METADATA_MISMATCH:${evidence.evidenceId}`);
-    const [bytes] = await object.download();
-    if (bytes.byteLength !== evidence.sizeBytes || sha256(bytes) !== evidence.fileHash.toLowerCase()) {
-      throw new Error(`EVIDENCE_HASH_MISMATCH:${evidence.evidenceId}`);
+      metadata.metadata.ownerId !== uid ||
+      metadata.metadata.caseId !== caseId ||
+      metadata.metadata.evidenceId !== evidence.evidenceId ||
+      metadata.metadata.sha256?.toLowerCase() !== evidence.fileHash.toLowerCase()
+    ) {
+      throw new Error(`EVIDENCE_STORAGE_METADATA_MISMATCH:${evidence.evidenceId}`);
     }
-    files.push({ evidenceId: evidence.evidenceId, fileName: evidence.fileName, bytes });
+
+    const [bytes] = await file.download();
+    if (bytes.byteLength !== evidence.sizeBytes || sha256(bytes) !== evidence.fileHash.toLowerCase()) {
+      throw new Error(`EVIDENCE_FILE_INTEGRITY_MISMATCH:${evidence.evidenceId}`);
+    }
+    evidenceFiles.push({
+      evidenceId: evidence.evidenceId,
+      fileName: safeFileName(evidence.fileName),
+      bytes,
+    });
   }
-  return files;
+  return evidenceFiles;
 }
 
 async function commitImmutableArtifact(params: {
@@ -253,25 +304,55 @@ async function commitImmutableArtifact(params: {
   bytes: Buffer;
   contentType: string;
   metadata: Record<string, string>;
-}): Promise<{ path: string; sha256: string; sizeBytes: number }> {
-  const object = getStorageBucket().file(params.path);
-  const expectedHash = sha256(params.bytes);
-  try {
-    await object.save(params.bytes, {
-      resumable: false,
+}) {
+  const file = getStorageBucket().file(params.path);
+  const digest = sha256(params.bytes);
+  await file.save(params.bytes, {
+    resumable: false,
+    validation: "crc32c",
+    preconditionOpts: { ifGenerationMatch: 0 },
+    metadata: {
       contentType: params.contentType,
-      metadata: { cacheControl: "private, max-age=0, no-transform", metadata: { ...params.metadata, sha256: expectedHash } },
-      preconditionOpts: { ifGenerationMatch: 0 },
-    });
-  } catch (error) {
-    const code = (error as { code?: number | string }).code;
-    if (Number(code) !== 412) throw error;
+      cacheControl: "private, no-store, max-age=0",
+      metadata: { ...params.metadata, sha256: digest },
+    },
+  });
+  const [metadata] = await file.getMetadata();
+  const [stored] = await file.download();
+  if (
+    Number(metadata.size) !== params.bytes.byteLength ||
+    metadata.metadata.sha256 !== digest ||
+    !stored.equals(params.bytes) ||
+    sha256(stored) !== digest
+  ) {
+    throw new Error(`IMMUTABLE_ARTIFACT_VERIFY_FAILED:${params.path}`);
   }
-  const [readBack] = await object.download();
-  if (readBack.byteLength !== params.bytes.byteLength || sha256(readBack) !== expectedHash) {
-    throw new Error(`IMMUTABLE_ARTIFACT_COLLISION_OR_HASH_MISMATCH:${params.path}`);
+  return { path: params.path, sha256: digest, sizeBytes: params.bytes.byteLength };
+}
+
+async function cleanupUnactivatedArtifacts(paths: string[]): Promise<void> {
+  if (paths.length === 0) return;
+  const outcomes = await Promise.allSettled(
+    [...new Set(paths)].map((artifactPath) =>
+      getStorageBucket().file(artifactPath).delete({ ignoreNotFound: true })
+    )
+  );
+  const failures = outcomes.filter((outcome) => outcome.status === "rejected");
+  if (failures.length > 0) {
+    console.error(`[SEALING] Failed to clean ${failures.length} unactivated artifacts`);
   }
-  return { path: params.path, sha256: expectedHash, sizeBytes: params.bytes.byteLength };
+}
+
+async function resolveCaseDocumentId(caseId: string): Promise<string> {
+  const canonicalCase = await adminDb.collection("cbam_cases").doc(caseId).get();
+  if (canonicalCase.exists) return canonicalCase.id;
+  const legacy = await adminDb.collection("cbam_cases")
+    .where("caseId", "==", caseId)
+    .limit(2)
+    .get();
+  if (legacy.empty) throw new Error("CASE_NOT_FOUND");
+  if (legacy.docs.length !== 1) throw new Error("CASE_ID_COLLISION");
+  return legacy.docs[0].id;
 }
 
 async function markFailed(params: {
@@ -281,19 +362,36 @@ async function markFailed(params: {
   error: unknown;
 }): Promise<void> {
   const message = params.error instanceof Error ? params.error.message : "SEALING_FAILED";
-  await adminDb.runTransaction(async (transaction) => {
-    const markerRef = adminDb.collection("report_requests").doc(params.digest);
-    const reportRef = adminDb.collection("cbam_reports").doc(params.reportId);
-    const markerSnapshot = await transaction.get(markerRef);
-    const reportSnapshot = await transaction.get(reportRef);
-    if (!markerSnapshot.exists) return;
-    const marker = markerSnapshot.data() as Partial<SealRequestMarker>;
-    if (marker.status === "COMPLETED" || marker.leaseOwner !== params.leaseOwner) return;
-    const now = new Date().toISOString();
-    transaction.update(markerRef, { status: "FAILED", updatedAt: now, error: message, leaseExpiresAt: now });
-    if (reportSnapshot.exists) transaction.update(reportRef, { status: "FAILED", updatedAt: now, error: message });
-  });
-  await setState(params.reportId, "FAILED", { error: message });
+  const now = new Date().toISOString();
+  try {
+    await adminDb.runTransaction(async (transaction) => {
+      const markerRef = adminDb.collection("report_requests").doc(params.digest);
+      const reportRef = adminDb.collection("cbam_reports").doc(params.reportId);
+      const [markerSnapshot, reportSnapshot] = await Promise.all([
+        transaction.get(markerRef),
+        transaction.get(reportRef),
+      ]);
+
+      if (markerSnapshot.exists && markerSnapshot.data()?.leaseOwner === params.leaseOwner) {
+        transaction.update(markerRef, {
+          status: "FAILED",
+          error: message,
+          updatedAt: now,
+          leaseExpiresAt: now,
+        });
+      }
+      if (reportSnapshot.exists && reportSnapshot.data()?.status !== "SEALED") {
+        transaction.update(reportRef, {
+          status: "FAILED",
+          error: message,
+          updatedAt: now,
+        });
+      }
+    });
+    await setState(params.reportId, "FAILED", { error: message });
+  } catch (markError) {
+    console.error("[SEALING] Failure state persistence failed", markError);
+  }
 }
 
 export async function sealReport(params: {
@@ -301,53 +399,89 @@ export async function sealReport(params: {
   caseId: string;
   entitlementId: string;
   requestId: string;
-  inputData: unknown;
+  inputData: AuditReadyCase;
   correctionReason?: string;
 }): Promise<SealingResult> {
   assertKmsSigningConfigured();
-  const caseData = AuditReadyCaseSchema.parse(params.inputData);
-  if (caseData.caseId !== params.caseId || caseData.ownerId !== params.uid) throw new Error("SEAL_CASE_IDENTITY_MISMATCH");
-  const year = Number(caseData.reportingPeriod.year.value);
-  if (!Number.isInteger(year)) throw new Error("SEAL_REPORTING_YEAR_INVALID");
-  const ruleset = getActiveRuleset(new Date(Date.UTC(year, 0, 1)));
-  if (ruleset.period !== "DEFINITIVE" || ruleset.supersessionState !== "ACTIVE") throw new Error("SEAL_RULESET_NOT_ACTIVE_DEFINITIVE");
-
-  const controls = runQualityControls(caseData);
-  const readiness = assessCaseReadiness(caseData);
-  if (!readiness.isEligibleForSealing) {
-    const blockers = controls.filter((control) => control.status === "BLOCKER").map((control) => control.ruleId);
-    throw new Error(`SEALING_BLOCKED_BY_QUALITY_CONTROLS:${blockers.join(",")}`);
-  }
-
+  const caseData = AuditReadyCaseSchema.parse({
+    ...params.inputData,
+    caseId: params.caseId,
+    ownerId: params.uid,
+  });
   const caseDataHash = sha256(canonical(caseData));
-  const identity = deriveSealIdentity(params);
-  const leaseOwner = crypto.randomUUID();
-  const lease = await acquireSealLease({ ...params, ...identity, inputHash: caseDataHash, leaseOwner });
-  if (lease.completed) return lease.completed;
+  const lease = await acquireSealLease({ ...params, inputHash: caseDataHash });
+  if (lease.existing) return lease.existing;
 
+  const { identity, leaseOwner } = lease;
   let reserved = false;
-  try {
-    await setState(identity.reportId, "SEAL_REQUESTED", { requestId: identity.requestId, caseDataHash });
-    const entitlement = await adminDb.runTransaction((transaction) => reserveEntitlement(transaction, {
-      entitlementId: params.entitlementId,
-      uid: params.uid,
-      reportId: identity.reportId,
-      caseId: params.caseId,
-      expiresInSeconds: 1800,
-    }));
-    reserved = true;
-    const releaseVersion = entitlement.releasesCount + 1;
-    if (releaseVersion > 1 && !params.correctionReason?.trim()) throw new Error("CORRECTION_REASON_REQUIRED_AFTER_FIRST_RELEASE");
-    await setState(identity.reportId, "ENTITLEMENT_RESERVED", { releaseVersion });
-    await setState(identity.reportId, "QC_VALIDATED", { controls: controls.length });
+  let activated = false;
+  const committedArtifactPaths: string[] = [];
 
+  try {
+    await setState(identity.reportId, "SEAL_REQUESTED", { caseDataHash });
+    const reservation = await adminDb.runTransaction((transaction) =>
+      reserveEntitlement(transaction, {
+        entitlementId: params.entitlementId,
+        uid: params.uid,
+        reportId: identity.reportId,
+        caseId: params.caseId,
+        expiresInSeconds: 20 * 60,
+      })
+    );
+    reserved = true;
+    const releaseVersion = reservation.releasesCount + 1;
+    if (releaseVersion > 1 && !params.correctionReason?.trim()) {
+      throw new Error("CORRECTION_REASON_REQUIRED");
+    }
+    await setState(identity.reportId, "ENTITLEMENT_RESERVED", { releaseVersion });
+
+    const controls = runQualityControls(caseData);
+    const readiness = assessCaseReadiness(caseData);
+    const blockers = controls.filter((item) => item.status === "BLOCKER");
+    if (blockers.length > 0 || !readiness.ready) {
+      throw new Error(
+        `SEAL_BLOCKED:${[
+          ...blockers.map((item) => item.ruleId),
+          ...readiness.blockerCodes,
+        ].join(",")}`
+      );
+    }
+    await setState(identity.reportId, "QC_VALIDATED", {
+      qualityControlCount: controls.length,
+    });
+
+    const rulesetYear = Number(caseData.reportingPeriod.year.value);
+    if (!Number.isInteger(rulesetYear) || rulesetYear < 2026) {
+      throw new Error("DEFINITIVE_REPORTING_YEAR_INVALID");
+    }
+    const ruleset = getActiveRuleset(new Date(Date.UTC(rulesetYear, 0, 1)));
+    if (ruleset.period !== "DEFINITIVE") {
+      throw new Error("TRANSITIONAL_RULESET_CANNOT_SEAL");
+    }
+
+    const evidenceFiles = await loadEvidenceFiles(caseData, params.uid, params.caseId);
     const frozenJson = Buffer.from(canonical(caseData), "utf8");
-    if (sha256(frozenJson) !== caseDataHash) throw new Error("CASE_DATA_FREEZE_HASH_MISMATCH");
-    await setState(identity.reportId, "DATA_FROZEN", { caseDataHash });
+    await setState(identity.reportId, "DATA_FROZEN", {
+      evidenceCount: evidenceFiles.length,
+    });
 
     const calculation = performDossierCalculations(caseData);
-    await setState(identity.reportId, "CALCULATION_COMPLETE", { calculationRootHash: calculation.calculationRootHash });
-    const evidenceFiles = await loadEvidenceFiles(caseData);
+    if (
+      calculation.totalEmbeddedEmissions === "NOT_CALCULATED" ||
+      calculation.specificEmbeddedEmissions === "NOT_CALCULATED"
+    ) {
+      throw new Error("CALCULATION_INCOMPLETE");
+    }
+    if (
+      calculation.allocationReconciliationDelta === "NOT_CALCULATED" ||
+      Number(calculation.allocationReconciliationDelta) > 0.000001
+    ) {
+      throw new Error("GOODS_ALLOCATION_NOT_RECONCILED");
+    }
+    await setState(identity.reportId, "CALCULATION_COMPLETE", {
+      calculationRootHash: calculation.calculationRootHash,
+    });
+
     const artifacts = await buildUnsignedVerifierArtifacts({
       caseData,
       calculation,
@@ -366,10 +500,15 @@ export async function sealReport(params: {
       generatedAt: lease.generatedAt,
       evidenceCount: evidenceFiles.length,
     });
-    await setState(identity.reportId, "ARTIFACTS_GENERATED", { manifestFiles: manifest.manifest.files.length });
+    await setState(identity.reportId, "ARTIFACTS_GENERATED", {
+      manifestFiles: manifest.manifest.files.length,
+    });
 
     const signature = await signManifestWithKms(manifest.bytes);
-    await setState(identity.reportId, "KMS_SIGNED", { manifestHash: signature.manifestHash, keyVersion: signature.keyVersion });
+    await setState(identity.reportId, "KMS_SIGNED", {
+      manifestHash: signature.manifestHash,
+      keyVersion: signature.keyVersion,
+    });
     const packageResult = await finalizeVerifierPackage({
       artifacts,
       manifestBytes: manifest.bytes,
@@ -378,16 +517,59 @@ export async function sealReport(params: {
     });
 
     const basePath = `reports/${params.uid}/${identity.reportId}`;
-    const commonMetadata = { reportId: identity.reportId, caseId: params.caseId, requestId: identity.requestId };
+    const commonMetadata = {
+      reportId: identity.reportId,
+      caseId: params.caseId,
+      requestId: identity.requestId,
+    };
+    const commitTracked = async (artifact: {
+      path: string;
+      bytes: Buffer;
+      contentType: string;
+    }) => {
+      const entry = await commitImmutableArtifact({
+        ...artifact,
+        metadata: commonMetadata,
+      });
+      committedArtifactPaths.push(entry.path);
+      return entry;
+    };
+
     const storageEntries = await Promise.all([
-      commitImmutableArtifact({ path: `${basePath}/dossier.zip`, bytes: packageResult.zip, contentType: "application/zip", metadata: commonMetadata }),
-      commitImmutableArtifact({ path: `${basePath}/dossier.pdf`, bytes: packageResult.primaryPdf, contentType: "application/pdf", metadata: commonMetadata }),
-      commitImmutableArtifact({ path: `${basePath}/dossier.xlsx`, bytes: packageResult.workbook, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", metadata: commonMetadata }),
-      commitImmutableArtifact({ path: `${basePath}/manifest.json`, bytes: manifest.bytes, contentType: "application/json", metadata: commonMetadata }),
-      commitImmutableArtifact({ path: `${basePath}/manifest.sig`, bytes: packageResult.signatureBytes, contentType: "application/vnd.cbamvalid.kms-signature+json", metadata: commonMetadata }),
-      commitImmutableArtifact({ path: `${basePath}/case-snapshot.json`, bytes: frozenJson, contentType: "application/json", metadata: commonMetadata }),
+      commitTracked({
+        path: `${basePath}/dossier.zip`,
+        bytes: packageResult.zip,
+        contentType: "application/zip",
+      }),
+      commitTracked({
+        path: `${basePath}/dossier.pdf`,
+        bytes: packageResult.primaryPdf,
+        contentType: "application/pdf",
+      }),
+      commitTracked({
+        path: `${basePath}/dossier.xlsx`,
+        bytes: packageResult.workbook,
+        contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }),
+      commitTracked({
+        path: `${basePath}/manifest.json`,
+        bytes: manifest.bytes,
+        contentType: "application/json",
+      }),
+      commitTracked({
+        path: `${basePath}/manifest.sig`,
+        bytes: packageResult.signatureBytes,
+        contentType: "application/vnd.cbamvalid.kms-signature+json",
+      }),
+      commitTracked({
+        path: `${basePath}/case-snapshot.json`,
+        bytes: frozenJson,
+        contentType: "application/json",
+      }),
     ]);
-    await setState(identity.reportId, "ARTIFACTS_COMMITTED", { packageHash: packageResult.zipHash });
+    await setState(identity.reportId, "ARTIFACTS_COMMITTED", {
+      packageHash: packageResult.zipHash,
+    });
 
     const documentHash = signature.manifestHash;
     const caseDocumentId = await resolveCaseDocumentId(params.caseId);
@@ -411,7 +593,9 @@ export async function sealReport(params: {
       kmsKeyVersion: signature.keyVersion,
       kmsAlgorithm: signature.algorithm,
       signatureBase64: signature.signatureBase64,
-      storage: Object.fromEntries(storageEntries.map((entry) => [entry.path.split("/").at(-1) || entry.path, entry])),
+      storage: Object.fromEntries(
+        storageEntries.map((entry) => [entry.path.split("/").at(-1) || entry.path, entry])
+      ),
     };
 
     await adminDb.runTransaction(async (transaction) => {
@@ -420,13 +604,23 @@ export async function sealReport(params: {
       const sealRef = adminDb.collection("document_seals").doc(documentHash);
       const caseRef = adminDb.collection("cbam_cases").doc(caseDocumentId);
       const outboxRef = adminDb.collection("seal_outbox").doc(identity.reportId);
-      const markerSnapshot = await transaction.get(markerRef);
-      const reportSnapshot = await transaction.get(reportRef);
-      const sealSnapshot = await transaction.get(sealRef);
-      const caseSnapshot = await transaction.get(caseRef);
-      if (!markerSnapshot.exists || !reportSnapshot.exists || !caseSnapshot.exists) throw new Error("SEAL_FINALIZATION_PREREQUISITE_MISSING");
+      const [markerSnapshot, reportSnapshot, sealSnapshot, caseSnapshot] = await Promise.all([
+        transaction.get(markerRef),
+        transaction.get(reportRef),
+        transaction.get(sealRef),
+        transaction.get(caseRef),
+      ]);
+      if (!markerSnapshot.exists || !reportSnapshot.exists || !caseSnapshot.exists) {
+        throw new Error("SEAL_FINALIZATION_PREREQUISITE_MISSING");
+      }
       const marker = markerSnapshot.data() as Partial<SealRequestMarker>;
-      if (marker.status !== "IN_PROGRESS" || marker.leaseOwner !== leaseOwner || marker.inputHash !== caseDataHash) throw new Error("SEAL_FINALIZATION_LEASE_LOST");
+      if (
+        marker.status !== "IN_PROGRESS" ||
+        marker.leaseOwner !== leaseOwner ||
+        marker.inputHash !== caseDataHash
+      ) {
+        throw new Error("SEAL_FINALIZATION_LEASE_LOST");
+      }
       if (sealSnapshot.exists) throw new Error("DOCUMENT_HASH_ALREADY_SEALED");
 
       await consumeEntitlement(transaction, {
@@ -479,21 +673,35 @@ export async function sealReport(params: {
         packageHash: packageResult.zipHash,
       }, { merge: true });
     });
+
+    activated = true;
     reserved = false;
+    await setState(identity.reportId, "ENTITLEMENT_CONSUMED", {
+      releaseVersion,
+      creditsConsumed: 20,
+    });
     return resultFromReport(reportRecord);
   } catch (error) {
+    if (!activated) await cleanupUnactivatedArtifacts(committedArtifactPaths);
     if (reserved) {
       try {
-        await adminDb.runTransaction((transaction) => releaseEntitlementReservation(transaction, {
-          entitlementId: params.entitlementId,
-          uid: params.uid,
-          reportId: identity.reportId,
-        }));
+        await adminDb.runTransaction((transaction) =>
+          releaseEntitlementReservation(transaction, {
+            entitlementId: params.entitlementId,
+            uid: params.uid,
+            reportId: identity.reportId,
+          })
+        );
       } catch (releaseError) {
         console.error("[SEALING] Entitlement reservation release failed", releaseError);
       }
     }
-    await markFailed({ digest: identity.digest, reportId: identity.reportId, leaseOwner, error });
+    await markFailed({
+      digest: identity.digest,
+      reportId: identity.reportId,
+      leaseOwner,
+      error,
+    });
     throw error;
   }
 }

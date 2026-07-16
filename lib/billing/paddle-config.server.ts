@@ -1,40 +1,61 @@
+import "server-only";
+
 export interface PaddleConfig {
-  isSandbox: boolean;
+  environment: "sandbox" | "production";
   apiKey: string;
   clientToken: string;
-  priceId: string;
+  serverPriceId: string;
   webhookSecret: string;
+  expectedWebhookUrl: string;
+  configuredWebhookUrl: string;
+}
+
+function required(name: string): string {
+  const value = process.env[name]?.trim() || "";
+  if (!value) throw new Error(`PADDLE_CONFIGURATION_ERROR:${name}_MISSING`);
+  return value;
 }
 
 export function getPaddleConfig(): PaddleConfig {
-  const isSandbox = process.env.NEXT_PUBLIC_PADDLE_SANDBOX === "true";
-  const apiKey = process.env.PADDLE_API_KEY || "";
-  const clientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || "";
-  const priceId = process.env.NEXT_PUBLIC_PADDLE_PRICE_ID || "";
-  const webhookSecret = process.env.PADDLE_WEBHOOK_SECRET_KEY || process.env.PADDLE_WEBHOOK_SECRET || "";
-
-  if (!apiKey || !clientToken || !priceId) {
-    throw new Error("PADDLE_CONFIGURATION_ERROR: Missing required Paddle configuration variables.");
+  const environment = process.env.PADDLE_ENV?.trim().toLowerCase() === "production" ||
+    process.env.NEXT_PUBLIC_PADDLE_SANDBOX !== "true" && process.env.NODE_ENV === "production"
+    ? "production"
+    : "sandbox";
+  const apiKey = required("PADDLE_API_KEY");
+  const clientToken = required("NEXT_PUBLIC_PADDLE_CLIENT_TOKEN");
+  const serverPriceId = required(
+    environment === "production" ? "PADDLE_PRICE_ID_PRODUCTION" : "PADDLE_PRICE_ID_SANDBOX"
+  );
+  const webhookSecret = (
+    process.env.PADDLE_WEBHOOK_SECRET?.trim() ||
+    process.env.PADDLE_WEBHOOK_SECRET_KEY?.trim() ||
+    ""
+  );
+  if (!webhookSecret) throw new Error("PADDLE_CONFIGURATION_ERROR:PADDLE_WEBHOOK_SECRET_MISSING");
+  if (!/^pri_[A-Za-z0-9]+$/.test(serverPriceId)) {
+    throw new Error("PADDLE_CONFIGURATION_ERROR:PRICE_ID_FORMAT_INVALID");
+  }
+  if (environment === "sandbox" && !apiKey.startsWith("pdl_sdbx_")) {
+    throw new Error("PADDLE_CONFIGURATION_ERROR:SANDBOX_API_KEY_MISMATCH");
+  }
+  if (environment === "production" && apiKey.startsWith("pdl_sdbx_")) {
+    throw new Error("PADDLE_CONFIGURATION_ERROR:PRODUCTION_API_KEY_MISMATCH");
   }
 
-  if (isSandbox) {
-    if (apiKey && !apiKey.startsWith("pdl_sdbx_")) {
-      console.warn("[PADDLE-CONFIG-WARNING]: NEXT_PUBLIC_PADDLE_SANDBOX is true but PADDLE_API_KEY does not start with pdl_sdbx_");
-    }
-  } else {
-    if (apiKey && apiKey.startsWith("pdl_sdbx_")) {
-      throw new Error("PADDLE_CONFIGURATION_ERROR: Sandbox API key cannot be used in production.");
-    }
-    if (clientToken && clientToken.startsWith("pdl_sdbx_apikey_")) {
-      throw new Error("PADDLE_CONFIGURATION_ERROR: Sandbox client token cannot be used in production.");
-    }
+  const projectId = process.env.GCLOUD_PROJECT?.trim() || "cbam-desk";
+  const expectedWebhookUrl = `https://europe-west1-${projectId}.cloudfunctions.net/paddleWebhook`;
+  const configuredWebhookUrl = process.env.PADDLE_WEBHOOK_URL?.trim() || "";
+  if (configuredWebhookUrl && configuredWebhookUrl !== expectedWebhookUrl) {
+    throw new Error("PADDLE_CONFIGURATION_ERROR:WEBHOOK_URL_MISMATCH");
   }
 
   return {
-    isSandbox,
+    environment,
     apiKey,
     clientToken,
-    priceId,
+    serverPriceId,
     webhookSecret,
+    expectedWebhookUrl,
+    configuredWebhookUrl,
   };
 }

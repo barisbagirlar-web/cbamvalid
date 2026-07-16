@@ -1,295 +1,286 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createEntitlement, reserveEntitlement, consumeEntitlement } from "../../functions/src/commerce/entitlement-service";
-import { DoubleSpendViolationError, EntitlementUnavailableError } from "../../functions/src/commerce/commerce-errors";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  consumeEntitlement,
+  createEntitlement,
+  reserveEntitlement,
+} from "../../functions/src/commerce/entitlement-service";
+import {
+  DoubleSpendViolationError,
+  EntitlementUnavailableError,
+} from "../../functions/src/commerce/commerce-errors";
+import { PREPARATION_PACK } from "../../functions/src/commerce/preparation-pack";
 
-const mockDocs: Record<string, Record<string, unknown>> = {};
+const documents: Record<string, Record<string, unknown>> = {};
+let generatedId = 0;
 
-type QueryFilter = {
-  field: string;
-  operator: string;
-  value: unknown;
+type Filter = { field: string; operator: string; value: unknown };
+
+type Snapshot = {
+  id: string;
+  exists: boolean;
+  data: () => Record<string, unknown> | undefined;
 };
 
-function documentSnapshot(path: string, data: Record<string, unknown>) {
-  const id = path.split("/").at(-1) || path;
+function snapshot(path: string): Snapshot {
+  const value = documents[path];
   return {
-    id,
-    exists: true,
-    data: () => data,
+    id: path.split("/").at(-1) || path,
+    exists: Boolean(value),
+    data: () => value,
   };
 }
 
-const mockDbTransaction = {
-  get: vi.fn(async (reference: { path?: string; get?: () => Promise<unknown> }) => {
-    if (reference && typeof reference.get === "function" && !reference.path) {
-      return reference.get();
-    }
+function documentReference(path: string) {
+  return {
+    path,
+    id: path.split("/").at(-1) || path,
+    get: async () => snapshot(path),
+    collection: (name: string) => collectionReference(`${path}/${name}`),
+  };
+}
 
-    const path = reference?.path || "";
-    const data = mockDocs[path];
-    return {
-      id: path.split("/").at(-1) || path,
-      exists: Boolean(data),
-      data: () => data,
-    };
+function collectionReference(path: string) {
+  const filters: Filter[] = [];
+  let resultLimit: number | undefined;
+  const query = {
+    where(field: string, operator: string, value: unknown) {
+      filters.push({ field, operator, value });
+      return query;
+    },
+    orderBy() {
+      return query;
+    },
+    limit(value: number) {
+      resultLimit = value;
+      return query;
+    },
+    async get() {
+      const prefix = `${path}/`;
+      let docs = Object.keys(documents)
+        .filter((candidate) => candidate.startsWith(prefix))
+        .filter((candidate) => !candidate.slice(prefix.length).includes("/"))
+        .filter((candidate) => filters.every((filter) => {
+          if (filter.operator !== "==") throw new Error(`UNSUPPORTED_OPERATOR:${filter.operator}`);
+          return documents[candidate][filter.field] === filter.value;
+        }))
+        .sort()
+        .map(snapshot);
+      if (resultLimit !== undefined) docs = docs.slice(0, resultLimit);
+      return { empty: docs.length === 0, docs };
+    },
+    doc(id?: string) {
+      generatedId += 1;
+      return documentReference(`${path}/${id || `generated-${generatedId}`}`);
+    },
+  };
+  return query;
+}
+
+const transaction = {
+  get: vi.fn(async (reference: { path?: string; get?: () => Promise<unknown> }) => {
+    if (reference.path) return snapshot(reference.path);
+    if (typeof reference.get === "function") return reference.get();
+    throw new Error("UNSUPPORTED_REFERENCE");
   }),
-  set: vi.fn((reference: { path: string }, data: Record<string, unknown>) => {
-    mockDocs[reference.path] = data;
+  create: vi.fn((reference: { path: string }, data: Record<string, unknown>) => {
+    if (documents[reference.path]) throw new Error(`ALREADY_EXISTS:${reference.path}`);
+    documents[reference.path] = structuredClone(data);
+  }),
+  set: vi.fn((reference: { path: string }, data: Record<string, unknown>, options?: { merge?: boolean }) => {
+    documents[reference.path] = options?.merge
+      ? { ...(documents[reference.path] || {}), ...structuredClone(data) }
+      : structuredClone(data);
   }),
   update: vi.fn((reference: { path: string }, data: Record<string, unknown>) => {
-    mockDocs[reference.path] = { ...mockDocs[reference.path], ...data };
+    if (!documents[reference.path]) throw new Error(`NOT_FOUND:${reference.path}`);
+    documents[reference.path] = { ...documents[reference.path], ...structuredClone(data) };
   }),
 };
 
 vi.mock("../../functions/src/firebase-admin", () => ({
   adminDb: {
-    collection: (collectionName: string) => {
-      const filters: QueryFilter[] = [];
-      let resultLimit: number | undefined;
-
-      const collection = {
-        where: vi.fn((field: string, operator: string, value: unknown) => {
-          filters.push({ field, operator, value });
-          return collection;
-        }),
-        limit: vi.fn((value: number) => {
-          resultLimit = value;
-          return collection;
-        }),
-        orderBy: vi.fn(() => collection),
-        get: vi.fn(async () => {
-          const prefix = `${collectionName}/`;
-          let documents = Object.entries(mockDocs)
-            .filter(([path]) => path.startsWith(prefix) && !path.slice(prefix.length).includes("/"))
-            .filter(([, data]) => filters.every((filter) => {
-              if (filter.operator !== "==") throw new Error(`UNSUPPORTED_MOCK_QUERY_OPERATOR:${filter.operator}`);
-              return data[filter.field] === filter.value;
-            }))
-            .map(([path, data]) => documentSnapshot(path, data));
-
-          if (resultLimit !== undefined) documents = documents.slice(0, resultLimit);
-          return {
-            empty: documents.length === 0,
-            docs: documents,
-          };
-        }),
-        doc: (documentId?: string) => {
-          const id = documentId || Math.random().toString(36).substring(2, 15);
-          const path = `${collectionName}/${id}`;
-          return {
-            id,
-            path,
-            get: async () => {
-              const data = mockDocs[path];
-              return {
-                id,
-                exists: Boolean(data),
-                data: () => data,
-              };
-            },
-            set: async (data: Record<string, unknown>) => {
-              mockDocs[path] = data;
-            },
-            update: async (data: Record<string, unknown>) => {
-              mockDocs[path] = { ...mockDocs[path], ...data };
-            },
-            delete: async () => {
-              delete mockDocs[path];
-            },
-          };
-        },
-      };
-
-      return collection;
-    },
-    runTransaction: async (callback: (transaction: typeof mockDbTransaction) => Promise<unknown>) =>
-      callback(mockDbTransaction),
+    collection: (name: string) => collectionReference(name),
+    runTransaction: async (callback: (tx: typeof transaction) => Promise<unknown>) => callback(transaction),
   },
-  getStorageBucket: () => ({
-    file: (filePath: string) => {
-      let fileData: Buffer<ArrayBufferLike> = Buffer.from("");
-      return {
-        name: filePath,
-        save: async (buffer: Buffer<ArrayBufferLike>) => {
-          fileData = buffer;
-        },
-        download: async () => [fileData],
-        delete: async () => undefined,
-      };
-    },
-  }),
+  getStorageBucket: () => ({ file: () => ({}) }),
 }));
 
-describe("5-Release Commercial Entitlement State Machine", () => {
+function seedCreditSummary(uid: string, credits = PREPARATION_PACK.accountCredits) {
+  documents[`users/${uid}/creditSummary/current`] = {
+    availableCredits: credits,
+    lifetimePurchased: PREPARATION_PACK.accountCredits,
+    lifetimeConsumed: 0,
+    lifetimeAdjusted: 0,
+    lifetimeRefunded: 0,
+    updatedAt: "2026-07-16T00:00:00.000Z",
+  };
+}
+
+async function createPack(uid = "user-123", orderId = "ord-1") {
+  return createEntitlement(transaction as never, {
+    uid,
+    orderId,
+    transactionId: `txn-${orderId}`,
+    eventId: `evt-${orderId}`,
+    productCode: PREPARATION_PACK.productCode,
+    quantity: 1,
+  });
+}
+
+describe("Preparation Pack Entitlement and Credit State Machine", () => {
   beforeEach(() => {
-    for (const key of Object.keys(mockDocs)) delete mockDocs[key];
+    for (const key of Object.keys(documents)) delete documents[key];
+    generatedId = 0;
     vi.clearAllMocks();
   });
 
-  it("1. Initializes with 0 releases and status AVAILABLE", async () => {
-    const entitlement = await createEntitlement(mockDbTransaction as never, {
-      uid: "user-123",
-      orderId: "ord-1",
-      transactionId: "txn-1",
-      eventId: "evt-1",
-      productCode: "CBAM_EXPORTER_FINAL_REPORT",
+  it("creates exactly one five-release entitlement backed by 100 credits", async () => {
+    const entitlement = await createPack();
+    expect(entitlement).toMatchObject({
+      productCode: PREPARATION_PACK.productCode,
+      status: "AVAILABLE",
       quantity: 1,
+      maxReleases: 5,
+      releasesCount: 0,
+      creditsRemaining: 100,
+      releasesList: [],
     });
-
-    expect(entitlement.releasesCount).toBe(0);
-    expect(entitlement.status).toBe("AVAILABLE");
-    expect(entitlement.releasesList).toEqual([]);
+    expect(Object.keys(documents).filter((path) => path.startsWith("entitlements/"))).toHaveLength(1);
   });
 
-  it("2. Reserves and locks case scope successfully, preventing double spend", async () => {
-    const entitlement = await createEntitlement(mockDbTransaction as never, {
-      uid: "user-123",
-      orderId: "ord-1",
-      transactionId: "txn-1",
-      eventId: "evt-1",
-      productCode: "CBAM_EXPORTER_FINAL_REPORT",
-      quantity: 1,
-    });
-
-    const reserved = await reserveEntitlement(mockDbTransaction as never, {
+  it("prevents concurrent reservation double spend", async () => {
+    const entitlement = await createPack();
+    await reserveEntitlement(transaction as never, {
       entitlementId: entitlement.entitlementId,
-      uid: "user-123",
-      reportId: "rep-1",
-      caseId: "case-999",
+      uid: entitlement.uid,
+      reportId: "report-1",
+      caseId: "case-1",
     });
 
-    expect(reserved.status).toBe("RESERVED");
-    expect(reserved.reservedReportId).toBe("rep-1");
-
-    await expect(
-      reserveEntitlement(mockDbTransaction as never, {
-        entitlementId: entitlement.entitlementId,
-        uid: "user-123",
-        reportId: "rep-2",
-        caseId: "case-999",
-      })
-    ).rejects.toThrow(DoubleSpendViolationError);
+    await expect(reserveEntitlement(transaction as never, {
+      entitlementId: entitlement.entitlementId,
+      uid: entitlement.uid,
+      reportId: "report-2",
+      caseId: "case-1",
+    })).rejects.toThrow(DoubleSpendViolationError);
   });
 
-  it("3. Enforces scope locking to the same caseId across multiple releases", async () => {
-    const entitlement = await createEntitlement(mockDbTransaction as never, {
-      uid: "user-123",
-      orderId: "ord-1",
-      transactionId: "txn-1",
-      eventId: "evt-1",
-      productCode: "CBAM_EXPORTER_FINAL_REPORT",
-      quantity: 1,
-    });
-
-    await reserveEntitlement(mockDbTransaction as never, {
+  it("scope-locks the pack to the first successfully sealed case", async () => {
+    const entitlement = await createPack();
+    seedCreditSummary(entitlement.uid);
+    await reserveEntitlement(transaction as never, {
       entitlementId: entitlement.entitlementId,
-      uid: "user-123",
-      reportId: "rep-1",
-      caseId: "case-999",
+      uid: entitlement.uid,
+      reportId: "report-1",
+      caseId: "case-1",
     });
-
-    await consumeEntitlement(mockDbTransaction as never, {
+    await consumeEntitlement(transaction as never, {
       entitlementId: entitlement.entitlementId,
-      uid: "user-123",
-      reportId: "rep-1",
-      caseId: "case-999",
-      reportHash: "hash-1",
+      uid: entitlement.uid,
+      reportId: "report-1",
+      caseId: "case-1",
+      reportHash: "a".repeat(64),
       version: 1,
     });
 
-    await expect(
-      reserveEntitlement(mockDbTransaction as never, {
-        entitlementId: entitlement.entitlementId,
-        uid: "user-123",
-        reportId: "rep-2",
-        caseId: "case-888",
-      })
-    ).rejects.toThrow(EntitlementUnavailableError);
+    await expect(reserveEntitlement(transaction as never, {
+      entitlementId: entitlement.entitlementId,
+      uid: entitlement.uid,
+      reportId: "report-2",
+      caseId: "case-2",
+    })).rejects.toThrow(EntitlementUnavailableError);
   });
 
-  it("4. Consumes releases sequentially, requires correctionReason for sequence 2-5, and fully consumes at 5", async () => {
-    const entitlement = await createEntitlement(mockDbTransaction as never, {
-      uid: "user-123",
-      orderId: "ord-1",
-      transactionId: "txn-1",
-      eventId: "evt-1",
-      productCode: "CBAM_EXPORTER_FINAL_REPORT",
-      quantity: 1,
-    });
+  it("debits exactly 20 credits for each of five successful seals", async () => {
+    const entitlement = await createPack();
+    seedCreditSummary(entitlement.uid);
 
-    await reserveEntitlement(mockDbTransaction as never, {
-      entitlementId: entitlement.entitlementId,
-      uid: "user-123",
-      reportId: "rep-1",
-      caseId: "case-1",
-    });
-    let updated = await consumeEntitlement(mockDbTransaction as never, {
-      entitlementId: entitlement.entitlementId,
-      uid: "user-123",
-      reportId: "rep-1",
-      caseId: "case-1",
-      reportHash: "hash-1",
-      version: 1,
-    });
-    expect(updated.releasesCount).toBe(1);
-    expect(updated.status).toBe("AVAILABLE");
-
-    await reserveEntitlement(mockDbTransaction as never, {
-      entitlementId: entitlement.entitlementId,
-      uid: "user-123",
-      reportId: "rep-2",
-      caseId: "case-1",
-    });
-    await expect(
-      consumeEntitlement(mockDbTransaction as never, {
+    for (let sequence = 1; sequence <= PREPARATION_PACK.maxReleases; sequence += 1) {
+      const reportId = `report-${sequence}`;
+      await reserveEntitlement(transaction as never, {
         entitlementId: entitlement.entitlementId,
-        uid: "user-123",
-        reportId: "rep-2",
-        caseId: "case-1",
-        reportHash: "hash-2",
-        version: 2,
-      })
-    ).rejects.toThrow("A correction reason is required after the first release.");
-
-    updated = await consumeEntitlement(mockDbTransaction as never, {
-      entitlementId: entitlement.entitlementId,
-      uid: "user-123",
-      reportId: "rep-2",
-      caseId: "case-1",
-      reportHash: "hash-2",
-      version: 2,
-      correctionReason: "Fixed incorrect CN Code",
-    });
-    expect(updated.releasesCount).toBe(2);
-
-    for (let sequence = 3; sequence <= 5; sequence += 1) {
-      await reserveEntitlement(mockDbTransaction as never, {
-        entitlementId: entitlement.entitlementId,
-        uid: "user-123",
-        reportId: `rep-${sequence}`,
+        uid: entitlement.uid,
+        reportId,
         caseId: "case-1",
       });
-      updated = await consumeEntitlement(mockDbTransaction as never, {
+      const updated = await consumeEntitlement(transaction as never, {
         entitlementId: entitlement.entitlementId,
-        uid: "user-123",
-        reportId: `rep-${sequence}`,
+        uid: entitlement.uid,
+        reportId,
         caseId: "case-1",
-        reportHash: `hash-${sequence}`,
+        reportHash: sequence.toString(16).padStart(64, "0"),
         version: sequence,
-        correctionReason: `Correction version ${sequence}`,
+        ...(sequence > 1 ? { correctionReason: `Correction ${sequence}` } : {}),
       });
+
+      const expectedCredits = PREPARATION_PACK.accountCredits - sequence * PREPARATION_PACK.creditsPerRelease;
+      expect(updated.releasesCount).toBe(sequence);
+      expect(updated.creditsRemaining).toBe(expectedCredits);
+      expect(documents[`users/${entitlement.uid}/creditSummary/current`].availableCredits).toBe(expectedCredits);
+      expect(documents[`users/${entitlement.uid}/creditLedger/seal_${reportId}`].amount).toBe(-20);
+      expect(updated.status).toBe(sequence === 5 ? "CONSUMED" : "AVAILABLE");
     }
 
-    expect(updated.releasesCount).toBe(5);
-    expect(updated.status).toBe("CONSUMED");
+    await expect(reserveEntitlement(transaction as never, {
+      entitlementId: entitlement.entitlementId,
+      uid: entitlement.uid,
+      reportId: "report-6",
+      caseId: "case-1",
+    })).rejects.toThrow(EntitlementUnavailableError);
+  });
 
-    await expect(
-      reserveEntitlement(mockDbTransaction as never, {
-        entitlementId: entitlement.entitlementId,
-        uid: "user-123",
-        reportId: "rep-6",
-        caseId: "case-1",
-      })
-    ).rejects.toThrow(EntitlementUnavailableError);
+  it("requires a correction reason for versions two through five", async () => {
+    const entitlement = await createPack();
+    seedCreditSummary(entitlement.uid);
+    await reserveEntitlement(transaction as never, {
+      entitlementId: entitlement.entitlementId,
+      uid: entitlement.uid,
+      reportId: "report-1",
+      caseId: "case-1",
+    });
+    await consumeEntitlement(transaction as never, {
+      entitlementId: entitlement.entitlementId,
+      uid: entitlement.uid,
+      reportId: "report-1",
+      caseId: "case-1",
+      reportHash: "a".repeat(64),
+      version: 1,
+    });
+    await reserveEntitlement(transaction as never, {
+      entitlementId: entitlement.entitlementId,
+      uid: entitlement.uid,
+      reportId: "report-2",
+      caseId: "case-1",
+    });
+    await expect(consumeEntitlement(transaction as never, {
+      entitlementId: entitlement.entitlementId,
+      uid: entitlement.uid,
+      reportId: "report-2",
+      caseId: "case-1",
+      reportHash: "b".repeat(64),
+      version: 2,
+    })).rejects.toThrow("A correction reason is required after the first release.");
+  });
+
+  it("hard-stops a seal when global account credits are insufficient", async () => {
+    const entitlement = await createPack();
+    seedCreditSummary(entitlement.uid, 0);
+    await reserveEntitlement(transaction as never, {
+      entitlementId: entitlement.entitlementId,
+      uid: entitlement.uid,
+      reportId: "report-1",
+      caseId: "case-1",
+    });
+
+    await expect(consumeEntitlement(transaction as never, {
+      entitlementId: entitlement.entitlementId,
+      uid: entitlement.uid,
+      reportId: "report-1",
+      caseId: "case-1",
+      reportHash: "a".repeat(64),
+      version: 1,
+    })).rejects.toThrow("20 credits are required for a successful seal.");
+    expect(documents[`users/${entitlement.uid}/creditSummary/current`].availableCredits).toBe(0);
+    expect(documents[`entitlements/${entitlement.entitlementId}`].releasesCount).toBe(0);
   });
 });

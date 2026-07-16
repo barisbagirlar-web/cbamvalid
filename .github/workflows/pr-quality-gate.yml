@@ -75,6 +75,13 @@ jobs:
           set -o pipefail
           npm run guard:verifier-grade-deliverables 2>&1 | tee artifacts/ci/verifier-grade-deliverables.log
 
+      - name: Verify end-to-end system DNA contract
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run guard:system-dna 2>&1 | tee artifacts/ci/system-dna.log
+          node scripts/guard-system-dna-runtime.mjs 2>&1 | tee artifacts/ci/system-dna-runtime.log
+
       - name: Typecheck
         shell: bash
         run: |
@@ -87,11 +94,44 @@ jobs:
           set -o pipefail
           npm run build:functions 2>&1 | tee artifacts/ci/functions-build.log
 
-      - name: Lint
+      - name: Lint repository contract
         shell: bash
         run: |
           set -o pipefail
           npm run lint 2>&1 | tee artifacts/ci/lint.log
+
+      - name: Lint system DNA surfaces
+        shell: bash
+        run: |
+          set -o pipefail
+          npx eslint \
+            proxy.ts \
+            context/AuthProvider.tsx \
+            lib/auth/safe-next-route.ts \
+            lib/auth/post-login-routing.ts \
+            lib/billing/paddle-config.server.ts \
+            scripts/check-paddle-config.ts \
+            scripts/guard-system-dna-runtime.mjs \
+            functions/src/auth/verified-user.ts \
+            functions/src/handlers/account.ts \
+            functions/src/handlers/cases.ts \
+            functions/src/handlers/reports.ts \
+            functions/src/cbam/report/seal-service.ts \
+            app/api/auth/session/route.ts \
+            'app/api/verify/[documentHash]/route.ts' \
+            'app/(auth)/login/page.tsx' \
+            'app/(auth)/register/page.tsx' \
+            'app/(auth)/verify-email/page.tsx' \
+            'app/(public)/product/page.tsx' \
+            'app/(public)/verify/page.tsx' \
+            'app/(public)/cn-code/[code]/page.tsx' \
+            'app/(workspace)/cases/[caseId]/CaseWizardClient.tsx' \
+            tests/auth/verified-user-and-routing.test.ts \
+            tests/auth/proxy-access.test.ts \
+            tests/auth/owner-admin.test.ts \
+            tests/commerce/purchase-fulfillment.test.ts \
+            tests/commerce/refund-reconciliation.test.ts \
+            2>&1 | tee artifacts/ci/lint-system-dna.log
 
       - name: Authentication tests
         shell: bash

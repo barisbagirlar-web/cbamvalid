@@ -1,9 +1,13 @@
+import { PREPARATION_PACK } from "./preparation-pack";
+
 export interface ProductDefinition {
   productCode: string;
   currency: string;
-  expectedUnitAmount: number; // in minor units (e.g. 15000 = $150.00)
-  entitlementType: string;
+  expectedUnitAmount: number;
+  entitlementType: "CBAM_PREPARATION_PACK";
   entitlementQuantity: number;
+  accountCredits: number;
+  creditsPerRelease: number;
   correctionWindowDays: number;
   maxCustomsLines: number;
   maxInstallations: number;
@@ -13,41 +17,35 @@ export interface ProductDefinition {
   paddlePriceIdProduction: string;
 }
 
-export const PRODUCT_CATALOG: Record<string, ProductDefinition> = {
-  CBAM_EXPORTER_FINAL_REPORT: {
-    productCode: "CBAM_EXPORTER_FINAL_REPORT",
-    currency: "USD",
-    expectedUnitAmount: 15000,
-    entitlementType: "CBAM_SEALED_DOSSIER",
-    entitlementQuantity: 1,
-    correctionWindowDays: 14,
-    maxCustomsLines: 100,
-    maxInstallations: 1,
-    maxCnCodes: 25,
-    active: true,
-    paddlePriceIdSandbox: process.env.PADDLE_PRICE_ID_SANDBOX || "pri_01j2fxyz...",
-    paddlePriceIdProduction: process.env.PADDLE_PRICE_ID_PRODUCTION || "pri_01j2fabc...",
-  },
-  CBAM_CREDIT_PACK_5: {
-    productCode: "CBAM_CREDIT_PACK_5",
-    currency: "USD",
-    expectedUnitAmount: 15000, // Or whatever the pack costs (150 EUR/USD)
-    entitlementType: "CBAM_SEALED_DOSSIER",
-    entitlementQuantity: 5,
-    correctionWindowDays: 14,
-    maxCustomsLines: 100,
-    maxInstallations: 1,
-    maxCnCodes: 25,
-    active: true,
-    paddlePriceIdSandbox: process.env.PADDLE_PRICE_ID_SANDBOX || "pri_01j2fxyz...",
-    paddlePriceIdProduction: process.env.PADDLE_PRICE_ID_PRODUCTION || "pri_01j2fabc...",
-  },
-} as const;
+const product: ProductDefinition = {
+  productCode: PREPARATION_PACK.productCode,
+  currency: PREPARATION_PACK.currency,
+  expectedUnitAmount: PREPARATION_PACK.priceMinor,
+  entitlementType: "CBAM_PREPARATION_PACK",
+  entitlementQuantity: 1,
+  accountCredits: PREPARATION_PACK.accountCredits,
+  creditsPerRelease: PREPARATION_PACK.creditsPerRelease,
+  correctionWindowDays: PREPARATION_PACK.correctionWindowDays,
+  maxCustomsLines: PREPARATION_PACK.maxCustomsLines,
+  maxInstallations: PREPARATION_PACK.maxInstallations,
+  maxCnCodes: PREPARATION_PACK.maxCnCodes,
+  active: true,
+  paddlePriceIdSandbox: process.env.PADDLE_PRICE_ID_SANDBOX?.trim() || "",
+  paddlePriceIdProduction: process.env.PADDLE_PRICE_ID_PRODUCTION?.trim() || "",
+};
+
+export const PRODUCT_CATALOG: Readonly<Record<string, ProductDefinition>> = Object.freeze({
+  [PREPARATION_PACK.productCode]: product,
+});
+
+export function getProduct(productCode: string): ProductDefinition | null {
+  const candidate = PRODUCT_CATALOG[productCode];
+  return candidate?.active ? candidate : null;
+}
 
 export function getPriceIdForProduct(productCode: string, isSandbox: boolean): string | null {
-  const product = PRODUCT_CATALOG[productCode];
-  if (!product || !product.active) {
-    return null;
-  }
-  return isSandbox ? product.paddlePriceIdSandbox : product.paddlePriceIdProduction;
+  const candidate = getProduct(productCode);
+  if (!candidate) return null;
+  const priceId = isSandbox ? candidate.paddlePriceIdSandbox : candidate.paddlePriceIdProduction;
+  return /^pri_[A-Za-z0-9]+$/.test(priceId) ? priceId : null;
 }

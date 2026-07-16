@@ -1,436 +1,182 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   ArrowRight,
-  CheckCircle2,
-  Clock,
+  FileCheck2,
   FileText,
-  HelpCircle,
-  Info,
-  Lock,
-  PlayCircle,
+  FolderKanban,
+  Loader2,
   Plus,
   RefreshCw,
   ShoppingBag,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthProvider";
 import {
+  getCases,
+  getEntitlementSummary,
+  getReports,
+  type CbamCaseRecord,
+  type PreparationPackEntitlement,
+} from "@/lib/functions/client";
+import type { SealedReportView } from "@/lib/cbam/report-contract";
+import {
   formatCaseUpdatedDate,
   getCaseDisplayName,
   getPrimaryCnCode,
 } from "@/lib/cbam/case-summary";
-import {
-  getCases,
-  getEntitlements,
-  getReports,
-  type CbamCaseRecord,
-} from "@/lib/functions/client";
+import { formatPreparationPackPrice, PREPARATION_PACK } from "@/lib/commerce/preparation-pack";
 
-type ReportRecord = Record<string, unknown>;
+const RECENT_ITEM_LIMIT = 3;
 
-const WORKFLOW_STEPS = [
-  { num: 1, title: "Case & Reporting Scope", desc: "Define boundaries and CN codes." },
-  { num: 2, title: "Goods & Customs Data", desc: "Import CN code customs declarations." },
-  { num: 3, title: "Installation & Production Route", desc: "Establish operator bounds." },
-  { num: 4, title: "Embedded Emissions", desc: "Direct and indirect carbon footprints." },
-  { num: 5, title: "Precursors & Adjustments", desc: "Complex supply-chain factors." },
-  { num: 6, title: "Evidence Register", desc: "Link primary verification documents." },
-  { num: 7, title: "Quality Review", desc: "Run automated integrity checks." },
-  { num: 8, title: "Seal & Deliverables", desc: "Verify and download the dossier ZIP." },
-] as const;
+type DashboardState = {
+  cases: CbamCaseRecord[];
+  reports: SealedReportView[];
+  entitlements: PreparationPackEntitlement[];
+  totalReleasesRemaining: number;
+};
 
-const REQUIRED_DATA = [
-  "Installation and operator details",
-  "Reporting year",
-  "Goods and CN codes",
-  "Production quantities",
-  "Fuel and electricity consumption",
-  "Direct and indirect emissions data",
-  "Precursor information, where applicable",
-  "Meter, invoice and production records",
-  "Supporting evidence documents",
-] as const;
-
-function describeError(error: unknown): string {
-  if (error instanceof Error && error.message.trim()) return error.message;
-  return "Dashboard data could not be loaded.";
+function errorMessage(error: unknown): string {
+  return error instanceof Error && error.message
+    ? error.message
+    : "Dashboard data could not be loaded.";
 }
 
-function readString(record: ReportRecord, key: string): string {
-  const value = record[key];
-  return typeof value === "string" ? value : "";
-}
-
-function reportInstallationName(report: ReportRecord): string {
-  const calculation = report.calculation;
-  if (!calculation || typeof calculation !== "object") return "Sealed dossier";
-  const inputs = (calculation as ReportRecord).inputs;
-  if (!inputs || typeof inputs !== "object") return "Sealed dossier";
-  const value = (inputs as ReportRecord).installationName;
-  return typeof value === "string" && value.trim() ? value.trim() : "Sealed dossier";
-}
-
-export default function CbamLandingPage() {
-  const { user, loading } = useAuth();
-  const [cases, setCases] = useState<CbamCaseRecord[]>([]);
-  const [reports, setReports] = useState<ReportRecord[]>([]);
-  const [availableEntitlementsCount, setAvailableEntitlementsCount] = useState(0);
-  const [dataLoading, setDataLoading] = useState(true);
+export default function CbamDashboardPage() {
+  const { user, loading: authLoading } = useAuth();
+  const [state, setState] = useState<DashboardState>({
+    cases: [],
+    reports: [],
+    entitlements: [],
+    totalReleasesRemaining: 0,
+  });
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [warning, setWarning] = useState("");
   const [attempt, setAttempt] = useState(0);
-  const [showChecklist, setShowChecklist] = useState(false);
 
   useEffect(() => {
-    if (loading || !user) return;
-
+    if (authLoading || !user) return;
     let cancelled = false;
+    setLoading(true);
+    setError("");
 
-    void Promise.allSettled([getCases(), getReports(), getEntitlements()])
-      .then(([casesResult, reportsResult, entitlementsResult]) => {
+    void Promise.all([getCases(), getReports(), getEntitlementSummary()])
+      .then(([cases, reports, entitlementSummary]) => {
         if (cancelled) return;
-
-        if (casesResult.status === "rejected") {
-          console.error("Dashboard case loading failed", casesResult.reason);
-          setCases([]);
-          setReports([]);
-          setAvailableEntitlementsCount(0);
-          setError(describeError(casesResult.reason));
-          setWarning("");
-          setDataLoading(false);
-          return;
-        }
-
-        setCases(casesResult.value);
-        setError("");
-
-        const warnings: string[] = [];
-        if (reportsResult.status === "fulfilled") {
-          setReports(reportsResult.value);
-        } else {
-          console.error("Dashboard report loading failed", reportsResult.reason);
-          setReports([]);
-          warnings.push("Report history is temporarily unavailable.");
-        }
-
-        if (entitlementsResult.status === "fulfilled") {
-          setAvailableEntitlementsCount(entitlementsResult.value.length);
-        } else {
-          console.error("Dashboard entitlement loading failed", entitlementsResult.reason);
-          setAvailableEntitlementsCount(0);
-          warnings.push("Preparation Pack status could not be verified; sealing remains unavailable.");
-        }
-
-        setWarning(warnings.join(" "));
-        setDataLoading(false);
+        setState({
+          cases,
+          reports,
+          entitlements: entitlementSummary.entitlements,
+          totalReleasesRemaining: entitlementSummary.totalReleasesRemaining,
+        });
       })
-      .catch((unexpectedError: unknown) => {
+      .catch((loadError: unknown) => {
         if (cancelled) return;
-        console.error("Unexpected dashboard loading failure", unexpectedError);
-        setCases([]);
-        setReports([]);
-        setAvailableEntitlementsCount(0);
-        setError(describeError(unexpectedError));
-        setWarning("");
-        setDataLoading(false);
+        console.error("Dashboard loading failed", loadError);
+        setError(errorMessage(loadError));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [attempt, loading, user]);
+  }, [attempt, authLoading, user]);
 
-  const retryLoading = () => {
-    setDataLoading(true);
-    setError("");
-    setWarning("");
-    setAttempt((current) => current + 1);
-  };
+  const activeCases = useMemo(
+    () => state.cases.filter((item) => item.status !== "ARCHIVED"),
+    [state.cases]
+  );
+  const recentCases = activeCases.slice(0, RECENT_ITEM_LIMIT);
+  const recentReports = state.reports.slice(0, RECENT_ITEM_LIMIT);
 
-  if (!loading && !user) return null;
-
-  if (loading || dataLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-kil-base px-6">
-        <div className="flex flex-col items-center">
-          <div className="w-8 h-8 border-2 border-kil-text/20 border-t-kil-accent rounded-full animate-spin mb-6"></div>
-          <p className="font-mono text-sm text-kil-text/60 tracking-widest uppercase">Loading Dashboard...</p>
-        </div>
-      </div>
-    );
+  if (authLoading || loading) {
+    return <main className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-accent" aria-label="Loading dashboard" /></main>;
   }
 
   if (error) {
     return (
-      <main className="min-h-screen bg-background px-6 py-16 text-foreground">
-        <section className="mx-auto max-w-xl rounded-2xl border border-red-300 bg-surface p-8 shadow-sm">
-          <div className="flex items-start gap-4">
-            <AlertCircle className="mt-0.5 h-6 w-6 shrink-0 text-red-700" aria-hidden="true" />
-            <div>
-              <h1 className="font-serif text-2xl font-bold">Dashboard could not be loaded</h1>
-              <p className="mt-3 text-sm leading-relaxed text-muted">{error}</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={retryLoading}
-            className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent px-5 text-sm font-semibold text-surface hover:bg-accent-hover"
-          >
-            <RefreshCw className="h-4 w-4" aria-hidden="true" /> Retry Loading
-          </button>
+      <main className="mx-auto max-w-xl px-6 py-16">
+        <section className="rounded-2xl border border-red-300 bg-surface p-8 shadow-sm">
+          <div className="flex gap-4"><AlertCircle className="h-6 w-6 shrink-0 text-red-700" /><div><h1 className="font-serif text-2xl font-bold">Dashboard could not be loaded</h1><p className="mt-3 text-sm text-muted">{error}</p></div></div>
+          <button type="button" onClick={() => setAttempt((current) => current + 1)} className="mt-6 inline-flex h-11 items-center gap-2 rounded-md bg-accent px-5 text-sm font-semibold text-surface"><RefreshCw className="h-4 w-4" />Retry</button>
         </section>
       </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground px-4 py-8 md:px-8">
-      <div className="max-w-6xl mx-auto">
-        {warning && (
-          <div role="status" className="mb-6 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            {warning}
-          </div>
-        )}
-
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 pb-6 border-b border-border mb-8">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight font-serif">CBAM Definitive Dossiers</h1>
-            <p className="text-muted text-sm mt-1">
-              Create calculation cases, link evidence, and generate a sealed verifier-preparation package.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {availableEntitlementsCount > 0 ? (
-              <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 px-4 py-2 rounded-full">
-                <span className="w-2.5 h-2.5 bg-accent rounded-full animate-pulse" />
-                <span className="text-xs font-semibold text-accent">
-                  1 Active Preparation Pack ({availableEntitlementsCount} Versions Remaining)
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <span className="text-xs bg-muted/40 text-muted border border-border px-3 py-1.5 rounded-full font-medium">
-                  No Active Preparation Pack
-                </span>
-                <Link
-                  href="/credits/buy"
-                  className="bg-accent hover:bg-accent-hover text-surface px-4 py-2 rounded-md font-semibold text-xs transition-colors flex items-center gap-1.5"
-                >
-                  <ShoppingBag className="w-3.5 h-3.5" /> Buy Pack — $150
-                </Link>
-              </div>
-            )}
-
-            {cases.length > 0 && (
-              <Link
-                href="/cases/new"
-                className="bg-foreground hover:bg-foreground/90 text-background px-4 py-2 rounded-md font-semibold text-xs transition-colors flex items-center gap-1"
-              >
-                <Plus className="w-3.5 h-3.5" /> Create New Case
-              </Link>
-            )}
-          </div>
+    <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 md:px-8">
+      <header className="flex flex-col gap-5 border-b border-border pb-7 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">Workspace Overview</p>
+          <h1 className="mt-2 font-serif text-3xl font-bold">CBAM Dashboard</h1>
+          <p className="mt-2 text-sm text-muted">Monitor active cases, sealed reports, release capacity and the next required action.</p>
         </div>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/cases/new" className="inline-flex h-11 items-center gap-2 rounded-md bg-accent px-5 text-sm font-semibold text-surface"><Plus className="h-4 w-4" />Create Case</Link>
+          <Link href="/credits/buy" className="inline-flex h-11 items-center gap-2 rounded-md border border-border-strong px-5 text-sm font-semibold hover:bg-neutral-soft"><ShoppingBag className="h-4 w-4" />Buy Pack — {formatPreparationPackPrice()}</Link>
+        </div>
+      </header>
 
-        {cases.length === 0 ? (
-          <div className="space-y-8">
-            <div className="bg-surface border border-border rounded-2xl p-6 md:p-10 shadow-sm relative overflow-hidden">
-              <div className="max-w-3xl">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-accent/10 text-accent mb-4">
-                  <Info className="w-3.5 h-3.5" /> Exporter Verification Preparation Pack
-                </span>
-                <h2 className="text-2xl md:text-3xl font-extrabold font-serif mb-4">
-                  Prepare Your CBAM Verification Package
-                </h2>
-                <p className="text-muted text-base leading-relaxed mb-6">
-                  Build a structured dossier for one installation and one reporting year. Enter production and emissions data, link supporting evidence, resolve quality findings, and generate a sealed verifier-preparation package.
-                </p>
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Metric icon={FolderKanban} label="Active Cases" value={activeCases.length} />
+        <Metric icon={FileCheck2} label="Sealed Reports" value={state.reports.length} />
+        <Metric icon={FileText} label="Release Seals Available" value={state.totalReleasesRemaining} />
+        <Metric icon={ShoppingBag} label="Active Packs" value={state.entitlements.length} />
+      </section>
 
-                <div className="mb-8">
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground/80 mb-3">Start here:</h3>
-                  <ol className="space-y-2.5 text-sm text-muted">
-                    <li className="flex items-start gap-2"><span className="font-mono text-accent font-bold">1.</span><span>Review the required data and evidence guidelines below.</span></li>
-                    <li className="flex items-start gap-2"><span className="font-mono text-accent font-bold">2.</span><span>Create your first dossier using the draft workspace; no upfront payment is needed.</span></li>
-                    <li className="flex items-start gap-2"><span className="font-mono text-accent font-bold">3.</span><span>Complete the eight data-preparation sections with automatic compliance checks.</span></li>
-                    <li className="flex items-start gap-2"><span className="font-mono text-accent font-bold">4.</span><span>Purchase the $150 Preparation Pack before sealing and downloading final deliverables.</span></li>
-                  </ol>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                  <Link href="/cases/new" className="bg-accent hover:bg-accent-hover text-surface px-8 py-3 rounded-md font-semibold transition-colors flex items-center justify-center gap-2 text-sm shadow-sm">
-                    Create Your First Dossier <ArrowRight className="w-4 h-4" />
-                  </Link>
-                  <Link href="/sample-dossier" className="bg-surface hover:bg-muted/10 border border-border text-foreground px-6 py-3 rounded-md font-semibold transition-colors text-sm flex items-center justify-center gap-1.5">
-                    <FileText className="w-4 h-4" /> View Sample Dossier
-                  </Link>
-                  <button type="button" onClick={() => setShowChecklist((current) => !current)} className="bg-surface hover:bg-muted/10 border border-border text-foreground px-6 py-3 rounded-md font-semibold transition-colors text-sm flex items-center justify-center gap-1.5">
-                    <HelpCircle className="w-4 h-4" /> Review Required Data
-                  </button>
-                  <Link href="/how-it-works" className="bg-surface hover:bg-muted/10 border border-border text-foreground px-6 py-3 rounded-md font-semibold transition-colors text-sm flex items-center justify-center gap-1.5">
-                    <PlayCircle className="w-4 h-4" /> Watch Walkthrough
-                  </Link>
-                </div>
-
-                <div className="p-4 bg-muted/20 border border-border rounded-lg text-xs text-muted leading-relaxed">
-                  <p className="font-semibold text-foreground mb-1">Important Verification Note & Legal Boundaries</p>
-                  No payment is required to create your initial draft and verify data applicability. The Preparation Pack is required to seal and download final deliverables. CBAMValid prepares the case dossier for independent verification and does not issue an accredited opinion, independent verification statement, customs approval, EU approval or acceptance guarantee.
-                </div>
-              </div>
-            </div>
-
-            {showChecklist && (
-              <div className="bg-surface border border-border rounded-xl p-6 animate-in slide-in-from-top-4">
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-accent" /> Required Data & Evidence Checklist
-                </h3>
-                <p className="text-sm text-muted mb-4">Make sure you have access to the following information before completing your CBAM declaration:</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                  {REQUIRED_DATA.map((item) => (
-                    <div key={item} className="flex items-center gap-2 p-2 bg-background border border-border/40 rounded-lg">
-                      <span className="w-1.5 h-1.5 bg-accent rounded-full" />
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div>
-              <h3 className="text-lg font-bold mb-6 font-serif">The 8-Step Verification Workflow</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {WORKFLOW_STEPS.map((step) => (
-                  <div key={step.num} className="bg-surface border border-border rounded-xl p-5 shadow-sm">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="w-7 h-7 bg-accent/10 text-accent font-bold text-xs rounded-full flex items-center justify-center">{step.num}</span>
-                      <h4 className="font-bold text-sm text-foreground">{step.title}</h4>
-                    </div>
-                    <p className="text-xs text-muted">{step.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-              <div className="bg-surface/50 border border-border/80 border-dashed rounded-xl p-6 text-center">
-                <Clock className="w-6 h-6 text-muted/60 mx-auto mb-2" />
-                <h4 className="text-sm font-semibold text-foreground/80 mb-1">Draft Cases</h4>
-                <p className="text-xs text-muted">Your active drafts appear here after you create a dossier.</p>
-              </div>
-              <div className="bg-surface/50 border border-border/80 border-dashed rounded-xl p-6 text-center">
-                <Lock className="w-6 h-6 text-muted/60 mx-auto mb-2" />
-                <h4 className="text-sm font-semibold text-foreground/80 mb-1">Sealed Reports History</h4>
-                <p className="text-xs text-muted">Final sealed verifier-preparation downloads appear here after sealing.</p>
-              </div>
-            </div>
+      {activeCases.length === 0 ? (
+        <section className="rounded-2xl border border-border bg-surface p-8 shadow-sm md:p-10">
+          <p className="text-xs font-bold uppercase tracking-wider text-accent">New-user onboarding</p>
+          <h2 className="mt-3 font-serif text-3xl font-bold">Prepare Your CBAM Verification Package</h2>
+          <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted">Create a draft without payment, add goods, installation, emissions and evidence data, resolve blockers, then purchase one {formatPreparationPackPrice()} USD Preparation Pack before the first successful seal.</p>
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+            <Link href="/cases/new" className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent px-5 text-sm font-semibold text-surface">Create Your First Dossier <ArrowRight className="h-4 w-4" /></Link>
+            <Link href="/sample-dossier" className="inline-flex h-11 items-center justify-center rounded-md border border-border-strong px-5 text-sm font-semibold hover:bg-neutral-soft">View Sample Dossier</Link>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-8">
-              <section className="bg-surface border border-border rounded-xl p-6 shadow-sm">
-                <h3 className="text-lg font-bold mb-4 font-serif">Draft Cases</h3>
-                <div className="space-y-4">
-                  {cases.map((cbamCase) => (
-                    <div key={cbamCase.caseId} className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors">
-                      <div>
-                        <p className="font-semibold text-sm">{getCaseDisplayName(cbamCase.data)}</p>
-                        <p className="text-xs text-muted mt-1 font-mono">
-                          CN Code: {getPrimaryCnCode(cbamCase.data)} | Updated: {formatCaseUpdatedDate(cbamCase.updatedAt)}
-                        </p>
-                        <div className="mt-2 flex items-center gap-2">
-                          <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-neutral-soft text-foreground border border-border">Draft mode</span>
-                        </div>
-                      </div>
-                      <Link href={`/cases/${cbamCase.caseId}`} className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center gap-1 self-end sm:self-auto">
-                        Resume Draft <ArrowRight className="w-3 h-3" />
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              </section>
+          <p className="mt-6 text-xs leading-relaxed text-muted">One pack adds {PREPARATION_PACK.accountCredits} credits and funds up to {PREPARATION_PACK.maxReleases} successful sealed versions for one case. Failed or blocked seal attempts consume zero credits.</p>
+        </section>
+      ) : (
+        <section className="grid gap-6 lg:grid-cols-2">
+          <OverviewList title="Recent Cases" actionLabel="View All Cases" actionHref="/cases">
+            {recentCases.map((cbamCase) => (
+              <Link key={cbamCase.caseId} href={`/cases/${cbamCase.caseId}`} className="flex items-center justify-between gap-4 rounded-lg border border-border bg-background p-4 hover:border-accent/50">
+                <div><p className="font-semibold">{getCaseDisplayName(cbamCase.data)}</p><p className="mt-1 text-xs text-muted">CN {getPrimaryCnCode(cbamCase.data)} · Updated {formatCaseUpdatedDate(cbamCase.updatedAt)}</p></div><ArrowRight className="h-4 w-4 shrink-0 text-muted" />
+              </Link>
+            ))}
+          </OverviewList>
 
-              <section className="bg-surface border border-border rounded-xl p-6 shadow-sm">
-                <h3 className="text-lg font-bold mb-4 font-serif">Sealed Reports History</h3>
-                {reports.length === 0 ? (
-                  <div className="p-8 text-center bg-background border border-dashed border-border/80 rounded-lg">
-                    <Lock className="w-8 h-8 text-muted/65 mx-auto mb-3" />
-                    <p className="text-sm text-subtle">No sealed reports found. Complete the draft checklist to generate verifier-preparation deliverables.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {reports.map((report, index) => {
-                      const reportId = readString(report, "reportId");
-                      const createdAt = readString(report, "createdAt");
-                      const documentHash = readString(report, "documentHash");
-                      return (
-                        <div key={reportId || `report-${index}`} className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors">
-                          <div>
-                            <p className="font-semibold text-sm">{reportInstallationName(report)}</p>
-                            <p className="text-xs text-muted mt-1 font-mono">
-                              Release ID: {reportId ? `${reportId.slice(0, 8)}...` : "Unavailable"} | Sealed: {createdAt ? formatCaseUpdatedDate(createdAt) : "Unknown"}
-                            </p>
-                            <p className="text-[11px] text-muted truncate mt-1">Hash: {documentHash || "Unavailable"}</p>
-                          </div>
-                          {reportId ? (
-                            <Link href={`/cbam/reports/${reportId}`} className="bg-foreground hover:bg-foreground/90 text-background text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center justify-center">
-                              View Dossier
-                            </Link>
-                          ) : (
-                            <span className="text-xs text-muted">Report link unavailable</span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
-            </div>
+          <OverviewList title="Recent Reports" actionLabel="View All Reports" actionHref="/reports">
+            {recentReports.length === 0 ? <p className="rounded-lg border border-dashed border-border p-6 text-sm text-muted">No sealed reports yet.</p> : recentReports.map((report) => (
+              <Link key={report.reportId} href={`/cbam/reports/${report.reportId}`} className="flex items-center justify-between gap-4 rounded-lg border border-border bg-background p-4 hover:border-accent/50">
+                <div><p className="font-semibold">Release version {report.releaseVersion}</p><p className="mt-1 font-mono text-xs text-muted">{report.reportId.slice(0, 18)}… · {formatCaseUpdatedDate(report.createdAt)}</p></div><ArrowRight className="h-4 w-4 shrink-0 text-muted" />
+              </Link>
+            ))}
+          </OverviewList>
+        </section>
+      )}
 
-            <div className="space-y-8">
-              <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
-                <h4 className="font-bold text-sm uppercase tracking-wider text-muted mb-4">Pack Status</h4>
-                {availableEntitlementsCount > 0 ? (
-                  <div className="p-3 bg-accent/5 border border-accent/10 rounded-lg text-xs">
-                    <span className="font-bold text-accent block">Active Preparation Pack</span>
-                    You have <strong>{availableEntitlementsCount}</strong> remaining sealed release versions available.
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="p-3 bg-muted/20 border border-border rounded-lg text-xs text-muted leading-relaxed">
-                      <span className="font-bold text-foreground block mb-1">No Active Pack</span>
-                      Unlock final export verification, package sealing, and ZIP generation.
-                    </div>
-                    <Link href="/credits/buy" className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center justify-center gap-1.5 w-full shadow-sm">
-                      Buy Pack — $150
-                    </Link>
-                  </div>
-                )}
-                <div className="mt-6 border-t border-border pt-4 text-xs text-muted space-y-2">
-                  <p><strong>1 pack includes:</strong></p>
-                  <ul className="list-disc list-inside space-y-1 pl-1">
-                    <li>1 Installation Dossier</li>
-                    <li>1 Reporting Year Scope</li>
-                    <li>8-Step workflow checklist</li>
-                    <li>5 Successful Release Seals</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
-                <h4 className="font-bold text-sm uppercase tracking-wider text-muted mb-3">Resources</h4>
-                <div className="space-y-2.5 text-xs text-accent">
-                  <Link href="/how-it-works" className="flex items-center gap-2 hover:underline"><PlayCircle className="w-4 h-4 text-muted" /> Walkthrough Video</Link>
-                  <Link href="/sample-dossier" className="flex items-center gap-2 hover:underline"><FileText className="w-4 h-4 text-muted" /> Sample Sealed Dossier</Link>
-                  <Link href="/methodology" className="flex items-center gap-2 hover:underline"><Info className="w-4 h-4 text-muted" /> Methodology & Sources</Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+      <section className="grid gap-4 md:grid-cols-3">
+        <Destination title="Cases" description="Complete draft and archived case list." href="/cases" />
+        <Destination title="Reports" description="Complete sealed report history and downloads." href="/reports" />
+        <Destination title="Methodology & Sources" description="Rulesets, source snapshots and calculation boundaries." href="/cbam/methodology" />
+      </section>
+    </main>
   );
+}
+
+function Metric({ icon: Icon, label, value }: { icon: typeof FolderKanban; label: string; value: number }) {
+  return <article className="rounded-xl border border-border bg-surface p-5 shadow-sm"><div className="flex items-center gap-2 text-muted"><Icon className="h-4 w-4" /><p className="text-xs font-bold uppercase tracking-wider">{label}</p></div><p className="mt-4 font-mono text-3xl font-bold">{value}</p></article>;
+}
+
+function OverviewList({ title, actionLabel, actionHref, children }: { title: string; actionLabel: string; actionHref: string; children: React.ReactNode }) {
+  return <article className="rounded-xl border border-border bg-surface p-6 shadow-sm"><div className="mb-5 flex items-center justify-between"><h2 className="font-serif text-xl font-bold">{title}</h2><Link href={actionHref} className="text-sm font-semibold text-accent hover:underline">{actionLabel}</Link></div><div className="space-y-3">{children}</div></article>;
+}
+
+function Destination({ title, description, href }: { title: string; description: string; href: string }) {
+  return <Link href={href} className="rounded-xl border border-border bg-surface p-5 shadow-sm hover:border-accent/50"><p className="font-semibold">{title}</p><p className="mt-2 text-sm text-muted">{description}</p></Link>;
 }

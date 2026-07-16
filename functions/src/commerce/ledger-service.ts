@@ -1,5 +1,5 @@
-import crypto from "crypto";
-import admin from "firebase-admin";
+import crypto from "node:crypto";
+import type admin from "firebase-admin";
 import { adminDb } from "../firebase-admin";
 
 export interface LedgerEntry {
@@ -22,80 +22,47 @@ export interface LedgerEntry {
   amountMinor?: number;
   createdAt: string;
   idempotencyKey: string;
-  previousEntryHash?: string;
   entryHash: string;
 }
 
-/**
- * Computes SHA-256 hash for a ledger entry to enforce chain security
- */
-export function calculateEntryHash(entry: Omit<LedgerEntry, "entryHash">): string {
-  const dataString = JSON.stringify({
-    entryId: entry.entryId,
-    uid: entry.uid,
-    orderId: entry.orderId,
-    transactionId: entry.transactionId,
-    eventId: entry.eventId,
-    type: entry.type,
-    quantity: entry.quantity,
-    currency: entry.currency || "",
-    amountMinor: entry.amountMinor || 0,
-    createdAt: entry.createdAt,
-    idempotencyKey: entry.idempotencyKey,
-    previousEntryHash: entry.previousEntryHash || "",
-  });
-  return crypto.createHash("sha256").update(dataString).digest("hex");
+function canonical(value: unknown): string {
+  if (value === undefined) return "null";
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${canonical(record[key])}`).join(",")}}`;
 }
 
-/**
- * Appends a new entry to the immutable commerce ledger within a transaction context
- */
+export function deriveLedgerEntryId(idempotencyKey: string): string {
+  if (!idempotencyKey.trim()) throw new Error("LEDGER_IDEMPOTENCY_KEY_REQUIRED");
+  return `led_${crypto.createHash("sha256").update(idempotencyKey).digest("hex")}`;
+}
+
+export function calculateEntryHash(entry: Omit<LedgerEntry, "entryHash">): string {
+  return crypto.createHash("sha256").update(canonical(entry)).digest("hex");
+}
+
 export async function writeLedgerEntry(
-  dbTransaction: admin.firestore.Transaction,
-  entryParams: Omit<LedgerEntry, "entryId" | "createdAt" | "previousEntryHash" | "entryHash">
+  transaction: admin.firestore.Transaction,
+  entryParams: Omit<LedgerEntry, "entryId" | "createdAt" | "entryHash">
 ): Promise<LedgerEntry> {
-  const ledgerCollection = adminDb.collection("commerce_ledger");
-
-  // 1. Check if an entry with this idempotency key already exists to prevent duplicate operations
-  const existingQuery = await dbTransaction.get(
-    ledgerCollection.where("idempotencyKey", "==", entryParams.idempotencyKey).limit(1)
-  );
-
-  if (!existingQuery.empty) {
-    const doc = existingQuery.docs[0];
-    return doc.data() as LedgerEntry;
+  if (!Number.isSafeInteger(entryParams.quantity) || entryParams.quantity <= 0) {
+    throw new Error("LEDGER_QUANTITY_INVALID");
+  }
+  if (entryParams.amountMinor !== undefined && (!Number.isSafeInteger(entryParams.amountMinor) || entryParams.amountMinor < 0)) {
+    throw new Error("LEDGER_AMOUNT_INVALID");
   }
 
-  // 2. Fetch the latest ledger entry to construct the chain link
-  const latestSnapshot = await dbTransaction.get(
-    ledgerCollection.orderBy("createdAt", "desc").limit(1)
-  );
-
-  let previousEntryHash = "";
-  if (!latestSnapshot.empty) {
-    const latestDoc = latestSnapshot.docs[0].data() as LedgerEntry;
-    previousEntryHash = latestDoc.entryHash;
-  }
-
-  // 3. Construct the new entry
-  const entryId = ledgerCollection.doc().id;
-  const createdAt = new Date().toISOString();
-
+  const entryId = deriveLedgerEntryId(entryParams.idempotencyKey);
   const entryData: Omit<LedgerEntry, "entryHash"> = {
     ...entryParams,
     entryId,
-    createdAt,
-    previousEntryHash,
+    createdAt: new Date().toISOString(),
   };
-
-  const entryHash = calculateEntryHash(entryData);
   const finalEntry: LedgerEntry = {
     ...entryData,
-    entryHash,
+    entryHash: calculateEntryHash(entryData),
   };
-
-  // 4. Save to firestore within the transactional context
-  dbTransaction.set(ledgerCollection.doc(entryId), finalEntry);
-
+  transaction.create(adminDb.collection("commerce_ledger").doc(entryId), finalEntry);
   return finalEntry;
 }

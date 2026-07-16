@@ -1,27 +1,17 @@
 import admin from "firebase-admin";
+import { createHash } from "node:crypto";
 import { adminDb } from "../firebase-admin";
 import { OrderNotFoundError } from "./commerce-errors";
 import { validateIdentifier } from "../firestore-validator";
+import { assertOrderTransition, type OrderStatus } from "./order-state";
 
 export interface CommerceOrder {
   orderId: string;
+  requestId: string;
   uid: string;
-  caseId: string;
+  caseId?: string;
   productCode: string;
-  status:
-    | "DRAFT"
-    | "CHECKOUT_CREATED"
-    | "PAYMENT_PENDING"
-    | "PAID"
-    | "ENTITLED"
-    | "REPORT_RESERVED"
-    | "REPORT_CALCULATED"
-    | "REPORT_SEALED"
-    | "DELIVERED"
-    | "PAYMENT_FAILED"
-    | "PAYMENT_CANCELED"
-    | "REFUNDED_UNUSED"
-    | "REFUNDED_AFTER_DELIVERY";
+  status: OrderStatus;
   currency: string;
   amountMinor: number;
   paddleTransactionId?: string;
@@ -29,30 +19,57 @@ export interface CommerceOrder {
   updatedAt: string;
 }
 
-/**
- * Creates an initial order record in CHECKOUT_CREATED state
- */
+export function deriveOrderId(uid: string, requestId: string): string {
+  validateIdentifier("uid", uid);
+  const normalizedRequestId = requestId.trim();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(normalizedRequestId)) {
+    throw new Error("CHECKOUT_REQUEST_ID_INVALID");
+  }
+  const digest = createHash("sha256").update(`${uid}\u0000${normalizedRequestId}`).digest("hex");
+  return `ord_${digest}`;
+}
+
 export async function createOrder(
   dbTransaction: admin.firestore.Transaction,
   params: {
     uid: string;
-    caseId: string;
+    requestId: string;
+    caseId?: string;
     productCode: string;
     currency: string;
     amountMinor: number;
   }
-): Promise<CommerceOrder> {
+): Promise<{ order: CommerceOrder; created: boolean }> {
   validateIdentifier("uid", params.uid);
-  validateIdentifier("caseId", params.caseId);
-  
-  const orderRef = adminDb.collection("commerce_orders").doc();
-  const orderId = `ord_${orderRef.id}`;
-  const now = new Date().toISOString();
+  if (params.caseId) validateIdentifier("caseId", params.caseId);
+  if (!Number.isSafeInteger(params.amountMinor) || params.amountMinor <= 0) {
+    throw new Error("ORDER_AMOUNT_INVALID");
+  }
 
+  const orderId = deriveOrderId(params.uid, params.requestId);
+  const orderRef = adminDb.collection("commerce_orders").doc(orderId);
+  const snapshot = await dbTransaction.get(orderRef);
+  if (snapshot.exists) {
+    const existing = snapshot.data() as Partial<CommerceOrder>;
+    if (
+      existing.uid !== params.uid ||
+      existing.requestId !== params.requestId ||
+      existing.productCode !== params.productCode ||
+      existing.currency !== params.currency ||
+      existing.amountMinor !== params.amountMinor ||
+      existing.caseId !== params.caseId
+    ) {
+      throw new Error("CHECKOUT_IDEMPOTENCY_COLLISION");
+    }
+    return { order: existing as CommerceOrder, created: false };
+  }
+
+  const now = new Date().toISOString();
   const order: CommerceOrder = {
     orderId,
+    requestId: params.requestId,
     uid: params.uid,
-    caseId: params.caseId,
+    ...(params.caseId ? { caseId: params.caseId } : {}),
     productCode: params.productCode,
     status: "CHECKOUT_CREATED",
     currency: params.currency,
@@ -60,73 +77,35 @@ export async function createOrder(
     createdAt: now,
     updatedAt: now,
   };
-
-  dbTransaction.set(adminDb.collection("commerce_orders").doc(orderId), order);
-  return order;
+  dbTransaction.create(orderRef, order);
+  return { order, created: true };
 }
 
-/**
- * Atomic status transition with validation rules
- */
 export async function transitionOrderStatus(
   dbTransaction: admin.firestore.Transaction,
   orderId: string,
-  newStatus: CommerceOrder["status"],
+  newStatus: OrderStatus,
   metadata?: Partial<CommerceOrder>
 ): Promise<CommerceOrder> {
   validateIdentifier("orderId", orderId);
-  if (metadata?.paddleTransactionId) {
-    validateIdentifier("paddleTransactionId", metadata.paddleTransactionId);
-  }
-  
-  const orderRef = adminDb.collection("commerce_orders").doc(orderId);
-  const snapshot: any = await dbTransaction.get(orderRef as any);
+  if (metadata?.paddleTransactionId) validateIdentifier("paddleTransactionId", metadata.paddleTransactionId);
 
-  if (!snapshot.exists) {
-    throw new OrderNotFoundError(orderId);
-  }
+  const orderRef = adminDb.collection("commerce_orders").doc(orderId);
+  const snapshot = await dbTransaction.get(orderRef);
+  if (!snapshot.exists) throw new OrderNotFoundError(orderId);
 
   const order = snapshot.data() as CommerceOrder;
-  const now = new Date().toISOString();
-
-  // Validate state machine monotonicity (prevent invalid transitions)
-  const isTransitionValid = validateStateTransition(order.status, newStatus);
-  if (!isTransitionValid) {
-    console.warn(`[ORDER-STATE] Warning: Attempted questionable state transition from ${order.status} to ${newStatus}. Transition registered.`);
-  }
-
-  const updatedOrder: Partial<CommerceOrder> = {
+  assertOrderTransition(order.status, newStatus);
+  const updatedOrder: CommerceOrder = {
+    ...order,
     ...metadata,
     status: newStatus,
-    updatedAt: now,
+    updatedAt: new Date().toISOString(),
   };
-
-  dbTransaction.update(orderRef, updatedOrder);
-  return { ...order, ...updatedOrder };
-}
-
-/**
- * Enforce state machine rules
- */
-function validateStateTransition(current: CommerceOrder["status"], target: CommerceOrder["status"]): boolean {
-  if (current === target) return true;
-
-  const validTransitions: Record<CommerceOrder["status"], CommerceOrder["status"][]> = {
-    DRAFT: ["CHECKOUT_CREATED"],
-    CHECKOUT_CREATED: ["PAYMENT_PENDING", "PAID", "PAYMENT_FAILED", "PAYMENT_CANCELED"],
-    PAYMENT_PENDING: ["PAID", "PAYMENT_FAILED", "PAYMENT_CANCELED"],
-    PAID: ["ENTITLED", "REFUNDED_UNUSED"],
-    ENTITLED: ["REPORT_RESERVED", "REFUNDED_UNUSED"],
-    REPORT_RESERVED: ["REPORT_CALCULATED", "ENTITLED", "REFUNDED_UNUSED"],
-    REPORT_CALCULATED: ["REPORT_SEALED"],
-    REPORT_SEALED: ["DELIVERED"],
-    DELIVERED: ["REFUNDED_AFTER_DELIVERY"],
-    PAYMENT_FAILED: ["CHECKOUT_CREATED"],
-    PAYMENT_CANCELED: ["CHECKOUT_CREATED"],
-    REFUNDED_UNUSED: [],
-    REFUNDED_AFTER_DELIVERY: [],
-  };
-
-  const allowed = validTransitions[current] || [];
-  return allowed.includes(target);
+  dbTransaction.update(orderRef, {
+    ...metadata,
+    status: newStatus,
+    updatedAt: updatedOrder.updatedAt,
+  });
+  return updatedOrder;
 }

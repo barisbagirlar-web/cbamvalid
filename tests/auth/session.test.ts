@@ -1,39 +1,30 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
-// Mock server-only in Vitest environment
 vi.mock("server-only", () => ({}));
 
-const { verifySessionCookie, createSessionCookie, verifyIdToken, mockCookiesSet } = vi.hoisted(() => {
-  return {
-    verifySessionCookie: vi.fn(),
-    createSessionCookie: vi.fn(),
-    verifyIdToken: vi.fn(),
-    mockCookiesSet: vi.fn(),
-  };
-});
+const { verifySessionCookie, createSessionCookie, verifyIdToken, mockCookiesSet } = vi.hoisted(() => ({
+  verifySessionCookie: vi.fn(),
+  createSessionCookie: vi.fn(),
+  verifyIdToken: vi.fn(),
+  mockCookiesSet: vi.fn(),
+}));
 
-// Mock getAdminAuth/getAdminDb helpers directly
-vi.mock("@/lib/firebase/admin", () => {
-  return {
-    adminAuth: {
-      verifySessionCookie,
-      createSessionCookie,
-      verifyIdToken,
-    },
-    adminDb: {},
-  };
-});
+vi.mock("@/lib/firebase/admin", () => ({
+  adminAuth: {
+    verifySessionCookie,
+    createSessionCookie,
+    verifyIdToken,
+  },
+  adminDb: {},
+}));
 
-// Mock next/headers cookies API
 const mockGetCookie = vi.fn();
-vi.mock("next/headers", () => {
-  return {
-    cookies: async () => ({
-      get: mockGetCookie,
-      set: mockCookiesSet,
-    }),
-  };
-});
+vi.mock("next/headers", () => ({
+  cookies: async () => ({
+    get: mockGetCookie,
+    set: mockCookiesSet,
+  }),
+}));
 
 import { requireFirebaseSession } from "@/lib/auth/require-firebase-session";
 import { POST, DELETE } from "@/app/api/auth/session/route";
@@ -57,7 +48,6 @@ describe("Firebase Auth Session Tests", () => {
       const mockClaims = { uid: "user-123", email: "test@cbamvalid.com" };
       mockGetCookie.mockReturnValueOnce({ value: "valid-cookie-token" });
       verifySessionCookie.mockResolvedValueOnce(mockClaims);
-
       const decoded = await requireFirebaseSession();
       expect(decoded).toEqual(mockClaims);
       expect(verifySessionCookie).toHaveBeenCalledWith("valid-cookie-token", true);
@@ -66,7 +56,6 @@ describe("Firebase Auth Session Tests", () => {
     it("throws 401 if verification fails", async () => {
       mockGetCookie.mockReturnValueOnce({ value: "invalid-cookie-token" });
       verifySessionCookie.mockRejectedValueOnce(new Error("Token revoked"));
-
       await expect(requireFirebaseSession()).rejects.toMatchObject({
         status: 401,
         code: "UNAUTHORIZED",
@@ -75,11 +64,8 @@ describe("Firebase Auth Session Tests", () => {
     });
 
     it("guarantees ID Token is rejected by verifySessionCookie", async () => {
-      // In Firebase SDK, verifySessionCookie explicitly fails if passed an ID Token.
-      // We simulate this by mocking verifySessionCookie to reject.
       mockGetCookie.mockReturnValueOnce({ value: "firebase-id-token" });
       verifySessionCookie.mockRejectedValueOnce(new Error("Decoding firebase session cookie failed"));
-
       await expect(requireFirebaseSession()).rejects.toMatchObject({
         status: 401,
         code: "UNAUTHORIZED",
@@ -93,11 +79,9 @@ describe("Firebase Auth Session Tests", () => {
         method: "POST",
         body: "not-json",
       });
-
       const res = await POST(req);
       expect(res.status).toBe(400);
-      const data = await res.json();
-      expect(data.error.code).toBe("BAD_REQUEST");
+      expect((await res.json()).error.code).toBe("BAD_REQUEST");
     });
 
     it("returns 400 if token is missing", async () => {
@@ -105,44 +89,45 @@ describe("Firebase Auth Session Tests", () => {
         method: "POST",
         body: JSON.stringify({}),
       });
-
       const res = await POST(req);
       expect(res.status).toBe(400);
-      const data = await res.json();
-      expect(data.error.code).toBe("MISSING_TOKEN");
+      expect((await res.json()).error.code).toBe("MISSING_TOKEN");
     });
 
-    it("returns 410 / recent authentication required if token auth_time is stale", async () => {
-      const staleAuthTime = Math.floor(Date.now() / 1000) - 20 * 60; // 20 mins ago
-      verifyIdToken.mockResolvedValueOnce({ auth_time: staleAuthTime });
-
+    it("returns recent-authentication-required if a verified token auth_time is stale", async () => {
+      const staleAuthTime = Math.floor(Date.now() / 1000) - 20 * 60;
+      verifyIdToken.mockResolvedValueOnce({
+        uid: "user-123",
+        email: "user@example.com",
+        email_verified: true,
+        auth_time: staleAuthTime,
+      });
       const req = new Request("http://localhost/api/auth/session", {
         method: "POST",
         body: JSON.stringify({ idToken: "stale-token" }),
       });
-
       const res = await POST(req);
       expect(res.status).toBe(401);
-      const data = await res.json();
-      expect(data.error.code).toBe("AUTH_RECENT_REQUIRED");
+      expect((await res.json()).error.code).toBe("AUTH_RECENT_REQUIRED");
     });
 
-    it("returns session status success and sets cookie if ID token is valid", async () => {
-      const recentAuthTime = Math.floor(Date.now() / 1000) - 1 * 60; // 1 min ago
-      verifyIdToken.mockResolvedValueOnce({ auth_time: recentAuthTime });
+    it("returns success and sets cookie for a recent verified ID token", async () => {
+      const recentAuthTime = Math.floor(Date.now() / 1000) - 60;
+      verifyIdToken.mockResolvedValueOnce({
+        uid: "user-123",
+        email: "user@example.com",
+        email_verified: true,
+        auth_time: recentAuthTime,
+      });
       createSessionCookie.mockResolvedValueOnce("new-session-cookie-value");
-
       const req = new Request("http://localhost/api/auth/session", {
         method: "POST",
         body: JSON.stringify({ idToken: "valid-id-token" }),
       });
-
       const res = await POST(req);
       expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.ok).toBe(true);
-
-      expect(verifyIdToken).toHaveBeenCalledWith("valid-id-token");
+      expect((await res.json()).ok).toBe(true);
+      expect(verifyIdToken).toHaveBeenCalledWith("valid-id-token", true);
       expect(createSessionCookie).toHaveBeenCalledWith("valid-id-token", {
         expiresIn: 5 * 24 * 60 * 60 * 1000,
       });
@@ -161,15 +146,11 @@ describe("Firebase Auth Session Tests", () => {
     it("sets __session max-age to 0 and returns ok", async () => {
       const res = await DELETE();
       expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.ok).toBe(true);
-
+      expect((await res.json()).ok).toBe(true);
       expect(mockCookiesSet).toHaveBeenCalledWith(
         "__session",
         "",
-        expect.objectContaining({
-          maxAge: 0,
-        })
+        expect.objectContaining({ maxAge: 0 })
       );
     });
   });

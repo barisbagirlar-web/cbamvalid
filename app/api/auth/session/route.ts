@@ -1,65 +1,68 @@
 import { cookies } from "next/headers";
 import { adminAuth } from "@/lib/firebase/admin";
-import { apiSuccess, apiFailure } from "@/lib/http/api-response";
+import { apiFailure, apiSuccess } from "@/lib/http/api-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error && error.message ? error.message : "Unknown session error";
+}
+
 export async function POST(request: Request) {
   try {
-    let payload;
+    let payload: unknown;
     try {
       payload = await request.json();
     } catch {
       return apiFailure("BAD_REQUEST", "Malformed JSON request payload.", 400);
     }
 
-    const { idToken } = payload;
-    if (!idToken) {
-      return apiFailure("MISSING_TOKEN", "ID Token is required.", 400);
+    const idToken = payload && typeof payload === "object" && "idToken" in payload
+      ? (payload as { idToken?: unknown }).idToken
+      : null;
+    if (typeof idToken !== "string" || !idToken.trim()) {
+      return apiFailure("MISSING_TOKEN", "ID token is required.", 400);
     }
 
-    // 1. Verify the ID token
     let decodedIdToken;
     try {
-      decodedIdToken = await adminAuth.verifyIdToken(idToken);
-    } catch (verifyError: any) {
-      console.error("[SESSION VERIFY ERROR]:", verifyError.message || verifyError);
+      decodedIdToken = await adminAuth.verifyIdToken(idToken, true);
+    } catch (verifyError: unknown) {
+      console.error("[SESSION VERIFY ERROR]", errorMessage(verifyError));
       return apiFailure("INVALID_TOKEN", "ID token verification failed.", 401);
     }
 
-    // 2. Enforce recent authentication (within last 10 minutes)
+    if (decodedIdToken.email_verified !== true || typeof decodedIdToken.email !== "string") {
+      return apiFailure("EMAIL_VERIFICATION_REQUIRED", "Verify your email before starting a server session.", 403);
+    }
+
     const authTime = decodedIdToken.auth_time;
-    const nowSec = Math.floor(Date.now() / 1000);
-    if (nowSec - authTime > 10 * 60) {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    if (!Number.isSafeInteger(authTime) || authTime <= 0 || nowSeconds - authTime > 10 * 60) {
       return apiFailure("AUTH_RECENT_REQUIRED", "Recent sign-in required.", 401);
     }
 
-    // 3. Create session cookie (5 days)
     const expiresIn = 5 * 24 * 60 * 60 * 1000;
-    let sessionCookie;
+    let sessionCookie: string;
     try {
       sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
-    } catch (cookieError: any) {
-      console.error("[SESSION COOKIE CREATE ERROR]:", cookieError.message || cookieError);
+    } catch (cookieError: unknown) {
+      console.error("[SESSION COOKIE CREATE ERROR]", errorMessage(cookieError));
       return apiFailure("COOKIE_CREATION_FAILED", "Failed to create session cookie.", 500);
     }
 
-    // 4. Set HttpOnly session cookie
-    const isProduction = process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_PADDLE_ENV === "production";
     const cookieStore = await cookies();
     cookieStore.set("__session", sessionCookie, {
       maxAge: expiresIn / 1000,
       httpOnly: true,
-      secure: isProduction,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
     });
-
     return apiSuccess({ status: "success" });
-
-  } catch (err: any) {
-    console.error("[SESSION UNEXPECTED ERROR]:", err.message || err);
+  } catch (error: unknown) {
+    console.error("[SESSION UNEXPECTED ERROR]", errorMessage(error));
     return apiFailure("INTERNAL_SERVER_ERROR", "Session could not be established.", 500);
   }
 }
@@ -69,11 +72,14 @@ export async function DELETE() {
     const cookieStore = await cookies();
     cookieStore.set("__session", "", {
       maxAge: 0,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       path: "/",
     });
     return apiSuccess({ status: "success" });
-  } catch (err: any) {
-    console.error("[SESSION LOGOUT ERROR]:", err.message || err);
+  } catch (error: unknown) {
+    console.error("[SESSION LOGOUT ERROR]", errorMessage(error));
     return apiFailure("INTERNAL_SERVER_ERROR", "Session logout failed.", 500);
   }
 }

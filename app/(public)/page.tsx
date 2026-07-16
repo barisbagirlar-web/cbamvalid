@@ -1,210 +1,94 @@
 import Link from "next/link";
-import { Shield, ArrowRight, CheckCircle2, Globe2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, FileArchive, FileSpreadsheet, Globe2, Shield } from "lucide-react";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
-import { generateOrganizationSchema, generateWebSiteSchema, generateWebApplicationSchema, generateFAQSchema } from "@/lib/seo/schema";
+import {
+  generateOrganizationSchema,
+  generateWebSiteSchema,
+  generateWebApplicationSchema,
+  generateFAQSchema,
+} from "@/lib/seo/schema";
+import { formatPreparationPackPrice, PREPARATION_PACK } from "@/lib/commerce/preparation-pack";
 
 export const metadata = generateSeoMetadata("/");
 
 export default function HomePage() {
+  const price = formatPreparationPackPrice();
   const jsonLd = [
     generateOrganizationSchema(),
     generateWebSiteSchema(),
-    generateWebApplicationSchema("Prepare structured exporter evidence, identify documentation gaps, calculate embedded emissions, and generate auditable CBAM preparation dossiers."),
+    generateWebApplicationSchema("Prepare evidence-linked CBAM calculations and a signed verifier-preparation dossier with controlled PDF and XLSX outputs."),
     generateFAQSchema([
       {
-        question: "What is a CBAM evidence dossier?",
-        answer: "A CBAM evidence dossier is a compiled report containing the direct and indirect embedded emissions data of imported goods, structured to align with EU regulations."
+        question: "What does one CBAMValid Preparation Pack include?",
+        answer: `One ${price} USD pack includes ${PREPARATION_PACK.accountCredits} account credits and funds up to ${PREPARATION_PACK.maxReleases} successful sealed versions for one CBAM case.`,
       },
       {
-        question: "Is CBAMValid an official European Commission service?",
-        answer: "No. CBAMValid is an independent software service that assists exporters and importers with calculations and reporting preparation."
-      }
-    ])
+        question: "Is CBAMValid an accredited verifier or official EU service?",
+        answer: "No. CBAMValid prepares calculation and evidence packages for independent accredited verification. It does not issue a verification opinion or EU acceptance decision.",
+      },
+    ]),
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans flex flex-col">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-
-
-      {/* 2. Hero Section */}
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <main className="flex-1">
-        <section className="max-w-7xl mx-auto px-6 py-20 lg:py-28">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div className="max-w-2xl space-y-6">
-              <div className="inline-flex items-center space-x-2 border border-border bg-accent-soft px-3 py-1.5 rounded-full text-xs font-semibold tracking-wider text-accent uppercase">
-                <Globe2 className="w-4 h-4 mr-1" strokeWidth={1.75} /> 
-                EU Regulatory Method Alignment
-              </div>
-              
-              <h1 className="text-4xl lg:text-6xl font-bold tracking-tight leading-[1.1]">
-                CBAM Exporter <br />
-                <span className="text-accent">Final Evidence Report</span>
-              </h1>
-              
-              <p className="text-base md:text-lg text-muted leading-relaxed">
-                Prepare a buyer-ready CBAM emissions and evidence package in one guided workflow. 
-                Enter your product, shipment, installation and emissions data. Review missing evidence, 
-                pay once, and download your final report in PDF, JSON and XML formats.
-              </p>
-
-              <div className="text-sm text-subtle font-semibold font-mono">
-                USD 150 per final report. No subscription. No credits.
-              </div>
-              
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-                <Link 
-                  href="/register?next=/cases/new" 
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent px-5 py-3 font-medium text-surface transition-colors hover:bg-accent-hover active:bg-accent-active cursor-pointer"
-                >
-                  Start a Dossier <ArrowRight size={18} strokeWidth={1.75} />
-                </Link>
-                <Link 
-                  href="/how-it-works" 
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-strong bg-transparent px-5 py-3 font-medium text-foreground transition-colors hover:bg-neutral-soft"
-                >
-                  Watch the Workflow
-                </Link>
-                <Link 
-                  href="/sample-dossier" 
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-strong bg-transparent px-5 py-3 font-medium text-foreground transition-colors hover:bg-neutral-soft"
-                >
-                  View the Sample Dossier
-                </Link>
-              </div>
+        <section className="mx-auto grid max-w-7xl items-center gap-16 px-6 py-20 lg:grid-cols-2 lg:py-28">
+          <div className="max-w-2xl space-y-6">
+            <div className="inline-flex items-center rounded-full border border-border bg-accent-soft px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-accent"><Globe2 className="mr-2 h-4 w-4" />EU CBAM definitive-period preparation</div>
+            <h1 className="text-4xl font-bold leading-[1.1] tracking-tight lg:text-6xl">CBAM Verifier-Preparation <span className="text-accent">Dossier</span></h1>
+            <p className="text-base leading-relaxed text-muted md:text-lg">Build one evidence-linked case, resolve automated blockers, purchase one controlled pack, and generate professional PDF, verifier XLSX and a signed 27-component ZIP package.</p>
+            <div className="rounded-lg border border-border bg-surface p-4 text-sm">
+              <strong>{price} USD one-time</strong> · {PREPARATION_PACK.accountCredits} credits · {PREPARATION_PACK.maxReleases} successful sealed versions · {PREPARATION_PACK.creditsPerRelease} credits per successful seal
             </div>
-
-            {/* Right side graphical placeholder */}
-            <section className="hidden lg:block relative p-8 bg-surface border border-border rounded-xl shadow-[var(--shadow-card)]">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between border-b border-border/50 pb-3">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-accent" strokeWidth={1.75} />
-                    <span className="font-semibold text-sm">Evidence Dossier Preview</span>
-                  </div>
-                  <span className="text-xs bg-accent-soft text-accent px-2.5 py-1 rounded-full font-semibold border border-border">
-                    USD 150
-                  </span>
-                </div>
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between py-1 border-b border-border/30">
-                    <span className="text-muted">PDF Evidence Manifest</span>
-                    <span className="text-accent font-semibold">Included</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-border/30">
-                    <span className="text-muted">Canonical JSON Format</span>
-                    <span className="text-accent font-semibold">Included</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-border/30">
-                    <span className="text-muted">CBAMValid Exporter Evidence XML</span>
-                    <span className="text-accent font-semibold">Included</span>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
-        </section>
-
-        {/* Video CTA Section */}
-        <section className="border-t border-border bg-surface py-20">
-          <div className="max-w-7xl mx-auto px-6 text-center">
-            <h2 className="text-3xl font-bold font-serif mb-4">See CBAMValid in Action</h2>
-            <p className="text-muted text-lg mb-10 max-w-2xl mx-auto">
-              Review the full evidence-linked workflow before creating your first case.
-            </p>
-            <div className="relative max-w-4xl mx-auto rounded-xl overflow-hidden shadow-2xl border border-border bg-black group block">
-              <div className="aspect-video relative">
-                <img 
-                  src="/media/cbamvalid-product-walkthrough-poster.webp" 
-                  alt="Video Walkthrough Poster" 
-                  className="w-full h-full object-cover opacity-80"
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-16 h-16 bg-accent/90 rounded-full flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
-                    <div className="w-0 h-0 border-y-8 border-y-transparent border-l-12 border-l-white ml-2" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="mt-8">
-              <Link 
-                href="/how-it-works" 
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-accent px-8 py-3 font-medium text-surface transition-colors hover:bg-accent-hover"
-              >
-                Open Full Walkthrough <ArrowRight className="w-4 h-4" />
-              </Link>
+            <div className="flex flex-col gap-4 sm:flex-row">
+              <Link href="/register?next=/cases/new" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent px-5 py-3 font-medium text-surface hover:bg-accent-hover">Start a Dossier <ArrowRight size={18} /></Link>
+              <Link href="/sample-dossier" className="inline-flex min-h-11 items-center justify-center rounded-md border border-border-strong px-5 py-3 font-medium hover:bg-neutral-soft">View Sample Dossier</Link>
+              <Link href="/product" className="inline-flex min-h-11 items-center justify-center rounded-md border border-border-strong px-5 py-3 font-medium hover:bg-neutral-soft">View Product Scope</Link>
             </div>
           </div>
+
+          <section className="rounded-xl border border-border bg-surface p-8 shadow-[var(--shadow-card)]">
+            <div className="flex items-center justify-between border-b border-border/50 pb-4"><div className="flex items-center gap-2"><Shield className="h-5 w-5 text-accent" /><span className="font-semibold">Controlled Package</span></div><span className="rounded-full border border-border bg-accent-soft px-3 py-1 text-xs font-semibold text-accent">{price} USD</span></div>
+            <div className="mt-6 space-y-4 text-sm">
+              <Deliverable icon={CheckCircle2} title="11 professional controlled PDFs" />
+              <Deliverable icon={FileSpreadsheet} title="Verifier-grade XLSX workspace" />
+              <Deliverable icon={FileArchive} title="Signed 27-component ZIP dossier" />
+              <Deliverable icon={Shield} title="Manifest, KMS signature and immutable hashes" />
+            </div>
+          </section>
         </section>
 
-        {/* 3. Steps section */}
-        <section id="how-it-works" className="border-t border-border bg-neutral-soft py-20">
-          <div className="max-w-7xl mx-auto px-6">
-            <h2 className="text-xl md:text-2xl font-bold mb-12 text-center">Five-Step Evidence Compilation Workflow</h2>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-6 text-sm">
+        <section className="border-t border-border bg-neutral-soft py-20">
+          <div className="mx-auto max-w-7xl px-6">
+            <h2 className="mb-12 text-center text-2xl font-bold">End-to-End Controlled Workflow</h2>
+            <div className="grid gap-5 md:grid-cols-4 lg:grid-cols-8">
               {[
-                "Add your exported goods",
-                "Add factory and production data",
-                "Review emissions and missing evidence",
-                "Pay USD 150",
-                "Download PDF, JSON and XML"
-              ].map((step, idx) => (
-                <section key={idx} className="p-5 bg-surface border border-border rounded-xl space-y-3 shadow-[var(--shadow-card)]">
-                  <span className="text-xs font-bold text-accent font-mono">Step {idx + 1}</span>
-                  <p className="font-semibold text-foreground">{step}</p>
-                </section>
-              ))}
+                "Register and verify email",
+                "Create one case",
+                "Enter goods and installation data",
+                "Link and approve evidence",
+                "Resolve calculation and QC blockers",
+                `Purchase ${price} USD pack`,
+                `Seal version for ${PREPARATION_PACK.creditsPerRelease} credits`,
+                "Download and independently verify package",
+              ].map((step, index) => <article key={step} className="rounded-xl border border-border bg-surface p-4 shadow-sm"><span className="font-mono text-xs font-bold text-accent">{index + 1}</span><p className="mt-3 text-sm font-semibold">{step}</p></article>)}
             </div>
           </div>
         </section>
 
-        {/* 4. Frequently Asked Questions */}
-        <section className="border-t border-border bg-background py-20">
-          <div className="max-w-7xl mx-auto px-6">
-            <h2 className="text-xl md:text-2xl font-bold mb-12 text-center">Frequently Asked Questions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              <div className="bg-surface border border-border p-6 rounded-xl">
-                <h3 className="font-semibold text-lg mb-2">What is a CBAM evidence dossier?</h3>
-                <p className="text-muted text-sm leading-relaxed">
-                  A CBAM evidence dossier is a compiled report containing the direct and indirect embedded emissions data of imported goods, structured to align with EU regulations.
-                </p>
-              </div>
-              <div className="bg-surface border border-border p-6 rounded-xl">
-                <h3 className="font-semibold text-lg mb-2">Is CBAMValid an official European Commission service?</h3>
-                <p className="text-muted text-sm leading-relaxed">
-                  No. CBAMValid is an independent software service that assists exporters and importers with calculations and reporting preparation.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 5. Trust & Disclaimers */}
-        <section className="border-t border-border max-w-7xl mx-auto px-6 py-20 space-y-8">
-          <div className="bg-surface border border-border rounded-xl p-6 md:p-10 space-y-6 shadow-[var(--shadow-card)]">
-            <div className="flex gap-3">
-              <CheckCircle2 className="w-6 h-6 text-foreground mt-0.5 shrink-0" strokeWidth={1.75} />
-              <div>
-                <h3 className="font-bold text-lg text-foreground">Trust Statement</h3>
-                <p className="mt-2 text-sm text-muted leading-relaxed">
-                  Built around current published EU CBAM rules and official source data. 
-                  Designed for exporter-to-importer evidence transfer and verification readiness.
-                </p>
-              </div>
-            </div>
-            <div className="border-t border-border pt-6 space-y-2">
-              <span className="text-xs font-bold text-subtle uppercase tracking-wider block">Mandatory Limitation & Regulatory Disclaimer</span>
-              <p className="text-xs text-subtle leading-relaxed">
-                CBAMValid prepares calculation and evidence packages. It is not an EU institution, customs authority, 
-                or accredited CBAM verifier. Actual emissions must be independently verified where verification is legally required.
-              </p>
-            </div>
+        <section className="mx-auto max-w-7xl px-6 py-20">
+          <div className="rounded-xl border border-border bg-surface p-8 shadow-[var(--shadow-card)]">
+            <h2 className="font-serif text-2xl font-bold">Regulatory and Commercial Boundary</h2>
+            <p className="mt-4 text-sm leading-relaxed text-muted">CBAMValid prepares calculations, evidence mapping, automated readiness controls and sealed verifier-preparation deliverables. It is not an EU institution, customs authority or accredited verifier. Actual emissions and the final operator report require independent accredited verification where applicable.</p>
+            <p className="mt-3 text-sm leading-relaxed text-muted">Credits are consumed only when a report version is successfully sealed in the same transaction that activates the immutable report. Drafting, calculations and blocked attempts consume zero credits.</p>
           </div>
         </section>
       </main>
     </div>
   );
+}
+
+function Deliverable({ icon: Icon, title }: { icon: typeof Shield; title: string }) {
+  return <div className="flex items-center justify-between border-b border-border/40 py-2"><span>{title}</span><Icon className="h-5 w-5 text-accent" /></div>;
 }

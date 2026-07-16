@@ -1,0 +1,23 @@
+export const PREPARATION_PACK = {
+  productCode: "CBAM_CREDIT_PACK_5",
+  slug: "cbam-5-reports",
+  displayName: "CBAM Verifier-Preparation Pack",
+  currency: "USD",
+  priceMinor: 14900,
+  accountCredits: 100 as number,
+  maxReleases: 5,
+  creditsPerRelease: 20,
+  correctionWindowDays: 14,
+  maxCustomsLines: 100,
+  maxInstallations: 1,
+  maxCnCodes: 25,
+} as const;
+
+export function formatPreparationPackPrice(): string {
+  return `$${PREPARATION_PACK.priceMinor / 100}`;
+}
+
+export function releasesFromCredits(credits: number): number {
+  if (!Number.isSafeInteger(credits) || credits < 0) return 0;
+  return Math.floor(credits / PREPARATION_PACK.creditsPerRelease);
+}

@@ -2,73 +2,111 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSuperAdmin() {
-      return request.auth != null && (request.auth.token.admin == true || request.auth.token.ownerAdmin == true);
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwnerSuperAdmin() {
+      return isSignedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.role == 'super_admin'
+        && request.auth.token.owner == true;
+    }
+
+    function isOwnDocument(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
     match /users/{userId} {
-      allow read: if (request.auth != null && request.auth.uid == userId) || isSuperAdmin();
-      allow create: if request.auth != null
-                    && request.auth.uid == userId
-                    && request.resource.data.tokens == 0
-                    && request.resource.data.role == 'user';
-      allow update: if request.auth != null
-                    && request.auth.uid == userId
-                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])
-                    && (
-                      !request.resource.data.diff(resource.data).affectedKeys().hasAny(['tokens'])
-                      || (request.resource.data.tokens == resource.data.tokens - 1)
-                    );
-      allow delete: if isSuperAdmin();
+      allow read: if isOwnDocument(userId) || isOwnerSuperAdmin();
+      allow create: if isOwnDocument(userId)
+        && request.resource.data.role == 'user'
+        && !request.resource.data.keys().hasAny([
+          'tokens',
+          'credits',
+          'availableCredits',
+          'creditSummary',
+          'customClaims',
+          'owner',
+          'admin',
+          'ownerAdmin'
+        ]);
+      allow update: if isOwnDocument(userId)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'role',
+          'tokens',
+          'credits',
+          'availableCredits',
+          'creditSummary',
+          'customClaims',
+          'owner',
+          'admin',
+          'ownerAdmin'
+        ]);
+      allow delete: if isOwnerSuperAdmin();
 
       match /creditSummary/{docId} {
-        allow read: if (request.auth != null && request.auth.uid == userId) || isSuperAdmin();
+        allow read: if isOwnDocument(userId) || isOwnerSuperAdmin();
         allow write: if false;
       }
 
       match /creditLedger/{docId} {
-        allow read: if (request.auth != null && request.auth.uid == userId) || isSuperAdmin();
+        allow read: if isOwnDocument(userId) || isOwnerSuperAdmin();
         allow write: if false;
       }
     }
 
     match /cbam_reports/{reportId} {
-      allow read: if (request.auth != null && resource.data.uid == request.auth.uid) || isSuperAdmin();
+      allow read: if (isSignedIn() && resource.data.uid == request.auth.uid) || isOwnerSuperAdmin();
       allow create: if false;
-      allow update, delete: if isSuperAdmin();
+      allow update, delete: if isOwnerSuperAdmin();
     }
 
     match /cbam_cases/{caseId} {
-      allow read: if (request.auth != null && resource.data.uid == request.auth.uid) || isSuperAdmin();
+      allow read: if (isSignedIn() && resource.data.uid == request.auth.uid) || isOwnerSuperAdmin();
       allow create: if false;
-      allow update, delete: if isSuperAdmin();
+      allow update, delete: if isOwnerSuperAdmin();
     }
 
     match /case_creation_requests/{requestDigest} {
       allow read, write: if false;
     }
 
-    // Seal request documents contain deterministic request identifiers,
-    // in-progress leases and retry state. They are backend-only controls.
     match /report_requests/{requestDigest} {
       allow read, write: if false;
     }
 
     match /commerce_orders/{orderId} {
-      allow read: if (request.auth != null && resource.data.uid == request.auth.uid) || isSuperAdmin();
+      allow read: if (isSignedIn() && resource.data.uid == request.auth.uid) || isOwnerSuperAdmin();
       allow create, update, delete: if false;
     }
 
     match /entitlements/{entitlementId} {
-      allow read: if (request.auth != null && resource.data.uid == request.auth.uid) || isSuperAdmin();
+      allow read: if (isSignedIn() && resource.data.uid == request.auth.uid) || isOwnerSuperAdmin();
       allow create, update, delete: if false;
     }
 
-    match /account_closures/{closureId} {
+    match /account_closure_requests/{closureId} {
       allow read, write: if false;
     }
 
     match /paddle_events/{eventId} {
+      allow read, write: if false;
+    }
+
+    match /credit_events/{eventId} {
+      allow read, write: if false;
+    }
+
+    match /commerce_ledger/{entryId} {
+      allow read, write: if false;
+    }
+
+    match /commerce_manual_reviews/{reviewId} {
+      allow read, write: if false;
+    }
+
+    match /admin_credit_reversals/{reversalId} {
       allow read, write: if false;
     }
 
@@ -90,6 +128,10 @@ service cloud.firestore {
     }
 
     match /audit_events/{docId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
       allow read, write: if false;
     }
   }

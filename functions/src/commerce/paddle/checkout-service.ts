@@ -1,55 +1,61 @@
-import { getPriceIdForProduct, PRODUCT_CATALOG } from "../../commerce/catalog";
-import { paddle, isSandboxMode } from "../paddle-client";
+import { getPriceIdForProduct, getProduct } from "../catalog";
+import { assertPaddleConfigured, paddle, isSandboxMode } from "../paddle-client";
 import { adminDb } from "../../firebase-admin";
-import { createOrder } from "../order-service";
+import { createOrder, transitionOrderStatus } from "../order-service";
+import { verifyCaseOwner } from "../../cbam/storage/case-repository";
 
-export async function createCheckout(uid: string, email: string, productCode: string, metadata: { caseId: string }) {
-  const { caseId } = metadata;
-  
-  const product = PRODUCT_CATALOG[productCode];
-  if (!product || !product.active) {
-    throw new Error("Product is inactive or invalid");
-  }
+export async function createCheckout(params: {
+  uid: string;
+  productCode: string;
+  requestId: string;
+  caseId?: string;
+}): Promise<string> {
+  assertPaddleConfigured();
+  const product = getProduct(params.productCode);
+  if (!product) throw new Error("CHECKOUT_PRODUCT_INVALID");
+  if (params.caseId) await verifyCaseOwner(params.caseId, params.uid);
 
-  const isSandbox = isSandboxMode();
-  const priceId = getPriceIdForProduct(productCode, isSandbox);
-  if (!priceId) {
-    throw new Error("Price mapping missing for the requested product code");
-  }
+  const sandbox = isSandboxMode();
+  const priceId = getPriceIdForProduct(params.productCode, sandbox);
+  if (!priceId) throw new Error("PADDLE_PRICE_MAPPING_MISSING");
 
-  const result = await adminDb.runTransaction(async (dbTransaction: any) => {
-    // Create server-side tracking order
-    const order = await createOrder(dbTransaction, {
-      uid: uid,
-      caseId: caseId,
-      productCode: productCode,
-      currency: product.currency,
-      amountMinor: product.expectedUnitAmount,
+  const result = await adminDb.runTransaction((transaction) => createOrder(transaction, {
+    uid: params.uid,
+    requestId: params.requestId,
+    ...(params.caseId ? { caseId: params.caseId } : {}),
+    productCode: params.productCode,
+    currency: product.currency,
+    amountMinor: product.expectedUnitAmount,
+  }));
+
+  if (result.order.paddleTransactionId) return result.order.paddleTransactionId;
+  if (!result.created) throw new Error("CHECKOUT_CREATION_IN_PROGRESS");
+
+  try {
+    const paddleTransaction = await paddle.transactions.create({
+      items: [{ priceId, quantity: 1 }],
+      customData: {
+        uid: params.uid,
+        orderId: result.order.orderId,
+        ...(params.caseId ? { caseId: params.caseId } : {}),
+        productCode: params.productCode,
+        environment: sandbox ? "sandbox" : "production",
+      },
     });
 
-    return order;
-  });
-
-  const paddleTransaction = await paddle.transactions.create({
-    items: [
-      {
-        priceId: priceId,
-        quantity: 1,
-      },
-    ],
-    customData: {
-      uid: uid,
-      orderId: result.orderId,
-      caseId: caseId,
-      productCode: productCode,
-      environment: isSandbox ? "sandbox" : "production",
-    },
-  });
-
-  await adminDb.collection("commerce_orders").doc(result.orderId).update({
-    paddleTransactionId: paddleTransaction.id,
-    status: "PAYMENT_PENDING",
-  });
-
-  return paddleTransaction.id;
+    await adminDb.runTransaction((transaction) => transitionOrderStatus(
+      transaction,
+      result.order.orderId,
+      "PAYMENT_PENDING",
+      { paddleTransactionId: paddleTransaction.id }
+    ));
+    return paddleTransaction.id;
+  } catch (error) {
+    await adminDb.runTransaction((transaction) => transitionOrderStatus(
+      transaction,
+      result.order.orderId,
+      "PAYMENT_FAILED"
+    )).catch((stateError) => console.error("Checkout failure state could not be persisted", stateError));
+    throw error;
+  }
 }

@@ -5,10 +5,29 @@ export interface AuthenticatedCallableRequest<T = unknown> extends CallableReque
   auth: NonNullable<CallableRequest<T>["auth"]>;
 }
 
+const SAFE_DOMAIN_CODES = new Set([
+  "failed-precondition",
+  "permission-denied",
+  "not-found",
+  "already-exists",
+  "resource-exhausted",
+  "aborted",
+]);
+
 function shouldEnforceAppCheck(): boolean {
   if (process.env.FUNCTIONS_EMULATOR === "true") return false;
   if (process.env.CBAM_ENFORCE_APP_CHECK === "false") return false;
   return true;
+}
+
+function domainHttpsError(error: unknown): HttpsError | null {
+  if (!error || typeof error !== "object") return null;
+  const candidate = error as { code?: unknown; message?: unknown };
+  if (typeof candidate.code !== "string" || !SAFE_DOMAIN_CODES.has(candidate.code)) return null;
+  const message = typeof candidate.message === "string" && candidate.message.trim()
+    ? candidate.message
+    : "The requested operation could not be completed.";
+  return new HttpsError(candidate.code as ConstructorParameters<typeof HttpsError>[0], message);
 }
 
 export function createCallable<T, Res>(
@@ -50,8 +69,9 @@ export function createCallable<T, Res>(
       } catch (error: unknown) {
         console.error(`[CALLABLE ERROR] uid=${request.auth?.uid || "unauthenticated"}`, error);
         if (error instanceof HttpsError) throw error;
-        const message = error instanceof Error ? error.message : "An internal error occurred.";
-        throw new HttpsError("internal", message);
+        const mapped = domainHttpsError(error);
+        if (mapped) throw mapped;
+        throw new HttpsError("internal", "An internal error occurred.");
       }
     }
   );
