@@ -100,6 +100,12 @@ const requiredComponents = requiredStart >= 0 && requiredEnd >= requiredStart
   ? componentMatches.slice(requiredStart, requiredEnd + 1)
   : [];
 if (requiredComponents.length !== 27) failures.push(`Verifier package must define exactly 27 top-level components; found ${requiredComponents.length}`);
+for (const requiredComponent of ["24_Executive_Verification_Readiness_Summary.pdf","25_Per_Good_Embedded_Emissions_Schedule.csv","26_Carbon_Price_Paid_Schedule.csv","27_Read_Me_and_Verifier_Navigation_Guide.pdf"]) {
+  requireText(packageBuilder, requiredComponent, "Mandated verifier package component");
+}
+for (const legacyComponent of ["Operator Summary Statement.pdf","Activity Data Ledger.csv","Carbon Price Register.csv","O3CI Field Mapping.csv"]) {
+  rejectText(packageBuilder, legacyComponent, "Legacy package component");
+}
 requireText(packageBuilder, 'schemaVersion: "CBAMVALID-DOSSIER-4.0"', "Manifest schema v4");
 requireText(packageBuilder, "legalSourceRegistryHash", "Manifest regulatory fingerprint");
 requireText(packageBuilder, "PACKAGE_REOPEN_HASH_MISMATCH", "ZIP read-back hash validation");

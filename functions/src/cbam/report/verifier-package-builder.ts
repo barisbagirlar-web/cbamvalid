@@ -19,22 +19,22 @@ export const REQUIRED_TOP_LEVEL_COMPONENTS = [
   "Source Stream Register.csv",
   "Emission Source Register.csv",
   "Meter Register.csv",
-  "Activity Data Ledger.csv",
+  "25_Per_Good_Embedded_Emissions_Schedule.csv",
   "Evidence Register.csv",
   "Field Evidence Matrix.csv",
   "Methodology Decision Log.pdf",
   "Calculation Annex.pdf",
   "Operator Emissions Report.pdf",
-  "Operator Summary Statement.pdf",
+  "24_Executive_Verification_Readiness_Summary.pdf",
   "Verification Readiness Assessment.pdf",
   "Misstatement Register.csv",
   "Corrective Action Log.csv",
-  "O3CI Field Mapping.csv",
+  "27_Read_Me_and_Verifier_Navigation_Guide.pdf",
   "Calculation Trace.json",
   "Data Integrity Manifest.json",
   "Manifest Signature.sig",
   "Units and Conversions Register.csv",
-  "Carbon Price Register.csv",
+  "26_Carbon_Price_Paid_Schedule.csv",
   "Verifier Workspace.xlsx",
   "Supporting_Evidence/",
 ] as const;
@@ -239,7 +239,7 @@ function buildPdfArtifacts(params: {
       { heading: "Evidence and controls", table: { headers: ["Measure", "Result"], widths: [90, 90], rows: [["Automated readiness", model.automatedReadiness], ["Quality-control blockers", model.qualitySummary.blockers], ["Approved clean evidence", model.evidenceSummary.approvedCleanEvidenceFiles], ["Calculation trace nodes", model.calculationTraceCount], ["Independent verifier status", model.independentVerifierStatus]] } },
       { heading: "Legal boundary", callout: { label: "Important", value: model.disclaimer } },
     ]),
-    pdfFile("Operator Summary Statement.pdf", "Operator Summary Statement", "Executive control statement for the sealed verifier-preparation package", [
+    pdfFile("24_Executive_Verification_Readiness_Summary.pdf", "Executive Verification Readiness Summary", "Executive readiness decision and independent-verifier handoff for the sealed package", [
       { heading: "Executive statement", paragraphs: [`Release ${releaseVersion} for case ${model.caseId} contains ${model.goods.length} CN-coded good(s), ${model.evidenceSummary.totalEvidenceFiles} evidence file(s), ${model.methodologyDecisionCount} methodology decision(s) and ${model.calculationTraceCount} cryptographically linked calculation node(s).`, `Automated preparation status: ${model.automatedReadiness}. Independent verifier status: ${model.independentVerifierStatus}.`] },
       { heading: "Key totals", table: { headers: ["Total embedded tCO2e", "Production t", "Specific tCO2e/t", "Evidence coverage", "QC blockers"], widths: [38, 32, 38, 34, 38], rows: [[model.totals.totalEmbeddedEmissions, model.totals.productionVolume, model.totals.aggregateSpecificEmbeddedEmissions, `${model.evidenceSummary.coverageRate}%`, model.qualitySummary.blockers]] } },
       { heading: "Trust chain", table: { headers: ["Control", "Value"], widths: [48, 132], rows: [["Calculation root", model.calculationRootHash], ["Legal source registry", model.ruleset.sourceHash], ["Report ID", reportId], ["Generated", generatedAt]] } },
@@ -267,14 +267,62 @@ function buildCsvArtifacts(params: {
     artifact("Source Stream Register.csv", csv([["Stream ID", "Name", "Country", "Quantity", "Quantity unit", "Direct tCO2e", "Indirect tCO2e", "Quantity evidence", "Direct evidence", "Indirect evidence"], ...caseData.precursors.map((item, index) => [`P${index + 1}`, item.name.value, item.countryOfOrigin.value, item.quantity.value, item.quantity.canonicalUnit, item.directEmissions.value, item.indirectEmissions.value, item.quantity.evidenceId, item.directEmissions.evidenceId, item.indirectEmissions.evidenceId])]), "text/csv"),
     artifact("Emission Source Register.csv", csv([["Source", "Value", "Unit", "Source type", "Evidence ID", "Measurement method", "Responsible person"], ["Direct emissions", caseData.directEmissions.value, caseData.directEmissions.canonicalUnit, caseData.directEmissions.sourceType, caseData.directEmissions.evidenceId, caseData.directEmissions.measurementMethod, caseData.directEmissions.responsiblePerson], ["Electricity", caseData.electricityConsumed.value, caseData.electricityConsumed.canonicalUnit, caseData.electricityConsumed.sourceType, caseData.electricityConsumed.evidenceId, caseData.electricityConsumed.measurementMethod, caseData.electricityConsumed.responsiblePerson], ["Grid factor", caseData.gridEmissionFactor.value, caseData.gridEmissionFactor.canonicalUnit, caseData.gridEmissionFactor.sourceType, caseData.gridEmissionFactor.evidenceId, caseData.gridEmissionFactor.measurementMethod, caseData.gridEmissionFactor.responsiblePerson]]), "text/csv"),
     artifact("Meter Register.csv", csv([["Input", "Measurement method", "Document reference", "Responsible person", "Evidence ID"], ["Direct emissions", caseData.directEmissions.measurementMethod, caseData.directEmissions.documentReference, caseData.directEmissions.responsiblePerson, caseData.directEmissions.evidenceId], ["Electricity", caseData.electricityConsumed.measurementMethod, caseData.electricityConsumed.documentReference, caseData.electricityConsumed.responsiblePerson, caseData.electricityConsumed.evidenceId], ["Grid emission factor", caseData.gridEmissionFactor.measurementMethod, caseData.gridEmissionFactor.documentReference, caseData.gridEmissionFactor.responsiblePerson, caseData.gridEmissionFactor.evidenceId]]), "text/csv"),
-    artifact("Activity Data Ledger.csv", csv([["Good", "CN", "Sector", "Production t", "Allocation share", "Allocated direct tCO2e", "Allocated indirect tCO2e", "Allocated precursor tCO2e", "Allocated embedded tCO2e", "Specific tCO2e/t", "5% materiality tCO2e/t", "Trace ID"], ...model.goods.map((good) => { const result = calculation.goods[good.goodIndex - 1]; return [good.goodIndex, good.cnCode, good.sector, good.productionVolume, good.allocationShare, result.allocatedDirectEmissions, result.allocatedIndirectEmissions, result.allocatedPrecursorEmissions, good.allocatedEmbeddedEmissions, good.specificEmbeddedEmissions, good.materialityThresholdSpecific, good.traceCalculationId]; })]), "text/csv"),
+    artifact("25_Per_Good_Embedded_Emissions_Schedule.csv", csv([["Good", "CN", "Sector", "Production t", "Allocation share", "Allocated direct tCO2e", "Allocated indirect tCO2e", "Allocated precursor tCO2e", "Allocated embedded tCO2e", "Specific tCO2e/t", "5% materiality tCO2e/t", "Trace ID"], ...model.goods.map((good) => { const result = calculation.goods[good.goodIndex - 1]; return [good.goodIndex, good.cnCode, good.sector, good.productionVolume, good.allocationShare, result.allocatedDirectEmissions, result.allocatedIndirectEmissions, result.allocatedPrecursorEmissions, good.allocatedEmbeddedEmissions, good.specificEmbeddedEmissions, good.materialityThresholdSpecific, good.traceCalculationId]; })]), "text/csv"),
     artifact("Evidence Register.csv", csv([["Evidence ID", "Type", "File", "Storage path", "Issuer", "Issue date", "Reporting period", "SHA-256", "Bytes", "Review", "Support", "Malware", "Confidentiality", "Reviewer notes"], ...caseData.evidenceRegister.map((item) => [item.evidenceId, item.documentType, item.fileName, item.storagePath, item.issuer, item.issueDate, item.reportingPeriod, item.fileHash, item.sizeBytes, item.reviewStatus, item.supportStatus, item.malwareScanStatus, item.confidentiality, item.reviewerNotes])]), "text/csv"),
     artifact("Field Evidence Matrix.csv", csv([["Evidence ID", "Linked input", "Linked calculations", "Review", "Support", "Malware"], ...caseData.evidenceRegister.flatMap((item) => item.linkedInputs.map((input) => [item.evidenceId, input, item.linkedCalculations.join(" | "), item.reviewStatus, item.supportStatus, item.malwareScanStatus]))]), "text/csv"),
     artifact("Misstatement Register.csv", csv([["Rule", "Issue", "Status", "Message", "Materiality reference"], ...controls.filter((item) => item.status !== "PASS" && item.status !== "NOT_APPLICABLE").map((item) => [item.ruleId, item.name, item.status, item.message, `${model.ruleset.materialityRate}% per-good specific emissions plus expert judgement`])]), "text/csv"),
     artifact("Corrective Action Log.csv", csv([["Rule", "Remediation code", "Required action", "State", "Responsible party", "Target date", "Closure evidence"], ...controls.filter((item) => item.status === "BLOCKER" || item.status === "WARNING").map((item) => [item.ruleId, item.remediationCode, item.message, "OPEN", "OPERATOR", "", ""])]), "text/csv"),
-    artifact("O3CI Field Mapping.csv", csv([["Dossier field", "O3CI concept", "Value / reference"], ["caseId", "CASE_IDENTIFIER", caseData.caseId], ["reportingPeriod", "REPORTING_PERIOD", model.identity.reportingPeriod], ["installation", "INSTALLATION", model.identity.installation], ["goods[].cnCode", "GOODS_CLASSIFICATION", model.goods.map((item) => item.cnCode).join(" | ")], ["totalEmbeddedEmissions", "TOTAL_EMBEDDED_EMISSIONS", model.totals.totalEmbeddedEmissions], ["calculationRootHash", "CALCULATION_PROVENANCE", calculation.calculationRootHash], ["legalSourceRegistryHash", "LEGAL_SOURCE_PROVENANCE", model.ruleset.sourceHash]]), "text/csv"),
+    artifact(
+      "27_Read_Me_and_Verifier_Navigation_Guide.pdf",
+      buildProfessionalPdf({
+        title: "Read Me and Verifier Navigation Guide",
+        subtitle: "Controlled review sequence, trust verification and independent-verifier handoff",
+        model,
+        sections: [
+          {
+            heading: "Start Here",
+            paragraphs: [
+              "Open this guide first. Review the executive readiness summary, then the operator emissions report, verifier workspace, evidence index and calculation trace before reaching any independent conclusion.",
+              "CBAMValid performs automated preparation controls only. Independent accredited verification remains outside the software boundary and is recorded as NOT_REVIEWED until completed by the appointed verifier."
+            ]
+          },
+          {
+            heading: "Recommended Review Order",
+            table: {
+              headers: ["Order", "Component", "Purpose"],
+              widths: [12, 72, 96],
+              rows: [
+                [1, "24 Executive Verification Readiness Summary", "Executive blockers, automated readiness and verifier handoff"],
+                [2, "Operator Emissions Report", "Declared scope, totals, intensity, materiality and limitations"],
+                [3, "Verifier Workspace", "Controlled review sheets, sign-off fields and challenge notes"],
+                [4, "25 Per-Good Embedded Emissions Schedule", "Per-CN-code production, allocation and embedded-emissions reconciliation"],
+                [5, "26 Carbon Price Paid Schedule", "Eligible carbon-price records and supporting evidence links"],
+                [6, "Evidence Index and Supporting Evidence", "Hash-linked source documents and coverage"],
+                [7, "Calculation Trace and Data Integrity Manifest", "Formula lineage, file hashes and trust-chain verification"]
+              ]
+            }
+          },
+          {
+            heading: "Trust Verification",
+            paragraphs: [
+              "Recompute SHA-256 for every file listed in Data Integrity Manifest.json, verify Manifest Signature.sig against the embedded public key and confirm the package hash shown in the sealed report record.",
+              "Any missing file, hash mismatch, signature failure, altered evidence object or inconsistent release sequence is a hard stop and must not be silently accepted."
+            ]
+          },
+          {
+            heading: "Independent Verifier Boundary",
+            callout: {
+              label: "Status",
+              value: model.independentVerifierStatus
+            },
+            paragraphs: [model.disclaimer]
+          }
+        ]
+      }),
+      "application/pdf"
+    ),
     artifact("Units and Conversions Register.csv", csv([["Field", "Raw unit", "Canonical unit", "Conversion", "Precision policy"], ...caseData.goods.map((good, index) => [`goods.${index}.productionVolume`, good.productionVolume.rawUnit, good.productionVolume.canonicalUnit, good.productionVolume.rawUnit === "kg" ? "divide by 1000" : "identity", "Decimal.js precision 34; presentation rounding only except per-good six decimals" ]), ["directEmissions", caseData.directEmissions.rawUnit, caseData.directEmissions.canonicalUnit, "identity", "No intermediate binary floating-point arithmetic"], ["electricityConsumed", caseData.electricityConsumed.rawUnit, caseData.electricityConsumed.canonicalUnit, "identity", "No intermediate binary floating-point arithmetic"], ["gridEmissionFactor", caseData.gridEmissionFactor.rawUnit, caseData.gridEmissionFactor.canonicalUnit, "identity", "No intermediate binary floating-point arithmetic"]]), "text/csv"),
-    artifact("Carbon Price Register.csv", csv([["ID", "Amount paid", "Applicable emissions", "Currency", "Period", "Legislation", "Payment evidence", "Certification evidence", "Conversion method", "Eligible reduction"], ...caseData.carbonPriceRecords.map((item) => [item.id, item.amountPaid, item.applicableEmissions, item.currency, item.paymentPeriod, item.legislationReference, item.proofOfPaymentEvidenceId, item.independentCertificationEvidenceId, item.conversionMethod, item.eligibleCertificateReduction])]), "text/csv"),
+    artifact("26_Carbon_Price_Paid_Schedule.csv", csv([["ID", "Amount paid", "Applicable emissions", "Currency", "Period", "Legislation", "Payment evidence", "Certification evidence", "Conversion method", "Eligible reduction"], ...caseData.carbonPriceRecords.map((item) => [item.id, item.amountPaid, item.applicableEmissions, item.currency, item.paymentPeriod, item.legislationReference, item.proofOfPaymentEvidenceId, item.independentCertificationEvidenceId, item.conversionMethod, item.eligibleCertificateReduction])]), "text/csv"),
   ];
 }
 
