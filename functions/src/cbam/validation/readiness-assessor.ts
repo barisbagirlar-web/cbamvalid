@@ -55,6 +55,9 @@ export function assessCaseReadiness(caseData: AuditReadyCase): VerificationReadi
     : criticalBlockers.length > 0
       ? "NOT_READY"
       : "READY_WITH_OPEN_ITEMS";
+  const blockerCodes = criticalBlockers
+    .map((gap) => gap.affectedResult)
+    .filter((code): code is string => typeof code === "string" && code.length > 0);
 
   return {
     status,
@@ -65,6 +68,6 @@ export function assessCaseReadiness(caseData: AuditReadyCase): VerificationReadi
     passedControls: passed.length,
     applicableControls: applicable.length,
     ready: isEligibleForSealing,
-    blockerCodes: criticalBlockers.map((gap) => gap.affectedResult),
+    blockerCodes,
   };
 }
