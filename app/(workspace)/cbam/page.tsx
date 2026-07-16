@@ -22,10 +22,12 @@ import {
   getCaseDisplayName,
   getPrimaryCnCode,
 } from "@/lib/cbam/case-summary";
+import { getDisplayReferenceCode } from "@/lib/cbam/case-id";
 import {
   getCases,
   getEntitlements,
   getReports,
+  deleteCase,
   type CbamCaseRecord,
 } from "@/lib/functions/client";
 
@@ -148,6 +150,16 @@ export default function CbamLandingPage() {
     setError("");
     setWarning("");
     setAttempt((current) => current + 1);
+  };
+
+  const handleDeleteCase = async (caseId: string) => {
+    if (!confirm("Are you sure you want to delete this CBAM draft case? This action is permanent and cannot be undone.")) return;
+    try {
+      await deleteCase(caseId);
+      setCases((prev) => prev.filter((c) => c.caseId !== caseId));
+    } catch (err) {
+      alert("Failed to delete case: " + (err instanceof Error ? err.message : String(err)));
+    }
   };
 
   if (!loading && !user) return null;
@@ -336,7 +348,12 @@ export default function CbamLandingPage() {
                   {cases.map((cbamCase) => (
                     <div key={cbamCase.caseId} className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors">
                       <div>
-                        <p className="font-semibold text-sm">{getCaseDisplayName(cbamCase.data)}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-semibold text-sm">{getCaseDisplayName(cbamCase.data)}</p>
+                          <span className="bg-accent/10 border border-accent/20 text-accent text-[10px] px-2 py-0.5 rounded font-mono font-bold tracking-wider">
+                            {getDisplayReferenceCode(cbamCase.caseId)}
+                          </span>
+                        </div>
                         <p className="text-xs text-muted mt-1 font-mono">
                           CN Code: {getPrimaryCnCode(cbamCase.data)} | Updated: {formatCaseUpdatedDate(cbamCase.updatedAt)}
                         </p>
@@ -344,9 +361,18 @@ export default function CbamLandingPage() {
                           <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-neutral-soft text-foreground border border-border">Draft mode</span>
                         </div>
                       </div>
-                      <Link href={`/cases/${cbamCase.caseId}`} className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center gap-1 self-end sm:self-auto">
-                        Resume Draft <ArrowRight className="w-3 h-3" />
-                      </Link>
+                      <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                        <Link href={`/cases/${cbamCase.caseId}`} className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center gap-1">
+                          Edit
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCase(cbamCase.caseId)}
+                          className="border border-red-200 hover:border-red-300 text-red-700 hover:bg-red-50 text-xs font-semibold px-4 py-2 rounded-md transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

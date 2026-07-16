@@ -1,5 +1,6 @@
 import { create } from "xmlbuilder2";
 import { CalculationOutput } from "../engine/calculation-orchestrator";
+import { getDisplayReferenceCode } from "../case-id";
 
 /**
  * Generates machine-readable CBAMValid interoperability XML structure.
@@ -18,6 +19,7 @@ export function buildXml(data: any, calc: CalculationOutput, docHash?: string): 
   root.ele("Header")
     .ele("SchemaVersion").txt("3.0").up()
     .ele("Language").txt("en").up()
+    .ele("ReferenceCode").txt(getDisplayReferenceCode(data?.caseId)).up()
     .up();
 
   // 2. Declarant Organization

@@ -8,3 +8,17 @@ export const CaseIdSchema = z.string().regex(CASE_ID_PATTERN, "Invalid CBAM case
 export function isCaseId(value: unknown): value is string {
   return typeof value === "string" && CASE_ID_PATTERN.test(value);
 }
+
+export function getDisplayReferenceCode(caseId: string | undefined): string {
+  if (!caseId) return "UNASSIGNED";
+  const clean = caseId.replace(/^case_/, "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  const suffix = clean.length > 8 ? clean.slice(-8) : clean.padEnd(8, "X");
+  return `CBAM-C-${suffix}`;
+}
+
+export function getDisplayReportReferenceCode(reportId: string | undefined): string {
+  if (!reportId) return "UNASSIGNED";
+  const clean = reportId.replace(/^report_/, "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  const suffix = clean.length > 8 ? clean.slice(-8) : clean.padEnd(8, "X");
+  return `CBAM-R-${suffix}`;
+}

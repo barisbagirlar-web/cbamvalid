@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthProvider";
 import { getReport, getReportDownloadUrl } from "@/lib/functions/client";
 import Link from "next/link";
 import { ShieldCheck, Download, ExternalLink, ArrowLeft } from "lucide-react";
+import { getDisplayReportReferenceCode } from "@/lib/cbam/case-id";
 
 export default function SealedReportPage({ params }: { params: Promise<{ reportId: string }> }) {
   const { user, loading } = useAuth();
@@ -125,7 +126,7 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
               <ShieldCheck className="w-6 h-6 text-accent shrink-0" strokeWidth={1.75} />
               <h1 className="text-xl md:text-2xl font-bold">Sealed Definitive Dossier</h1>
             </div>
-            <p className="text-xs text-muted font-mono">Report ID: {reportId}</p>
+            <p className="text-xs text-muted font-mono">Reference Code: {getDisplayReportReferenceCode(reportId || undefined)} | Report ID: {reportId}</p>
             <p className="text-xs text-muted font-mono">Verification Seal: {report.documentHash}</p>
           </div>
           <div className="flex flex-wrap gap-2.5">

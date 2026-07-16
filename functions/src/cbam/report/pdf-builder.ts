@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import { CalculationOutput } from "../engine/calculation-orchestrator";
 import * as crypto from "crypto";
+import { getDisplayReferenceCode } from "../case-id";
 
 /**
  * Helper to calculate SHA-256 hash in a Node environment
@@ -141,7 +142,7 @@ export function buildPdfDossier(
   
   // Metadata Container Block
   doc.setFillColor(38, 42, 51);
-  doc.roundedRect(20, 130, 170, 80, 2, 2, "F");
+  doc.roundedRect(20, 130, 170, 88, 2, 2, "F");
   
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(10);
@@ -173,6 +174,7 @@ export function buildPdfDossier(
     covY += 8;
   };
   
+  renderCoverMeta("Reference Code:", getDisplayReferenceCode(data?.caseId), false);
   renderCoverMeta("Exporter Legal Name:", exporterName, true);
   renderCoverMeta("Declarant EORI Number:", declarantEori, true);
   renderCoverMeta("Target Facility Name:", installationName, true);
