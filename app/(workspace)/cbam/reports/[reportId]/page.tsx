@@ -147,6 +147,12 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
             >
               <Download className="w-4 h-4" strokeWidth={1.75} /> Exporter Evidence XML
             </button>
+            <button
+              onClick={() => handleDownload("json")}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-strong bg-transparent px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-neutral-soft cursor-pointer"
+            >
+              <Download className="w-4 h-4" strokeWidth={1.75} /> Exporter Evidence JSON
+            </button>
           </div>
         </div>
 

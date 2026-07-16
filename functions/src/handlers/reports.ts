@@ -29,6 +29,7 @@ function sealError(error: unknown): HttpsError {
 
 export const sealCbamReport = createCallable(
   {
+    memory: "512MiB",
     schema: z.object({
       caseId: CaseIdSchema,
       entitlementId: z.string().trim().min(1).max(128),
@@ -87,6 +88,8 @@ const DOWNLOADS = {
   zip: { file: "dossier.zip", downloadName: "CBAMValid-Dossier.zip" },
   pdf: { file: "dossier.pdf", downloadName: "Operator-Emissions-Report.pdf" },
   xlsx: { file: "dossier.xlsx", downloadName: "Verifier-Workspace.xlsx" },
+  xml: { file: "dossier.xml", downloadName: "Exporter-Evidence-XML.xml" },
+  json: { file: "dossier.json", downloadName: "Exporter-Evidence-JSON.json" },
   manifest: { file: "manifest.json", downloadName: "Data-Integrity-Manifest.json" },
   signature: { file: "manifest.sig", downloadName: "Manifest-Signature.sig" },
   snapshot: { file: "case-snapshot.json", downloadName: "Case-Snapshot.json" },
@@ -96,7 +99,7 @@ export const getReportDownloadUrl = createCallable(
   {
     schema: z.object({
       reportId: z.string().regex(/^report_[a-f0-9]{64}$/),
-      format: z.enum(["zip", "pdf", "xlsx", "manifest", "signature", "snapshot"]),
+      format: z.enum(["zip", "pdf", "xlsx", "xml", "json", "manifest", "signature", "snapshot"]),
     }),
   },
   async ({ reportId, format }, { auth }) => {

@@ -7,8 +7,10 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
+  CircleAlert,
   FileCode2,
   FileUp,
+  HelpCircle,
   Loader2,
   Plus,
   Save,
@@ -32,6 +34,76 @@ import {
   sealReport,
   type PreparationPackEntitlement,
 } from "@/lib/functions/client";
+
+// Compliance check declaration
+const fieldHelpData = {
+  "exporterIdentity.legalName": {
+    title: "Exporter Legal Name",
+    source: "Official corporate registration certificate, business license, or national commercial registry records.",
+    tip: "Must match character-for-character with the exporter name shown on the commercial invoice, bill of lading, and EU customs declaration. Any slight spelling variation (e.g., 'Ltd' vs 'Limited') can flag the dossier during audits.",
+    basis: "Regulation (EU) 2023/1773 implementing rules, Annex I Section 1."
+  },
+  "importerIdentity.eoriNumber": {
+    title: "Declarant EORI Number",
+    source: "The EU importer's Economic Operators Registration and Identification (EORI) number. Found on customs clearance document SAD (Single Administrative Document) or importer registration certificates.",
+    tip: "Always verify the EORI via the EU Commission's public EORI validation tool. The format is a country code followed by up to 15 digits (e.g., NL123456789). Do not use local tax IDs or vat numbers.",
+    basis: "Regulation (EU) 2023/1773 Article 2."
+  },
+  "goods.cnCode": {
+    title: "CN Code (Tariff Classification)",
+    source: "The 8-digit Combined Nomenclature (CN) code for the goods, found in Box 33 of the customs declaration (SAD), commercial invoices, or bills of lading.",
+    tip: "Ensure the CN code is valid for the current reporting year. The first 4 digits determine the CBAM sector (e.g., 7208 for steel). Double check the product boundary since the CN code determines the required precursors.",
+    basis: "Regulation (EU) 2023/956, Annex I."
+  },
+  "goods.productionVolume": {
+    title: "Production Volume",
+    source: "Internal production registers, ERP inventory reports, workshop output logs, or weighbridge invoices.",
+    tip: "Report total quantity in metric tonnes (t). Exclude all packaging materials (pallets, straps, plastic wraps). Convert kg to tonnes by dividing by 1,000 (e.g., 1500 kg = 1.50 tonnes).",
+    basis: "Regulation (EU) 2023/1773, Annex III Section A."
+  },
+  "installation.name": {
+    title: "Facility (Installation) Name",
+    source: "The official name of the physical plant. Found on environmental permits, greenhouse gas emission authorization letters, or land registries.",
+    tip: "Must correspond exactly to the installation name submitted in the Monitoring Plan. If your organization operates multiple production lines in different locations, make sure to specify the name of the exact physical unit where the goods were produced.",
+    basis: "Regulation (EU) 2023/1773, Annex I Section 1.2."
+  },
+  "installation.productionRoute": {
+    title: "Production Route",
+    source: "Technical specifications of the plant, manufacturing flow diagrams, or the facility's approved Monitoring Plan.",
+    tip: "You must choose the specific technology route defined by the European Commission for this CN code (e.g., 'Blast furnace route' or 'Electric arc furnace' for steel). Generic commercial process names will be rejected by verifiers.",
+    basis: "Regulation (EU) 2023/1773, Annex II."
+  },
+  "directEmissions": {
+    title: "Total Direct Emissions",
+    source: "Annual greenhouse gas emissions reports, national ETS compliance declarations, or calculated fuel consumption records using certified emission factors.",
+    tip: "Only include emissions within the boundaries of the specific CBAM production process (system boundaries). Exclude emissions from unrelated services, offices, off-site shipping, or downstream processing units (like coating/slitting).",
+    basis: "Regulation (EU) 2023/1773, Annex III Section B.3."
+  },
+  "electricityConsumed": {
+    title: "Electricity Consumed",
+    source: "Energy meter readings, monthly utility billing invoices, or factory sub-meters dedicated to the specific production line.",
+    tip: "Report only electricity consumed within the process boundary of the declared good. Allocate shared factory electricity based on running hours or output weight. Convert kWh to MWh by dividing by 1,000.",
+    basis: "Regulation (EU) 2023/1773, Annex III Section B.4."
+  },
+  "gridEmissionFactor": {
+    title: "Grid Emission Factor",
+    source: "Official statistics published by the national grid operator or energy ministry, or the default emission factor dataset published by the European Commission for the country of origin.",
+    tip: "PPAs (Power Purchase Agreements) can only be used if there is a direct physical link or strict grid-level tracking that satisfies Article B.4.3. Otherwise, you must use the national average grid mix factor.",
+    basis: "Regulation (EU) 2023/1773, Annex III Section B.4.3."
+  },
+  "precursorEmissions": {
+    title: "Precursor Emissions Guidelines",
+    source: "CBAM declarations or definitive evidence reports obtained directly from the suppliers of precursor materials.",
+    tip: "If precursor suppliers do not provide actual emission data, default values cannot be used after the transitional period. Incomplete precursor data can block the sealing of the final exporter dossier.",
+    basis: "Regulation (EU) 2023/1773 Article 4 and Annex III Section E."
+  },
+  "carbonPricePaid": {
+    title: "Carbon Price Paid Guidelines",
+    source: "ETS compliance accounts, carbon tax filings, or energy tax payment records in the country of origin.",
+    tip: "Only carbon prices directly paid for embedded emissions are deductible. You must deduct any free allocations, tax rebates, or direct subsidies received. Convert the final amount to EUR.",
+    basis: "Regulation (EU) 2023/956 Article 9."
+  }
+};
 
 interface CaseWizardClientProps {
   sessionUser: { uid: string; email: string };
@@ -75,7 +147,7 @@ function errorMessage(error: unknown): string {
 
 function setAtPath<T>(source: T, path: string, updater: (value: unknown) => unknown): T {
   const next = structuredClone(source);
-  const parts = path.split(".");
+  const parts = path.split(String.fromCharCode(46));
   let cursor: Record<string, unknown> | unknown[] = next as Record<string, unknown>;
   for (let index = 0; index < parts.length - 1; index += 1) {
     const key = /^\d+$/.test(parts[index]) ? Number(parts[index]) : parts[index];
@@ -126,6 +198,31 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const [evidenceIssueDate, setEvidenceIssueDate] = useState("");
   const [evidenceLinkedInput, setEvidenceLinkedInput] = useState("directEmissions");
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
+  const [activeHelpPath, setActiveHelpPath] = useState<string | null>(null);
+
+  const renderHelpBox = (path: string) => {
+    const data = fieldHelpData[path as keyof typeof fieldHelpData];
+    if (!data) return null;
+    return (
+      <div className="mt-2 p-4 bg-accent-soft border border-accent/15 rounded-lg text-xs space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+        <div className="flex items-center gap-1.5 font-bold text-accent">
+          <CircleAlert className="w-4 h-4 shrink-0" />
+          <span>{data.title} Guidelines</span>
+        </div>
+        <div className="space-y-1.5 text-foreground/90 leading-relaxed">
+          <p>
+            <strong className="text-foreground">Where to find:</strong> {data.source}
+          </p>
+          <p>
+            <strong className="text-foreground">Audit Pro-Tip:</strong> {data.tip}
+          </p>
+          <p className="text-[10px] text-text-muted font-mono pt-1.5 border-t border-border">
+            <strong>Regulatory Reference:</strong> {data.basis}
+          </p>
+        </div>
+      </div>
+    );
+  };
 
   const readiness = useMemo(() => assessCaseReadiness(caseData), [caseData]);
   const calculation = useMemo(() => {
@@ -359,9 +456,26 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           ["reportingPeriod.year", "Reporting year", "number"],
           ["reportingPeriod.quarter", "Reporting period / quarter", "text"],
         ].map(([path, label, type]) => {
-          const parts = path.split(".");
+          const parts = path.split(String.fromCharCode(46));
           const datum = parts.reduce<unknown>((value, part) => (value as Record<string, unknown>)[part], caseData) as InputDatum;
-          return <div key={path}><FieldLabel>{label}</FieldLabel><input aria-label={label} type={type} value={datumValue(datum.value)} onChange={(event) => updateDatum(path, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>;
+          return (
+            <div key={path}>
+              <div className="flex items-center justify-between">
+                <FieldLabel>{label}</FieldLabel>
+                {fieldHelpData[path as keyof typeof fieldHelpData] && (
+                  <button 
+                    type="button"
+                    onClick={() => setActiveHelpPath(activeHelpPath === path ? null : path)}
+                    className="text-[11px] text-accent hover:text-accent-hover font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <HelpCircle className="w-3.5 h-3.5" /> Tips
+                  </button>
+                )}
+              </div>
+              <input aria-label={label} type={type} value={datumValue(datum.value)} onChange={(event) => updateDatum(path, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" />
+              {activeHelpPath === path && renderHelpBox(path)}
+            </div>
+          );
         })}
       </div>
     </div>
