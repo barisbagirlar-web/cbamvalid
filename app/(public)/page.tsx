@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Globe2, Shield } from "lucide-react";
 import { COMMERCIAL_CONTRACT, formatCommercialPrice } from "@/lib/billing/commercial-contract";
@@ -104,7 +105,14 @@ export default function HomePage() {
             </p>
             <div className="group relative mx-auto block max-w-4xl overflow-hidden rounded-xl border border-border bg-black shadow-2xl">
               <div className="relative aspect-video">
-                <img src="/media/cbamvalid-product-walkthrough-poster.webp" alt="CBAMValid product workflow" className="h-full w-full object-cover opacity-80" />
+                <Image
+                  src="/media/cbamvalid-product-walkthrough-poster.webp"
+                  alt="CBAMValid product workflow"
+                  fill
+                  sizes="(min-width: 1024px) 896px, 100vw"
+                  className="object-cover opacity-80"
+                  priority
+                />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent/90 shadow-lg transition-transform group-hover:scale-110">
                     <div className="ml-2 h-0 w-0 border-y-8 border-l-12 border-y-transparent border-l-white" />
