@@ -15,14 +15,23 @@ function errorMessage(error: unknown): string {
     : "Checkout could not be started.";
 }
 
+const paddleToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || "";
+const paddleEnvironmentValue = process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT || "";
+const paddleEnvironment = paddleEnvironmentValue === "sandbox" || paddleEnvironmentValue === "production"
+  ? paddleEnvironmentValue
+  : null;
+const paddleConfigurationError = paddleToken && paddleEnvironment
+  ? ""
+  : "Payment system configuration is unavailable.";
+
 export default function BuyCreditsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const checkoutRequestId = useRef<string>(crypto.randomUUID());
   const [paddle, setPaddle] = useState<Paddle | null>(null);
-  const [initializing, setInitializing] = useState(true);
+  const [initializing, setInitializing] = useState(paddleConfigurationError === "");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(paddleConfigurationError);
   const product = CREDIT_PACKAGES[0];
 
   useEffect(() => {
@@ -30,18 +39,12 @@ export default function BuyCreditsPage() {
   }, [loading, router, user]);
 
   useEffect(() => {
+    if (!paddleToken || !paddleEnvironment) return undefined;
     let cancelled = false;
-    const token = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
-    const configuredEnvironment = process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT;
-    if (!token || !["sandbox", "production"].includes(configuredEnvironment || "")) {
-      setError("Payment system configuration is unavailable.");
-      setInitializing(false);
-      return;
-    }
 
     void initializePaddle({
-      environment: configuredEnvironment as "sandbox" | "production",
-      token,
+      environment: paddleEnvironment,
+      token: paddleToken,
     })
       .then((instance) => {
         if (cancelled) return;
