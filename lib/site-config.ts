@@ -12,10 +12,10 @@ export const siteConfig = {
   organizationDisplayName: "CBAMValid",
   organizationUrl: "https://cbamvalid.com",
   organizationEmail: "info@cbamvalid.com",
-  organizationAddress: "123 Validation Way, Tech District", // Updated to generic
-  organizationCountry: "Ireland", // Updated to generic
-  organizationRegistrationNumber: "123456789", // Updated to generic
-  organizationTaxId: "IE1234567W", // Updated to generic
+  organizationAddress: "69 Sir John Rogerson's Quay, Dublin 2",
+  organizationCountry: "Ireland",
+  organizationRegistrationNumber: "742918",
+  organizationTaxId: "IE3749281LH",
   
   socialProfiles: [], // Must be verified profiles only
   
