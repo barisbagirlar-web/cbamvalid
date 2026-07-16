@@ -27,6 +27,142 @@ type ResolvedCaseDocument = {
 type EvidenceReviewDecision = "APPROVED" | "REJECTED";
 type EvidenceScanStatus = "CLEAN" | "INFECTED";
 
+function migrateLegacyCase(raw: any): any {
+  if (!raw || typeof raw !== "object") return {};
+  
+  const migrated = { ...raw };
+
+  const toInputDatum = (val: any, unit?: any): any => {
+    if (val && typeof val === "object" && ("sourceType" in val || "value" in val)) {
+      return {
+        id: val.id,
+        value: val.value !== undefined ? val.value : null,
+        rawUnit: val.rawUnit,
+        canonicalUnit: val.canonicalUnit ?? unit,
+        reportingPeriod: val.reportingPeriod,
+        sourceType: val.sourceType || "ESTIMATED",
+        evidenceId: val.evidenceId,
+        documentReference: val.documentReference,
+        measurementMethod: val.measurementMethod,
+        confidenceStatus: val.confidenceStatus || "LOW_ESTIMATE",
+        responsiblePerson: val.responsiblePerson,
+        reviewerNote: val.reviewerNote,
+      };
+    }
+    return {
+      value: (val !== undefined && val !== null) ? val : null,
+      canonicalUnit: unit,
+      sourceType: "ESTIMATED",
+      confidenceStatus: "LOW_ESTIMATE",
+    };
+  };
+
+  if (typeof migrated.directEmissions === "number" || migrated.directEmissions === null || migrated.directEmissions === undefined) {
+    migrated.directEmissions = toInputDatum(migrated.directEmissions, "tCO2e");
+  } else {
+    migrated.directEmissions = toInputDatum(migrated.directEmissions, "tCO2e");
+  }
+
+  if (typeof migrated.electricityConsumed === "number" || migrated.electricityConsumed === null || migrated.electricityConsumed === undefined) {
+    migrated.electricityConsumed = toInputDatum(migrated.electricityConsumed, "MWh");
+  } else {
+    migrated.electricityConsumed = toInputDatum(migrated.electricityConsumed, "MWh");
+  }
+
+  if (typeof migrated.gridEmissionFactor === "number" || migrated.gridEmissionFactor === null || migrated.gridEmissionFactor === undefined) {
+    migrated.gridEmissionFactor = toInputDatum(migrated.gridEmissionFactor, "tCO2e/MWh");
+  } else {
+    migrated.gridEmissionFactor = toInputDatum(migrated.gridEmissionFactor, "tCO2e/MWh");
+  }
+
+  if (!migrated.importerIdentity || typeof migrated.importerIdentity !== "object") {
+    migrated.importerIdentity = {
+      legalName: toInputDatum(null),
+      eoriNumber: toInputDatum(null),
+      address: toInputDatum(null),
+    };
+  } else {
+    migrated.importerIdentity = {
+      legalName: toInputDatum(migrated.importerIdentity.legalName),
+      eoriNumber: toInputDatum(migrated.importerIdentity.eoriNumber),
+      address: migrated.importerIdentity.address ? toInputDatum(migrated.importerIdentity.address) : undefined,
+    };
+  }
+
+  if (!migrated.exporterIdentity || typeof migrated.exporterIdentity !== "object") {
+    migrated.exporterIdentity = {
+      legalName: toInputDatum(null),
+      address: toInputDatum(null),
+    };
+  } else {
+    migrated.exporterIdentity = {
+      legalName: toInputDatum(migrated.exporterIdentity.legalName),
+      address: migrated.exporterIdentity.address ? toInputDatum(migrated.exporterIdentity.address) : undefined,
+    };
+  }
+
+  if (!migrated.reportingPeriod || typeof migrated.reportingPeriod !== "object") {
+    migrated.reportingPeriod = {
+      year: toInputDatum(null),
+      quarter: toInputDatum(null),
+    };
+  } else {
+    migrated.reportingPeriod = {
+      year: toInputDatum(migrated.reportingPeriod.year),
+      quarter: toInputDatum(migrated.reportingPeriod.quarter),
+    };
+  }
+
+  if (!migrated.installation || typeof migrated.installation !== "object") {
+    migrated.installation = {
+      name: toInputDatum(null),
+      country: toInputDatum(null),
+      productionRoute: toInputDatum(null),
+    };
+  } else {
+    migrated.installation = {
+      name: toInputDatum(migrated.installation.name),
+      country: toInputDatum(migrated.installation.country),
+      productionRoute: toInputDatum(migrated.installation.productionRoute),
+      unloCode: migrated.installation.unloCode ? toInputDatum(migrated.installation.unloCode) : undefined,
+      systemBoundaries: migrated.installation.systemBoundaries,
+    };
+  }
+
+  if (!Array.isArray(migrated.goods)) {
+    migrated.goods = [];
+  } else {
+    migrated.goods = migrated.goods.map((g: any) => ({
+      cnCode: toInputDatum(g.cnCode),
+      sector: g.sector || "IRON_AND_STEEL",
+      productionVolume: toInputDatum(g.productionVolume, "t"),
+      shipmentRecords: toInputDatum(g.shipmentRecords),
+      allocationShare: g.allocationShare ? toInputDatum(g.allocationShare, "fraction") : undefined,
+    }));
+  }
+
+  if (!Array.isArray(migrated.precursors)) {
+    migrated.precursors = [];
+  } else {
+    migrated.precursors = migrated.precursors.map((p: any) => ({
+      name: toInputDatum(p.name),
+      quantity: toInputDatum(p.quantity, "t"),
+      directEmissions: toInputDatum(p.directEmissions, "tCO2e/t"),
+      indirectEmissions: toInputDatum(p.indirectEmissions, "tCO2e/t"),
+      countryOfOrigin: toInputDatum(p.countryOfOrigin),
+    }));
+  }
+
+  if (!Array.isArray(migrated.carbonPriceRecords)) migrated.carbonPriceRecords = [];
+  if (!Array.isArray(migrated.evidenceRegister)) migrated.evidenceRegister = [];
+  if (!Array.isArray(migrated.calculationTrace)) migrated.calculationTrace = [];
+  if (!Array.isArray(migrated.gapAssessment)) migrated.gapAssessment = [];
+  if (!Array.isArray(migrated.methodologyDecisions)) migrated.methodologyDecisions = [];
+  if (!Array.isArray(migrated.auditEvents)) migrated.auditEvents = [];
+
+  return migrated;
+}
+
 function parseStoredCase(data: unknown, documentId: string): CbamCaseRecord {
   if (!data || typeof data !== "object") throw new Error("CASE_RECORD_INVALID");
   const source = data as Partial<CbamCaseRecord>;
@@ -36,8 +172,12 @@ function parseStoredCase(data: unknown, documentId: string): CbamCaseRecord {
   const caseId = createCanonicalCaseId(
     typeof source.caseId === "string" && source.caseId.trim() ? source.caseId : documentId
   );
+  
+  // Migrate legacy case structures before validating with Zod schema
+  const migratedData = migrateLegacyCase(source.data);
+
   const parsedData = AuditReadyCaseSchema.parse({
-    ...(source.data as Record<string, unknown>),
+    ...migratedData,
     caseId,
     ownerId: uid,
   });
