@@ -1,11 +1,17 @@
 import { createCallable } from "../wrapper";
 import { z } from "zod";
 import { adminDb } from "../firebase-admin";
+import { requireVerifiedUser } from "../auth/verified-user";
 import { normalizeCreditSummary } from "../commerce/credit-service";
 
 function iso(value: unknown): string {
   if (typeof value === "string") return value;
-  if (value && typeof value === "object" && "toDate" in value && typeof (value as { toDate?: unknown }).toDate === "function") {
+  if (
+    value &&
+    typeof value === "object" &&
+    "toDate" in value &&
+    typeof (value as { toDate?: unknown }).toDate === "function"
+  ) {
     return (value as { toDate: () => Date }).toDate().toISOString();
   }
   return "";
@@ -17,11 +23,14 @@ function text(record: Record<string, unknown>, key: string): string {
 }
 
 export const getAccountOverview = createCallable({}, async (_, { auth }) => {
+  requireVerifiedUser(auth);
   const [profileSnapshot, creditSnapshot] = await Promise.all([
     adminDb.collection("users").doc(auth.uid).get(),
     adminDb.collection("users").doc(auth.uid).collection("creditSummary").doc("current").get(),
   ]);
-  const profile = profileSnapshot.exists ? profileSnapshot.data() as Record<string, unknown> : {};
+  const profile = profileSnapshot.exists
+    ? profileSnapshot.data() as Record<string, unknown>
+    : {};
   return {
     profile: {
       displayName: text(profile, "displayName"),
@@ -47,6 +56,7 @@ export const updateOwnProfile = createCallable(
     }),
   },
   async (data, { auth }) => {
+    requireVerifiedUser(auth);
     const updatedAt = new Date().toISOString();
     await adminDb.collection("users").doc(auth.uid).set({
       ...data,
@@ -60,6 +70,7 @@ export const updateOwnProfile = createCallable(
 export const listCreditLedger = createCallable(
   { schema: z.object({ limit: z.number().int().min(1).max(100).optional().default(25) }) },
   async ({ limit }, { auth }) => {
+    requireVerifiedUser(auth);
     const snapshot = await adminDb.collection("users").doc(auth.uid).collection("creditLedger")
       .orderBy("createdAt", "desc")
       .limit(limit)
@@ -90,6 +101,7 @@ export const listCreditLedger = createCallable(
 export const listPurchaseHistory = createCallable(
   { schema: z.object({ limit: z.number().int().min(1).max(100).optional().default(25) }) },
   async ({ limit }, { auth }) => {
+    requireVerifiedUser(auth);
     const snapshot = await adminDb.collection("paddle_events")
       .where("uid", "==", auth.uid)
       .orderBy("occurredAt", "desc")
@@ -122,11 +134,13 @@ export const listPurchaseHistory = createCallable(
 );
 
 export const requestAccountClosure = createCallable({}, async (_, { auth }) => {
+  requireVerifiedUser(auth);
   const requestedAt = new Date().toISOString();
   await adminDb.collection("account_closure_requests").doc(auth.uid).set({
     uid: auth.uid,
     status: "REQUESTED",
     requestedAt,
+    updatedAt: requestedAt,
   }, { merge: true });
   return { success: true as const, requestedAt };
 });
