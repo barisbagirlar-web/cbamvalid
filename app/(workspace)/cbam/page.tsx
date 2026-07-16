@@ -22,7 +22,7 @@ import {
   getCaseDisplayName,
   getPrimaryCnCode,
 } from "@/lib/cbam/case-summary";
-import { getDisplayReferenceCode } from "@/lib/cbam/case-id";
+import { getDisplayReferenceCode, getDisplayReportReferenceCode } from "@/lib/cbam/case-id";
 import {
   getCases,
   getEntitlements,
@@ -394,7 +394,12 @@ export default function CbamLandingPage() {
                       return (
                         <div key={reportId || `report-${index}`} className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors">
                           <div>
-                            <p className="font-semibold text-sm">{reportInstallationName(report)}</p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-semibold text-sm">{reportInstallationName(report)}</p>
+                              <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] px-2 py-0.5 rounded font-mono font-bold tracking-wider">
+                                {getDisplayReportReferenceCode(reportId)}
+                              </span>
+                            </div>
                             <p className="text-xs text-muted mt-1 font-mono">
                               Release ID: {reportId ? `${reportId.slice(0, 8)}...` : "Unavailable"} | Sealed: {createdAt ? formatCaseUpdatedDate(createdAt) : "Unknown"}
                             </p>
