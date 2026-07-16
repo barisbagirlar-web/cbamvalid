@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Shield, ArrowRight, CheckCircle2, Globe2 } from "lucide-react";
+import VideoPlayer from "@/components/VideoPlayer";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 import { generateOrganizationSchema, generateWebSiteSchema, generateWebApplicationSchema, generateFAQSchema } from "@/lib/seo/schema";
 
@@ -117,18 +118,13 @@ export default function HomePage() {
             <p className="text-muted text-lg mb-10 max-w-2xl mx-auto">
               Review the full evidence-linked workflow before creating your first case.
             </p>
-            <div className="relative max-w-4xl mx-auto rounded-xl overflow-hidden shadow-2xl border border-border bg-black group block">
+            <div className="relative max-w-4xl mx-auto rounded-xl overflow-hidden shadow-2xl border border-border bg-black">
               <div className="aspect-video relative">
-                <img 
-                  src="/media/cbamvalid-product-walkthrough-poster.webp" 
-                  alt="Video Walkthrough Poster" 
-                  className="w-full h-full object-cover opacity-80"
+                <VideoPlayer
+                  src="/media/cbamvalid-product-walkthrough.mp4"
+                  poster="/media/cbamvalid-product-walkthrough-poster.webp"
+                  startAtSeconds={3}
                 />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-16 h-16 bg-accent/90 rounded-full flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
-                    <div className="w-0 h-0 border-y-8 border-y-transparent border-l-12 border-l-white ml-2" />
-                  </div>
-                </div>
               </div>
             </div>
             <div className="mt-8">
