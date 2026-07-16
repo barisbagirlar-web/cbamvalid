@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { doc, onSnapshot } from "firebase/firestore";
 import { CreditCard, LogOut, Menu, Shield, User, X } from "lucide-react";
 import { BrandLockup } from "@/components/brand/BrandLockup";
@@ -13,44 +13,43 @@ import { APP_NAV } from "@/lib/navigation";
 
 export function AppHeader() {
   const { user, claims, signOutUser, loading } = useAuth();
-  const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
-  const [availableCredits, setAvailableCredits] = useState(0);
+  const [creditState, setCreditState] = useState<{ uid: string; balance: number }>({ uid: "", balance: 0 });
   const accountMenuRef = useRef<HTMLDivElement>(null);
-  const isAdmin = claims?.ownerAdmin === true || claims?.admin === true;
+  const isAdmin =
+    claims?.admin === true &&
+    claims?.ownerAdmin === true &&
+    claims?.email_verified === true;
 
   useEffect(() => {
-    if (!user || isAdmin) {
-      setAvailableCredits(0);
-      return;
-    }
+    if (!user || isAdmin) return undefined;
     return onSnapshot(
       doc(firebaseDb, "users", user.uid, "creditSummary", "current"),
       (snapshot) => {
         const value = snapshot.exists() ? Number(snapshot.data().availableCredits || 0) : 0;
-        setAvailableCredits(Number.isSafeInteger(value) && value >= 0 ? value : 0);
+        setCreditState({
+          uid: user.uid,
+          balance: Number.isSafeInteger(value) && value >= 0 ? value : 0,
+        });
       },
       (error) => {
         console.error("Credit summary listener failed", error);
-        setAvailableCredits(0);
+        setCreditState({ uid: user.uid, balance: 0 });
       }
     );
   }, [isAdmin, user]);
 
   useEffect(() => {
     const close = (event: MouseEvent) => {
-      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) setAccountOpen(false);
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
+        setAccountOpen(false);
+      }
     };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, []);
-
-  useEffect(() => {
-    setMobileOpen(false);
-    setAccountOpen(false);
-  }, [pathname]);
 
   if (loading) {
     return (
@@ -61,6 +60,7 @@ export function AppHeader() {
   }
   if (!user) return null;
 
+  const availableCredits = !isAdmin && creditState.uid === user.uid ? creditState.balance : 0;
   const navLinks = isAdmin
     ? [
         { href: "/admin", label: "Admin Console" },
@@ -70,7 +70,10 @@ export function AppHeader() {
       ]
     : APP_NAV;
   const packUnlocksAvailable = Math.floor(availableCredits / COMMERCIAL_CONTRACT.creditsRequiredToUnlock);
-
+  const closeMenus = () => {
+    setMobileOpen(false);
+    setAccountOpen(false);
+  };
   const isActive = (href: string) =>
     pathname === href || (href !== "/cbam" && pathname.startsWith(`${href}/`));
 
@@ -81,7 +84,7 @@ export function AppHeader() {
 
         <nav className="hidden flex-1 items-center justify-center gap-7 px-4 md:flex lg:gap-9" aria-label="Main Navigation">
           {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} className={`rounded-sm px-1 py-1 text-[15px] font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent ${isActive(link.href) ? "text-accent" : "text-muted hover:text-foreground"}`}>
+            <Link key={link.href} href={link.href} onClick={closeMenus} className={`rounded-sm px-1 py-1 text-[15px] font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent ${isActive(link.href) ? "text-accent" : "text-muted hover:text-foreground"}`}>
               {link.label}
             </Link>
           ))}
@@ -89,13 +92,13 @@ export function AppHeader() {
 
         <div className="flex shrink-0 items-center gap-3 lg:gap-5">
           {!isAdmin && (
-            <Link href="/credits/buy" className="hidden items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-[13px] transition-colors hover:bg-border/30 lg:flex">
+            <Link href="/credits/buy" onClick={closeMenus} className="hidden items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-[13px] transition-colors hover:bg-border/30 lg:flex">
               <span className="font-semibold text-foreground">{availableCredits} credits</span>
               <span className="text-muted">· {packUnlocksAvailable} pack unlock{packUnlocksAvailable === 1 ? "" : "s"} available</span>
             </Link>
           )}
           {!isAdmin && availableCredits < COMMERCIAL_CONTRACT.creditsRequiredToUnlock && (
-            <Link href="/credits/buy" className="hidden h-11 items-center justify-center rounded-md bg-accent px-5 text-[15px] font-medium text-surface transition-colors hover:bg-accent-hover lg:inline-flex">
+            <Link href="/credits/buy" onClick={closeMenus} className="hidden h-11 items-center justify-center rounded-md bg-accent px-5 text-[15px] font-medium text-surface transition-colors hover:bg-accent-hover lg:inline-flex">
               Buy Pack — {formatCommercialPrice()}
             </Link>
           )}
@@ -113,9 +116,9 @@ export function AppHeader() {
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted">Signed in as</p>
                   <p className="truncate text-sm font-medium" title={user.email || ""}>{user.email}</p>
                 </div>
-                <Link href="/account" className="flex items-center gap-3 px-4 py-2 text-[15px] hover:bg-border/30"><User className="h-4 w-4 text-muted" /> Account</Link>
-                {!isAdmin && <Link href="/credits/buy" className="flex items-center gap-3 px-4 py-2 text-[15px] hover:bg-border/30"><CreditCard className="h-4 w-4 text-muted" /> Billing & Packs</Link>}
-                <Link href="/account#security" className="flex items-center gap-3 px-4 py-2 text-[15px] hover:bg-border/30"><Shield className="h-4 w-4 text-muted" /> Security</Link>
+                <Link href="/account" onClick={closeMenus} className="flex items-center gap-3 px-4 py-2 text-[15px] hover:bg-border/30"><User className="h-4 w-4 text-muted" /> Account</Link>
+                {!isAdmin && <Link href="/credits/buy" onClick={closeMenus} className="flex items-center gap-3 px-4 py-2 text-[15px] hover:bg-border/30"><CreditCard className="h-4 w-4 text-muted" /> Billing & Packs</Link>}
+                <Link href="/account#security" onClick={closeMenus} className="flex items-center gap-3 px-4 py-2 text-[15px] hover:bg-border/30"><Shield className="h-4 w-4 text-muted" /> Security</Link>
                 <div className="my-1 border-t border-border/50" />
                 <button type="button" onClick={() => void signOutUser()} className="flex w-full items-center gap-3 px-4 py-2 text-[15px] text-red-600 hover:bg-red-50"><LogOut className="h-4 w-4" /> Sign Out</button>
               </div>
@@ -131,20 +134,20 @@ export function AppHeader() {
       {mobileOpen && (
         <div id="mobile-app-menu" className="absolute left-0 top-full z-40 max-h-[calc(100vh-64px)] w-full overflow-y-auto border-b border-border bg-surface shadow-lg md:hidden">
           {!isAdmin && (
-            <Link href="/credits/buy" className="flex items-center justify-between border-b border-border bg-accent/5 px-6 py-4">
+            <Link href="/credits/buy" onClick={closeMenus} className="flex items-center justify-between border-b border-border bg-accent/5 px-6 py-4">
               <span className="text-sm font-semibold">{availableCredits} credits</span>
               <span className="text-sm text-muted">{packUnlocksAvailable} pack unlock{packUnlocksAvailable === 1 ? "" : "s"}</span>
             </Link>
           )}
           <nav className="flex flex-col py-2" aria-label="Mobile Application Navigation">
             {navLinks.map((link) => (
-              <Link key={link.href} href={link.href} className={`border-l-4 px-6 py-3 text-[15px] font-medium ${isActive(link.href) ? "border-accent bg-accent/5 text-accent" : "border-transparent"}`}>
+              <Link key={link.href} href={link.href} onClick={closeMenus} className={`border-l-4 px-6 py-3 text-[15px] font-medium ${isActive(link.href) ? "border-accent bg-accent/5 text-accent" : "border-transparent"}`}>
                 {link.label}
               </Link>
             ))}
             <div className="my-2 border-t border-border" />
-            <Link href="/account" className="flex items-center gap-3 px-6 py-3 text-[15px]"><User className="h-5 w-5 text-muted" /> Account Settings</Link>
-            <button type="button" onClick={async () => { await signOutUser(); router.push("/login"); }} className="flex w-full items-center gap-3 px-6 py-3 text-left text-[15px] text-red-600"><LogOut className="h-5 w-5" /> Sign Out</button>
+            <Link href="/account" onClick={closeMenus} className="flex items-center gap-3 px-6 py-3 text-[15px]"><User className="h-5 w-5 text-muted" /> Account Settings</Link>
+            <button type="button" onClick={() => void signOutUser()} className="flex w-full items-center gap-3 px-6 py-3 text-left text-[15px] text-red-600"><LogOut className="h-5 w-5" /> Sign Out</button>
           </nav>
         </div>
       )}
