@@ -837,9 +837,28 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         </div>
         <div className="md:col-span-2">
           {renderFieldLabelWithTips("Payment evidence", "carbonPricePaid.proofOfPaymentEvidenceId")}
-          <select aria-label={`Carbon price ${index + 1} payment evidence`} value={record.proofOfPaymentEvidenceId || ""} onChange={(event) => updatePlain(`carbonPriceRecords.${index}.proofOfPaymentEvidenceId`, event.target.value || undefined)} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="">Select evidence</option>{caseData.evidenceRegister.map((evidence) => <option key={evidence.evidenceId} value={evidence.evidenceId}>{evidence.fileName}</option>)}</select>
+          {caseData.evidenceRegister.length === 0 ? (
+            <div className="rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              <strong>No evidence uploaded yet.</strong> Upload and approve a payment document in the evidence section below first, then return here to link it.
+            </div>
+          ) : (
+            <select
+              aria-label={`Carbon price ${index + 1} payment evidence`}
+              value={record.proofOfPaymentEvidenceId || ""}
+              onChange={(event) => updatePlain(`carbonPriceRecords.${index}.proofOfPaymentEvidenceId`, event.target.value || undefined)}
+              className="w-full rounded border border-border bg-background p-2 text-sm"
+            >
+              <option value="">— Select evidence document —</option>
+              {caseData.evidenceRegister.map((evidence) => (
+                <option key={evidence.evidenceId} value={evidence.evidenceId}>
+                  {evidence.fileName} ({evidence.reviewStatus})
+                </option>
+              ))}
+            </select>
+          )}
           {activeHelpPath === "carbonPricePaid.proofOfPaymentEvidenceId" && renderHelpBox("carbonPricePaid.proofOfPaymentEvidenceId")}
         </div>
+
       </div>)}
 
       <div className="space-y-4 rounded-xl border border-border bg-surface p-6 shadow-[var(--shadow-card)]"><h3 className="font-bold">Upload immutable evidence</h3><div className="grid gap-4 md:grid-cols-2">
@@ -895,8 +914,75 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   );
 
   const renderStep8 = () => (
-    <div className="space-y-6"><h2 className="text-xl font-bold">8. Verification readiness and dossier generation</h2><div className="grid gap-6 lg:grid-cols-2">
-      <section className="rounded-xl border border-border bg-surface p-6"><h3 className="mb-4 flex items-center gap-2 font-bold"><Shield className="h-5 w-5 text-accent" /> Verification readiness</h3><div className={`rounded border p-3 text-sm font-semibold ${readiness.isEligibleForSealing ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-red-300 bg-red-50 text-red-900"}`}>{readiness.status} · {readiness.completenessPercentage}% · {readiness.passedControls}/{readiness.applicableControls} controls passed</div><div className="mt-4 max-h-80 space-y-2 overflow-y-auto">{readiness.allGaps.map((gap) => <div key={gap.gapId} className="border-l-2 border-red-500 pl-3 text-xs"><strong>{gap.requirement}</strong><p className="text-muted">{gap.whyItMatters}</p></div>)}</div><button type="button" aria-label="Generate sealed dossier" onClick={handleSeal} disabled={sealing || !readiness.isEligibleForSealing || usableEntitlements.length === 0} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-40">{sealing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Generate sealed dossier</button><StatusBanner status={sealStatus} tone="error" /><p className="mt-3 text-xs text-muted">Generating a sealed dossier consumes 1 credit only after successful validation and cryptographic signature. Failed or blocked attempts consume zero credits.</p></section>
+    <div className="space-y-6">
+      <h2 className="text-xl font-bold">8. Verification readiness and dossier generation</h2>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="rounded-xl border border-border bg-surface p-6">
+          <h3 className="mb-4 flex items-center gap-2 font-bold"><Shield className="h-5 w-5 text-accent" /> Verification readiness</h3>
+
+          {/* Overall status badge */}
+          <div className={`rounded border p-3 text-sm font-semibold ${
+            readiness.isEligibleForSealing
+              ? readiness.hasWarnings
+                ? "border-amber-300 bg-amber-50 text-amber-900"
+                : "border-emerald-300 bg-emerald-50 text-emerald-900"
+              : "border-red-300 bg-red-50 text-red-900"
+          }`}>
+            {readiness.status} &nbsp;·&nbsp; {readiness.completenessPercentage}% &nbsp;·&nbsp; {readiness.passedControls}/{readiness.applicableControls} controls passed
+          </div>
+
+          {/* Hard blockers — must be resolved before generation */}
+          {readiness.criticalBlockers.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-red-700">🚫 Must be resolved before generating</p>
+              <div className="space-y-2 max-h-52 overflow-y-auto">
+                {readiness.criticalBlockers.map((gap) => (
+                  <div key={gap.gapId} className="border-l-2 border-red-500 bg-red-50/50 pl-3 py-1.5 text-xs rounded-r">
+                    <strong className="text-red-800">{gap.requirement}</strong>
+                    <p className="text-muted mt-0.5">{gap.whyItMatters}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Warnings — report generates but annotated as data gaps */}
+          {readiness.warningGaps.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-amber-700">⚠ Data gaps — report generates with annotations</p>
+              <div className="space-y-2 max-h-52 overflow-y-auto">
+                {readiness.warningGaps.map((gap) => (
+                  <div key={gap.gapId} className="border-l-2 border-amber-400 bg-amber-50/50 pl-3 py-1.5 text-xs rounded-r">
+                    <strong className="text-amber-900">{gap.requirement}</strong>
+                    <p className="text-muted mt-0.5">{gap.whyItMatters}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Disclaimer when generating with gaps */}
+          {readiness.isEligibleForSealing && readiness.hasWarnings && (
+            <div className="mt-4 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+              <strong>⚠ This report will contain {readiness.warningGaps.length} data gap{readiness.warningGaps.length !== 1 ? "s" : ""}</strong><br />
+              Missing fields will be highlighted in the PDF with a <em>"DATA GAP — Verifier Action Required"</em> annotation. The report is operator-prepared and the independent verifier must assess these gaps during their review.
+            </div>
+          )}
+
+          <button
+            type="button"
+            aria-label="Generate sealed dossier"
+            onClick={handleSeal}
+            disabled={sealing || !readiness.isEligibleForSealing || usableEntitlements.length === 0}
+            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {sealing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            {readiness.hasWarnings ? "Generate dossier with data gaps" : "Generate sealed dossier"}
+          </button>
+          <StatusBanner status={sealStatus} tone="error" />
+          <p className="mt-3 text-xs text-muted">Generating a sealed dossier consumes 1 credit only after successful validation and cryptographic signature. Failed or blocked attempts consume zero credits.</p>
+        </section>
+
       <section className="rounded-xl border border-border bg-surface p-6"><h3 className="mb-4 flex items-center gap-2 font-bold"><FileCode2 className="h-5 w-5 text-accent" /> Mathematical audit preview</h3>{calculation.error ? <StatusBanner status={calculation.error} tone="warning" /> : <><div className="grid grid-cols-2 gap-3 text-sm"><div><span className="text-muted">Total embedded</span><strong className="block">{calculation.result?.totalEmbeddedEmissions} tCO2e</strong></div><div><span className="text-muted">Aggregate intensity</span><strong className="block">{calculation.result?.specificEmbeddedEmissions} tCO2e/t</strong></div><div><span className="text-muted">Allocation total</span><strong className="block">{calculation.result?.allocationShareTotal}</strong></div><div><span className="text-muted">Reconciliation delta</span><strong className="block">{calculation.result?.allocationReconciliationDelta}</strong></div></div><div className="mt-4 max-h-80 space-y-3 overflow-y-auto">{calculation.result?.trace.map((trace) => <div key={trace.calculationId} className="rounded border border-border bg-neutral-soft p-3 font-mono text-xs"><div className="font-bold text-accent">{trace.formulaId}</div><div>{String(trace.outputValue)} {trace.outputUnit}</div><div className="break-all text-[10px] text-muted">{trace.calculationHash}</div></div>)}</div></>}</section>
     </div></div>
   );
