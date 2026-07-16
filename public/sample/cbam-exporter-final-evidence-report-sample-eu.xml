@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CBAMQuarterlyReport xmlns="urn:europe:ec:taxud:cbam:qreport:v1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:europe:ec:taxud:cbam:qreport:v1 QReport_ver1.12.xsd" reportId="2C1B2A5782ED6642">
+  <Declarant>
+    <EORI>N/A</EORI>
+    <Name>N/A</Name>
+    <RoleCode>1</RoleCode>
+  </Declarant>
+  <ReportingPeriod>
+    <Year>2026</Year>
+    <Quarter>1</Quarter>
+  </ReportingPeriod>
+  <Installation>
+    <InstallationIdentifier>INST_1</InstallationIdentifier>
+    <Name>N/A</Name>
+    <CountryCode>TR</CountryCode>
+    <ProductionRoute>
+      <Description>N/A</Description>
+    </ProductionRoute>
+  </Installation>
+  <ImportedGoods>
+    <ImportedGoodItem>
+      <CNCode>72085120</CNCode>
+      <ProductionVolume>15000</ProductionVolume>
+      <UnitCode>t</UnitCode>
+      <Emissions>
+        <DirectSpecificEmissions>0</DirectSpecificEmissions>
+        <IndirectSpecificEmissions>0</IndirectSpecificEmissions>
+        <TotalEmbeddedEmissions>0</TotalEmbeddedEmissions>
+      </Emissions>
+      <CarbonPricePaid>
+        <AmountPaidEur>0</AmountPaidEur>
+        <DeductionAmountEur>0</DeductionAmountEur>
+      </CarbonPricePaid>
+    </ImportedGoodItem>
+  </ImportedGoods>
+</CBAMQuarterlyReport>
