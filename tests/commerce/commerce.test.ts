@@ -7,8 +7,9 @@ import {
   assertOrderTransition,
   isOrderTransitionAllowed,
 } from "../../functions/src/commerce/order-state";
-import { InvalidWebhookSignatureError } from "../../functions/src/commerce/commerce-errors";
 
+const SANDBOX_PRICE_ID = "pri_01sandboxvalid";
+const PRODUCTION_PRICE_ID = "pri_01productionvalid";
 const unmarshal = vi.hoisted(() => vi.fn());
 
 vi.mock("../../functions/src/commerce/paddle-client", () => ({
@@ -29,7 +30,7 @@ function validTransaction(overrides: Record<string, unknown> = {}) {
       caseId: "case-123",
       environment: "sandbox",
     },
-    items: [{ quantity: 1, price: { id: "pri_sandbox_valid" } }],
+    items: [{ quantity: 1, price: { id: SANDBOX_PRICE_ID } }],
     details: { totals: { total: "14900" } },
     ...overrides,
   };
@@ -51,19 +52,17 @@ describe("Canonical Preparation Pack", () => {
   });
 
   it("exposes one active server product and rejects placeholder price IDs", async () => {
-    process.env.PADDLE_PRICE_ID_SANDBOX = "pri_sandbox_valid";
-    process.env.PADDLE_PRICE_ID_PRODUCTION = "pri_production_valid";
+    process.env.PADDLE_PRICE_ID_SANDBOX = SANDBOX_PRICE_ID;
+    process.env.PADDLE_PRICE_ID_PRODUCTION = PRODUCTION_PRICE_ID;
     vi.resetModules();
     const { PRODUCT_CATALOG, getPriceIdForProduct, getProduct } = await import(
       "../../functions/src/commerce/catalog"
     );
-
     expect(Object.keys(PRODUCT_CATALOG)).toEqual([WEB_PACK.productCode]);
     expect(getProduct(WEB_PACK.productCode)?.expectedUnitAmount).toBe(14900);
-    expect(getPriceIdForProduct(WEB_PACK.productCode, true)).toBe("pri_sandbox_valid");
-    expect(getPriceIdForProduct(WEB_PACK.productCode, false)).toBe("pri_production_valid");
+    expect(getPriceIdForProduct(WEB_PACK.productCode, true)).toBe(SANDBOX_PRICE_ID);
+    expect(getPriceIdForProduct(WEB_PACK.productCode, false)).toBe(PRODUCTION_PRICE_ID);
     expect(getPriceIdForProduct("INVALID_PRODUCT", true)).toBeNull();
-
     delete process.env.PADDLE_PRICE_ID_SANDBOX;
     delete process.env.PADDLE_PRICE_ID_PRODUCTION;
   });
@@ -71,8 +70,8 @@ describe("Canonical Preparation Pack", () => {
 
 describe("Paddle Transaction Contract", () => {
   beforeEach(() => {
-    process.env.PADDLE_PRICE_ID_SANDBOX = "pri_sandbox_valid";
-    process.env.PADDLE_PRICE_ID_PRODUCTION = "pri_production_valid";
+    process.env.PADDLE_PRICE_ID_SANDBOX = SANDBOX_PRICE_ID;
+    process.env.PADDLE_PRICE_ID_PRODUCTION = PRODUCTION_PRICE_ID;
     vi.resetModules();
   });
 
@@ -89,16 +88,16 @@ describe("Paddle Transaction Contract", () => {
       currency: "USD",
       totalMinor: 14900,
       quantity: 1,
-      priceId: "pri_sandbox_valid",
+      priceId: SANDBOX_PRICE_ID,
     });
   });
 
   it.each([
     ["wrong currency", { currencyCode: "EUR" }, "PADDLE_CURRENCY_MISMATCH"],
     ["wrong total", { details: { totals: { total: "14901" } } }, "PADDLE_AMOUNT_MISMATCH"],
-    ["wrong price", { items: [{ quantity: 1, price: { id: "pri_attacker" } }] }, "PADDLE_PRICE_ID_MISMATCH"],
+    ["wrong price", { items: [{ quantity: 1, price: { id: "pri_01attacker" } }] }, "PADDLE_PRICE_ID_MISMATCH"],
     ["wrong environment", { customData: { uid: "user-123", orderId: `ord_${"a".repeat(64)}`, productCode: "CBAM_CREDIT_PACK_5", caseId: "case-123", environment: "production" } }, "PADDLE_ENVIRONMENT_MISMATCH"],
-    ["wrong quantity", { items: [{ quantity: 2, price: { id: "pri_sandbox_valid" } }] }, "PADDLE_QUANTITY_INVALID"],
+    ["wrong quantity", { items: [{ quantity: 2, price: { id: SANDBOX_PRICE_ID } }] }, "PADDLE_QUANTITY_INVALID"],
   ])("rejects %s", async (_name, override, errorCode) => {
     const { validateCompletedTransaction } = await import(
       "../../functions/src/commerce/transaction-contract"
@@ -149,12 +148,18 @@ describe("Webhook Signature Boundary", () => {
     await expect(verifyWebhookSignature("{}", "ts=1;h1=valid")).resolves.toEqual(event);
   });
 
-  it("rejects empty and invalid signatures", async () => {
+  it("rejects empty and invalid signatures with the canonical security code", async () => {
     const { verifyWebhookSignature } = await import(
       "../../functions/src/commerce/webhook-verifier"
     );
-    await expect(verifyWebhookSignature("{}", "")).rejects.toThrow(InvalidWebhookSignatureError);
+    await expect(verifyWebhookSignature("{}", "")).rejects.toMatchObject({
+      code: "INVALID_WEBHOOK_SIGNATURE",
+      status: 401,
+    });
     unmarshal.mockRejectedValueOnce(new Error("invalid"));
-    await expect(verifyWebhookSignature("{}", "bad")).rejects.toThrow(InvalidWebhookSignatureError);
+    await expect(verifyWebhookSignature("{}", "bad")).rejects.toMatchObject({
+      code: "INVALID_WEBHOOK_SIGNATURE",
+      status: 401,
+    });
   });
 });
