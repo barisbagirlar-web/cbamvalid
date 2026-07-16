@@ -1,27 +1,52 @@
 import { z } from "zod";
 import { CaseIdSchema } from "./case-id";
 
-export const InputDatumSchema = z.object({
-  id: z.string().uuid().optional(),
-  value: z.union([z.number().finite(), z.string(), z.null()]),
-  rawUnit: z.string().optional(),
-  canonicalUnit: z.string().optional(),
-  unit: z.string().optional(),
-  reportingPeriod: z.string().optional(),
-  sourceType: z.enum(["PRIMARY", "DEFAULT", "SECONDARY", "ESTIMATED", "REGULATORY"]),
-  evidenceId: z.string().uuid().optional(),
-  documentReference: z.string().optional(),
-  measurementMethod: z.string().optional(),
-  confidenceStatus: z.enum([
-    "HIGH_VERIFIED",
-    "MEDIUM_DOCUMENTED",
-    "LOW_ESTIMATE",
-    "DEFAULT",
-    "DEFAULT_ASSIGNED",
-  ]),
-  responsiblePerson: z.string().optional(),
-  reviewerNote: z.string().optional(),
-});
+export const InputDatumSchema = z.preprocess(
+  (val: any) => {
+    if (val && typeof val === "object") {
+      const copy = { ...val };
+      for (const k of [
+        "id",
+        "rawUnit",
+        "canonicalUnit",
+        "unit",
+        "reportingPeriod",
+        "evidenceId",
+        "documentReference",
+        "measurementMethod",
+        "responsiblePerson",
+        "reviewerNote",
+      ]) {
+        if (copy[k] === null) {
+          delete copy[k];
+        }
+      }
+      return copy;
+    }
+    return val;
+  },
+  z.object({
+    id: z.string().uuid().optional(),
+    value: z.union([z.number().finite(), z.string(), z.null()]),
+    rawUnit: z.string().optional(),
+    canonicalUnit: z.string().optional(),
+    unit: z.string().optional(),
+    reportingPeriod: z.string().optional(),
+    sourceType: z.enum(["PRIMARY", "DEFAULT", "SECONDARY", "ESTIMATED", "REGULATORY"]),
+    evidenceId: z.string().uuid().optional(),
+    documentReference: z.string().optional(),
+    measurementMethod: z.string().optional(),
+    confidenceStatus: z.enum([
+      "HIGH_VERIFIED",
+      "MEDIUM_DOCUMENTED",
+      "LOW_ESTIMATE",
+      "DEFAULT",
+      "DEFAULT_ASSIGNED",
+    ]),
+    responsiblePerson: z.string().optional(),
+    reviewerNote: z.string().optional(),
+  })
+);
 
 export type InputDatum = z.infer<typeof InputDatumSchema>;
 
