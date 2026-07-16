@@ -379,42 +379,48 @@ export default function CbamLandingPage() {
               </section>
 
               <section className="bg-surface border border-border rounded-xl p-6 shadow-sm">
-                <h3 className="text-lg font-bold mb-4 font-serif">Sealed Reports History</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold font-serif">Sealed Reports</h3>
+                  <Link href="/reports" className="text-xs font-semibold text-accent hover:underline flex items-center gap-1">
+                    View all sealed reports <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
                 {reports.length === 0 ? (
-                  <div className="p-8 text-center bg-background border border-dashed border-border/80 rounded-lg">
-                    <Lock className="w-8 h-8 text-muted/65 mx-auto mb-3" />
-                    <p className="text-sm text-subtle">No sealed reports found. Complete the draft checklist to generate verifier-preparation deliverables.</p>
+                  <div className="p-6 text-center bg-background border border-dashed border-border/80 rounded-lg">
+                    <Lock className="w-7 h-7 text-muted/65 mx-auto mb-2" />
+                    <p className="text-sm text-muted">No sealed reports yet. Complete and seal a draft case to generate verifier-preparation packages.</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {reports.map((report, index) => {
+                  <div className="space-y-3">
+                    {reports.slice(0, 3).map((report, index) => {
                       const reportId = readString(report, "reportId");
                       const createdAt = readString(report, "createdAt");
-                      const documentHash = readString(report, "documentHash");
                       return (
-                        <div key={reportId || `report-${index}`} className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors">
-                          <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="font-semibold text-sm">{reportInstallationName(report)}</p>
-                              <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] px-2 py-0.5 rounded font-mono font-bold tracking-wider">
+                        <div key={reportId || `report-${index}`} className="p-3 bg-background border border-border/60 rounded-lg flex items-center justify-between gap-3 hover:border-border transition-colors">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <p className="font-semibold text-xs truncate">{reportInstallationName(report)}</p>
+                              <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold tracking-wider shrink-0">
                                 {getDisplayReportReferenceCode(reportId)}
                               </span>
                             </div>
-                            <p className="text-xs text-muted mt-1 font-mono">
-                              Release ID: {reportId ? `${reportId.slice(0, 8)}...` : "Unavailable"} | Sealed: {createdAt ? formatCaseUpdatedDate(createdAt) : "Unknown"}
+                            <p className="text-[11px] text-muted mt-0.5 font-mono">
+                              {createdAt ? formatCaseUpdatedDate(createdAt) : "Unknown date"}
                             </p>
-                            <p className="text-[11px] text-muted truncate mt-1">Hash: {documentHash || "Unavailable"}</p>
                           </div>
-                          {reportId ? (
-                            <Link href={`/cbam/reports/${reportId}`} className="bg-foreground hover:bg-foreground/90 text-background text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center justify-center">
-                              View Dossier
+                          {reportId && (
+                            <Link href={`/cbam/reports/${reportId}`} className="shrink-0 bg-foreground hover:bg-foreground/90 text-background text-[11px] font-semibold px-3 py-1.5 rounded transition-colors">
+                              Open
                             </Link>
-                          ) : (
-                            <span className="text-xs text-muted">Report link unavailable</span>
                           )}
                         </div>
                       );
                     })}
+                    {reports.length > 3 && (
+                      <Link href="/reports" className="block text-center text-xs text-accent hover:underline pt-1">
+                        + {reports.length - 3} more sealed reports
+                      </Link>
+                    )}
                   </div>
                 )}
               </section>

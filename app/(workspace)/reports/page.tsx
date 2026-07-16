@@ -64,28 +64,42 @@ export default function ReportsPage() {
         ) : (
           <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
             <div className="space-y-4">
-              {reports.map((r: any) => (
-                <div 
-                  key={r.reportId} 
-                  className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors"
-                >
-                  <div>
-                    <p className="font-semibold text-sm">{r.calculation?.inputs?.installationName}</p>
-                    <p className="text-xs text-muted mt-1 font-mono">
-                      Release ID: {r.reportId.substring(0, 8)}... | Sealed: {new Date(r.createdAt).toLocaleDateString()}
-                    </p>
-                    <p className="text-[11px] text-muted truncate mt-1 max-w-md font-mono" title={r.documentHash}>
-                      Hash: {r.documentHash}
-                    </p>
-                  </div>
-                  <Link
-                    href={`/cbam/reports/${r.reportId}`}
-                    className="bg-foreground hover:bg-foreground/90 text-background text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center justify-center gap-1.5 self-end sm:self-auto"
+              {reports.map((r: any) => {
+                const cnCode = r.calculation?.inputs?.cnCode || r.cnCode || null;
+                const refCode = r.reportId
+                  ? `CBAM-R-${r.reportId.replace(/-/g, "").slice(0, 8).toUpperCase()}`
+                  : null;
+                return (
+                  <div
+                    key={r.reportId}
+                    className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors"
                   >
-                    <FileText className="w-3.5 h-3.5" /> View Dossier
-                  </Link>
-                </div>
-              ))}
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <p className="font-semibold text-sm">{r.calculation?.inputs?.installationName || "Unnamed Installation"}</p>
+                        {refCode && (
+                          <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] px-2 py-0.5 rounded font-mono font-bold tracking-wider">
+                            {refCode}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted font-mono">
+                        {cnCode && <><strong>CN:</strong> {cnCode} · </>}
+                        Release ID: {r.reportId.substring(0, 8)}... · Sealed: {new Date(r.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                      </p>
+                      <p className="text-[11px] text-muted truncate mt-1 max-w-md font-mono" title={r.documentHash}>
+                        Seal: {r.documentHash}
+                      </p>
+                    </div>
+                    <Link
+                      href={`/cbam/reports/${r.reportId}`}
+                      className="shrink-0 bg-foreground hover:bg-foreground/90 text-background text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center justify-center gap-1.5 self-end sm:self-auto"
+                    >
+                      <FileText className="w-3.5 h-3.5" /> View Dossier
+                    </Link>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
