@@ -52,6 +52,16 @@ function shortHash(value: string): string {
   return `${value.slice(0, 12)}…${value.slice(-12)}`;
 }
 
+function positiveNumber(value: string): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+}
+
+function percentage(value: string, total: string): number {
+  const denominator = positiveNumber(total);
+  return denominator > 0 ? Math.min(100, (positiveNumber(value) / denominator) * 100) : 0;
+}
+
 export default function SealedReportPage({ params }: { params: Promise<{ reportId: string }> }) {
   const { reportId } = use(params);
   const { user, loading } = useAuth();
@@ -211,6 +221,25 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
               <p className="mt-3 break-words font-mono text-lg font-bold">{value}</p>
             </article>
           ))}
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+          <article className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+            <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent">Emissions profile</p><h2 className="mt-1 font-serif text-xl font-bold">Direct to indirect composition</h2></div><span className="text-xs text-muted">tCO2e</span></div>
+            <div className="mt-6 flex h-12 overflow-hidden rounded-lg bg-neutral-soft" aria-label="Direct and indirect emissions composition">
+              <div className="flex min-w-0 items-center justify-center bg-orange-700 px-2 text-xs font-bold text-white" style={{ width: `${percentage(calculation.totalDirectEmissions, calculation.totalEmbeddedEmissions)}%` }}>{calculation.totalDirectEmissions}</div>
+              <div className="flex min-w-0 items-center justify-center bg-blue-700 px-2 text-xs font-bold text-white" style={{ width: `${percentage(calculation.totalIndirectEmissions, calculation.totalEmbeddedEmissions)}%` }}>{calculation.totalIndirectEmissions}</div>
+            </div>
+            <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3"><div><span className="text-muted">Direct</span><strong className="block font-mono">{calculation.totalDirectEmissions}</strong></div><div><span className="text-muted">Indirect</span><strong className="block font-mono">{calculation.totalIndirectEmissions}</strong></div><div><span className="text-muted">Precursor subset</span><strong className="block font-mono">{calculation.totalPrecursorEmissions}</strong></div></div>
+            <p className="mt-4 text-xs leading-relaxed text-muted">Precursor emissions are already classified within direct and indirect totals and are shown separately only as a traceability subset.</p>
+          </article>
+
+          <article className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent">Allocation reconciliation</p>
+            <h2 className="mt-1 font-serif text-xl font-bold">CN-code emissions allocation</h2>
+            <div className="mt-5 space-y-4">{calculation.goods.map((good) => <div key={good.goodIndex}><div className="flex items-center justify-between gap-3 text-xs"><span className="font-mono">{good.cnCode}</span><span>{good.allocatedEmbeddedEmissions} tCO2e · {good.specificEmbeddedEmissions} tCO2e/t</span></div><div className="mt-2 h-3 overflow-hidden rounded-full bg-neutral-soft"><div className="h-full rounded-full bg-accent" style={{ width: `${percentage(good.allocatedEmbeddedEmissions, calculation.totalEmbeddedEmissions)}%` }} /></div></div>)}</div>
+            <div className="mt-5 grid grid-cols-2 gap-3 rounded-lg border border-border bg-neutral-soft p-4 text-sm"><div><span className="text-muted">Share total</span><strong className="block font-mono">{calculation.allocationShareTotal}</strong></div><div><span className="text-muted">Delta</span><strong className="block font-mono">{calculation.allocationReconciliationDelta}</strong></div></div>
+          </article>
         </section>
 
         <section className="grid gap-6 lg:grid-cols-2">

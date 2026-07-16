@@ -99,6 +99,10 @@ export type GoodCalculationPreview = {
 export type DossierCalculationPreview = {
   trace: CalculationTraceNode[];
   goods: GoodCalculationPreview[];
+  installationDirectEmissions: string;
+  electricityIndirectEmissions: string;
+  precursorDirectEmissions: string;
+  precursorIndirectEmissions: string;
   totalDirectEmissions: string;
   totalIndirectEmissions: string;
   totalPrecursorEmissions: string;
@@ -227,6 +231,10 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
   return {
     trace,
     goods,
+    installationDirectEmissions: direct?.toString() ?? "NOT_CALCULATED",
+    electricityIndirectEmissions: indirect?.toString() ?? "NOT_CALCULATED",
+    precursorDirectEmissions: precursorComplete ? precursorDirect.toString() : "NOT_CALCULATED",
+    precursorIndirectEmissions: precursorComplete ? precursorIndirect.toString() : "NOT_CALCULATED",
     totalDirectEmissions: totalDirect?.toString() ?? "NOT_CALCULATED",
     totalIndirectEmissions: totalIndirect?.toString() ?? "NOT_CALCULATED",
     totalPrecursorEmissions: precursorTotal?.toString() ?? "NOT_CALCULATED",

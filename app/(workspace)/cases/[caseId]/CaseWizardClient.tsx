@@ -3,14 +3,18 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   BookOpenCheck,
   CheckCircle2,
   Eraser,
   FileCode2,
+  FileCheck2,
   FileUp,
+  LockKeyhole,
   Loader2,
+  PackageCheck,
   Plus,
   Save,
   Shield,
@@ -32,6 +36,7 @@ import {
   createEmptyInput,
   type AuditReadyCase,
   type EvidenceSupportStatus,
+  type GapRecord,
   type InputDatum,
   type UnitCode,
 } from "@/lib/cbam/schema";
@@ -77,6 +82,38 @@ const EVIDENCE_LINK_OPTIONS = [
   ["electricityConsumed", "Electricity consumed"],
   ["gridEmissionFactor", "Grid emission factor"],
 ] as const;
+
+const SEALED_PACKAGE_HIGHLIGHTS = [
+  { title: "11 professional PDFs", detail: "Executive report, monitoring plan, calculation annex, readiness assessment and methodology records", icon: FileCheck2 },
+  { title: "Verifier workspace", detail: "Controlled XLSX with 14+ worksheets, filters, validations, source links and verifier sign-off", icon: FileCode2 },
+  { title: "Evidence assurance", detail: "Immutable evidence copies, field links, issuer/date metadata, malware status and SHA-256 register", icon: Shield },
+  { title: "Signed trust chain", detail: "27-component ZIP, canonical manifest, KMS asymmetric signature and immutable release hashes", icon: LockKeyhole },
+] as const;
+
+function numeric(value: string | number | null | undefined): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+}
+
+function percentOf(value: string | number | null | undefined, total: string | number | null | undefined): number {
+  const denominator = numeric(total);
+  if (denominator <= 0) return 0;
+  return Math.min(100, Math.max(0, (numeric(value) / denominator) * 100));
+}
+
+function gapResolution(gap: GapRecord): { step: number; action: string; evidence: string } {
+  const code = String(gap.requiredEvidence || "");
+  const requirement = gap.requirement.toLowerCase();
+  if (code.includes("SCENARIO")) return { step: 1, action: "Remove the illustrative scenario and enter the real operator and reporting scope.", evidence: "Case-specific records must replace every demonstration value." };
+  if (code.includes("EORI") || requirement.includes("eori")) return { step: 1, action: "Enter the active declarant EORI, then upload and link the registration evidence.", evidence: "EORI registration record or importer-issued evidence." };
+  if (code.includes("IDENTITY")) return { step: 3, action: "Complete the importer, exporter, installation, country, route and explicit system boundary.", evidence: "Company records, operating permit, monitoring plan and process map." };
+  if (code.includes("CN_") || code.includes("PRODUCTION") || code.includes("ALLOCATION") || requirement.includes("good")) return { step: 2, action: "Correct the goods row and reconcile all allocation shares to exactly 1 before linking source records.", evidence: "Customs classification, production ledger and allocation workbook." };
+  if (requirement.includes("directemissions") || code.includes("QC_06")) return { step: 4, action: "Enter period-total direct emissions and link the approved monitoring calculation.", evidence: "Fuel/activity ledger, meter/lab records and emissions workbook." };
+  if (requirement.includes("electricity") || requirement.includes("gridemissionfactor") || code.includes("QC_07") || code.includes("QC_08")) return { step: 5, action: "Enter electricity and a correctly scaled grid factor, then link each value to approved evidence.", evidence: "Meter/invoice records and the official or supplier-specific factor source with period/version." };
+  if (requirement.includes("precursor") || code.includes("PRECURSOR")) return { step: 6, action: "Complete each precursor quantity and emissions field, or document an evidenced no-precursor decision.", evidence: "Bill of materials, mass balance and supplier/operator emissions communication." };
+  if (requirement.includes("carbon") || code.includes("CARBON_PRICE")) return { step: 7, action: "Link the carbon-price record to approved proof of assessment and payment, or remove an unsupported deduction.", evidence: "Official assessment, receipt, applicable-emissions reconciliation and rebate documentation." };
+  return { step: 7, action: "Upload the source document, link it to the exact input and complete malware and support review.", evidence: "Original source file with issuer, issue date, reporting period and SHA-256 integrity record." };
+}
 
 function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
@@ -525,10 +562,67 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           </p>
         </section>
       )}
+      <section className="rounded-xl border border-slate-300 bg-slate-950 p-6 text-white shadow-sm" aria-label="Sealed package deliverables">
+        <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange-300">Successful sealed release</p>
+            <h3 className="mt-1 flex items-center gap-2 text-xl font-bold"><PackageCheck className="h-6 w-6" /> What the Preparation Pack actually delivers</h3>
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-300">The blue scenario above is a free workflow demonstration. A paid release is created only from case-specific data after every preparation control passes and produces a verifier-facing, immutable package.</p>
+          </div>
+          <span className="shrink-0 rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold">27 controlled components</span>
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          {SEALED_PACKAGE_HIGHLIGHTS.map((item) => {
+            const Icon = item.icon;
+            return <article key={item.title} className="rounded-lg border border-slate-700 bg-slate-900 p-4"><Icon className="h-5 w-5 text-orange-300" /><h4 className="mt-3 text-sm font-bold">{item.title}</h4><p className="mt-1 text-xs leading-relaxed text-slate-300">{item.detail}</p></article>;
+          })}
+        </div>
+        <p className="mt-4 text-xs leading-relaxed text-slate-400">Professional boundary: CBAMValid prepares the operator dossier and evidence chain. Only an appropriately accredited independent verifier can issue a verification opinion.</p>
+      </section>
+
       <div className="grid gap-6 lg:grid-cols-2">
-      <section className="rounded-xl border border-border bg-surface p-6"><h3 className="mb-4 flex items-center gap-2 font-bold"><Shield className="h-5 w-5 text-accent" /> Verification readiness</h3><div className={`rounded border p-3 text-sm font-semibold ${readiness.isEligibleForSealing ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-red-300 bg-red-50 text-red-900"}`}>{readiness.status} · {readiness.completenessPercentage}% · {readiness.passedControls}/{readiness.applicableControls} controls passed</div><div className="mt-4 max-h-80 space-y-2 overflow-y-auto">{readiness.allGaps.map((gap) => <div key={gap.gapId} className="border-l-2 border-red-500 pl-3 text-xs"><strong>{gap.requirement}</strong><p className="text-muted">{gap.whyItMatters}</p></div>)}</div><button type="button" aria-label="Generate sealed dossier" onClick={handleSeal} disabled={sealing || !readiness.isEligibleForSealing || usableEntitlements.length === 0} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-40">{sealing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Generate sealed dossier</button><StatusBanner status={sealStatus} tone="error" /><p className="mt-3 text-xs text-muted">Generation consumes a successful release only after server validation, immutable artifact commit and signature completion.</p></section>
-      <section className="rounded-xl border border-border bg-surface p-6"><h3 className="mb-4 flex items-center gap-2 font-bold"><FileCode2 className="h-5 w-5 text-accent" /> Mathematical audit preview</h3>{calculation.error ? <StatusBanner status={calculation.error} tone="warning" /> : <><div className="grid grid-cols-2 gap-3 text-sm"><div><span className="text-muted">Total embedded</span><strong className="block">{calculation.result?.totalEmbeddedEmissions} tCO2e</strong></div><div><span className="text-muted">Aggregate intensity</span><strong className="block">{calculation.result?.specificEmbeddedEmissions} tCO2e/t</strong></div><div><span className="text-muted">Allocation total</span><strong className="block">{calculation.result?.allocationShareTotal}</strong></div><div><span className="text-muted">Reconciliation delta</span><strong className="block">{calculation.result?.allocationReconciliationDelta}</strong></div></div><div className="mt-4 max-h-80 space-y-3 overflow-y-auto">{calculation.result?.trace.map((trace) => <div key={trace.calculationId} className="rounded border border-border bg-neutral-soft p-3 font-mono text-xs"><div className="font-bold text-accent">{trace.formulaId}</div><div>{String(trace.outputValue)} {trace.outputUnit}</div><div className="break-all text-[10px] text-muted">{trace.calculationHash}</div></div>)}</div></>}</section>
-    </div></div>
+        <section className="rounded-xl border border-border bg-surface p-6">
+          <h3 className="flex items-center gap-2 font-bold"><Shield className="h-5 w-5 text-accent" /> Verification readiness</h3>
+          <div className={`mt-4 rounded border p-4 ${readiness.isEligibleForSealing ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-red-300 bg-red-50 text-red-900"}`}>
+            <div className="flex items-center justify-between gap-4 text-sm font-semibold"><span>{readiness.status.replaceAll("_", " ")}</span><span>{readiness.completenessPercentage}%</span></div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-black/10"><div className={`h-full rounded-full ${readiness.isEligibleForSealing ? "bg-emerald-700" : "bg-red-700"}`} style={{ width: `${readiness.completenessPercentage}%` }} /></div>
+            <p className="mt-2 text-xs">{readiness.passedControls}/{readiness.applicableControls} applicable controls passed · {readiness.criticalBlockers.length} blocker(s)</p>
+          </div>
+
+          {readiness.allGaps.length > 0 ? (
+            <div className="mt-4 max-h-[34rem] space-y-3 overflow-y-auto pr-1" aria-label="Readiness remediation plan">
+              {readiness.allGaps.map((gap) => {
+                const resolution = gapResolution(gap);
+                return (
+                  <article key={gap.gapId} className="rounded-lg border border-red-200 bg-red-50 p-4 text-xs text-red-950">
+                    <div className="flex items-start gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-700" /><div><h4 className="font-bold">{gap.requirement}</h4><p className="mt-1 leading-relaxed text-red-900">{gap.whyItMatters}</p></div></div>
+                    <div className="mt-3 rounded border border-red-200 bg-white/70 p-3"><p><strong>How to fix:</strong> {resolution.action}</p><p className="mt-1"><strong>Evidence:</strong> {resolution.evidence}</p></div>
+                    <button type="button" onClick={() => setCurrentStep(resolution.step)} className="mt-3 inline-flex items-center gap-1 font-semibold text-red-800 underline underline-offset-2">Fix in step {resolution.step} <ArrowRight className="h-3 w-3" /></button>
+                  </article>
+                );
+              })}
+            </div>
+          ) : <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"><CheckCircle2 className="mb-2 h-5 w-5" />Every automated preparation control has passed. The independent verifier status remains separate.</div>}
+
+          {readiness.isEligibleForSealing ? (
+            <button type="button" aria-label="Generate sealed dossier" onClick={handleSeal} disabled={sealing || usableEntitlements.length === 0} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-40">{sealing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Generate sealed dossier</button>
+          ) : (
+            <button type="button" onClick={() => setCurrentStep(scenarioActive ? 1 : 7)} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface"><FileUp className="h-4 w-4" /> {scenarioActive ? "Replace demo with case data" : "Resolve evidence blockers"}</button>
+          )}
+          <StatusBanner status={sealStatus} tone="error" />
+          <p className="mt-3 text-xs text-muted">A release is consumed only after server validation, immutable artifact commit and KMS signature completion. Failed or blocked attempts consume no release.</p>
+        </section>
+
+        <section className="rounded-xl border border-border bg-surface p-6">
+          <h3 className="flex items-center gap-2 font-bold"><FileCode2 className="h-5 w-5 text-accent" /> Mathematical audit and emissions flow</h3>
+          {calculation.error ? <div className="mt-4"><StatusBanner status={calculation.error} tone="warning" /></div> : <>
+            <div className="mt-4 grid grid-cols-2 gap-3 text-sm"><div><span className="text-muted">Total embedded</span><strong className="block">{calculation.result?.totalEmbeddedEmissions} tCO2e</strong></div><div><span className="text-muted">Aggregate intensity</span><strong className="block">{calculation.result?.specificEmbeddedEmissions} tCO2e/t</strong></div><div><span className="text-muted">Allocation total</span><strong className="block">{calculation.result?.allocationShareTotal}</strong></div><div><span className="text-muted">Reconciliation delta</span><strong className="block">{calculation.result?.allocationReconciliationDelta}</strong></div></div>
+            {calculation.result && numeric(calculation.result.totalEmbeddedEmissions) > 0 && <div className="mt-5 rounded-lg border border-border bg-neutral-soft p-4" aria-label="Emissions composition chart"><div className="flex items-center justify-between text-xs"><strong>Emissions composition</strong><span className="text-muted">tCO2e</span></div><div className="mt-3 flex h-8 overflow-hidden rounded-md bg-slate-200" title="Direct, electricity and precursor emissions"><div className="bg-orange-700" style={{ width: `${percentOf(calculation.result.installationDirectEmissions, calculation.result.totalEmbeddedEmissions)}%` }} /><div className="bg-blue-700" style={{ width: `${percentOf(calculation.result.electricityIndirectEmissions, calculation.result.totalEmbeddedEmissions)}%` }} /><div className="bg-orange-400" style={{ width: `${percentOf(calculation.result.precursorDirectEmissions, calculation.result.totalEmbeddedEmissions)}%` }} /><div className="bg-blue-400" style={{ width: `${percentOf(calculation.result.precursorIndirectEmissions, calculation.result.totalEmbeddedEmissions)}%` }} /></div><div className="mt-3 grid gap-2 text-[11px] sm:grid-cols-2"><span><i className="mr-2 inline-block h-2 w-2 bg-orange-700" />Installation direct {calculation.result.installationDirectEmissions}</span><span><i className="mr-2 inline-block h-2 w-2 bg-blue-700" />Electricity indirect {calculation.result.electricityIndirectEmissions}</span><span><i className="mr-2 inline-block h-2 w-2 bg-orange-400" />Precursor direct {calculation.result.precursorDirectEmissions}</span><span><i className="mr-2 inline-block h-2 w-2 bg-blue-400" />Precursor indirect {calculation.result.precursorIndirectEmissions}</span></div></div>}
+            <div className="mt-4 max-h-80 space-y-3 overflow-y-auto">{calculation.result?.trace.map((trace) => <div key={trace.calculationId} className="rounded border border-border bg-neutral-soft p-3 font-mono text-xs"><div className="font-bold text-accent">{trace.formulaId}</div><div>{String(trace.outputValue)} {trace.outputUnit}</div><div className="break-all text-[10px] text-muted">SHA-256 {trace.calculationHash}</div></div>)}</div>
+          </>}
+        </section>
+      </div>
+    </div>
   );
 
   const stepContent = [renderStep1, renderStep2, renderStep3, renderStep4, renderStep5, renderStep6, renderStep7, renderStep8][currentStep - 1];

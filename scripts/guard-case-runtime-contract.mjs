@@ -33,6 +33,8 @@ const saveContract = read("lib/functions/case-save-contract.ts");
 const caseSummary = read("lib/cbam/case-summary.ts");
 const newCasePage = read("app/(workspace)/cases/new/page.tsx");
 const casePage = read("app/(workspace)/cases/[caseId]/page.tsx");
+const caseWizard = read("app/(workspace)/cases/[caseId]/CaseWizardClient.tsx");
+const fieldHelp = read("components/cbam/FieldHelp.tsx");
 const casesPage = read("app/(workspace)/cases/page.tsx");
 const dashboardPage = read("app/(workspace)/cbam/page.tsx");
 const firebaseConfig = read("firebase.json");
@@ -107,6 +109,15 @@ rejectText(casePage, "void loadWorkspace()", "Effect-owned synchronous state loa
 rejectText(casePage, 'router.push("/dashboard")', "Silent workspace dashboard fallback");
 rejectText(casePage, 'router.replace("/dashboard")', "Silent workspace dashboard fallback");
 
+requireText(fieldHelp, 'className="fixed inset-0 z-[100]', "Viewport-bound field guidance overlay");
+requireText(fieldHelp, 'max-h-[calc(100dvh-2rem)]', "Field guidance viewport height bound");
+requireText(fieldHelp, 'aria-modal="true"', "Accessible field guidance dialog");
+requireText(fieldHelp, 'event.key === "Escape"', "Keyboard-close field guidance dialog");
+requireText(fieldHelp, "Close data-source help", "Visible close control contract");
+requireText(caseWizard, "What the Preparation Pack actually delivers", "Paid package value disclosure");
+requireText(caseWizard, "How to fix:", "Readiness remediation guidance");
+requireText(caseWizard, "Resolve evidence blockers", "Actionable blocked sealing state");
+
 requireText(caseSummary, "caseData.installation.name", "Canonical installation summary path");
 requireText(caseSummary, "caseData.goods[0]?.cnCode", "Canonical CN-code summary path");
 requireText(caseSummary, "Number.isFinite", "Non-finite summary protection");
@@ -163,6 +174,8 @@ console.log("CASE_ROLLING_DEPLOY_COMPATIBILITY=PASS");
 console.log("CASE_LOAD_FAILURE_ISOLATION=PASS");
 console.log("CASE_LEGACY_READ_COMPATIBILITY=PASS");
 console.log("CASE_LOAD_CANCELLATION=PASS");
+console.log("CASE_FIELD_HELP_VIEWPORT=PASS");
+console.log("CASE_READINESS_REMEDIATION=PASS");
 console.log("CASE_SEALING_RESOLVER=PASS");
 console.log("CASE_SUMMARY_SCHEMA_PATHS=PASS");
 console.log("CASE_CREATION_MARKER_RULES=PASS");
