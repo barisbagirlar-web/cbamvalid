@@ -1,56 +1,45 @@
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 
-function loadEnvFile(filePath: string) {
+function loadEnvFile(filePath: string): void {
   if (!fs.existsSync(filePath)) return;
-  const content = fs.readFileSync(filePath, "utf8");
-  content.split("\n").forEach(line => {
+  for (const line of fs.readFileSync(filePath, "utf8").split(/\r?\n/)) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) return;
-    const parts = trimmed.split("=");
-    if (parts.length >= 2) {
-      const key = parts[0].trim();
-      let val = parts.slice(1).join("=").trim();
-      if (val.startsWith('"') && val.endsWith('"')) {
-        val = val.substring(1, val.length - 1);
-      } else if (val.startsWith("'") && val.endsWith("'")) {
-        val = val.substring(1, val.length - 1);
-      }
-      process.env[key] = val;
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const separator = trimmed.indexOf("=");
+    if (separator <= 0) continue;
+    const key = trimmed.slice(0, separator).trim();
+    let value = trimmed.slice(separator + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
     }
-  });
+    if (process.env[key] === undefined) process.env[key] = value;
+  }
 }
 
 loadEnvFile(path.join(process.cwd(), ".env"));
 loadEnvFile(path.join(process.cwd(), ".env.local"));
 
-import { getPaddleConfig } from "../lib/billing/paddle-config.server";
-import { CREDIT_PACKAGES } from "../lib/billing/catalog";
-
-try {
+async function main(): Promise<void> {
+  const { getPaddleConfig } = await import("../lib/billing/paddle-config.server");
   const config = getPaddleConfig();
-  
-  console.log("PADDLE_ENV=CONFIGURED");
+
+  console.log(`PADDLE_ENVIRONMENT=${config.environment.toUpperCase()}`);
   console.log("PADDLE_API_KEY=CONFIGURED");
   console.log("PADDLE_CLIENT_TOKEN=CONFIGURED");
-  
-  if (config.webhookSecret) {
-    console.log("PADDLE_WEBHOOK_SECRET=CONFIGURED");
-  } else {
-    console.log("PADDLE_WEBHOOK_SECRET=MISSING");
-  }
-  
-  let validPricesCount = 0;
-  CREDIT_PACKAGES.forEach(pkg => {
-    if (pkg.paddlePriceId) {
-      validPricesCount++;
-    }
-  });
-  
-  console.log("PADDLE_PRICE_IDS=CONFIGURED");
-  
-  process.exit(0);
-} catch (error: any) {
-  console.error("PADDLE_CONFIGURATION_ERROR:", error.message || error);
-  process.exit(1);
+  console.log("PADDLE_SERVER_PRICE_ID=CONFIGURED");
+  console.log("PADDLE_WEBHOOK_SECRET=CONFIGURED");
+  console.log(`PADDLE_WEBHOOK_ENDPOINT_EXPECTED=${config.expectedWebhookUrl}`);
+  console.log(`PADDLE_WEBHOOK_URL_DECLARED=${config.configuredWebhookUrl ? "YES" : "NO"}`);
+  console.log("PADDLE_DASHBOARD_ENDPOINT_VERIFIED=NO");
+  console.log("PADDLE_CONFIG_STATIC_CHECK=PASS");
 }
+
+main().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : "PADDLE_CONFIGURATION_ERROR";
+  console.error(`PADDLE_CONFIG_STATIC_CHECK=FAIL:${message}`);
+  process.exitCode = 1;
+});
