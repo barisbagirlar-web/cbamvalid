@@ -1,103 +1,71 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { siteConfig } from "@/lib/site-config";
 import { generateBreadcrumbSchema } from "@/lib/seo/schema";
+import { PREPARATION_PACK } from "@/lib/commerce/preparation-pack";
 
-// Valid CBAM Chapters (Security Gate)
 const VALID_CHAPTERS = ["72", "73", "76", "25", "27", "28", "31"];
 
 interface PageProps {
   params: Promise<{ code: string }>;
 }
 
-// 1. DYNAMIC METADATA & SEMANTIC SEO
+function validCode(code: string): boolean {
+  return /^\d{8}$/.test(code) && VALID_CHAPTERS.includes(code.slice(0, 2));
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { code } = await params;
-  const chapter = code.substring(0, 2);
-  
-  if (code.length !== 8 || !VALID_CHAPTERS.includes(chapter)) {
-    return { 
-      title: "Invalid CN Code | CBAMValid",
-      robots: { index: false, follow: false }
-    };
+  if (!validCode(code)) {
+    return { title: "Invalid CN Code | CBAMValid", robots: { index: false, follow: false } };
   }
 
   return {
-    title: `CBAM Declaration for CN Code ${code} | EU Compliance`,
-    description: `Generate CBAMValid Exporter Evidence XML and PDF documents for CN Code ${code}. Calculate direct and precursor embedded emissions accurately.`,
-    alternates: {
-      canonical: `${siteConfig.canonicalOrigin}/cn-code/${code}`,
-    },
-    // Quality Gate: Only index if it's a known valid chapter with sufficient content
-    robots: { index: true, follow: true }
+    title: `CBAM Preparation for CN Code ${code} | CBAMValid`,
+    description: `Prepare evidence-linked embedded-emissions calculations and verifier-preparation dossier schedules for CBAM goods under CN code ${code}.`,
+    alternates: { canonical: `${siteConfig.canonicalOrigin}/cn-code/${code}` },
+    robots: { index: true, follow: true },
   };
 }
 
-// 2. SERVER COMPONENT PAGE GENERATION
 export default async function CNCodeLandingPage({ params }: PageProps) {
   const { code } = await params;
-  const chapter = code.substring(0, 2);
+  if (!validCode(code)) notFound();
+  const chapter = code.slice(0, 2);
+  const nextRoute = `/cases/new?cn=${code}`;
 
-  // If the code is out of scope, return 404 to prevent thin/garbage indexing
-  if (code.length !== 8 || !VALID_CHAPTERS.includes(chapter)) {
-    notFound();
-  }
-
-  // JSON-LD Structured Data for AI bots
   const jsonLd = [
     generateBreadcrumbSchema([
       { name: "Home", item: "/" },
-      { name: "CN-Code Hub", item: "/cn-code" },
-      { name: `CN Code ${code}`, item: `/cn-code/${code}` }
+      { name: "CN Code Hub", item: "/cn-code" },
+      { name: `CN Code ${code}`, item: `/cn-code/${code}` },
     ]),
     {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
-      "name": `CBAM Calculator for ${code}`,
-      "applicationCategory": "BusinessApplication",
-      "operatingSystem": "Web",
-      "offers": {
+      name: `CBAM Preparation Software for ${code}`,
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      offers: {
         "@type": "Offer",
-        "price": "150.00",
-        "priceCurrency": "USD"
+        price: (PREPARATION_PACK.priceMinor / 100).toFixed(2),
+        priceCurrency: PREPARATION_PACK.currency,
       },
-      "description": `Automated CBAM compliance tool for goods under CN code ${code}.`,
-    }
+      description: `Evidence-linked CBAM calculation and verifier-preparation dossier software for CN code ${code}.`,
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
-      {/* JSON-LD INJECTION */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      
-      {/* MINIMALIST SEO SHOWCASE */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-24 text-center">
-        <div className="max-w-3xl mx-auto">
-          <div className="mb-6 inline-flex items-center space-x-2 border border-border bg-surface px-4 py-1.5 rounded-full text-xs font-mono tracking-widest uppercase text-accent font-semibold">
-            <span>Chapter {chapter} Compliant</span>
-          </div>
-          
-          <h1 className="font-serif text-4xl md:text-6xl font-normal tracking-tight text-foreground leading-tight mb-6">
-            EU CBAM Declaration for <br />
-            <span className="font-mono text-accent">{code}</span>
-          </h1>
-          
-          <p className="text-lg text-muted mb-12 leading-relaxed">
-            Exporting products under CN Code {code} to the European Union? Calculate your embedded direct, indirect, and precursor emissions. Generate your CBAMValid Exporter Evidence XML package in minutes.
-          </p>
-          
-          <Link 
-            href={`/dashboard/wizard?cn=${code}`} 
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent px-8 py-4 text-base font-medium text-surface transition-colors hover:bg-accent-hover active:bg-accent-active shadow-sm"
-          >
-            Start Wizard for {code}
-          </Link>
-        </div>
-      </main>
-    </div>
+    <main className="flex min-h-screen items-center justify-center bg-background px-6 py-24 text-center text-foreground">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div className="mx-auto max-w-3xl">
+        <div className="mb-6 inline-flex items-center rounded-full border border-border bg-surface px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-accent">CBAM chapter {chapter}</div>
+        <h1 className="mb-6 font-serif text-4xl font-normal leading-tight tracking-tight md:text-6xl">CBAM preparation for<br /><span className="font-mono text-accent">CN {code}</span></h1>
+        <p className="mb-8 text-lg leading-relaxed text-muted">Create an evidence-linked case for goods under CN code {code}. Calculate direct, indirect and precursor emissions, resolve readiness blockers and prepare controlled verifier schedules.</p>
+        <p className="mb-10 text-sm text-muted">Drafting and calculations are free. One {PREPARATION_PACK.currency} {(PREPARATION_PACK.priceMinor / 100).toFixed(0)} Preparation Pack funds up to {PREPARATION_PACK.maxReleases} successful sealed versions for one case.</p>
+        <Link href={`/register?next=${encodeURIComponent(nextRoute)}`} className="inline-flex min-h-11 items-center justify-center rounded-md bg-accent px-8 py-4 text-base font-medium text-surface shadow-sm hover:bg-accent-hover">Start a Case for {code}</Link>
+      </div>
+    </main>
   );
 }
