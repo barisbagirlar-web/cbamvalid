@@ -1,9 +1,16 @@
-import { HttpsError } from "firebase-functions/v2/https";
-
 type CallableAuth = {
   uid: string;
   token: Record<string, unknown>;
 };
+
+export class OwnerSuperAdminRequiredError extends Error {
+  readonly code = "permission-denied";
+
+  constructor() {
+    super("Requires exact owner super-admin privileges.");
+    this.name = "OwnerSuperAdminRequiredError";
+  }
+}
 
 export function isOwnerSuperAdmin(auth: CallableAuth): boolean {
   const expectedUid = process.env.OWNER_ADMIN_UID?.trim() || "";
@@ -22,6 +29,6 @@ export function isOwnerSuperAdmin(auth: CallableAuth): boolean {
 
 export function requireOwnerSuperAdmin(auth: CallableAuth): void {
   if (!isOwnerSuperAdmin(auth)) {
-    throw new HttpsError("permission-denied", "Requires exact owner super-admin privileges.");
+    throw new OwnerSuperAdminRequiredError();
   }
 }
