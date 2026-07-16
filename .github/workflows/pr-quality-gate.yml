@@ -80,6 +80,7 @@ jobs:
         run: |
           set -o pipefail
           npm run guard:system-dna 2>&1 | tee artifacts/ci/system-dna.log
+          node scripts/guard-system-dna-runtime.mjs 2>&1 | tee artifacts/ci/system-dna-runtime.log
 
       - name: Typecheck
         shell: bash
@@ -110,6 +111,7 @@ jobs:
             lib/auth/post-login-routing.ts \
             lib/billing/paddle-config.server.ts \
             scripts/check-paddle-config.ts \
+            scripts/guard-system-dna-runtime.mjs \
             functions/src/auth/verified-user.ts \
             functions/src/handlers/account.ts \
             functions/src/handlers/cases.ts \
