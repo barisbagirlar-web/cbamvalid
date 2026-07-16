@@ -75,6 +75,12 @@ jobs:
           set -o pipefail
           npm run guard:verifier-grade-deliverables 2>&1 | tee artifacts/ci/verifier-grade-deliverables.log
 
+      - name: Verify complete commercial DNA contract
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run guard:commerce 2>&1 | tee artifacts/ci/commercial-architecture.log
+
       - name: Typecheck
         shell: bash
         run: |
