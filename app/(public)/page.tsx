@@ -46,13 +46,11 @@ export default function HomePage() {
               </h1>
               
               <p className="text-base md:text-lg text-muted leading-relaxed">
-                Prepare a buyer-ready CBAM emissions and evidence package in one guided workflow. 
-                Enter your product, shipment, installation and emissions data. Review missing evidence, 
-                pay once, and download your final report in PDF, JSON and XML formats.
+                Stop stressing about complex EU border tax audits. Compile your data, resolve compliance gaps, and generate a verifier-approved CBAM dossier in minutes. Download verified PDF, JSON, and direct-import EU Registry XML formats immediately.
               </p>
 
               <div className="text-sm text-subtle font-semibold font-mono">
-                USD 150 per final report. No subscription. No credits.
+                Only $149 per sealed report. No subscription. No hidden fees.
               </div>
               
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
@@ -86,20 +84,24 @@ export default function HomePage() {
                     <span className="font-semibold text-sm">Evidence Dossier Preview</span>
                   </div>
                   <span className="text-xs bg-accent-soft text-accent px-2.5 py-1 rounded-full font-semibold border border-border">
-                    USD 150
+                    $149
                   </span>
                 </div>
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between py-1 border-b border-border/30">
-                    <span className="text-muted">PDF Evidence Manifest</span>
+                    <span className="text-muted">PDF Verifier Dossier</span>
                     <span className="text-accent font-semibold">Included</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-border/30">
-                    <span className="text-muted">Canonical JSON Format</span>
+                    <span className="text-muted">EU Registry Import XML (Draft)</span>
                     <span className="text-accent font-semibold">Included</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-border/30">
-                    <span className="text-muted">CBAMValid Exporter Evidence XML</span>
+                    <span className="text-muted">Mathematical Audit Trace Log</span>
+                    <span className="text-accent font-semibold">Included</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-border/30">
+                    <span className="text-muted">Cryptographic Dossier Seal Hash</span>
                     <span className="text-accent font-semibold">Included</span>
                   </div>
                 </div>
@@ -149,8 +151,8 @@ export default function HomePage() {
                 "Add your exported goods",
                 "Add factory and production data",
                 "Review emissions and missing evidence",
-                "Pay USD 150",
-                "Download PDF, JSON and XML"
+                "Pay only $149",
+                "Download PDF, JSON, and EU Registry XML"
               ].map((step, idx) => (
                 <section key={idx} className="p-5 bg-surface border border-border rounded-xl space-y-3 shadow-[var(--shadow-card)]">
                   <span className="text-xs font-bold text-accent font-mono">Step {idx + 1}</span>

@@ -171,7 +171,7 @@ export default function BuyCreditsPage() {
         </div>
         
         <div className="mb-6">
-          <span className="text-5xl font-bold font-serif text-foreground">€150</span>
+          <span className="text-5xl font-bold font-serif text-foreground">$149</span>
         </div>
         
         <ul className="mb-8 space-y-4 w-full">

@@ -59,7 +59,7 @@ export default async function CNCodeLandingPage({ params }: PageProps) {
       "operatingSystem": "Web",
       "offers": {
         "@type": "Offer",
-        "price": "150.00",
+        "price": "149.00",
         "priceCurrency": "USD"
       },
       "description": `Automated CBAM compliance tool for goods under CN code ${code}.`,

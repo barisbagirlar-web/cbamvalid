@@ -44,7 +44,7 @@ export default function PricingPage() {
               </div>
               
               <div className="mb-6">
-                <span className="text-4xl font-bold font-serif">€150</span>
+                <span className="text-4xl font-bold font-serif">$149</span>
               </div>
               
               <ul className="mb-8 space-y-4 flex-1">

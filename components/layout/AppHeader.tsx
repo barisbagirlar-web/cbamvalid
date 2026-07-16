@@ -182,7 +182,7 @@ export function AppHeader() {
               href="/credits/buy" 
               className="hidden lg:inline-flex h-[44px] items-center justify-center gap-2 rounded-md bg-accent px-5 text-[15px] font-medium text-surface transition-colors hover:bg-accent-hover active:bg-accent-active outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent shadow-sm"
             >
-              Buy Pack — $150
+              Buy Pack — $149
             </Link>
           )}
 

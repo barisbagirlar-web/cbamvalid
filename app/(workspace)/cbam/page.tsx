@@ -220,7 +220,7 @@ export default function CbamLandingPage() {
                   href="/credits/buy"
                   className="bg-accent hover:bg-accent-hover text-surface px-4 py-2 rounded-md font-semibold text-xs transition-colors flex items-center gap-1.5"
                 >
-                  <ShoppingBag className="w-3.5 h-3.5" /> Buy Pack — $150
+                  <ShoppingBag className="w-3.5 h-3.5" /> Buy Pack — $149
                 </Link>
               </div>
             )}
@@ -241,13 +241,13 @@ export default function CbamLandingPage() {
             <div className="bg-surface border border-border rounded-2xl p-6 md:p-10 shadow-sm relative overflow-hidden">
               <div className="max-w-3xl">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-accent/10 text-accent mb-4">
-                  <Info className="w-3.5 h-3.5" /> Exporter Verification Preparation Pack
+                  <Info className="w-3.5 h-3.5" /> Prepare Your CBAM Verification Package
                 </span>
-                <h2 className="text-2xl md:text-3xl font-extrabold font-serif mb-4">
-                  Prepare Your CBAM Verification Package
+                <h2 className="text-2xl md:text-3xl font-extrabold font-serif mb-4 leading-tight">
+                  Stop stressing about CBAM Audits. Seal your verification dossier today.
                 </h2>
                 <p className="text-muted text-base leading-relaxed mb-6">
-                  Build a structured dossier for one installation and one reporting year. Enter production and emissions data, link supporting evidence, resolve quality findings, and generate a sealed verifier-preparation package.
+                  Don't risk customs penalties or rejected declarations. CBAMValid guides you step-by-step to build a bulletproof, verifier-ready dossier. Get a professional package complete with a **Mathematical Audit Trace**, **Cryptographic Dossier Seals**, and **direct EU Registry XML & JSON imports**—all formatted to independent accredited verification standards.
                 </p>
 
                 <div className="mb-8">
@@ -256,7 +256,7 @@ export default function CbamLandingPage() {
                     <li className="flex items-start gap-2"><span className="font-mono text-accent font-bold">1.</span><span>Review the required data and evidence guidelines below.</span></li>
                     <li className="flex items-start gap-2"><span className="font-mono text-accent font-bold">2.</span><span>Create your first dossier using the draft workspace; no upfront payment is needed.</span></li>
                     <li className="flex items-start gap-2"><span className="font-mono text-accent font-bold">3.</span><span>Complete the eight data-preparation sections with automatic compliance checks.</span></li>
-                    <li className="flex items-start gap-2"><span className="font-mono text-accent font-bold">4.</span><span>Purchase the $150 Preparation Pack before sealing and downloading final deliverables.</span></li>
+                    <li className="flex items-start gap-2"><span className="font-mono text-accent font-bold">4.</span><span>Purchase the $149 Preparation Pack before sealing and downloading final deliverables.</span></li>
                   </ol>
                 </div>
 
@@ -404,7 +404,7 @@ export default function CbamLandingPage() {
                       Unlock final export verification, package sealing, and ZIP generation.
                     </div>
                     <Link href="/credits/buy" className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center justify-center gap-1.5 w-full shadow-sm">
-                      Buy Pack — $150
+                      Buy Pack — $149
                     </Link>
                   </div>
                 )}

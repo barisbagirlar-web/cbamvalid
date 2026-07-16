@@ -17,7 +17,7 @@ export const PRODUCT_CATALOG: Record<string, ProductDefinition> = {
   CBAM_EXPORTER_FINAL_REPORT: {
     productCode: "CBAM_EXPORTER_FINAL_REPORT",
     currency: "USD",
-    expectedUnitAmount: 15000,
+    expectedUnitAmount: 14900,
     entitlementType: "CBAM_SEALED_DOSSIER",
     entitlementQuantity: 1,
     correctionWindowDays: 14,
@@ -31,7 +31,7 @@ export const PRODUCT_CATALOG: Record<string, ProductDefinition> = {
   CBAM_CREDIT_PACK_5: {
     productCode: "CBAM_CREDIT_PACK_5",
     currency: "USD",
-    expectedUnitAmount: 15000, // Or whatever the pack costs (150 EUR/USD)
+    expectedUnitAmount: 14900, // Or whatever the pack costs (149 EUR/USD)
     entitlementType: "CBAM_SEALED_DOSSIER",
     entitlementQuantity: 5,
     correctionWindowDays: 14,
