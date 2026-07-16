@@ -192,11 +192,11 @@ export const AuditReadyCaseSchema = z.object({
   importerIdentity: z.object({
     legalName: InputDatumSchema,
     eoriNumber: InputDatumSchema,
-    address: InputDatumSchema.optional(),
+    address: InputDatumSchema.nullable().optional(),
   }),
   exporterIdentity: z.object({
     legalName: InputDatumSchema,
-    address: InputDatumSchema.optional(),
+    address: InputDatumSchema.nullable().optional(),
   }),
   reportingPeriod: z.object({
     year: InputDatumSchema,
@@ -207,14 +207,14 @@ export const AuditReadyCaseSchema = z.object({
     sector: z.string().min(1),
     productionVolume: InputDatumSchema,
     shipmentRecords: InputDatumSchema,
-    allocationShare: InputDatumSchema.optional(),
+    allocationShare: InputDatumSchema.nullable().optional(),
   })),
   installation: z.object({
     name: InputDatumSchema,
-    unloCode: InputDatumSchema.optional(),
+    unloCode: InputDatumSchema.nullable().optional(),
     country: InputDatumSchema,
     productionRoute: InputDatumSchema,
-    systemBoundaries: z.string().optional(),
+    systemBoundaries: z.string().nullable().optional(),
   }),
   directEmissions: InputDatumSchema,
   electricityConsumed: InputDatumSchema,
