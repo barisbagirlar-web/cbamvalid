@@ -127,7 +127,7 @@ describe("Firebase Auth Session Tests", () => {
       const res = await POST(req);
       expect(res.status).toBe(200);
       expect((await res.json()).ok).toBe(true);
-      expect(verifyIdToken).toHaveBeenCalledWith("valid-id-token");
+      expect(verifyIdToken).toHaveBeenCalledWith("valid-id-token", true);
       expect(createSessionCookie).toHaveBeenCalledWith("valid-id-token", {
         expiresIn: 5 * 24 * 60 * 60 * 1000,
       });
