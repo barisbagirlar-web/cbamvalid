@@ -6,6 +6,7 @@ import type { DossierCalculationResult } from "../calculator";
 import type { QualityControlResult } from "../validation/quality-controls";
 import type { KmsSignatureResult } from "./kms-signature";
 import { buildVerifierWorkbook } from "./xlsx-builder";
+import { buildPdfDossier } from "./pdf-builder";
 
 export const REQUIRED_TOP_LEVEL_COMPONENTS = [
   "Product and Scope Definition.pdf",
@@ -161,7 +162,7 @@ function buildPdfArtifacts(params: {
     pdfFile("System Boundary.pdf", "System Boundary", [{ heading: "Installation", lines: [`${caseData.installation.name.value}, ${caseData.installation.country.value}`] }, { heading: "Boundary statement", lines: [caseData.installation.systemBoundaries || "—"] }]),
     pdfFile("Methodology Decision Log.pdf", "Methodology Decision Log", [{ heading: "Decisions", lines: caseData.methodologyDecisions.length ? caseData.methodologyDecisions.map((item) => `${item.topic}: ${item.selectedMethod}. ${item.reason} Basis: ${item.legalOrTechnicalBasis}. Status: ${item.reviewStatus}.`) : ["No methodology decision recorded."] }]),
     pdfFile("Calculation Annex.pdf", "Calculation Annex", [{ heading: "Engine", lines: [`Ruleset: ${calculation.ruleset}`, `Engine: ${calculation.engineVersion}`, `Root hash: ${calculation.calculationRootHash}`] }, { heading: "Formula trace", lines: calculation.trace.map((item) => `${item.formulaId}: ${item.outputValue} ${item.outputUnit}; hash ${item.calculationHash}`) }]),
-    pdfFile("Operator Emissions Report.pdf", "Operator Emissions Report", [{ heading: "Installation totals", lines: [`Direct: ${calculation.totalDirectEmissions} tCO2e`, `Indirect: ${calculation.totalIndirectEmissions} tCO2e`, `Precursors: ${calculation.totalPrecursorEmissions} tCO2e`, `Embedded total: ${calculation.totalEmbeddedEmissions} tCO2e`] }, { heading: "Per-good results", lines: goods }, { heading: "Legal boundary", lines: ["This is a verifier-preparation dossier. It is not an accredited verifier opinion, customs decision, EU approval or Registry submission."] }]),
+    artifact("Operator Emissions Report.pdf", buildPdfDossier(caseData, calculation as any, undefined, false, false), "application/pdf"),
     pdfFile("Operator Summary Statement.pdf", "Operator Summary Statement", [{ heading: "Statement", lines: [`Release ${releaseVersion} for case ${caseData.caseId}.`, `The dossier contains ${caseData.evidenceRegister.length} evidence records and ${caseData.methodologyDecisions.length} methodology decisions.`, `Calculation root hash: ${calculation.calculationRootHash}`] }]),
     pdfFile("Verification Readiness Assessment.pdf", "Verification Readiness Assessment", [{ heading: "Quality-control result", lines: controls.map((control) => `${control.ruleId}: ${control.status} — ${control.name}${control.message ? ` — ${control.message}` : ""}`) }, { heading: "Conclusion", lines: [blockers.length ? `${blockers.length} blocker(s) remain.` : "All applicable automated controls passed. Independent verifier judgment remains required."] }]),
   ];
