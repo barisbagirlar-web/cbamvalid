@@ -14,6 +14,8 @@ export interface VerificationReadinessAssessment {
   completenessPercentage: number;
   passedControls: number;
   applicableControls: number;
+  ready: boolean;
+  blockerCodes: string[];
 }
 
 function severity(control: QualityControlResult): GapSeverity {
@@ -62,5 +64,7 @@ export function assessCaseReadiness(caseData: AuditReadyCase): VerificationReadi
     completenessPercentage,
     passedControls: passed.length,
     applicableControls: applicable.length,
+    ready: isEligibleForSealing,
+    blockerCodes: criticalBlockers.map((gap) => gap.affectedResult),
   };
 }
