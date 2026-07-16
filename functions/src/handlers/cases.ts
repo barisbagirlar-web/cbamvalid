@@ -1,6 +1,8 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import { z } from "zod";
 import { createCallable } from "../wrapper";
+import { requireOwnerSuperAdmin } from "../auth/owner-admin";
+import { requireVerifiedUser } from "../auth/verified-user";
 import {
   archiveCase,
   createCase,
@@ -23,7 +25,6 @@ function parseCaseData(data: unknown, uid: string, caseId?: string): AuditReadyC
     ownerId: uid,
     ...(caseId ? { caseId } : {}),
   });
-
   if (!parsed.success) {
     const fields = parsed.error.issues.map((issue) => issue.path.join(".")).filter(Boolean);
     throw new HttpsError(
@@ -49,12 +50,6 @@ function resolveCreationRequestId(
     );
   }
   return parsed.data;
-}
-
-function requireAdmin(auth: { token: Record<string, unknown> }): void {
-  if (auth.token.admin !== true && auth.token.ownerAdmin !== true) {
-    throw new HttpsError("permission-denied", "Requires administrator privileges.");
-  }
 }
 
 function translateEvidenceError(error: unknown): never {
@@ -86,13 +81,13 @@ export const saveCbamCase = createCallable(
     }),
   },
   async ({ caseId, requestId, data }, { auth }) => {
+    requireVerifiedUser(auth);
     if (caseId && requestId) {
       throw new HttpsError(
         "invalid-argument",
         "Edit requests must not include a case-creation request ID."
       );
     }
-
     if (!caseId) {
       const parsedData = parseCaseData(data, auth.uid);
       const creationRequestId = resolveCreationRequestId(requestId, parsedData);
@@ -107,7 +102,6 @@ export const saveCbamCase = createCallable(
     if (existing.status !== "DRAFT") {
       throw new HttpsError("failed-precondition", "Only a draft case can be edited.");
     }
-
     const parsedData = parseCaseData(data, auth.uid, caseId);
     await updateCase(caseId, auth.uid, parsedData);
     return { caseId, status: "success" };
@@ -117,6 +111,7 @@ export const saveCbamCase = createCallable(
 export const getCbamCase = createCallable(
   { schema: z.object({ caseId: CaseIdSchema }) },
   async ({ caseId }, { auth }) => {
+    requireVerifiedUser(auth);
     const cbamCase = await getCase(caseId);
     if (!cbamCase || cbamCase.uid !== auth.uid) {
       throw new HttpsError("not-found", "Case not found or access denied.");
@@ -141,9 +136,14 @@ export const reviewCbamEvidence = createCallable(
     }),
   },
   async (data, { auth }) => {
+    requireVerifiedUser(auth);
     try {
       const updated = await reviewCaseEvidence({ ...data, uid: auth.uid });
-      return { case: toCaseWorkspaceView(updated), status: "success" };
+      return {
+        case: toCaseWorkspaceView(updated),
+        reviewScope: "OWNER_INTERNAL_REVIEW_NOT_INDEPENDENT_VERIFICATION" as const,
+        status: "success",
+      };
     } catch (error) {
       translateEvidenceError(error);
     }
@@ -160,7 +160,7 @@ export const recordCbamEvidenceScan = createCallable(
     }),
   },
   async (data, { auth }) => {
-    requireAdmin(auth);
+    requireOwnerSuperAdmin(auth);
     try {
       const updated = await recordEvidenceMalwareScan({
         ...data,
@@ -181,6 +181,7 @@ export const renameCbamCase = createCallable(
     }),
   },
   async ({ caseId, newName }, { auth }) => {
+    requireVerifiedUser(auth);
     const existing = await getCase(caseId);
     if (!existing || existing.uid !== auth.uid) {
       throw new HttpsError("not-found", "Case not found or access denied.");
@@ -188,7 +189,6 @@ export const renameCbamCase = createCallable(
     if (existing.status !== "DRAFT") {
       throw new HttpsError("failed-precondition", "Only a draft case can be renamed.");
     }
-
     const updatedData = {
       ...existing.data,
       installation: {
@@ -204,6 +204,7 @@ export const renameCbamCase = createCallable(
 export const archiveCbamCase = createCallable(
   { schema: z.object({ caseId: CaseIdSchema }) },
   async ({ caseId }, { auth }) => {
+    requireVerifiedUser(auth);
     await archiveCase(caseId, auth.uid);
     return { success: true };
   }
@@ -212,6 +213,7 @@ export const archiveCbamCase = createCallable(
 export const deleteCbamCase = createCallable(
   { schema: z.object({ caseId: CaseIdSchema }) },
   async ({ caseId }, { auth }) => {
+    requireVerifiedUser(auth);
     try {
       await deleteCase(caseId, auth.uid);
       return { success: true };
@@ -228,6 +230,7 @@ export const deleteCbamCase = createCallable(
 );
 
 export const getCbamCases = createCallable({}, async (_, { auth }) => {
+  requireVerifiedUser(auth);
   const cases = await getCasesForUser(auth.uid);
   return { cases, status: "success" };
 });
@@ -235,6 +238,7 @@ export const getCbamCases = createCallable({}, async (_, { auth }) => {
 export const calculateCbam = createCallable(
   { schema: z.object({ caseId: CaseIdSchema }) },
   async ({ caseId }, { auth }) => {
+    requireVerifiedUser(auth);
     const existing = await getCase(caseId);
     if (!existing || existing.uid !== auth.uid) {
       throw new HttpsError("not-found", "Case not found or access denied.");
@@ -245,7 +249,8 @@ export const calculateCbam = createCallable(
   }
 );
 
-export const getSourcesStatus = createCallable({}, async () => {
+export const getSourcesStatus = createCallable({}, async (_, { auth }) => {
+  requireVerifiedUser(auth);
   return {
     status: "success",
     ruleset: "EU-CBAM-DEFINITIVE-2026",
