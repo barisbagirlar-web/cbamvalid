@@ -43,6 +43,15 @@ import {
 
 const SESSION_COOKIE = "__session";
 
+function verifiedIdTokenClaims() {
+  return {
+    uid: "user-123",
+    email: "user@cbamvalid.com",
+    email_verified: true,
+    auth_time: Math.floor(Date.now() / 1000) - 10,
+  };
+}
+
 describe("Production Security and Foundation Audits", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -54,9 +63,8 @@ describe("Production Security and Foundation Audits", () => {
     await expect(requireFirebaseSession()).rejects.toThrow("Session expired or invalid cookie.");
   });
 
-  it("creates a revocation-checkable HttpOnly Firebase session cookie", async () => {
-    const recentAuthTime = Math.floor(Date.now() / 1000) - 10;
-    verifyIdToken.mockResolvedValueOnce({ auth_time: recentAuthTime });
+  it("creates a revocation-checkable HttpOnly cookie only for a verified email", async () => {
+    verifyIdToken.mockResolvedValueOnce(verifiedIdTokenClaims());
     createSessionCookie.mockResolvedValueOnce("firebase-session-cookie");
 
     const response = await sessionPost(new Request("http://localhost/api/auth/session", {
@@ -66,6 +74,7 @@ describe("Production Security and Foundation Audits", () => {
     }));
 
     expect(response.status).toBe(200);
+    expect(verifyIdToken).toHaveBeenCalledWith("valid-id-token", true);
     expect(mockCookiesSet).toHaveBeenCalledWith(
       SESSION_COOKIE,
       "firebase-session-cookie",
@@ -75,6 +84,27 @@ describe("Production Security and Foundation Audits", () => {
         path: "/",
       })
     );
+  });
+
+  it("refuses a server session for an unverified email token", async () => {
+    verifyIdToken.mockResolvedValueOnce({
+      ...verifiedIdTokenClaims(),
+      email_verified: false,
+    });
+
+    const response = await sessionPost(new Request("http://localhost/api/auth/session", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ idToken: "unverified-id-token" }),
+    }));
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      error: { code: "EMAIL_VERIFICATION_REQUIRED" },
+    });
+    expect(createSessionCookie).not.toHaveBeenCalled();
+    expect(mockCookiesSet).not.toHaveBeenCalled();
   });
 
   it("returns structured unauthorized errors for missing and invalid sessions", async () => {
@@ -95,7 +125,7 @@ describe("Production Security and Foundation Audits", () => {
   });
 
   it("accepts a valid server session", async () => {
-    const claims = { uid: "user-123", email: "user@cbamvalid.com" };
+    const claims = { uid: "user-123", email: "user@cbamvalid.com", email_verified: true };
     mockCookiesGet.mockReturnValue({ value: "valid-session" });
     verifySessionCookie.mockResolvedValueOnce(claims);
     await expect(requireFirebaseSession()).resolves.toEqual(claims);
