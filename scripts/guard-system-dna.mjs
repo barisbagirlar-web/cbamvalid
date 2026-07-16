@@ -93,11 +93,15 @@ requireTokens("functions/src/webhook.ts", [
   'processingState: "FAILED_RETRYABLE"',
   "attempts >= 10",
   "payloadSha256",
+  "WEBHOOK_CONFIGURATION_ERROR",
+  "PADDLE_EVENT_ENVELOPE_INVALID",
 ]);
 requireTokens("functions/src/commerce/webhook-processor.ts", [
   "validateCompletedTransaction",
   "fulfillPreparationPackPurchase",
   "processRefund",
+  "commerce_manual_reviews",
+  "PARTIAL_OR_EXCESS_ADJUSTMENT",
 ]);
 requireTokens("functions/src/commerce/webhook-verifier.ts", [
   "paddle.webhooks.unmarshal",
@@ -134,6 +138,43 @@ requireTokens("functions/src/commerce/refund-service.ts", [
   'status: "REVOKED"',
 ]);
 
+requireTokens("functions/src/auth/verified-user.ts", [
+  "EMAIL_VERIFICATION_REQUIRED",
+  "auth.token.email_verified !== true",
+]);
+requireTokens("functions/src/handlers/commerce.ts", [
+  "requireVerifiedUser(auth)",
+  "z.literal(PREPARATION_PACK.productCode)",
+  "LEGACY_CREDIT_UNLOCK_DISABLED",
+]);
+requireTokens("functions/src/handlers/reports.ts", [
+  "requireVerifiedUser(auth)",
+  "sealCbamReport",
+]);
+requireTokens("context/AuthProvider.tsx", [
+  "if (!refreshedUser.emailVerified)",
+  'fetch("/api/auth/session", { method: "DELETE" })',
+]);
+requireTokens("app/(auth)/register/page.tsx", [
+  "sendEmailVerification",
+  "Create Account and Verify Email",
+  "minLength={12}",
+]);
+requireTokens("app/(auth)/login/page.tsx", [
+  "if (!user.emailVerified)",
+  "sendEmailVerification",
+]);
+requireTokens("app/(auth)/verify-email/page.tsx", [
+  "RESEND_COOLDOWN_SECONDS",
+  "Check Verification",
+  "finalizeServerSession",
+]);
+requireTokens("lib/auth/safe-next-route.ts", [
+  '!candidate.startsWith("/")',
+  'candidate.startsWith("//")',
+  'candidate.includes("\\\\")',
+]);
+
 requireTokens("functions/src/auth/owner-admin.ts", [
   "OWNER_ADMIN_UID",
   "OWNER_ADMIN_EMAIL",
@@ -148,10 +189,13 @@ requireTokens("lib/auth/admin-gate.ts", [
   "claims.owner === true",
   "claims.email_verified === true",
 ]);
-requireTokens("functions/src/handlers/commerce.ts", [
-  "z.literal(PREPARATION_PACK.productCode)",
-  "LEGACY_CREDIT_UNLOCK_DISABLED",
+requireTokens("lib/auth/post-login-routing.ts", [
+  'claims.role === "super_admin"',
+  "claims.owner === true",
+  "claims.email_verified === true",
+  "resolveSafeNextRoute",
 ]);
+rejectTokens("lib/auth/post-login-routing.ts", ["claims.ownerAdmin", "claims.admin"]);
 requireTokens("functions/src/handlers/admin.ts", [
   "requireOwnerSuperAdmin(auth)",
   "LEGACY_ABSOLUTE_CREDIT_SETTER_DISABLED",
@@ -161,8 +205,28 @@ requireTokens("lib/account-contract.ts", [
   "balanceAfter: z.number().int().nonnegative()",
 ]);
 
+const firestoreRules = requireTokens("firestore.rules", [
+  "request.auth.token.email_verified == true",
+  "request.auth.token.role == 'super_admin'",
+  "request.auth.token.owner == true",
+  "allow write: if false;",
+  "match /commerce_ledger/{entryId}",
+  "match /credit_events/{eventId}",
+  "match /commerce_manual_reviews/{reviewId}",
+]);
+for (const forbidden of [
+  "request.auth.token.admin == true",
+  "request.auth.token.ownerAdmin == true",
+  "request.resource.data.tokens == resource.data.tokens - 1",
+]) {
+  if (firestoreRules.includes(forbidden)) failures.push(`firestore.rules: forbidden ${forbidden}`);
+}
+
 const commercialSurfaceFiles = [
   "app/(public)/page.tsx",
+  "app/(public)/product/page.tsx",
+  "app/(public)/cn-code/[code]/page.tsx",
+  "app/(workspace)/cbam/page.tsx",
   "app/(workspace)/credits/buy/page.tsx",
   "app/(workspace)/account/page.tsx",
   "components/layout/AppHeader.tsx",
@@ -170,7 +234,7 @@ const commercialSurfaceFiles = [
   "functions/src/commerce/catalog.ts",
 ];
 for (const relativePath of commercialSurfaceFiles) {
-  rejectTokens(relativePath, ["USD 150", "$150", "No credits", "1 credit equals 1"]);
+  rejectTokens(relativePath, ["USD 150", "$150", "No credits", "1 credit equals 1", "Exporter Evidence XML"]);
 }
 
 const productionSecretFiles = [
@@ -200,5 +264,7 @@ console.log("WEBHOOK_AUTHENTICITY_AND_RETRY=PASS");
 console.log("CREDIT_CONSERVATION=PASS");
 console.log("ENTITLEMENT_SCOPE_AND_SEAL_ATOMICITY=PASS");
 console.log("REFUND_RECONCILIATION=PASS");
+console.log("EMAIL_VERIFICATION_BOUNDARY=PASS");
+console.log("TENANT_FIRESTORE_RULES=PASS");
 console.log("EXACT_OWNER_ADMIN_GATE=PASS");
 console.log("STALE_COMMERCIAL_COPY_SCAN=PASS");
