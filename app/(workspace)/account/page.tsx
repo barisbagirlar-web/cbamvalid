@@ -91,6 +91,13 @@ export default function AccountPage() {
     );
   }
 
+  const creditHistory = [
+    { label: "Lifetime purchased", value: overview?.credits.lifetimePurchased ?? 0 },
+    { label: "Lifetime consumed", value: overview?.credits.lifetimeConsumed ?? 0 },
+    { label: "Lifetime adjusted", value: overview?.credits.lifetimeAdjusted ?? 0 },
+    { label: "Lifetime refunded", value: overview?.credits.lifetimeRefunded ?? 0 },
+  ];
+
   return (
     <div className="mx-auto max-w-5xl space-y-8 p-4 md:p-8">
       <Link href="/cbam" className="flex items-center gap-2 text-xs font-semibold text-muted transition-colors hover:text-foreground">
@@ -132,6 +139,19 @@ export default function AccountPage() {
           <div className="mt-4 font-mono text-4xl font-bold">{overview?.preparationPacks.activeCount ?? 0}</div>
           <p className="mt-2 text-xs text-muted">{overview?.preparationPacks.releasesRemaining ?? 0} sealed release{overview?.preparationPacks.releasesRemaining === 1 ? "" : "s"} remaining across unlocked cases.</p>
         </article>
+      </section>
+
+      <section className="rounded-xl border border-border bg-surface p-6 shadow-sm" aria-labelledby="credit-lifetime-heading">
+        <div className="flex items-center gap-2"><History className="h-5 w-5" /><h2 id="credit-lifetime-heading" className="font-serif text-xl font-bold">Lifetime credit reconciliation</h2></div>
+        <p className="mt-2 text-xs leading-relaxed text-muted">These cumulative values are server-maintained and reconcile purchases, case-pack unlocks, owner-admin adjustments and approved refunds.</p>
+        <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {creditHistory.map((item) => (
+            <div key={item.label} className="rounded-lg border border-border bg-neutral-soft p-4">
+              <dt className="text-xs font-semibold uppercase tracking-wider text-muted">{item.label}</dt>
+              <dd className="mt-2 font-mono text-2xl font-bold">{item.value}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
       <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
