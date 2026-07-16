@@ -1,14 +1,16 @@
 import { CallableRequest, HttpsError, onCall, CallableOptions } from "firebase-functions/v2/https";
 import { z } from "zod";
+import { resolveAppCheckEnforcement } from "./app-check-policy";
 
 export interface AuthenticatedCallableRequest<T = unknown> extends CallableRequest<T> {
   auth: NonNullable<CallableRequest<T>["auth"]>;
 }
 
 function shouldEnforceAppCheck(): boolean {
-  if (process.env.FUNCTIONS_EMULATOR === "true") return false;
-  if (process.env.CBAM_ENFORCE_APP_CHECK === "false") return false;
-  return true;
+  return resolveAppCheckEnforcement(
+    process.env.CBAM_ENFORCE_APP_CHECK,
+    process.env.FUNCTIONS_EMULATOR === "true"
+  );
 }
 
 export function createCallable<T, Res>(

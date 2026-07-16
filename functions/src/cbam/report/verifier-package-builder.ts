@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import JSZip from "jszip";
+import { Decimal } from "decimal.js";
 import type { AuditReadyCase } from "../schema";
 import type { DossierCalculationResult } from "../calculator";
 import type { QualityControlResult } from "../validation/quality-controls";
@@ -147,7 +148,7 @@ function qualityTable(model: VerifierPackageModel) {
       control.name,
       control.status,
       control.message || "No automated finding",
-      control.remediationCode || "—",
+      control.remediationCode || "-",
     ]),
   };
 }
@@ -157,6 +158,36 @@ function monitoringTable(model: VerifierPackageModel) {
     headers: ["Requirement", "Definitive-period monitoring-plan element", "Status", "Evidence / basis"],
     widths: [20, 76, 22, 62],
     rows: model.monitoringPlan.map((item) => [item.requirementId, item.requirement, item.status, item.evidence]),
+  };
+}
+
+function sensitivityAnalysis(model: VerifierPackageModel) {
+  const total = new Decimal(model.totals.totalEmbeddedEmissions);
+  const electricity = new Decimal(model.totals.electricityIndirectEmissions);
+  const production = new Decimal(model.totals.productionVolume);
+  const baseIntensity = new Decimal(model.totals.aggregateSpecificEmbeddedEmissions);
+  const gridDelta = electricity.times("0.1");
+  const lowGridIntensity = total.minus(gridDelta).dividedBy(production);
+  const highGridIntensity = total.plus(gridDelta).dividedBy(production);
+  const lowProductionIntensity = total.dividedBy(production.times("0.9"));
+  const highProductionIntensity = total.dividedBy(production.times("1.1"));
+  const format = (value: Decimal) => value.toDecimalPlaces(6, Decimal.ROUND_HALF_UP).toString();
+
+  return {
+    rows: [
+      ["Grid emission factor -10%", format(total.minus(gridDelta)), format(lowGridIntensity), format(lowGridIntensity.minus(baseIntensity))],
+      ["Base case", total.toString(), baseIntensity.toString(), "0"],
+      ["Grid emission factor +10%", format(total.plus(gridDelta)), format(highGridIntensity), format(highGridIntensity.minus(baseIntensity))],
+      ["Production volume -10%", total.toString(), format(lowProductionIntensity), format(lowProductionIntensity.minus(baseIntensity))],
+      ["Production volume +10%", total.toString(), format(highProductionIntensity), format(highProductionIntensity.minus(baseIntensity))],
+    ],
+    bars: [
+      { label: "Grid factor -10%", value: format(lowGridIntensity), color: [47, 119, 172] as [number, number, number] },
+      { label: "Base intensity", value: baseIntensity.toString(), color: [20, 42, 74] as [number, number, number] },
+      { label: "Grid factor +10%", value: format(highGridIntensity), color: [198, 88, 48] as [number, number, number] },
+      { label: "Production -10%", value: format(lowProductionIntensity), color: [198, 88, 48] as [number, number, number] },
+      { label: "Production +10%", value: format(highProductionIntensity), color: [47, 119, 172] as [number, number, number] },
+    ],
   };
 }
 
@@ -190,6 +221,7 @@ function buildPdfArtifacts(params: {
     item.reviewStatus,
     item.evidenceIds.join(" | "),
   ]);
+  const sensitivity = sensitivityAnalysis(model);
 
   return [
     pdfFile("Product and Scope Definition.pdf", "Product and Scope Definition", "Controlled scope, parties, reporting period and goods population", [
@@ -214,7 +246,7 @@ function buildPdfArtifacts(params: {
       { heading: "Input hierarchy", table: { headers: ["Input", "Value", "Unit", "Source", "Evidence", "Method"], widths: [35, 24, 22, 25, 40, 34], rows: [["Direct emissions", caseData.directEmissions.value, caseData.directEmissions.canonicalUnit, caseData.directEmissions.sourceType, caseData.directEmissions.evidenceId || "MISSING", caseData.directEmissions.measurementMethod || "NOT DOCUMENTED"], ["Electricity", caseData.electricityConsumed.value, caseData.electricityConsumed.canonicalUnit, caseData.electricityConsumed.sourceType, caseData.electricityConsumed.evidenceId || "MISSING", caseData.electricityConsumed.measurementMethod || "NOT DOCUMENTED"], ["Grid emission factor", caseData.gridEmissionFactor.value, caseData.gridEmissionFactor.canonicalUnit, caseData.gridEmissionFactor.sourceType, caseData.gridEmissionFactor.evidenceId || "MISSING", caseData.gridEmissionFactor.measurementMethod || "NOT DOCUMENTED"]] } },
     ]),
     pdfFile("Process Map.pdf", "Process Map", "Controlled flow from source data to verifier review", [
-      { heading: "End-to-end process", table: { headers: ["Stage", "Controlled activity", "Evidence / output"], widths: [20, 90, 70], rows: [["1", "Identify installation, operator, CN-coded goods and reporting period", "CASE and GOODS registers"], ["2", "Define production processes, source streams, boundaries and functional units", "Monitoring Plan and System Boundary"], ["3", "Capture direct, electricity and precursor data with approved evidence", "INPUTS, PRECURSORS and EVIDENCE"], ["4", "Apply unit conversions, allocation and embedded-emissions formulae", "CALCULATION_TRACE and root hash"], ["5", "Run evidence, methodology, reconciliation and integrity controls", "QUALITY_CONTROLS and MONITORING_PLAN"], ["6", "Apply per-good 5% materiality reference for verifier planning", "GOODS materiality columns"], ["7", "Freeze, hash, sign and commit immutable package", "Manifest, KMS signature and package hash"], ["8", "Independent accredited verifier performs review and records opinion", "VERIFIER_SIGN_OFF — initially NOT_REVIEWED"]] } },
+      { heading: "End-to-end process", table: { headers: ["Stage", "Controlled activity", "Evidence / output"], widths: [20, 90, 70], rows: [["1", "Identify installation, operator, CN-coded goods and reporting period", "CASE and GOODS registers"], ["2", "Define production processes, source streams, boundaries and functional units", "Monitoring Plan and System Boundary"], ["3", "Capture direct, electricity and precursor data with approved evidence", "INPUTS, PRECURSORS and EVIDENCE"], ["4", "Apply unit conversions, allocation and embedded-emissions formulae", "CALCULATION_TRACE and root hash"], ["5", "Run evidence, methodology, reconciliation and integrity controls", "QUALITY_CONTROLS and MONITORING_PLAN"], ["6", "Apply per-good 5% materiality reference for verifier planning", "GOODS materiality columns"], ["7", "Freeze, hash, sign and commit immutable package", "Manifest, KMS signature and package hash"], ["8", "Independent accredited verifier performs review and records opinion", "VERIFIER_SIGN_OFF - initially NOT_REVIEWED"]] } },
       { heading: "Production-route context", paragraphs: model.sectorMethodologies.map((sector) => `${sector.displayName}: ${sector.defaultBoundaries}`) },
     ]),
     pdfFile("System Boundary.pdf", "System Boundary", "Installation boundary, sector methodology and included processes", [
@@ -223,7 +255,7 @@ function buildPdfArtifacts(params: {
       { heading: "Boundary limitation", paragraphs: ["The sealed boundary is the operator-declared and evidence-linked preparation boundary. The independent verifier remains responsible for confirming conformity with the applicable sector-specific legal boundary."] },
     ]),
     pdfFile("Methodology Decision Log.pdf", "Methodology Decision Log", "Selected methods, rejected alternatives, legal basis and evidence", [
-      { heading: "Decision register", table: { headers: ["Topic", "Selected method", "Reason", "Legal / technical basis", "Review", "Evidence"], widths: [26, 35, 38, 43, 18, 20], rows: methodRows.length ? methodRows : [["NO DECISION", "—", "No methodology decision recorded", "—", "GAP", "—"]] } },
+      { heading: "Decision register", table: { headers: ["Topic", "Selected method", "Reason", "Legal / technical basis", "Review", "Evidence"], widths: [26, 35, 38, 43, 18, 20], rows: methodRows.length ? methodRows : [["NO DECISION", "-", "No methodology decision recorded", "-", "GAP", "-"]] } },
       { heading: "Definitive legal basis", table: legalSourceTable(model) },
       { heading: "Review boundary", paragraphs: ["An ACCEPTED status means accepted within the operator preparation workflow. It is not an accredited verifier acceptance or legal approval."] },
     ]),
@@ -232,12 +264,32 @@ function buildPdfArtifacts(params: {
       { heading: "Formula trace", table: { headers: ["Formula", "Output", "Unit", "Calculation hash", "Warnings / assumptions"], widths: [43, 22, 20, 55, 40], rows: calculation.trace.map((item) => [item.formulaId, item.outputValue, item.outputUnit, item.calculationHash, [...item.warnings, ...item.assumptions].join("; ") || "None"] ) } },
       { heading: "Per-good reconciliation", table: goodsTable(model) },
     ]),
-    pdfFile("Operator Emissions Report.pdf", "Operator Emissions Report", "Definitive-period emissions statement prepared for independent accredited verification", [
-      { heading: "Operator and installation", table: identityTable(model) },
-      { heading: "Installation totals", table: { headers: ["Metric", "Value", "Unit"], widths: [90, 45, 45], rows: [["Installation direct emissions", model.totals.installationDirectEmissions, "tCO2e"], ["Electricity indirect emissions", model.totals.electricityIndirectEmissions, "tCO2e"], ["Precursor direct emissions", model.totals.precursorDirectEmissions, "tCO2e"], ["Precursor indirect emissions", model.totals.precursorIndirectEmissions, "tCO2e"], ["Total direct emissions", model.totals.totalDirectEmissions, "tCO2e"], ["Total indirect emissions", model.totals.totalIndirectEmissions, "tCO2e"], ["Total embedded emissions", model.totals.totalEmbeddedEmissions, "tCO2e"], ["Aggregate production", model.totals.productionVolume, "t"], ["Aggregate specific embedded emissions", model.totals.aggregateSpecificEmbeddedEmissions, "tCO2e/t"]] } },
-      { heading: "Per-good emissions and materiality", table: goodsTable(model) },
-      { heading: "Evidence and controls", table: { headers: ["Measure", "Result"], widths: [90, 90], rows: [["Automated readiness", model.automatedReadiness], ["Quality-control blockers", model.qualitySummary.blockers], ["Approved clean evidence", model.evidenceSummary.approvedCleanEvidenceFiles], ["Calculation trace nodes", model.calculationTraceCount], ["Independent verifier status", model.independentVerifierStatus]] } },
-      { heading: "Legal boundary", callout: { label: "Important", value: model.disclaimer } },
+    pdfFile("Operator Emissions Report.pdf", "CBAM Operator Emissions Report", "Executive decision report, evidence assurance and technical calculation annex", [
+      { heading: "Executive summary", callout: { label: "Preparation conclusion", value: `${model.automatedReadiness}. ${model.goods.length} CN-coded good(s); ${model.totals.totalEmbeddedEmissions} tCO2e total embedded emissions; ${model.totals.aggregateSpecificEmbeddedEmissions} tCO2e/t aggregate intensity; ${model.evidenceSummary.coverageRate}% field-evidence coverage; ${model.qualitySummary.blockers} automated blocker(s). Independent verifier status remains ${model.independentVerifierStatus}.` } },
+      { heading: "Operator, installation and reporting scope", table: identityTable(model) },
+      { heading: "Decision metrics", pageBreakBefore: true, table: { headers: ["Metric", "Result", "Control interpretation"], widths: [62, 42, 76], rows: [["Automated preparation readiness", model.automatedReadiness, "All operator-preparation controls passed before sealing"], ["Independent verifier status", model.independentVerifierStatus, "No accredited verification opinion is created by CBAMValid"], ["Total embedded emissions", `${model.totals.totalEmbeddedEmissions} tCO2e`, "Direct + indirect + qualifying precursor emissions"], ["Aggregate intensity", `${model.totals.aggregateSpecificEmbeddedEmissions} tCO2e/t`, "Total embedded emissions divided by covered production"], ["Evidence coverage", `${model.evidenceSummary.coverageRate}%`, `${model.evidenceSummary.approvedCleanEvidenceFiles}/${model.evidenceSummary.totalEvidenceFiles} registered file(s) approved and clean`], ["Calculation provenance", `${model.calculationTraceCount} hashed nodes`, model.calculationRootHash]] } },
+
+      { heading: "Emissions waterfall", paragraphs: ["The chart reconciles installation direct emissions, electricity indirect emissions and precursor emissions to the sealed total. Values are taken from the deterministic calculation trace; chart geometry is presentation-only."], waterfallChart: { unit: "tCO2e", components: [{ label: "Installation direct", value: model.totals.installationDirectEmissions, color: [198, 88, 48] }, { label: "Electricity indirect", value: model.totals.electricityIndirectEmissions, color: [47, 119, 172] }, { label: "Precursor direct", value: model.totals.precursorDirectEmissions, color: [224, 133, 74] }, { label: "Precursor indirect", value: model.totals.precursorIndirectEmissions, color: [83, 146, 191] }], total: model.totals.totalEmbeddedEmissions } },
+      { heading: "Installation totals", pageBreakBefore: true, table: { headers: ["Metric", "Value", "Unit"], widths: [90, 45, 45], rows: [["Installation direct emissions", model.totals.installationDirectEmissions, "tCO2e"], ["Electricity indirect emissions", model.totals.electricityIndirectEmissions, "tCO2e"], ["Precursor direct emissions", model.totals.precursorDirectEmissions, "tCO2e"], ["Precursor indirect emissions", model.totals.precursorIndirectEmissions, "tCO2e"], ["Total direct emissions", model.totals.totalDirectEmissions, "tCO2e"], ["Total indirect emissions", model.totals.totalIndirectEmissions, "tCO2e"], ["Total embedded emissions", model.totals.totalEmbeddedEmissions, "tCO2e"], ["Aggregate production", model.totals.productionVolume, "t"], ["Aggregate specific embedded emissions", model.totals.aggregateSpecificEmbeddedEmissions, "tCO2e/t"]] } },
+
+      { heading: "Per-good allocation and materiality", paragraphs: ["Allocated emissions reconcile to the installation total. The 5% figures are planning references for independent verification; expert judgement remains applicable."], barChart: { unit: "tCO2e", items: model.goods.map((good, index) => ({ label: `Good ${good.goodIndex} · ${good.cnCode}`, value: good.allocatedEmbeddedEmissions, color: index % 2 === 0 ? [198, 88, 48] : [47, 119, 172] })) }, table: goodsTable(model) },
+
+      { heading: "Evidence assurance", pageBreakBefore: true, callout: { label: "Evidence conclusion", value: `${model.evidenceSummary.approvedCleanEvidenceFiles} approved and malware-clean file(s), ${model.evidenceSummary.linkedInputCount} linked input(s), ${model.evidenceSummary.linkedCalculationCount} linked calculation node(s), ${model.evidenceSummary.duplicateHashCount} duplicate approved hash(es).` } },
+      { heading: "Evidence register", table: { headers: ["Evidence ID", "Type", "File", "Issuer", "Issue date", "Review", "Support", "Malware", "SHA-256"], widths: [28, 25, 27, 27, 20, 18, 18, 17, 35], rows: caseData.evidenceRegister.map((item) => [item.evidenceId, item.documentType, item.fileName, item.issuer, item.issueDate, item.reviewStatus, item.supportStatus, item.malwareScanStatus, item.fileHash]) } },
+
+      { heading: "Sensitivity analysis (mechanical +/-10%)", pageBreakBefore: true, paragraphs: ["This is a deterministic what-if analysis, not a statistical uncertainty opinion. It isolates the arithmetic effect of a +/-10% grid-factor change and a +/-10% production-volume change while all other sealed inputs remain constant."], barChart: { unit: "tCO2e/t", items: sensitivity.bars }, table: { headers: ["Scenario", "Total tCO2e", "Intensity tCO2e/t", "Intensity delta"], widths: [70, 35, 40, 35], rows: sensitivity.rows } },
+      { heading: "Time-series availability", callout: { label: "Data boundary", value: "No monthly time series is inferred from period totals. A monthly trend may only be produced when monthly source records are supplied and reconciled; this sealed report does not fabricate missing monthly observations." } },
+
+      { heading: "Quality-control results and corrective-action closure", pageBreakBefore: true, table: qualityTable(model) },
+      { heading: "Monitoring-plan coverage", table: monitoringTable(model) },
+
+      { heading: "Mathematical audit trail", pageBreakBefore: true, callout: { label: "Calculation root", value: model.calculationRootHash } },
+      { heading: "Formula trace", table: { headers: ["Formula", "Output", "Unit", "Calculation hash", "Warnings / assumptions"], widths: [43, 22, 20, 55, 40], rows: calculation.trace.map((item) => [item.formulaId, item.outputValue, item.outputUnit, item.calculationHash, [...item.warnings, ...item.assumptions].join("; ") || "None"]) } },
+      { heading: "Allocation reconciliation", table: { headers: ["Control", "Result"], widths: [90, 90], rows: [["Allocation share total", model.totals.allocationShareTotal], ["Allocation reconciliation delta", model.totals.allocationReconciliationDelta], ["Eligible carbon-price certificate reduction", model.totals.eligibleCertificateReduction]] } },
+
+      { heading: "Legal sources and trust chain", pageBreakBefore: true, table: legalSourceTable(model) },
+      { heading: "Cryptographic provenance", table: { headers: ["Control", "Value"], widths: [48, 132], rows: [["Report ID", reportId], ["Release", releaseVersion], ["Generated", generatedAt], ["Ruleset", model.ruleset.version], ["Legal-source registry hash", model.ruleset.sourceHash], ["Calculation root hash", model.calculationRootHash]] } },
+      { heading: "Legal and professional boundary", callout: { label: "No verification opinion", value: model.disclaimer } },
     ]),
     pdfFile("Operator Summary Statement.pdf", "Operator Summary Statement", "Executive control statement for the sealed verifier-preparation package", [
       { heading: "Executive statement", paragraphs: [`Release ${releaseVersion} for case ${model.caseId} contains ${model.goods.length} CN-coded good(s), ${model.evidenceSummary.totalEvidenceFiles} evidence file(s), ${model.methodologyDecisionCount} methodology decision(s) and ${model.calculationTraceCount} cryptographically linked calculation node(s).`, `Automated preparation status: ${model.automatedReadiness}. Independent verifier status: ${model.independentVerifierStatus}.`] },
@@ -249,7 +301,7 @@ function buildPdfArtifacts(params: {
       { heading: "Readiness conclusion", callout: { label: "Automated status", value: `${model.automatedReadiness}. Passed ${model.qualitySummary.passed}; blockers ${model.qualitySummary.blockers}; warnings ${model.qualitySummary.warnings}; monitoring-plan gaps ${model.monitoringPlan.filter((item) => item.status === "GAP").length}.` } },
       { heading: "Quality controls", table: qualityTable(model) },
       { heading: "Monitoring-plan coverage", table: monitoringTable(model) },
-      { heading: "Evidence register", table: { headers: ["Evidence ID", "Type", "File", "Review", "Support", "Malware", "SHA-256"], widths: [30, 28, 32, 18, 20, 18, 34], rows: evidenceRows.length ? evidenceRows : [["NONE", "—", "No evidence registered", "GAP", "GAP", "GAP", "—"]] } },
+      { heading: "Evidence register", table: { headers: ["Evidence ID", "Type", "File", "Review", "Support", "Malware", "SHA-256"], widths: [30, 28, 32, 18, 20, 18, 34], rows: evidenceRows.length ? evidenceRows : [["NONE", "-", "No evidence registered", "GAP", "GAP", "GAP", "-"]] } },
       { heading: "Materiality reference", paragraphs: [`For each tonne of each relevant good identified by CN code, the verifier applies a quantitative materiality level of ${model.ruleset.materialityRate}% of total specific embedded emissions. Expert judgement remains applicable below that threshold and for parameters outside the quantitative threshold.`] },
       { heading: "Independent-verifier handoff", paragraphs: ["The VERIFIER_SIGN_OFF worksheet is intentionally NOT_REVIEWED. Only the independent accredited verifier may complete verifier identity, accreditation, site-visit, reasonable-assurance, opinion and findings-closure fields."] },
     ]),

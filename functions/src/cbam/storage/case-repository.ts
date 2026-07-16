@@ -16,6 +16,7 @@ import {
   parseCaseCreationMarker,
   type CaseCreationMarker,
 } from "./case-creation-idempotency";
+import { adaptLegacyCaseData } from "./legacy-case-adapter";
 
 export type CbamCase = CbamCaseRecord;
 
@@ -36,11 +37,23 @@ function parseStoredCase(data: unknown, documentId: string): CbamCaseRecord {
   const caseId = createCanonicalCaseId(
     typeof source.caseId === "string" && source.caseId.trim() ? source.caseId : documentId
   );
-  const parsedData = AuditReadyCaseSchema.parse({
+  const currentDataResult = AuditReadyCaseSchema.safeParse({
     ...(source.data as Record<string, unknown>),
     caseId,
     ownerId: uid,
   });
+  const createdAt = typeof source.createdAt === "string" ? source.createdAt : new Date(0).toISOString();
+  const updatedAt = typeof source.updatedAt === "string" ? source.updatedAt : new Date(0).toISOString();
+  const parsedData = currentDataResult.success
+    ? currentDataResult.data
+    : adaptLegacyCaseData({
+        rawData: source.data,
+        caseId,
+        uid,
+        createdAt,
+        updatedAt,
+      });
+  if (!parsedData) throw new Error("CASE_RECORD_UNSUPPORTED_SCHEMA");
 
   return {
     caseId,
@@ -49,8 +62,8 @@ function parseStoredCase(data: unknown, documentId: string): CbamCaseRecord {
     status: source.status ?? "DRAFT",
     latestReleaseId: source.latestReleaseId,
     latestReleaseVersion: source.latestReleaseVersion,
-    createdAt: typeof source.createdAt === "string" ? source.createdAt : new Date(0).toISOString(),
-    updatedAt: typeof source.updatedAt === "string" ? source.updatedAt : new Date(0).toISOString(),
+    createdAt,
+    updatedAt,
   };
 }
 
@@ -393,7 +406,16 @@ export async function getCasesForUser(uid: string): Promise<CbamCaseRecord[]> {
   const byCaseId = new Map<string, { documentId: string; record: CbamCaseRecord }>();
 
   for (const document of snapshot.docs) {
-    const record = parseStoredCase(document.data(), document.id);
+    let record: CbamCaseRecord;
+    try {
+      record = parseStoredCase(document.data(), document.id);
+    } catch (error: unknown) {
+      console.error("Skipping unsupported CBAM case record", {
+        documentId: document.id,
+        reason: error instanceof Error ? error.message : "CASE_RECORD_INVALID",
+      });
+      continue;
+    }
     const existing = byCaseId.get(record.caseId);
     const shouldReplace =
       !existing ||
