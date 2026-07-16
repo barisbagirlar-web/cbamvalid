@@ -100,7 +100,7 @@ describe("case repository idempotency", () => {
     const retry = await createCase(OWNER_ID, retryInput, REQUEST_ID);
 
     expect(retry).toEqual(first);
-    expect(retry.data.exporterIdentity.legalName.value).toBeNull();
+    expect(retry.data.exporterIdentity.legalName.value).toBe("Illustrative Steel Exporter Ltd.");
     expect(fakeFirestore.size("cbam_cases")).toBe(1);
     expect(fakeFirestore.size("case_creation_requests")).toBe(1);
   });

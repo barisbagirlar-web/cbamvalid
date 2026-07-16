@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
+  BookOpenCheck,
   CheckCircle2,
+  Eraser,
   FileCode2,
   FileUp,
   Loader2,
@@ -20,6 +22,11 @@ import { assessCaseReadiness } from "@/lib/cbam/validation/readiness-assessor";
 import { performDossierCalculations } from "@/lib/cbam/calculator";
 import type { FieldHelpKey } from "@/lib/cbam/field-help";
 import { GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH } from "@/lib/cbam/input-constraints";
+import {
+  ILLUSTRATIVE_SCENARIO_ID,
+  isIllustrativeScenarioActive,
+  replaceIllustrativeScenarioWithBlank,
+} from "@/lib/cbam/new-case";
 import {
   AuditReadyCaseSchema,
   createEmptyInput,
@@ -122,6 +129,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const [currentStep, setCurrentStep] = useState(1);
   const [caseData, setCaseData] = useState<AuditReadyCase>(() => AuditReadyCaseSchema.parse(initialCase));
   const [saving, setSaving] = useState(false);
+  const [clearingScenario, setClearingScenario] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
   const [saveTone, setSaveTone] = useState<"neutral" | "success" | "error">("neutral");
   const [uploading, setUploading] = useState(false);
@@ -136,6 +144,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
 
   const readiness = useMemo(() => assessCaseReadiness(caseData), [caseData]);
+  const scenarioActive = useMemo(() => isIllustrativeScenarioActive(caseData), [caseData]);
   const calculation = useMemo(() => {
     try {
       return { result: performDossierCalculations(caseData), error: "" };
@@ -180,6 +189,29 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       setSaveStatus(errorMessage(error));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleStartBlankCase = async () => {
+    if (!window.confirm(
+      "Remove every illustrative value from this draft and start with blank fields? This cannot be undone after the blank draft is saved."
+    )) return;
+
+    setClearingScenario(true);
+    setSaveStatus("");
+    try {
+      const blank = replaceIllustrativeScenarioWithBlank(caseData, sessionUser.uid);
+      await persistDraft(blank);
+      setCaseData(blank);
+      setSaveTone("success");
+      setSaveStatus("Illustrative values were removed. Enter and evidence your case-specific data.");
+      setCurrentStep(1);
+    } catch (error) {
+      console.error("Illustrative scenario removal failed", error);
+      setSaveTone("error");
+      setSaveStatus(errorMessage(error));
+    } finally {
+      setClearingScenario(false);
     }
   };
 
@@ -446,7 +478,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       <div className="space-y-4 rounded-xl border border-border bg-surface p-6"><h3 className="font-bold">Upload immutable evidence</h3><div className="grid gap-4 md:grid-cols-2">
         <div><FieldLabel helpKey="evidenceFile">File</FieldLabel><input aria-label="Evidence file" type="file" accept=".pdf,.csv,.xls,.xlsx,.png,.jpg,.jpeg,.txt" onChange={(event) => setEvidenceFile(event.target.files?.[0] || null)} /></div>
         <div><FieldLabel helpKey="evidenceDocumentType">Document type</FieldLabel><input aria-label="Evidence document type" value={evidenceDocumentType} onChange={(event) => setEvidenceDocumentType(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-        <div><FieldLabel helpKey="evidenceIssuer">Issuer</FieldLabel><input aria-label="Evidence issuer" value={evidenceIssuer} onChange={(event) => setEvidenceIssuer(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
+        <div><FieldLabel helpKey="evidenceIssuer">Issuer</FieldLabel><input aria-label="Evidence issuer" value={evidenceIssuer} onChange={(event) => setEvidenceIssuer(event.target.value)} placeholder="Example: electricity supplier or installation operator" className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
         <div><FieldLabel helpKey="evidenceIssueDate">Issue date</FieldLabel><input aria-label="Evidence issue date" type="date" value={evidenceIssueDate} onChange={(event) => setEvidenceIssueDate(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
         <div><FieldLabel helpKey="evidenceLinkedInput">Linked input</FieldLabel><select aria-label="Evidence linked input" value={evidenceLinkedInput} onChange={(event) => setEvidenceLinkedInput(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm">{EVIDENCE_LINK_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}{caseData.goods.flatMap((_, index) => [[`goods.${index}.cnCode`, `Good ${index + 1} CN code`], [`goods.${index}.productionVolume`, `Good ${index + 1} production`], [`goods.${index}.allocationShare`, `Good ${index + 1} allocation`]]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}{caseData.precursors.flatMap((_, index) => [[`precursors.${index}.quantity`, `Precursor ${index + 1} quantity`], [`precursors.${index}.directEmissions`, `Precursor ${index + 1} direct emissions`], [`precursors.${index}.indirectEmissions`, `Precursor ${index + 1} indirect emissions`]]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
       </div><button type="button" onClick={handleEvidenceUpload} disabled={uploading} className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-sm font-semibold text-surface disabled:opacity-50">{uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />} Upload and register evidence</button><StatusBanner status={evidenceStatus} tone={evidenceStatus.toLowerCase().includes("failed") || evidenceStatus.includes("EVIDENCE_") ? "error" : "warning"} /></div>
@@ -456,7 +488,44 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   );
 
   const renderStep8 = () => (
-    <div className="space-y-6"><h2 className="text-xl font-bold">8. Verification readiness and dossier generation</h2><div className="grid gap-6 lg:grid-cols-2">
+    <div className="space-y-6"><h2 className="text-xl font-bold">8. Verification readiness and dossier generation</h2>
+      {scenarioActive && calculation.result && (
+        <section className="rounded-xl border-2 border-blue-300 bg-blue-50 p-6 text-blue-950" aria-label="Illustrative scenario report">
+          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em]">Illustrative scenario · Not for submission</p>
+              <h3 className="mt-1 flex items-center gap-2 text-lg font-bold"><BookOpenCheck className="h-5 w-5" /> Scenario report</h3>
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed">
+                This report is calculated from the example values prefilled across all eight steps. It demonstrates the workflow and expected output structure; it is not verified evidence and cannot be sealed.
+              </p>
+            </div>
+            <span className="rounded bg-blue-900 px-3 py-1 font-mono text-[10px] text-white">{ILLUSTRATIVE_SCENARIO_ID}</span>
+          </div>
+          <dl className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded border border-blue-200 bg-white p-3"><dt className="text-xs text-blue-700">Installation</dt><dd className="font-semibold">{String(caseData.installation.name.value)}</dd></div>
+            <div className="rounded border border-blue-200 bg-white p-3"><dt className="text-xs text-blue-700">Reporting period</dt><dd className="font-semibold">{String(caseData.reportingPeriod.year.value)} · {String(caseData.reportingPeriod.quarter.value)}</dd></div>
+            <div className="rounded border border-blue-200 bg-white p-3"><dt className="text-xs text-blue-700">Production</dt><dd className="font-semibold">{calculation.result.productionVolume} t</dd></div>
+            <div className="rounded border border-blue-200 bg-white p-3"><dt className="text-xs text-blue-700">Electricity consumed</dt><dd className="font-semibold">{String(caseData.electricityConsumed.value)} MWh</dd></div>
+            <div className="rounded border border-blue-200 bg-white p-3"><dt className="text-xs text-blue-700">Grid factor</dt><dd className="font-semibold">{String(caseData.gridEmissionFactor.value)} tCO2e/MWh</dd></div>
+            <div className="rounded border border-blue-200 bg-white p-3"><dt className="text-xs text-blue-700">Direct emissions</dt><dd className="font-semibold">{calculation.result.totalDirectEmissions} tCO2e</dd></div>
+            <div className="rounded border border-blue-200 bg-white p-3"><dt className="text-xs text-blue-700">Indirect emissions</dt><dd className="font-semibold">{calculation.result.totalIndirectEmissions} tCO2e</dd></div>
+            <div className="rounded border border-blue-200 bg-white p-3"><dt className="text-xs text-blue-700">Precursor emissions</dt><dd className="font-semibold">{calculation.result.totalPrecursorEmissions} tCO2e</dd></div>
+            <div className="rounded border border-blue-200 bg-white p-3"><dt className="text-xs text-blue-700">Total embedded</dt><dd className="font-semibold">{calculation.result.totalEmbeddedEmissions} tCO2e</dd></div>
+            <div className="rounded border border-blue-200 bg-white p-3"><dt className="text-xs text-blue-700">Aggregate intensity</dt><dd className="font-semibold">{calculation.result.specificEmbeddedEmissions} tCO2e/t</dd></div>
+            <div className="rounded border border-blue-200 bg-white p-3"><dt className="text-xs text-blue-700">Illustrative carbon price</dt><dd className="font-semibold">{String(caseData.carbonPriceRecords[0]?.amountPaid ?? "—")} {caseData.carbonPriceRecords[0]?.currency ?? ""}</dd></div>
+          </dl>
+          <div className="mt-5 overflow-x-auto rounded border border-blue-200 bg-white">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead className="border-b border-blue-200 bg-blue-100 text-xs uppercase"><tr><th className="p-3">CN code</th><th className="p-3">Production</th><th className="p-3">Allocation</th><th className="p-3">Allocated emissions</th><th className="p-3">Intensity</th></tr></thead>
+              <tbody>{calculation.result.goods.map((good) => <tr key={good.goodIndex} className="border-b border-blue-100 last:border-0"><td className="p-3 font-mono">{good.cnCode}</td><td className="p-3">{good.productionVolume} t</td><td className="p-3">{good.allocationShare}</td><td className="p-3">{good.allocatedEmbeddedEmissions} tCO2e</td><td className="p-3">{good.specificEmbeddedEmissions} tCO2e/t</td></tr>)}</tbody>
+            </table>
+          </div>
+          <p className="mt-4 text-xs leading-relaxed text-blue-800">
+            Verification remains intentionally blocked until the illustrative scenario is removed and every material input is supported by approved, malware-clean evidence.
+          </p>
+        </section>
+      )}
+      <div className="grid gap-6 lg:grid-cols-2">
       <section className="rounded-xl border border-border bg-surface p-6"><h3 className="mb-4 flex items-center gap-2 font-bold"><Shield className="h-5 w-5 text-accent" /> Verification readiness</h3><div className={`rounded border p-3 text-sm font-semibold ${readiness.isEligibleForSealing ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-red-300 bg-red-50 text-red-900"}`}>{readiness.status} · {readiness.completenessPercentage}% · {readiness.passedControls}/{readiness.applicableControls} controls passed</div><div className="mt-4 max-h-80 space-y-2 overflow-y-auto">{readiness.allGaps.map((gap) => <div key={gap.gapId} className="border-l-2 border-red-500 pl-3 text-xs"><strong>{gap.requirement}</strong><p className="text-muted">{gap.whyItMatters}</p></div>)}</div><button type="button" aria-label="Generate sealed dossier" onClick={handleSeal} disabled={sealing || !readiness.isEligibleForSealing || usableEntitlements.length === 0} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-40">{sealing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Generate sealed dossier</button><StatusBanner status={sealStatus} tone="error" /><p className="mt-3 text-xs text-muted">Generation consumes a successful release only after server validation, immutable artifact commit and signature completion.</p></section>
       <section className="rounded-xl border border-border bg-surface p-6"><h3 className="mb-4 flex items-center gap-2 font-bold"><FileCode2 className="h-5 w-5 text-accent" /> Mathematical audit preview</h3>{calculation.error ? <StatusBanner status={calculation.error} tone="warning" /> : <><div className="grid grid-cols-2 gap-3 text-sm"><div><span className="text-muted">Total embedded</span><strong className="block">{calculation.result?.totalEmbeddedEmissions} tCO2e</strong></div><div><span className="text-muted">Aggregate intensity</span><strong className="block">{calculation.result?.specificEmbeddedEmissions} tCO2e/t</strong></div><div><span className="text-muted">Allocation total</span><strong className="block">{calculation.result?.allocationShareTotal}</strong></div><div><span className="text-muted">Reconciliation delta</span><strong className="block">{calculation.result?.allocationReconciliationDelta}</strong></div></div><div className="mt-4 max-h-80 space-y-3 overflow-y-auto">{calculation.result?.trace.map((trace) => <div key={trace.calculationId} className="rounded border border-border bg-neutral-soft p-3 font-mono text-xs"><div className="font-bold text-accent">{trace.formulaId}</div><div>{String(trace.outputValue)} {trace.outputUnit}</div><div className="break-all text-[10px] text-muted">{trace.calculationHash}</div></div>)}</div></>}</section>
     </div></div>
@@ -464,5 +533,5 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
 
   const stepContent = [renderStep1, renderStep2, renderStep3, renderStep4, renderStep5, renderStep6, renderStep7, renderStep8][currentStep - 1];
 
-  return <main className="min-h-screen bg-background px-4 py-8 pb-32 text-foreground md:px-8"><div className="mx-auto max-w-6xl space-y-6"><header className="flex flex-col justify-between gap-4 border-b border-border pb-4 md:flex-row md:items-center"><div><h1 className="text-2xl font-bold">Case workflow</h1><p className="text-sm text-muted">ID: {caseData.caseId || "UNASSIGNED"} · User: {sessionUser.email || sessionUser.uid}</p></div><button type="button" onClick={handleSave} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded border border-border bg-neutral-soft px-4 py-2 text-sm font-medium disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {saving ? "Saving…" : "Save draft"}</button></header><StatusBanner status={saveStatus} tone={saveTone} /><nav aria-label="Dossier steps" className="flex gap-3 overflow-x-auto pb-3">{STEPS.map((step) => <button type="button" key={step.id} onClick={() => setCurrentStep(step.id)} className={`min-w-28 rounded-lg border px-3 py-2 text-xs font-bold ${currentStep === step.id ? "border-accent bg-accent text-surface" : "border-border bg-surface text-muted"}`}><span className="block text-sm">{step.id}</span>{step.label}</button>)}</nav><section className="py-4">{stepContent()}</section></div><div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface p-4 shadow-[0_-4px_8px_rgba(0,0,0,0.08)]"><div className="mx-auto flex max-w-6xl items-center justify-between"><button type="button" onClick={() => setCurrentStep((step) => Math.max(1, step - 1))} disabled={currentStep === 1} className="inline-flex items-center gap-2 rounded border border-border px-4 py-2 disabled:opacity-40"><ArrowLeft className="h-4 w-4" /> Previous</button><span className="text-sm font-bold text-muted">Step {currentStep} of 8</span><button type="button" onClick={() => setCurrentStep((step) => Math.min(8, step + 1))} disabled={currentStep === 8} className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-surface disabled:opacity-40">Next <ArrowRight className="h-4 w-4" /></button></div></div></main>;
+  return <main className="min-h-screen bg-background px-4 py-8 pb-32 text-foreground md:px-8"><div className="mx-auto max-w-6xl space-y-6"><header className="flex flex-col justify-between gap-4 border-b border-border pb-4 md:flex-row md:items-center"><div><h1 className="text-2xl font-bold">Case workflow</h1><p className="text-sm text-muted">ID: {caseData.caseId || "UNASSIGNED"} · User: {sessionUser.email || sessionUser.uid}</p></div><button type="button" onClick={handleSave} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded border border-border bg-neutral-soft px-4 py-2 text-sm font-medium disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {saving ? "Saving…" : "Save draft"}</button></header>{scenarioActive && <aside className="flex flex-col justify-between gap-4 rounded-xl border-2 border-blue-300 bg-blue-50 p-5 text-blue-950 md:flex-row md:items-center"><div><p className="text-xs font-bold uppercase tracking-[0.16em]">Illustrative scenario active</p><p className="mt-1 max-w-3xl text-sm leading-relaxed">Every step is prefilled with a coherent steel-export example. Review the inputs, open the field guidance, and inspect the calculated scenario report in step 8. These values are not evidence and cannot be sealed.</p></div><button type="button" onClick={handleStartBlankCase} disabled={clearingScenario} className="inline-flex shrink-0 items-center justify-center gap-2 rounded border border-blue-800 bg-white px-4 py-2 text-sm font-semibold disabled:opacity-50">{clearingScenario ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eraser className="h-4 w-4" />} {clearingScenario ? "Removing…" : "Start with blank case"}</button></aside>}<StatusBanner status={saveStatus} tone={saveTone} /><nav aria-label="Dossier steps" className="flex gap-3 overflow-x-auto pb-3">{STEPS.map((step) => <button type="button" key={step.id} onClick={() => setCurrentStep(step.id)} className={`min-w-28 rounded-lg border px-3 py-2 text-xs font-bold ${currentStep === step.id ? "border-accent bg-accent text-surface" : "border-border bg-surface text-muted"}`}><span className="block text-sm">{step.id}</span>{step.label}</button>)}</nav><section className="py-4">{stepContent()}</section></div><div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface p-4 shadow-[0_-4px_8px_rgba(0,0,0,0.08)]"><div className="mx-auto flex max-w-6xl items-center justify-between"><button type="button" onClick={() => setCurrentStep((step) => Math.max(1, step - 1))} disabled={currentStep === 1} className="inline-flex items-center gap-2 rounded border border-border px-4 py-2 disabled:opacity-40"><ArrowLeft className="h-4 w-4" /> Previous</button><span className="text-sm font-bold text-muted">Step {currentStep} of 8</span><button type="button" onClick={() => setCurrentStep((step) => Math.min(8, step + 1))} disabled={currentStep === 8} className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-surface disabled:opacity-40">Next <ArrowRight className="h-4 w-4" /></button></div></div></main>;
 }

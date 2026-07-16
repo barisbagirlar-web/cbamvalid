@@ -24,10 +24,27 @@ function supportedEvidence(caseData: AuditReadyCase, path: string, datum: InputD
 function acceptedMethod(caseData: AuditReadyCase, topic: string): boolean {
   return caseData.methodologyDecisions.some((decision) => decision.topic === topic && decision.reviewStatus === "ACCEPTED" && decision.reason.trim().length > 0 && decision.legalOrTechnicalBasis.trim().length > 0 && decision.rulesetVersion.trim().length > 0 && decision.evidenceIds.every((evidenceId) => caseData.evidenceRegister.some((evidence) => evidence.evidenceId === evidenceId)));
 }
+function illustrativeScenarioActive(caseData: AuditReadyCase): boolean {
+  return caseData.auditEvents.reduce((active, event) => {
+    if (event.action === "ILLUSTRATIVE_SCENARIO_LOADED") return true;
+    if (event.action === "ILLUSTRATIVE_SCENARIO_REPLACED") return false;
+    return active;
+  }, false);
+}
 
 export function runQualityControls(caseData: AuditReadyCase): QualityControlResult[] {
   const results: QualityControlResult[] = [];
   const add = (ruleId: string, name: string, status: QualityControlStatus, message?: string, remediationCode?: string) => results.push({ ruleId, name, status, message, remediationCode });
+  const scenarioActive = illustrativeScenarioActive(caseData);
+  add(
+    "QC_SCENARIO",
+    "Illustrative scenario replacement",
+    scenarioActive ? "BLOCKER" : "NOT_APPLICABLE",
+    scenarioActive
+      ? "Illustrative values demonstrate the workflow but are not case evidence. Start with a blank case and enter case-specific data before sealing."
+      : undefined,
+    scenarioActive ? "REM_REPLACE_ILLUSTRATIVE_SCENARIO" : undefined
+  );
   const identityComplete = [caseData.importerIdentity.legalName.value, caseData.exporterIdentity.legalName.value, caseData.installation.name.value, caseData.installation.country.value, caseData.installation.productionRoute.value, caseData.installation.systemBoundaries].every((value) => String(value || "").trim());
   add("QC_00", "Operator, installation and boundary identity", identityComplete ? "PASS" : "BLOCKER", identityComplete ? undefined : "Importer, exporter, installation, country, route and boundary statement are required.", "REM_COMPLETE_CASE_IDENTITY");
 
