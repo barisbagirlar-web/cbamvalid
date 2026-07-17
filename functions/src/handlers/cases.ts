@@ -109,6 +109,25 @@ export const saveCbamCase = createCallable(
     }
 
     const parsedData = parseCaseData(data, auth.uid, caseId);
+
+    if (existing.latestReleaseId) {
+      const oldYear = existing.data.reportingPeriod?.year?.value;
+      const newYear = parsedData.reportingPeriod?.year?.value;
+      const oldInstall = existing.data.installation?.name?.value;
+      const newInstall = parsedData.installation?.name?.value;
+      const oldExporter = existing.data.exporterIdentity?.legalName?.value;
+      const newExporter = parsedData.exporterIdentity?.legalName?.value;
+      const oldCn = existing.data.goods?.[0]?.cnCode?.value;
+      const newCn = parsedData.goods?.[0]?.cnCode?.value;
+
+      if (oldYear !== newYear || oldInstall !== newInstall || oldExporter !== newExporter || oldCn !== newCn) {
+        throw new HttpsError(
+          "failed-precondition",
+          "SCOPE_LOCKED: Sealed case scope parameters (exporter, installation, reporting year, or CN code) cannot be modified."
+        );
+      }
+    }
+
     await updateCase(caseId, auth.uid, parsedData);
     return { caseId, status: "success" };
   }
@@ -185,8 +204,8 @@ export const renameCbamCase = createCallable(
     if (!existing || existing.uid !== auth.uid) {
       throw new HttpsError("not-found", "Case not found or access denied.");
     }
-    if (existing.status !== "DRAFT") {
-      throw new HttpsError("failed-precondition", "Only a draft case can be renamed.");
+    if (existing.status !== "DRAFT" || existing.latestReleaseId) {
+      throw new HttpsError("failed-precondition", "Only a draft case that has not been sealed can be renamed.");
     }
 
     const updatedData = {

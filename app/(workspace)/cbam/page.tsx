@@ -376,7 +376,14 @@ export default function CbamLandingPage() {
                     <>
                       <div className="space-y-4">
                         {paginatedDrafts.map((cbamCase) => (
-                          <div key={cbamCase.caseId} className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors">
+                          <div
+                            key={cbamCase.caseId}
+                            className={`p-4 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-colors ${
+                              cbamCase.latestReleaseId
+                                ? "bg-emerald-500/[0.02] border border-emerald-500/20 hover:border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.02)]"
+                                : "bg-background border border-border/60 hover:border-border"
+                            }`}
+                          >
                             <div>
                               <div className="flex flex-wrap items-center gap-2">
                                 <p className="font-semibold text-sm">{getCaseDisplayName(cbamCase.data)}</p>
@@ -389,6 +396,12 @@ export default function CbamLandingPage() {
                               </p>
                               <div className="mt-2 flex items-center gap-2">
                                 <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-neutral-soft text-foreground border border-border">Draft mode</span>
+                                {cbamCase.latestReleaseId && (
+                                  <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 flex items-center gap-1">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    Sealed / Mühürlü
+                                  </span>
+                                )}
                               </div>
                             </div>
                             <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">

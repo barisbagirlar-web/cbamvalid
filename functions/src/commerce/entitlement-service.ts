@@ -155,12 +155,6 @@ export async function reserveEntitlement(
   const reservationExpiresAt = new Date(
     now.getTime() + (params.expiresInSeconds || 300) * 1000
   ).toISOString();
-  transaction.update(entitlementRef, {
-    status: "RESERVED",
-    reservedReportId: params.reportId,
-    reservationExpiresAt,
-    updatedAt: now.toISOString(),
-  });
   await writeLedgerEntry(transaction, {
     uid: entitlement.uid,
     orderId: entitlement.orderId,
@@ -169,6 +163,12 @@ export async function reserveEntitlement(
     type: "ENTITLEMENT_RESERVED",
     quantity: 1,
     idempotencyKey: `reserve:${params.entitlementId}:${params.reportId}`,
+  });
+  transaction.update(entitlementRef, {
+    status: "RESERVED",
+    reservedReportId: params.reportId,
+    reservationExpiresAt,
+    updatedAt: now.toISOString(),
   });
   return { ...entitlement, status: "RESERVED", reservedReportId: params.reportId, reservationExpiresAt, updatedAt: now.toISOString() };
 }
@@ -220,6 +220,15 @@ export async function consumeEntitlement(
   };
   const releasesList = [...entitlement.releasesList, releaseItem];
   const status: Entitlement["status"] = newCount === maxReleases ? "CONSUMED" : "AVAILABLE";
+  await writeLedgerEntry(transaction, {
+    uid: entitlement.uid,
+    orderId: entitlement.orderId,
+    transactionId: entitlement.orderId,
+    eventId: `consume_${params.reportId}_${newCount}`,
+    type: "ENTITLEMENT_CONSUMED",
+    quantity: 1,
+    idempotencyKey: `consume:${params.entitlementId}:${params.reportId}:${newCount}`,
+  });
   transaction.update(entitlementRef, {
     status,
     releasesCount: newCount,
@@ -231,15 +240,6 @@ export async function consumeEntitlement(
     updatedAt: now,
     reservedReportId: null,
     reservationExpiresAt: null,
-  });
-  await writeLedgerEntry(transaction, {
-    uid: entitlement.uid,
-    orderId: entitlement.orderId,
-    transactionId: entitlement.orderId,
-    eventId: `consume_${params.reportId}_${newCount}`,
-    type: "ENTITLEMENT_CONSUMED",
-    quantity: 1,
-    idempotencyKey: `consume:${params.entitlementId}:${params.reportId}:${newCount}`,
   });
   return { ...entitlement, status, releasesCount: newCount, maxReleases, scopeCaseId: params.caseId, releasesList, consumedReportId: params.reportId, consumedAt: now, updatedAt: now, reservedReportId: undefined, reservationExpiresAt: undefined };
 }
@@ -261,7 +261,6 @@ export async function releaseEntitlementReservation(
   const maxReleases = entitlement.maxReleases || DEFAULT_MAX_RELEASES;
   const status: Entitlement["status"] = entitlement.releasesCount >= maxReleases ? "CONSUMED" : "AVAILABLE";
   const now = new Date().toISOString();
-  transaction.update(entitlementRef, { status, reservedReportId: null, reservationExpiresAt: null, updatedAt: now });
   await writeLedgerEntry(transaction, {
     uid: entitlement.uid,
     orderId: entitlement.orderId,
@@ -271,6 +270,7 @@ export async function releaseEntitlementReservation(
     quantity: 1,
     idempotencyKey: `release:${params.entitlementId}:${params.reportId}`,
   });
+  transaction.update(entitlementRef, { status, reservedReportId: null, reservationExpiresAt: null, updatedAt: now });
   return { ...entitlement, status, updatedAt: now, reservedReportId: undefined, reservationExpiresAt: undefined };
 }
 
@@ -284,7 +284,6 @@ export async function revokeEntitlement(
   if (!snapshot.exists) throw new EntitlementUnavailableError();
   const entitlement = normalizeEntitlement(snapshot.data(), snapshot.id);
   const now = new Date().toISOString();
-  transaction.update(entitlementRef, { status: "REVOKED", reservedReportId: null, reservationExpiresAt: null, updatedAt: now });
   await writeLedgerEntry(transaction, {
     uid: entitlement.uid,
     orderId: entitlement.orderId,
@@ -294,5 +293,6 @@ export async function revokeEntitlement(
     quantity: 1,
     idempotencyKey: `revoke:${params.entitlementId}:${params.eventId}`,
   });
+  transaction.update(entitlementRef, { status: "REVOKED", reservedReportId: null, reservationExpiresAt: null, updatedAt: now });
   return { ...entitlement, status: "REVOKED", updatedAt: now };
 }
