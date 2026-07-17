@@ -145,6 +145,10 @@ export interface DossierCalculationResult {
   calculationRootHash: string;
   ruleset: string;
   engineVersion: string;
+  inputs?: any;
+  applicability?: any;
+  pricing?: any;
+  formulasUsed?: any;
 }
 
 function resolveAllocationShares(caseData: AuditReadyCase): Decimal[] {
@@ -237,5 +241,45 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
 
   const calculationRootHash = hashObject({ ruleset: CALCULATION_RULESET, engineVersion: CALCULATION_ENGINE_VERSION, trace: trace.map((item) => item.calculationHash), totals: { installationDirect: directEmissions.toString(), electricityIndirect: indirectEmissions.toString(), precursorDirect: precursorDirect.toString(), precursorIndirect: precursorIndirect.toString(), totalDirect: totalDirect.toString(), totalIndirect: totalIndirect.toString(), totalPrecursor: totalPrecursor.toString(), totalEmbedded: totalEmbedded.toString(), productionVolume: productionVolume.toString(), aggregateSpecific: aggregateSpecific.toString(), eligibleCertificateReduction: eligibleCertificateReduction.toString(), allocationShareTotal: allocationShareTotal.toString(), allocationReconciliationDelta: allocationReconciliationDelta.toString() }, goods });
 
-  return { trace, goods, perGoodResults: goods, installationDirectEmissions: directEmissions.toString(), electricityIndirectEmissions: indirectEmissions.toString(), precursorDirectEmissions: precursorDirect.toString(), precursorIndirectEmissions: precursorIndirect.toString(), totalDirectEmissions: totalDirect.toString(), totalIndirectEmissions: totalIndirect.toString(), totalPrecursorEmissions: totalPrecursor.toString(), totalEmbeddedEmissions: totalEmbedded.toString(), productionVolume: productionVolume.toString(), specificEmbeddedEmissions: aggregateSpecific.toString(), eligibleCertificateReduction: eligibleCertificateReduction.toString(), allocationShareTotal: allocationShareTotal.toString(), allocationReconciliationDelta: allocationReconciliationDelta.toString(), calculationRootHash, ruleset: CALCULATION_RULESET, engineVersion: CALCULATION_ENGINE_VERSION };
+  return {
+    trace,
+    goods,
+    perGoodResults: goods,
+    installationDirectEmissions: directEmissions.toString(),
+    electricityIndirectEmissions: indirectEmissions.toString(),
+    precursorDirectEmissions: precursorDirect.toString(),
+    precursorIndirectEmissions: precursorIndirect.toString(),
+    totalDirectEmissions: totalDirect.toString(),
+    totalIndirectEmissions: totalIndirect.toString(),
+    totalPrecursorEmissions: totalPrecursor.toString(),
+    totalEmbeddedEmissions: totalEmbedded.toString(),
+    productionVolume: productionVolume.toString(),
+    specificEmbeddedEmissions: aggregateSpecific.toString(),
+    eligibleCertificateReduction: eligibleCertificateReduction.toString(),
+    allocationShareTotal: allocationShareTotal.toString(),
+    allocationReconciliationDelta: allocationReconciliationDelta.toString(),
+    calculationRootHash,
+    ruleset: CALCULATION_RULESET,
+    engineVersion: CALCULATION_ENGINE_VERSION,
+    inputs: {
+      role: caseData.importerIdentity?.eoriNumber?.value ? "IMPORTER" : "EXPORTER",
+      importYear: Number(caseData.reportingPeriod?.year?.value || 2026),
+      importQuarter: Number(caseData.reportingPeriod?.quarter?.value || 1),
+      cnCode: String(caseData.goods?.[0]?.cnCode?.value || ""),
+      productionVolume: Number(caseData.goods?.[0]?.productionVolume?.value || 0),
+      productionUnit: "t",
+      directEmissions: Number(caseData.directEmissions?.value || 0),
+      electricityConsumed: Number(caseData.electricityConsumed?.value || 0),
+      gridEmissionFactor: Number(caseData.gridEmissionFactor?.value || 0),
+      precursorDirectEmissions: precursorDirect.toNumber(),
+      precursorIndirectEmissions: precursorIndirect.toNumber(),
+    },
+    applicability: {
+      sector: String(caseData.goods?.[0]?.sector || "IRON_AND_STEEL"),
+    },
+    pricing: {
+      datasetVersion: "2026-Q1-V1",
+    },
+    formulasUsed: {}
+  };
 }

@@ -326,20 +326,20 @@ export function buildPdfDossier(
   let tblY = 55;
   const drawRow = (metric: string, val: string | number, unit: string, source: string) => {
     doc.setFillColor(250, 249, 245);
-    doc.rect(15, tblY - 7, 180, 9, "F");
+    doc.rect(15, tblY - 7, 180, 10, "F");
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.text(metric, 20, tblY - 1);
+    doc.setFontSize(8);
+    doc.text(metric, 20, tblY - 0.5);
     doc.setFont("helvetica", "bold");
-    doc.text(String(val), 120, tblY - 1);
+    doc.text(String(val), 120, tblY - 0.5);
     doc.setFont("helvetica", "normal");
-    doc.text(unit, 150, tblY - 1);
-    doc.text(source, 170, tblY - 1);
+    doc.text(unit, 150, tblY - 0.5);
+    doc.text(source, 170, tblY - 0.5);
     
     doc.setDrawColor(220, 225, 230);
     doc.setLineWidth(0.2);
-    doc.line(15, tblY + 2, 195, tblY + 2);
-    tblY += 9;
+    doc.line(15, tblY + 3, 195, tblY + 3);
+    tblY += 10;
   };
   
   drawRow("Total Direct Emissions", safeStr(calc?.totalDirectEmissions), "tCO2e", "Primary Meter");
@@ -404,7 +404,7 @@ export function buildPdfDossier(
   renderLabelValue("Estimated Financial Obligation:", `${safeStr(calc?.estimatedCertificateCostEur)} EUR`, 20, 128, false);
 
   // Highlight Box in orange
-  doc.setFillColor(189, 93, 58, 12);
+  doc.setFillColor(249, 239, 236);
   doc.setDrawColor(189, 93, 58, 40);
   doc.setLineWidth(0.4);
   doc.roundedRect(15, 144, 180, 24, 1.5, 1.5, "FD");
@@ -475,15 +475,23 @@ export function buildPdfDossier(
     doc.setFont("helvetica", "bold");
     doc.setTextColor(200, 30, 30); // Red
     doc.text("CRITICAL DATA GAPS IDENTIFIED:", 20, 128);
-    let gy = 135;
-    gaps.forEach((g: any, idx: number) => {
-      if (gy < 165) {
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(26, 25, 21);
-        doc.text(`- ${safeStr(g.requirement)}: ${safeStr(g.whyItMatters)}`, 20, gy, { maxWidth: 170 });
-        gy += 8;
-      }
+    let gy = 134;
+    const maxVisibleGaps = 4;
+    gaps.slice(0, maxVisibleGaps).forEach((g: any) => {
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(26, 25, 21);
+      doc.setFontSize(7.5);
+      const gapText = `- ${safeStr(g.requirement)}: ${safeStr(g.whyItMatters)}`;
+      const splitText = doc.splitTextToSize(gapText, 170);
+      doc.text(splitText, 20, gy);
+      gy += splitText.length * 4.5;
     });
+    if (gaps.length > maxVisibleGaps) {
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(200, 30, 30);
+      doc.setFontSize(7.5);
+      doc.text(`* AND ${gaps.length - maxVisibleGaps} MORE CRITICAL DATA GAPS. Resolve these in the case editor to seal.`, 20, gy);
+    }
   }
 
   // Verifier checklist
@@ -568,7 +576,7 @@ export function buildPdfDossier(
   doc.text("8. Cryptographic Package Manifest & Sign-off (Kriptografik Paket Mührü)", 15, 30);
 
   // Big Callout Panel for the Cryptographic Package Seal Hash (Paket Hash'i)
-  doc.setFillColor(30, 41, 59, 8); // Light slate-blue background
+  doc.setFillColor(240, 242, 245); // Light slate-blue background
   doc.setDrawColor(30, 41, 59, 30);
   doc.setLineWidth(0.35);
   doc.roundedRect(15, 36, 180, 16, 1.5, 1.5, "FD");
@@ -604,10 +612,10 @@ export function buildPdfDossier(
     doc.text("PASS", 175, my);
   };
   
-  drawManifestRow("cbam-exporter-final-evidence-report-sample.pdf", sha256("pdf-mock-bytes-dossier"), 78);
-  drawManifestRow("cbam-exporter-final-evidence-report-sample.xml", sha256("xml-mock-bytes-dossier"), 85);
-  drawManifestRow("cbam-exporter-final-evidence-report-sample.json", sha256("json-mock-bytes-dossier"), 92);
-  drawManifestRow("cbam-exporter-final-evidence-report-sample.csv", sha256("csv-mock-bytes-dossier"), 99);
+  drawManifestRow("cbam-exporter-final-evidence-report-sample.pdf", sha256("pdf-mock-bytes-dossier"), 80);
+  drawManifestRow("cbam-exporter-final-evidence-report-sample.xml", sha256("xml-mock-bytes-dossier"), 88);
+  drawManifestRow("cbam-exporter-final-evidence-report-sample.json", sha256("json-mock-bytes-dossier"), 96);
+  drawManifestRow("cbam-exporter-final-evidence-report-sample.csv", sha256("csv-mock-bytes-dossier"), 104);
 
   // Legal Notice / Disclaimer
   drawCard(doc, 15, 112, 180, 40, "CONFIDENTIALITY & LEGAL NOTICE");
@@ -720,7 +728,10 @@ export function buildPdfDossier(
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7.5);
       doc.setTextColor(110, 115, 125);
-      doc.text(`CASE ID: ${reportId} | ENGINE v1.0.0`, 195, 14, { align: "right" });
+      const displayId = reportId.startsWith("case_") || reportId.startsWith("report_")
+        ? getDisplayReferenceCode(reportId)
+        : reportId;
+      doc.text(`CASE ID: ${displayId} | ENGINE v1.0.0`, 195, 14, { align: "right" });
     }
     
     // Page footers (Skip cover page 1)

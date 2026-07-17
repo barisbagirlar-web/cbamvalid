@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   ArrowRight,
@@ -75,6 +75,15 @@ function reportInstallationName(report: ReportRecord): string {
   return typeof value === "string" && value.trim() ? value.trim() : "Sealed dossier";
 }
 
+function reportCnCode(report: ReportRecord): string {
+  const calculation = report.calculation;
+  if (!calculation || typeof calculation !== "object") return "";
+  const inputs = (calculation as ReportRecord).inputs;
+  if (!inputs || typeof inputs !== "object") return "";
+  const value = (inputs as ReportRecord).cnCode;
+  return typeof value === "string" ? value : "";
+}
+
 export default function CbamLandingPage() {
   const { user, loading } = useAuth();
   const [cases, setCases] = useState<CbamCaseRecord[]>([]);
@@ -85,6 +94,19 @@ export default function CbamLandingPage() {
   const [warning, setWarning] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [showChecklist, setShowChecklist] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const drafts = useMemo(() => {
+    return cases.filter((c) => c.status === "DRAFT" || c.data?.status === "DRAFT");
+  }, [cases]);
+
+  const totalPages = Math.ceil(drafts.length / itemsPerPage);
+
+  const paginatedDrafts = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return drafts.slice(start, start + itemsPerPage);
+  }, [drafts, currentPage]);
 
   useEffect(() => {
     if (loading || !user) return;
@@ -345,36 +367,87 @@ export default function CbamLandingPage() {
               <section className="bg-surface border border-border rounded-xl p-6 shadow-sm">
                 <h3 className="text-lg font-bold mb-4 font-serif">Draft Cases</h3>
                 <div className="space-y-4">
-                  {cases.map((cbamCase) => (
-                    <div key={cbamCase.caseId} className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-semibold text-sm">{getCaseDisplayName(cbamCase.data)}</p>
-                          <span className="bg-accent/10 border border-accent/20 text-accent text-[10px] px-2 py-0.5 rounded font-mono font-bold tracking-wider">
-                            {getDisplayReferenceCode(cbamCase.caseId)}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted mt-1 font-mono">
-                          CN Code: {getPrimaryCnCode(cbamCase.data)} | Updated: {formatCaseUpdatedDate(cbamCase.updatedAt)}
-                        </p>
-                        <div className="mt-2 flex items-center gap-2">
-                          <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-neutral-soft text-foreground border border-border">Draft mode</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                        <Link href={`/cases/${cbamCase.caseId}`} className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center gap-1">
-                          Edit
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteCase(cbamCase.caseId)}
-                          className="border border-red-200 hover:border-red-300 text-red-700 hover:bg-red-50 text-xs font-semibold px-4 py-2 rounded-md transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
+                  {drafts.length === 0 ? (
+                    <div className="p-6 text-center bg-background border border-dashed border-border/80 rounded-lg">
+                      <Clock className="w-7 h-7 text-muted/65 mx-auto mb-2" />
+                      <p className="text-sm text-muted">No active draft cases. Click "Create new case" above to start.</p>
                     </div>
-                  ))}
+                  ) : (
+                    <>
+                      <div className="space-y-4">
+                        {paginatedDrafts.map((cbamCase) => (
+                          <div key={cbamCase.caseId} className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors">
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="font-semibold text-sm">{getCaseDisplayName(cbamCase.data)}</p>
+                                <span className="bg-accent/10 border border-accent/20 text-accent text-[10px] px-2 py-0.5 rounded font-mono font-bold tracking-wider">
+                                  {getDisplayReferenceCode(cbamCase.caseId)}
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted mt-1 font-mono">
+                                CN Code: {getPrimaryCnCode(cbamCase.data)} | Updated: {formatCaseUpdatedDate(cbamCase.updatedAt)}
+                              </p>
+                              <div className="mt-2 flex items-center gap-2">
+                                <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-neutral-soft text-foreground border border-border">Draft mode</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                              <Link href={`/cases/${cbamCase.caseId}`} className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center gap-1">
+                                Edit
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCase(cbamCase.caseId)}
+                                className="border border-red-200 hover:border-red-300 text-red-700 hover:bg-red-50 text-xs font-semibold px-4 py-2 rounded-md transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {totalPages > 1 && (
+                        <div className="flex items-center justify-between border-t border-border pt-4 mt-6">
+                          <p className="text-xs text-muted">
+                            Showing <strong>{((currentPage - 1) * itemsPerPage) + 1}</strong> to <strong>{Math.min(currentPage * itemsPerPage, drafts.length)}</strong> of <strong>{drafts.length}</strong> drafts
+                          </p>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              disabled={currentPage === 1}
+                              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                              className="px-2.5 py-1 text-[11px] font-semibold rounded border border-border bg-background hover:bg-surface disabled:opacity-50 transition-colors"
+                            >
+                              Prev
+                            </button>
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                              <button
+                                key={page}
+                                type="button"
+                                onClick={() => setCurrentPage(page)}
+                                className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-colors ${
+                                  currentPage === page
+                                    ? "bg-accent text-surface border border-accent"
+                                    : "border border-border bg-background hover:bg-surface text-foreground"
+                                }`}
+                              >
+                                {page}
+                              </button>
+                            ))}
+                            <button
+                              type="button"
+                              disabled={currentPage === totalPages}
+                              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                              className="px-2.5 py-1 text-[11px] font-semibold rounded border border-border bg-background hover:bg-surface disabled:opacity-50 transition-colors"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </section>
 
@@ -405,6 +478,7 @@ export default function CbamLandingPage() {
                               </span>
                             </div>
                             <p className="text-[11px] text-muted mt-0.5 font-mono">
+                              {reportCnCode(report) && <>CN Code: {reportCnCode(report)} | </>}
                               {createdAt ? formatCaseUpdatedDate(createdAt) : "Unknown date"}
                             </p>
                           </div>
