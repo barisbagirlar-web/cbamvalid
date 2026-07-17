@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<CBAMDefinitiveDossier xmlns="https://cbamvalid.com/schema/exporter-evidence/1.0" generator="CBAMValid Sealing Engine v3.0" generatedAt="2026-07-16T21:00:37.211Z">
+<CBAMDefinitiveDossier xmlns="https://cbamvalid.com/schema/exporter-evidence/1.0" generator="CBAMValid Sealing Engine v3.0" generatedAt="2026-07-17T14:16:23.610Z">
   <Header>
     <SchemaVersion>3.0</SchemaVersion>
     <Language>en</Language>
+    <ReferenceCode>UNASSIGNED</ReferenceCode>
   </Header>
   <Declarant>
     <EORI>GB123456789000</EORI>

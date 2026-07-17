@@ -6,6 +6,21 @@ import { getCase } from "../cbam/storage/case-repository";
 import { CaseIdSchema } from "../cbam/case-id";
 import { assertKmsSigningConfigured } from "../cbam/report/kms-signature";
 
+/** Recursively replace NaN/Infinity with null so Firebase can JSON-encode the response. */
+function sanitizeForJson(value: unknown): unknown {
+  if (typeof value === "number" && (!isFinite(value) || isNaN(value))) return null;
+  if (Array.isArray(value)) return value.map(sanitizeForJson);
+  if (value !== null && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      out[k] = sanitizeForJson(v);
+    }
+    return out;
+  }
+  return value;
+}
+
+
 function sealError(error: unknown): HttpsError {
   if (error instanceof HttpsError) return error;
   const message = error instanceof Error ? error.message : "REPORT_GENERATION_FAILED";
@@ -54,7 +69,7 @@ export const sealCbamReport = createCallable(
         inputData: cbamCase.data,
         correctionReason,
       });
-      return { report, status: "success" };
+      return { report: sanitizeForJson(report) as Record<string, unknown>, status: "success" };
     } catch (error) {
       throw sealError(error);
     }
@@ -67,8 +82,8 @@ export const getCbamReports = createCallable({}, async (_, { auth }) => {
     .where("status", "==", "SEALED")
     .get();
   const reports = snapshot.docs
-    .map((document) => document.data())
-    .sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")));
+    .map((document) => sanitizeForJson(document.data()))
+    .sort((left, right) => String((right as Record<string,unknown>).createdAt || "").localeCompare(String((left as Record<string,unknown>).createdAt || "")));
   return { reports, status: "success" };
 });
 
@@ -80,7 +95,7 @@ export const getCbamReport = createCallable(
     if (!report || report.uid !== auth.uid || report.status !== "SEALED") {
       throw new HttpsError("not-found", "Report not found or access denied.");
     }
-    return { report, status: "success" };
+    return { report: sanitizeForJson(report), status: "success" };
   }
 );
 

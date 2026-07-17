@@ -1,7 +1,7 @@
 import admin from "firebase-admin";
 import { adminDb } from "../firebase-admin";
 import { DoubleSpendViolationError, EntitlementUnavailableError } from "./commerce-errors";
-import { writeLedgerEntry } from "./ledger-service";
+import { writeLedgerEntry, LedgerReadCache } from "./ledger-service";
 import { validateIdentifier } from "../firestore-validator";
 
 const DEFAULT_MAX_RELEASES = 5;
@@ -122,7 +122,8 @@ export async function createEntitlement(
 
 export async function reserveEntitlement(
   transaction: admin.firestore.Transaction,
-  params: { entitlementId: string; uid: string; reportId: string; caseId: string; expiresInSeconds?: number }
+  params: { entitlementId: string; uid: string; reportId: string; caseId: string; expiresInSeconds?: number },
+  readCache?: LedgerReadCache
 ): Promise<Entitlement> {
   validateIdentifier("entitlementId", params.entitlementId);
   validateIdentifier("uid", params.uid);
@@ -163,7 +164,7 @@ export async function reserveEntitlement(
     type: "ENTITLEMENT_RESERVED",
     quantity: 1,
     idempotencyKey: `reserve:${params.entitlementId}:${params.reportId}`,
-  });
+  }, readCache);
   transaction.update(entitlementRef, {
     status: "RESERVED",
     reservedReportId: params.reportId,
@@ -183,7 +184,8 @@ export async function consumeEntitlement(
     reportHash: string;
     version: number;
     correctionReason?: string;
-  }
+  },
+  readCache?: LedgerReadCache
 ): Promise<Entitlement> {
   validateIdentifier("entitlementId", params.entitlementId);
   validateIdentifier("uid", params.uid);
@@ -228,7 +230,7 @@ export async function consumeEntitlement(
     type: "ENTITLEMENT_CONSUMED",
     quantity: 1,
     idempotencyKey: `consume:${params.entitlementId}:${params.reportId}:${newCount}`,
-  });
+  }, readCache);
   transaction.update(entitlementRef, {
     status,
     releasesCount: newCount,

@@ -22,7 +22,7 @@ export function resolveCertificatePrice(params: {
   if (year === 2026) {
     if (quarter === 1) {
       return {
-        priceEurPerTonne: 75.36,
+        priceEurPerTonne: 75.50,
         cadence: "QUARTERLY",
         state: "OFFICIAL_PUBLISHED",
         datasetVersion: "EU_CBAM_PRICE_2026_Q1",

@@ -47,29 +47,54 @@ export function calculateEntryHash(entry: Omit<LedgerEntry, "entryHash">): strin
   return crypto.createHash("sha256").update(dataString).digest("hex");
 }
 
+export interface LedgerReadCache {
+  idempotencySnapshot: admin.firestore.QuerySnapshot;
+  latestSnapshot: admin.firestore.QuerySnapshot;
+}
+
 /**
- * Appends a new entry to the immutable commerce ledger within a transaction context
+ * Pre-fetch all reads required by writeLedgerEntry before any writes happen in the
+ * same transaction. Pass the returned cache into writeLedgerEntry to avoid the
+ * Firestore "reads before writes" constraint.
+ */
+export async function prefetchLedgerReads(
+  dbTransaction: admin.firestore.Transaction,
+  idempotencyKey: string
+): Promise<LedgerReadCache> {
+  const ledgerCollection = adminDb.collection("commerce_ledger");
+  const [idempotencySnapshot, latestSnapshot] = await Promise.all([
+    dbTransaction.get(ledgerCollection.where("idempotencyKey", "==", idempotencyKey).limit(1)),
+    dbTransaction.get(ledgerCollection.orderBy("createdAt", "desc").limit(1)),
+  ]);
+  return { idempotencySnapshot, latestSnapshot };
+}
+
+/**
+ * Appends a new entry to the immutable commerce ledger within a transaction context.
+ * Supply a `readCache` (from prefetchLedgerReads) when this function is called after
+ * writes have already been queued in the same transaction.
  */
 export async function writeLedgerEntry(
   dbTransaction: admin.firestore.Transaction,
-  entryParams: Omit<LedgerEntry, "entryId" | "createdAt" | "previousEntryHash" | "entryHash">
+  entryParams: Omit<LedgerEntry, "entryId" | "createdAt" | "previousEntryHash" | "entryHash">,
+  readCache?: LedgerReadCache
 ): Promise<LedgerEntry> {
   const ledgerCollection = adminDb.collection("commerce_ledger");
 
-  // 1. Check if an entry with this idempotency key already exists to prevent duplicate operations
-  const existingQuery = await dbTransaction.get(
-    ledgerCollection.where("idempotencyKey", "==", entryParams.idempotencyKey).limit(1)
-  );
+  // 1. Check idempotency — use pre-fetched snapshot if available
+  const idempotencySnapshot = readCache
+    ? readCache.idempotencySnapshot
+    : await dbTransaction.get(ledgerCollection.where("idempotencyKey", "==", entryParams.idempotencyKey).limit(1));
 
-  if (!existingQuery.empty) {
-    const doc = existingQuery.docs[0];
+  if (!idempotencySnapshot.empty) {
+    const doc = idempotencySnapshot.docs[0];
     return doc.data() as LedgerEntry;
   }
 
-  // 2. Fetch the latest ledger entry to construct the chain link
-  const latestSnapshot = await dbTransaction.get(
-    ledgerCollection.orderBy("createdAt", "desc").limit(1)
-  );
+  // 2. Fetch the latest ledger entry for chain link — use pre-fetched snapshot if available
+  const latestSnapshot = readCache
+    ? readCache.latestSnapshot
+    : await dbTransaction.get(ledgerCollection.orderBy("createdAt", "desc").limit(1));
 
   let previousEntryHash = "";
   if (!latestSnapshot.empty) {
@@ -77,25 +102,13 @@ export async function writeLedgerEntry(
     previousEntryHash = latestDoc.entryHash;
   }
 
-  // 3. Construct the new entry
+  // 3. Construct and write the new entry
   const entryId = ledgerCollection.doc().id;
   const createdAt = new Date().toISOString();
-
-  const entryData: Omit<LedgerEntry, "entryHash"> = {
-    ...entryParams,
-    entryId,
-    createdAt,
-    previousEntryHash,
-  };
-
+  const entryData: Omit<LedgerEntry, "entryHash"> = { ...entryParams, entryId, createdAt, previousEntryHash };
   const entryHash = calculateEntryHash(entryData);
-  const finalEntry: LedgerEntry = {
-    ...entryData,
-    entryHash,
-  };
-
-  // 4. Save to firestore within the transactional context
+  const finalEntry: LedgerEntry = { ...entryData, entryHash };
   dbTransaction.set(ledgerCollection.doc(entryId), finalEntry);
-
   return finalEntry;
 }
+

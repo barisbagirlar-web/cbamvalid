@@ -399,7 +399,7 @@ export default function CbamLandingPage() {
                                 {cbamCase.latestReleaseId && (
                                   <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 flex items-center gap-1">
                                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                    Sealed / Mühürlü
+                                    Sealed
                                   </span>
                                 )}
                               </div>
