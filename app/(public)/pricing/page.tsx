@@ -2,8 +2,8 @@ import React from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { CREDIT_PACKAGES } from "@/lib/billing/catalog";
-
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
+import { ExpertAuthoritySection } from "@/components/seo/ExpertAuthoritySection";
 
 export const metadata = generateSeoMetadata("/pricing");
 
@@ -93,6 +93,10 @@ export default function PricingPage() {
               </Link>
             </div>
           ))}
+        </div>
+
+        <div className="max-w-4xl mx-auto mt-16">
+          <ExpertAuthoritySection toolName="CBAM Compliance Pricing" />
         </div>
       </section>
     </div>

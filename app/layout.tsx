@@ -42,6 +42,8 @@ export const metadata: Metadata = {
   }
 };
 
+import { buildEntityGraph } from "@/lib/seo/entity-graph";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -52,6 +54,12 @@ export default function RootLayout({
       <body className={`${inter.className} bg-kil-base text-kil-text antialiased min-h-screen`}>
         <AuthProvider>
           {children}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(buildEntityGraph("en")),
+            }}
+          />
         </AuthProvider>
       </body>
     </html>

@@ -51,7 +51,6 @@ export interface LedgerReadCache {
   idempotencySnapshot: admin.firestore.QuerySnapshot;
   latestSnapshot: admin.firestore.QuerySnapshot;
 }
-
 /**
  * Pre-fetch all reads required by writeLedgerEntry before any writes happen in the
  * same transaction. Pass the returned cache into writeLedgerEntry to avoid the
@@ -62,11 +61,12 @@ export async function prefetchLedgerReads(
   idempotencyKey: string
 ): Promise<LedgerReadCache> {
   const ledgerCollection = adminDb.collection("commerce_ledger");
+  const idempotencyRef = adminDb.collection("idempotency").doc(idempotencyKey);
   const [idempotencySnapshot, latestSnapshot] = await Promise.all([
-    dbTransaction.get(ledgerCollection.where("idempotencyKey", "==", idempotencyKey).limit(1)),
+    dbTransaction.get(idempotencyRef),
     dbTransaction.get(ledgerCollection.orderBy("createdAt", "desc").limit(1)),
   ]);
-  return { idempotencySnapshot, latestSnapshot };
+  return { idempotencySnapshot, latestSnapshot } as any;
 }
 
 /**
@@ -82,12 +82,25 @@ export async function writeLedgerEntry(
   const ledgerCollection = adminDb.collection("commerce_ledger");
 
   // 1. Check idempotency — use pre-fetched snapshot if available
-  const idempotencySnapshot = readCache
-    ? readCache.idempotencySnapshot
-    : await dbTransaction.get(ledgerCollection.where("idempotencyKey", "==", entryParams.idempotencyKey).limit(1));
+  const idempotencyDoc = readCache
+    ? (readCache.idempotencySnapshot as any)
+    : await dbTransaction.get(adminDb.collection("idempotency").doc(entryParams.idempotencyKey));
 
-  if (!idempotencySnapshot.empty) {
-    const doc = idempotencySnapshot.docs[0];
+  const exists = idempotencyDoc && (
+    typeof idempotencyDoc.exists === 'boolean'
+      ? idempotencyDoc.exists
+      : (typeof idempotencyDoc.empty === 'boolean' ? !idempotencyDoc.empty : false)
+  );
+
+  if (exists) {
+    const doc = typeof idempotencyDoc.exists === 'boolean' ? idempotencyDoc : idempotencyDoc.docs[0];
+    const entryId = doc.data()?.ledgerEntryId || doc.data()?.entryId;
+    if (entryId) {
+      const existingDoc = await dbTransaction.get(ledgerCollection.doc(entryId));
+      if (existingDoc.exists) {
+        return existingDoc.data() as LedgerEntry;
+      }
+    }
     return doc.data() as LedgerEntry;
   }
 
@@ -109,6 +122,14 @@ export async function writeLedgerEntry(
   const entryHash = calculateEntryHash(entryData);
   const finalEntry: LedgerEntry = { ...entryData, entryHash };
   dbTransaction.set(ledgerCollection.doc(entryId), finalEntry);
+
+  // Register the idempotency key to document level lock!
+  const idempotencyRef = adminDb.collection("idempotency").doc(entryParams.idempotencyKey);
+  dbTransaction.set(idempotencyRef, {
+    processedAt: createdAt,
+    ledgerEntryId: entryId,
+    type: entryParams.type,
+  });
+
   return finalEntry;
 }
-

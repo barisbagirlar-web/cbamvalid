@@ -1,6 +1,7 @@
 import { legalConfig } from "@/lib/legal-config";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 import { generateBreadcrumbSchema } from "@/lib/seo/schema";
+import { ExpertAuthoritySection } from "@/components/seo/ExpertAuthoritySection";
 
 export const metadata = generateSeoMetadata("/contact");
 
@@ -51,6 +52,8 @@ export default function ContactPage() {
             {legalConfig.taxId && `VAT/Tax ID: ${legalConfig.taxId}`}
           </p>
         </div>
+
+        <ExpertAuthoritySection toolName="CBAM Compliance Platform" />
       </section>
     </div>
   );

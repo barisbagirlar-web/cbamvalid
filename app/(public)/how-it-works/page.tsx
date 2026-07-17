@@ -1,7 +1,8 @@
 import React from "react";
 import Link from "next/link";
-import { PlayCircle, ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
+import { ExpertAuthoritySection } from "@/components/seo/ExpertAuthoritySection";
 
 export const metadata = generateSeoMetadata("/how-it-works");
 
@@ -87,6 +88,10 @@ export default function HowItWorksPage() {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto mt-16">
+          <ExpertAuthoritySection toolName="CBAM Compliance Platform" />
         </div>
 
       </div>

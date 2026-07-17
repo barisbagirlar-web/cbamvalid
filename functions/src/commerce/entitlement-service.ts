@@ -86,7 +86,8 @@ export async function createEntitlement(
     eventId: string;
     productCode: string;
     quantity: number;
-  }
+  },
+  readCache?: LedgerReadCache
 ): Promise<Entitlement> {
   validateIdentifier("uid", params.uid);
   validateIdentifier("orderId", params.orderId);
@@ -116,7 +117,7 @@ export async function createEntitlement(
     type: "ENTITLEMENT_ISSUED",
     quantity: params.quantity,
     idempotencyKey: `entitlement:${params.transactionId}:${params.productCode}`,
-  });
+  }, readCache);
   return entitlement;
 }
 

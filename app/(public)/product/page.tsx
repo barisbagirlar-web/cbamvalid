@@ -5,6 +5,8 @@ import {
   FileText, ShieldCheck, Scale, AlertTriangle, Cpu, HelpCircle, 
   ArrowRight, Download, Eye, Layers, CheckCircle2, ChevronRight 
 } from "lucide-react";
+import { buildCbamProductJsonLd } from "@/lib/seo/build-generated-tool-product-jsonld";
+import { ExpertAuthoritySection } from "@/components/seo/ExpertAuthoritySection";
 
 export const metadata = generateSeoMetadata("/product");
 
@@ -344,6 +346,22 @@ console.log(intensity.toFixed(6));
         </div>
       </section>
 
+      <div className="max-w-4xl mx-auto px-6 pb-20">
+        <ExpertAuthoritySection toolName="CBAM Exporter Software" />
+      </div>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            buildCbamProductJsonLd({
+              productName: "Exporter Verification Preparation Pack",
+              description: "Prepare structured exporter evidence, identify documentation gaps, calculate emissions, and generate auditable CBAM dossiers.",
+              path: "/product",
+            })
+          ),
+        }}
+      />
     </div>
   );
 }

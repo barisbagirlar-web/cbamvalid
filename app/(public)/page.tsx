@@ -3,6 +3,7 @@ import { Shield, ArrowRight, CheckCircle2, Globe2 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 import { generateOrganizationSchema, generateWebSiteSchema, generateWebApplicationSchema, generateFAQSchema } from "@/lib/seo/schema";
+import { ExpertAuthoritySection } from "@/components/seo/ExpertAuthoritySection";
 
 export const metadata = generateSeoMetadata("/");
 
@@ -179,6 +180,10 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        <div className="max-w-4xl mx-auto px-6 py-10">
+          <ExpertAuthoritySection toolName="CBAM Compliance Platform" />
+        </div>
 
         {/* 5. Trust & Disclaimers */}
         <section className="border-t border-border max-w-7xl mx-auto px-6 py-20 space-y-8">

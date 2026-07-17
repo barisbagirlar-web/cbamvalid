@@ -1,5 +1,6 @@
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 import { generateBreadcrumbSchema } from "@/lib/seo/schema";
+import { ExpertAuthoritySection } from "@/components/seo/ExpertAuthoritySection";
 
 export const metadata = generateSeoMetadata("/about");
 
@@ -30,6 +31,8 @@ export default function AboutPage() {
         <div className="p-4 bg-accent-soft text-accent text-sm rounded-md border border-accent/20">
           <strong>Independence Notice:</strong> CBAMValid is an independent software service and is not an official European Commission or CBAM Registry service.
         </div>
+
+        <ExpertAuthoritySection toolName="CBAM Compliance Platform" />
       </section>
     </div>
   );

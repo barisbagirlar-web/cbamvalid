@@ -1,7 +1,6 @@
 import { adminDb } from "../firebase-admin";
-import { transitionOrderStatus } from "./order-service";
 import { createEntitlement } from "./entitlement-service";
-import { writeLedgerEntry } from "./ledger-service";
+import { writeLedgerEntry, prefetchLedgerReads } from "./ledger-service";
 import { processRefund } from "./refund-service";
 import { PRODUCT_CATALOG } from "./catalog";
 
@@ -72,7 +71,16 @@ async function handleTransactionCompleted(eventId: string, transaction: any): Pr
 
   // Execute atomic transactional updates
   await adminDb.runTransaction(async (dbTransaction: any) => {
-    // 1. Log payment captured entry in the ledger with idempotency verification
+    // ---- 1. READS PHASE (ALL GETS MUST HAPPEN FIRST) ----
+    const paymentLedgerCache = await prefetchLedgerReads(dbTransaction, `payment:${transactionId}`);
+    const entitlementLedgerCache = await prefetchLedgerReads(dbTransaction, `entitlement:${transactionId}:${productCode}`);
+
+    const orderRef = adminDb.collection("commerce_orders").doc(orderId);
+    const orderSnapshot = await dbTransaction.get(orderRef);
+    const orderExists = orderSnapshot.exists;
+
+    // ---- 2. WRITES PHASE (ALL SETS/UPDATES HAPPEN SECOND) ----
+    // Log payment captured entry in the ledger
     await writeLedgerEntry(dbTransaction, {
       uid,
       orderId,
@@ -83,14 +91,34 @@ async function handleTransactionCompleted(eventId: string, transaction: any): Pr
       currency,
       amountMinor: catalogProduct.expectedUnitAmount * purchasedQuantity,
       idempotencyKey: `payment:${transactionId}`,
-    });
+    }, paymentLedgerCache);
 
-    // 2. Transition order state to PAID
-    await transitionOrderStatus(dbTransaction, orderId, "PAID", {
-      paddleTransactionId: transactionId,
-    });
+    const now = new Date().toISOString();
+    if (!orderExists) {
+      // Create order document on-the-fly and initialize directly to PAID state
+      const order = {
+        orderId,
+        uid,
+        caseId: customData.caseId || "account-credits",
+        productCode,
+        status: "PAID",
+        currency,
+        amountMinor: catalogProduct.expectedUnitAmount * purchasedQuantity,
+        paddleTransactionId: transactionId,
+        createdAt: now,
+        updatedAt: now,
+      };
+      dbTransaction.set(orderRef, order);
+    } else {
+      // If it exists, transition it directly to PAID state
+      dbTransaction.update(orderRef, {
+        status: "PAID",
+        paddleTransactionId: transactionId,
+        updatedAt: now,
+      });
+    }
 
-    // 3. Issue entitlement document and write entitlement ledger entry
+    // Issue entitlement document and write entitlement ledger entry
     await createEntitlement(dbTransaction, {
       uid,
       orderId,
@@ -98,10 +126,13 @@ async function handleTransactionCompleted(eventId: string, transaction: any): Pr
       eventId,
       productCode,
       quantity: totalEntitlementsToGrant,
-    });
+    }, entitlementLedgerCache);
 
-    // 4. Transition order state to ENTITLED
-    await transitionOrderStatus(dbTransaction, orderId, "ENTITLED");
+    // Finalize order status to ENTITLED
+    dbTransaction.update(orderRef, {
+      status: "ENTITLED",
+      updatedAt: now,
+    });
   });
 
   console.log(`[PADDLE-PROCESSOR] Completed fulfillment for order ${orderId}, entitlement issued.`);
