@@ -327,10 +327,14 @@ function toc(doc: jsPDF, r: CBAMReport) {
     const textWidth = doc.getTextWidth(t);
     const pageTextWidth = doc.getTextWidth(pageText);
     
-    doc.setLineDashPattern([0.4, 1.2], 0);
-    draw(doc, C.D_GRAY);
-    doc.line(22 + textWidth, ty - 1, 188 - pageTextWidth, ty - 1);
-    doc.setLineDashPattern([], 0);
+    const startLineX = 24 + textWidth;
+    const endLineX = 186 - pageTextWidth;
+    if (startLineX < endLineX - 4) {
+      doc.setLineDashPattern([0.4, 1.2], 0);
+      draw(doc, C.D_GRAY);
+      doc.line(startLineX, ty - 0.5, endLineX, ty - 0.5);
+      doc.setLineDashPattern([], 0);
+    }
     
     text(doc, C.RUST);
     doc.text(pageText, 190, ty, { align: 'right' });
