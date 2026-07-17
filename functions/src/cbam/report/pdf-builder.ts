@@ -13,7 +13,7 @@ function sha256(content: string | Buffer): string {
 /**
  * Helper to safely format values with fallback string to prevent crashes on null/empty data
  */
-function safeStr(val: any, fallback: string = "Data not provided / N/A"): string {
+function safeStr(val: any, fallback: string = "N/A"): string {
   if (val === null || val === undefined || String(val).trim() === "") return fallback;
   return String(val);
 }
@@ -517,13 +517,13 @@ export function buildPdfDossier(
   drawCheckItem("Completeness Score Above threshold", gaps.length === 0, 110, 219);
 
   // ----------------------------------------------------
-  // PAGE 8: MATHEMATICAL AUDIT TRACE (MATEMATİKSEL DENETİM İZİ)
+  // PAGE 8: MATHEMATICAL AUDIT TRACE (MATEMATIKSEL DENETIM IZI)
   // ----------------------------------------------------
   doc.addPage();
   tocPages["trace"] = doc.getNumberOfPages();
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  doc.text("7. Mathematical Audit Trace (Matematiksel Denetim İzi)", 15, 30);
+  doc.text("7. Mathematical Audit Trace (Matematiksel Denetim Izi)", 15, 30);
   
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
@@ -567,13 +567,13 @@ export function buildPdfDossier(
   }
 
   // ----------------------------------------------------
-  // PAGE 9: CRYPTOGRAPHIC MANIFEST & SIGN-OFF (KRİPTOGRAFİK PAKET HASH'İ)
+  // PAGE 9: CRYPTOGRAPHIC MANIFEST & SIGN-OFF (KRIPTOGRAFIK PAKET HASHI)
   // ----------------------------------------------------
   doc.addPage();
   tocPages["manifest"] = doc.getNumberOfPages();
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  doc.text("8. Cryptographic Package Manifest & Sign-off (Kriptografik Paket Mührü)", 15, 30);
+  doc.text("8. Cryptographic Package Manifest & Sign-off (Kriptografik Paket Muhru)", 15, 30);
 
   // Big Callout Panel for the Cryptographic Package Seal Hash (Paket Hash'i)
   doc.setFillColor(240, 242, 245); // Light slate-blue background
@@ -693,7 +693,7 @@ export function buildPdfDossier(
   renderTocItem("4. Embedded Emissions Inventory", tocPages["emissions"] || 5);
   renderTocItem("5. Carbon Price Paid & Financial Exposure", tocPages["financial"] || 6);
   renderTocItem("6. Methodology Decision Log & Quality Control", tocPages["methodology"] || 7);
-  renderTocItem("7. Mathematical Audit Trace (Matematiksel Denetim İzi)", tocPages["trace"] || 8);
+  renderTocItem("7. Mathematical Audit Trace (Matematiksel Denetim Izi)", tocPages["trace"] || 8);
   renderTocItem("8. Cryptographic Package Manifest & Sign-off", tocPages["manifest"] || 9);
 
   // ----------------------------------------------------
