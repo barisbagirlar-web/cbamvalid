@@ -133,11 +133,14 @@ switch (check) {
       const calcModule = await import(path.join(rootDir, "functions/build/cbam/calculator.js"));
       const performDossierCalculations = calcModule.performDossierCalculations;
       if (typeof performDossierCalculations === "function") {
-        // Construct a mock case matching the schema
+        // Construct a mock case matching the schema with multiple goods
         const mockCase = {
           caseId: "case_test_guard",
           uid: "test_uid",
-          goods: [{ cnCode: { value: "72011011" }, productionVolume: { value: "1000" } }],
+          goods: [
+            { cnCode: { value: "72011011" }, productionVolume: { value: "1000" }, allocationShare: { value: "0.6", rawUnit: "fraction", canonicalUnit: "fraction" } },
+            { cnCode: { value: "72011012" }, productionVolume: { value: "500" }, allocationShare: { value: "0.4", rawUnit: "fraction", canonicalUnit: "fraction" } }
+          ],
           directEmissions: { value: "1500" },
           electricityConsumed: { value: "500" },
           gridEmissionFactor: { value: "0.45" },
@@ -157,7 +160,7 @@ switch (check) {
             console.error(`[FAIL] Trace node ${node.formulaId} has missing or invalid officialSource.`);
             process.exit(1);
           }
-          if (!node.outputValue || typeof node.outputValue !== "string" || node.outputValue.trim() === "") {
+          if (node.outputValue === undefined || node.outputValue === null || String(node.outputValue).trim() === "") {
             console.error(`[FAIL] Trace node ${node.formulaId} has missing or invalid outputValue.`);
             process.exit(1);
           }
@@ -175,11 +178,36 @@ switch (check) {
           
           // Verify output matches target PDF output patterns
           const output = `${node.outputValue} ${node.outputUnit}`;
-          if (output.trim() === "" || isNaN(parseFloat(node.outputValue))) {
+          if (output.trim() === "" || isNaN(parseFloat(String(node.outputValue)))) {
             console.error(`[FAIL] Trace node ${node.formulaId} output "${output}" has non-numeric value.`);
             process.exit(1);
           }
         }
+
+        // Verify multi-good allocation trace node patterns
+        const allocationNodes = calcResult.trace.filter(node => node.formulaId.startsWith("CBAM_GOOD_EMISSIONS_ALLOCATION_"));
+        if (allocationNodes.length < 2) {
+          console.error(`[FAIL] Multi-good allocation trace check failed. Expected at least 2 allocation nodes, found ${allocationNodes.length}`);
+          process.exit(1);
+        }
+        console.log("[PASS] Multi-good allocation trace nodes verified successfully.");
+
+        // Verify allocation reconciliation node completeness and integrity
+        const reconNode = calcResult.trace.find(node => node.formulaId === "CBAM_GOODS_ALLOCATION_RECONCILIATION");
+        if (!reconNode) {
+          console.error("[FAIL] CBAM_GOODS_ALLOCATION_RECONCILIATION node not found in trace.");
+          process.exit(1);
+        }
+        const reconValue = parseFloat(String(reconNode.outputValue));
+        if (reconValue !== 0) {
+          console.error(`[FAIL] Allocation reconciliation mismatch. Expected delta output to be 0, found: ${reconNode.outputValue}`);
+          process.exit(1);
+        }
+        if (reconNode.outputUnit !== "tCO2e") {
+          console.error(`[FAIL] Allocation reconciliation unit mismatch. Expected tCO2e, found: ${reconNode.outputUnit}`);
+          process.exit(1);
+        }
+        console.log("[PASS] Allocation reconciliation integrity verified (delta output is 0 tCO2e).");
 
         // 3. Verify PDF rendering properties (V16 Quality Checks)
         try {
