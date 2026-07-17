@@ -118,7 +118,7 @@ export default function HomePage() {
             <p className="text-muted text-lg mb-10 max-w-2xl mx-auto">
               Review the full evidence-linked workflow before creating your first case.
             </p>
-            <div className="relative max-w-4xl mx-auto rounded-xl overflow-hidden shadow-2xl border border-border bg-black">
+            <div className="relative max-w-4xl mx-auto rounded-xl overflow-hidden shadow-2xl border border-border">
               <div className="aspect-video relative">
                 <VideoPlayer
                   src="/media/cbamvalid-product-walkthrough.mp4"
