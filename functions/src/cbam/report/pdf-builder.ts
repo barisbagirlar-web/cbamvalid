@@ -633,21 +633,28 @@ function manifest(doc: jsPDF, r: CBAMReport) {
     my += 7;
   });
 
-  card(doc, 15, 115, 180, 40, 'CONFIDENTIALITY & LEGAL NOTICE');
+  // FIX: Legal Disclaimer is now rendered with manual border + text to avoid separator line
+  const disclaimerY = 115;
+  const disclaimerH = 40;
+  fill(doc, C.CREAM);
+  draw(doc, C.ANTRASIT);
+  doc.setLineWidth(0.25);
+  doc.roundedRect(15, disclaimerY, 180, disclaimerH, 2, 2, 'FD');
+
+  doc.setFont('helvetica', 'bold').setFontSize(8.5);
+  text(doc, C.RUST);
+  doc.text('CONFIDENTIALITY & LEGAL NOTICE', 20, disclaimerY + 6.5);
+  // NO SEPARATOR LINE
+
   doc.setFont('helvetica', 'normal').setFontSize(6.5);
   text(doc, C.D_GRAY);
+  const legalText = 'LEGAL DISCLAIMER: This document is an independent compliance dossier prepared for verification purposes. It is not an official custom submission, accredited audit certificate, or binding legal opinion. The calculation parameters are derived strictly from metrics entered by the operators. CBAMValid holds no direct liability for any customs declarations, financial assessments, or regulatory penalties applied by the EU Authorities.';
   
-  const disclaimerText = 
-    "LEGAL DISCLAIMER: This document is an independent compliance dossier prepared for verification purposes. " +
-    "It is not an official custom submission, accredited audit certificate, or binding legal opinion. " +
-    "The calculation parameters are derived strictly from metrics entered by the operators. " +
-    "CBAMValid holds no direct liability for any customs declarations, financial assessments, or regulatory penalties applied by the EU Authorities.";
-  
-  const finalDisclaimerText = r.metadata.redactForPublicSample 
+  const finalLegalText = r.metadata.redactForPublicSample 
     ? "PUBLIC SAMPLE DISCLAIMER: This sample dossier has been generated using fictional demonstration data for the purpose of pipeline validation and visual QA. Sensitive quantities and entity identifiers have been redacted accordingly."
-    : disclaimerText;
-    
-  doc.text(doc.splitTextToSize(finalDisclaimerText, 170), 20, 125);
+    : legalText;
+
+  doc.text(doc.splitTextToSize(finalLegalText, 170), 20, disclaimerY + 14);
 
   // Sign-off blocks
   doc.setFont('helvetica', 'bold').setFontSize(9);
