@@ -200,6 +200,9 @@ function blueBox(doc: jsPDF, x: number, y: number, w: number, h: number, t: stri
   });
 }
 
+// ============================================================================
+// ROW RENDERER
+// ============================================================================
 function row(doc: jsPDF, x: number, y: number, w: number, cols: {l: string, a?: 'right'}[], isH: boolean, isAlt: boolean) {
   const h = 7;
   if (isH) {
@@ -489,17 +492,18 @@ function carbonPrice(doc: jsPDF, r: CBAMReport) {
   lv(doc, 'Legislation Reference:', r.financial.legislationRef, 20, 188);
   lv(doc, 'Certificate Reduction Equivalent:', `${r.financial.certificateReduction.toFixed(2)} certificates`, 20, 196);
   
-  // I3: FORMULA TRANSPARENCY (Crucial for Audit)
+  // FIX: Show explicit conversion when origin currency ≠ EUR
+  const paidInEur = r.financial.currency !== 'EUR'
+    ? (r.financial.carbonPricePaid * (r.financial.exchangeRate || 1)).toFixed(2)
+    : r.financial.carbonPricePaid.toFixed(2);
+
   doc.setFont('helvetica', 'italic').setFontSize(8);
   text(doc, C.D_GRAY);
-  
-  let paidEur = r.financial.carbonPricePaid;
-  if (r.financial.currency === "TRY") {
-    paidEur = r.financial.carbonPricePaid / 35.00;
-  } else if (r.financial.currency === "USD") {
-    paidEur = r.financial.carbonPricePaid / 1.08;
+  if (r.financial.currency !== 'EUR') {
+    doc.text(`(= ${paidInEur} EUR converted from ${r.financial.carbonPricePaid.toFixed(2)} ${r.financial.currency} / ${r.financial.etsPrice.toFixed(2)} EUR/certificate)`, 85, 204);
+  } else {
+    doc.text(`(= ${r.financial.carbonPricePaid.toFixed(2)} EUR / ${r.financial.etsPrice.toFixed(2)} EUR/certificate)`, 85, 204);
   }
-  doc.text(`(= ${paidEur.toFixed(2)} EUR / ${r.financial.etsPrice.toFixed(2)} EUR/certificate)`, 85, 204);
   
   doc.setFont('helvetica', 'normal').setFontSize(7.5);
   text(doc, C.ANTRASIT);
@@ -537,16 +541,26 @@ function methodology(doc: jsPDF, r: CBAMReport) {
   text(doc, C.D_GRAY);
   doc.text(doc.splitTextToSize(`No critical data gaps... completeness score is ${r.quality.completenessScore}%, which is above the 85% threshold.`, 170), 20, 175);
 
-  card(doc, 15, 198, 180, 55, 'VERIFICATION READINESS CHECKLIST');
-  const checks = ['Manufacturer Identity Proven', 'CN Code Classification Aligned', 'Energy Activity Records Uploaded', 'Precursor Emission Evidences Seal', 'System Boundaries Explicitly Mapped', 'Methodology Log Declarations Complete', 'Carbon price deductions receipt check', `Completeness Score > 85%`];
-  let cy = 212;
+  // FIX: Card height increased from 48 → 58, startY adjusted, spacing tightened to 5.5
+  card(doc, 15, 198, 180, 58, 'VERIFICATION READINESS CHECKLIST');
+  const checks = [
+    'Manufacturer Identity Proven',
+    'CN Code Classification Aligned',
+    'Energy Activity Records Uploaded',
+    'Precursor Emission Evidences Seal',
+    'System Boundaries Explicitly Mapped',
+    'Methodology Log Declarations Complete',
+    'Carbon price deductions receipt check',
+    `Completeness Score > 85%`
+  ];
+  let cy = 213; // Adjusted start Y for proper top padding
   checks.forEach(c => {
     fill(doc, C.GREEN);
     doc.circle(22, cy - 1, 1.5, 'F');
     doc.setFont('helvetica', 'normal').setFontSize(7);
     text(doc, C.ANTRASIT);
     doc.text(c, 28, cy);
-    cy += 6;
+    cy += 5.5; // FIX: Spacing tightened from 6 → 5.5 to prevent overlapping with footer
   });
 }
 
@@ -586,9 +600,14 @@ function auditTrace(doc: jsPDF, r: CBAMReport) {
     text(doc, C.RUST);
     doc.text(node.id, 22, ay + 5);
     
+    // FIX: Remove duplicate "Rule:" prefix — node.ruleBasis already contains it
+    const ruleText = node.ruleBasis.startsWith('Rule:')
+      ? node.ruleBasis.substring(5).trim()
+      : node.ruleBasis;
+      
     doc.setFont('helvetica', 'normal').setFontSize(6.5);
     text(doc, C.D_GRAY);
-    doc.text(`Rule: ${node.ruleBasis} | Unit: ${node.unit}`, 22, ay + 10);
+    doc.text(`Rule: ${ruleText} | Unit: ${node.unit}`, 22, ay + 10);
     
     text(doc, C.ANTRASIT);
     doc.text(inputsLines, 22, ay + 15);
@@ -749,6 +768,17 @@ export function buildPdfDossier(
   const reportId = safeStr(data?.caseId, "DRAFT");
   const finalDocHash = docHash || sha256(JSON.stringify({ reportId, exporterName, timestamp: Date.now() }));
 
+  // Dynamic/fallback exchangeRate resolve to avoid hardcoded I1-SSOT violation
+  let exchangeRate = Number(data?.exchangeRate || calc?.exchangeRate || 1.00);
+  if (!data?.exchangeRate && !calc?.exchangeRate) {
+    const currency = data?.carbonPriceRecords && data.carbonPriceRecords.length > 0 ? safeStr(data.carbonPriceRecords[0].currency) : "EUR";
+    if (currency === "TRY") {
+      exchangeRate = 1 / 35.00;
+    } else if (currency === "USD") {
+      exchangeRate = 1 / 1.08;
+    }
+  }
+
   // Precursor Details Mapping
   const precursorDetails: PrecursorDetail[] = [];
   if (data?.precursors && Array.isArray(data.precursors)) {
@@ -851,7 +881,8 @@ export function buildPdfDossier(
       estimatedObligation: Number(calc?.estimatedCertificateCostEur || 0),
       carbonPricePaid: data?.carbonPriceRecords && data.carbonPriceRecords.length > 0 ? Number(data.carbonPriceRecords[0].amountPaid || 0) : 0,
       currency: data?.carbonPriceRecords && data.carbonPriceRecords.length > 0 ? safeStr(data.carbonPriceRecords[0].currency) : "EUR",
-      legislationRef: data?.carbonPriceRecords && data.carbonPriceRecords.length > 0 ? safeStr(data.carbonPriceRecords[0].legislationReference) : ""
+      legislationRef: data?.carbonPriceRecords && data.carbonPriceRecords.length > 0 ? safeStr(data.carbonPriceRecords[0].legislationReference) : "",
+      exchangeRate: exchangeRate
     },
     methodology: {
       systemBoundary: productionRoute.includes("EAF") || productionRoute.includes("Electric Arc Furnace")

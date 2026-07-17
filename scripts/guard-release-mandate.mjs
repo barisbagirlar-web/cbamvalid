@@ -180,6 +180,36 @@ switch (check) {
             process.exit(1);
           }
         }
+
+        // 3. Verify PDF rendering properties (V16 Quality Checks)
+        try {
+          const pdfModule = await import(path.join(rootDir, "functions/build/cbam/report/pdf-builder.js"));
+          const buildPdfDossier = pdfModule.buildPdfDossier;
+          if (typeof buildPdfDossier === "function") {
+            const pdfBuffer = buildPdfDossier(mockCase, calcResult, "mock-hash-value");
+            const pdfText = pdfBuffer.toString("utf-8");
+            
+            if (pdfText.includes("[object Object]")) {
+              console.error("[FAIL] Serialized [object Object] detected inside V16 PDF layout streams.");
+              process.exit(1);
+            }
+            if (pdfText.includes("Rule: Rule:")) {
+              console.error("[FAIL] Duplicate 'Rule: Rule:' prefix detected inside V16 PDF layout streams.");
+              process.exit(1);
+            }
+            if (!pdfText.includes("converted from")) {
+              console.error("[FAIL] Missing TRY-to-EUR 'converted from' conversion text inside V16 PDF layout streams.");
+              process.exit(1);
+            }
+            console.log("[PASS] V16 PDF layout checks (No object objects, no duplicate rules, converted from label present) verified.");
+          } else {
+            console.error("[FAIL] buildPdfDossier is not exported as a function.");
+            process.exit(1);
+          }
+        } catch (pdfErr) {
+          console.error(`[FAIL] V16 PDF layout check failed: ${pdfErr.message}`);
+          process.exit(1);
+        }
       } else {
         console.error("[FAIL] performDossierCalculations is not exported as a function.");
         process.exit(1);

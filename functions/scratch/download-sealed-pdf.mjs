@@ -40,7 +40,7 @@ if (admin.apps.length === 0) {
 async function run() {
   const bucket = getStorage().bucket("cbam-desk.firebasestorage.app");
   const uid = "r3Sv0U5YqEcLLylbw5ndwK1Zg652";
-  const reportId = "report_0e7ede521570f2dd50b4bbf485b553b5b4198bc0ed5d59cf3cfaea25599db252";
+  const reportId = "report_bb5e90791e666a513cd2bffb3bd23226eb61e0dea997a563ec28c773b88120fb";
   const filePath = `reports/${uid}/${reportId}/dossier.pdf`;
 
   console.log(`Downloading ${filePath}...`);
