@@ -161,7 +161,7 @@ function card(doc: jsPDF, x: number, y: number, w: number, h: number, title?: st
   }
 }
 
-function lv(doc: jsPDF, l: string, v: string, x: number, y: number, isRedacted: boolean = false, redactForPublic: boolean = false, valueOffset: number = 65) {
+function lv(doc: jsPDF, l: string, v: string, x: number, y: number, isRedacted: boolean = false, redactForPublic: boolean = false, valueOffset: number = 65, maxWidth: number = 0) {
   doc.setFont('helvetica', 'bold').setFontSize(7.5);
   text(doc, C.D_GRAY);
   doc.text(l, x, y);
@@ -176,7 +176,14 @@ function lv(doc: jsPDF, l: string, v: string, x: number, y: number, isRedacted: 
   } else {
     doc.setFont('helvetica', 'normal');
     text(doc, C.ANTRASIT);
-    doc.text(v, x + valueOffset, y);
+    if (maxWidth > 0) {
+      const lines = doc.splitTextToSize(v, maxWidth);
+      lines.forEach((line: string, idx: number) => {
+        doc.text(line, x + valueOffset, y + (idx * 3.5));
+      });
+    } else {
+      doc.text(v, x + valueOffset, y);
+    }
   }
 }
 
@@ -362,20 +369,20 @@ function toc(doc: jsPDF, r: CBAMReport) {
 function scope1(doc: jsPDF, r: CBAMReport) {
   const redactForPublic = !!r.metadata.redactForPublicSample;
   card(doc, 15, 35, 85, 60, 'EXPORTER IDENTITY DETAILS');
-  lv(doc, 'Exporter Legal Name:', r.exporter.legalName, 20, 50, true, redactForPublic, 45);
-  lv(doc, 'Production Country:', r.exporter.country, 20, 58, false, redactForPublic, 45);
-  lv(doc, 'Address Record:', 'Provided in Evidence Register', 20, 66, true, redactForPublic, 45);
+  lv(doc, 'Exporter Legal Name:', r.exporter.legalName, 20, 50, true, redactForPublic, 45, 32);
+  lv(doc, 'Production Country:', r.exporter.country, 20, 58, false, redactForPublic, 45, 32);
+  lv(doc, 'Address Record:', 'Provided in Evidence Register', 20, 66, true, redactForPublic, 45, 32);
 
   card(doc, 110, 35, 85, 60, 'IMPORTER IDENTITY DETAILS');
-  lv(doc, 'Declarant EORI Number:', r.importer.eoriNumber, 115, 50, true, redactForPublic, 45);
-  lv(doc, 'Importer Corporate Name:', r.importer.corporateName, 115, 58, true, redactForPublic, 45);
-  lv(doc, 'Importer Address:', 'Provided in Registry SAD', 115, 66, true, redactForPublic, 45);
+  lv(doc, 'Declarant EORI Number:', r.importer.eoriNumber, 115, 50, true, redactForPublic, 45, 32);
+  lv(doc, 'Importer Corporate Name:', r.importer.corporateName, 115, 58, true, redactForPublic, 45, 32);
+  lv(doc, 'Importer Address:', 'Provided in Registry SAD', 115, 66, true, redactForPublic, 45, 32);
 
   card(doc, 15, 105, 180, 70, 'GOODS CLASSIFICATION AND QUANTITY');
-  lv(doc, 'Goods Tariff CN Code:', r.goods.cnCode, 20, 120, false, redactForPublic);
-  lv(doc, 'CBAM Production Sector:', r.goods.sector, 20, 128, false, redactForPublic);
-  lv(doc, 'Production Volume:', `${r.goods.productionVolume} Tonnes`, 20, 136, false, redactForPublic);
-  lv(doc, 'Complex Goods Classification:', r.goods.isComplex ? 'Yes (Precursors Applicable)' : 'No', 20, 144, false, redactForPublic);
+  lv(doc, 'Goods Tariff CN Code:', r.goods.cnCode, 20, 120, false, redactForPublic, 65, 105);
+  lv(doc, 'CBAM Production Sector:', r.goods.sector, 20, 128, false, redactForPublic, 65, 105);
+  lv(doc, 'Production Volume:', `${r.goods.productionVolume} Tonnes`, 20, 136, false, redactForPublic, 65, 105);
+  lv(doc, 'Complex Goods Classification:', r.goods.isComplex ? 'Yes (Precursors Applicable)' : 'No', 20, 144, false, redactForPublic, 65, 105);
 
   card(doc, 15, 185, 180, 40, 'SHIPMENT INTEGRITY STATS');
   doc.setFont('helvetica', 'normal').setFontSize(7.5);
@@ -386,23 +393,23 @@ function scope1(doc: jsPDF, r: CBAMReport) {
 function scope2(doc: jsPDF, r: CBAMReport) {
   const redactForPublic = !!r.metadata.redactForPublicSample;
   card(doc, 15, 35, 180, 50, 'PRODUCTION INSTALLATION METADATA');
-  lv(doc, 'Facility Legal Name:', r.installation.facilityName, 20, 50, true, redactForPublic);
-  lv(doc, 'Geographical Location:', r.installation.location, 20, 58, true, redactForPublic);
-  lv(doc, 'Operating Country:', r.installation.country, 20, 66, false, redactForPublic);
+  lv(doc, 'Facility Legal Name:', r.installation.facilityName, 20, 50, true, redactForPublic, 65, 105);
+  lv(doc, 'Geographical Location:', r.installation.location, 20, 58, true, redactForPublic, 65, 105);
+  lv(doc, 'Operating Country:', r.installation.country, 20, 66, false, redactForPublic, 65, 105);
 
   card(doc, 15, 95, 180, 60, 'PRODUCTION ROUTE AND TECHNOLOGY');
-  lv(doc, 'Production Route Applied:', r.installation.productionRoute, 20, 110, false, redactForPublic);
-  lv(doc, 'Regulatory Sector Class:', r.goods.sector, 20, 118, false, redactForPublic);
-  lv(doc, 'Benchmark Target Level:', r.installation.benchmarkTarget, 20, 126, false, redactForPublic);
+  lv(doc, 'Production Route Applied:', r.installation.productionRoute, 20, 110, false, redactForPublic, 65, 105);
+  lv(doc, 'Regulatory Sector Class:', r.goods.sector, 20, 118, false, redactForPublic, 65, 105);
+  lv(doc, 'Benchmark Target Level:', r.installation.benchmarkTarget, 20, 126, false, redactForPublic, 65, 105);
 
   card(doc, 15, 165, 180, 40, 'SYSTEM BOUNDARY REGISTRATION');
   doc.setFont('helvetica', 'normal').setFontSize(7.5);
   text(doc, C.ANTRASIT);
-  doc.text(`Active: ${r.installation.systemBoundary}`, 20, 180);
+  doc.text(doc.splitTextToSize(`Active: ${r.installation.systemBoundary}`, 170), 20, 180);
 
   card(doc, 15, 215, 180, 35, 'PRECURSOR MATERIALS SCOPE');
-  lv(doc, 'Precursors Subject to CBAM:', r.goods.isComplex ? 'Yes — Precursor Ledger Active' : 'None', 20, 230, false, redactForPublic);
-  lv(doc, 'Precursor Evidence Coverage:', r.goods.isComplex ? '100% Verified Actual Data' : 'N/A', 20, 238, false, redactForPublic);
+  lv(doc, 'Precursors Subject to CBAM:', r.goods.isComplex ? 'Yes — Precursor Ledger Active' : 'None', 20, 230, false, redactForPublic, 65, 105);
+  lv(doc, 'Precursor Evidence Coverage:', r.goods.isComplex ? '100% Verified Actual Data' : 'N/A', 20, 238, false, redactForPublic, 65, 105);
 }
 
 function emissions(doc: jsPDF, r: CBAMReport) {
@@ -475,15 +482,15 @@ function emissions(doc: jsPDF, r: CBAMReport) {
 
 function carbonPrice(doc: jsPDF, r: CBAMReport) {
   card(doc, 15, 35, 180, 50, 'NET LIABILITY DETERMINATION');
-  lv(doc, 'Gross Certificates Required (1:1):', `${r.financial.grossCertificates} certificates`, 20, 50);
-  lv(doc, 'Benchmark Phase-In adjustment:', `${(r.financial.phaseInFactor * 100).toFixed(0)}% of liability applies`, 20, 58);
-  lv(doc, 'Carbon Price Paid Deduction:', `${r.financial.certificateReduction.toFixed(2)} certificates`, 20, 66);
-  lv(doc, 'Net CBAM Certificates Due:', `${r.financial.netCertificates.toFixed(2)} certificates`, 20, 74);
+  lv(doc, 'Gross Certificates Required (1:1):', `${r.financial.grossCertificates} certificates`, 20, 50, false, false, 65, 105);
+  lv(doc, 'Benchmark Phase-In adjustment:', `${(r.financial.phaseInFactor * 100).toFixed(0)}% of liability applies`, 20, 58, false, false, 65, 105);
+  lv(doc, 'Carbon Price Paid Deduction:', `${r.financial.certificateReduction.toFixed(2)} certificates`, 20, 66, false, false, 65, 105);
+  lv(doc, 'Net CBAM Certificates Due:', `${r.financial.netCertificates.toFixed(2)} certificates`, 20, 74, false, false, 65, 105);
 
   card(doc, 15, 95, 180, 40, 'CERTIFICATE PRICING ANALYSIS');
-  lv(doc, 'Weekly ETS Average Resolved:', `${r.financial.etsPrice.toFixed(2)} EUR/certificate`, 20, 110);
-  lv(doc, 'Pricing Dataset Version:', r.financial.pricingVersion, 20, 118);
-  lv(doc, 'Estimated Financial Obligation:', `${r.financial.estimatedObligation.toFixed(2)} EUR`, 20, 126);
+  lv(doc, 'Weekly ETS Average Resolved:', `${r.financial.etsPrice.toFixed(2)} EUR/certificate`, 20, 110, false, false, 65, 105);
+  lv(doc, 'Pricing Dataset Version:', r.financial.pricingVersion, 20, 118, false, false, 65, 105);
+  lv(doc, 'Estimated Financial Obligation:', `${r.financial.estimatedObligation.toFixed(2)} EUR`, 20, 126, false, false, 65, 105);
 
   fill(doc, C.RUST);
   doc.roundedRect(20, 140, 170, 15, 2, 2, 'F');
@@ -492,9 +499,9 @@ function carbonPrice(doc: jsPDF, r: CBAMReport) {
   doc.text(`ESTIMATED FINANCIAL OBLIGATION: ${r.financial.estimatedObligation.toFixed(2)} EUR`, 105, 150, { align: 'center' });
 
   card(doc, 15, 165, 180, 70, 'CARBON PRICE PAID IN COUNTRY OF ORIGIN');
-  lv(doc, 'Amount Paid in Origin:', `${r.financial.carbonPricePaid.toFixed(2)} ${r.financial.currency}`, 20, 180);
-  lv(doc, 'Legislation Reference:', r.financial.legislationRef, 20, 188);
-  lv(doc, 'Certificate Reduction Equivalent:', `${r.financial.certificateReduction.toFixed(2)} certificates`, 20, 196);
+  lv(doc, 'Amount Paid in Origin:', `${r.financial.carbonPricePaid.toFixed(2)} ${r.financial.currency}`, 20, 180, false, false, 65, 105);
+  lv(doc, 'Legislation Reference:', r.financial.legislationRef, 20, 188, false, false, 65, 105);
+  lv(doc, 'Certificate Reduction Equivalent:', `${r.financial.certificateReduction.toFixed(2)} certificates`, 20, 196, false, false, 65, 105);
   
   // FIX: Show explicit conversion when origin currency ≠ EUR
   const paidInEur = r.financial.currency !== 'EUR'
