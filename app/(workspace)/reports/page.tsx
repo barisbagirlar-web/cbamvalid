@@ -85,9 +85,9 @@ export default function ReportsPage() {
                       </div>
                       <p className="text-xs text-muted font-mono">
                         {cnCode && <><strong>CN:</strong> {cnCode} · </>}
-                        Release ID: {r.reportId.substring(0, 8)}... · Sealed: {new Date(r.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                        Release ID: <span className="select-all break-all">{r.reportId}</span> · Sealed: {new Date(r.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                       </p>
-                      <p className="text-[11px] text-muted truncate mt-1 max-w-md font-mono" title={r.documentHash}>
+                      <p className="text-[11px] text-muted mt-1 font-mono break-all select-all" title={r.documentHash}>
                         Seal: {r.documentHash}
                       </p>
                     </div>
