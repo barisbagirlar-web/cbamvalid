@@ -1,25 +1,23 @@
-# CBAMValid — CBAM Evidence Validation and Report Preparation
+# CBAMValid — Exporter Verification Preparation Pack
 
-> CBAMValid is an independent software service that helps EU importers, third-country operators, and authorised declarants prepare structured evidence, identify documentation gaps, calculate embedded emissions deterministically according to EU rules, and generate auditable compliance dossiers.
+> CBAMValid is an independent software service assisting non-EU exporters and EU importers in preparing verification-ready dossiers. The platform automatically verifies data compliance, links primary document evidence, and generates locked exporter declarations.
 
-## Core Product
-- [Homepage](https://cbamvalid.com/)
-- [Methodology](https://cbamvalid.com/methodology)
-- [Regulatory Sources](https://cbamvalid.com/regulatory-sources)
-- [CN-Code Hub](https://cbamvalid.com/cn-code)
+## Compliance Software & Tools
+- [CBAM Exporter Software](https://cbamvalid.com/product): Link utility bills, invoices, activity data, and map manufacturing system boundaries.
+- [Pricing Packages](https://cbamvalid.com/pricing): Unlock the 23-component verification readiness package and obtain 5 sealed dossier releases.
+- [CBAM Certificate Verification](https://cbamvalid.com/verify): Verify the cryptographic seal integrity, active state, and audit trail of generated dossiers.
+- [CBAM CN-Code Scope Hub](https://cbamvalid.com/cn-code): Verify if your imported products fall within the scope of the EU Carbon Border Adjustment Mechanism.
 
-## Compliance Preparation
-- Evidence Readiness: Evaluates completeness of actual vs default emissions data.
-- Calculation Traceability: Provides a cryptographic-style audit trail mapping inputs to the exact EU formula.
-- Report Preparation: Compiles sealed XML and PDF versions for registry upload.
+## Methodologies & Guides
+- [CBAM Calculation Methodology](https://cbamvalid.com/methodology): Learn our deterministic calculation rules for direct and indirect embedded emissions under the EU regulation.
+- [CBAM Dossier Workflow Guide](https://cbamvalid.com/how-it-works): Walk through each stage of the case preparation from data entry to cryptographic sealing.
+- [Sample CBAM Compliance Dossier](https://cbamvalid.com/sample-dossier): Review a complete fictional demonstration dossier before purchasing credits.
 
-## Trust and Policies
-- [About](https://cbamvalid.com/about)
-- [Contact](https://cbamvalid.com/contact)
-- [Privacy Notice](https://cbamvalid.com/privacy)
-- [Terms of Service](https://cbamvalid.com/terms)
-- [Refund Policy](https://cbamvalid.com/refund-policy)
+## About & Legal
+- [About CBAMValid](https://cbamvalid.com/about): Meet the team behind our independent compliance verification preparation tool.
+- [Contact Support](https://cbamvalid.com/contact): Get technical support and billing inquiries regarding your CBAM evidence packages.
+- [Terms of Service](https://cbamvalid.com/terms): Read the usage agreements governing calculations and report generation.
+- [Privacy Notice](https://cbamvalid.com/privacy): Understand data handling security rules for your compliance evidence files.
 
 ## About
-CBAMValid is operated independently. Not EU certified. Not an official European Commission or CBAM Registry service.
-Last updated: 2024-01-01
+CBAMValid is operated under European Union privacy and data standards. Last updated: 2026-07-17T21:54:00Z.

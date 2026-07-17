@@ -1,0 +1,15 @@
+# robots.txt for CBAMValid
+
+# Allow all major search engines and AI crawlers
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /admin/
+Disallow: /account/
+
+# Sitemaps
+Sitemap: https://cbamvalid.com/sitemap.xml
+
+# LLM Discoverability
+# llms.txt: https://cbamvalid.com/llms.txt

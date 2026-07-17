@@ -3,10 +3,9 @@ import Link from "next/link";
 import { Check } from "lucide-react";
 import { CREDIT_PACKAGES } from "@/lib/billing/catalog";
 
-export const metadata = {
-  title: "Pricing | CBAMValid",
-  description: "Get started with the CBAM Exporter Verification Preparation Pack. Purchase the pack ($149) before starting your CBAM case.",
-};
+import { generateSeoMetadata } from "@/lib/seo/build-metadata";
+
+export const metadata = generateSeoMetadata("/pricing");
 
 export default function PricingPage() {
   const packages = CREDIT_PACKAGES.filter((p) => p.active).sort((a, b) => a.displayOrder - b.displayOrder);

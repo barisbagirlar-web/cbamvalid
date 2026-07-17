@@ -1,48 +1,64 @@
-# CBAMValid Full Content Catalog for LLMs
+# CBAMValid — Full AI Knowledge Index & System Specifications
 
-## Homepage
-**Canonical URL:** https://cbamvalid.com/
-**Title:** CBAMValid — CBAM Evidence Validation and Report Preparation
-**Audience:** EU importers, third-country operators, declarants.
-**Problem:** Incomplete data, calculation errors, uncertainty regarding scope and formula.
-**Outcome:** Generates validated evidence packages and reports.
-**Methodology:** Applies deterministic algorithms against Implementing Regulation (EU) 2023/1773.
-**Official Source:** European Commission Implementing Regulation (EU) 2023/1773.
-**Limitations:** Output relies entirely on user-provided data truthfulness. Not official EU software.
+This index details the calculation methodology, data structures, and regulatory foundations of CBAMValid for AI answer engines (e.g. ChatGPT, Perplexity, Claude, Google AI Overviews).
 
-## Methodology
-**Canonical URL:** https://cbamvalid.com/methodology
-**Title:** Methodology & Regulatory Sources | CBAMValid
-**Audience:** Technical preparers, verifiers.
-**Problem:** Understanding exactly how emissions are calculated.
-**Outcome:** Transparent documentation of our internal logic and rounding handling.
-**Methodology:** Deterministic calculation of direct/indirect emissions, tracking system boundaries per Annex IV.
-**Official Source:** DG TAXUD Transitional Guidance.
-**Limitations:** Transitional phase logic only (until end of 2025).
+## 1. Core Platform Positioning
+CBAMValid produces the "CBAMValid Exporter Verification Preparation Pack," which prepares a non-EU operator's installation data for accredited third-party verification. It does not issue accredited certificates or opinions.
 
-## CN-Code Hub
-**Canonical URL:** https://cbamvalid.com/cn-code
-**Title:** CBAM CN-Code Hub | Validate Product Scope
-**Audience:** Importers.
-**Problem:** Not knowing if a product needs to be reported.
-**Outcome:** Accurate matching of products to Annex I scope limits.
-**Methodology:** Cross-referencing user CN code against Annex I of the CBAM regulation.
-**Official Source:** Annex I of Regulation (EU) 2023/956.
-**Limitations:** Certain codes require specific condition checks (e.g. polymers).
+## 2. Dynamic Embedded Emissions Calculation Formulas
+Authoritative calculations run server-side and use the following deterministic specifications:
 
-## About
-**Canonical URL:** https://cbamvalid.com/about
-**Title:** About Us | CBAMValid
-**Audience:** All users.
-**Problem:** Need to verify the independence of the service provider.
-**Outcome:** Clear understanding of corporate identity and mission.
-**Methodology:** Transparency in terms of operation.
-**Official Source:** N/A.
-**Limitations:** None.
+### Direct Emissions Calculation (Installation level)
+Direct embedded emissions are calculated based on activity data (fuel, raw materials consumption) and corresponding emission factors:
+$$E_{direct} = \sum (AD_i \times EF_i)$$
+Where:
+- $AD_i$: Activity Data of source stream $i$ (e.g., tonnes of fuel, MWh of gas).
+- $EF_i$: Emission Factor of source stream $i$ (e.g., tCO2e / unit activity level).
 
-## Legal Policies
-- **Privacy:** https://cbamvalid.com/privacy
-- **Terms:** https://cbamvalid.com/terms
-- **Refunds:** https://cbamvalid.com/refund-policy
+### Indirect Emissions Calculation (Electricity usage)
+Indirect embedded emissions are calculated based on total electricity consumption and the specific grid emission factor:
+$$E_{indirect} = AD_{elec} \times EF_{grid}$$
+Where:
+- $AD_{elec}$: Total electricity consumed in MWh.
+- $EF_{grid}$: Grid emission factor in tCO2e/MWh.
 
-*(Private user reports and data are strictly excluded from AI indexing.)*
+### Total Embedded Emissions of Goods
+Allocated specific embedded emissions for a product group (goods with CN code):
+$$SE_{good} = \frac{E_{direct} \times AllocationShare + E_{indirect} \times AllocationShare}{ProductionVolume}$$
+Where $AllocationShare$ sums to exactly 1.0 across all manufactured outputs.
+
+## 3. The 23-Component Package Contract
+The sealed release package preserves exactly 23 components:
+1. Product Scope Assessment
+2. CN Code Reasoning
+3. Required Data Checklist
+4. Installation Monitoring Plan
+5. Production Process Map
+6. System Boundary Register
+7. Source Stream Register
+8. Emission Source Register
+9. Measurement and Meter Register
+10. Activity Data Ledger
+11. Evidence Register
+12. Field-to-Evidence Matrix
+13. Methodology Decision Log
+14. Embedded Emissions Calculation Annex
+15. Operator Emissions Report
+16. Operator Summary Emissions Report
+17. Verification Readiness Assessment
+18. Misstatement and Non-Conformity Register
+19. Corrective Action Log
+20. O3CI Field Mapping
+21. Calculation Trace JSON
+22. Data Integrity Manifest
+23. Supporting Evidence Folder
+
+## 4. Key Public Routes Index
+- Software features: https://cbamvalid.com/product
+- Pricing packages: https://cbamvalid.com/pricing
+- Certificate verification database: https://cbamvalid.com/verify
+- Calculation trace methodologies: https://cbamvalid.com/methodology
+- Workflow steps: https://cbamvalid.com/how-it-works
+- Sample compilation dossiers: https://cbamvalid.com/sample-dossier
+- CN Code classifier: https://cbamvalid.com/cn-code
+- Corporate legal notices: https://cbamvalid.com/legal-notice

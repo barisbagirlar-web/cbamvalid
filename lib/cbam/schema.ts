@@ -20,6 +20,7 @@ export const UnitCodeSchema = z.enum([
 export type UnitCode = z.infer<typeof UnitCodeSchema>;
 
 export const InputDatumSchema = z.preprocess(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (val: any) => {
     if (val && typeof val === "object") {
       const copy = { ...val };

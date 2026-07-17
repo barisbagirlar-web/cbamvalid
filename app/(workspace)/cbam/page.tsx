@@ -281,7 +281,7 @@ export default function CbamLandingPage() {
                   Stop stressing about CBAM Audits. Seal your verification dossier today.
                 </h2>
                 <p className="text-muted text-base leading-relaxed mb-6">
-                  Don't risk customs penalties or rejected declarations. CBAMValid guides you step-by-step to build a bulletproof, verifier-ready dossier. Get a professional package complete with a **Mathematical Audit Trace**, **Cryptographic Dossier Seals**, and **direct EU Registry XML & JSON imports**—all formatted to independent accredited verification standards.
+                  Don&apos;t risk customs penalties or rejected declarations. CBAMValid guides you step-by-step to build a bulletproof, verifier-ready dossier. Get a professional package complete with a **Mathematical Audit Trace**, **Cryptographic Dossier Seals**, and **direct EU Registry XML & JSON imports**—all formatted to independent accredited verification standards.
                 </p>
 
                 <div className="mb-8">
@@ -370,7 +370,7 @@ export default function CbamLandingPage() {
                   {drafts.length === 0 ? (
                     <div className="p-6 text-center bg-background border border-dashed border-border/80 rounded-lg">
                       <Clock className="w-7 h-7 text-muted/65 mx-auto mb-2" />
-                      <p className="text-sm text-muted">No active draft cases. Click "Create new case" above to start.</p>
+                      <p className="text-sm text-muted">No active draft cases. Click &quot;Create new case&quot; above to start.</p>
                     </div>
                   ) : (
                     <>

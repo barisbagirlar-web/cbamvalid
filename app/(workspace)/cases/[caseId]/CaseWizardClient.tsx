@@ -3,7 +3,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  AlertCircle,
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
@@ -605,9 +604,10 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       const reportId = response.report?.reportId;
       if (!reportId) throw new Error("SEALED_REPORT_ID_MISSING");
       router.push(`/cbam/reports/${reportId}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Sealing failed", error);
-      const msg = errorMessage(error);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const msg = errorMessage(error as any);
       if (msg.includes("CORRECTION_REASON_REQUIRED_AFTER_FIRST_RELEASE")) {
         setShowCorrectionInput(true);
         setSealStatus("A correction reason is required to seal a corrected version. Please describe the changes below.");
@@ -983,7 +983,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           {readiness.isEligibleForSealing && readiness.hasWarnings && (
             <div className="mt-4 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
               <strong>⚠ This report will contain {readiness.warningGaps.length} data gap{readiness.warningGaps.length !== 1 ? "s" : ""}</strong><br />
-              Missing fields will be highlighted in the PDF with a <em>"DATA GAP — Verifier Action Required"</em> annotation. The report is operator-prepared and the independent verifier must assess these gaps during their review.
+              Missing fields will be highlighted in the PDF with a <em>&quot;DATA GAP — Verifier Action Required&quot;</em> annotation. The report is operator-prepared and the independent verifier must assess these gaps during their review.
             </div>
           )}
 

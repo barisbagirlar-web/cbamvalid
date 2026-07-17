@@ -2,6 +2,7 @@ import { z } from "zod";
 import { CaseIdSchema } from "./case-id";
 
 export const InputDatumSchema = z.preprocess(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (val: any) => {
     if (val && typeof val === "object") {
       const copy = { ...val };

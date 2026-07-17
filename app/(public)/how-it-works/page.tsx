@@ -1,12 +1,9 @@
 import React from "react";
 import Link from "next/link";
 import { PlayCircle, ArrowRight, CheckCircle2 } from "lucide-react";
-import type { Metadata } from "next";
+import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 
-export const metadata: Metadata = {
-  title: "How CBAMValid Works | CBAM Dossier Workflow",
-  description: "See how CBAMValid guides users from case creation and evidence collection to quality review, secure credit purchase and sealed dossier delivery.",
-};
+export const metadata = generateSeoMetadata("/how-it-works");
 
 export default function HowItWorksPage() {
   const workflowStages = [

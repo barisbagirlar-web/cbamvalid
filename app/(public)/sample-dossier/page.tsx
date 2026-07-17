@@ -4,12 +4,9 @@ import path from "path";
 import SampleViewer from "./SampleViewer";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import type { Metadata } from "next";
+import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 
-export const metadata: Metadata = {
-  title: "CBAMValid Sample Dossier | Audit-Preparation Report",
-  description: "Review a complete fictional CBAM dossier generated to demonstrate the calculation, evidence, quality-control and report-delivery structure of CBAMValid.",
-};
+export const metadata = generateSeoMetadata("/sample-dossier");
 
 // We load the manifest on the server to pass it down to the client viewer
 async function getManifest() {

@@ -1,15 +1,12 @@
 import React from "react";
 import Link from "next/link";
-import { Metadata } from "next";
+import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 import { 
   FileText, ShieldCheck, Scale, AlertTriangle, Cpu, HelpCircle, 
   ArrowRight, Download, Eye, Layers, CheckCircle2, ChevronRight 
 } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "CBAMValid Product | Evidence-Linked CBAM Dossier Software",
-  description: "Prepare structured CBAM cases, connect supporting evidence, resolve quality-control findings and generate sealed dossier packages.",
-};
+export const metadata = generateSeoMetadata("/product");
 
 export default function ProductPage() {
   const workflowSteps = [

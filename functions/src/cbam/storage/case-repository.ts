@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createHash } from "node:crypto";
 import { adminDb, getStorageBucket } from "../../firebase-admin";
 import { CaseOwnershipViolationError } from "../../commerce/commerce-errors";
