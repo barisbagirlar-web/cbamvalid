@@ -331,6 +331,8 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const [evidenceStatus, setEvidenceStatus] = useState("");
   const [sealing, setSealing] = useState(false);
   const [sealStatus, setSealStatus] = useState("");
+  const [showCorrectionInput, setShowCorrectionInput] = useState(false);
+  const [correctionReason, setCorrectionReason] = useState("");
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [evidenceDocumentType, setEvidenceDocumentType] = useState("PRODUCTION_RECORD");
   const [evidenceIssuer, setEvidenceIssuer] = useState("");
@@ -391,7 +393,8 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
 
   const usableEntitlements = useMemo(() => availableEntitlements.filter((entitlement) => {
     const status = String(entitlement.status || "").toUpperCase();
-    const caseMatches = !entitlement.caseId || entitlement.caseId === caseData.caseId;
+    const lockId = entitlement.scopeCaseId || entitlement.caseId;
+    const caseMatches = !lockId || lockId === caseData.caseId;
     return caseMatches && ["AVAILABLE", "ACTIVE", "PURCHASED"].includes(status);
   }), [availableEntitlements, caseData.caseId]);
 
@@ -584,18 +587,33 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       setSealStatus("No case-compatible Preparation Pack release is available.");
       return;
     }
+    if (showCorrectionInput && correctionReason.trim().length < 10) {
+      setSealStatus("Correction reason must be at least 10 characters long.");
+      return;
+    }
     if (!sealRequestId.current) sealRequestId.current = crypto.randomUUID();
     setSealing(true);
     setSealStatus("");
     try {
       await persistDraft();
-      const response = await sealReport(caseData.caseId, entitlementId, sealRequestId.current);
+      const response = await sealReport(
+        caseData.caseId,
+        entitlementId,
+        sealRequestId.current,
+        showCorrectionInput ? correctionReason.trim() : undefined
+      );
       const reportId = response.report?.reportId;
       if (!reportId) throw new Error("SEALED_REPORT_ID_MISSING");
       router.push(`/cbam/reports/${reportId}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Sealing failed", error);
-      setSealStatus(errorMessage(error));
+      const msg = errorMessage(error);
+      if (msg.includes("CORRECTION_REASON_REQUIRED_AFTER_FIRST_RELEASE")) {
+        setShowCorrectionInput(true);
+        setSealStatus("A correction reason is required to seal a corrected version. Please describe the changes below.");
+      } else {
+        setSealStatus(msg);
+      }
     } finally {
       setSealing(false);
     }
@@ -966,6 +984,20 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
             <div className="mt-4 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
               <strong>⚠ This report will contain {readiness.warningGaps.length} data gap{readiness.warningGaps.length !== 1 ? "s" : ""}</strong><br />
               Missing fields will be highlighted in the PDF with a <em>"DATA GAP — Verifier Action Required"</em> annotation. The report is operator-prepared and the independent verifier must assess these gaps during their review.
+            </div>
+          )}
+
+          {showCorrectionInput && (
+            <div className="mt-4 space-y-2">
+              <label className="block text-xs font-bold uppercase tracking-wider text-accent">Correction Reason (Min 10 characters)</label>
+              <textarea
+                value={correctionReason}
+                onChange={(e) => setCorrectionReason(e.target.value)}
+                placeholder="Describe the changes made in this corrected release version..."
+                className="w-full rounded border border-border bg-background p-2 text-xs font-semibold"
+                rows={3}
+                required
+              />
             </div>
           )}
 

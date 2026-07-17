@@ -69,6 +69,7 @@ export const sealCbamReportCallable = httpsCallable<{
   caseId: string;
   entitlementId: string;
   requestId: string;
+  correctionReason?: string;
 }, SealResponse>(firebaseFunctions, "sealCbamReport");
 
 export const getCbamReportsCallable = httpsCallable<void, { reports: UnknownRecord[] }>(firebaseFunctions, "getCbamReports");
@@ -155,9 +156,10 @@ export async function calculateReport(caseId: string) {
 export async function sealReport(
   caseId: string,
   entitlementId: string,
-  requestId: string
+  requestId: string,
+  correctionReason?: string
 ): Promise<SealResponse> {
-  const result = await sealCbamReportCallable({ caseId, entitlementId, requestId });
+  const result = await sealCbamReportCallable({ caseId, entitlementId, requestId, correctionReason });
   return result.data;
 }
 
