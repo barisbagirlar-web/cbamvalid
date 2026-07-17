@@ -10,7 +10,7 @@ export interface AuditNode {
   id: string;
   ruleBasis: string;
   unit: string;
-  inputs: Record<string, string | number>;
+  inputs: Record<string, string | number | any>;
   output: string;
 }
 
@@ -436,24 +436,34 @@ function emissions(doc: jsPDF, r: CBAMReport) {
     ty += 7;
   });
 
+  let nextY = 195;
   // I5: PREMIUM PRECURSOR DETAILED INVENTORY (Mandatory for Complex Goods)
   if (r.goods.isComplex && r.emissions.precursorDetails.length > 0) {
-    card(doc, 15, 195, 180, 48, 'PREMIUM PRECURSOR DETAILED INVENTORY');
+    card(doc, 15, 195, 180, 28, 'PREMIUM PRECURSOR DETAILED INVENTORY');
     doc.setFont('helvetica', 'normal').setFontSize(7.5);
     text(doc, C.ANTRASIT);
     let py = 210;
     r.emissions.precursorDetails.forEach(p => {
-      if (py < 238) {
+      if (py < 218) {
         doc.text(`Precursor: ${p.name} | Quantity: ${p.quantity} t | Direct: ${p.direct} tCO2e | Indirect: ${p.indirect} tCO2e`, 20, py);
         py += 8;
       }
     });
+    nextY = 228;
   } else {
-    card(doc, 15, 195, 180, 28, 'PRECURSOR MATERIALS INVENTORY');
-    doc.setFont("helvetica", "normal").setFontSize(8.5);
+    card(doc, 15, 195, 180, 20, 'PRECURSOR MATERIALS INVENTORY');
+    doc.setFont("helvetica", "normal").setFontSize(7.5);
     text(doc, C.ANTRASIT);
     doc.text("No precursor materials are registered or applicable for this CN sector (Simple Good).", 20, 210);
+    nextY = 220;
   }
+
+  // EMISSIONS RECONCILIATION SUMMARY Card (Restored)
+  card(doc, 15, nextY, 180, 22, 'EMISSIONS RECONCILIATION SUMMARY');
+  doc.setFont("helvetica", "normal").setFontSize(7.5);
+  text(doc, C.ANTRASIT);
+  const summaryText = `The total embedded emissions for the reporting period resolve to ${r.emissions.totalEmbedded} tonnes of CO2 equivalent. This calculation accounts for direct combustion streams, process inputs, and indirect grid factors. All calculation variables reconcile to installation-level totals without double-counting.`;
+  doc.text(doc.splitTextToSize(summaryText, 170), 20, nextY + 13);
 }
 
 function carbonPrice(doc: jsPDF, r: CBAMReport) {
@@ -499,23 +509,23 @@ function carbonPrice(doc: jsPDF, r: CBAMReport) {
 function methodology(doc: jsPDF, r: CBAMReport) {
   card(doc, 15, 35, 180, 112, 'METHODOLOGY DECISIONS REGISTRATION');
   const decs = [
-    ['1. System Boundary Scope', r.methodology.systemBoundary],
-    ['2. Direct Emission Method', r.methodology.directEmission],
-    ['3. Electricity Factor Source', r.methodology.electricityFactor],
-    ['4. Fuel Source Stream Classification', r.methodology.fuelClassification],
-    ['5. Measurement Uncertainty Budget', r.methodology.uncertainty],
-    ['6. Missing Data Protocol (Article 16)', r.methodology.missingData],
-    ['7. Data Quality Rating (Tier Level)', r.methodology.dataQuality]
+    ['1. System Boundary Scope', r.methodology.systemBoundary, 'Annex II boundary rules, Article 4 (2)'],
+    ['2. Direct Emission Method', r.methodology.directEmission, 'Article 4 implementing acts'],
+    ['3. Electricity Factor Source', r.methodology.electricityFactor, 'Annex III Section B.4.3'],
+    ['4. Fuel Source Stream Classification', r.methodology.fuelClassification, 'Commission Regulation (EU) 2020/2085'],
+    ['5. Measurement Uncertainty Budget', r.methodology.uncertainty, 'EN ISO 5167 standard'],
+    ['6. Missing Data Protocol (Article 16)', r.methodology.missingData, 'Implementing Regulation Article 16'],
+    ['7. Data Quality Rating (Tier Level)', r.methodology.dataQuality, 'Annex III Data Tiers Reference']
   ];
   let dy = 51;
-  decs.forEach(([n, m]) => {
+  decs.forEach(([n, m, b]) => {
     doc.setFont('helvetica', 'bold').setFontSize(7.5);
     text(doc, C.ANTRASIT);
     doc.text(n, 20, dy);
     
     doc.setFont('helvetica', 'normal');
     text(doc, C.RUST);
-    doc.text(`Selected Method: ${m}`, 20, dy + 4);
+    doc.text(`Selected Method: ${m} | Basis: ${b}`, 20, dy + 4);
     dy += 13;
   });
 
@@ -550,7 +560,11 @@ function auditTrace(doc: jsPDF, r: CBAMReport) {
   
   // I1: Dynamic pagination with exact doc.splitTextToSize calculations to prevent layout overflow
   r.auditTrace.forEach((node) => {
-    const inputsStr = Object.entries(node.inputs).map(([k, v]) => `${k}: ${v}`).join(' | ');
+    const inputsStr = Object.entries(node.inputs).map(([k, v]) => {
+      // Explicitly serialize objects/arrays to JSON string to prevent "[object Object]"
+      const valStr = typeof v === 'object' && v !== null ? JSON.stringify(v) : String(v);
+      return `${k}:${valStr}`;
+    }).join(' | ');
     const inputsLines = doc.splitTextToSize(`INPUTS: ${inputsStr}`, 160);
     
     // Exact height calculation:

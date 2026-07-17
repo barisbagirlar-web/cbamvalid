@@ -347,6 +347,10 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
   const eligibleCertificateReduction = caseData.carbonPriceRecords.reduce((total, record, index) => {
     let amount = new Decimal(record.amountPaid || 0);
     const currency = (record.currency || "EUR").toUpperCase().trim();
+    const isTrOrigin = String((caseData as any).installationCountry || caseData.installation?.country?.value || "").toUpperCase().trim() === "TR";
+    if (isTrOrigin && currency === "EUR") {
+      throw new Error("INVALID_STATE: TR origin country with EUR currency is a data inconsistency error");
+    }
     if (currency === "TRY") {
       amount = amount.dividedBy(35.00); // 35 TRY/EUR exchange rate
     } else if (currency === "USD") {

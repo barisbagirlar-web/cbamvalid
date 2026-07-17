@@ -3,6 +3,7 @@ import { buildPdfDossier } from "../../functions/src/cbam/report/pdf-builder";
 import { buildWorkbook } from "../../functions/src/cbam/report/workbook-builder";
 import { buildXml } from "../../functions/src/cbam/report/xml-builder";
 import { orchestrateCalculation } from "../../lib/cbam/engine/calculation-orchestrator";
+import { performDossierCalculations } from "../../functions/src/cbam/calculator";
 
 describe("Report Builders & Sealing Artifacts", () => {
   const mockInput = {
@@ -36,5 +37,20 @@ describe("Report Builders & Sealing Artifacts", () => {
     expect(typeof xml).toBe("string");
     expect(xml).toContain("CBAMDefinitiveDossier");
     expect(xml).toContain("mock-hash-value");
+  });
+
+  it("Flags TR origin + EUR currency carbon price record as INVALID_STATE", () => {
+    const invalidCase = {
+      caseId: "case_test_invalid",
+      uid: "test_uid",
+      goods: [{ cnCode: { value: "72011011" }, productionVolume: { value: "100" } }],
+      directEmissions: { value: "150", unit: "tCO2e" },
+      electricityConsumed: { value: "50", unit: "MWh" },
+      gridEmissionFactor: { value: "0.45", unit: "tCO2e/MWh" },
+      precursors: [],
+      installationCountry: "TR",
+      carbonPriceRecords: [{ id: "rec_1", amountPaid: 25.5, currency: "EUR", legislationReference: "TR Carbon Tax Law 44" }]
+    };
+    expect(() => performDossierCalculations(invalidCase as any)).toThrow("INVALID_STATE");
   });
 });
