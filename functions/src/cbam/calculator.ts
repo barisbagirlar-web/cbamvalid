@@ -172,7 +172,7 @@ function resolveAllocationShares(caseData: AuditReadyCase): Decimal[] {
 }
 
 export function performDossierCalculations(caseData: AuditReadyCase): DossierCalculationResult {
-  const isComplexGoodParam = !!((caseData as any).isComplexGood || (caseData.goods?.[0] as any)?.isComplexGood);
+  const isComplexGoodParam = !!((caseData as any).isComplexGood || (caseData.goods?.[0] as any)?.isComplexGood || (caseData.precursors && caseData.precursors.length > 0));
 
   let directEmissions = decimalRequired(caseData.directEmissions.value, "directEmissions");
   let electricityConsumed = decimalRequired(caseData.electricityConsumed.value, "electricityConsumed");
@@ -345,7 +345,13 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
 
   // 2. Calculate Carbon Price Reduction Equivalent
   const eligibleCertificateReduction = caseData.carbonPriceRecords.reduce((total, record, index) => {
-    const amount = new Decimal(record.amountPaid || 0);
+    let amount = new Decimal(record.amountPaid || 0);
+    const currency = (record.currency || "EUR").toUpperCase().trim();
+    if (currency === "TRY") {
+      amount = amount.dividedBy(35.00); // 35 TRY/EUR exchange rate
+    } else if (currency === "USD") {
+      amount = amount.dividedBy(1.08);  // 1.08 USD/EUR exchange rate
+    }
     if (amount.isNegative()) throw new Error("CALCULATION_NEGATIVE_CARBON_PRICE_AMOUNT");
     const reduction = certPrice.gt(0) ? amount.dividedBy(certPrice).toDecimalPlaces(2, Decimal.ROUND_HALF_UP) : new Decimal(0);
     record.eligibleCertificateReduction = Number(reduction.toString());

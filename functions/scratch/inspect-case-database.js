@@ -1,7 +1,6 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import crypto from "crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,42 +17,31 @@ const b64 = match[1];
 const serviceAccountString = Buffer.from(b64, "base64").toString("utf8");
 
 // Write to a temporary file
-const tempKeyPath = path.resolve(__dirname, "../../temp-admin-key.json");
+const tempKeyPath = path.resolve(__dirname, "../../temp-admin-key-inspect.json");
 fs.writeFileSync(tempKeyPath, serviceAccountString, "utf8");
 
 // Set environment variables before any firebase imports
 process.env.GOOGLE_APPLICATION_CREDENTIALS = tempKeyPath;
-process.env.FIREBASE_CONFIG = JSON.stringify({
-  projectId: "cbam-desk",
-  storageBucket: "cbam-desk.firebasestorage.app"
-});
 
 // Import firebase-admin
 import admin from "firebase-admin";
 import { initializeApp } from "firebase-admin/app";
-import { getStorage } from "firebase-admin/storage";
+import { getFirestore } from "firebase-admin/firestore";
 
 if (admin.apps.length === 0) {
   initializeApp();
 }
 
 async function run() {
-  const bucket = getStorage().bucket("cbam-desk.firebasestorage.app");
-  const uid = "r3Sv0U5YqEcLLylbw5ndwK1Zg652";
-  const reportId = "report_f0a56635322d657d44698c74ac9f3931eb27e5cd79e3e914f7759f796ecfc18d";
-  const filePath = `reports/${uid}/${reportId}/dossier.pdf`;
-
-  console.log(`Downloading ${filePath}...`);
-  const file = bucket.file(filePath);
-  
-  const destPath = path.resolve(__dirname, "../../public/sample/cbam-exporter-final-evidence-report-sample.pdf");
-  await file.download({ destination: destPath });
-  console.log(`Successfully downloaded PDF to ${destPath}`);
-
-  // Calculate local sha256 to print
-  const pdfBytes = fs.readFileSync(destPath);
-  const hash = crypto.createHash("sha256").update(pdfBytes).digest("hex");
-  console.log(`Local SHA-256: ${hash}`);
+  const db = getFirestore();
+  const cid = "case_89d9ccc7c9b8e6d92ea35a08f4368da52f51b1a4b8e28382dca672346b197481";
+  const snap = await db.collection("cbam_cases").doc(cid).get();
+  if (snap.exists) {
+    console.log("=== CASE DATABASE DETAILS ===");
+    console.log(JSON.stringify(snap.data(), null, 2));
+  } else {
+    console.log("Case not found in DB.");
+  }
 }
 
 run()

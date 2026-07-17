@@ -65,7 +65,7 @@ export function buildPdfDossier(
   const importQuarter = safeStr(calc?.inputs?.importQuarter || data?.reportingPeriod?.quarter?.value, "");
   const cnCode = safeStr(calc?.inputs?.cnCode || data?.goods?.[0]?.cnCode?.value);
   const sector = safeStr(calc?.applicability?.sector || data?.goods?.[0]?.sector);
-  const productionVolume = safeStr(data?.productionVolume || data?.goods?.[0]?.productionVolume?.value);
+  const productionVolume = calc?.productionVolume || safeStr(data?.productionVolume || data?.goods?.[0]?.productionVolume?.value);
   // isComplexGood: prefer calc-derived value (based on actual precursor emissions > 0)
   // over case-level flag, which may be stale or misclassified.
   const isComplexGood = (calc?.isComplexGood === true) ||
@@ -377,7 +377,9 @@ export function buildPdfDossier(
   doc.setFontSize(8.5);
   doc.setTextColor(50, 55, 65);
   let boundaryText = cleanText(safeStr(data?.installation?.systemBoundaries, ""));
-  if (boundaryText.includes("or electric arc furnace") || boundaryText === "Coke oven, blast furnace, basic oxygen furnace or electric arc furnace processes.") {
+  if (productionRoute.includes("EAF") || productionRoute.includes("Electric Arc Furnace")) {
+    boundaryText = "Active: Electric Arc Furnace (EAF)";
+  } else {
     boundaryText = "Active: Coke Oven + Blast Furnace + Basic Oxygen Furnace (BF-BOF)";
   }
   doc.text(doc.splitTextToSize(boundaryText, 170), 20, 154);
@@ -553,8 +555,8 @@ export function buildPdfDossier(
   doc.setFontSize(14);
   doc.text("6. Methodology Decision Log and Quality Control", 15, 30);
 
-  // Decisions card — increased height from 74 to 96 to fit expanded spacing
-  drawCard(doc, 15, 35, 180, 96, "METHODOLOGY DECISIONS REGISTRATION");
+  // Decisions card — increased height from 96 to 112 to fit expanded spacing without overlapping title
+  drawCard(doc, 15, 35, 180, 112, "METHODOLOGY DECISIONS REGISTRATION");
   const renderDecision = (topic: string, method: string, basis: string, y: number) => {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(26, 25, 21);
@@ -569,35 +571,35 @@ export function buildPdfDossier(
     doc.line(18, y + 7.5, 192, y + 7.5);
   };
   
-  // Spaced out with step of 12 (instead of 9) to completely resolve overlapping
-  renderDecision("1. System Boundary Scope", "Installation-level continuous monitoring (BF-BOF integrated route)", "Annex II boundary rules, Article 4 (2)", 48);
-  renderDecision("2. Direct Emission Method", "Source stream analysis / fuel factor calculation", "Article 4 implementing acts", 60);
-  renderDecision("3. Electricity Factor Source", "National Grid Average mix factor", "Annex III Section B.4.3", 72);
-  renderDecision("4. Fuel Source Stream Classification", "Category A (Pure Coke/Coal)", "Commission Regulation (EU) 2020/2085", 84);
-  renderDecision("5. Measurement Uncertainty Budget", "Uncertainty < 1.5% (ISO GUM compliant)", "EN ISO 5167 standard", 96);
-  renderDecision("6. Missing Data Protocol (Article 16)", "Historic extrapolation rules", "Implementing Regulation Article 16", 108);
-  renderDecision("7. Data Quality Rating (Tier Level)", "Tier 3 (Highest direct measurement)", "Annex III Data Tiers Reference", 120);
+  // Spaced out with step of 13 starting at y=51 to completely resolve overlapping
+  renderDecision("1. System Boundary Scope", `Installation-level continuous monitoring (Active: ${productionRoute})`, "Annex II boundary rules, Article 4 (2)", 51);
+  renderDecision("2. Direct Emission Method", "Source stream analysis / fuel factor calculation", "Article 4 implementing acts", 64);
+  renderDecision("3. Electricity Factor Source", "National Grid Average mix factor", "Annex III Section B.4.3", 77);
+  renderDecision("4. Fuel Source Stream Classification", "Category A (Pure Coke/Coal)", "Commission Regulation (EU) 2020/2085", 90);
+  renderDecision("5. Measurement Uncertainty Budget", "Uncertainty < 1.5% (ISO GUM compliant)", "EN ISO 5167 standard", 103);
+  renderDecision("6. Missing Data Protocol (Article 16)", "Historic extrapolation rules", "Implementing Regulation Article 16", 116);
+  renderDecision("7. Data Quality Rating (Tier Level)", "Tier 3 (Highest direct measurement)", "Annex III Data Tiers Reference", 129);
   
-  // Gap analysis card — shifted down to y=138 to accommodate larger first card
-  drawCard(doc, 15, 138, 180, 64, "QUALITY CONTROL & DATA GAP SUMMARY");
+  // Gap analysis card — shifted down to y=152 to accommodate larger first card
+  drawCard(doc, 15, 152, 180, 48, "QUALITY CONTROL & DATA GAP SUMMARY");
   const gaps = data?.gapAssessment ? data.gapAssessment.filter((g: any) => g.severity === "BLOCKER" || g.severity === "CRITICAL" || g.isBlocking) : [];
   if (gaps.length === 0) {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(16, 124, 65); // Green
-    doc.text("VERIFICATION READINESS GATES: PASSED", 20, 154);
+    doc.text("VERIFICATION READINESS GATES: PASSED", 20, 168);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(50, 55, 65);
     doc.text(
       "No critical data gaps, unapproved evidence records, or methodology deviations were detected. " +
       "The completeness score is 94.5%, which is above the 85% threshold defined under Article 12(1)(a) registry criteria.",
-      20, 160, { maxWidth: 170 }
+      20, 174, { maxWidth: 170 }
     );
   } else {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(200, 30, 30); // Red
-    doc.text("CRITICAL DATA GAPS IDENTIFIED:", 20, 154);
-    let gy = 160;
-    const maxVisibleGaps = 4;
+    doc.text("CRITICAL DATA GAPS IDENTIFIED:", 20, 168);
+    let gy = 174;
+    const maxVisibleGaps = 3;
     gaps.slice(0, maxVisibleGaps).forEach((g: any) => {
       doc.setFont("helvetica", "normal");
       doc.setTextColor(26, 25, 21);
@@ -615,8 +617,8 @@ export function buildPdfDossier(
     }
   }
 
-  // Verifier checklist — shifted down to y=208 to accommodate shifted cards
-  drawCard(doc, 15, 208, 180, 52, "VERIFICATION READINESS CHECKLIST");
+  // Verifier checklist — shifted down to y=205 to accommodate shifted cards
+  drawCard(doc, 15, 205, 180, 48, "VERIFICATION READINESS CHECKLIST");
   const drawCheckItem = (label: string, isChecked: boolean, cx: number, cy: number) => {
     doc.setDrawColor(30, 41, 59);
     doc.setFillColor(isChecked ? 30 : 255, isChecked ? 41 : 255, isChecked ? 59 : 255);
@@ -627,15 +629,15 @@ export function buildPdfDossier(
     doc.text(label, cx + 5, cy);
   };
   
-  drawCheckItem("Manufacturer Identity Proven", true, 20, 224);
-  drawCheckItem("CN Code Classification Aligned", true, 20, 231);
-  drawCheckItem("Energy Activity Records Uploaded", true, 20, 238);
-  drawCheckItem("Precursor Emission Evidences Seal", isComplexGood, 20, 245);
+  drawCheckItem("Manufacturer Identity Proven", true, 20, 220);
+  drawCheckItem("CN Code Classification Aligned", true, 20, 227);
+  drawCheckItem("Energy Activity Records Uploaded", true, 20, 234);
+  drawCheckItem("Precursor Emission Evidences Seal", isComplexGood, 20, 241);
   
-  drawCheckItem("System Boundaries Explicitly Mapped", true, 110, 224);
-  drawCheckItem("Methodology Log Declarations Complete", true, 110, 231);
-  drawCheckItem("Carbon price deductions receipt check", !!(data?.carbonPriceRecords?.length), 110, 238);
-  drawCheckItem("Completeness Score > 85% (Registry Criterion)", gaps.length === 0, 110, 245);
+  drawCheckItem("System Boundaries Explicitly Mapped", true, 110, 220);
+  drawCheckItem("Methodology Log Declarations Complete", true, 110, 227);
+  drawCheckItem("Carbon price deductions receipt check", !!(data?.carbonPriceRecords?.length), 110, 234);
+  drawCheckItem("Completeness Score > 85% (Registry Criterion)", gaps.length === 0, 110, 241);
 
   // ----------------------------------------------------
   // PAGE 8: MATHEMATICAL AUDIT TRACE (MATEMATIKSEL DENETIM IZI)
@@ -816,14 +818,14 @@ export function buildPdfDossier(
   doc.line(110, ySignatures + 48, 170, ySignatures + 48);
   doc.text("Verifier Signature and Stamp", 110, ySignatures + 54);
 
-  // Digital Signature Roadmap Callout Box — increased height to 28 to prevent text collision
-  drawCard(doc, 15, ySignatures + 67, 180, 28, "FUTURE ROADMAP: DIGITAL SEAL AND PAdES INTEGRATION");
+  // Digital Signature Roadmap Callout Box — increased height to 38 and top adjusted to ySignatures + 65 to prevent text collision and footer line clipping
+  drawCard(doc, 15, ySignatures + 65, 180, 38, "FUTURE ROADMAP: DIGITAL SEAL AND PAdES INTEGRATION");
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(100, 110, 120);
   const padesText = "Note for next release phase: This dossier is prepared with structural JSON/XML hashes. Future updates will support direct cryptographic sealing of the PDF document conforming to the PAdES (PDF Advanced Electronic Signatures) standard, enabling fully automated, cloud-signed verification certificates.";
-  // Shifted text down to ySignatures + 81 to render it cleanly below the card's header divider line
-  doc.text(doc.splitTextToSize(padesText, 170), 20, ySignatures + 81);
+  // Shifted text down to ySignatures + 77 to render it cleanly below the card's header divider line
+  doc.text(doc.splitTextToSize(padesText, 170), 20, ySignatures + 77);
 
   // ----------------------------------------------------
   // RE-DRAW DYNAMIC TABLE OF CONTENTS ON PAGE 2
@@ -835,20 +837,26 @@ export function buildPdfDossier(
     doc.setFontSize(8.5);
     doc.setTextColor(26, 25, 21);
     doc.text(sectionName, 20, tocY);
-    // Proper tab leader: draw a dotted line from text end to page number
+    
+    // Dynamic Page text and width calculations to prevent layout overlaps
+    const pageText = `Page ${pageNum}`;
     const textWidth = doc.getTextWidth(sectionName);
+    const pageTextWidth = doc.getTextWidth(pageText);
+    
     doc.setDrawColor(180, 185, 195);
-    doc.setLineWidth(0.1);
+    doc.setLineWidth(0.15);
     const lineStartX = 22 + textWidth;
-    const lineEndX = 177;
-    if (lineEndX > lineStartX + 5) {
+    const lineEndX = 188 - pageTextWidth; // Ends precisely before Page text starts
+    
+    if (lineEndX > lineStartX + 4) {
       doc.setLineDashPattern([0.4, 1.2], 0);
       doc.line(lineStartX, tocY - 1, lineEndX, tocY - 1);
       doc.setLineDashPattern([], 0);
     }
+    
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(189, 93, 58);
-    doc.text(`${pageNum}`, 185, tocY, { align: "right" });
+    doc.setTextColor(189, 93, 58); // Orange accent
+    doc.text(pageText, 190, tocY, { align: "right" });
     tocY += 8;
   };
 
