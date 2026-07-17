@@ -88,8 +88,15 @@ service cloud.firestore {
     match /source_registry_snapshots/{docId} {
       allow read, write: if false;
     }
-
     match /audit_events/{docId} {
+      allow read, write: if false;
+    }
+
+    match /commerce_ledger/{docId} {
+      allow read, write: if false;
+    }
+
+    match /idempotency/{docId} {
       allow read, write: if false;
     }
   }
