@@ -189,11 +189,11 @@ switch (check) {
             const pdfBuffer = buildPdfDossier(mockCase, calcResult, "mock-hash-value");
             const pdfText = pdfBuffer.toString("utf-8");
             
-            if (pdfText.includes("[object Object]")) {
+            if (pdfText.match(/\[object\s+Object\]/i)) {
               console.error("[FAIL] Serialized [object Object] detected inside V16 PDF layout streams.");
               process.exit(1);
             }
-            if (pdfText.includes("Rule: Rule:")) {
+            if (pdfText.match(/Rule\s*:\s*Rule/i)) {
               console.error("[FAIL] Duplicate 'Rule: Rule:' prefix detected inside V16 PDF layout streams.");
               process.exit(1);
             }
