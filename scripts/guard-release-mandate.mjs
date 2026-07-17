@@ -120,13 +120,75 @@ switch (check) {
   }
 
   case "calculation-trace": {
-    // Verify deterministic traces are structured
+    // 1. Verify deterministic traces are structured in engine source
     const enginePath = path.join(rootDir, "lib/cbam/calculation/calculation-engine.ts");
     const content = fs.readFileSync(enginePath, "utf-8");
     if (!content.includes("formulaId") || !content.includes("legalVersionRef") || !content.includes("roundingMethod")) {
       console.error("[FAIL] Trace schema details missing from calculation engine.");
       process.exit(1);
     }
+
+    // 2. Perform live check on calculation output node fields (ruleBasis and output formats)
+    try {
+      const calcModule = await import(path.join(rootDir, "functions/build/cbam/calculator.js"));
+      const performDossierCalculations = calcModule.performDossierCalculations;
+      if (typeof performDossierCalculations === "function") {
+        // Construct a mock case matching the schema
+        const mockCase = {
+          caseId: "case_test_guard",
+          uid: "test_uid",
+          goods: [{ cnCode: { value: "72011011" }, productionVolume: { value: "1000" } }],
+          directEmissions: { value: "1500" },
+          electricityConsumed: { value: "500" },
+          gridEmissionFactor: { value: "0.45" },
+          precursors: [{ name: { value: "Pig Iron" }, quantity: { value: "120" }, directEmissions: { value: "150" }, indirectEmissions: { value: "18" } }],
+          carbonPriceRecords: [{ id: "rec_1", amountPaid: 21700, currency: "TRY", legislationReference: "TR Environmental Law" }]
+        };
+        const calcResult = performDossierCalculations(mockCase);
+        
+        // Assertions on ruleBasis and output matching target PDF patterns
+        if (!calcResult.trace || calcResult.trace.length === 0) {
+          console.error("[FAIL] No trace nodes returned by calculator.");
+          process.exit(1);
+        }
+        
+        for (const node of calcResult.trace) {
+          if (!node.officialSource || typeof node.officialSource !== "string" || node.officialSource.trim() === "") {
+            console.error(`[FAIL] Trace node ${node.formulaId} has missing or invalid officialSource.`);
+            process.exit(1);
+          }
+          if (!node.outputValue || typeof node.outputValue !== "string" || node.outputValue.trim() === "") {
+            console.error(`[FAIL] Trace node ${node.formulaId} has missing or invalid outputValue.`);
+            process.exit(1);
+          }
+          if (!node.outputUnit || typeof node.outputUnit !== "string" || node.outputUnit.trim() === "") {
+            console.error(`[FAIL] Trace node ${node.formulaId} has missing or invalid outputUnit.`);
+            process.exit(1);
+          }
+          
+          // Verify ruleBasis matches the required regulatory pattern
+          const ruleBasis = `Rule: ${node.officialSource} v${node.formulaVersion || 1}`;
+          if (!ruleBasis.includes("Regulation") && !ruleBasis.includes("Implementing")) {
+            console.error(`[FAIL] Trace node ${node.formulaId} ruleBasis "${ruleBasis}" does not match target PDF regulatory structure.`);
+            process.exit(1);
+          }
+          
+          // Verify output matches target PDF output patterns
+          const output = `${node.outputValue} ${node.outputUnit}`;
+          if (output.trim() === "" || isNaN(parseFloat(node.outputValue))) {
+            console.error(`[FAIL] Trace node ${node.formulaId} output "${output}" has non-numeric value.`);
+            process.exit(1);
+          }
+        }
+      } else {
+        console.error("[FAIL] performDossierCalculations is not exported as a function.");
+        process.exit(1);
+      }
+    } catch (err) {
+      console.error(`[FAIL] Runtime trace check failed: ${err.message}`);
+      process.exit(1);
+    }
+
     console.log("[PASS] Deterministic audit calculation trace verified.");
     break;
   }
