@@ -47,13 +47,15 @@ export function generateSeoMetadata(path: string): Metadata {
     },
   };
 
-  // Completely bypass Next.js metadata normalization for the root URL
-  // to avoid stripping the trailing slash (e.g. producing https://cbamvalid.com)
-  if (meta.canonicalPath !== "/") {
-    metadata.alternates = {
-      canonical: `${siteConfig.canonicalOrigin}${meta.canonicalPath}`,
-    };
-  }
+  const pathPart = meta.canonicalPath === "/" ? "" : meta.canonicalPath;
+  metadata.alternates = {
+    canonical: `${siteConfig.canonicalOrigin}${meta.canonicalPath}`,
+    languages: {
+      "en": `${siteConfig.canonicalOrigin}${meta.canonicalPath}`,
+      "de": `${siteConfig.canonicalOrigin}/de${pathPart}`,
+      "fr": `${siteConfig.canonicalOrigin}/fr${pathPart}`,
+    },
+  };
 
   return metadata;
 }

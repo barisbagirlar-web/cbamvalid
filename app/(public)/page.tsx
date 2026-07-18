@@ -2,16 +2,19 @@ import Link from "next/link";
 import { Shield, ArrowRight, CheckCircle2, Globe2 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
-import { generateOrganizationSchema, generateWebSiteSchema, generateWebApplicationSchema, generateFAQSchema } from "@/lib/seo/schema";
+import { generateEnterpriseGraphSchema, generateFAQSchema, generateClaimReviewSchema } from "@/lib/seo/schema";
 import { ExpertAuthoritySection } from "@/components/seo/ExpertAuthoritySection";
 
 export const metadata = generateSeoMetadata("/");
 
 export default function HomePage() {
   const jsonLd = [
-    generateOrganizationSchema(),
-    generateWebSiteSchema(),
-    generateWebApplicationSchema("Prepare structured exporter evidence, identify documentation gaps, calculate embedded emissions, and generate auditable CBAM preparation dossiers."),
+    generateEnterpriseGraphSchema("/"),
+    generateClaimReviewSchema(
+      "CBAM applies only to direct emissions",
+      "False",
+      "Under Regulation (EU) 2023/956, CBAM applies to both direct embedded emissions (from production processes) and, for certain sectors such as aluminium and electricity, indirect embedded emissions from electricity consumption. Importers must account for both direct and applicable indirect emissions when calculating CBAM certificate obligations."
+    ),
     generateFAQSchema([
       {
         question: "What is a CBAM evidence dossier?",
@@ -20,6 +23,10 @@ export default function HomePage() {
       {
         question: "Is CBAMValid an official European Commission service?",
         answer: "No. CBAMValid is an independent software service that assists exporters and importers with calculations and reporting preparation."
+      },
+      {
+        question: "When do CBAM certificates need to be surrendered?",
+        answer: "CBAM certificates must be surrendered annually from 1 January 2026. During the transitional period (2023-2025), importers must report embedded emissions quarterly without financial payment."
       }
     ])
   ];

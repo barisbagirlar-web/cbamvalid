@@ -99,6 +99,16 @@ export default function BuyCreditsPage() {
       return;
     }
 
+    const host = window.location.hostname;
+    const isProductionDomain = host.includes("cbamvalid.com") || host.includes("cbam-desk.web.app");
+    const isSandbox = process.env.NEXT_PUBLIC_PADDLE_SANDBOX === "true" || process.env.NEXT_PUBLIC_PADDLE_ENV !== "production";
+
+    if (isSandbox && isProductionDomain) {
+      setError("Sandbox payment testing is disabled on the production domain. Please use the staging site for testing.");
+      setLoadingPkg(null);
+      return;
+    }
+
     setLoadingPkg(slug);
     setError("");
 

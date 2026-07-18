@@ -73,10 +73,20 @@ export const paddleWebhook = onRequest(
           return;
         }
       }
-
       // 6. Process the event payload
       try {
-        await processWebhookEvent(verifiedEvent);
+        const host = (request.headers.host || "").toLowerCase();
+        const forwardedHost = (request.headers["x-forwarded-host"] as string || "").toLowerCase();
+        
+        const isProductionDomain = 
+          host.includes("cbamvalid.com") || 
+          host.includes("cbam-desk.web.app") || 
+          host.includes("cbam-desk.firebaseapp.com") ||
+          forwardedHost.includes("cbamvalid.com") ||
+          forwardedHost.includes("cbam-desk.web.app") ||
+          forwardedHost.includes("cbam-desk.firebaseapp.com");
+
+        await processWebhookEvent(verifiedEvent, isProductionDomain);
 
         // Mark event as PROCESSED
         await eventRef.update({

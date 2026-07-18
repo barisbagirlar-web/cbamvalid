@@ -1,0 +1,103 @@
+{
+  "name": "EU Regulation Watchdog",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": "interval",
+        "value": 12,
+        "unit": "hours"
+      },
+      "name": "Trigger Interval",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32023R0956",
+        "responseFormat": "string",
+        "options": {}
+      },
+      "name": "HTTP Request Eur-Lex",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ .body }}",
+              "operation": "contains",
+              "value2": "Regulation (EU) 2023/956"
+            }
+          ]
+        }
+      },
+      "name": "Verify Status",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "email": "info@cbamvalid.com",
+        "subject": "ALERT: CBAM Regulation page changed or unreachable",
+        "message": "The official EUR-Lex regulation text page has changed or could not be verified by the automated watchdog."
+      },
+      "name": "Send Alert Email",
+      "type": "n8n-nodes-base.email",
+      "typeVersion": 1,
+      "position": [
+        700,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "Trigger Interval": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request Eur-Lex",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request Eur-Lex": {
+      "main": [
+        [
+          {
+            "node": "Verify Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Status": {
+      "main": [
+        null,
+        [
+          {
+            "node": "Send Alert Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

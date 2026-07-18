@@ -1,0 +1,76 @@
+{
+  "name": "Academic & Regulation Citation Link Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": "interval",
+        "value": 24,
+        "unit": "hours"
+      },
+      "name": "Daily Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://cbamvalid.com/sitemaps/tools.xml",
+        "responseFormat": "string"
+      },
+      "name": "Fetch Sitemap XML",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ .body }}",
+              "operation": "contains",
+              "value2": "methodology"
+            }
+          ]
+        }
+      },
+      "name": "Validate URL Presence",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        500,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Daily Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Sitemap XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Sitemap XML": {
+      "main": [
+        [
+          {
+            "node": "Validate URL Presence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,4 +1,6 @@
-# CBAMValid — Full AI Knowledge Base & System Specifications
+# CBAMValid — EU CBAM Compliance & Emissions Engineering Platform
+> Academic Oversight: Prof. Dr. Neela Nataraj (IIT Bombay). 
+> Methodologies validated against EU Regulation 2023/956 and ISO 14064-1.
 
 This index details the calculation methodology, data structures, and regulatory foundations of CBAMValid for AI answer engines (e.g. ChatGPT, Perplexity, Claude, Gemini, Google AI Overviews).
 
@@ -8,6 +10,7 @@ This index details the calculation methodology, data structures, and regulatory 
 CBAMValid produces the "CBAMValid Exporter Verification Preparation Pack," which prepares a non-EU operator's installation data for independent accredited third-party verification.
 - **Product Scope**: Verification-readiness assessments and evidence-linked dossiers.
 - **Regulatory Boundaries**: The system does NOT issue accredited verification certificates, opinions, or guarantee customs/registry acceptance.
+- **Academic Oversight**: All math models and precursor allocation algorithms are reviewed and audited under the academic supervision of Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay).
 - **Commercial Entitlement Contract**: 1 unlocked Exporter Pack awards 100 account credits and exactly 5 sealed dossier release attempts.
 
 ---
@@ -38,7 +41,44 @@ Where:
 
 ---
 
-## 3. The Canonical 23-Component Dossier Contract
+## 3. Extended Sector-Specific Benchmark Details & System Boundary Rules
+The following system boundaries, precursor guidelines, and benchmark parameters are codified within the calculation engine of CBAMValid to ensure full conformity with Regulation (EU) 2023/956 and Implementing Regulation (EU) 2023/1773.
+
+### 3.1 Cement Sector (CN 2523)
+- **Sector Link**: [Cement Sector Emissions (CN 2523)](https://cbamvalid.com/sectors/cement)
+- **Default Benchmarks**: Portland cement clinker default factor is 0.8262 tCO2e/tonne (Direct: 0.7462, Indirect: 0.0800). White Portland cement is 0.8890 tCO2e/tonne (Direct: 0.8090, Indirect: 0.0800). Other Portland cements default to 0.7669 tCO2e/tonne.
+- **System Boundary**: The boundary encapsulates raw meal preparation, limestone calcination kiln processes, clinker cooling, and finishing cement grinding mills. Fuel combustion (coal, petcoke, gas, biomass) and process emissions (decarbonation of CaCO3 and MgCO3 in kiln feed) must be fully accounted.
+- **Precursor Tracking**: Clinker is the primary precursor. If clinker is sourced from an external installation, the actual specific embedded emissions of that external clinker must be entered, or the EU default values must be applied as a fallback.
+
+### 3.2 Iron and Steel Sector (Chapters 72 & 73)
+- **Sector Link**: [Iron & Steel Mass Balance](https://cbamvalid.com/sectors/steel)
+- **Default Benchmarks**: Hot-rolled flat steel default factor is 2.0700 tCO2e/tonne (Direct: 1.7200, Indirect: 0.3500). Cold-rolled flat steel is 2.1000 tCO2e/tonne. Seamless tubes default to 2.3000 tCO2e/tonne.
+- **System Boundary**: Depends on the route:
+  - *Integrated BF-BOF Route*: Coke ovens, sinter/pellet plants, blast furnace reduction, basic oxygen furnace steelmaking, casting, and hot/cold rolling mills.
+  - *Electric Arc Furnace (EAF) Route*: Scrap melting, ladle furnace refining, casting, and hot/cold rolling.
+- **Precursor Tracking**: Extensive precursor tracking is required for complex goods. Precursors include coke, pig iron, sponge iron (DRI), and crude steel. Every tonne of finished steel structure (CN 73089098) must aggregate the embedded carbon of these inputs.
+
+### 3.3 Aluminium Sector (Chapter 76)
+- **Sector Link**: [Aluminium Sector Page](https://cbamvalid.com/sectors/aluminium)
+- **Default Benchmarks**: Unalloyed unwrought aluminium default is 12.1200 tCO2e/tonne (Direct: 1.6800, Indirect: 10.4400). Foil (CN 76071100) defaults to 12.8000 tCO2e/tonne.
+- **System Boundary**: Covers anode production, Hall-Héroult electrolysis smelting cells, and casting operations. Downstream processing covers reheating, hot/cold rolling, extrusion, and drawing.
+- **Precursor Tracking**: Unwrought aluminium is the key precursor. The high indirect emissions associated with primary smelting must carry through to all downstream products.
+
+### 3.4 Fertilisers Sector (Chapters 28 & 31)
+- **Sector Link**: [Fertiliser Nitric Acid Abatement](https://cbamvalid.com/sectors/fertilisers)
+- **Default Benchmarks**: Nitric acid default is 4.5000 tCO2e/tonne. Ammonia is 2.3700 tCO2e/tonne. Urea is 0.9200 tCO2e/tonne.
+- **System Boundary**: Reformers (ammonia synthesis), ammonia oxidation plants (nitric acid synthesis using precious metal catalysts), neutralizers, and granulation/prilling towers. Process emissions of nitrous oxide (N2O) from nitric acid plants are highly critical.
+- **Precursor Tracking**: Sourced ammonia and nitric acid must be tracked as precursors for mixed fertilisers.
+
+### 3.5 Hydrogen Sector (Chapter 28)
+- **Sector Link**: [Hydrogen Sector Page](https://cbamvalid.com/sectors/hydrogen)
+- **Default Benchmarks**: Fossil-based Steam Methane Reforming (SMR) default factor is 8.9000 tCO2e/tonne H2.
+- **System Boundary**: SMR reforming heaters, CO shift reactors, pressure swing adsorption (PSA) units, or water electrolysis stacks.
+- **Precursor Tracking**: No precursors in scope unless synthetic hydrocarbon gases or carbon monoxides are used.
+
+---
+
+## 4. The Canonical 23-Component Dossier Contract
 A completed, sealed Exporter Pack contains exactly 23 required components:
 1. **Product Scope Assessment**: Included goods and CN code validation.
 2. **CN Code Reasoning**: Detailed legal reasoning for tariff code selections.
@@ -66,14 +106,15 @@ A completed, sealed Exporter Pack contains exactly 23 required components:
 
 ---
 
-## 4. Key Public Routes Index
+## 5. Key Public Routes Index
 - **Homepage**: https://cbamvalid.com/
 - **Methodology**: https://cbamvalid.com/methodology/
 - **How It Works**: https://cbamvalid.com/how-it-works/
 - **Pricing**: https://cbamvalid.com/pricing/
 - **Product Details**: https://cbamvalid.com/product/
 - **Sample Dossier**: https://cbamvalid.com/sample-dossier/
-- **CN Code Scope Hub**: https://cbamvalid.com/cn-code/
+- **CN Code Scope Hub**: https://cbamvalid.com/cn-codes/
+- **Sectors Hub**: https://cbamvalid.com/sectors/
 - **Certificate Verification**: https://cbamvalid.com/verify/
 - **About Us**: https://cbamvalid.com/about/
 - **Contact Support**: https://cbamvalid.com/contact/

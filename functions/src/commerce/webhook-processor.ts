@@ -7,12 +7,19 @@ import { PRODUCT_CATALOG } from "./catalog";
 /**
  * Main processor of verified webhook events from Paddle
  */
-export async function processWebhookEvent(event: any): Promise<void> {
+export async function processWebhookEvent(event: any, isProductionDomain = false): Promise<void> {
   const eventId = event.eventId;
   const eventType = event.eventType;
   const data = event.data;
 
-  console.log(`[PADDLE-PROCESSOR] Processing event ${eventId} of type ${eventType}`);
+  console.log(`[PADDLE-PROCESSOR] Processing event ${eventId} of type ${eventType} (isProductionDomain: ${isProductionDomain})`);
+
+  // 360-degree Sandbox Protection Guard
+  const isSandbox = process.env.NEXT_PUBLIC_PADDLE_SANDBOX === "true";
+  if (isSandbox && isProductionDomain) {
+    console.warn(`[SECURITY ALERT] Sandbox transaction ${eventId} rejected on production domain!`);
+    throw new Error("SANDBOX_TRANSACTION_BLOCKED_ON_PRODUCTION");
+  }
 
   if (eventType === "transaction.completed") {
     await handleTransactionCompleted(eventId, data);

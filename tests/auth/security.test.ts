@@ -270,4 +270,32 @@ describe("Production Security & Foundation Audits", () => {
     expect(mockDbTransaction.set.mock.calls.length).toBeGreaterThanOrEqual(3);
     expect(mockDbTransaction.update.mock.calls.length).toBeGreaterThanOrEqual(1);
   });
+
+  it("12. Sandbox transaction completed webhook throws and blocks database writes if received on production domain", async () => {
+    const { processWebhookEvent } = await import("../../functions/src/commerce/webhook-processor");
+    const event = {
+      eventId: "evt_sandbox_payment_reject",
+      eventType: "transaction.completed",
+      data: {
+        id: "txn_sandbox_payment_reject",
+        status: "completed",
+        currencyCode: "USD",
+        customData: {
+          uid: "test-user-uid",
+          orderId: "ord_test_reject",
+          productCode: "CBAM_EXPORTER_FINAL_REPORT",
+        },
+        items: [{ quantity: 1 }]
+      }
+    };
+
+    const originalSandbox = process.env.NEXT_PUBLIC_PADDLE_SANDBOX;
+    process.env.NEXT_PUBLIC_PADDLE_SANDBOX = "true";
+
+    try {
+      await expect(processWebhookEvent(event, true)).rejects.toThrow("SANDBOX_TRANSACTION_BLOCKED_ON_PRODUCTION");
+    } finally {
+      process.env.NEXT_PUBLIC_PADDLE_SANDBOX = originalSandbox;
+    }
+  });
 });

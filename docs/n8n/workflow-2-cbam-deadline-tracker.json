@@ -1,0 +1,90 @@
+{
+  "name": "CBAM Deadline Tracker & Alerts",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyWeek"
+            }
+          ]
+        }
+      },
+      "name": "Weekly Check",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst nextDeadlines = [\n  { date: new Date('2026-01-31'), period: 'Q4 2025' },\n  { date: new Date('2026-04-30'), period: 'Q1 2026' }\n];\nconst now = new Date();\nconst imminent = nextDeadlines.filter(d => {\n  const diffDays = (d.date - now) / (1000 * 60 * 60 * 24);\n  return diffDays > 0 && diffDays <= 14;\n});\nreturn imminent.map(d => ({ json: { ...d, daysRemaining: Math.ceil((d.date - now) / (1000 * 60 * 60 * 24)) } }));\n"
+      },
+      "name": "Check Proximity",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "=:warning: CBAM Compliance Deadline Alert: the reporting period {{ .period }} closes in {{ .daysRemaining }} days (Deadline: {{ .date }}). Ensure all dossiers are sealed."
+            }
+          ]
+        }
+      },
+      "name": "Slack Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        500,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Weekly Check": {
+      "main": [
+        [
+          {
+            "node": "Check Proximity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Proximity": {
+      "main": [
+        [
+          {
+            "node": "Slack Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

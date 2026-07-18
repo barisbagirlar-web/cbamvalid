@@ -1,0 +1,45 @@
+{
+  "name": "Competitor CBAM Pricing Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": "interval",
+        "value": 7,
+        "unit": "days"
+      },
+      "name": "Weekly Run",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://cbamvalid.com/pricing",
+        "responseFormat": "string"
+      },
+      "name": "Check Own Pricing Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        300,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Weekly Run": {
+      "main": [
+        [
+          {
+            "node": "Check Own Pricing Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
