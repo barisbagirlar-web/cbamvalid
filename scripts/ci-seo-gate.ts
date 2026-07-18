@@ -341,6 +341,139 @@ if (salienceContent.includes("SALIENCE")
   fail("Phase 4 Salience", "verify-entity-salience.ts missing or incomplete");
 }
 
+// ─── GATE 11: Şartname v2.1 — SEO Registry types exist (§2) ───
+const seoTypesContent = checkFileExists("lib/seo/types.ts");
+if (seoTypesContent.includes("PageRole")
+    && seoTypesContent.includes("ContentQualityContract")
+    && seoTypesContent.includes("SeoPageRecord")
+    && seoTypesContent.includes("SeoChange")) {
+  pass("§2 Registry types: PageRole + ContentQualityContract + SeoPageRecord + SeoChange defined");
+} else {
+  fail("§2 Registry types", "lib/seo/types.ts missing required type definitions");
+}
+
+// ─── GATE 11.1: Şartname v2.1 — Content quality contracts integrated ───
+if (seoTypesContent.includes("uniqueValueTypes")
+    && seoTypesContent.includes("userProblem")
+    && seoTypesContent.includes("decisionEnabled")
+    && seoTypesContent.includes("lastHumanReviewAt")) {
+  pass("§10.2 Content quality: ContentQualityContract interface with all required fields");
+} else {
+  fail("§10.2 Content quality", "ContentQualityContract missing required fields (userProblem, decisionEnabled, uniqueValueTypes, lastHumanReviewAt)");
+}
+
+// ─── GATE 11.2: Şartname v2.1 — SEO change log infrastructure (§24) ───
+const changeLogContent = checkFileExists("lib/seo/change-log.ts");
+if (changeLogContent.includes("SeoChangeRecord")
+    && changeLogContent.includes("SCO-001")
+    && changeLogContent.includes("hypothesis")) {
+  pass("§24 Change log: lib/seo/change-log.ts with structured SEOChange records");
+} else {
+  fail("§24 Change log", "lib/seo/change-log.ts missing or incomplete");
+}
+
+// ─── GATE 11.3: Şartname v2.1 — Entity Wikidata validation script (§12.5/Ek Kod-4) ───
+const wikiContent = checkFileExists("scripts/validate-entity.ts");
+if (wikiContent.includes("wikidata")
+    && wikiContent.includes("QID")
+    && wikiContent.includes("Special:EntityData")) {
+  pass("§12.5 Entity validation: scripts/validate-entity.ts with Wikidata QID check");
+} else {
+  fail("§12.5 Entity validation", "scripts/validate-entity.ts missing or incomplete");
+}
+
+// ─── GATE 11.4: Şartname v2.1 — Hreflang completeness checker (§17/Ek Kod-7) ───
+const hreflangContent = checkFileExists("scripts/check-hreflang.ts");
+if (hreflangContent.includes("HREFLANG")
+    && hreflangContent.includes("x-default")
+    && hreflangContent.includes("SUPPORTED_LOCALES")) {
+  pass("§17 Hreflang: scripts/check-hreflang.ts completeness validator exists");
+} else {
+  fail("§17 Hreflang", "scripts/check-hreflang.ts missing or incomplete");
+}
+
+// ─── GATE 11.5: Şartname v2.1 — Internal link graph analyzer (§14/Ek Kod-5) ───
+const linkAnalyzerContent = checkFileExists("scripts/analyze-links.ts");
+if (linkAnalyzerContent.includes("LINK-ANALYZER")
+    && linkAnalyzerContent.includes("anchor text")
+    && linkAnalyzerContent.includes("depth")) {
+  pass("§14 Link graph: scripts/analyze-links.ts with anchor diversity + depth analytics");
+} else {
+  fail("§14 Link graph", "scripts/analyze-links.ts missing or incomplete");
+}
+
+// ─── GATE 11.6: Şartname v2.1 — Structured data validator (§15/Ek Kod-6) ───
+const schemaValidatorContent = checkFileExists("scripts/validate-schema.ts");
+if (schemaValidatorContent.includes("SCHEMA")
+    && schemaValidatorContent.includes("DEPRECATED_TYPES")
+    && schemaValidatorContent.includes("REQUIRED_PROPERTIES")) {
+  pass("§15 Schema validation: scripts/validate-schema.ts with deprecated types + required property checks");
+} else {
+  fail("§15 Schema validation", "scripts/validate-schema.ts missing or incomplete");
+}
+
+// ─── GATE 11.7: Şartname v2.1 — Content near-duplicate detector (§19.2/§26/Ek Kod-11) ───
+const dedupContent = checkFileExists("scripts/detect-near-duplicates.ts");
+if (dedupContent.includes("DEDUP")
+    && dedupContent.includes("jaccardSimilarity")
+    && dedupContent.includes("SIMILARITY_THRESHOLD")) {
+  pass("§19.2 Dedup: scripts/detect-near-duplicates.ts with Jaccard similarity exists");
+} else {
+  fail("§19.2 Dedup", "scripts/detect-near-duplicates.ts missing or incomplete");
+}
+
+// ─── GATE 11.8: Şartname v2.1 — HTML parity checker (§8.4/Ek Kod-3) ───
+const parityContent = checkFileExists("scripts/check-html-parity.ts");
+if (parityContent.includes("HTML-PARITY")
+    && parityContent.includes("CRITICAL_ELEMENTS")
+    && parityContent.includes("checkRawHtmlContent")) {
+  pass("§8.4 HTML parity: scripts/check-html-parity.ts SSR/CSR content gap detector exists");
+} else {
+  fail("§8.4 HTML parity", "scripts/check-html-parity.ts missing or incomplete");
+}
+
+// ─── GATE 11.9: Şartname v2.1 — Policy anti-spam gate (§1/§34) ───
+const policyContent = checkFileExists("scripts/check-policy-gate.ts");
+if (policyContent.includes("POLICY-GATE")
+    && policyContent.includes("SPAM_CHECKS")
+    && policyContent.includes("google.com/search/docs/essentials/spam-policies")) {
+  pass("§1/§34 Policy gate: scripts/check-policy-gate.ts anti-spam scanner exists");
+} else {
+  fail("§1/§34 Policy gate", "scripts/check-policy-gate.ts missing or incomplete");
+}
+
+// ─── GATE 11.10: Şartname v2.1 — BigQuery analytics SQL (§23/Ek Kod-10) ───
+const bqContent = checkFileExists("scripts/bigquery-seo-analytics.ts");
+const bqSqlContent = checkFileExists("scripts/bigquery-seo-tables.sql");
+if (bqContent.includes("STRIKING_DISTANCE_SQL")
+    && bqContent.includes("CONTENT_DECAY_SQL")
+    && bqSqlContent.includes("seo_analytics")) {
+  pass("§23 BigQuery: striking-distance SQL + content decay + table schemas defined");
+} else {
+  fail("§23 BigQuery", "BigQuery analytics SQL templates missing or incomplete");
+}
+
+// ─── GATE 11.11: Şartname v2.1 — Lighthouse CI config (§21/Ek Kod-8) ───
+const lhContent = checkFileExists("lighthouserc.js");
+if (lhContent.includes("largest-contentful-paint")
+    && lhContent.includes("cumulative-layout-shift")
+    && lhContent.includes("total-blocking-time")) {
+  pass("§21 Performance: lighthouserc.js with CWV budgets configured");
+} else {
+  fail("§21 Performance", "lighthouserc.js missing or missing CWV budget configuration");
+}
+
+// ─── GATE 11.12: Şartname v2.1 — robots.txt production standard (§6) ───
+const robotsContent = checkFileExists("public/robots.txt");
+if (robotsContent.includes("User-agent: *")
+    && robotsContent.includes("Allow: /")
+    && robotsContent.includes("Disallow:")
+    && robotsContent.includes("Sitemap:")) {
+  pass("§6 Robots.txt: production-standard robots.txt with sitemap reference exists");
+} else {
+  fail("§6 Robots.txt", "public/robots.txt missing or incomplete");
+}
+
 // ─── FINAL VERDICT ───
 console.log("\n[SEO-GATE] ========================================");
 if (exitCode === 0) {

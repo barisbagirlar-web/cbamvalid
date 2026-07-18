@@ -1,0 +1,74 @@
+# ─── §29: CI/CD SEO QUALITY GATES — GitHub Actions ───
+# Şartname v2.1 Enterprise
+# 
+# Runs on every PR, push to main, and scheduled cron.
+# Production deploy is BLOCKED if ANY SEO gate fails.
+
+name: seo-quality-gates
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "15 2 * * *"  # Daily at 02:15 UTC
+
+concurrency:
+  group: seo-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  seo-build-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run build
+
+      # ─── SEO Invariant Gates ───
+      - run: npm run seo:validate-registry
+      - run: npm run seo:validate-routes
+      - run: npm run seo:validate-raw-html
+      - run: npm run seo:validate-canonicals
+      - run: npm run seo:validate-hreflang
+      - run: npm run seo:validate-sitemaps
+      - run: npm run seo:validate-robots
+      - run: npm run seo:validate-schema
+      - run: npm run seo:validate-internal-links
+      - run: npm run seo:detect-cannibalization
+      - run: npm run seo:detect-near-duplicates
+      - run: npm run seo:policy-gate
+      - run: npm run seo:validate-entity
+      - run: npm run seo:validate-performance
+
+      # ─── All-in-one gate (33+ invariants) ───
+      - run: npm run seo:ci-gate
+
+  seo-live-prod:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npm run seo:prod-crawl
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+      - run: npm run seo:prod-contract
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
