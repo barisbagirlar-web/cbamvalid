@@ -47,6 +47,25 @@ if (schemaContent.includes("generateEnterpriseGraphSchema")
   fail("Enterprise graph schema", "missing sameAs/dateModified/enterprise export");
 }
 
+// ─── GATE 1.1: Legislation schema type (Phase 2 — YMYL regulatory authority) ───
+if (schemaContent.includes('"@type": "Legislation"')
+    && schemaContent.includes('legislationType')
+    && schemaContent.includes('jurisdiction')
+    && schemaContent.includes('eli/reg/2023/956/oj')
+    && schemaContent.includes('eli/reg_impl/2023/1773/oj')) {
+  pass("Schema citations: Legislation type with EUR-Lex jurisdiction (at least 2 citations)");
+} else {
+  fail("Schema Legislation type", "citations still use CreativeWork — must be Legislation with jurisdiction");
+}
+
+// ─── GATE 1.2: x-default hreflang (Phase 2 — international SEO anchor) ───
+const metadataContent = checkFileExists("lib/seo/build-metadata.ts");
+if (metadataContent.includes('x-default') && metadataContent.includes('alternates')) {
+  pass("build-metadata.ts: x-default hreflang configured in alternates.languages");
+} else {
+  fail("x-default hreflang", "missing from alternates.languages — international SEO signal absent");
+}
+
 // ─── GATE 2: llms.txt & llms-full.txt ───
 const llmsContent = checkFileExists("public/llms.txt");
 const llmsFullContent = checkFileExists("public/llms-full.txt");
@@ -103,6 +122,17 @@ if (sectorContent.includes("eur-lex.europa.eu")) {
   pass("Sector page: eur-lex citation present");
 } else {
   fail("Sector page: eur-lex citation", "missing");
+}
+
+// ─── GATE 4.1: Passage Indexing snippet (Phase 2 — AI Overview optimization) ───
+const cnCodePageContent = checkFileExists("app/(public)/cn-codes/[code]/[sector]/page.tsx");
+if (cnCodePageContent.includes("Definition &amp; Default Factor")
+    && cnCodePageContent.includes("Passage Indexing")
+    && cnCodePageContent.includes("Transitional Registry")
+    && cnCodePageContent.includes("indirectEmissionsInScope")) {
+  pass("CN code page: Passage Indexing 'Definition & Default Factor' snippet for AI Overview");
+} else {
+  fail("CN code page: Passage Indexing", "missing AI Overview snippet after H1");
 }
 
 const methodologyContent = checkFileExists("components/methodology/MethodologyContent.tsx");

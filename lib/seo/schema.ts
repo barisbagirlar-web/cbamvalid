@@ -187,30 +187,39 @@ export function generateArticleSchema(opts: {
   dateModified?: string;
   citations?: Array<{ name: string; url: string }>;
 }) {
+  // PHASE 2: Legislation type for YMYL regulatory authority signal (Google prioritizes Legislation over CreativeWork)
   const defaultCitations = [
     {
-      "@type": "CreativeWork",
+      "@type": "Legislation",
+      "legislationType": "Regulation",
       "name": "Regulation (EU) 2023/956 — Carbon Border Adjustment Mechanism",
-      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32023R0956"
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32023R0956",
+      "jurisdiction": { "@type": "AdministrativeArea", "name": "European Union" }
     },
     {
-      "@type": "CreativeWork",
+      "@type": "Legislation",
+      "legislationType": "Regulation",
       "name": "Implementing Regulation (EU) 2023/1773",
-      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32023R1773"
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32023R1773",
+      "jurisdiction": { "@type": "AdministrativeArea", "name": "European Union" }
     },
     {
-      "@type": "CreativeWork",
+      "@type": "Legislation",
+      "legislationType": "Regulation",
       "name": "Commission Delegated Regulation (EU) 2024/3215",
-      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=OJ:L_202403215"
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=OJ:L_202403215",
+      "jurisdiction": { "@type": "AdministrativeArea", "name": "European Union" }
     }
   ];
 
   const citations =
     opts.citations && opts.citations.length > 0
       ? opts.citations.map(c => ({
-          "@type": "CreativeWork",
+          "@type": "Legislation",
+          "legislationType": "Regulation",
           "name": c.name,
-          "url": c.url
+          "url": c.url,
+          "jurisdiction": { "@type": "AdministrativeArea", "name": "European Union" }
         }))
       : defaultCitations;
 
@@ -298,11 +307,19 @@ export function generateEnterpriseGraphSchema(currentPath: string) {
         "operatingSystem": "Web",
         "author": { "@id": `${siteConfig.canonicalOrigin}/team/neela-nataraj/#person` },
         "provider": { "@id": `${siteConfig.canonicalOrigin}/#organization` },
-        "citation": {
-          "@type": "CreativeWork",
+        "citation": [{
+          "@type": "Legislation",
+          "legislationType": "Regulation",
           "name": "Regulation (EU) 2023/956 of the European Parliament and of the Council",
-          "url": "https://eur-lex.europa.eu/eli/reg/2023/956/oj"
-        },
+          "url": "https://eur-lex.europa.eu/eli/reg/2023/956/oj",
+          "jurisdiction": { "@type": "AdministrativeArea", "name": "European Union" }
+        }, {
+          "@type": "Legislation",
+          "legislationType": "Regulation",
+          "name": "Implementing Regulation (EU) 2023/1773",
+          "url": "https://eur-lex.europa.eu/eli/reg_impl/2023/1773/oj",
+          "jurisdiction": { "@type": "AdministrativeArea", "name": "European Union" }
+        }],
         "dateModified": "2026-07-18T12:00:00Z",
         "hasOfferCatalog": {
           "@type": "OfferCatalog",

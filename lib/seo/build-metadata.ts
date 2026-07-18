@@ -48,12 +48,14 @@ export function generateSeoMetadata(path: string): Metadata {
   };
 
   const pathPart = meta.canonicalPath === "/" ? "" : meta.canonicalPath;
+  // PHASE 2: x-default hreflang anchors global audience to English canonical
   metadata.alternates = {
     canonical: `${siteConfig.canonicalOrigin}${meta.canonicalPath}`,
     languages: {
       "en": `${siteConfig.canonicalOrigin}${meta.canonicalPath}`,
       "de": `${siteConfig.canonicalOrigin}/de${pathPart}`,
       "fr": `${siteConfig.canonicalOrigin}/fr${pathPart}`,
+      "x-default": `${siteConfig.canonicalOrigin}${meta.canonicalPath}`,
     },
   };
 

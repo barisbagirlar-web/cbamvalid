@@ -98,6 +98,18 @@ export default async function CnCodeSectorPage({ params }: PageProps) {
           <h1 className='text-3xl md:text-4xl font-serif font-bold tracking-tight mb-3'>
             CBAM for CN Code <span className='font-mono text-accent'>{code}</span>
           </h1>
+
+          {/* PHASE 2 §4: Passage Indexing block — AI Overview "Definition & Default Factor" snippet */}
+          <div className='bg-accent/5 border border-accent/20 rounded-lg p-4 mb-3'>
+            <p className='text-sm text-foreground leading-relaxed'>
+              <strong>Definition &amp; Default Factor:</strong> Under the EU Carbon Border Adjustment Mechanism (CBAM), CN Code <strong>{code}</strong> covers <em>{entry!.description.toLowerCase()}</em>. The European Commission Transitional Registry establishes the default embedded emissions benchmark at{' '}
+              <strong className='font-mono text-accent'>{entry!.benchmarkTco2ePerTonne !== null ? `${entry!.benchmarkTco2ePerTonne} tCO2e per tonne` : `${entry!.defaultIndirectFactor} tCO2e/MWh`}</strong>{' '}
+              of product, per Implementing Regulation (EU) 2023/1773 Annex III.{' '}
+              {entry!.requiresPrecursorTracking ? 'Importers must also account for upstream precursor material emissions — tracking is mandatory for complex goods under this sector.' : ''}{' '}
+              {entry!.indirectEmissionsInScope ? 'Indirect electricity emissions are fully in scope and must be reported using actual consumption data or applicable grid factors.' : 'Only direct process emissions are in scope for this product category.'}
+            </p>
+          </div>
+
           <p className='text-lg text-muted leading-relaxed'>{entry!.description}</p>
           <p className='mt-3 text-xs text-muted'>
             Source:{' '}
