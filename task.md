@@ -11,5 +11,8 @@
 - [x] Fix Paddle client-side token key configuration in production environment env variables
 - [x] Run vitest tests and build compilation scripts successfully
 - [x] Run high-concurrency 50-event webhook stress tests successfully
+- [x] Fix PADDLE_WEBHOOK_SECRET secret name mismatch in Cloud Functions verifier
+- [x] Optimize sitemap.xml priority, weekly/monthly crawl frequency, and trailing slashes
+- [x] Redesign sitemap dates generation using daily offsets to guarantee zero date monokültür overlaps
 - [x] Deploy functions and hosting to Firebase production environment
 - [x] Commit and push clean codebase to GitHub repository
