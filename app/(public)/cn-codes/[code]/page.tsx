@@ -18,6 +18,7 @@ import { getCnCodeEntry, CN_CODE_REGISTRY } from '@/lib/cbam/cn-codes/cn-code-re
 import { ExpertAuthoritySection } from '@/components/seo/ExpertAuthoritySection';
 import { EmbeddedCarbonCalculator } from '@/components/seo/EmbeddedCarbonCalculator';
 import { PassageIndexingFactBox, TransitionalPeriodFactBox } from '@/components/seo/PassageIndexingFactBox';
+import { TopologyLinker } from '@/components/seo/TopologyLinker';
 
 interface PageProps {
   params: Promise<{ code: string }>;
@@ -69,6 +70,11 @@ export default async function CnCodeDetailPage({ params }: PageProps) {
   const relatedCodes = CN_CODE_REGISTRY
     .filter((e) => e.sector === entry.sector && e.code !== code)
     .slice(0, 5);
+
+  // PHASE 4: Extended related codes for TopologyLinker (up to 50 for graph connectivity)
+  const topologyRelatedCodes = CN_CODE_REGISTRY
+    .filter((e) => e.sector === entry.sector && e.code !== code)
+    .slice(0, 50);
 
   // ─── AI Overview Fact Box content ───
   const factBoxQuestion = `What is the CBAM emission factor for CN code ${code}?`;
@@ -295,6 +301,13 @@ export default async function CnCodeDetailPage({ params }: PageProps) {
 
         {/* ─── Expert Authority ─── */}
         <ExpertAuthoritySection toolName={`CBAM Calculator — ${sectorLabel}`} />
+
+        {/* ─── PHASE 4: TopologyLinker — Hub-Spoke Internal Link Graph ─── */}
+        <TopologyLinker
+          currentCode={code}
+          sectorSlug={entry.sector}
+          relatedCodes={topologyRelatedCodes}
+        />
 
         {/* ─── Disclaimer ─── */}
         <div className='mt-8 p-4 border border-border/50 rounded-lg text-xs text-muted'>

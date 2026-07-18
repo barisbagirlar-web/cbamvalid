@@ -271,6 +271,76 @@ if (cnSitemapContent.includes("cn-codes/${entry.code}")
   fail("Phase 3 CN sitemap", "missing dual URL pattern — must generate both /cn-codes/:code and /cn-codes/:code/:sector");
 }
 
+// ─── GATE 10: Phase 4 — TopologyLinker component ───
+const topologyContent = checkFileExists("components/seo/TopologyLinker.tsx");
+if (topologyContent.includes("TopologyLinker")
+    && topologyContent.includes("sectorSlug")
+    && topologyContent.includes("relatedCodes")
+    && topologyContent.includes("SECTOR_DISPLAY")) {
+  pass("Phase 4 Topology: TopologyLinker with Hub-Spoke link graph exists");
+} else {
+  fail("Phase 4 Topology", "TopologyLinker.tsx missing or incomplete sector taxonomy");
+}
+
+// ─── GATE 10.1: Phase 4 — TopologyLinker injected into both CN code page templates ───
+if (codePageContent.includes("TopologyLinker")
+    && cnCodePageContent.includes("TopologyLinker")) {
+  pass("Phase 4 Topology injection: TopologyLinker present in both CN code templates");
+} else {
+  fail("Phase 4 Topology injection", "TopologyLinker missing from one or both CN code page templates");
+}
+
+// ─── GATE 10.2: Phase 4 — Financial Impact Report pages ───
+const reportContent = checkFileExists("app/(public)/reports/cbam-financial-impact-[sector]-2026/page.tsx");
+if (reportContent.includes("Dataset")
+    && reportContent.includes("Financial Impact")
+    && reportContent.includes("EU_ETS_PRICE")
+    && reportContent.includes("generateStaticParams")) {
+  pass("Phase 4 Reports: Financial Impact report with Dataset schema + SSG exists");
+} else {
+  fail("Phase 4 Reports", "Financial Impact report page missing or incomplete");
+}
+
+// ─── GATE 10.3: Phase 4 — Embed widget page ───
+const widgetContent = checkFileExists("app/(public)/widget/cbam-calculator/page.tsx");
+if (widgetContent.includes('rel="dofollow"')
+    && widgetContent.includes('ref=widget-embed')
+    && widgetContent.includes('CBAMValid Compliance Engine')) {
+  pass("Phase 4 Widget: Embeddable calculator with dofollow canonical backlink");
+} else {
+  fail("Phase 4 Widget", "Widget page missing dofollow backlink (INV-09 violation)");
+}
+
+// ─── GATE 10.4: Phase 4 — embed.js public script ───
+const embedContent = checkFileExists("public/embed.js");
+if (embedContent.includes('rel="dofollow"')
+    && embedContent.includes('cbamvalid-widget-container')
+    && embedContent.includes('ref=widget-embed')) {
+  pass("Phase 4 Embed: public/embed.js with dofollow backlink exists");
+} else {
+  fail("Phase 4 Embed", "public/embed.js missing or lacking INV-09 dofollow backlink enforcement");
+}
+
+// ─── GATE 10.5: Phase 4 — Graph connectivity CI script ───
+const graphContent = checkFileExists("scripts/verify-graph-connectivity.ts");
+if (graphContent.includes("GRAPH")
+    && graphContent.includes("In-Degree")
+    && graphContent.includes("orphan")) {
+  pass("Phase 4 Graph: verify-graph-connectivity.ts orphan page detector exists");
+} else {
+  fail("Phase 4 Graph", "verify-graph-connectivity.ts missing or incomplete");
+}
+
+// ─── GATE 10.6: Phase 4 — Entity salience CI script ───
+const salienceContent = checkFileExists("scripts/verify-entity-salience.ts");
+if (salienceContent.includes("SALIENCE")
+    && salienceContent.includes("PRIMARY_ENTITIES")
+    && salienceContent.includes("SALIENCE_THRESHOLD")) {
+  pass("Phase 4 Salience: verify-entity-salience.ts NLP gate with CBAM entity list exists");
+} else {
+  fail("Phase 4 Salience", "verify-entity-salience.ts missing or incomplete");
+}
+
 // ─── FINAL VERDICT ───
 console.log("\n[SEO-GATE] ========================================");
 if (exitCode === 0) {

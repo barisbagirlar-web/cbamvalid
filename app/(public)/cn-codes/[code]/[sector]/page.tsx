@@ -6,6 +6,7 @@ import { generateBreadcrumbSchema, generateFAQSchema, generateEnterpriseGraphSch
 import { validateCnCodeSector, getCnCodesBySector, CbamSectorSlug } from '@/lib/cbam/cn-codes/cn-code-registry';
 import { ExpertAuthoritySection } from '@/components/seo/ExpertAuthoritySection';
 import { EmbeddedCarbonCalculator } from '@/components/seo/EmbeddedCarbonCalculator';
+import { TopologyLinker } from '@/components/seo/TopologyLinker';
 
 interface PageProps {
   params: Promise<{ code: string; sector: string }>;
@@ -46,6 +47,9 @@ export default async function CnCodeSectorPage({ params }: PageProps) {
   if (!entry) notFound();
   const sectorLabel = SECTOR_DISPLAY[entry!.sector] ?? entry!.sector;
   const relatedCodes = getCnCodesBySector(entry!.sector as CbamSectorSlug).filter((e) => e.code !== code).slice(0, 5);
+
+  // PHASE 4: Extended related codes for TopologyLinker (up to 50 for graph connectivity)
+  const topologyRelatedCodes = getCnCodesBySector(entry!.sector as CbamSectorSlug).filter((e) => e.code !== code).slice(0, 50);
 
   const jsonLd = [
     generateEnterpriseGraphSchema(`/cn-codes/${code}/${sector}`),
@@ -252,6 +256,13 @@ export default async function CnCodeSectorPage({ params }: PageProps) {
         </section>
 
         <ExpertAuthoritySection toolName={`CBAM Calculator — ${sectorLabel}`} />
+
+        {/* ─── PHASE 4: TopologyLinker — Hub-Spoke Internal Link Graph ─── */}
+        <TopologyLinker
+          currentCode={code}
+          sectorSlug={entry!.sector}
+          relatedCodes={topologyRelatedCodes}
+        />
 
         <div className='mt-8 p-4 border border-border/50 rounded-lg text-xs text-muted'>
           <strong>Regulatory Disclaimer:</strong> CBAMValid is not an EU institution or accredited CBAM verifier. Benchmark values are EU defaults from official regulations and may be superseded. Final CBAM obligations must be verified by accredited verifiers and submitted to the EU CBAM Registry.
