@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 // Routes that require authentication (Workspace)
 const workspacePrefixes = ['/dashboard', '/cases', '/reports', '/cbam', '/admin'];
 
+// PHASE 4: Public reports that exist under /reports but are NOT workspace routes
+const publicReportPrefixes = ['/reports/cbam-financial-impact'];
+
 // Routes that are only for unauthenticated users
 const authRoutes = ['/login', '/register'];
 
@@ -24,7 +27,9 @@ export function proxy(request: NextRequest) {
   const isAuthenticated = !!session;
 
   // 1. Workspace Protection: Unauthenticated user accessing workspace routes
-  const isWorkspaceRoute = workspacePrefixes.some(prefix => pathname.startsWith(prefix));
+  // PHASE 4: Public reports like /reports/cbam-financial-impact-* bypass auth
+  const isPublicReport = publicReportPrefixes.some(prefix => pathname.startsWith(prefix));
+  const isWorkspaceRoute = !isPublicReport && workspacePrefixes.some(prefix => pathname.startsWith(prefix));
   if (isWorkspaceRoute && !isAuthenticated) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('next', pathname);
