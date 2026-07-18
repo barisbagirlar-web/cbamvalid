@@ -18,7 +18,7 @@ export function generateSeoMetadata(path: string): Metadata {
     title: meta.title,
     description: meta.description,
     alternates: {
-      canonical: `${siteConfig.canonicalOrigin}${meta.canonicalPath}`,
+      canonical: meta.canonicalPath === "/" ? "https://cbamvalid.com/" : `${siteConfig.canonicalOrigin}${meta.canonicalPath}`,
     },
     robots: {
       index: meta.indexable,

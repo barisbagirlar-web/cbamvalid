@@ -14,13 +14,12 @@ export async function GET() {
       const month = String(lastmodDate.getUTCMonth() + 1).padStart(2, "0");
       const day = String(lastmodDate.getUTCDate()).padStart(2, "0");
       const formattedDate = `${year}-${month}-${day}`;
-
       const url = entry.url;
-      let priority = "0.8";
+      let priority = "0.80";
       let changefreq = "weekly";
 
       if (url === "https://cbamvalid.com/") {
-        priority = "1.0";
+        priority = "1.00";
         changefreq = "weekly";
       } else if (
         url.includes("/privacy") ||
@@ -32,7 +31,7 @@ export async function GET() {
         url.includes("/verify") ||
         url.includes("/sample-dossier")
       ) {
-        priority = "0.6";
+        priority = "0.60";
         changefreq = "monthly";
       }
 
