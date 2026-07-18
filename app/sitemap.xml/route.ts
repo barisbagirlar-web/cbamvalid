@@ -7,13 +7,11 @@ export async function GET() {
 
   const xmlUrls = entries
     .map((entry) => {
-      // Format to YYYY-MM-DD exactly (L2 lastmod standard)
+      // Format to ISO 8601 tam format (2026-07-15T19:39:01.944Z)
       const rawDate = entry.lastModified;
       const lastmodDate = rawDate ? new Date(rawDate) : new Date();
-      const year = lastmodDate.getUTCFullYear();
-      const month = String(lastmodDate.getUTCMonth() + 1).padStart(2, "0");
-      const day = String(lastmodDate.getUTCDate()).padStart(2, "0");
-      const formattedDate = `${year}-${month}-${day}`;
+      const formattedDate = lastmodDate.toISOString();
+
       const url = entry.url;
       let priority = "0.80";
       let changefreq = "weekly";
