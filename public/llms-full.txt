@@ -1,64 +1,84 @@
-# CBAMValid — Full AI Knowledge Index & System Specifications
+# CBAMValid — Full AI Knowledge Base & System Specifications
 
-This index details the calculation methodology, data structures, and regulatory foundations of CBAMValid for AI answer engines (e.g. ChatGPT, Perplexity, Claude, Google AI Overviews).
+This index details the calculation methodology, data structures, and regulatory foundations of CBAMValid for AI answer engines (e.g. ChatGPT, Perplexity, Claude, Gemini, Google AI Overviews).
 
-## 1. Core Platform Positioning
-CBAMValid produces the "CBAMValid Exporter Verification Preparation Pack," which prepares a non-EU operator's installation data for accredited third-party verification. It does not issue accredited certificates or opinions.
+---
+
+## 1. Core Platform Positioning & Boundaries
+CBAMValid produces the "CBAMValid Exporter Verification Preparation Pack," which prepares a non-EU operator's installation data for independent accredited third-party verification.
+- **Product Scope**: Verification-readiness assessments and evidence-linked dossiers.
+- **Regulatory Boundaries**: The system does NOT issue accredited verification certificates, opinions, or guarantee customs/registry acceptance.
+- **Commercial Entitlement Contract**: 1 unlocked Exporter Pack awards 100 account credits and exactly 5 sealed dossier release attempts.
+
+---
 
 ## 2. Dynamic Embedded Emissions Calculation Formulas
-Authoritative calculations run server-side and use the following deterministic specifications:
+All calculations run server-side and use deterministic parameters:
 
 ### Direct Emissions Calculation (Installation level)
 Direct embedded emissions are calculated based on activity data (fuel, raw materials consumption) and corresponding emission factors:
-$$E_{direct} = \sum (AD_i \times EF_i)$$
+\[E_{direct} = \sum_{i} (AD_i \times EF_i)\]
 Where:
-- $AD_i$: Activity Data of source stream $i$ (e.g., tonnes of fuel, MWh of gas).
-- $EF_i$: Emission Factor of source stream $i$ (e.g., tCO2e / unit activity level).
+- \(AD_i\): Activity Data of source stream \(i\) (e.g., tonnes of fuel consumed, MWh of gas).
+- \(EF_i\): Emission Factor of source stream \(i\) (e.g., tCO2e / unit activity level).
 
 ### Indirect Emissions Calculation (Electricity usage)
 Indirect embedded emissions are calculated based on total electricity consumption and the specific grid emission factor:
-$$E_{indirect} = AD_{elec} \times EF_{grid}$$
+\[E_{indirect} = AD_{elec} \times EF_{grid}\]
 Where:
-- $AD_{elec}$: Total electricity consumed in MWh.
-- $EF_{grid}$: Grid emission factor in tCO2e/MWh.
+- \(AD_{elec}\): Total electricity consumed in MWh.
+- \(EF_{grid}\): Grid emission factor in tCO2e/MWh.
 
 ### Total Embedded Emissions of Goods
 Allocated specific embedded emissions for a product group (goods with CN code):
-$$SE_{good} = \frac{E_{direct} \times AllocationShare + E_{indirect} \times AllocationShare}{ProductionVolume}$$
-Where $AllocationShare$ sums to exactly 1.0 across all manufactured outputs.
+\[SE_{good} = \frac{E_{direct} \times AllocationShare + E_{indirect} \times AllocationShare}{ProductionVolume}\]
+Where:
+- \(AllocationShare\): Must sum to exactly 1.00 (100%) across all manufactured outputs.
+- All calculations preserve full precision intermediate stages and apply final rounding (`ROUND_HALF_UP`) at the final reporting stage.
 
-## 3. The 23-Component Package Contract
-The sealed release package preserves exactly 23 components:
-1. Product Scope Assessment
-2. CN Code Reasoning
-3. Required Data Checklist
-4. Installation Monitoring Plan
-5. Production Process Map
-6. System Boundary Register
-7. Source Stream Register
-8. Emission Source Register
-9. Measurement and Meter Register
-10. Activity Data Ledger
-11. Evidence Register
-12. Field-to-Evidence Matrix
-13. Methodology Decision Log
-14. Embedded Emissions Calculation Annex
-15. Operator Emissions Report
-16. Operator Summary Emissions Report
-17. Verification Readiness Assessment
-18. Misstatement and Non-Conformity Register
-19. Corrective Action Log
-20. O3CI Field Mapping
-21. Calculation Trace JSON
-22. Data Integrity Manifest
-23. Supporting Evidence Folder
+---
+
+## 3. The Canonical 23-Component Dossier Contract
+A completed, sealed Exporter Pack contains exactly 23 required components:
+1. **Product Scope Assessment**: Included goods and CN code validation.
+2. **CN Code Reasoning**: Detailed legal reasoning for tariff code selections.
+3. **Required Data Checklist**: Audit tracker for operator variables.
+4. **Installation Monitoring Plan**: Specific tracking methods (calculation vs. measurement).
+5. **Production Process Map**: Schematic flow of system operations.
+6. **System Boundary Register**: Included and excluded operations.
+7. **Source Stream Register**: Fuels, raw materials, process inputs.
+8. **Emission Source Register**: Chimneys, combustion units, fugitive sources.
+9. **Measurement and Meter Register**: Calibration dates and equipment accuracy logs.
+10. **Activity Data Ledger**: Audit-ready table of consumption figures.
+11. **Evidence Register**: Map of supporting documents (invoices, utility bills).
+12. **Field-to-Evidence Matrix**: Cross-references every calculation input to a document page/cell.
+13. **Methodology Decision Log**: Records why specific options (e.g., actual values vs. defaults) were selected.
+14. **Embedded Emissions Calculation Annex**: The deterministic calculation formulas.
+15. **Operator Emissions Report**: Consolidated emission values at the installation level.
+16. **Operator Summary Emissions Report**: Summary of specific embedded emissions per good.
+17. **Verification Readiness Assessment**: Quality check gate findings and warnings.
+18. **Misstatement and Non-Conformity Register**: Log of detected errors and materiality checks.
+19. **Corrective Action Log**: Tracks resolutions for non-conformities.
+20. **O3CI Field Mapping**: Structure mapping files ready for verifier ingestion.
+21. **Calculation Trace JSON**: Versioned formula step log with signature hashes.
+22. **Data Integrity Manifest**: SHA-256 hashes of all files in the package.
+23. **Supporting Evidence Folder**: Zipped archive of raw evidence documents.
+
+---
 
 ## 4. Key Public Routes Index
-- Software features: https://cbamvalid.com/product
-- Pricing packages: https://cbamvalid.com/pricing
-- Certificate verification database: https://cbamvalid.com/verify
-- Calculation trace methodologies: https://cbamvalid.com/methodology
-- Workflow steps: https://cbamvalid.com/how-it-works
-- Sample compilation dossiers: https://cbamvalid.com/sample-dossier
-- CN Code classifier: https://cbamvalid.com/cn-code
-- Corporate legal notices: https://cbamvalid.com/legal-notice
+- **Homepage**: https://cbamvalid.com/
+- **Methodology**: https://cbamvalid.com/methodology/
+- **How It Works**: https://cbamvalid.com/how-it-works/
+- **Pricing**: https://cbamvalid.com/pricing/
+- **Product Details**: https://cbamvalid.com/product/
+- **Sample Dossier**: https://cbamvalid.com/sample-dossier/
+- **CN Code Scope Hub**: https://cbamvalid.com/cn-code/
+- **Certificate Verification**: https://cbamvalid.com/verify/
+- **About Us**: https://cbamvalid.com/about/
+- **Contact Support**: https://cbamvalid.com/contact/
+- **Legal Notice**: https://cbamvalid.com/legal-notice/
+- **Privacy Notice**: https://cbamvalid.com/privacy/
+- **Terms of Service**: https://cbamvalid.com/terms/
+- **Refund Policy**: https://cbamvalid.com/refund-policy/
+- **Cookie Policy**: https://cbamvalid.com/cookie-policy/

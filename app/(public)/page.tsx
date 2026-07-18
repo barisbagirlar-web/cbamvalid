@@ -23,16 +23,13 @@ export default function HomePage() {
       }
     ])
   ];
-
   return (
     <div className="min-h-screen bg-background text-foreground font-sans flex flex-col">
+      <link rel="canonical" href="https://cbamvalid.com/" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-
-
-      {/* 2. Hero Section */}
+      />      {/* 2. Hero Section */}
       <main className="flex-1">
         <section className="max-w-7xl mx-auto px-6 py-20 lg:py-28">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">

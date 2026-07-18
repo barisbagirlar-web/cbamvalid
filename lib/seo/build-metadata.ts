@@ -14,12 +14,9 @@ export function generateSeoMetadata(path: string): Metadata {
     };
   }
 
-  return {
+  const metadata: Metadata = {
     title: meta.title,
     description: meta.description,
-    alternates: {
-      canonical: meta.canonicalPath === "/" ? "./" : `${siteConfig.canonicalOrigin}${meta.canonicalPath}`,
-    },
     robots: {
       index: meta.indexable,
       follow: meta.indexable,
@@ -49,4 +46,14 @@ export function generateSeoMetadata(path: string): Metadata {
       images: [siteConfig.ogImage],
     },
   };
+
+  // Completely bypass Next.js metadata normalization for the root URL
+  // to avoid stripping the trailing slash (e.g. producing https://cbamvalid.com)
+  if (meta.canonicalPath !== "/") {
+    metadata.alternates = {
+      canonical: `${siteConfig.canonicalOrigin}${meta.canonicalPath}`,
+    };
+  }
+
+  return metadata;
 }

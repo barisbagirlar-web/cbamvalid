@@ -1,23 +1,27 @@
-# CBAMValid — Exporter Verification Preparation Pack
+# CBAMValid — LLM & AI Agent Sitemap
 
-> CBAMValid is an independent software service assisting non-EU exporters and EU importers in preparing verification-ready dossiers. The platform automatically verifies data compliance, links primary document evidence, and generates locked exporter declarations.
+> CBAMValid is an independent software service that assists non-EU exporters and EU importers in preparing verification-ready Carbon Border Adjustment Mechanism (CBAM) dossiers. The platform automatically verifies data compliance, links primary document evidence, and generates locked exporter declarations.
 
-## Compliance Software & Tools
-- [CBAM Exporter Software](https://cbamvalid.com/product): Link utility bills, invoices, activity data, and map manufacturing system boundaries.
-- [Pricing Packages](https://cbamvalid.com/pricing): Unlock the 23-component verification readiness package and obtain 5 sealed dossier releases.
-- [CBAM Certificate Verification](https://cbamvalid.com/verify): Verify the cryptographic seal integrity, active state, and audit trail of generated dossiers.
-- [CBAM CN-Code Scope Hub](https://cbamvalid.com/cn-code): Verify if your imported products fall within the scope of the EU Carbon Border Adjustment Mechanism.
+## Core Software & Tools
+- [CBAM Exporter Software](https://cbamvalid.com/product/): Configure manufacturing installations, map system boundaries, track source streams, and link evidence files.
+- [Pricing Packages](https://cbamvalid.com/pricing/): Purchase credits to unlock the 23-component verification readiness package and generate sealed dossier releases.
+- [CBAM Certificate Verification](https://cbamvalid.com/verify/): Cryptographically verify the integrity, release status, and ledger logs of generated dossiers.
+- [CBAM CN-Code Scope Hub](https://cbamvalid.com/cn-code/): Query product CN codes to determine if they fall within the EU Carbon Border Adjustment Mechanism scope.
 
 ## Methodologies & Guides
-- [CBAM Calculation Methodology](https://cbamvalid.com/methodology): Learn our deterministic calculation rules for direct and indirect embedded emissions under the EU regulation.
-- [CBAM Dossier Workflow Guide](https://cbamvalid.com/how-it-works): Walk through each stage of the case preparation from data entry to cryptographic sealing.
-- [Sample CBAM Compliance Dossier](https://cbamvalid.com/sample-dossier): Review a complete fictional demonstration dossier before purchasing credits.
+- [CBAM Calculation Methodology](https://cbamvalid.com/methodology/): Formulas and data structures for calculating direct and indirect embedded emissions under EU regulations.
+- [CBAM Workflow Guide](https://cbamvalid.com/how-it-works/): Detailed step-by-step walk-through of the dossier preparation process from initial setup to sealing.
+- [Sample Compliance Dossier](https://cbamvalid.com/sample-dossier/): Interactive viewer showcasing a complete fictional operator preparation dossier.
 
-## About & Legal
-- [About CBAMValid](https://cbamvalid.com/about): Meet the team behind our independent compliance verification preparation tool.
-- [Contact Support](https://cbamvalid.com/contact): Get technical support and billing inquiries regarding your CBAM evidence packages.
-- [Terms of Service](https://cbamvalid.com/terms): Read the usage agreements governing calculations and report generation.
-- [Privacy Notice](https://cbamvalid.com/privacy): Understand data handling security rules for your compliance evidence files.
+## About & Legal Information
+- [About CBAMValid](https://cbamvalid.com/about/): Background, academic oversight, advisory board members, and service mission.
+- [Contact Support](https://cbamvalid.com/contact/): Submit billing, API, or general support tickets to info@cbamvalid.com.
+- [Terms of Service](https://cbamvalid.com/terms/): Legal terms, credit entitlement contract, and platform usage limits.
+- [Privacy Notice](https://cbamvalid.com/privacy/): Security policy, data isolation, and encryption protocols for evidence storage.
+- [Refund Policy](https://cbamvalid.com/refund-policy/): Transaction refund rules and credit ledger terms.
+- [Cookie Policy](https://cbamvalid.com/cookie-policy/): Usage of authentication session cookies and site preferences.
+- [Legal Notice](https://cbamvalid.com/legal-notice/): Corporate operator details and tax IDs.
 
-## About
-CBAMValid is operated under European Union privacy and data standards. Last updated: 2026-07-17T21:54:00Z.
+## AI & Developer Resources
+- [Full LLM Knowledge base](https://cbamvalid.com/llms-full.txt): Absolute full text, formulas, and schema contracts of the platform for AI engines.
+- [Sitemap.xml](https://cbamvalid.com/sitemap.xml): Dynamic XML index containing lastmod timestamps and crawl frequencies.
