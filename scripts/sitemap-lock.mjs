@@ -93,7 +93,7 @@ async function runSitemapLock() {
     const indexableRegistryRoutes = Object.keys(seoRegistry).filter(route => seoRegistry[route].indexable);
     const missingRoutes = [];
     indexableRegistryRoutes.forEach(route => {
-      const expectedUrl = `https://cbamvalid.com${route === "/" ? "" : route}`;
+      const expectedUrl = `https://cbamvalid.com${route === "/" ? "/" : route}`;
       if (!urls.includes(expectedUrl)) {
         missingRoutes.push(expectedUrl);
       }

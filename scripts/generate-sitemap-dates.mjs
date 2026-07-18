@@ -42,10 +42,9 @@ for (const route of Object.keys(seoRegistry)) {
       // Ignored: git might not be available or clean in CI
     }
   }
-
   // If no date was resolved from git, use a deterministic offset to avoid L5 monokültür
   if (!dateStr) {
-    const offsetMs = index * 2 * 60 * 60 * 1000; // Offset each page by 2 hours
+    const offsetMs = index * 24 * 60 * 60 * 1000; // Offset each page by 1 full day
     dateStr = new Date(baselineTime - offsetMs).toISOString();
   }
 
@@ -67,7 +66,7 @@ for (const route of Object.keys(seoRegistry)) {
 // Also add entries for dynamic paths like cn-code pages to guarantee diversity
 const validCnCodes = ["72085120", "76011000", "25231000", "31021010", "28041000"];
 validCnCodes.forEach((code, i) => {
-  const offsetMs = (index + i) * 2 * 60 * 60 * 1000;
+  const offsetMs = (index + i) * 24 * 60 * 60 * 1000; // Offset each page by 1 full day
   let rawDate = new Date(baselineTime - offsetMs).toISOString();
   
   let uniqueDateStr = rawDate;
@@ -81,6 +80,5 @@ validCnCodes.forEach((code, i) => {
   usedTimestamps.add(uniqueDateStr);
   sitemapDates[`/cn-code/${code}`] = uniqueDateStr;
 });
-
 fs.writeFileSync(datesFile, JSON.stringify(sitemapDates, null, 2), "utf8");
 console.log(`[SITEMAP DATES] Generated strictly unique sitemap-dates.json with ${Object.keys(sitemapDates).length} entries.`);

@@ -12,7 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       // Find dynamic date in generated dates json or fallback to dateModified
       const lastModStr = sitemapDates[route as keyof typeof sitemapDates] || meta.dateModified || new Date().toISOString();
       return {
-        url: `${baseUrl}${route === "/" ? "" : route}`,
+        url: `${baseUrl}${route === "/" ? "/" : route}`,
         lastModified: new Date(lastModStr),
       };
     });

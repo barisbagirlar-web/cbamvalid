@@ -15,9 +15,32 @@ export async function GET() {
       const day = String(lastmodDate.getUTCDate()).padStart(2, "0");
       const formattedDate = `${year}-${month}-${day}`;
 
+      const url = entry.url;
+      let priority = "0.8";
+      let changefreq = "weekly";
+
+      if (url === "https://cbamvalid.com/") {
+        priority = "1.0";
+        changefreq = "weekly";
+      } else if (
+        url.includes("/privacy") ||
+        url.includes("/terms") ||
+        url.includes("/refund-policy") ||
+        url.includes("/cookie-policy") ||
+        url.includes("/legal-notice") ||
+        url.includes("/cn-code") ||
+        url.includes("/verify") ||
+        url.includes("/sample-dossier")
+      ) {
+        priority = "0.6";
+        changefreq = "monthly";
+      }
+
       return `  <url>
-    <loc>${entry.url}</loc>
+    <loc>${url}</loc>
     <lastmod>${formattedDate}</lastmod>
+    <changefreq>${changefreq}</changefreq>
+    <priority>${priority}</priority>
   </url>`;
     })
     .join("\n");
