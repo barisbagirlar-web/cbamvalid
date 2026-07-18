@@ -355,6 +355,23 @@ export function generateEnterpriseGraphSchema(currentPath: string) {
           "ratingValue": "4.9",
           "reviewCount": "142",
           "bestRating": "5"
+        },
+        // PHASE 3 §4: potentialAction CreateAction — XML export lead magnet
+        // Signals to Google: this page can generate a CBAM Declarant Portal XML file
+        "potentialAction": {
+          "@type": "CreateAction",
+          "name": "Generate CBAM XML Report",
+          "description": "Export calculation data in EU-compliant XML format for the CBAM Declarant Portal.",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://cbamvalid.com/api/export/xml?calcId={id}",
+            "httpMethod": "POST"
+          },
+          "result": {
+            "@type": "DigitalDocument",
+            "name": "CBAM Emissions Declaration XML",
+            "encodingFormat": "application/xml"
+          }
         }
       },
       {

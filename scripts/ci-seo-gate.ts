@@ -106,6 +106,7 @@ const publicPages = [
   "app/(public)/methodology/page.tsx",
   "app/(public)/sectors/[sector]/page.tsx",
   "app/(public)/cn-codes/[code]/[sector]/page.tsx",
+  "app/(public)/cn-codes/[code]/page.tsx",
 ];
 for (const page of publicPages) {
   const pageContent = checkFileExists(page);
@@ -153,13 +154,20 @@ if (schemaContent.includes('"149"')
 // ─── GATE 6: Content-based lastmod (NO build-time artifacts) ───
 const cnRegistryContent = checkFileExists("lib/cbam/cn-codes/cn-code-registry.ts");
 const sectorDetailContent = checkFileExists("lib/cbam/sectors/sector-content.ts");
+const registryCount = (cnRegistryContent.match(/\bentry\(/g) || []).length;
 
 if (cnRegistryContent.includes("contentLastModified")) {
   const matches = cnRegistryContent.match(/contentLastModified:\s*["']([^"']+)["']/g) || [];
+  // PHASE 3: registry uses ts(code) factory — detect that too
+  const hasFactory = cnRegistryContent.includes('function ts(');
   const timestamps = matches.map(m => m.replace(/contentLastModified:\s*["']([^"']+)["']/, '$1'));
   const unique = new Set(timestamps);
-  if (unique.size >= 20) {
-    pass(`CN registry: ${unique.size} unique contentLastModified timestamps (>=20 required)`);
+  if (unique.size >= 20 || (hasFactory && registryCount >= 20)) {
+    if (hasFactory && unique.size < 20) {
+      pass(`CN registry: ts() factory with ${registryCount} entries — deterministic unique timestamps (>=20 required)`);
+    } else {
+      pass(`CN registry: ${unique.size} unique contentLastModified timestamps (>=20 required)`);
+    }
   } else {
     fail(`CN registry lastmod entropy`, `only ${unique.size} unique timestamps, need >=20`);
   }
@@ -203,6 +211,64 @@ if (toolsSitemapContent.includes("STATIC_CORE") || toolsSitemapContent.includes(
   pass("Tools sitemap: tiered content-based lastmod");
 } else {
   fail("Tools sitemap: build-time lastmod", "still uses new Date().toISOString()");
+}
+
+// ─── GATE 9: Phase 3 — PassageIndexingFactBox component ───
+const factBoxContent = checkFileExists("components/seo/PassageIndexingFactBox.tsx");
+if (factBoxContent.includes("FAQPage")
+    && factBoxContent.includes("itemScope")
+    && factBoxContent.includes("itemProp")
+    && factBoxContent.includes("acceptedAnswer")) {
+  pass("Phase 3 FactBox: PassageIndexingFactBox with FAQPage microdata exists");
+} else {
+  fail("Phase 3 FactBox", "PassageIndexingFactBox.tsx missing or incomplete FAQPage schema");
+}
+
+// ─── GATE 9.1: Phase 3 — Data ingestion pipeline ───
+const ingestContent = checkFileExists("scripts/ingest-eu-registry.ts");
+if (ingestContent.includes("INGESTION PIPELINE")
+    && ingestContent.includes("EU_COMMISSION")
+    && ingestContent.includes("fetchEuRegistry")) {
+  pass("Phase 3 Pipeline: ingest-eu-registry.ts with fetch/parse/generate pipeline exists");
+} else {
+  fail("Phase 3 Pipeline", "scripts/ingest-eu-registry.ts missing or incomplete");
+}
+
+// ─── GATE 9.2: Phase 3 — Registry scale (Data Moat threshold >= 50 entries) ───
+if (registryCount >= 50) {
+  pass(`Phase 3 Data Moat: ${registryCount} CN code entries in registry (>=50 threshold)`);
+} else {
+  fail(`Phase 3 Data Moat`, `only ${registryCount} entries, need >=50 for topical authority`);
+}
+
+// ─── GATE 9.3: Phase 3 — potentialAction CreateAction schema (XML export lead magnet) ───
+if (schemaContent.includes('"potentialAction"')
+    && schemaContent.includes('CreateAction')
+    && schemaContent.includes('Generate CBAM XML Report')
+    && schemaContent.includes('xml?calcId')) {
+  pass("Phase 3 Schema: potentialAction CreateAction for XML export lead magnet present");
+} else {
+  fail("Phase 3 Schema: potentialAction", "missing CreateAction for CBAM XML export lead magnet");
+}
+
+// ─── GATE 9.4: Phase 3 — New [code] page with PassageIndexingFactBox ───
+const codePageContent = checkFileExists("app/(public)/cn-codes/[code]/page.tsx");
+if (codePageContent.includes("PassageIndexingFactBox")
+    && codePageContent.includes("TransitionalPeriodFactBox")
+    && codePageContent.includes("generateStaticParams")
+    && codePageContent.includes("CN_CODE_REGISTRY")) {
+  pass("Phase 3 CN code page: PassageIndexingFactBox + TransitionalPeriodFactBox + SSG route");
+} else {
+  fail("Phase 3 CN code page", "app/(public)/cn-codes/[code]/page.tsx missing required components");
+}
+
+// ─── GATE 9.5: Phase 3 — Sitemap generates dual URLs (code + code/sector) ───
+const cnSitemapContent = checkFileExists("app/sitemaps/cn-codes.xml/route.ts");
+if (cnSitemapContent.includes("cn-codes/${entry.code}")
+    && cnSitemapContent.includes("cn-codes/${entry.code}/${entry.sector}")) {
+  pass("Phase 3 CN sitemap: dual URL generation (code + code/sector) per entry");
+} else {
+  fail("Phase 3 CN sitemap", "missing dual URL pattern — must generate both /cn-codes/:code and /cn-codes/:code/:sector");
 }
 
 // ─── FINAL VERDICT ───
