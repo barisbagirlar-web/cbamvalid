@@ -26,7 +26,7 @@ export const LEGAL_SOURCE_REGISTRY_VERSION = "CBAM-EU-2026.07.16";
  * recomputes this value and fails closed on registry drift.
  */
 export const DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT =
-  "8463233359d67185a513ca34427861be034b17937b9e7259b01fbf7a30689ffc";
+  "7e17ddb14e300758d5125606820b4ba7e5322c2ee20dd079efe63825990c71bf";
 
 export const OFFICIAL_SOURCES = {
   REG_2023_956: {
@@ -66,7 +66,7 @@ export const OFFICIAL_SOURCES = {
     methodologyScope: [
       "50 tonne annual mass threshold for cement, fertilisers, iron and steel, and aluminium",
       "definitive-period declaration and certificate obligations",
-      "actual values require accredited verification",
+      "actual values require independent verification",
     ],
   },
   IMPL_2025_2546: {

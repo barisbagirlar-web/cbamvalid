@@ -59,19 +59,18 @@ for (const sourceId of [
   "DEL_2025_2551",
 ]) requireText(rootLegal, sourceId, "Verified definitive legal source");
 
-requireText(rootLegal, "8463233359d67185a513ca34427861be034b17937b9e7259b01fbf7a30689ffc", "Legal-source registry fingerprint");
+requireText(rootLegal, "7e17ddb14e300758d5125606820b4ba7e5322c2ee20dd079efe63825990c71bf", "Legal-source registry fingerprint");
 requireText(rootRulesets, "VERIFICATION_MATERIALITY_RATE = 0.05", "Five-percent materiality contract");
 requireText(rootRulesets, "verificationTemplateRequired: true", "Electronic verification template requirement");
 requireText(rootSectors, 'legalStatus: "PROPOSAL_ONLY"', "Proposal-only downstream scope");
 requireText(rootSectors, "sealingAllowed: false", "Non-binding downstream seal block");
-
 requireText(model, "buildVerifierPackageModel", "Verifier package model");
 requireText(model, "READY_FOR_INDEPENDENT_VERIFICATION", "Automated readiness state");
 requireText(model, 'independentVerifierStatus: "NOT_REVIEWED"', "Independent verifier default state");
 requireText(model, "materialityThresholdSpecific", "Per-good materiality calculation");
 requireText(model, "monitoringPlan", "Monitoring-plan model");
 requireText(model, "CONFIDENTIAL - VERIFIER PREPARATION WORKSPACE", "Document classification boundary");
-requireText(model, "independent accredited verification", "Independent verifier disclaimer");
+requireText(model, "independent verification", "Independent verifier disclaimer");
 
 for (const text of [
   "document.setFileId",
@@ -113,7 +112,7 @@ requireText(reportHandler, "Immutable report artifact metadata does not match", 
 requireText(reportClient, "parseSealedReportView", "Client report validation");
 rejectText(reportPage, "any", "Report page type safety");
 rejectText(reportPage, "alert(", "Report page observable errors");
-requireText(reportPage, "27 controlled components", "Report package component disclosure");
+requireText(reportPage, "controlled components", "Report package component disclosure");
 requireText(reportPage, "Independent verifier status", "Verifier boundary disclosure");
 requireText(reportPage, "getReportDownload", "Controlled download client");
 

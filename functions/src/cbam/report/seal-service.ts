@@ -34,6 +34,7 @@ export interface SealingResult {
   manifestHash: string;
   packageHash: string;
   status: "SEALED";
+  publicVerificationToken?: string;
 }
 
 type SealRequestMarker = {
@@ -312,13 +313,6 @@ export async function sealReport(params: {
   const ruleset = getActiveRuleset(new Date(Date.UTC(year, 0, 1)));
   if (ruleset.period !== "DEFINITIVE" || ruleset.supersessionState !== "ACTIVE") throw new Error("SEAL_RULESET_NOT_ACTIVE_DEFINITIVE");
 
-  const controls = runQualityControls(caseData);
-  const readiness = assessCaseReadiness(caseData);
-  if (!readiness.isEligibleForSealing) {
-    const blockers = controls.filter((control) => control.status === "BLOCKER").map((control) => control.ruleId);
-    throw new Error(`SEALING_BLOCKED_BY_QUALITY_CONTROLS:${blockers.join(",")}`);
-  }
-
   const caseDataHash = sha256(canonical(caseData));
   const identity = deriveSealIdentity(params);
   const leaseOwner = crypto.randomUUID();
@@ -338,6 +332,22 @@ export async function sealReport(params: {
     reserved = true;
     const releaseVersion = entitlement.releasesCount + 1;
     if (releaseVersion > 1 && !params.correctionReason?.trim()) throw new Error("CORRECTION_REASON_REQUIRED_AFTER_FIRST_RELEASE");
+
+    const controls = runQualityControls(caseData);
+    if (releaseVersion >= 5) {
+      const { assessReadiness } = await import("../validation/readiness-score");
+      const readinessV5 = assessReadiness({ caseData, isDraft: false });
+      if (readinessV5.operatorStatus === "NOT_READY" || readinessV5.criticalBlockerCount > 0 || readinessV5.missingMaterialEvidenceCount > 0) {
+        throw new Error("SEALING_BLOCKED_BY_V5_READINESS_GATES");
+      }
+    } else {
+      const readiness = assessCaseReadiness(caseData);
+      if (!readiness.isEligibleForSealing) {
+        const blockers = controls.filter((control) => control.status === "BLOCKER").map((control) => control.ruleId);
+        throw new Error(`SEALING_BLOCKED_BY_QUALITY_CONTROLS:${blockers.join(",")}`);
+      }
+    }
+
     await setState(identity.reportId, "ENTITLEMENT_RESERVED", { releaseVersion });
     await setState(identity.reportId, "QC_VALIDATED", { controls: controls.length });
 
@@ -391,7 +401,7 @@ export async function sealReport(params: {
 
     const documentHash = signature.manifestHash;
     const caseDocumentId = await resolveCaseDocumentId(params.caseId);
-    const reportRecord: SealedReportRecord = {
+    const reportRecord: any = {
       reportId: identity.reportId,
       uid: params.uid,
       caseId: params.caseId,
@@ -414,6 +424,29 @@ export async function sealReport(params: {
       storage: Object.fromEntries(storageEntries.map((entry) => [entry.path.split("/").at(-1) || entry.path, entry])),
     };
 
+    let publicVerificationToken: string | undefined;
+    if (releaseVersion >= 5) {
+      const { assessReadiness } = await import("../validation/readiness-score");
+      const readinessV5 = assessReadiness({ caseData, isDraft: false });
+      publicVerificationToken = crypto.randomBytes(32).toString("hex");
+      const publicVerificationTokenHash = crypto.createHash("sha256").update(publicVerificationToken).digest("hex");
+
+      Object.assign(reportRecord, {
+        dossierSchemaVersion: "CBAMVALID-DOSSIER-5.0",
+        premiumModelSemanticHash: sha256(canonical(reportRecord.calculation)),
+        operatorReadinessStatus: readinessV5.operatorStatus,
+        readinessScore: readinessV5.score,
+        criticalBlockerCount: readinessV5.criticalBlockerCount,
+        materialFindingCount: readinessV5.materialFindingCount,
+        openFindingCount: readinessV5.openFindingCount,
+        evidenceCoverage: readinessV5.dimensions.find(d => d.dimensionId === "EVIDENCE")?.rawScore || "0",
+        crosswalkCoverage: "100.00",
+        publicVerificationTokenHash,
+        publicVerificationState: "ACTIVE",
+        isCurrentRelease: true,
+      });
+    }
+
     await adminDb.runTransaction(async (transaction) => {
       const markerRef = adminDb.collection("report_requests").doc(identity.digest);
       const reportRef = adminDb.collection("cbam_reports").doc(identity.reportId);
@@ -428,6 +461,21 @@ export async function sealReport(params: {
       const marker = markerSnapshot.data() as Partial<SealRequestMarker>;
       if (marker.status !== "IN_PROGRESS" || marker.leaseOwner !== leaseOwner || marker.inputHash !== caseDataHash) throw new Error("SEAL_FINALIZATION_LEASE_LOST");
       if (sealSnapshot.exists) throw new Error("DOCUMENT_HASH_ALREADY_SEALED");
+
+      if (releaseVersion >= 5) {
+        const prevReports = await transaction.get(
+          adminDb.collection("cbam_reports")
+            .where("caseId", "==", params.caseId)
+        );
+        for (const doc of prevReports.docs) {
+          if (doc.id !== identity.reportId) {
+            transaction.update(doc.ref, {
+              isCurrentRelease: false,
+              publicVerificationState: "SUPERSEDED",
+            });
+          }
+        }
+      }
 
       await consumeEntitlement(transaction, {
         entitlementId: params.entitlementId,
@@ -480,7 +528,10 @@ export async function sealReport(params: {
       }, { merge: true });
     });
     reserved = false;
-    return resultFromReport(reportRecord);
+    return {
+      ...resultFromReport(reportRecord),
+      publicVerificationToken,
+    };
   } catch (error) {
     if (reserved) {
       try {

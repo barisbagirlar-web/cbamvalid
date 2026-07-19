@@ -65,9 +65,19 @@ export const PersistedSealedReportSchema = z.object({
 });
 
 export const SealedReportViewSchema = PersistedSealedReportSchema.extend({
-  packageTopLevelComponentCount: z.literal(27),
-  automatedReadiness: z.literal("READY_FOR_INDEPENDENT_VERIFICATION"),
-  independentVerifierStatus: z.literal("NOT_REVIEWED"),
+  packageTopLevelComponentCount: z.union([z.literal(27), z.literal(23)]),
+  automatedReadiness: z.enum([
+    "READY_FOR_INDEPENDENT_VERIFICATION",
+    "BLOCKED_BEFORE_INDEPENDENT_VERIFICATION",
+    "READY_FOR_VERIFIER_REVIEW",
+    "NOT_READY",
+  ]),
+  independentVerifierStatus: z.union([
+    z.literal("NOT_REVIEWED"),
+    z.literal("IN_REVIEW"),
+    z.literal("OPINION_ISSUED_EXTERNAL"),
+    z.literal("REJECTED_EXTERNAL"),
+  ]),
   verificationMaterialityRate: z.literal(VERIFICATION_MATERIALITY_RATE),
 });
 
@@ -76,10 +86,11 @@ export type SealedReportView = z.infer<typeof SealedReportViewSchema>;
 
 export function toSealedReportView(value: unknown): SealedReportView {
   const report = PersistedSealedReportSchema.parse(value);
+  const isV5 = report.releaseVersion >= 5;
   return SealedReportViewSchema.parse({
     ...report,
-    packageTopLevelComponentCount: 27,
-    automatedReadiness: "READY_FOR_INDEPENDENT_VERIFICATION",
+    packageTopLevelComponentCount: isV5 ? 23 : 27,
+    automatedReadiness: isV5 ? "READY_FOR_VERIFIER_REVIEW" : "READY_FOR_INDEPENDENT_VERIFICATION",
     independentVerifierStatus: "NOT_REVIEWED",
     verificationMaterialityRate: VERIFICATION_MATERIALITY_RATE,
   });
