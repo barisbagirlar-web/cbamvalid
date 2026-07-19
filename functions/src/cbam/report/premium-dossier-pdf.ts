@@ -1,7 +1,6 @@
 import crypto from "node:crypto";
 import { jsPDF } from "jspdf";
 import type { PremiumDossierViewModel } from "./premium-dossier-schema";
-import { VERIFICATION_MATERIALITY_RATE } from "../registry/rulesets";
 
 const PAGE_WIDTH = 210;
 const MARGIN = 15;

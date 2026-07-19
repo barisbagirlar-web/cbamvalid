@@ -1,5 +1,5 @@
 import type { AuditReadyCase } from "../schema";
-import type { EvidenceSufficiencyRow, MaterialInputRequirement } from "../report/premium-dossier-schema";
+import type { EvidenceSufficiencyRow } from "../report/premium-dossier-schema";
 import { deriveMaterialRequirements } from "./material-input-registry";
 
 function getValueAtPath(obj: any, path: string): any {
@@ -149,7 +149,6 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase): EvidenceSuffic
     const caseQuarter = caseData.reportingPeriod.quarter.value || "ANNUAL";
     if (record.reportingPeriod && record.reportingPeriod.trim().length > 0) {
       const evidencePeriod = record.reportingPeriod.trim();
-      const casePeriodString = `${caseYear}-${caseQuarter}`;
       if (!evidencePeriod.includes(String(caseYear)) && !evidencePeriod.includes(String(caseQuarter))) {
         state = "OUT_OF_PERIOD";
         reasonCodes.push("EVIDENCE_PERIOD_MISMATCH");
