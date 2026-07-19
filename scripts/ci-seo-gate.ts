@@ -291,7 +291,7 @@ if (codePageContent.includes("TopologyLinker")
 }
 
 // ─── GATE 10.2: Phase 4 — Financial Impact Report pages ───
-const reportContent = checkFileExists("app/(public)/reports/cbam-financial-impact-[sector]/page.tsx");
+const reportContent = checkFileExists("app/(public)/cbam-impact-2026/page.tsx");
 if (reportContent.includes("Dataset")
     && reportContent.includes("Financial Impact")
     && reportContent.includes("EU_ETS_PRICE")
