@@ -138,4 +138,6 @@ export interface SeoMeta {
   datePublished?: string;
   dateModified?: string;
   authorId?: string;
+  /** Şartname v2.1 §10.2: Content Quality Contract */
+  qualityContract?: ContentQualityContract;
 }

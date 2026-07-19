@@ -1,0 +1,63 @@
+# CBAMValid Regulatory Compliance — Test PR (Gün 3)
+#
+# This PR deliberately violates CBAM regulatory invariants to verify
+# that CodeRabbitAI blocks all violations. MERGE IS FORBIDDEN.
+#
+# Violation 1: Missing @euRef on exported function
+# Violation 2: Float arithmetic in emission calculation
+# Violation 3: Default value without is_eu_default_applied flag
+# Violation 4: Hardcoded emission factor outside registry
+#
+# Expected CodeRabbit output:
+#   - CRITICAL BLOCK: LEGAL CITATION MANDATE (missing @euRef)
+#   - CRITICAL BLOCK: Float arithmetic
+#   - WARNING: is_eu_default_applied missing
+#   - WARNING: Hardcoded emission factor
+
+diff --git a/lib/cbam/test-pr-violations.ts b/lib/cbam/test-pr-violations.ts
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/lib/cbam/test-pr-violations.ts
+@@ -0,0 +1,42 @@
++/**
++ * ⚠️ TEST PR — DELIBERATE VIOLATIONS
++ * DO NOT MERGE. This file verifies CodeRabbitAI blocks regulatory violations.
++ */
++
++// VIOLATION 1: Exported function without @euRef JSDoc
++export function calculateSteelEmissions(productionTonnes: number): number {
++  // VIOLATION 2: Float arithmetic
++  // VIOLATION 4: Hardcoded emission factor 1.85 (must come from emission-factors registry)
++  return productionTonnes * 1.85;
++}
++
++// VIOLATION 1 (continued): No @euRef
++export function getDefaultEmissionFactor(sector: string): number {
++  // VIOLATION 4: Hardcoded factors
++  const factors: Record<string, number> = {
++    STEEL: 1.85,
++    CEMENT: 0.72,
++    ALUMINIUM: 2.1,
++  };
++  // VIOLATION 2: Float division
++  return (factors[sector] || 1.5) / 1.0;
++}
++
++// VIOLATION 3: Default value used without is_eu_default_applied flag
++export function applyDefaults(actualData?: number): { value: number; isDefault: boolean } {
++  // VIOLATION 3a: Missing is_eu_default_applied flag
++  return { value: actualData ?? 0.72, isDefault: !actualData };
++}
++
++// VIOLATION 2: More float arithmetic
++export function estimateCarbonCost(
++  emissions: number,
++  certificatePrice: number,
++): number {
++  const baseCost = emissions * certificatePrice;
++  // VIOLATION 2: Float arithmetic
++  const taxAdjustment = baseCost + baseCost * 0.05;
++  const discount = emissions > 100 ? baseCost - 500 : 0;
++  return taxAdjustment + discount;
++}

@@ -1,38 +1,25 @@
 import { SECTOR_DETAILS } from '@/lib/cbam/sectors/sector-content';
+import { buildUrlsetStream, sitemapStreamResponse, safeLastMod, deduplicateUrls } from '@/lib/seo/sitemap-guards';
 
 export const dynamic = 'force-static';
 
 export async function GET() {
-  const hubLastmod = '2026-07-18T00:00:00Z'; // Sector hub index page
-  
-  const sectors = [
-    { path: '/sectors', lastmod: hubLastmod },
+  const hubLastmod = safeLastMod('2026-07-18T00:00:00Z');
+
+  const urls = [
+    { url: 'https://cbamvalid.com/sectors', lastmod: hubLastmod },
     ...Object.keys(SECTOR_DETAILS).map(slug => ({
-      path: `/sectors/${slug}`,
-      lastmod: SECTOR_DETAILS[slug].contentLastModified,
+      url: `https://cbamvalid.com/sectors/${slug}`,
+      lastmod: safeLastMod(SECTOR_DETAILS[slug].contentLastModified),
     })),
   ];
 
-  const urlsXml = sectors.map(({ path, lastmod }) => {
-    const url = `https://cbamvalid.com${path}`;
-    const priority = path === '/sectors' ? '0.80' : '0.70';
-    return `  <url>
-    <loc>${url}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>${priority}</priority>
-  </url>`;
-  }).join('\n');
+  // MIL-STD §1.3: deduplicate
+  const { clean } = deduplicateUrls(urls);
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urlsXml}
-</urlset>`;
+  // MIL-STD §5.0 I5: Stream-based generation — O(1) memory, safe for scale
+  const stream = buildUrlsetStream(clean, { previousGoodCount: urls.length });
+  if (!stream) return sitemapStreamResponse(new ReadableStream({ start(c) { c.close(); } }));
 
-  return new Response(xml, {
-    headers: {
-      'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=86400, s-maxage=86400',
-    },
-  });
+  return sitemapStreamResponse(stream);
 }

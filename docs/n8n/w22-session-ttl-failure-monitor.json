@@ -1,0 +1,61 @@
+{
+  "name": "W22 Session TTL Failure Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cbam-session-ttl-alert",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [100, 300],
+      "name": "Webhook: Session TTL Failure"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle Session TTL failure — GDPR data retention violation\nconst event = $input.first().json;\n\nconst result = {\n  type: 'session_ttl_failure',\n  severity: 'P1',\n  userId: event.userId || 'UNKNOWN',\n  sessionAge: event.sessionAge || 0,\n  ttlLimit: event.ttlLimit || 3600,\n  exceededBy: Math.max(0, (event.sessionAge || 0) - (event.ttlLimit || 3600)),\n  dataExposed: event.dataExposed || false,\n  timestamp: event.timestamp || new Date().toISOString(),\n  actionRequired: 'FORCE_LOGOUT_ALL + SECURITY_INCIDENT_REPORT',\n};\n\nconsole.log(`[W22] 🔴 Session TTL Failure: User ${result.userId}, session age ${result.sessionAge}s exceeds ${result.ttlLimit}s limit`);\n\nreturn [{ json: result }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [300, 300],
+      "name": "Validate TTL Violation"
+    },
+    {
+      "parameters": {
+        "repository": "cbam-paddle-app",
+        "title": "={{'[P1 SECURITY] Session TTL Failure — User: ' + $json.userId}}",
+        "body": "=## 🔴 P1 Security Incident: Session TTL Failure\n\n**User ID:** {{$json.userId}}\n**Session Age:** {{$json.sessionAge}}s (limit: {{$json.ttlLimit}}s)\n**Exceeded By:** {{$json.exceededBy}}s\n**Data Exposed:** {{$json.dataExposed}}\n**Detected At:** {{$json.timestamp}}\n\n**Action Required:**\n- [ ] Force logout all active sessions\n- [ ] Audit session storage for data retention violations\n- [ ] Verify zero-retention cleanup on client-side\n- [ ] Security incident report per GDPR Art. 33\n- [ ] Compliance Officer review",
+        "labels": ["P1", "security", "data-retention", "session"]
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [500, 200],
+      "name": "Create Security Issue"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "={{'🔴 P1: CBAMValid Session TTL Failure — Data Retention Violation'}}",
+        "text": "=🔴 SESSION TTL FAILURE — ZERO-RETENTION VIOLATION\n\nUser: {{$json.userId}}\nSession Age: {{$json.sessionAge}}s (exceeded {{$json.ttlLimit}}s limit by {{$json.exceededBy}}s)\n\nACTION: Force logout all. Security incident report filed.\nGDPR Art. 33 notification may be required."
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [500, 400],
+      "name": "Email Security Alert"
+    }
+  ],
+  "connections": {
+    "Webhook: Session TTL Failure": {
+      "main": [[{"node": "Validate TTL Violation", "type": "main", "index": 0}]]
+    },
+    "Validate TTL Violation": {
+      "main": [
+        [{"node": "Create Security Issue", "type": "main", "index": 0}],
+        [{"node": "Email Security Alert", "type": "main", "index": 0}]
+      ]
+    }
+  }
+}

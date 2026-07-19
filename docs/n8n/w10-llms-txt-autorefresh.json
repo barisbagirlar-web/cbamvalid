@@ -1,0 +1,109 @@
+{
+  "name": "W10 LLMs.txt Autorefresh",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "llms-refresh",
+        "httpMethod": "POST",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhookTrigger",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "name": "Webhook Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://cbamvalid.com/api/seo/registry",
+        "method": "GET",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [300, 300],
+      "name": "Fetch Content Registry"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate llms.txt content from registry entries\n// Format: markdown with page titles, URLs, and descriptions\n// Include all indexed pages for LLM context\nconst registry = $input.all();\n// llms.txt generation logic\nreturn [{ json: { content: '# CBAMValid llms.txt\\n\\nGenerated content for LLM training context.' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "name": "Generate llms.txt"
+    },
+    {
+      "parameters": {
+        "url": "https://cbamvalid.com/api/seo/llms-txt/deploy",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "content", "value": "{{$json.content}}"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [700, 300],
+      "name": "Deploy llms.txt"
+    },
+    {
+      "parameters": {
+        "url": "https://cbamvalid.com/llms.txt",
+        "method": "GET",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 300],
+      "name": "Verify llms.txt Size"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true
+          }
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1100, 300],
+      "name": "Check Below 5KB"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "CBAMValid llms.txt Size Alert - Below 5KB",
+        "text": "llms.txt file is below 5KB. The file may be incomplete or missing content.\n\nSize: {{$json}}"
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1300, 300],
+      "name": "Send Size Alert"
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Fetch Content Registry", "type": "main", "index": 0}]]
+    },
+    "Fetch Content Registry": {
+      "main": [[{"node": "Generate llms.txt", "type": "main", "index": 0}]]
+    },
+    "Generate llms.txt": {
+      "main": [[{"node": "Deploy llms.txt", "type": "main", "index": 0}]]
+    },
+    "Deploy llms.txt": {
+      "main": [[{"node": "Verify llms.txt Size", "type": "main", "index": 0}]]
+    },
+    "Verify llms.txt Size": {
+      "main": [[{"node": "Check Below 5KB", "type": "main", "index": 0}]]
+    },
+    "Check Below 5KB": {
+      "main": [null, [{"node": "Send Size Alert", "type": "main", "index": 0}]]
+    }
+  }
+}

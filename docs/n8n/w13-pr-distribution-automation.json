@@ -1,0 +1,124 @@
+{
+  "name": "W13 PR Distribution Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "pr-distribute",
+        "httpMethod": "POST",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhookTrigger",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "name": "Webhook Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://cbamvalid.com/api/reports/latest",
+        "method": "GET",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [300, 300],
+      "name": "Fetch Latest Report"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate press release from report data\n// Format: headline, summary, key findings, quote, boilerplate\n// Output: structured press release object\nconst report = $input.all();\n// Press release generation logic\nreturn [{ json: { headline: '', summary: '', body: '', boilerplate: 'About CBAMValid: ...' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "name": "Generate Press Release"
+    },
+    {
+      "parameters": {
+        "url": "https://api.prnewswire.com/v1/releases",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "headline", "value": "{{$json.headline}}"},
+            {"name": "body", "value": "{{$json.body}}"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [700, 300],
+      "name": "Submit to PR Newswire"
+    },
+    {
+      "parameters": {
+        "url": "https://www.helpareporter.com/api/submissions",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "title", "value": "{{$json.headline}}"},
+            {"name": "summary", "value": "{{$json.summary}}"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 300],
+      "name": "Submit to HARO"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "CBAMValid PR Distribution Complete",
+        "text": "Press release has been distributed.\n\nPR Newswire: Submitted\nHARO: Submitted"
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1100, 300],
+      "name": "Send Notification"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "id": {
+            "__rl": true,
+            "mode": "list",
+            "value": "pr-distribution-log"
+          }
+        },
+        "sheetName": "Sheet1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1100, 500],
+      "name": "Log to Spreadsheet"
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Fetch Latest Report", "type": "main", "index": 0}]]
+    },
+    "Fetch Latest Report": {
+      "main": [[{"node": "Generate Press Release", "type": "main", "index": 0}]]
+    },
+    "Generate Press Release": {
+      "main": [[{"node": "Submit to PR Newswire", "type": "main", "index": 0}]]
+    },
+    "Submit to PR Newswire": {
+      "main": [[{"node": "Submit to HARO", "type": "main", "index": 0}]]
+    },
+    "Submit to HARO": {
+      "main": [[{"node": "Send Notification", "type": "main", "index": 0}]]
+    },
+    "Send Notification": {
+      "main": [[{"node": "Log to Spreadsheet", "type": "main", "index": 0}]]
+    }
+  }
+}

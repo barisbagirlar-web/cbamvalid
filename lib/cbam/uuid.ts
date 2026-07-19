@@ -3,6 +3,13 @@
  * Works inside secure contexts (HTTPS, localhost) and insecure contexts alike,
  * as well as server-side and client-side (including older browsers/webviews).
  */
+/**
+ * A client-safe, environment-agnostic RFC 4122 Version 4 compliant UUID generator.
+ * Works inside secure contexts (HTTPS, localhost) and insecure contexts alike,
+ * as well as server-side and client-side (including older browsers/webviews).
+ *
+ * @euRef "CBAMValid internal — UUID generation, no regulatory basis"
+ */
 export function safeRandomUUID(): string {
   // 1. Browser/Native secure context support
   if (typeof window !== "undefined" && window.crypto && window.crypto.randomUUID) {

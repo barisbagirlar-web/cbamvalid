@@ -1,0 +1,91 @@
+{
+  "name": "W20 CBAM Certificate Hash Collision Alert",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cbam-certificate-hash-alert",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [100, 300],
+      "name": "Webhook: Certificate Hash Alert"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate CBAM certificate hash integrity\n// Triggered when hash collision detected or hash generation fails\nconst alert = $input.first().json;\n\n// Expected payload:\n// { installationId, reportingPeriod, expectedHash, actualHash, timestamp, severity }\n\nconst result = {\n  type: 'certificate_hash_collision',\n  severity: alert.severity || 'P0',\n  installationId: alert.installationId || 'UNKNOWN',\n  reportingPeriod: alert.reportingPeriod || 'UNKNOWN',\n  expectedHash: alert.expectedHash || '',\n  actualHash: alert.actualHash || '',\n  timestamp: alert.timestamp || new Date().toISOString(),\n  action: 'AUTO_DISABLE_SIGNING',\n  message: `Certificate hash collision detected for installation ${alert.installationId}. Expected: ${alert.expectedHash?.slice(0, 16)}, Actual: ${alert.actualHash?.slice(0, 16)}. Auto-disabling certificate signing.`,\n};\n\n// P0 severity check\nif (result.severity === 'P0') {\n  result.pagerDutyRequired = true;\n  result.autoDisableSigning = true;\n}\n\nconsole.log(`[W20] 🔴 Certificate hash collision: ${result.message}`);\n\nreturn [{ json: result }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [300, 300],
+      "name": "Validate Hash Collision Event"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [{
+            "value1": "={{$json.severity}}",
+            "operation": "equals",
+            "value2": "P0"
+          }]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "name": "Is P0 Severity?"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "={{'🔴 P0: CBAM Certificate Hash Collision — ' + $json.installationId}}",
+        "text": "=🔴 CRITICAL: Certificate Hash Collision Detected\n\nInstallation: {{$json.installationId}}\nPeriod: {{$json.reportingPeriod}}\nExpected Hash: {{$json.expectedHash}}\nActual Hash: {{$json.actualHash}}\nTimestamp: {{$json.timestamp}}\n\nIMMEDIATE ACTION REQUIRED:\n1. Auto-disabling certificate signing\n2. Investigate hash generation pipeline\n3. Verify no tampering occurred\n4. Compliance Officer sign-off required to re-enable\n\nThis is a P0 security incident."
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [700, 200],
+      "name": "Email P0 Alert"
+    },
+    {
+      "parameters": {
+        "repository": "cbam-paddle-app",
+        "title": "={{'[P0] Certificate Hash Collision — ' + $json.installationId + ' — ' + $json.reportingPeriod}}",
+        "body": "=## 🔴 P0: CBAM Certificate Hash Collision\n\n**Installation:** {{$json.installationId}}\n**Period:** {{$json.reportingPeriod}}\n**Expected Hash:** {{$json.expectedHash?.slice(0, 16)}}...\n**Actual Hash:** {{$json.actualHash?.slice(0, 16)}}...\n**Detected At:** {{$json.timestamp}}\n\n**Auto-actions taken:**\n- [x] Certificate signing disabled\n- [x] PagerDuty alert triggered\n- [x] Compliance Officer notified\n\n**Manual actions required:**\n- [ ] Audit hash generation pipeline\n- [ ] Verify no data tampering\n- [ ] Restore from cryptographic audit log\n- [ ] Re-enable signing after Compliance Officer sign-off",
+        "labels": ["P0", "security", "certificate-hash"]
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [700, 400],
+      "name": "Create GitHub Issue (P0)"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "={{'⚠️ CBAM Certificate Hash Non-Critical Alert — ' + $json.installationId}}",
+        "text": "=⚠️ Certificate Hash Validation Alert\n\nInstallation: {{$json.installationId}}\nSeverity: {{$json.severity}}\n\nThis is a non-critical alert. Review required within 24h."
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [500, 500],
+      "name": "Email Non-Critical Alert"
+    }
+  ],
+  "connections": {
+    "Webhook: Certificate Hash Alert": {
+      "main": [[{"node": "Validate Hash Collision Event", "type": "main", "index": 0}]]
+    },
+    "Validate Hash Collision Event": {
+      "main": [[{"node": "Is P0 Severity?", "type": "main", "index": 0}]]
+    },
+    "Is P0 Severity?": {
+      "main": [
+        [{"node": "Email P0 Alert", "type": "main", "index": 0}, {"node": "Create GitHub Issue (P0)", "type": "main", "index": 0}],
+        [{"node": "Email Non-Critical Alert", "type": "main", "index": 0}]
+      ]
+    }
+  }
+}

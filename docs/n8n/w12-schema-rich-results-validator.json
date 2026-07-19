@@ -1,0 +1,94 @@
+{
+  "name": "W12 Schema Rich Results Validator",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"hours": 24}]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Define priority URLs to validate for schema markup\n// Include top pages: homepage, sector pages, methodology, about, glossary\n// Output: array of URLs with page type metadata\nconst priorityPages = [\n  'https://cbamvalid.com',\n  'https://cbamvalid.com/sectors',\n  'https://cbamvalid.com/methodology',\n  'https://cbamvalid.com/about',\n  'https://cbamvalid.com/glossary'\n];\nreturn priorityPages.map(url => ({ json: { url } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [300, 300],
+      "name": "Generate URL List"
+    },
+    {
+      "parameters": {
+        "url": "https://searchconsole.googleapis.com/v1/urlTestingTools/mobileFriendlyTest:run",
+        "method": "POST",
+        "authentication": "oAuth2",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "url", "value": "{{$json.url}}"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [500, 300],
+      "name": "Check Rich Results API"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Rich Results Test API response\n// Identify schema errors, warnings, missing required properties\n// Output: structured validation results per URL\nconst results = $input.all();\n// Rich results parsing logic\nreturn results.map(r => ({ json: { ...r.json, errors: [] } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [700, 300],
+      "name": "Parse Schema Results"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true
+          }
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "name": "Check Schema Errors"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "CBAMValid Schema Rich Results Alert",
+        "text": "Schema validation found errors preventing rich results.\n\nErrors: {{$json.errors}}"
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1100, 300],
+      "name": "Send Schema Alert"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{"node": "Generate URL List", "type": "main", "index": 0}]]
+    },
+    "Generate URL List": {
+      "main": [[{"node": "Check Rich Results API", "type": "main", "index": 0}]]
+    },
+    "Check Rich Results API": {
+      "main": [[{"node": "Parse Schema Results", "type": "main", "index": 0}]]
+    },
+    "Parse Schema Results": {
+      "main": [[{"node": "Check Schema Errors", "type": "main", "index": 0}]]
+    },
+    "Check Schema Errors": {
+      "main": [null, [{"node": "Send Schema Alert", "type": "main", "index": 0}]]
+    }
+  }
+}

@@ -1,103 +1,63 @@
 {
-  "name": "EU Regulation Watchdog",
+  "name": "Workflow 1 EU Regulation Watchdog",
   "nodes": [
     {
       "parameters": {
-        "rule": "interval",
-        "value": 12,
-        "unit": "hours"
+        "rule": {
+          "interval": [{"hours": 24}]
+        }
       },
-      "name": "Trigger Interval",
-      "type": "n8n-nodes-base.cron",
+      "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1,
-      "position": [
-        100,
-        300
-      ]
+      "position": [100, 300],
+      "name": "Schedule Trigger"
     },
     {
       "parameters": {
-        "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32023R0956",
-        "responseFormat": "string",
+        "url": "https://eur-lex.europa.eu/search.html?q=CBAM&type=quick&scope=EURLEX",
+        "method": "GET",
         "options": {}
       },
-      "name": "HTTP Request Eur-Lex",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [
-        300,
-        300
-      ]
+      "position": [300, 300],
+      "name": "Check EUR-Lex Updates"
     },
     {
       "parameters": {
         "conditions": {
-          "string": [
-            {
-              "value1": "={{ .body }}",
-              "operation": "contains",
-              "value2": "Regulation (EU) 2023/956"
-            }
-          ]
+          "options": {
+            "caseSensitive": true
+          }
         }
       },
-      "name": "Verify Status",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [
-        500,
-        300
-      ]
+      "position": [500, 300],
+      "name": "Contains New Regulation"
     },
     {
       "parameters": {
-        "email": "info@cbamvalid.com",
-        "subject": "ALERT: CBAM Regulation page changed or unreachable",
-        "message": "The official EUR-Lex regulation text page has changed or could not be verified by the automated watchdog."
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "CBAMValid EUR-Lex Alert - New CBAM Regulation Detected",
+        "text": "New or updated CBAM regulation detected on EUR-Lex.\n\nReview immediately: {{$json}}"
       },
-      "name": "Send Alert Email",
-      "type": "n8n-nodes-base.email",
-      "typeVersion": 1,
-      "position": [
-        700,
-        200
-      ]
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [700, 300],
+      "name": "Send Regulation Alert"
     }
   ],
   "connections": {
-    "Trigger Interval": {
-      "main": [
-        [
-          {
-            "node": "HTTP Request Eur-Lex",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Schedule Trigger": {
+      "main": [[{"node": "Check EUR-Lex Updates", "type": "main", "index": 0}]]
     },
-    "HTTP Request Eur-Lex": {
-      "main": [
-        [
-          {
-            "node": "Verify Status",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Check EUR-Lex Updates": {
+      "main": [[{"node": "Contains New Regulation", "type": "main", "index": 0}]]
     },
-    "Verify Status": {
-      "main": [
-        null,
-        [
-          {
-            "node": "Send Alert Email",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Contains New Regulation": {
+      "main": [null, [{"node": "Send Regulation Alert", "type": "main", "index": 0}]]
     }
   }
 }

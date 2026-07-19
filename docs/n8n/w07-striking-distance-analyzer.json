@@ -1,0 +1,87 @@
+{
+  "name": "W07 Striking Distance Analyzer",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"hours": 24}]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/webmasters/v3/sites/https%3A%2F%2Fcbamvalid.com%2F/searchAnalytics/query",
+        "method": "POST",
+        "authentication": "oAuth2",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "startDate", "value": "{{$now.format('yyyy-MM-dd', -30)}}"},
+            {"name": "endDate", "value": "{{$now.format('yyyy-MM-dd')}}"},
+            {"name": "dimensions", "value": "[\"query\",\"page\"]"},
+            {"name": "rowLimit", "value": "5000"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [300, 300],
+      "name": "Fetch GSC Analytics"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Analyze queries in striking distance (positions 4-15)\n// Calculate opportunity scores based on CTR gain potential\n// Output: array of queries with scores, pages, and estimated traffic impact\nconst rows = $input.all();\nconst opportunities = [];\n// Scoring logic for striking distance analysis\nreturn rows.map(r => ({ json: r.json }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "name": "Calculate Opportunity Scores"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "CBAMValid Striking Distance Report",
+        "text": "Striking distance analysis complete.\n\nTop opportunities identified. Review the report for optimization targets."
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [700, 300],
+      "name": "Send Opportunity Report"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "id": {
+            "__rl": true,
+            "mode": "list",
+            "value": "striking-distance-log"
+          }
+        },
+        "sheetName": "Sheet1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [700, 500],
+      "name": "Log to Spreadsheet"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{"node": "Fetch GSC Analytics", "type": "main", "index": 0}]]
+    },
+    "Fetch GSC Analytics": {
+      "main": [[{"node": "Calculate Opportunity Scores", "type": "main", "index": 0}]]
+    },
+    "Calculate Opportunity Scores": {
+      "main": [[{"node": "Send Opportunity Report", "type": "main", "index": 0}, {"node": "Log to Spreadsheet", "type": "main", "index": 0}]]
+    }
+  }
+}

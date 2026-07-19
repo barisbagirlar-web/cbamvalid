@@ -1,0 +1,101 @@
+{
+  "name": "W14 Widget Embed Health Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"hours": 24}]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://cbamvalid.com/widget",
+        "method": "GET",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [300, 300],
+      "name": "Check Widget Page"
+    },
+    {
+      "parameters": {
+        "url": "https://cdn.cbamvalid.com/embed.js",
+        "method": "GET",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [300, 500],
+      "name": "Check embed.js"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate widget embed page: CORS headers, CSP, embed script presence\n// Check backlink integrity on known customer pages\n// Output: backlink validation results\nconst pages = $input.all();\n// Backlink validation logic\nreturn pages.map(r => ({ json: r.json }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "name": "Validate Backlinks"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate embed.js: content length, JS syntax validity, version match\n// Check MIME type, cache headers, CORS headers\n// Output: embed.js validation results\nconst embed = $input.all();\n// Embed validation logic\nreturn embed.map(r => ({ json: r.json }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [500, 500],
+      "name": "Validate embed.js Integrity"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true
+          }
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [700, 300],
+      "name": "Check Widget Issues"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "CBAMValid Widget Embed Health Alert",
+        "text": "Widget embed health check found issues.\n\nBacklink issues: {{$json}}\nEmbed.js issues: {{$json}}"
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "name": "Send Health Alert"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{"node": "Check Widget Page", "type": "main", "index": 0}]]
+    },
+    "Check Widget Page": {
+      "main": [[{"node": "Validate Backlinks", "type": "main", "index": 0}]]
+    },
+    "Check embed.js": {
+      "main": [[{"node": "Validate embed.js Integrity", "type": "main", "index": 0}]]
+    },
+    "Validate Backlinks": {
+      "main": [[{"node": "Check Widget Issues", "type": "main", "index": 0}]]
+    },
+    "Validate embed.js Integrity": {
+      "main": [[{"node": "Check Widget Issues", "type": "main", "index": 0}]]
+    },
+    "Check Widget Issues": {
+      "main": [null, [{"node": "Send Health Alert", "type": "main", "index": 0}]]
+    }
+  }
+}

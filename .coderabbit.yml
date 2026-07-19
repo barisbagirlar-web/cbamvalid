@@ -1,0 +1,110 @@
+# ─────────────────────────────────────────────────────────────
+# .coderabbit.yml — CBAMValid Regulatory Compliance Configuration
+# EU Regulation 2023/956 + Implementing Regulation 2023/1773
+# ─────────────────────────────────────────────────────────────
+
+review_profile: "strict"
+fail_on_error: true
+early_access: true
+
+custom_instructions: |
+  CBAMVALID REGULATORY INVARIANTS (EU REGULATION 2023/956):
+
+  1. LEGAL CITATION MANDATE: Every calculation function MUST include a JSDoc
+     @euRef tag citing the exact EU Regulation article/annex.
+     Format: @euRef "Regulation (EU) 2023/956 Art. X(Y)"
+     Missing citation = CRITICAL BLOCK. No orphan formulas allowed.
+
+  2. PRECURSOR ALLOCATION LOGIC: Embedded emissions calculations for complex
+     goods MUST follow Annex III Section B allocation hierarchy.
+     Verify mass balance closure:
+       Sum(inputs) == Sum(outputs) + Sum(emissions)
+     Tolerance: ±0.01%.
+     Non-compliance = CRITICAL BLOCK + mandatory Compliance Officer review.
+
+  3. DEFAULT VALUES GUARD: When user data is missing, EU default values
+     (Annex IV) MUST be applied with explicit flag `is_eu_default_applied: boolean`.
+     Flag MUST be present in all output schemas.
+     Silent substitution without flag = CRITICAL BLOCK.
+
+  4. CBAM CERTIFICATE INTEGRITY: Certificate hash generation MUST use SHA-256.
+     Hash input MUST include:
+       installation_id + reporting_period + verified_emissions + timestamp
+     Any change MUST produce new hash. Collision resistance mandatory.
+     Deterministic replay test required.
+
+  5. AUDIT TRAIL IMMUTABILITY: All calculation inputs/outputs MUST be logged
+     with cryptographic timestamp. No UPDATE/DELETE on audit_log table.
+     Append-only enforced at schema level.
+
+  6. HREFLANG & JURISDICTION: Multi-language content MUST maintain semantic
+     equivalence. DE/FR translations of legal terms MUST match official
+     EUR-Lex terminology. Drift detection: cross-check against EUR-Lex.
+
+  7. ZERO-DATA RETENTION: Client-side session TTL (1 hour) MUST be enforced.
+     Server-side PDF generation MUST fs.unlinkSync() after delivery.
+     Verify cleanup in finally{} blocks. Memory retention = DATA BREACH.
+
+  8. ACADEMIC OVERSIGHT TAG: All public-facing methodology pages MUST include
+     Prof. Dr. Neela Nataraj (IIT Bombay) oversight block.
+     DOM presence check via data-testid="academic-oversight" mandatory.
+
+  PR REVIEW PRIORITY:
+  - CBAM engine changes: 2 reviewers + Compliance Officer sign-off
+  - Methodology pages: 1 reviewer + Academic Oversight check
+  - SEO/schema changes: 1 reviewer + LegalService schema validation
+
+# ─── PATH FILTERS ───
+
+path_filters:
+  exclude:
+    - "**/*.test.ts"
+    - "docs/**"
+    - "**/*.md"
+  include:
+    - "lib/cbam/**"
+    - "lib/cbam-engine/**"
+    - "components/compliance/**"
+    - "app/(public)/methodology/**"
+    - "app/(workspace)/cbam/**"
+    - "functions/src/cbam/**"
+    - "lib/seo/schema.ts"
+    - "lib/cbam/calculation/**"
+    - "lib/cbam/emission-factors/**"
+
+# ─── CHAT CONFIG ───
+
+chat:
+  auto_reply: true
+  language: "en-US"
+
+# ─── SCHEMA VALIDATION ───
+
+schema_validation:
+  enabled: true
+  legal_service_required: true
+  verify_legal_citation_resolvable: true
+
+# ─── REGULATION VERSIONING ───
+
+regulation_tracking:
+  primary:
+    - id: "EUR-LEX-32023R0956"
+      uri: "https://eur-lex.europa.eu/eli/reg/2023/956/oj"
+      title: "CBAM Regulation"
+      effective: "2023-10-01"
+    - id: "EUR-LEX-32023R1773"
+      uri: "https://eur-lex.europa.eu/eli/reg_impl/2023/1773/oj"
+      title: "CBAM Implementing Regulation"
+      effective: "2023-10-01"
+  alert_on_new_revision: true
+  invalidate_stale_citations: true
+
+# ─── PRE-COMMIT HOOKS ───
+
+pre_commit:
+  run:
+    - "npm run typecheck"
+    - "npm run lint"
+    - "npm run test:cbam-engine"
+  block_on_failure: true

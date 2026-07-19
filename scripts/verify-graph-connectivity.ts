@@ -155,7 +155,7 @@ let orphanCount = 0;
 console.log("[GRAPH] Checking In-Degree for all public routes...\n");
 
 // Known orphans — pages that exist but are linked from the registry (dynamic routes)
-const REGISTRY_DRIVEN_PREFIXES = ['/cn-codes/', '/sectors/', '/reports/'];
+const REGISTRY_DRIVEN_PREFIXES = ['/cn-codes/', '/sectors/', '/reports/', '/cbam-impact-2026/'];
 const KNOWN_ROOT_PAGES = ['/about', '/cn-code', '/cn-code/[code]', '/widget/cbam-calculator']; // linked from layout/footer, redirect routes, embed resources
 
 for (const route of routes.sort()) {

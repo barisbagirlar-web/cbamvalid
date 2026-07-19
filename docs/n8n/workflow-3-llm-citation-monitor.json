@@ -1,76 +1,51 @@
 {
-  "name": "Academic & Regulation Citation Link Monitor",
+  "name": "Workflow 3 LLM Citation Monitor",
   "nodes": [
     {
       "parameters": {
-        "rule": "interval",
-        "value": 24,
-        "unit": "hours"
+        "rule": {
+          "interval": [{"hours": 24}]
+        }
       },
-      "name": "Daily Trigger",
-      "type": "n8n-nodes-base.cron",
+      "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1,
-      "position": [
-        100,
-        300
-      ]
+      "position": [100, 300],
+      "name": "Schedule Trigger"
     },
     {
       "parameters": {
-        "url": "https://cbamvalid.com/sitemaps/tools.xml",
-        "responseFormat": "string"
+        "url": "https://cbamvalid.com/sitemap.xml",
+        "method": "GET",
+        "options": {}
       },
-      "name": "Fetch Sitemap XML",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [
-        300,
-        300
-      ]
+      "position": [300, 300],
+      "name": "Fetch Sitemap"
     },
     {
       "parameters": {
         "conditions": {
-          "string": [
-            {
-              "value1": "={{ .body }}",
-              "operation": "contains",
-              "value2": "methodology"
-            }
-          ]
+          "options": {
+            "caseSensitive": false
+          }
         }
       },
-      "name": "Validate URL Presence",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [
-        500,
-        300
-      ]
+      "position": [500, 300],
+      "name": "Contains Methodology Pages"
     }
   ],
   "connections": {
-    "Daily Trigger": {
-      "main": [
-        [
-          {
-            "node": "Fetch Sitemap XML",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Schedule Trigger": {
+      "main": [[{"node": "Fetch Sitemap", "type": "main", "index": 0}]]
     },
-    "Fetch Sitemap XML": {
-      "main": [
-        [
-          {
-            "node": "Validate URL Presence",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Fetch Sitemap": {
+      "main": [[{"node": "Contains Methodology Pages", "type": "main", "index": 0}]]
+    },
+    "Contains Methodology Pages": {
+      "main": [null, null]
     }
   }
 }

@@ -1,0 +1,100 @@
+{
+  "name": "W15 Semrush Backlink Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"hours": 24}]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://api.semrush.com/analytics/v1/backlinks",
+        "method": "GET",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "domain", "value": "cbamvalid.com"},
+            {"name": "target", "value": "domain"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [300, 300],
+      "name": "Fetch Semrush Backlinks"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compare current backlinks with previous snapshot\n// Identify new high-DR (Domain Rating) backlinks\n// Output: delta of new, lost, and changed backlinks\nconst backlinks = $input.all();\n// Backlink delta analysis logic\nreturn backlinks.map(r => ({ json: r.json }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "name": "Analyze Backlink Delta"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true
+          }
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [700, 300],
+      "name": "Check New High-DR Links"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "CBAMValid New High-DR Backlinks Digest",
+        "text": "New high-authority backlinks detected.\n\nNew backlinks: {{$json}}"
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "name": "Send Backlink Digest"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "id": {
+            "__rl": true,
+            "mode": "list",
+            "value": "backlink-monitor-log"
+          }
+        },
+        "sheetName": "Sheet1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [900, 500],
+      "name": "Log to Spreadsheet"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{"node": "Fetch Semrush Backlinks", "type": "main", "index": 0}]]
+    },
+    "Fetch Semrush Backlinks": {
+      "main": [[{"node": "Analyze Backlink Delta", "type": "main", "index": 0}]]
+    },
+    "Analyze Backlink Delta": {
+      "main": [[{"node": "Check New High-DR Links", "type": "main", "index": 0}]]
+    },
+    "Check New High-DR Links": {
+      "main": [null, [{"node": "Send Backlink Digest", "type": "main", "index": 0}, {"node": "Log to Spreadsheet", "type": "main", "index": 0}]]
+    }
+  }
+}

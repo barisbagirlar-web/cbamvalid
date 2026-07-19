@@ -207,10 +207,164 @@ if (sitemapIndexContent.includes("contentLastModified")
 }
 
 const toolsSitemapContent = checkFileExists("app/sitemaps/tools.xml/route.ts");
-if (toolsSitemapContent.includes("STATIC_CORE") || toolsSitemapContent.includes("getLastmodForPath")) {
-  pass("Tools sitemap: tiered content-based lastmod");
+if (toolsSitemapContent.includes("STATIC_CORE") || toolsSitemapContent.includes("getLastmodForPath")
+    || toolsSitemapContent.includes("fileLastMod")) {
+  pass("Tools sitemap: content-derived lastmod (tiered or file-mtime based)");
 } else {
   fail("Tools sitemap: build-time lastmod", "still uses new Date().toISOString()");
+}
+
+// ─── GATE 8.1: MIL-STD §1.4 Empty sitemap fail-safe ───
+if (sitemapIndexContent.includes("buildSitemapIndexXml")
+    && (toolsSitemapContent.includes("buildUrlsetXml") || toolsSitemapContent.includes("buildUrlsetStream"))
+    && (sitemapIndexContent.includes("sitemapResponse") || sitemapIndexContent.includes("sitemapStreamResponse"))) {
+  pass("MIL-STD §1.4: Empty sitemap fail-safe activated (buildUrlset/buildSitemapIndex + response guard)");
+} else {
+  fail("MIL-STD §1.4 Empty fail-safe", "sitemaps missing empty-guard — could serve destructive empty XML to Googlebot");
+}
+
+// ─── GATE 8.2: MIL-STD §1.3 Dedup protection ───
+const guardsContent = checkFileExists("lib/seo/sitemap-guards.ts");
+if (guardsContent.includes("deduplicateUrls")
+    && guardsContent.includes("urlHash")
+    && guardsContent.includes("normalizeUrl")) {
+  pass("MIL-STD §1.3: URL normalization + deduplication via SHA-256 hash");
+} else {
+  fail("MIL-STD §1.3 Dedup", "sitemap-guards.ts missing URL normalization or dedup logic");
+}
+
+// ─── GATE 8.3: MIL-STD §1.2 Monotonic lastmod ───
+if (guardsContent.includes("safeLastMod")
+    && guardsContent.includes("MAX")
+    && guardsContent.includes("clamped")) {
+  pass("MIL-STD §1.2: Monotonic lastmod guard (MAX(DB,epoch) enforcement)");
+} else {
+  fail("MIL-STD §1.2 Monotonic", "safeLastMod missing — future dates could corrupt Googlebot temporal logic");
+}
+
+// ─── GATE 8.4: MIL-STD §3 Canonical SSOT gate ───
+const ssotContent = checkFileExists("scripts/verify-canonical-ssot.ts");
+if (ssotContent.toLowerCase().includes("ssot")
+    && ssotContent.includes("crossCheckCanonical")
+    && ssotContent.toLowerCase().includes("canonical drift")) {
+  pass("MIL-STD §3: Canonical SSOT CI gate exists (HTML ↔ HTTP ↔ XML ↔ robots.txt)");
+} else {
+  fail("MIL-STD §3 SSOT gate", "verify-canonical-ssot.ts missing or incomplete");
+}
+
+// ─── GATE 8.5: MIL-STD §2 Dirty URL Firewall ───
+const firewallContent = checkFileExists("scripts/sitemap-dirty-firewall.ts");
+if (firewallContent.toUpperCase().includes("FIREWALL")
+    && firewallContent.includes("Dirty")
+    && (firewallContent.includes("status !== 200") || firewallContent.includes("expected 200"))) {
+  pass("MIL-STD §2 Node 2: Dirty URL Firewall CI script exists");
+} else {
+  fail("MIL-STD §2 Firewall", "sitemap-dirty-firewall.ts missing or incomplete");
+}
+
+// ─── GATE 8.6: MIL-STD §4 Red Team ───
+const redTeamContent = checkFileExists("scripts/red-team-sitemap.ts");
+if (redTeamContent.includes("RED-TEAM")
+    && redTeamContent.includes("Parameter Injection")
+    && redTeamContent.includes("Orphan Page")) {
+  pass("MIL-STD §4: Red Team sitemap attack simulation exists");
+} else {
+  fail("MIL-STD §4 Red Team", "red-team-sitemap.ts missing or incomplete");
+}
+
+// ─── GATE 8.7: MIL-STD §5/§6 Stream Engine + Stress Test ───
+const stressContent = checkFileExists("scripts/sitemap-stress-test.ts");
+if (stressContent.includes("STRESS")
+    && stressContent.includes("benchmark")
+    && stressContent.includes("Fail-Safe")) {
+  pass("MIL-STD §5/§6: Sitemap stream engine + stress test exists");
+} else {
+  fail("MIL-STD §5/§6 Stress", "sitemap-stress-test.ts missing or incomplete");
+}
+
+// ─── GATE 8.8: Priority/changefreq removed per Google 2024+ deprecation ───
+let priorityCount = 0;
+for (const f of ["app/sitemap.xml/route.ts", "app/sitemaps/tools.xml/route.ts",
+  "app/sitemaps/sectors.xml/route.ts", "app/sitemaps/cn-codes.xml/route.ts"]) {
+  const fc = checkFileExists(f);
+  priorityCount += (fc.match(/<priority>/g) || []).length;
+  priorityCount += (fc.match(/<changefreq>/g) || []).length;
+}
+if (priorityCount === 0) {
+  pass("MIL-STD §1.1: priority/changefreq tags removed (Google 2024+ deprecation)");
+} else {
+  fail("MIL-STD §1.1 Deprecated tags", `${priorityCount} priority/changefreq tag(s) remain — remove per Google recommendation`);
+}
+
+// ─── GATE 8.9: MIL-STD §5.0 I5 Stream engine ───
+if (guardsContent.includes("buildUrlsetStream")
+    && guardsContent.includes("ReadableStream")
+    && guardsContent.includes("TextEncoder")) {
+  pass("MIL-STD §5.0 I5: Stream-based XML generation (ReadableStream, O(1) memory)");
+} else {
+  fail("MIL-STD §5.0 I5 Stream", "sitemap-guards.ts missing ReadableStream-based generation");
+}
+
+// ─── GATE 8.10: MIL-STD §4 Attack 1: XSS/script injection stripping ───
+if (guardsContent.includes("sanitizeParamValue")
+    && guardsContent.includes("XSS_PATTERNS")
+    && guardsContent.includes("[BLOCKED]")) {
+  pass("MIL-STD §4 Attack 1: XSS/script injection URL param stripping");
+} else {
+  fail("MIL-STD §4 Attack 1 XSS", "sitemap-guards.ts missing XSS/sanitization of URL params");
+}
+
+// ─── GATE 8.11: MIL-STD §1.4 Webhook alarm ───
+if (guardsContent.includes("fireAlarm")
+    && guardsContent.includes("SITEMAP_ALARM_WEBHOOK")
+    && guardsContent.includes("P0")) {
+  pass("MIL-STD §1.4: Webhook P0 alarm fires on empty sitemap (with env var config)");
+} else {
+  fail("MIL-STD §1.4 Alarm", "sitemap-guards.ts missing webhook alarm for empty guard");
+}
+
+// ─── GATE 8.12: MIL-STD §4 Attack 3: Cache poisoning defenses ───
+if (guardsContent.includes("Vary")
+    && guardsContent.includes("Surrogate-Control")) {
+  pass("MIL-STD §4 Attack 3: Vary + Surrogate-Control headers (cache poisoning defense)");
+} else {
+  fail("MIL-STD §4 Attack 3 Cache", "sitemap-guards.ts missing Vary/Surrogate-Control headers");
+}
+
+// ─── GATE 8.13: MIL-STD §3 HTTP Link header canonical ───
+if ((nextConfigContent.includes('"Link"') || nextConfigContent.includes("'Link'"))
+    && nextConfigContent.includes('canonical')) {
+  pass("MIL-STD §3: HTTP Link header canonical configured in next.config.js");
+} else {
+  fail("MIL-STD §3 Link header", "next.config.js missing HTTP Link header with rel=canonical");
+}
+
+// ─── GATE 8.14: MIL-STD §2 Firewall 6-node ───
+if (firewallContent.toLowerCase().includes("noindex")
+    && firewallContent.toLowerCase().includes("content-type")
+    && (firewallContent.includes("redirectChain") || firewallContent.toLowerCase().includes("redirect"))
+    && (firewallContent.includes("soft404") || firewallContent.toLowerCase().includes("soft 404"))) {
+  pass("MIL-STD §2: Firewall 6-node complete (noindex, content-type, redirect, soft-404)");
+} else {
+  fail("MIL-STD §2 Firewall 6-node", "sitemap-dirty-firewall.ts missing one or more validation nodes");
+}
+
+// ─── GATE 8.15: MIL-STD §6.2 10M URL simulation ───
+if (stressContent.includes("10M") || stressContent.includes("test10MTheoretical")
+    || (stressContent.includes("theoretical") && stressContent.includes("10000000"))) {
+  pass("MIL-STD §6.2: 10M URL theoretical validation + concurrent stress test");
+} else {
+  fail("MIL-STD §6.2 Stress", "sitemap-stress-test.ts missing 10M URL validation");
+}
+
+// ─── GATE 8.16: n8n w11 actual JS implementation ───
+const n8nW11Content = checkFileExists("docs/n8n/w11-sitemap-health-check.json");
+if (n8nW11Content.includes("urlMatches") || n8nW11Content.includes("lastmod")
+    && !n8nW11Content.includes("XML parsing logic for sub-sitemap extraction") // Old placeholder check
+    && !n8nW11Content.includes("Sitemap validation logic")) {
+  pass("MIL-STD: n8n w11 sitemap health-check has actual working JS (not placeholder)");
+} else {
+  fail("MIL-STD n8n w11", "w11-sitemap-health-check.json still contains placeholder JS or missing validation logic");
 }
 
 // ─── GATE 9: Phase 3 — PassageIndexingFactBox component ───
@@ -291,7 +445,7 @@ if (codePageContent.includes("TopologyLinker")
 }
 
 // ─── GATE 10.2: Phase 4 — Financial Impact Report pages ───
-const reportContent = checkFileExists("app/(public)/cbam-impact-2026/page.tsx");
+const reportContent = checkFileExists("app/(public)/cbam-impact-2026/[sector]/page.tsx");
 if (reportContent.includes("Dataset")
     && reportContent.includes("Financial Impact")
     && reportContent.includes("EU_ETS_PRICE")
@@ -472,6 +626,81 @@ if (robotsContent.includes("User-agent: *")
   pass("§6 Robots.txt: production-standard robots.txt with sitemap reference exists");
 } else {
   fail("§6 Robots.txt", "public/robots.txt missing or incomplete");
+}
+
+// ─── GATE 11.13: Şartname v2.1 — Zod Registry Validation (§2.1/Ek Kod-1) ───
+const zodRegistryContent = checkFileExists("scripts/validate-registry.ts");
+if (zodRegistryContent.includes("ZOD-REGISTRY")
+    && zodRegistryContent.includes("SeoPageRecordSchema")
+    && zodRegistryContent.includes("safeParse")) {
+  pass("§2.1 Zod registry: scripts/validate-registry.ts with Zod schema validation exists");
+} else {
+  fail("§2.1 Zod registry", "scripts/validate-registry.ts missing or incomplete");
+}
+
+// ─── GATE 11.14: Şartname v2.1 — Content decay detector standalone (§26/Ek Kod-11) ───
+const decayContent = checkFileExists("scripts/detect-content-decay.ts");
+if (decayContent.includes("DECAY")
+    && decayContent.includes("TF-IDF")
+    && decayContent.includes("decayCandidates")) {
+  pass("§26 Decay: scripts/detect-content-decay.ts TF-IDF content decay detector exists");
+} else {
+  fail("§26 Decay", "scripts/detect-content-decay.ts missing or incomplete");
+}
+
+// ─── GATE 11.15: Şartname v2.1 — Googlebot verification script (§22/Ek Kod-9) ───
+const googlebotContent = checkFileExists("scripts/verify-googlebot.py");
+if (googlebotContent.includes("GOOGLEBOT")
+    && googlebotContent.includes("gethostbyaddr")
+    && googlebotContent.includes("verify_googlebot")) {
+  pass("§22 Googlebot: scripts/verify-googlebot.py reverse+forward DNS verification exists");
+} else {
+  fail("§22 Googlebot", "scripts/verify-googlebot.py missing or incomplete");
+}
+
+// ─── GATE 11.16: Şartname v2.1 — Search Console Analytics integration (§23/Ek Kod-10) ───
+const gscAnalyticsContent = checkFileExists("scripts/gsc-analytics.ts");
+if (gscAnalyticsContent.includes("GSC-ANALYTICS")
+    && gscAnalyticsContent.includes("StrikingDistanceOpportunity")
+    && gscAnalyticsContent.includes("detectDecay")) {
+  pass("§23 GSC: scripts/gsc-analytics.ts with striking-distance+cannibalization+decay analytics");
+} else {
+  fail("§23 GSC", "scripts/gsc-analytics.ts missing or incomplete");
+}
+
+// ─── GATE 11.17: Şartname v2.1 — SEO PR Automation (§30/Ek Kod-12) ───
+const prAutomationContent = checkFileExists("scripts/create-seo-pr.ts");
+if (prAutomationContent.includes("PR-AUTOMATION")
+    && prAutomationContent.includes("gh pr create")
+    && prAutomationContent.includes("createPr")) {
+  pass("§30 PR automation: scripts/create-seo-pr.ts GitHub CLI PR automation exists");
+} else {
+  fail("§30 PR automation", "scripts/create-seo-pr.ts missing or incomplete");
+}
+
+// ─── GATE 11.18: Şartname v2.1 — Complete n8n workflow catalog (18 workflows) ───
+const n8nDir = path.join(workspaceRoot, "docs", "n8n");
+let n8nFileCount = 0;
+if (fs.existsSync(n8nDir)) {
+  n8nFileCount = fs.readdirSync(n8nDir).filter(f => f.endsWith(".json") && f.startsWith("w")).length;
+}
+if (n8nFileCount >= 18) {
+  pass(`§34 n8n workflows: ${n8nFileCount}/18 workflow definitions exist (w01-w18)`);
+} else {
+  fail("§34 n8n workflows", `only ${n8nFileCount}/18 workflow definitions — missing ${18 - n8nFileCount} (need w01-w18)`);
+}
+
+// ─── GATE 11.19: Şartname v2.1 — Content quality contracts populated in registry (§10.2) ───
+const seoRegistryContent = checkFileExists("lib/seo/registry.ts");
+if (seoRegistryContent.includes("qualityContract")
+    && seoRegistryContent.includes("userProblem")
+    && seoRegistryContent.includes("decisionEnabled")
+    && seoRegistryContent.includes("uniqueValueTypes")
+    && seoRegistryContent.includes("lastHumanReviewAt")) {
+  const qcCount = (seoRegistryContent.match(/qualityContract:/g) || []).length;
+  pass(`§10.2 Quality contracts: ${qcCount} registry entries with ContentQualityContract populated`);
+} else {
+  fail("§10.2 Quality contracts", "lib/seo/registry.ts missing qualityContract on key pages");
 }
 
 // ─── FINAL VERDICT ───

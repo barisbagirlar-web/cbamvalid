@@ -1,0 +1,73 @@
+{
+  "name": "W05 Weekly Crawl Budget Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"hours": 24}]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/webmasters/v3/sites/https%3A%2F%2Fcbamvalid.com%2F/searchAnalytics/query",
+        "method": "POST",
+        "authentication": "oAuth2",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "startDate", "value": "{{$now.format('yyyy-MM-dd', -7)}}"},
+            {"name": "endDate", "value": "{{$now.format('yyyy-MM-dd')}}"},
+            {"name": "dimensions", "value": "[\"page\"]"},
+            {"name": "rowLimit", "value": "1000"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [300, 300],
+      "name": "Fetch GSC Crawl Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true
+          }
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "name": "Check Crawl Drop"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "CBAMValid Crawl Budget Alert - >20% Drop Detected",
+        "text": "Crawl budget has dropped more than 20% compared to the previous period. Review GSC immediately.\n\nDetails: {{$json}}"
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [700, 300],
+      "name": "Send Crawl Alert"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{"node": "Fetch GSC Crawl Data", "type": "main", "index": 0}]]
+    },
+    "Fetch GSC Crawl Data": {
+      "main": [[{"node": "Check Crawl Drop", "type": "main", "index": 0}]]
+    },
+    "Check Crawl Drop": {
+      "main": [null, [{"node": "Send Crawl Alert", "type": "main", "index": 0}]]
+    }
+  }
+}

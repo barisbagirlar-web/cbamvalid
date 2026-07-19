@@ -49,6 +49,10 @@ const nextConfig = {
             key: 'Cache-Control',
             value: 'public, s-maxage=3600, stale-while-revalidate=86400',
           },
+          {
+            key: 'Link',
+            value: '<https://cbamvalid.com>; rel="canonical"',
+          },
         ],
       },
       // Legal Content Caching

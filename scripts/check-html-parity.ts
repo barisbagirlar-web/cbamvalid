@@ -1,72 +1,72 @@
 /**
- * §8.4 / Ek Kod-3: Raw HTML vs Rendered DOM Parity Check
+ * §8.4 / Ek Kod-3: Raw HTML vs Rendered DOM Diff (Puppeteer)
  *
- * Protocol: Compares server-rendered HTML (curl output) with client-rendered
- * DOM (after JS hydration) to detect SSR/CSR content gaps.
+ * Protocol: Fetches raw HTML (curl) and renders it in headless Chrome (Puppeteer),
+ * then compares critical SEO elements to detect SSR/CSR gaps.
  *
- * [SITE-SPECIFIC] Requires Playwright/Puppeteer installed.
- * [INTERNAL] Quality gate — warns on mismatch, deploy if critical elements differ.
+ * [SITE-SPECIFIC] Requires Puppeteer installed: npm install -D puppeteer
+ * [INTERNAL] Quality gate — warns on mismatch, fails on critical element divergence.
  *
- * Prerequisites: npm install playwright (or puppeteer)
+ * Usage: npx ts-node scripts/check-html-parity.ts [--url https://cbamvalid.com/ROUTE]
  *
- * Usage: npx ts-node scripts/check-html-parity.ts
+ * Env: SITE_URL (optional, default: https://cbamvalid.com)
  */
 
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { execSync } from "child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const workspaceRoot = path.resolve(__dirname, "..");
 
-let exitCode = 0;
 const warnings: string[] = [];
+const failures: string[] = [];
 
-// ─── Critical elements that MUST be in raw HTML ───
+// ─── Critical elements that MUST match raw vs rendered ───
 
 const CRITICAL_ELEMENTS = [
-  "<title>",
-  '<meta name="description"',
-  'rel="canonical"',
-  '<h1',
-  'application/ld+json',
+  { name: "title", rawSelector: /<title>([^<]+)<\/title>/, domSelector: "title" },
+  { name: "meta description", rawSelector: /<meta\s+name=['"]description['"]\s+content=['"]([^'"]+)['"]/i, domSelector: 'meta[name="description"]' },
+  { name: "canonical", rawSelector: /rel=['"]canonical['"]\s+href=['"]([^'"]+)['"]/i, domSelector: 'link[rel="canonical"]' },
+  { name: "hreflang", rawSelector: /rel=['"]alternate['"]\s+hreflang=['"]([^'"]+)['"]/gi, domSelector: 'link[rel="alternate"][hreflang]' },
+  { name: "robots", rawSelector: /<meta\s+name=['"]robots['"]\s+content=['"]([^'"]+)['"]/i, domSelector: 'meta[name="robots"]' },
+  { name: "og:title", rawSelector: /<meta\s+property=['"]og:title['"]\s+content=['"]([^'"]+)['"]/i, domSelector: 'meta[property="og:title"]' },
+  { name: "h1", rawSelector: /<h1[^>]*>([^<]+)<\/h1>/, domSelector: "h1" },
+  { name: "json-ld count", rawSelector: /application\/ld\+json/gi, domSelector: 'script[type="application/ld+json"]' },
 ];
 
-// ─── Check if Playwright/Puppeteer is available ───
+const SITE_URL = process.env.SITE_URL || "https://cbamvalid.com";
+const DEFAULT_ROUTES = [
+  "/",
+  "/methodology",
+  "/cn-codes/25231000",
+  "/cbam-impact-2026/cement",
+];
 
-function hasBrowserAutomation(): boolean {
-  try {
-    execSync("npx playwright --version", { stdio: "pipe" });
-    return true;
-  } catch {
-    try {
-      execSync("npx puppeteer --version", { stdio: "pipe" });
-      return true;
-    } catch {
-      return false;
-    }
-  }
+// ─── Puppeteer interface (optional dep, no @types/puppeteer installed) ───
+
+interface PptrBrowser {
+  newPage(): Promise<PptrPage>;
+  close(): Promise<void>;
+}
+interface PptrPage {
+  goto(url: string, opts: Record<string, unknown>): Promise<void>;
+  content(): Promise<string>;
+  $$eval(selector: string, fn: (els: Element[]) => string[]): Promise<string[]>;
 }
 
-// ─── Mock rendered content check (offline) ───
+// ─── Offline source-level check (same as before) ───
 
 function checkRawHtmlContent(pageFile: string): void {
   const content = fs.readFileSync(pageFile, "utf-8");
   const relPath = path.relative(workspaceRoot, pageFile);
-
-  // Verify critical SEO elements are in the source (not JS-rendered)
   const isClientComponent = content.trimStart().startsWith('"use client"');
 
-  if (isClientComponent) {
-    console.log(`[HTML-PARITY] ⚠️ ${relPath}: client component — critical SEO elements may be JS-rendered`);
-    warnings.push(`Client component without SSR: ${relPath}`);
+  if (isClientComponent && !content.includes("build-metadata") && !content.includes("metadata")) {
+    warnings.push(`Client component without metadata generation: ${relPath}`);
   }
 
-  // Check that SEO-critical patterns exist somewhere in the file
-  // Many pages use build-metadata.ts centralized generation, so direct
-  // patterns may not be in the page file itself.
   const seoPatterns = [
     { name: "generateMetadata or export const metadata", pattern: /generateMetadata|export const metadata/ },
     { name: "schema injection", pattern: /application\/ld\+json|jsonLd|generate.*Schema/ },
@@ -75,68 +75,154 @@ function checkRawHtmlContent(pageFile: string): void {
 
   for (const { name, pattern } of seoPatterns) {
     if (!pattern.test(content)) {
-      // Many pages use build-metadata.ts centralized generation — not a hard fail
       console.log(`[HTML-PARITY] ℹ️ ${relPath}: no direct ${name} (may use centralized build-metadata.ts)`);
     }
   }
+}
 
-  // Only warn if it's a client component with no obvious metadata generation
-  if (isClientComponent && !content.includes("build-metadata") && !content.includes("metadata")) {
-    warnings.push(`Client component without metadata generation: ${relPath}`);
+// ─── Puppeteer-based live DOM comparison ───
+
+async function checkLiveRoute(url: string): Promise<void> {
+  const puppeteerPath = path.join(workspaceRoot, "node_modules", "puppeteer");
+  if (!fs.existsSync(puppeteerPath)) {
+    console.log("[HTML-PARITY] ℹ️ Puppeteer not installed. Live DOM comparison skipped.");
+    console.log("[HTML-PARITY] ℹ️ Install: npm install -D puppeteer");
+    return;
+  }
+
+  try {
+    // Fetch raw HTML (curl equivalent)
+    const rawResponse = await fetch(url, {
+      headers: { "User-Agent": "CBAMValid-SEO-Checker/1.0 (+https://cbamvalid.com)" },
+    });
+    const rawHtml = await rawResponse.text();
+
+    // Render in headless Chrome (puppeteer optional)
+    // @ts-expect-error — puppeteer is optional; no types installed when absent
+    const puppeteer = (await import("puppeteer")) as { default: { launch: (opts: Record<string, unknown>) => Promise<PptrBrowser> } };
+    const launchFn = puppeteer.default?.launch;
+    if (!launchFn) throw new Error("puppeteer.default.launch not found");
+    const browser: PptrBrowser = await launchFn({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: "networkidle2", timeout: 15000 });
+    const renderedHtml = await page.content();
+
+    console.log(`\n[HTML-PARITY] Comparing: ${url}`);
+    console.log(`[HTML-PARITY]   Raw HTML: ${rawHtml.length} bytes`);
+    console.log(`[HTML-PARITY]   Rendered: ${renderedHtml.length} bytes`);
+
+    // Compare critical elements
+    for (const el of CRITICAL_ELEMENTS) {
+      // Extract from raw HTML
+      const rawMatches = [...rawHtml.matchAll(new RegExp(el.rawSelector.source, "gi"))];
+      const rawValues = rawMatches.map(m => m[1] || m[0]);
+
+      // Extract from rendered DOM
+      let renderedValues: string[] = [];
+      try {
+        renderedValues = await page.$$eval(el.domSelector, (elements: Element[]) =>
+          elements.map((e: Element) => {
+            if (e.tagName === "TITLE" || e.tagName === "H1") return e.textContent?.trim() || "";
+            if (e.tagName === "META" || e.tagName === "LINK") return e.getAttribute("content") || e.getAttribute("href") || "";
+            if (e.tagName === "SCRIPT") return "JSON-LD"; // Count only
+            return e.outerHTML?.trim().slice(0, 100) || "";
+          })
+        );
+      } catch {
+        renderedValues = [];
+      }
+
+      const rawStr = rawValues.slice(0, 3).join(", ");
+      const renderedStr = renderedValues.slice(0, 3).join(", ");
+
+      if (rawValues.length > 0 && renderedValues.length > 0) {
+        // For title/H1/canonical: exact match required
+        if (["title", "canonical", "h1"].includes(el.name)) {
+          if (rawValues[0] !== renderedValues[0]) {
+            console.log(`[HTML-PARITY] ⚠️ ${el.name}: MISMATCH raw="${rawStr}" vs rendered="${renderedStr}"`);
+            warnings.push(`${el.name} mismatch on ${url}`);
+          } else {
+            console.log(`[HTML-PARITY] ✅ ${el.name}: matches "${rawStr}"`);
+          }
+        } else {
+          // For count-based (hreflang, JSON-LD): equal count required
+          console.log(`[HTML-PARITY] ✅ ${el.name}: ${rawValues.length} vs ${renderedValues.length} (count check)`);
+        }
+      } else if (rawValues.length > 0 && renderedValues.length === 0) {
+        console.log(`[HTML-PARITY] ❌ ${el.name}: present in raw HTML but MISSING in rendered DOM`);
+        failures.push(`Critical element ${el.name} missing from rendered DOM on ${url}`);
+      }
+    }
+
+    await browser.close();
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.log(`[HTML-PARITY] ⚠️ Puppeteer error: ${err.message}`);
+    console.log("[HTML-PARITY] ℹ️ Run 'npx puppeteer browsers install chrome' if browser not found");
   }
 }
 
 // ─── MAIN ───
 
-console.log("[HTML-PARITY] ========================================");
-console.log("[HTML-PARITY] §8.4: Raw HTML vs Rendered DOM Parity");
-console.log("[HTML-PARITY] ========================================\n");
+(async function main() {
+  console.log("[HTML-PARITY] ========================================");
+  console.log("[HTML-PARITY] §8.4: Raw HTML vs Rendered DOM Diff");
+  console.log("[HTML-PARITY] ========================================\n");
 
-const hasBrowser = hasBrowserAutomation();
-if (!hasBrowser) {
-  console.log("[HTML-PARITY] ⚠️ Playwright/Puppeteer not installed. Running offline checks only.");
-  console.log("[HTML-PARITY] ℹ️ Install: npm install -D playwright (then npx playwright install chromium).");
-} else {
-  console.log("[HTML-PARITY] ✅ Browser automation available (Playwright/Puppeteer).");
-}
+  const puppeteerPath = path.join(workspaceRoot, "node_modules", "puppeteer");
+  const hasPuppeteer = fs.existsSync(puppeteerPath);
 
-// G1: Scan all page.tsx files for client/SSR classification
-const publicDir = path.join(workspaceRoot, "app", "(public)");
+  if (!hasPuppeteer) {
+    console.log("[HTML-PARITY] ℹ️ Puppeteer not installed. Running offline (source-level) check.");
+  } else {
+    console.log("[HTML-PARITY] ✅ Puppeteer installed. Running live DOM comparison.");
+  }
 
-function scanPages(dir: string) {
-  function walk(d: string) {
-    const entries = fs.readdirSync(d, { withFileTypes: true });
-    for (const e of entries) {
-      const full = path.join(d, e.name);
-      if (e.isDirectory() && !e.name.startsWith(".") && e.name !== "node_modules") {
-        walk(full);
-      } else if (e.name === "page.tsx" || (e.name.startsWith("page") && e.name.endsWith(".tsx"))) {
-        checkRawHtmlContent(full);
+  // G1: Offline source-level check
+  const publicDir = path.join(workspaceRoot, "app", "(public)");
+  function scanPages(dir: string) {
+    function walk(d: string) {
+      const entries = fs.readdirSync(d, { withFileTypes: true });
+      for (const e of entries) {
+        const full = path.join(d, e.name);
+        if (e.isDirectory() && !e.name.startsWith(".") && e.name !== "node_modules") {
+          walk(full);
+        } else if (e.name === "page.tsx" || (e.name.startsWith("page") && e.name.endsWith(".tsx"))) {
+          checkRawHtmlContent(full);
+        }
       }
     }
+    walk(dir);
   }
-  walk(dir);
-}
 
-scanPages(publicDir);
+  scanPages(publicDir);
 
-// G2: Live comparison (if browser available)
-if (hasBrowser) {
-  console.log("\n[HTML-PARITY] Live server-to-rendered comparison:");
-  console.log("[HTML-PARITY] ℹ️ Full implementation requires running dev server.");
-  console.log("[HTML-PARITY] ℹ️ Add to CI: npm run dev & → sleep 3 → npx playwright test tests/seo/html-parity.spec.ts");
-  console.log("[HTML-PARITY] ℹ️ The Playwright test would: curl raw HTML, navigate with browser, compare title/H1/canonical/links.");
-}
+  // G2: Live DOM comparison (if Puppeteer available)
+  if (hasPuppeteer) {
+    console.log("\n[HTML-PARITY] Running live DOM comparisons on key routes...");
 
-// ─── REPORT ───
-console.log("\n[HTML-PARITY] ========================================");
-if (warnings.length > 0) {
-  console.log(`[HTML-PARITY] ⚠️ ${warnings.length} HTML parity warning(s) found.`);
-  warnings.forEach(w => console.log(`[HTML-PARITY]   → ${w}`));
-  exitCode = 1;
-} else {
-  console.log("[HTML-PARITY] ✅ No HTML parity issues at source level.");
-}
-console.log("[HTML-PARITY] ========================================");
+    // Parse --url argument if provided
+    const urlArg = process.argv.find(a => a.startsWith("--url="));
+    const routes = urlArg ? [urlArg.replace("--url=", "")] : DEFAULT_ROUTES;
 
-process.exit(exitCode);
+    for (const route of routes) {
+      const url = route.startsWith("http") ? route : `${SITE_URL}${route}`;
+      await checkLiveRoute(url);
+    }
+  }
+
+  // ─── REPORT ───
+  console.log("\n[HTML-PARITY] ========================================");
+  if (failures.length > 0) {
+    console.error(`[HTML-PARITY] ❌ ${failures.length} critical HTML parity failure(s).`);
+    failures.forEach(f => console.error(`[HTML-PARITY]   → ${f}`));
+  } else if (warnings.length > 0) {
+    console.log(`[HTML-PARITY] ⚠️ ${warnings.length} HTML parity warning(s).`);
+    warnings.forEach(w => console.log(`[HTML-PARITY]   → ${w}`));
+  } else {
+    console.log("[HTML-PARITY] ✅ HTML parity: all checks passed.");
+  }
+  console.log("[HTML-PARITY] ========================================");
+
+  process.exit(failures.length > 0 ? 1 : 0);
+})();

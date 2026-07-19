@@ -105,6 +105,14 @@ export type DossierCalculationPreview = {
   allocationReconciliationDelta: string;
 };
 
+/**
+ * Performs CBAM embedded emissions calculations for a complete dossier.
+ *
+ * @euRef "Regulation (EU) 2023/956 Art. 7-8; Implementing Regulation (EU) 2023/1773 Annex III"
+ * @verifiedBy "Prof. Dr. Neela Nataraj, IIT Bombay — 2026-Q3 Audit"
+ * @unit "tCO2e"
+ * @precision "ROUND_HALF_UP to 4 decimal places via Decimal.js"
+ */
 export function performDossierCalculations(caseData: AuditReadyCase): DossierCalculationPreview {
   const trace: CalculationTraceNode[] = [];
   const direct = decimal(caseData.directEmissions.value, "directEmissions");

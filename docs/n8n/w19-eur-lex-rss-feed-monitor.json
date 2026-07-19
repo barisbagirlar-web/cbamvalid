@@ -1,0 +1,112 @@
+{
+  "name": "W19 EUR-Lex RSS Feed Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"hours": 6}]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "name": "Schedule Trigger (Every 6h)"
+    },
+    {
+      "parameters": {
+        "url": "https://eur-lex.europa.eu/oj/direct-access.html?locale=en&recent=1",
+        "method": "GET",
+        "options": {
+          "timeout": 30000,
+          "response": { "response": { "format": "string" } }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [300, 300],
+      "name": "Fetch EUR-Lex Recent OJ"
+    },
+    {
+      "parameters": {
+        "url": "https://eur-lex.europa.eu/search.html?q=CBAM+OR+\"carbon+border\"+OR+\"emission+trading\"&type=named&named-sector=env&displayProfile=allRelAllConsDocProfile&typeOfActStatus=REGULATION",
+        "method": "GET",
+        "options": {
+          "timeout": 30000,
+          "response": { "response": { "format": "string" } }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [500, 300],
+      "name": "Search CBAM Regulations"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse EUR-Lex search results for new/updated CBAM regulations\nconst items = $input.all();\n\nconst now = new Date();\nconst sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);\n\nconst cbamKeywords = [\n  'CBAM', 'carbon border adjustment', 'emission trading',\n  'ETS', 'carbon leakage', 'free allocation', 'benchmark',\n  'verification', 'accredited verifier', 'implementing regulation',\n  'delegated regulation', 'default value', 'transitional period',\n  '2023/956', '2023/1773', 'Combined Nomenclature'\n];\n\nconst newRegulations = [];\n\nfor (const item of items) {\n  const body = item.json?.body ?? item.json?.data ?? '';\n  if (typeof body !== 'string' || body.length < 100) continue;\n\n  // Extract regulation titles via regex\n  const titleRegex = /(?:Regulation|Implementing Regulation|Delegated Regulation)\\s*\\(EU\\)\\s*20\\d{2}\\/\\d{1,5}[^<]*/gi;\n  let match;\n  while ((match = titleRegex.exec(body)) !== null) {\n    for (const keyword of cbamKeywords) {\n      if (match[0].toLowerCase().includes(keyword.toLowerCase()) ||\n          body.slice(match.index - 200, match.index + 500).toLowerCase().includes(keyword.toLowerCase())) {\n        newRegulations.push({\n          title: match[0].trim(),\n          matchedKeyword: keyword,\n          snippet: body.slice(Math.max(0, match.index - 100), match.index + 400).trim(),\n          detectedAt: now.toISOString(),\n        });\n        break;\n      }\n    }\n  }\n}\n\n// Deduplicate by title\nconst seen = new Set();\nconst unique = newRegulations.filter(r => {\n  if (seen.has(r.title)) return false;\n  seen.add(r.title);\n  return true;\n});\n\nconsole.log(`[W19] Found ${unique.length} new/updated CBAM regulations`);\n\nif (unique.length > 0) {\n  return unique.map(r => ({ json: r }));\n}\nreturn [{ json: { title: 'No new CBAM regulations in last 6 hours', status: 'clear' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [700, 300],
+      "name": "Parse CBAM Regulation Titles"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [{
+            "value1": "={{$json.title}}",
+            "operation": "notRegex",
+            "value2": "^No new"
+          }]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "name": "New Regulation Detected?"
+    },
+    {
+      "parameters": {
+        "owner": "barisbagirlar",
+        "repository": "cbam-paddle-app",
+        "title": "={{'[REGULATORY UPDATE] ' + $json.title}}",
+        "body": "=## 🔴 CBAM Regulation Change Detected\n\n**Regulation:** {{$json.title}}\n**Matched Keyword:** {{$json.matchedKeyword}}\n**Detected At:** {{$json.detectedAt}}\n\n**Action Required:**\n- [ ] Verify regulation text on EUR-Lex\n- [ ] Check if CBAMValid emission factors registry needs update\n- [ ] Review calculation engine for affected formulas\n- [ ] Update .coderabbit.yml regulation-tracking if new regulation\n- [ ] Compliance Officer sign-off\n\n**Snippet:**\n```\n{{$json.snippet}}\n```"
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [1100, 200],
+      "name": "Create GitHub Issue"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "={{'[CBAM REGULATORY UPDATE] ' + $json.title.slice(0, 80)}}",
+        "text": "=🔴 CBAM Regulation Change Detected for CBAMValid.com\n\nRegulation: {{$json.title}}\nDetected At: {{$json.detectedAt}}\n\nGitHub Issue created. Review required within 48 hours.\nEUR-Lex: https://eur-lex.europa.eu/"
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1100, 400],
+      "name": "Email Compliance Officer"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger (Every 6h)": {
+      "main": [[{"node": "Fetch EUR-Lex Recent OJ", "type": "main", "index": 0}]]
+    },
+    "Fetch EUR-Lex Recent OJ": {
+      "main": [[{"node": "Search CBAM Regulations", "type": "main", "index": 0}]]
+    },
+    "Search CBAM Regulations": {
+      "main": [[{"node": "Parse CBAM Regulation Titles", "type": "main", "index": 0}]]
+    },
+    "Parse CBAM Regulation Titles": {
+      "main": [[{"node": "New Regulation Detected?", "type": "main", "index": 0}]]
+    },
+    "New Regulation Detected?": {
+      "main": [
+        [{"node": "Create GitHub Issue", "type": "main", "index": 0}],
+        [{"node": "Email Compliance Officer", "type": "main", "index": 0}]
+      ]
+    }
+  }
+}

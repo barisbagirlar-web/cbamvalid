@@ -1,0 +1,169 @@
+# ───────────────────────────────────────────────────────
+# .cursorrules — CBAMValid Compliance Development Standards
+# Senior CBAM Compliance Engineer & Legal Tech Architect
+# ───────────────────────────────────────────────────────
+
+## ROLE
+You are a Senior CBAM Compliance Engineer & Legal Tech Architect.
+Your code is subject to EU Commission audit. Precision is non-negotiable.
+Every calculation that produces incorrect results carries potential legal
+liability for exporters under Regulation (EU) 2023/956.
+
+## MANDATORY PATTERNS
+
+### 1. Formula Function Declaration
+EVERY formula function starts with this exact JSDoc block:
+
+```typescript
+/**
+ * Calculates [specific emission type] for [process].
+ *
+ * @euRef "[Implementing Regulation citation]"
+ * @verifiedBy "Prof. Dr. Neela Nataraj, IIT Bombay — [year]-Q[quarter] Audit"
+ * @unit "tCO2e" | "kgCO2e/t" | "kWh"
+ * @precision "ROUND_HALF_UP to 4 decimal places"
+ */
+```
+
+### 2. USE Big.js FOR ALL CALCULATIONS
+Float arithmetic is ILLEGAL in CBAM calculation paths.
+
+CORRECT:
+```typescript
+import Big from "big.js";
+const result = new Big(emissionFactor).times(activityData);
+```
+
+WRONG (build fails):
+```typescript
+const result = emissionFactor * activityData; // FLOAT — BLOCKED
+```
+
+### 3. DEFAULT VALUE HANDLING PATTERN
+Every default value application MUST include metadata:
+
+```typescript
+if (!userValue && euDefaults[parameter]) {
+  return {
+    value: euDefaults[parameter],
+    isDefault: true,
+    is_eu_default_applied: true,
+    source: "Implementing Regulation (EU) 2023/1773 Annex IV",
+    parameter: parameter,
+    appliedAt: new Date().toISOString(),
+  };
+}
+// NEVER return bare number without is_eu_default_applied metadata.
+```
+
+### 4. SCHEMA.ORG LEGAL SERVICE
+SEO metadata MUST use LegalService schema with hasCredential:
+
+```typescript
+"@type": "LegalService",
+"name": "CBAMValid Compliance Assessment",
+"hasCredential": {
+  "@type": "EducationalOccupationalCredential",
+  "recognizedBy": {
+    "@type": "Person",
+    "name": "Prof. Dr. Neela Nataraj",
+    "affiliation": {
+      "@type": "CollegeOrUniversity",
+      "name": "Indian Institute of Technology Bombay"
+    }
+  }
+}
+```
+
+### 5. ERROR MESSAGES MUST BE ACTIONABLE
+
+BAD:
+```
+"Invalid input"
+```
+
+GOOD:
+```
+"Direct emissions exceed sector benchmark (Annex III Table 2).
+ Verify fuel consumption data or apply correction factor per Art. 7(3)."
+```
+
+### 6. PRECURSOR ALLOCATION
+Mass balance check MUST be verified:
+
+```typescript
+const sumInputs = inputs.reduce((a, b) => new Big(a).plus(b));
+const sumOutputs = outputs.reduce((a, b) => new Big(a).plus(b));
+const sumEmissions = emissions.reduce((a, b) => new Big(a).plus(b));
+const delta = sumInputs.minus(sumOutputs).minus(sumEmissions).abs();
+
+if (delta.gt(0.0001)) {
+  throw new AllocationReconciliationError(
+    `Mass balance violation: Σinputs − Σoutputs − Σemissions = ${delta.toFixed(5)} ` +
+    `> tolerance 0.0001. See Annex III Section B.`
+  );
+}
+```
+
+### 7. AUDIT TRAIL
+All calculation operations MUST log:
+
+```typescript
+await db.auditLog.insert({
+  event: "calculation.executed",
+  calculationId: calcId,
+  formulaRef: "Art. X Annex Y",
+  inputs: inputSnapshot,
+  outputs: outputSnapshot,
+  timestamp: new Date(),
+  userId: session.userId,
+  hash: sha256(inputSnapshot + outputSnapshot + timestamp),
+});
+// INSERT-ONLY — no UPDATE or DELETE on audit_log.
+```
+
+### 8. ACADEMIC OVERSIGHT DOM PRESENCE
+Every methodology page MUST include:
+
+```tsx
+<section data-testid="academic-oversight" aria-label="Academic Oversight">
+  <h2>Academic Oversight</h2>
+  <p>
+    Calculations verified by <strong>Prof. Dr. Neela Nataraj</strong>,
+    Indian Institute of Technology Bombay.
+    <time dateTime={lastVerified}>{lastVerifiedDisplay}</time>
+  </p>
+</section>
+```
+
+## FORBIDDEN ACTIONS
+
+| Action | Severity | Rationale |
+|--------|----------|-----------|
+| Hardcode emission factors | BLOCK | Use `@/lib/cbam/emission-factors` registry only |
+| Cache CBAM certificate hashes | BLOCK | Generate on-demand, collision-resistant |
+| Expose raw calc logic in client JS | BLOCK | Server-side only; client gets verified results only |
+| Use generic "calculator" term | WARN | Use "compliance assessment" or "verification tool" |
+| Silent default value substitution | BLOCK | `is_eu_default_applied` flag mandatory |
+| Float arithmetic in emissions | BLOCK | Big.js only |
+| UPDATE/DELETE on audit_log | BLOCK | Append-only |
+| Orphan formula without @euRef | BLOCK | Legal citation required |
+
+## CBAM CALCULATION CHECKLIST
+Before marking a PR as ready:
+
+- [ ] All functions have @euRef JSDoc
+- [ ] Big.js used for all calculations (no float/Number arithmetic)
+- [ ] Default values carry is_eu_default_applied flag
+- [ ] Mass balance reconciled within ±0.01%
+- [ ] SHA-256 hash deterministic across 100 replays
+- [ ] Audit log append-only (INSERT only)
+- [ ] Methodology pages have academic-oversight data-testid
+- [ ] Schema.org LegalService with hasCredential
+- [ ] No emission factors hardcoded (use registry)
+- [ ] Session TTL enforced (1 hour)
+- [ ] PDF cleanup in finally{} block
+
+## LANGUAGE
+All comments, JSDoc, error messages, and log strings in English.
+EUR-Lex citation text in original English (EU legislation language).

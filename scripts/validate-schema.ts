@@ -21,7 +21,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const workspaceRoot = path.resolve(__dirname, "..");
 
-let exitCode = 0;
 const warnings: string[] = [];
 const failures: string[] = [];
 
@@ -45,8 +44,6 @@ const REQUIRED_PROPERTIES: Record<string, string[]> = {
   "Product": ["name"],
   "FAQPage": ["mainEntity"],
 };
-
-const SITE_ORIGIN = "https://cbamvalid.com";
 
 // ─── Schema extraction from source files ───
 
@@ -89,7 +86,6 @@ function validateSchemaTypes(schemaLibDir: string): void {
       if (content.includes(`"@type":"${deprecated}"`) || content.includes(`"${deprecated}"`)) {
         failures.push(`Deprecated schema type "${deprecated}" used in ${relPath}`);
         console.error(`[SCHEMA] ❌ ${relPath}: uses deprecated type "${deprecated}"`);
-        exitCode = 1;
       }
     }
 
@@ -139,54 +135,91 @@ function validateRequiredProperties(schemaContent: string, fileName: string): vo
   }
 }
 
-// ─── MAIN ───
+// ─── G5: Rich Results Test API (live call when API key available) ───
 
-console.log("[SCHEMA] ========================================");
-console.log("[SCHEMA] §15: Structured Data Validation");
-console.log("[SCHEMA] Checking: deprecated types, required properties, visible parity");
-console.log("[SCHEMA] ========================================\n");
-
-// G1: Deprecated type check
-const seoLib = path.join(workspaceRoot, "lib", "seo");
-validateSchemaTypes(seoLib);
-
-// G2: Required properties check
-const schemaFile = path.join(seoLib, "schema.ts");
-if (fs.existsSync(schemaFile)) {
-  const content = fs.readFileSync(schemaFile, "utf-8");
-  validateRequiredProperties(content, "lib/seo/schema.ts");
-  console.log("[SCHEMA] ✅ Schema generator file analyzed for type completeness.");
+async function testRichResultsApi(url: string, apiKey: string): Promise<void> {
+  try {
+    const res = await fetch(
+      `https://searchconsole.googleapis.com/v1/urlTestingTools/mobileFriendlyTest:run?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      console.log(`[SCHEMA] ✅ Rich Results API response: HTTP ${res.status}`);
+      if (data.mobileFriendliness) {
+        console.log(`[SCHEMA]   Mobile-friendly: ${data.mobileFriendliness}`);
+      }
+      if (data.resourceIssues) {
+        console.log(`[SCHEMA]   Resource issues: ${data.resourceIssues.length}`);
+      }
+    } else {
+      console.log(`[SCHEMA] ⚠️ Rich Results API returned HTTP ${res.status} — ${await res.text().then(t => t.slice(0, 100))}`);
+    }
+  } catch (err: unknown) {
+    const e = err as Error;
+    console.log(`[SCHEMA] ⚠️ Rich Results API call failed: ${e.message}`);
+    console.log("[SCHEMA] ℹ️ This is expected without proper API key/auth configuration.");
+  }
 }
 
-// G3: Page-level schema injection check
-const publicDir = path.join(workspaceRoot, "app", "(public)");
-checkVisibleParity(publicDir);
+// ─── MAIN (async IIFE for Rich Results API) ───
 
-// G4: Schema block count (each page must have at least @graph or single type)
-const pages = extractSchemaContent(publicDir);
-console.log(`\n[SCHEMA] ${pages.length} page(s) with JSON-LD schema injection detected.`);
+async function main() {
+  console.log("[SCHEMA] ========================================");
+  console.log("[SCHEMA] §15: Structured Data Validation");
+  console.log("[SCHEMA] Checking: deprecated types, required properties, visible parity");
+  console.log("[SCHEMA] ========================================\n");
 
-// G5: Rich Results Test API (offline fallback)
-const apiKey = process.env.GOOGLE_API_KEY;
-if (apiKey) {
-  console.log("[SCHEMA] ✅ Google API key detected. Rich Results Test API validation enabled.");
-  console.log("[SCHEMA] ⚠️ Live API validation not implemented in this script — use Search Console Reports instead.");
-} else {
-  console.log("[SCHEMA] ⚠️ No GOOGLE_API_KEY set. Rich Results Test API validation SKIPPED.");
-  console.log("[SCHEMA] ℹ️ Set GOOGLE_API_KEY env var for live Rich Results API validation.");
+  // G1: Deprecated type check
+  const seoLib = path.join(workspaceRoot, "lib", "seo");
+  validateSchemaTypes(seoLib);
+
+  // G2: Required properties check
+  const schemaFile = path.join(seoLib, "schema.ts");
+  if (fs.existsSync(schemaFile)) {
+    const content = fs.readFileSync(schemaFile, "utf-8");
+    validateRequiredProperties(content, "lib/seo/schema.ts");
+    console.log("[SCHEMA] ✅ Schema generator file analyzed for type completeness.");
+  }
+
+  // G3: Page-level schema injection check
+  const publicDir = path.join(workspaceRoot, "app", "(public)");
+  checkVisibleParity(publicDir);
+
+  // G4: Schema block count (each page must have at least @graph or single type)
+  const pages = extractSchemaContent(publicDir);
+  console.log(`\n[SCHEMA] ${pages.length} page(s) with JSON-LD schema injection detected.`);
+
+  // G5: Rich Results Test API (live call when API key available)
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (apiKey) {
+    console.log("\n[SCHEMA] ✅ Google API key detected. Running Rich Results Test API validation...");
+    console.log("[SCHEMA] ℹ️ Testing URL: https://cbamvalid.com/");
+    await testRichResultsApi("https://cbamvalid.com/", apiKey);
+  } else {
+    console.log("\n[SCHEMA] ⚠️ No GOOGLE_API_KEY set. Rich Results Test API validation SKIPPED.");
+    console.log("[SCHEMA] ℹ️ Set GOOGLE_API_KEY env var for live Rich Results API validation.");
+    console.log("[SCHEMA] ℹ️ Get key: https://console.cloud.google.com/apis/credentials");
+  }
+
+  // ─── REPORT ───
+  console.log("\n[SCHEMA] ========================================");
+  if (failures.length > 0) {
+    console.error(`[SCHEMA] ❌ ${failures.length} schema violation(s) detected.`);
+    failures.forEach(f => console.error(`[SCHEMA]   → ${f}`));
+  } else {
+    console.log("[SCHEMA] ✅ Schema validation: No critical violations.");
+  }
+  if (warnings.length > 0) {
+    console.log(`[SCHEMA] ⚠️ ${warnings.length} schema warning(s).`);
+  }
+  console.log("[SCHEMA] ========================================");
+
+  process.exit(failures.length > 0 ? 1 : 0);
 }
 
-// ─── REPORT ───
-console.log("\n[SCHEMA] ========================================");
-if (failures.length > 0) {
-  console.error(`[SCHEMA] ❌ ${failures.length} schema violation(s) detected.`);
-  failures.forEach(f => console.error(`[SCHEMA]   → ${f}`));
-} else {
-  console.log("[SCHEMA] ✅ Schema validation: No critical violations.");
-}
-if (warnings.length > 0) {
-  console.log(`[SCHEMA] ⚠️ ${warnings.length} schema warning(s).`);
-}
-console.log("[SCHEMA] ========================================");
-
-process.exit(failures.length > 0 ? 1 : 0);
+main();

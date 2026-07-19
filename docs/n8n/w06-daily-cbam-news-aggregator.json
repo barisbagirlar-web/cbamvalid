@@ -1,0 +1,115 @@
+{
+  "name": "W06 Daily CBAM News Aggregator",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"hours": 24}]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://eur-lex.europa.eu/search.html?q=CBAM&type=quick&scope=EURLEX",
+        "method": "GET",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [300, 300],
+      "name": "Fetch EUR-Lex CBAM"
+    },
+    {
+      "parameters": {
+        "url": "https://taxation-customs.ec.europa.eu/carbon-border-adjustment-mechanism_en",
+        "method": "GET",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [500, 300],
+      "name": "Fetch EC CBAM Page"
+    },
+    {
+      "parameters": {
+        "sourceData": "json",
+        "extractionValues": {
+          "values": [
+            {"key": "eurlex_title", "cssSelector": ".title"},
+            {"key": "eurlex_date", "cssSelector": ".date"},
+            {"key": "ec_content", "cssSelector": ".ecl-content"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.htmlExtract",
+      "typeVersion": 1,
+      "position": [700, 300],
+      "name": "Extract HTML Content"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true
+          }
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "name": "Check New Content"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "CBAMValid New CBAM Content Digest",
+        "text": "New CBAM regulatory content detected.\n\nEUR-Lex: {{$json.eurlex_title}}\nEC Page: New content found.\n\nReview immediately."
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1100, 300],
+      "name": "Send News Digest"
+    },
+    {
+      "parameters": {
+        "url": "https://cbamvalid.com/api/ingest/trigger",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "source", "value": "daily-aggregator"},
+            {"name": "content", "value": "{{$json}}"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1100, 500],
+      "name": "Trigger Content Ingest"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{"node": "Fetch EUR-Lex CBAM", "type": "main", "index": 0}]]
+    },
+    "Fetch EUR-Lex CBAM": {
+      "main": [[{"node": "Fetch EC CBAM Page", "type": "main", "index": 0}]]
+    },
+    "Fetch EC CBAM Page": {
+      "main": [[{"node": "Extract HTML Content", "type": "main", "index": 0}]]
+    },
+    "Extract HTML Content": {
+      "main": [[{"node": "Check New Content", "type": "main", "index": 0}]]
+    },
+    "Check New Content": {
+      "main": [null, [{"node": "Send News Digest", "type": "main", "index": 0}, {"node": "Trigger Content Ingest", "type": "main", "index": 0}]]
+    }
+  }
+}

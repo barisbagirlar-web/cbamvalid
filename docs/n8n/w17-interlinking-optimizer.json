@@ -1,0 +1,116 @@
+{
+  "name": "W17 Interlinking Optimizer",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"hours": 24}]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://cbamvalid.com/api/seo/interlinking/analyze",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "domain", "value": "cbamvalid.com"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [300, 300],
+      "name": "Trigger Interlinking Analysis"
+    },
+    {
+      "parameters": {
+        "url": "https://cbamvalid.com/api/seo/interlinking/results",
+        "method": "GET",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [500, 300],
+      "name": "Fetch Analysis Results"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Identify orphan pages: pages with no incoming internal links\n// Identify underlinked pages: pages with few internal links\n// Output: array of orphan and underlinked pages with recommendations\nconst results = $input.all();\n// Orphan page identification logic\nreturn results.map(r => ({ json: r.json }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [700, 300],
+      "name": "Identify Orphan Pages"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true
+          }
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "name": "Check Orphan Pages"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "CBAMValid Orphan Pages Alert",
+        "text": "Orphan or underlinked pages detected.\n\nDetails: {{$json}}"
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1100, 300],
+      "name": "Send Orphan Alert"
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/cbamvalid/cbam-paddle-app/pulls",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "title", "value": "[Interlinking] Fix orphan pages"},
+            {"name": "head", "value": "fix/interlinking-orphans"},
+            {"name": "base", "value": "main"},
+            {"name": "body", "value": "Automated interlinking optimization found orphan pages.\n\n{{$json}}"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1100, 500],
+      "name": "Create Interlinking PR"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{"node": "Trigger Interlinking Analysis", "type": "main", "index": 0}]]
+    },
+    "Trigger Interlinking Analysis": {
+      "main": [[{"node": "Fetch Analysis Results", "type": "main", "index": 0}]]
+    },
+    "Fetch Analysis Results": {
+      "main": [[{"node": "Identify Orphan Pages", "type": "main", "index": 0}]]
+    },
+    "Identify Orphan Pages": {
+      "main": [[{"node": "Check Orphan Pages", "type": "main", "index": 0}]]
+    },
+    "Check Orphan Pages": {
+      "main": [null, [{"node": "Send Orphan Alert", "type": "main", "index": 0}, {"node": "Create Interlinking PR", "type": "main", "index": 0}]]
+    }
+  }
+}

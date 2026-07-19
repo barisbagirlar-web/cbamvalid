@@ -1,45 +1,32 @@
 {
-  "name": "Competitor CBAM Pricing Monitor",
+  "name": "Workflow 4 Competitor Pricing Monitor",
   "nodes": [
     {
       "parameters": {
-        "rule": "interval",
-        "value": 7,
-        "unit": "days"
+        "rule": {
+          "interval": [{"hours": 24}]
+        }
       },
-      "name": "Weekly Run",
-      "type": "n8n-nodes-base.cron",
+      "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1,
-      "position": [
-        100,
-        300
-      ]
+      "position": [100, 300],
+      "name": "Schedule Trigger"
     },
     {
       "parameters": {
         "url": "https://cbamvalid.com/pricing",
-        "responseFormat": "string"
+        "method": "GET",
+        "options": {}
       },
-      "name": "Check Own Pricing Page",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [
-        300,
-        300
-      ]
+      "position": [300, 300],
+      "name": "Check Own Pricing Page"
     }
   ],
   "connections": {
-    "Weekly Run": {
-      "main": [
-        [
-          {
-            "node": "Check Own Pricing Page",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Schedule Trigger": {
+      "main": [[{"node": "Check Own Pricing Page", "type": "main", "index": 0}]]
     }
   }
 }

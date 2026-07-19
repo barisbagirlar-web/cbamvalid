@@ -36,7 +36,9 @@ export default function MethodologyPage() {
       <MethodologyContent />
       
       <div className="max-w-4xl mx-auto px-6 pb-20">
-        <ExpertAuthoritySection toolName="CBAM Calculation Engine" />
+        <div data-testid="academic-oversight" aria-label="Academic Oversight">
+          <ExpertAuthoritySection toolName="CBAM Calculation Engine" />
+        </div>
       </div>
     </>
   );

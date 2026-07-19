@@ -1,0 +1,120 @@
+{
+  "name": "W18 GSC Bulk Export to BigQuery",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"hours": 24}]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/webmasters/v3/sites/https%3A%2F%2Fcbamvalid.com%2F/searchAnalytics/query",
+        "method": "POST",
+        "authentication": "oAuth2",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "startDate", "value": "{{$now.format('yyyy-MM-dd', -1)}}"},
+            {"name": "endDate", "value": "{{$now.format('yyyy-MM-dd')}}"},
+            {"name": "dimensions", "value": "[\"query\",\"page\",\"country\",\"device\"]"},
+            {"name": "rowLimit", "value": "25000"},
+            {"name": "aggregationType", "value": "byPage"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [300, 300],
+      "name": "Fetch GSC Bulk Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transform GSC data for BigQuery schema\n// Normalize: clicks, impressions, CTR, position to proper types\n// Add: date partition, domain, ingestion timestamp\n// Output: array of rows ready for BigQuery insert\nconst rows = $input.all();\n// Data transformation logic for BigQuery schema\nreturn rows.map(r => ({ json: r.json }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "name": "Transform for BigQuery"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "projectId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "cbam-desk"
+        },
+        "datasetId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "search_console"
+        },
+        "tableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gsc_daily_export"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleBigQuery",
+      "typeVersion": 2,
+      "position": [700, 300],
+      "name": "Upsert to BigQuery"
+    },
+    {
+      "parameters": {
+        "url": "https://bigquery.googleapis.com/bigquery/v2/projects/cbam-desk/queries",
+        "method": "POST",
+        "authentication": "oAuth2",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "query", "value": "SELECT domain, SUM(clicks) as total_clicks, SUM(impressions) as total_impressions, AVG(position) as avg_position FROM search_console.gsc_daily_export WHERE _partitiondate = CURRENT_DATE() GROUP BY domain"},
+            {"name": "useLegacySql", "value": "false"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 300],
+      "name": "Run Summary SQL"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "CBAMValid Daily GSC BigQuery Export Digest",
+        "text": "Daily GSC data exported to BigQuery.\n\nSummary: {{$json}}"
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1100, 300],
+      "name": "Send Daily Digest"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{"node": "Fetch GSC Bulk Data", "type": "main", "index": 0}]]
+    },
+    "Fetch GSC Bulk Data": {
+      "main": [[{"node": "Transform for BigQuery", "type": "main", "index": 0}]]
+    },
+    "Transform for BigQuery": {
+      "main": [[{"node": "Upsert to BigQuery", "type": "main", "index": 0}]]
+    },
+    "Upsert to BigQuery": {
+      "main": [[{"node": "Run Summary SQL", "type": "main", "index": 0}]]
+    },
+    "Run Summary SQL": {
+      "main": [[{"node": "Send Daily Digest", "type": "main", "index": 0}]]
+    }
+  }
+}

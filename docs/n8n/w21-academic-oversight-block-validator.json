@@ -1,0 +1,105 @@
+{
+  "name": "W21 Academic Oversight Block Validator",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"hours": 12}]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "name": "Schedule Trigger (Every 12h)"
+    },
+    {
+      "parameters": {
+        "url": "https://cbamvalid.com/methodology",
+        "method": "GET",
+        "sendBody": false,
+        "options": {
+          "timeout": 15000,
+          "response": { "response": { "format": "string" } }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [300, 300],
+      "name": "Fetch Methodology Page"
+    },
+    {
+      "parameters": {
+        "url": "https://cbamvalid.com/cn-codes/25231000",
+        "method": "GET",
+        "sendBody": false,
+        "options": {
+          "timeout": 15000,
+          "response": { "response": { "format": "string" } }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [300, 500],
+      "name": "Fetch CN Code Detail Page"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check for Academic Oversight DOM presence on methodology pages\n// data-testid=\"academic-oversight\" MUST be present (E-E-A-T authority)\nconst pages = $input.all();\nconst results = { valid: true, issues: [], checkedPages: [] };\n\nfor (const item of pages) {\n  const body = item.json?.body ?? item.json?.data ?? '';\n  const url = item.json?.url ?? 'unknown';\n  \n  const hasAcademicBlock = /data-testid=[\"']academic-oversight[\"']/.test(body);\n  const hasProfNataraj = /Neela Nataraj|IIT Bombay/.test(body);\n  \n  results.checkedPages.push({\n    url,\n    academicBlock: hasAcademicBlock,\n    profNataraj: hasProfNataraj,\n    status: hasAcademicBlock ? 'PASS' : 'FAIL'\n  });\n  \n  if (!hasAcademicBlock) {\n    results.valid = false;\n    results.issues.push(`ACADEMIC_OVERSIGHT_MISSING: ${url} — data-testid=\"academic-oversight\" not found in DOM`);\n  }\n  \n  if (!hasProfNataraj) {\n    results.issues.push(`PROF_REFERENCE_MISSING: ${url} — \"Prof. Dr. Neela Nataraj\" or \"IIT Bombay\" not found`);\n  }\n}\n\nconsole.log(`[W21] Checked ${results.checkedPages.length} pages: ${results.valid ? 'ALL PASS' : results.issues.length + ' ISSUES'}`);\n\nreturn [{ json: results }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "name": "Validate Academic Oversight DOM"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [{
+            "value1": "={{$json.valid}}",
+            "operation": "equals",
+            "value2": false
+          }]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [700, 300],
+      "name": "Academic Block Missing?"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "={{'🔴 CBAMValid: Academic Oversight Block MISSING — ' + $json.issues.length + ' issue(s)'}}",
+        "text": "=🔴 Academic Oversight Validation FAILED\n\nIssues detected:\n{{JSON.stringify($json.issues, null, 2)}}\n\nChecked pages:\n{{JSON.stringify($json.checkedPages, null, 2)}}\n\nACTION: Block deployment until fixed. Academic oversight (data-testid=\"academic-oversight\") is mandatory for E-E-A-T authority."
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "name": "Alert Content Team"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger (Every 12h)": {
+      "main": [
+        [{"node": "Fetch Methodology Page", "type": "main", "index": 0}],
+        [{"node": "Fetch CN Code Detail Page", "type": "main", "index": 0}]
+      ]
+    },
+    "Fetch Methodology Page": {
+      "main": [[{"node": "Validate Academic Oversight DOM", "type": "main", "index": 0}]]
+    },
+    "Fetch CN Code Detail Page": {
+      "main": [[{"node": "Validate Academic Oversight DOM", "type": "main", "index": 0}]]
+    },
+    "Validate Academic Oversight DOM": {
+      "main": [[{"node": "Academic Block Missing?", "type": "main", "index": 0}]]
+    },
+    "Academic Block Missing?": {
+      "main": [
+        [],
+        [{"node": "Alert Content Team", "type": "main", "index": 0}]
+      ]
+    }
+  }
+}

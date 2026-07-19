@@ -119,7 +119,19 @@ export default async function SectorPage({ params }: PageProps) {
           </Link>
         </section>
 
-        <ExpertAuthoritySection toolName={`CBAM Sector Compliance Tool — ${detail.name}`} />
+        <section className='border border-border rounded-xl p-6 mb-10 bg-surface/50'>
+          <h2 className='font-bold text-lg mb-2'>2026 CBAM Financial Impact — {detail.name} Sector</h2>
+          <p className='text-sm text-muted mb-4'>
+            Data-driven analysis of estimated carbon cost liability for {detail.name.toLowerCase()} importers under EU CBAM Regulation 2023/956. Based on EU ETS carbon pricing and benchmark emission factors.
+          </p>
+          <Link href={`/cbam-impact-2026/${sector}`} className='inline-flex items-center justify-center gap-2 rounded-md border border-accent/40 bg-surface px-5 py-2.5 text-sm font-medium text-accent transition-colors hover:bg-accent/10 hover:border-accent'>
+            View {detail.name} Financial Impact Report →
+          </Link>
+        </section>
+
+        <div data-testid="academic-oversight" aria-label="Academic Oversight">
+          <ExpertAuthoritySection toolName={`CBAM Sector Compliance Tool — ${detail.name}`} />
+        </div>
 
         <div className='mt-8 p-4 border border-border/50 rounded-lg text-xs text-muted'>
           <strong>Disclaimer:</strong> CBAMValid is an independent compliance preparation platform and is not affiliated with the European Commission or any EU member state authority.

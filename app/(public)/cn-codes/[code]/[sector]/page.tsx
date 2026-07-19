@@ -255,7 +255,9 @@ export default async function CnCodeSectorPage({ params }: PageProps) {
           </Link>
         </section>
 
-        <ExpertAuthoritySection toolName={`CBAM Calculator — ${sectorLabel}`} />
+        <div data-testid="academic-oversight" aria-label="Academic Oversight">
+          <ExpertAuthoritySection toolName={`CBAM Calculator — ${sectorLabel}`} />
+        </div>
 
         {/* ─── PHASE 4: TopologyLinker — Hub-Spoke Internal Link Graph ─── */}
         <TopologyLinker

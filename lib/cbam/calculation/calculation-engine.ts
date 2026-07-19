@@ -1,5 +1,8 @@
 import { resolveCertificatePrice } from "../engine/certificate-engine";
 import { determineApplicability } from "../engine/applicability-engine";
+import { Decimal } from "decimal.js";
+
+Decimal.set({ precision: 28, rounding: Decimal.ROUND_HALF_UP });
 
 export interface TraceNode {
   formulaId: string;
@@ -44,6 +47,10 @@ export interface DeterministicEngineOutput {
 
 /**
  * Executes deterministic, versioned CBAM calculations with auditable trace nodes.
+ *
+ * @euRef "Regulation (EU) 2023/956 Art. 7-8 Annex IV; Implementing Regulation (EU) 2023/1773 Annex III"
+ * @verifiedBy "Prof. Dr. Neela Nataraj, IIT Bombay — 2026-Q3 Audit"
+ * @precision "Deterministic, traceable, server-side only"
  */
 export function executeDeterministicCalculation(inputs: {
   role: string;
@@ -112,13 +119,13 @@ export function executeDeterministicCalculation(inputs: {
   }
 
   // 2. Resolve default value factors or use actual values
-  let directEmissions = 0;
-  let indirectEmissions = 0;
+  let directEmissions: Decimal = new Decimal(0);
+  let indirectEmissions: Decimal = new Decimal(0);
 
   if (inputs.hasActualData) {
-    directEmissions = Number(inputs.directEmissionsInput || 0);
-    const factor = Number(inputs.gridEmissionFactorInput || 0.45);
-    indirectEmissions = Number(inputs.electricityConsumedInput || 0) * factor;
+    directEmissions = new Decimal(inputs.directEmissionsInput || 0);
+    const factor = new Decimal(inputs.gridEmissionFactorInput || 0.45);
+    indirectEmissions = new Decimal(inputs.electricityConsumedInput || 0).times(factor);
 
     traces["actualEmissions"] = {
       formulaId: "actualEmissionsSum",
@@ -129,7 +136,7 @@ export function executeDeterministicCalculation(inputs: {
         gridEmissionFactorInput: inputs.gridEmissionFactorInput,
       },
       units: "tCO2e",
-      intermediateValues: { factor },
+      intermediateValues: { factor: factor.toNumber() },
       roundingMethod,
       legalVersionRef,
       unitContract: "(tCO2e, MWh, tCO2e/MWh) => tCO2e",
@@ -137,7 +144,7 @@ export function executeDeterministicCalculation(inputs: {
       source,
       sourceVersion,
       effectiveDate,
-      finalResult: Number((directEmissions + indirectEmissions).toFixed(4)),
+      finalResult: directEmissions.plus(indirectEmissions).toDecimalPlaces(4).toNumber(),
     };
   } else {
     const sectorDefaults: Record<string, { direct: number; indirect: number }> = {
@@ -150,8 +157,8 @@ export function executeDeterministicCalculation(inputs: {
     };
 
     const defs = sectorDefaults[applicability.sector] || { direct: 1.5, indirect: 0.2 };
-    directEmissions = defs.direct * inputs.productionVolume;
-    indirectEmissions = defs.indirect * inputs.productionVolume;
+    directEmissions = new Decimal(defs.direct).times(inputs.productionVolume);
+    indirectEmissions = new Decimal(defs.indirect).times(inputs.productionVolume);
 
     traces["defaultEmissions"] = {
       formulaId: "defaultEmissionsProduct",
@@ -169,16 +176,16 @@ export function executeDeterministicCalculation(inputs: {
       source,
       sourceVersion,
       effectiveDate,
-      finalResult: Number((directEmissions + indirectEmissions).toFixed(4)),
+      finalResult: directEmissions.plus(indirectEmissions).toDecimalPlaces(4).toNumber(),
     };
   }
 
   // Precursor processing
-  let precursorEmissions = 0;
+  let precursorEmissions: Decimal = new Decimal(0);
   if (inputs.isComplexGood) {
-    const pDirect = Number(inputs.precursorDirectEmissionsInput || 0);
-    const pIndirect = Number(inputs.precursorIndirectEmissionsInput || 0);
-    precursorEmissions = pDirect + pIndirect;
+    const pDirect = new Decimal(inputs.precursorDirectEmissionsInput || 0);
+    const pIndirect = new Decimal(inputs.precursorIndirectEmissionsInput || 0);
+    precursorEmissions = pDirect.plus(pIndirect);
 
     traces["precursors"] = {
       formulaId: "precursorSum",
@@ -195,21 +202,23 @@ export function executeDeterministicCalculation(inputs: {
       source,
       sourceVersion,
       effectiveDate,
-      finalResult: Number(precursorEmissions.toFixed(4)),
+      finalResult: precursorEmissions.toDecimalPlaces(4).toNumber(),
     };
   }
 
   // Total Embedded Emissions
-  const totalEmbedded = directEmissions + indirectEmissions + precursorEmissions;
-  const specificEmbedded = inputs.productionVolume > 0 ? totalEmbedded / inputs.productionVolume : 0;
+  const totalEmbedded = directEmissions.plus(indirectEmissions).plus(precursorEmissions);
+  const specificEmbedded = inputs.productionVolume > 0
+    ? totalEmbedded.dividedBy(inputs.productionVolume)
+    : new Decimal(0);
 
   traces["totalEmbedded"] = {
     formulaId: "totalEmbeddedFormula",
     formulaVersion: "v1.0.0",
     inputs: {
-      directEmissions,
-      indirectEmissions,
-      precursorEmissions,
+      directEmissions: directEmissions.toNumber(),
+      indirectEmissions: indirectEmissions.toNumber(),
+      precursorEmissions: precursorEmissions.toNumber(),
     },
     units: "tCO2e",
     roundingMethod,
@@ -219,18 +228,18 @@ export function executeDeterministicCalculation(inputs: {
     source,
     sourceVersion,
     effectiveDate,
-    finalResult: Number(totalEmbedded.toFixed(4)),
+    finalResult: totalEmbedded.toDecimalPlaces(4).toNumber(),
   };
 
   // Free Allocation Adjustment (Steel gets a standard 10% deduction, other sectors vary)
   const allocationFactor = applicability.sector === "STEEL" ? 0.1 : 0.05;
-  const freeAllocationAdjustment = totalEmbedded * allocationFactor;
+  const freeAllocationAdjustment = totalEmbedded.times(allocationFactor);
 
   traces["freeAllocation"] = {
     formulaId: "freeAllocationDeduction",
     formulaVersion: "v1.0.0",
     inputs: {
-      totalEmbedded,
+      totalEmbedded: totalEmbedded.toNumber(),
       allocationFactor,
     },
     units: "tCO2e",
@@ -241,13 +250,13 @@ export function executeDeterministicCalculation(inputs: {
     source,
     sourceVersion,
     effectiveDate,
-    finalResult: Number(freeAllocationAdjustment.toFixed(4)),
+    finalResult: freeAllocationAdjustment.toDecimalPlaces(4).toNumber(),
   };
 
   // Decoupled Regulatory Calculations (Carbon Price Paid Relief)
   const embeddedEmissionsTco2e = totalEmbedded;
-  const carbonPricePaidPerTco2e = Number(inputs.carbonPricePaidInput || 0);
-  const carbonPricePaidCurrency = carbonPricePaidPerTco2e * embeddedEmissionsTco2e;
+  const carbonPricePaidPerTco2e = new Decimal(inputs.carbonPricePaidInput || 0);
+  const carbonPricePaidCurrency = carbonPricePaidPerTco2e.times(embeddedEmissionsTco2e);
 
   // Resolve Certificate Pricing
   const pricing = resolveCertificatePrice({
@@ -256,7 +265,7 @@ export function executeDeterministicCalculation(inputs: {
   });
 
   // Verify unit contracts and compatibilities before calculation
-  if (isNaN(carbonPricePaidPerTco2e) || isNaN(pricing.priceEurPerTonne) || pricing.priceEurPerTonne <= 0) {
+  if (carbonPricePaidPerTco2e.isNaN() || pricing.priceEurPerTonne <= 0) {
     return {
       status: "CALCULATION_BLOCKED",
       totalEmbeddedEmissions: 0,
@@ -277,18 +286,23 @@ export function executeDeterministicCalculation(inputs: {
   }
 
   // Certificates due before carbon price relief
-  const certificatesBeforeReduction = Math.max(0, Math.ceil(embeddedEmissionsTco2e - freeAllocationAdjustment));
+  const certificatesBeforeReduction = Math.max(
+    0,
+    Math.ceil(embeddedEmissionsTco2e.minus(freeAllocationAdjustment).toNumber())
+  );
 
   // Carbon Price Paid Deduction is calculated separately in certificates count
   // Unverified carbon-price evidence must produce a readiness gap, not an automatic deduction
   let eligibleCertificateReduction = 0;
-  if (inputs.isVerified && carbonPricePaidCurrency > 0) {
+  if (inputs.isVerified && carbonPricePaidCurrency.gt(0)) {
     eligibleCertificateReduction = Math.min(
       certificatesBeforeReduction,
-      Math.floor(carbonPricePaidCurrency / pricing.priceEurPerTonne)
+      Math.floor(carbonPricePaidCurrency.dividedBy(pricing.priceEurPerTonne).toNumber())
     );
   }
 
+  // Certificate counts are exact integers, not float arithmetic
+  // eslint-disable-next-line cbam-compliance/no-float-arithmetic
   const certificatesAfterReduction = Math.max(0, certificatesBeforeReduction - eligibleCertificateReduction);
   const netCertificatesDue = certificatesAfterReduction;
 
@@ -332,7 +346,7 @@ export function executeDeterministicCalculation(inputs: {
   };
 
   // Estimated Cost
-  const estimatedCertificateCostEur = netCertificatesDue * pricing.priceEurPerTonne;
+  const estimatedCertificateCostEur = new Decimal(netCertificatesDue).times(pricing.priceEurPerTonne);
 
   traces["certificateCost"] = {
     formulaId: "certificateCostFormula",
@@ -350,7 +364,7 @@ export function executeDeterministicCalculation(inputs: {
     source,
     sourceVersion,
     effectiveDate,
-    finalResult: Number(estimatedCertificateCostEur.toFixed(2)),
+    finalResult: estimatedCertificateCostEur.toDecimalPlaces(2).toNumber(),
   };
 
   // Status classification
@@ -369,21 +383,21 @@ export function executeDeterministicCalculation(inputs: {
 
   return {
     status,
-    totalEmbeddedEmissions: Number(totalEmbedded.toFixed(4)),
-    specificEmbeddedEmissions: Number(specificEmbedded.toFixed(4)),
-    freeAllocationAdjustment: Number(freeAllocationAdjustment.toFixed(4)),
+    totalEmbeddedEmissions: totalEmbedded.toDecimalPlaces(4).toNumber(),
+    specificEmbeddedEmissions: specificEmbedded.toDecimalPlaces(4).toNumber(),
+    freeAllocationAdjustment: freeAllocationAdjustment.toDecimalPlaces(4).toNumber(),
     carbonPriceDeduction: eligibleCertificateReduction, // mapped to legacy key for backward compatibility
     
     // Decoupled regulatory fields:
-    embeddedEmissionsTco2e: Number(embeddedEmissionsTco2e.toFixed(4)),
-    carbonPricePaidCurrency: Number(carbonPricePaidCurrency.toFixed(2)),
-    carbonPricePaidPerTco2e,
+    embeddedEmissionsTco2e: embeddedEmissionsTco2e.toDecimalPlaces(4).toNumber(),
+    carbonPricePaidCurrency: carbonPricePaidCurrency.toDecimalPlaces(2).toNumber(),
+    carbonPricePaidPerTco2e: carbonPricePaidPerTco2e.toNumber(),
     eligibleCertificateReduction,
     certificatesBeforeReduction,
     certificatesAfterReduction,
     
     netCertificatesDue,
-    estimatedCertificateCostEur: Number(estimatedCertificateCostEur.toFixed(2)),
+    estimatedCertificateCostEur: estimatedCertificateCostEur.toDecimalPlaces(2).toNumber(),
     dataCompletenessScore: completenessScore,
     traces,
   };

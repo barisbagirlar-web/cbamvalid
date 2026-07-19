@@ -1,0 +1,81 @@
+{
+  "name": "W23 CodeRabbit Critical Alert Router",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "coderabbit-critical-alert",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [100, 300],
+      "name": "Webhook: CodeRabbit Alert"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Route CodeRabbit critical alerts to appropriate channels\n// Based on CBAMValid regulatory severity mapping\nconst alert = $input.first().json;\n\nconst severityMap = {\n  'MISSING_EU_CITATION': { priority: 'P1', channel: ['slack', 'jira', 'email'], message: 'EU regulation citation missing — legal liability risk' },\n  'FLOAT_ARITHMETIC': { priority: 'P1', channel: ['slack', 'email'], message: 'Float arithmetic in CBAM calculation — precision non-compliance' },\n  'DEFAULT_VALUE_NO_FLAG': { priority: 'P1', channel: ['slack', 'jira', 'email'], message: 'Default value used without is_eu_default_applied flag' },\n  'HARDCODED_EMISSION_FACTOR': { priority: 'P2', channel: ['email'], message: 'Hardcoded emission factor outside registry' },\n  'AUDIT_TRAIL_VIOLATION': { priority: 'P0', channel: ['slack', 'jira', 'email', 'pagerduty'], message: 'Audit trail immutability violation — legal compliance required' },\n  'PRECURSOR_ALLOCATION_ERROR': { priority: 'P0', channel: ['slack', 'jira', 'email', 'pagerduty'], message: 'Mass balance closure violation (>0.01% tolerance)' },\n  'CERTIFICATE_HASH_COLLISION': { priority: 'P0', channel: ['slack', 'jira', 'email', 'pagerduty'], message: 'Certificate hash collision — cryptographic integrity breach' },\n  'ACADEMIC_OVERSIGHT_MISSING': { priority: 'P1', channel: ['slack', 'email'], message: 'Academic oversight block missing — E-E-A-T authority risk' },\n  'SESSION_TTL_FAILURE': { priority: 'P1', channel: ['slack', 'jira', 'email'], message: 'Session TTL enforcement failure — data retention violation' },\n};\n\nconst ruleType = alert.ruleType || alert.type || 'UNKNOWN';\nconst mapping = severityMap[ruleType] || { priority: 'P3', channel: ['email'], message: 'Unknown CodeRabbit alert type' };\n\nconst result = {\n  ...alert,\n  mappedPriority: mapping.priority,\n  mappedChannels: mapping.channel,\n  mappedMessage: mapping.message,\n  routedAt: new Date().toISOString(),\n  action: mapping.priority === 'P0' ? 'BLOCK_DEPLOYMENT' : 'REQUIRE_REVIEW',\n};\n\nconsole.log(`[W23] CodeRabbit alert: ${ruleType} → ${mapping.priority} → ${mapping.channel.join(',')}`);\n\nreturn [{ json: result }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [300, 300],
+      "name": "Classify & Route Alert"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "multipleValues": true
+          },
+          "string": [{
+            "value1": "={{$json.mappedPriority}}",
+            "operation": "equals",
+            "value2": "P0"
+          }]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "name": "Is P0 Critical?"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "={{'🔴 CodeRabbit ' + $json.mappedPriority + ': ' + $json.mappedMessage}}" ,
+        "text": "=CodeRabbit Critical Alert — CBAMValid Regulatory Compliance\n\nType: {{$json.ruleType || $json.type}}\nPriority: {{$json.mappedPriority}}\nMessage: {{$json.mappedMessage}}\nFile: {{$json.file || 'unknown'}}\nLine: {{$json.line || 'unknown'}}\nRouted At: {{$json.routedAt}}\nAction: {{$json.action}}\n\nFull alert:\n{{JSON.stringify($json, null, 2)}}"
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [700, 200],
+      "name": "Email Alert"
+    },
+    {
+      "parameters": {
+        "repository": "cbam-paddle-app",
+        "title": "={{'[' + $json.mappedPriority + '] CodeRabbit: ' + $json.mappedMessage}}",
+        "body": "=## {{$json.mappedPriority}} CodeRabbit Regulatory Alert\n\n**Type:** {{$json.ruleType || $json.type}}\n**Message:** {{$json.mappedMessage}}\n**File:** {{$json.file || 'unknown'}}\n**Line:** {{$json.line || 'unknown'}}\n\n**Required Action:** {{$json.action}}\n**Compliance Officer review required** for P0/P1\n\nFull alert payload appended."
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [700, 400],
+      "name": "Create GitHub Issue"
+    }
+  ],
+  "connections": {
+    "Webhook: CodeRabbit Alert": {
+      "main": [[{"node": "Classify & Route Alert", "type": "main", "index": 0}]]
+    },
+    "Classify & Route Alert": {
+      "main": [[{"node": "Is P0 Critical?", "type": "main", "index": 0}]]
+    },
+    "Is P0 Critical?": {
+      "main": [
+        [{"node": "Email Alert", "type": "main", "index": 0}, {"node": "Create GitHub Issue", "type": "main", "index": 0}],
+        [{"node": "Email Alert", "type": "main", "index": 0}]
+      ]
+    }
+  }
+}

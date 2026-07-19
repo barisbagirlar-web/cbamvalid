@@ -1,0 +1,112 @@
+{
+  "name": "W11 Sitemap Health Check",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"hours": 24}]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://cbamvalid.com/sitemap.xml",
+        "method": "GET",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [300, 300],
+      "name": "Fetch Sitemap Index"
+    },
+    {
+      "parameters": {
+        "jsCode": "// MIL-STD §2 Node 1: Parse sitemap index XML to extract sub-sitemap URLs\nconst xml = $input.first().json.body ?? $input.first().json.data ?? '';\nconst subSitemaps = [];\n\n// Extract <loc> elements from <sitemap> entries\nconst locRegex = /<sitemap>[\\s\\S]*?<loc>([^<]+)<\\/loc>[\\s\\S]*?<\\/sitemap>/g;\nlet match;\nwhile ((match = locRegex.exec(xml)) !== null) {\n  subSitemaps.push({ url: match[1] });\n}\n\n// Also try direct <loc> extraction as fallback\nif (subSitemaps.length === 0) {\n  const altRegex = /<loc>([^<]+)<\\/loc>/g;\n  while ((match = altRegex.exec(xml)) !== null) {\n    if (match[1].includes('sitemaps/') || match[1].includes('sitemap-')) {\n      subSitemaps.push({ url: match[1] });\n    }\n  }\n}\n\nconsole.log(`[W11] Found ${subSitemaps.length} sub-sitemaps in index`);\nreturn subSitemaps.length > 0 ? subSitemaps.map(s => ({ json: s })) : [{ json: { url: 'https://cbamvalid.com/sitemap.xml', error: 'no-sub-sitemaps-found' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "name": "Parse Sub-Sitemaps"
+    },
+    {
+      "parameters": {
+        "url": "={{$json.url}}",
+        "method": "GET",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [700, 300],
+      "name": "Fetch Each Sub-Sitemap"
+    },
+    {
+      "parameters": {
+        "jsCode": "// MIL-STD §1-§4: Full sitemap structure validation\nconst results = { valid: true, issues: [], details: {} };\nlet totalUrls = 0;\n\nfor (const item of $input.all()) {\n  const xml = item.json.body ?? item.json.data ?? '';\n  const url = item.json.url ?? 'unknown';\n  \n  // 1. XML well-formedness check\n  if (!xml.startsWith('<?xml') && !xml.startsWith('<urlset') && !xml.startsWith('<sitemapindex')) {\n    results.issues.push(`[NOT-XML] ${url}: response is not valid XML`);\n    results.valid = false;\n    continue;\n  }\n  \n  // 2. Extract <url> entries\n  const urlMatches = [...xml.matchAll(/<url>[\\s\\S]*?<\\/url>/g)];\n  const urls = [];\n  \n  for (const urlBlock of urlMatches) {\n    const locMatch = urlBlock[0].match(/<loc>([^<]+)<\\/loc>/);\n    const lastmodMatch = urlBlock[0].match(/<lastmod>([^<]+)<\\/lastmod>/);\n    \n    if (!locMatch) {\n      results.issues.push(`[MISSING-LOC] ${url}: <url> entry without <loc>`);\n      results.valid = false;\n      continue;\n    }\n    \n    const loc = locMatch[1];\n    const lastmod = lastmodMatch ? lastmodMatch[1] : null;\n    urls.push({ loc, lastmod });\n    totalUrls++;\n  }\n  \n  // 3. Lastmod validation: no future dates, valid ISO 8601\n  const now = new Date().toISOString();\n  for (const u of urls) {\n    if (u.lastmod && u.lastmod > now) {\n      results.issues.push(`[FUTURE-LASTMOD] ${url}: ${u.loc} has future lastmod ${u.lastmod}`);\n      results.valid = false;\n    }\n    if (u.lastmod && isNaN(Date.parse(u.lastmod))) {\n      results.issues.push(`[INVALID-LASTMOD] ${url}: ${u.loc} invalid lastmod format`);\n      results.valid = false;\n    }\n  }\n  \n  // 4. Empty URLset check (MIL-STD §1.4)\n  if (urls.length === 0 && !xml.includes('sitemapindex')) {\n    results.issues.push(`[EMPTY-URLSET] ${url}: empty <urlset> — catastrophic de-indexing risk`);\n    results.valid = false;\n  }\n  \n  // 5. Priority/changefreq deprecation check\n  if (xml.includes('<priority>') || xml.includes('<changefreq>')) {\n    results.issues.push(`[DEPRECATED-TAGS] ${url}: contains <priority> or <changefreq> — removed per Google 2024+ deprecation`);\n  }\n  \n  // 6. Store details\n  const name = url.split('/').pop() || url;\n  results.details[name] = { urlCount: urls.length, issues: results.issues.filter(i => i.includes(name)).length };\n}\n\n// 7. Cross-sitemap duplicate check\nresults.details.totalUrls = totalUrls;\n\nconsole.log(`[W11] Validated ${Object.keys(results.details).length - 1} sitemaps, ${totalUrls} total URLs, ${results.issues.length} issues`);\nreturn [{ json: results }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "name": "Validate Sitemap Structure"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.valid}}",
+              "operation": "equals",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1100, 300],
+      "name": "Check Sitemap Issues"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "🔴 CBAMValid Sitemap Health Alert — {{$json.issues.length}} issue(s) detected",
+        "text": "=Sitemap Health Check FAILED\n\nIssues: {{JSON.stringify($json.issues, null, 2)}}\nTotal URLs: {{$json.details.totalUrls}}\nTime: {{new Date().toISOString()}}"
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1300, 300],
+      "name": "Send Sitemap Alert"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{"node": "Fetch Sitemap Index", "type": "main", "index": 0}]]
+    },
+    "Fetch Sitemap Index": {
+      "main": [[{"node": "Parse Sub-Sitemaps", "type": "main", "index": 0}]]
+    },
+    "Parse Sub-Sitemaps": {
+      "main": [[{"node": "Fetch Each Sub-Sitemap", "type": "main", "index": 0}]]
+    },
+    "Fetch Each Sub-Sitemap": {
+      "main": [[{"node": "Validate Sitemap Structure", "type": "main", "index": 0}]]
+    },
+    "Validate Sitemap Structure": {
+      "main": [[{"node": "Check Sitemap Issues", "type": "main", "index": 0}]]
+    },
+    "Check Sitemap Issues": {
+      "main": [
+        [{"node": "Send Sitemap Alert", "type": "main", "index": 0}],
+        []
+      ]
+    }
+  }
+}

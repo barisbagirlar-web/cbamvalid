@@ -1,0 +1,76 @@
+{
+  "name": "W16 GBP Q&A Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"hours": 24}]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://mybusinessbusinessinformation.googleapis.com/v1/accounts/{accountId}/locations/{locationId}/questions",
+        "method": "GET",
+        "authentication": "oAuth2",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [300, 300],
+      "name": "Fetch GBP Questions"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter new questions since last check\n// Identify unanswered questions and trending topics\n// Output: filtered new questions array\nconst questions = $input.all();\n// New question filtering logic\nreturn questions.map(r => ({ json: r.json }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "name": "Filter New Questions"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true
+          }
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [700, 300],
+      "name": "Check New Questions"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "CBAMValid New GBP Questions Alert",
+        "text": "New questions on Google Business Profile need answers.\n\nQuestions: {{$json}}"
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "name": "Send GBP Alert"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{"node": "Fetch GBP Questions", "type": "main", "index": 0}]]
+    },
+    "Fetch GBP Questions": {
+      "main": [[{"node": "Filter New Questions", "type": "main", "index": 0}]]
+    },
+    "Filter New Questions": {
+      "main": [[{"node": "Check New Questions", "type": "main", "index": 0}]]
+    },
+    "Check New Questions": {
+      "main": [null, [{"node": "Send GBP Alert", "type": "main", "index": 0}]]
+    }
+  }
+}

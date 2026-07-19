@@ -1,90 +1,51 @@
 {
-  "name": "CBAM Deadline Tracker & Alerts",
+  "name": "Workflow 2 CBAM Deadline Tracker",
   "nodes": [
     {
       "parameters": {
-        "triggerTimes": {
-          "item": [
-            {
-              "mode": "everyWeek"
-            }
-          ]
+        "rule": {
+          "interval": [{"hours": 24}]
         }
       },
-      "name": "Weekly Check",
-      "type": "n8n-nodes-base.cron",
+      "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1,
-      "position": [
-        100,
-        300
-      ]
+      "position": [100, 300],
+      "name": "Schedule Trigger"
     },
     {
       "parameters": {
-        "jsCode": "\nconst nextDeadlines = [\n  { date: new Date('2026-01-31'), period: 'Q4 2025' },\n  { date: new Date('2026-04-30'), period: 'Q1 2026' }\n];\nconst now = new Date();\nconst imminent = nextDeadlines.filter(d => {\n  const diffDays = (d.date - now) / (1000 * 60 * 60 * 24);\n  return diffDays > 0 && diffDays <= 14;\n});\nreturn imminent.map(d => ({ json: { ...d, daysRemaining: Math.ceil((d.date - now) / (1000 * 60 * 60 * 24)) } }));\n"
+        "jsCode": "// Check upcoming CBAM deadlines against current date\n// Deadlines to track: quarterly report submission, annual verification, factor updates\n// Output: deadline objects with name, date, days remaining, priority\nconst today = new Date();\nconst deadlines = [\n  { name: 'Q1 CBAM Report Due', date: '2026-04-30', priority: 'high' },\n  { name: 'Q2 CBAM Report Due', date: '2026-07-31', priority: 'high' },\n  { name: 'Q3 CBAM Report Due', date: '2026-10-31', priority: 'high' },\n  { name: 'Q4 CBAM Report Due', date: '2027-01-31', priority: 'high' },\n  { name: 'Default Values Review', date: '2026-12-31', priority: 'medium' }\n];\nconst upcoming = deadlines.filter(d => {\n  const diff = Math.ceil((new Date(d.date) - today) / (1000 * 60 * 60 * 24));\n  return diff <= 30 && diff >= 0;\n});\nreturn upcoming.map(d => ({ json: { ...d, daysRemaining: Math.ceil((new Date(d.date) - today) / (1000 * 60 * 60 * 24)) } }));"
       },
-      "name": "Check Proximity",
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
-      "position": [
-        300,
-        300
-      ]
+      "position": [300, 300],
+      "name": "Check Upcoming Deadlines"
     },
     {
       "parameters": {
-        "url": "https://api.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
+        "url": "https://hooks.slack.com/services/cbamvalid/deadline-alerts",
         "method": "POST",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
+        "authentication": "genericCredentialType",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            {
-              "name": "text",
-              "value": "=:warning: CBAM Compliance Deadline Alert: the reporting period {{ .period }} closes in {{ .daysRemaining }} days (Deadline: {{ .date }}). Ensure all dossiers are sealed."
-            }
+            {"name": "text", "value": "CBAM Deadline Alert: {{$json.name}} due in {{$json.daysRemaining}} days"}
           ]
-        }
+        },
+        "options": {}
       },
-      "name": "Slack Notification",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [
-        500,
-        300
-      ]
+      "position": [500, 300],
+      "name": "Send Slack Notification"
     }
   ],
   "connections": {
-    "Weekly Check": {
-      "main": [
-        [
-          {
-            "node": "Check Proximity",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Schedule Trigger": {
+      "main": [[{"node": "Check Upcoming Deadlines", "type": "main", "index": 0}]]
     },
-    "Check Proximity": {
-      "main": [
-        [
-          {
-            "node": "Slack Notification",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Check Upcoming Deadlines": {
+      "main": [[{"node": "Send Slack Notification", "type": "main", "index": 0}]]
     }
   }
 }

@@ -1,0 +1,129 @@
+{
+  "name": "W08 Content Decay Detector",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"hours": 24}]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/webmasters/v3/sites/https%3A%2F%2Fcbamvalid.com%2F/searchAnalytics/query",
+        "method": "POST",
+        "authentication": "oAuth2",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "startDate", "value": "{{$now.format('yyyy-MM-dd', -7)}}"},
+            {"name": "endDate", "value": "{{$now.format('yyyy-MM-dd')}}"},
+            {"name": "dimensions", "value": "[\"page\"]"},
+            {"name": "rowLimit", "value": "5000"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [300, 300],
+      "name": "Fetch GSC Current Period"
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/webmasters/v3/sites/https%3A%2F%2Fcbamvalid.com%2F/searchAnalytics/query",
+        "method": "POST",
+        "authentication": "oAuth2",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "startDate", "value": "{{$now.format('yyyy-MM-dd', -21)}}"},
+            {"name": "endDate", "value": "{{$now.format('yyyy-MM-dd', -7)}}"},
+            {"name": "dimensions", "value": "[\"page\"]"},
+            {"name": "rowLimit", "value": "5000"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [300, 500],
+      "name": "Fetch GSC Previous Period"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compare current vs previous period CTR and clicks per page\n// Detect content decay: significant CTR or traffic decline\n// Output: array of decaying pages with metrics delta\nconst current = $input.all();\n// Comparison logic for content decay detection\nreturn current.map(r => ({ json: r.json }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "name": "Compare CTR and Clicks"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true
+          }
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [700, 300],
+      "name": "Check Content Decay"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@cbamvalid.com",
+        "toEmail": "barisbagirlar@gmail.com",
+        "subject": "CBAMValid Content Decay Alert",
+        "text": "Content decay detected on the following pages. Review and refresh content.\n\nDetails: {{$json}}"
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "name": "Send Decay Alert"
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/cbamvalid/cbam-paddle-app/issues",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "title", "value": "[Content Decay] Pages need refresh"},
+            {"name": "body", "value": "Automated content decay detection found declining pages.\n\n{{$json}}"},
+            {"name": "labels", "value": "[\"content-decay\"]"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 500],
+      "name": "Create GitHub Issue"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{"node": "Fetch GSC Current Period", "type": "main", "index": 0}]]
+    },
+    "Fetch GSC Current Period": {
+      "main": [[{"node": "Compare CTR and Clicks", "type": "main", "index": 0}]]
+    },
+    "Fetch GSC Previous Period": {
+      "main": [[{"node": "Compare CTR and Clicks", "type": "main", "index": 0}]]
+    },
+    "Compare CTR and Clicks": {
+      "main": [[{"node": "Check Content Decay", "type": "main", "index": 0}]]
+    },
+    "Check Content Decay": {
+      "main": [null, [{"node": "Send Decay Alert", "type": "main", "index": 0}, {"node": "Create GitHub Issue", "type": "main", "index": 0}]]
+    }
+  }
+}

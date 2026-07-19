@@ -20,7 +20,15 @@ export const seoRegistry: Record<string, SeoMeta> = {
     schemaTypes: ["Organization", "WebSite", "WebApplication"],
     internalLinkTargets: ["/about", "/methodology", "/cn-code"],
     datePublished: "2024-01-01T00:00:00Z",
-    dateModified: new Date().toISOString()
+    dateModified: new Date().toISOString(),
+    qualityContract: {
+      userProblem: "EU importers need auditable CBAM evidence dossiers but lack structured tooling",
+      decisionEnabled: "Whether to use the platform or manual spreadsheets for CBAM compliance",
+      uniqueValueTypes: ["calculator", "expertExperience", "methodology"],
+      evidenceRefs: ["EU 2023/956", "EU 2023/1773"],
+      limitations: ["Does not replace accredited verifier", "Requires user-provided installation data"],
+      lastHumanReviewAt: "2026-07-19",
+    },
   },
   "/about": {
     path: "/about",
@@ -59,6 +67,14 @@ export const seoRegistry: Record<string, SeoMeta> = {
     authorityReferences: [],
     schemaTypes: ["Article", "BreadcrumbList"],
     internalLinkTargets: ["/", "/cn-code"],
+    qualityContract: {
+      userProblem: "Exporters must understand which CBAM methodology applies to their installation type",
+      decisionEnabled: "Whether to use actual data or EU default values for emission factor calculation",
+      uniqueValueTypes: ["methodology", "expertExperience", "dataset"],
+      evidenceRefs: ["EU 2023/956 Art.7", "EU 2023/1773 Annex III", "ISO 14064-1"],
+      limitations: ["General methodology only", "Installation-specific rules may vary by member state"],
+      lastHumanReviewAt: "2026-07-19",
+    },
   },
   "/contact": {
     path: "/contact",
@@ -248,7 +264,15 @@ export const seoRegistry: Record<string, SeoMeta> = {
     lastModifiedSource: "registry",
     authorityReferences: [],
     schemaTypes: ["BreadcrumbList", "WebApplication"],
-    internalLinkTargets: ["/", "/how-it-works", "/pricing"]
+    internalLinkTargets: ["/", "/how-it-works", "/pricing"],
+    qualityContract: {
+      userProblem: "Operators need a structured tool to compile CBAM evidence dossiers with proper audit trail",
+      decisionEnabled: "Whether CBAMValid software meets verifier requirements vs. manual compilation",
+      uniqueValueTypes: ["calculator", "methodology", "firstPartyData"],
+      evidenceRefs: ["EU 2023/956", "EU 2023/1773", "GHG Protocol"],
+      limitations: ["Does not provide accredited verification", "User responsible for data accuracy"],
+      lastHumanReviewAt: "2026-07-19",
+    },
   },
   "/sample-dossier": {
     path: "/sample-dossier",
