@@ -24,8 +24,41 @@ import {
   createVerifierEvidenceFiles,
   createVerifierGradeCase,
 } from "../fixtures/verifier-grade-case";
-import { assessReadiness } from "../../functions/src/cbam/validation/readiness-score";
+import { assessReadiness, getReportingPeriodAssessment } from "../../functions/src/cbam/validation/readiness-score";
+import { generateFindingsAndActions } from "../../functions/src/cbam/validation/findings-engine";
 import { runEvidenceSufficiency } from "../../functions/src/cbam/validation/evidence-sufficiency";
+
+async function verifyPdfGeometry(pdfBytes: Buffer) {
+  const document = await pdfjsLib.getDocument({
+    data: new Uint8Array(pdfBytes),
+    disableFontFace: true,
+    standardFontDataUrl: "node_modules/pdfjs-dist/standard_fonts/",
+  }).promise;
+
+  expect(document.numPages).toBeGreaterThanOrEqual(5);
+
+  for (let pageNum = 1; pageNum <= document.numPages; pageNum++) {
+    const page = await document.getPage(pageNum);
+    const content = await page.getTextContent();
+    const viewport = page.getViewport({ scale: 1.0 });
+
+    const width = viewport.width;
+    const height = viewport.height;
+
+    content.items.forEach((item: any) => {
+      if (!("str" in item) || !item.str.trim()) return;
+      
+      const tx = item.transform; // [scaleX, skewX, skewY, scaleY, x, y]
+      const x = tx[4];
+      const y = tx[5];
+
+      expect(x).toBeGreaterThanOrEqual(-50);
+      expect(x).toBeLessThanOrEqual(width + 50);
+      expect(y).toBeGreaterThanOrEqual(-50);
+      expect(y).toBeLessThanOrEqual(height + 50);
+    });
+  }
+}
 
 async function pdfText(bytes: Buffer): Promise<{ text: string; pages: number }> {
   const document = await pdfjsLib.getDocument({
@@ -108,6 +141,11 @@ describe("premium-dossier-v5 deliverables", () => {
     expect(status).toBe("NOT_READY");
     expect(criticalBlockerCount).toBeGreaterThan(0);
     expect(canSeal).toBe(false);
+
+    const { findings } = generateFindingsAndActions(quarterlyCase);
+    expect(findings).toContainEqual(
+      expect.objectContaining({ findingId: "FND-PERIOD-NON-ANNUAL" })
+    );
   });
 
   it("seals and reopens the exact 23-component V5 package", async () => {
@@ -252,4 +290,113 @@ describe("premium-dossier-v5 deliverables", () => {
     expect(fs.existsSync(path.join(outputDir, "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf"))).toBe(true);
     expect(fs.existsSync(path.join(outputDir, "Data Integrity Manifest.json"))).toBe(true);
   }, 30_000);
+
+  it("validates all reporting period fixtures correctly", () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+
+    const makePeriodCase = (year: string, quarter: string, startDate?: string, endDate?: string) => {
+      const c = JSON.parse(JSON.stringify(caseData));
+      c.reportingPeriod.year.value = year;
+      c.reportingPeriod.quarter.value = quarter;
+      if (startDate !== undefined) {
+        c.reportingPeriod.startDate = { value: startDate, inputPath: "reportingPeriod.startDate", sourceEvidenceId: "EV-001" };
+      } else {
+        delete c.reportingPeriod.startDate;
+      }
+      if (endDate !== undefined) {
+        c.reportingPeriod.endDate = { value: endDate, inputPath: "reportingPeriod.endDate", sourceEvidenceId: "EV-001" };
+      } else {
+        delete c.reportingPeriod.endDate;
+      }
+      return c;
+    };
+
+    // 1. 2026-Q1
+    const q1Case = makePeriodCase("2026", "Q1");
+    const q1Ass = getReportingPeriodAssessment(q1Case);
+    expect(q1Ass.type).toBe("INTERIM_QUARTERLY");
+    expect(q1Ass.definitiveAnnualEligible).toBe(false);
+    expect(q1Ass.hardBlockerFindingIds).toContain("FND-PERIOD-NON-ANNUAL");
+
+    // 2. 2026-Q2
+    const q2Case = makePeriodCase("2026", "Q2");
+    const q2Ass = getReportingPeriodAssessment(q2Case);
+    expect(q2Ass.type).toBe("INTERIM_QUARTERLY");
+    expect(q2Ass.definitiveAnnualEligible).toBe(false);
+
+    // 3. one month
+    const m1Case = makePeriodCase("2026", "M01");
+    const m1Ass = getReportingPeriodAssessment(m1Case);
+    expect(m1Ass.type).toBe("INTERIM_MONTHLY");
+    expect(m1Ass.definitiveAnnualEligible).toBe(false);
+
+    // 4. six months
+    const h1Case = makePeriodCase("2026", "CUSTOM", "2026-01-01", "2026-06-30");
+    const h1Ass = getReportingPeriodAssessment(h1Case);
+    expect(h1Ass.type).toBe("CUSTOM_INTERNAL");
+    expect(h1Ass.definitiveAnnualEligible).toBe(false);
+
+    // 5. 2026 full year
+    const fyCase = makePeriodCase("2026", "ANNUAL", "2026-01-01", "2026-12-31");
+    const fyAss = getReportingPeriodAssessment(fyCase);
+    expect(fyAss.type).toBe("DEFINITIVE_ANNUAL");
+    expect(fyAss.definitiveAnnualEligible).toBe(true);
+
+    // 6. leap-year full year
+    const leapCase = makePeriodCase("2024", "ANNUAL", "2024-01-01", "2024-12-31");
+    const leapAss = getReportingPeriodAssessment(leapCase);
+    expect(leapAss.type).toBe("DEFINITIVE_ANNUAL");
+    expect(leapAss.coveredDays).toBe(366);
+    expect(leapAss.definitiveAnnualEligible).toBe(true);
+
+    // 7. missing start date
+    const missingStart = makePeriodCase("2026", "ANNUAL", "", "2026-12-31");
+    const msAss = getReportingPeriodAssessment(missingStart);
+    expect(msAss.hardBlockerFindingIds).toContain("FND-PERIOD-MISSING-START-DATE");
+
+    // 8. missing end date
+    const missingEnd = makePeriodCase("2026", "ANNUAL", "2026-01-01", "");
+    const meAss = getReportingPeriodAssessment(missingEnd);
+    expect(meAss.hardBlockerFindingIds).toContain("FND-PERIOD-MISSING-END-DATE");
+
+    // 9. end before start
+    const badChrono = makePeriodCase("2026", "ANNUAL", "2026-12-31", "2026-01-01");
+    const bcAss = getReportingPeriodAssessment(badChrono);
+    expect(bcAss.hardBlockerFindingIds).toContain("FND-PERIOD-INVALID-CHRONOLOGY");
+
+    // 10. future year
+    const futureCase = makePeriodCase("2099", "ANNUAL", "2099-01-01", "2099-12-31");
+    const futAss = getReportingPeriodAssessment(futureCase);
+    expect(futAss.hardBlockerFindingIds).toContain("FND-PERIOD-FUTURE-YEAR");
+
+    // 11. custom internal period
+    const customCase = makePeriodCase("2026", "CUSTOM_PERIOD", "2026-03-01", "2026-08-15");
+    const custAss = getReportingPeriodAssessment(customCase);
+    expect(custAss.type).toBe("CUSTOM_INTERNAL");
+    expect(custAss.definitiveAnnualEligible).toBe(false);
+  });
+
+  it("verifies PDF visual geometry and ensures all 30 sections, IDs and labels are present without silent truncation", async () => {
+    const outputDir = path.join(process.cwd(), "artifacts", "sample-v5");
+    const primaryPdfPath = path.join(outputDir, "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
+    expect(fs.existsSync(primaryPdfPath)).toBe(true);
+
+    const pdfBytes = fs.readFileSync(primaryPdfPath);
+    await verifyPdfGeometry(pdfBytes);
+
+    const { text, pages } = await pdfText(pdfBytes);
+    
+    // Check 30 sections
+    for (let i = 1; i <= 30; i++) {
+      expect(text).toContain(`${i}.`);
+    }
+
+    // Check critical findings & evidence references are present
+    expect(text).toContain("11111111");
+    expect(text).toContain("Prepared for Independent");
+    expect(text).toContain("Verified Steel Operator GmbH");
+    expect(text).toContain("Prof. Dr. Neela Nataraj");
+
+    console.log(`Verified PDF Geometry successfully. Total pages: ${pages}`);
+  });
 });

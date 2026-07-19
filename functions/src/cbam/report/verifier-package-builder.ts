@@ -13,7 +13,7 @@ import { buildVerifierWorkbook } from "./xlsx-builder";
 import { runEvidenceSufficiency } from "../validation/evidence-sufficiency";
 import { buildVerificationCrosswalk } from "../registry/verification-template-2025-2546";
 import { generateFindingsAndActions } from "../validation/findings-engine";
-import { assessReadiness } from "../validation/readiness-score";
+import { assessReadiness, getReportingPeriodAssessment } from "../validation/readiness-score";
 import { buildPremiumDossierPdf } from "./premium-dossier-pdf";
 import type { PremiumDossierViewModel } from "./premium-dossier-schema";
 
@@ -233,9 +233,11 @@ function buildPdfArtifacts(params: {
     const crosswalk = buildVerificationCrosswalk(caseData);
     const { findings, correctiveActions } = generateFindingsAndActions(caseData);
     const readiness = assessReadiness({ caseData, isDraft: false });
+    const periodAssessment = getReportingPeriodAssessment(caseData);
 
     const dossierModel: PremiumDossierViewModel = {
       schemaVersion: "CBAMVALID-DOSSIER-5.0",
+      reportingPeriodAssessment: periodAssessment,
       reportId: params.reportId,
       caseId: params.caseData.caseId || "",
       releaseVersion: params.releaseVersion,
