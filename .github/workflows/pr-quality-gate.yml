@@ -75,6 +75,12 @@ jobs:
           set -o pipefail
           npm run guard:verifier-grade-deliverables 2>&1 | tee artifacts/ci/verifier-grade-deliverables.log
 
+      - name: Verify complete commercial DNA contract
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run guard:commerce 2>&1 | tee artifacts/ci/commercial-architecture.log
+
       - name: Typecheck
         shell: bash
         run: |
@@ -87,11 +93,17 @@ jobs:
           set -o pipefail
           npm run build:functions 2>&1 | tee artifacts/ci/functions-build.log
 
-      - name: Lint
+      - name: Lint established application surface
         shell: bash
         run: |
           set -o pipefail
           npm run lint 2>&1 | tee artifacts/ci/lint.log
+
+      - name: Lint complete commercial DNA surface
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run lint:commercial-dna 2>&1 | tee artifacts/ci/lint-commercial-dna.log
 
       - name: Authentication tests
         shell: bash

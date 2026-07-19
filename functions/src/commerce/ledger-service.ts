@@ -1,5 +1,5 @@
-import crypto from "crypto";
-import admin from "firebase-admin";
+import crypto from "node:crypto";
+import type admin from "firebase-admin";
 import { adminDb } from "../firebase-admin";
 
 export interface LedgerEntry {
@@ -10,6 +10,7 @@ export interface LedgerEntry {
   eventId: string;
   type:
     | "PAYMENT_CAPTURED"
+    | "CREDITS_GRANTED"
     | "ENTITLEMENT_ISSUED"
     | "ENTITLEMENT_RESERVED"
     | "ENTITLEMENT_CONSUMED"
@@ -22,13 +23,25 @@ export interface LedgerEntry {
   amountMinor?: number;
   createdAt: string;
   idempotencyKey: string;
-  previousEntryHash?: string;
+  previousEntryHash: string;
   entryHash: string;
 }
 
-/**
- * Computes SHA-256 hash for a ledger entry to enforce chain security
- */
+interface LedgerHead {
+  entryId: string;
+  entryHash: string;
+  sequence: number;
+  updatedAt: string;
+}
+
+export interface PreparedLedgerEntry {
+  entry: LedgerEntry;
+  entryRef: admin.firestore.DocumentReference;
+  headRef: admin.firestore.DocumentReference;
+  nextHead: LedgerHead;
+  idempotentReplay: boolean;
+}
+
 export function calculateEntryHash(entry: Omit<LedgerEntry, "entryHash">): string {
   const dataString = JSON.stringify({
     entryId: entry.entryId,
@@ -42,60 +55,100 @@ export function calculateEntryHash(entry: Omit<LedgerEntry, "entryHash">): strin
     amountMinor: entry.amountMinor || 0,
     createdAt: entry.createdAt,
     idempotencyKey: entry.idempotencyKey,
-    previousEntryHash: entry.previousEntryHash || "",
+    previousEntryHash: entry.previousEntryHash,
   });
   return crypto.createHash("sha256").update(dataString).digest("hex");
 }
 
-/**
- * Appends a new entry to the immutable commerce ledger within a transaction context
- */
-export async function writeLedgerEntry(
-  dbTransaction: admin.firestore.Transaction,
-  entryParams: Omit<LedgerEntry, "entryId" | "createdAt" | "previousEntryHash" | "entryHash">
-): Promise<LedgerEntry> {
-  const ledgerCollection = adminDb.collection("commerce_ledger");
+function deterministicEntryId(idempotencyKey: string): string {
+  return `led_${crypto.createHash("sha256").update(idempotencyKey).digest("hex")}`;
+}
 
-  // 1. Check if an entry with this idempotency key already exists to prevent duplicate operations
-  const existingQuery = await dbTransaction.get(
-    ledgerCollection.where("idempotencyKey", "==", entryParams.idempotencyKey).limit(1)
-  );
-
-  if (!existingQuery.empty) {
-    const doc = existingQuery.docs[0];
-    return doc.data() as LedgerEntry;
+export async function prepareLedgerEntry(
+  transaction: admin.firestore.Transaction,
+  entryParams: Omit<LedgerEntry, "entryId" | "createdAt" | "previousEntryHash" | "entryHash"> & {
+    createdAt?: string;
+  }
+): Promise<PreparedLedgerEntry> {
+  if (!entryParams.idempotencyKey.trim()) throw new Error("LEDGER_IDEMPOTENCY_KEY_REQUIRED");
+  if (!Number.isSafeInteger(entryParams.quantity) || entryParams.quantity <= 0) throw new Error("LEDGER_QUANTITY_INVALID");
+  if (entryParams.amountMinor !== undefined && (!Number.isSafeInteger(entryParams.amountMinor) || entryParams.amountMinor < 0)) {
+    throw new Error("LEDGER_AMOUNT_INVALID");
   }
 
-  // 2. Fetch the latest ledger entry to construct the chain link
-  const latestSnapshot = await dbTransaction.get(
-    ledgerCollection.orderBy("createdAt", "desc").limit(1)
-  );
+  const entryId = deterministicEntryId(entryParams.idempotencyKey);
+  const entryRef = adminDb.collection("commerce_ledger").doc(entryId);
+  const headRef = adminDb.collection("commerce_ledger_state").doc("head");
+  const [existingSnapshot, headSnapshot] = await Promise.all([
+    transaction.get(entryRef),
+    transaction.get(headRef),
+  ]);
 
-  let previousEntryHash = "";
-  if (!latestSnapshot.empty) {
-    const latestDoc = latestSnapshot.docs[0].data() as LedgerEntry;
-    previousEntryHash = latestDoc.entryHash;
+  if (existingSnapshot.exists) {
+    const existing = existingSnapshot.data() as LedgerEntry;
+    if (
+      existing.idempotencyKey !== entryParams.idempotencyKey ||
+      existing.uid !== entryParams.uid ||
+      existing.orderId !== entryParams.orderId ||
+      existing.transactionId !== entryParams.transactionId ||
+      existing.type !== entryParams.type ||
+      existing.quantity !== entryParams.quantity ||
+      existing.amountMinor !== entryParams.amountMinor ||
+      existing.currency !== entryParams.currency
+    ) throw new Error("LEDGER_IDEMPOTENCY_COLLISION");
+    return {
+      entry: existing,
+      entryRef,
+      headRef,
+      nextHead: headSnapshot.exists ? headSnapshot.data() as LedgerHead : {
+        entryId: existing.entryId,
+        entryHash: existing.entryHash,
+        sequence: 0,
+        updatedAt: existing.createdAt,
+      },
+      idempotentReplay: true,
+    };
   }
 
-  // 3. Construct the new entry
-  const entryId = ledgerCollection.doc().id;
-  const createdAt = new Date().toISOString();
-
+  const head = headSnapshot.exists ? headSnapshot.data() as LedgerHead : null;
+  const createdAt = entryParams.createdAt || new Date().toISOString();
   const entryData: Omit<LedgerEntry, "entryHash"> = {
     ...entryParams,
     entryId,
     createdAt,
-    previousEntryHash,
+    previousEntryHash: head?.entryHash || "",
   };
-
-  const entryHash = calculateEntryHash(entryData);
-  const finalEntry: LedgerEntry = {
-    ...entryData,
-    entryHash,
+  const entry: LedgerEntry = { ...entryData, entryHash: calculateEntryHash(entryData) };
+  return {
+    entry,
+    entryRef,
+    headRef,
+    nextHead: {
+      entryId,
+      entryHash: entry.entryHash,
+      sequence: (head?.sequence || 0) + 1,
+      updatedAt: createdAt,
+    },
+    idempotentReplay: false,
   };
+}
 
-  // 4. Save to firestore within the transactional context
-  dbTransaction.set(ledgerCollection.doc(entryId), finalEntry);
+export function commitLedgerEntry(
+  transaction: admin.firestore.Transaction,
+  prepared: PreparedLedgerEntry
+): void {
+  if (prepared.idempotentReplay) return;
+  transaction.create(prepared.entryRef, prepared.entry);
+  transaction.set(prepared.headRef, prepared.nextHead);
+}
 
-  return finalEntry;
+export async function writeLedgerEntry(
+  transaction: admin.firestore.Transaction,
+  entryParams: Omit<LedgerEntry, "entryId" | "createdAt" | "previousEntryHash" | "entryHash"> & {
+    createdAt?: string;
+  }
+): Promise<LedgerEntry> {
+  const prepared = await prepareLedgerEntry(transaction, entryParams);
+  commitLedgerEntry(transaction, prepared);
+  return prepared.entry;
 }

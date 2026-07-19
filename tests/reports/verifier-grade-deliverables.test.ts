@@ -107,8 +107,11 @@ describe("verifier-grade deliverables", () => {
     });
 
     expect(topLevel(artifacts.map((item) => item.path))).toHaveLength(25);
+    for (const requiredComponent of ["24_Executive_Verification_Readiness_Summary.pdf","25_Per_Good_Embedded_Emissions_Schedule.csv","26_Carbon_Price_Paid_Schedule.csv","27_Read_Me_and_Verifier_Navigation_Guide.pdf"]) {
+      expect(artifacts.some((item) => item.path === requiredComponent)).toBe(true);
+    }
     const pdfArtifacts = artifacts.filter((item) => item.mediaType === "application/pdf");
-    expect(pdfArtifacts).toHaveLength(11);
+    expect(pdfArtifacts).toHaveLength(12);
     for (const item of pdfArtifacts) {
       expect(item.bytes.subarray(0, 4).toString("ascii")).toBe("%PDF");
       expect(item.bytes.byteLength).toBeGreaterThan(5000);
@@ -118,6 +121,13 @@ describe("verifier-grade deliverables", () => {
       expect(parsed.text).toContain("independent");
       expect(parsed.text).toContain("Page 1 of");
     }
+
+    const navigationGuide = artifacts.find((item) => item.path === "27_Read_Me_and_Verifier_Navigation_Guide.pdf");
+    expect(navigationGuide).toBeDefined();
+    const navigationPdf = await pdfText(navigationGuide!.bytes);
+    expect(navigationPdf.text).toContain("Recommended Review Order");
+    expect(navigationPdf.text).toContain("Trust Verification");
+    expect(navigationPdf.text).toContain("NOT_REVIEWED");
 
     const operator = artifacts.find((item) => item.path === "Operator Emissions Report.pdf");
     expect(operator).toBeDefined();

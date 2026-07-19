@@ -1,14 +1,12 @@
 import { AppHeader } from "@/components/layout/AppHeader";
+import { requireAuthenticatedSession } from "@/lib/auth/session-gate";
 
-export default function WorkspaceLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function WorkspaceLayout({ children }: { children: React.ReactNode }) {
+  await requireAuthenticatedSession();
   return (
-    <div className="min-h-screen flex flex-col bg-surface-soft">
+    <div className="flex min-h-screen flex-col bg-surface-soft">
       <AppHeader />
-      <main className="flex-1 max-w-[1440px] mx-auto w-full px-6 py-8">
+      <main className="mx-auto w-full max-w-[1440px] flex-1 px-6 py-8">
         {children}
       </main>
     </div>

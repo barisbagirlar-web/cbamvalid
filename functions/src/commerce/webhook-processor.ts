@@ -1,151 +1,205 @@
 import { adminDb } from "../firebase-admin";
-import { transitionOrderStatus } from "./order-service";
-import { createEntitlement } from "./entitlement-service";
-import { writeLedgerEntry } from "./ledger-service";
+import { COMMERCIAL_CONTRACT, normalizeProductCode } from "./commercial-contract";
+import { preparePurchasedCreditGrant, commitPurchasedCreditGrant } from "./credit-service";
+import { prepareLedgerEntry, commitLedgerEntry } from "./ledger-service";
+import { assertOrderTransition, type CommerceOrder } from "./order-service";
 import { processRefund } from "./refund-service";
-import { PRODUCT_CATALOG } from "./catalog";
+import type { VerifiedWebhookEvent } from "./webhook-verifier";
 
-/**
- * Main processor of verified webhook events from Paddle
- */
-export async function processWebhookEvent(event: any): Promise<void> {
-  const eventId = event.eventId;
-  const eventType = event.eventType;
-  const data = event.data;
-
-  console.log(`[PADDLE-PROCESSOR] Processing event ${eventId} of type ${eventType}`);
-
-  if (eventType === "transaction.completed") {
-    await handleTransactionCompleted(eventId, data);
-  } else if (eventType === "adjustment.created" || eventType === "adjustment.updated") {
-    await handleAdjustmentUpdated(eventId, data);
-  } else {
-    console.log(`[PADDLE-PROCESSOR] Skipping unhandled event type: ${eventType}`);
-  }
+export interface NormalizedCompletedTransaction {
+  transactionId: string;
+  status: "completed";
+  currency: string;
+  totalMinor: number;
+  uid: string;
+  orderId: string;
+  requestId: string;
+  productCode: string;
+  quantity: number;
+  priceId: string;
 }
 
-/**
- * Handle transaction.completed event to issue entitlements and update ledger
- */
-async function handleTransactionCompleted(eventId: string, transaction: any): Promise<void> {
-  const transactionId = transaction.id;
-  const status = transaction.status;
-  const customData = transaction.customData || {};
-  const uid = customData.uid;
-  const orderId = customData.orderId;
-  const productCode = customData.productCode;
+export interface ProcessedWebhookResult {
+  handled: boolean;
+  eventType: string;
+  uid?: string;
+  orderId?: string;
+  transactionId?: string;
+  productCode?: string;
+  idempotentReplay?: boolean;
+}
 
-  if (status !== "completed") {
-    console.log(`[PADDLE-PROCESSOR] Transaction ${transactionId} status is ${status}. Skipping fulfillment.`);
-    return;
-  }
+function record(value: unknown, field: string): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`PADDLE_FIELD_INVALID:${field}`);
+  return value as Record<string, unknown>;
+}
 
-  if (!uid || !orderId || !productCode) {
-    console.error(`[PADDLE-PROCESSOR] Missing metadata in transaction completed customData:`, customData);
-    return;
-  }
+function requiredString(value: unknown, field: string): string {
+  if (typeof value !== "string" || !value.trim()) throw new Error(`PADDLE_FIELD_INVALID:${field}`);
+  return value.trim();
+}
 
-  // Cross-check transaction items against server catalog
-  const catalogProduct = PRODUCT_CATALOG[productCode];
-  if (!catalogProduct) {
-    console.error(`[PADDLE-PROCESSOR] Product code ${productCode} not found in server catalog.`);
-    return;
-  }
+function totalMinor(data: Record<string, unknown>): number {
+  const details = data.details && typeof data.details === "object" ? data.details as Record<string, unknown> : {};
+  const detailsTotals = details.totals && typeof details.totals === "object" ? details.totals as Record<string, unknown> : {};
+  const totals = data.totals && typeof data.totals === "object" ? data.totals as Record<string, unknown> : {};
+  const raw = detailsTotals.total ?? totals.total;
+  const parsed = typeof raw === "number" ? raw : Number(requiredString(raw, "totals.total"));
+  if (!Number.isSafeInteger(parsed) || parsed < 0) throw new Error("PADDLE_TOTAL_INVALID");
+  return parsed;
+}
 
-  // Verify currency and amount (Paddle transaction details)
-  const currency = transaction.currencyCode || "";
-  if (currency !== catalogProduct.currency) {
-    console.error(`[PADDLE-PROCESSOR] Currency mismatch: expected ${catalogProduct.currency}, got ${currency}`);
-    return;
-  }
+export function normalizeCompletedTransaction(value: unknown): NormalizedCompletedTransaction {
+  const data = record(value, "transaction");
+  const status = requiredString(data.status, "status");
+  if (status !== "completed") throw new Error(`PADDLE_TRANSACTION_NOT_COMPLETED:${status}`);
+  const customData = record(data.customData ?? data.custom_data, "customData");
+  const items = data.items;
+  if (!Array.isArray(items) || items.length !== 1) throw new Error("PADDLE_LINE_ITEM_COUNT_INVALID");
+  const item = record(items[0], "items.0");
+  const quantity = Number(item.quantity);
+  if (!Number.isSafeInteger(quantity) || quantity !== 1) throw new Error("PADDLE_QUANTITY_INVALID");
+  const price = item.price && typeof item.price === "object" ? item.price as Record<string, unknown> : {};
+  const priceId = requiredString(price.id ?? item.priceId ?? item.price_id, "items.0.priceId");
+  const productCode = normalizeProductCode(requiredString(customData.productCode, "customData.productCode"));
+  return {
+    transactionId: requiredString(data.id, "id"),
+    status: "completed",
+    currency: requiredString(data.currencyCode ?? data.currency_code, "currencyCode").toUpperCase(),
+    totalMinor: totalMinor(data),
+    uid: requiredString(customData.uid, "customData.uid"),
+    orderId: requiredString(customData.orderId, "customData.orderId"),
+    requestId: requiredString(customData.requestId, "customData.requestId"),
+    productCode,
+    quantity,
+    priceId,
+  };
+}
 
-  const items = transaction.items || [];
-  if (items.length === 0) {
-    console.error(`[PADDLE-PROCESSOR] Transaction has no items.`);
-    return;
-  }
+async function handleTransactionCompleted(
+  event: VerifiedWebhookEvent
+): Promise<ProcessedWebhookResult> {
+  const purchase = normalizeCompletedTransaction(event.data);
+  const orderRef = adminDb.collection("commerce_orders").doc(purchase.orderId);
 
-  // Calculate total quantity across items matching the productCode
-  // (Assuming one line item for simplicity, but summing is safer)
-  const purchasedQuantity = items.reduce((acc: number, item: any) => acc + (item.quantity || 1), 0);
-  const totalEntitlementsToGrant = catalogProduct.entitlementQuantity * purchasedQuantity;
+  const result = await adminDb.runTransaction(async (transaction) => {
+    const orderSnapshot = await transaction.get(orderRef);
+    if (!orderSnapshot.exists) throw new Error("PADDLE_ORDER_NOT_FOUND");
+    const order = orderSnapshot.data() as CommerceOrder;
+    if (
+      order.orderId !== purchase.orderId ||
+      order.uid !== purchase.uid ||
+      order.productCode !== purchase.productCode ||
+      order.checkoutRequestId !== purchase.requestId ||
+      order.paddleTransactionId !== purchase.transactionId ||
+      order.paddlePriceId !== purchase.priceId ||
+      order.currency !== purchase.currency ||
+      order.amountMinor !== purchase.totalMinor ||
+      purchase.productCode !== COMMERCIAL_CONTRACT.productCode ||
+      purchase.totalMinor !== COMMERCIAL_CONTRACT.priceMinor ||
+      purchase.currency !== COMMERCIAL_CONTRACT.currency
+    ) throw new Error("PADDLE_ORDER_FULFILLMENT_MISMATCH");
 
-  // Execute atomic transactional updates
-  await adminDb.runTransaction(async (dbTransaction: any) => {
-    // 1. Log payment captured entry in the ledger with idempotency verification
-    await writeLedgerEntry(dbTransaction, {
-      uid,
-      orderId,
-      transactionId,
-      eventId,
+    const paymentLedger = await prepareLedgerEntry(transaction, {
+      uid: purchase.uid,
+      orderId: purchase.orderId,
+      transactionId: purchase.transactionId,
+      eventId: event.eventId,
       type: "PAYMENT_CAPTURED",
-      quantity: purchasedQuantity,
-      currency,
-      amountMinor: catalogProduct.expectedUnitAmount * purchasedQuantity,
-      idempotencyKey: `payment:${transactionId}`,
+      quantity: 1,
+      currency: purchase.currency,
+      amountMinor: purchase.totalMinor,
+      idempotencyKey: `payment:${purchase.transactionId}`,
+      createdAt: event.occurredAt,
+    });
+    const creditGrant = await preparePurchasedCreditGrant(transaction, {
+      uid: purchase.uid,
+      orderId: purchase.orderId,
+      transactionId: purchase.transactionId,
+      eventId: event.eventId,
+      credits: COMMERCIAL_CONTRACT.creditsGranted,
+      occurredAt: event.occurredAt,
     });
 
-    // 2. Transition order state to PAID
-    await transitionOrderStatus(dbTransaction, orderId, "PAID", {
-      paddleTransactionId: transactionId,
-    });
+    const bothReplay = paymentLedger.idempotentReplay && creditGrant.idempotentReplay;
+    if (order.status === "CREDITS_GRANTED") {
+      if (!bothReplay) throw new Error("PADDLE_FULFILLMENT_PARTIAL_STATE");
+      return { idempotentReplay: true };
+    }
+    if (paymentLedger.idempotentReplay !== creditGrant.idempotentReplay) {
+      throw new Error("PADDLE_FULFILLMENT_PARTIAL_STATE");
+    }
+    if (order.status !== "PAYMENT_PENDING") throw new Error(`PADDLE_ORDER_STATE_INVALID:${order.status}`);
+    assertOrderTransition(order.status, "PAID");
+    assertOrderTransition("PAID", "CREDITS_GRANTED");
 
-    // 3. Issue entitlement document and write entitlement ledger entry
-    await createEntitlement(dbTransaction, {
-      uid,
-      orderId,
-      transactionId,
-      eventId,
-      productCode,
-      quantity: totalEntitlementsToGrant,
+    commitLedgerEntry(transaction, paymentLedger);
+    commitPurchasedCreditGrant(transaction, creditGrant);
+    transaction.update(orderRef, {
+      status: "CREDITS_GRANTED",
+      paidAt: event.occurredAt,
+      creditsGranted: COMMERCIAL_CONTRACT.creditsGranted,
+      updatedAt: new Date().toISOString(),
     });
-
-    // 4. Transition order state to ENTITLED
-    await transitionOrderStatus(dbTransaction, orderId, "ENTITLED");
+    return { idempotentReplay: false };
   });
 
-  console.log(`[PADDLE-PROCESSOR] Completed fulfillment for order ${orderId}, entitlement issued.`);
+  return {
+    handled: true,
+    eventType: event.eventType,
+    uid: purchase.uid,
+    orderId: purchase.orderId,
+    transactionId: purchase.transactionId,
+    productCode: purchase.productCode,
+    idempotentReplay: result.idempotentReplay,
+  };
 }
 
-/**
- * Handle adjustment.created or adjustment.updated event (refunds)
- */
-async function handleAdjustmentUpdated(eventId: string, adjustment: any): Promise<void> {
-  const transactionId = adjustment.transactionId;
-  const status = adjustment.status;
-  const adjustmentId = adjustment.id;
-
-  // Only handle approved/completed adjustments (refunds)
+async function handleAdjustmentUpdated(event: VerifiedWebhookEvent): Promise<ProcessedWebhookResult> {
+  const adjustment = record(event.data, "adjustment");
+  const status = requiredString(adjustment.status, "adjustment.status");
   if (status !== "approved" && status !== "completed") {
-    console.log(`[PADDLE-PROCESSOR] Adjustment ${adjustmentId} status is ${status}. Skipping.`);
-    return;
+    return { handled: false, eventType: event.eventType };
   }
-
-  // Retrieve transaction to extract order metadata from customData
-  const orderQuery = await adminDb
-    .collection("commerce_orders")
+  const transactionId = requiredString(adjustment.transactionId ?? adjustment.transaction_id, "adjustment.transactionId");
+  const adjustmentId = requiredString(adjustment.id, "adjustment.id");
+  const orderQuery = await adminDb.collection("commerce_orders")
     .where("paddleTransactionId", "==", transactionId)
-    .limit(1)
+    .limit(2)
     .get();
-
-  if (orderQuery.empty) {
-    console.error(`[PADDLE-PROCESSOR] Mapped order for transaction ${transactionId} not found.`);
-    return;
+  if (orderQuery.docs.length !== 1) throw new Error("REFUND_ORDER_RESOLUTION_FAILED");
+  const order = orderQuery.docs[0].data() as CommerceOrder;
+  const totals = record(adjustment.totals, "adjustment.totals");
+  const amountMinor = Number(requiredString(totals.subtotal ?? totals.total, "adjustment.totals.total"));
+  if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0 || amountMinor > order.amountMinor) {
+    throw new Error("REFUND_AMOUNT_INVALID");
   }
+  const currency = requiredString(adjustment.currencyCode ?? adjustment.currency_code, "adjustment.currencyCode").toUpperCase();
+  if (currency !== order.currency) throw new Error("REFUND_CURRENCY_MISMATCH");
 
-  const order = orderQuery.docs[0].data() as any;
+  await adminDb.runTransaction((transaction) => processRefund(transaction, {
+    uid: order.uid,
+    orderId: order.orderId,
+    transactionId,
+    eventId: event.eventId,
+    adjustmentId,
+    amountMinor,
+    currency,
+  }));
+  return {
+    handled: true,
+    eventType: event.eventType,
+    uid: order.uid,
+    orderId: order.orderId,
+    transactionId,
+    productCode: order.productCode,
+  };
+}
 
-  await adminDb.runTransaction(async (dbTransaction: any) => {
-    await processRefund(dbTransaction, {
-      uid: order.uid,
-      orderId: order.orderId,
-      transactionId,
-      eventId,
-      adjustmentId,
-      amountMinor: Number(adjustment.totals?.subtotal || 0),
-      currency: adjustment.currencyCode || "USD",
-    });
-  });
-
-  console.log(`[PADDLE-PROCESSOR] Completed refund processing for order ${order.orderId}.`);
+export async function processWebhookEvent(event: VerifiedWebhookEvent): Promise<ProcessedWebhookResult> {
+  if (event.eventType === "transaction.completed") return handleTransactionCompleted(event);
+  if (event.eventType === "adjustment.created" || event.eventType === "adjustment.updated") {
+    return handleAdjustmentUpdated(event);
+  }
+  return { handled: false, eventType: event.eventType };
 }

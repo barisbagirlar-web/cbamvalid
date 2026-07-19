@@ -1,46 +1,42 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
-// Routes that require authentication (Workspace)
-const workspacePrefixes = ['/dashboard', '/cases', '/reports', '/cbam', '/admin'];
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/cases",
+  "/reports",
+  "/cbam",
+  "/account",
+  "/credits",
+  "/admin",
+] as const;
 
-// Routes that are only for unauthenticated users
-const authRoutes = ['/login', '/register'];
-
-// Public routes that should redirect to dashboard if authenticated
-const redirectIfAuthRoutes = ['/', ...authRoutes];
+function matchesPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
-  // Skip proxy for static files and Next.js internals
   if (
-    pathname.startsWith('/_next') ||
-    pathname.match(/\.(png|svg|jpg|jpeg|gif|webp|ico)$/)
+    pathname.startsWith("/_next/") ||
+    pathname === "/favicon.ico" ||
+    /\.(?:png|svg|jpg|jpeg|gif|webp|ico|woff2?)$/i.test(pathname)
   ) {
     return NextResponse.next();
   }
 
-  const session = request.cookies.get('__session');
-  const isAuthenticated = !!session;
-
-  // 1. Workspace Protection: Unauthenticated user accessing workspace routes
-  const isWorkspaceRoute = workspacePrefixes.some(prefix => pathname.startsWith(prefix));
-  if (isWorkspaceRoute && !isAuthenticated) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('next', pathname);
+  const protectedRoute = PROTECTED_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
+  const hasSessionCookie = Boolean(request.cookies.get("__session")?.value);
+  if (protectedRoute && !hasSessionCookie) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(loginUrl);
   }
 
-  // 2. Auth Protection: Authenticated user accessing auth or root routes
-  const isRedirectIfAuthRoute = redirectIfAuthRoutes.includes(pathname);
-  if (isRedirectIfAuthRoute && isAuthenticated) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
   const response = NextResponse.next();
-  if (isWorkspaceRoute || pathname.startsWith("/account") || pathname.startsWith("/api")) {
+  if (protectedRoute || pathname.startsWith("/api/")) {
     response.headers.set("Cache-Control", "private, no-store, no-cache, must-revalidate");
+    response.headers.set("Pragma", "no-cache");
   }
-  
   return response;
 }

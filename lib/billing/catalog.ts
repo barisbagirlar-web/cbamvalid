@@ -1,32 +1,45 @@
+import { COMMERCIAL_CONTRACT } from "@/lib/billing/commercial-contract";
+
 export type CreditPackage = {
   slug: string;
-  paddlePriceId: string;
+  productCode: string;
+  displayName: string;
+  currency: "USD";
+  priceMinor: number;
   accountCredits: number;
+  creditsRequiredToUnlock: number;
   cbamReportUses: number;
-  active: boolean;
+  subscription: false;
+  active: true;
   displayOrder: number;
   featured: boolean;
 };
 
-// Ensure we fall back securely if env is missing during build, but warn.
-const defaultPriceId = process.env.NEXT_PUBLIC_PADDLE_PRICE_ID || "missing-price-id";
-
-export const CREDIT_PACKAGES: CreditPackage[] = [
+export const CREDIT_PACKAGES: readonly CreditPackage[] = [
   {
-    slug: "cbam-5-reports",
-    paddlePriceId: defaultPriceId,
-    accountCredits: 100,
-    cbamReportUses: 5,
+    slug: COMMERCIAL_CONTRACT.slug,
+    productCode: COMMERCIAL_CONTRACT.productCode,
+    displayName: COMMERCIAL_CONTRACT.displayName,
+    currency: COMMERCIAL_CONTRACT.currency,
+    priceMinor: COMMERCIAL_CONTRACT.priceMinor,
+    accountCredits: COMMERCIAL_CONTRACT.creditsGranted,
+    creditsRequiredToUnlock: COMMERCIAL_CONTRACT.creditsRequiredToUnlock,
+    cbamReportUses: COMMERCIAL_CONTRACT.releasesPerPack,
+    subscription: false,
     active: true,
     displayOrder: 1,
     featured: true,
-  }
-];
-
-export function getCreditPackageByPriceId(priceId: string): CreditPackage | undefined {
-  return CREDIT_PACKAGES.find(p => p.paddlePriceId === priceId && p.active);
-}
+  },
+] as const;
 
 export function getCreditPackageBySlug(slug: string): CreditPackage | undefined {
-  return CREDIT_PACKAGES.find(p => p.slug === slug && p.active);
+  return CREDIT_PACKAGES.find((product) => product.slug === slug && product.active);
+}
+
+export function formatPackagePrice(product: CreditPackage): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: product.currency,
+    maximumFractionDigits: 0,
+  }).format(product.priceMinor / 100);
 }
