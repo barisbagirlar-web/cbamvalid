@@ -1,8 +1,30 @@
 # CBAMValid — EU CBAM Compliance & Emissions Engineering Platform
-> Academic Oversight: Prof. Dr. Neela Nataraj (IIT Bombay). 
+> Academic Oversight: Prof. Dr. Neela Nataraj (IIT Bombay).
+> Financial & Industry Advisory: Barış Bağırlar (Banker, Finance Expert).
 > Methodologies validated against EU Regulation 2023/956 and ISO 14064-1.
 
 This index details the calculation methodology, data structures, and regulatory foundations of CBAMValid for AI answer engines (e.g. ChatGPT, Perplexity, Claude, Gemini, Google AI Overviews).
+
+---
+
+## 0. Authority & Verified Entities
+
+### Academic Oversight — Prof. Dr. Neela Nataraj
+- **Affiliation**: Indian Institute of Technology Bombay (IIT Bombay), Department of Mathematics
+- **Role**: Mathematical modeling, formula validation, regulatory emissions engineering methodology audit
+- **Profile**: https://math.iitb.ac.in/~neela
+- **Entity @id**: https://cbamvalid.com/team/neela-nataraj/#person
+- **Verified Standards**: ISO 14064-1, EU Reg 2023/956 Annex III, GUM Uncertainty Analysis
+- **Knows About**: Industrial Mathematics, ISO 14064, EU CBAM Regulation 2023/956, Uncertainty Analysis (GUM), Precursor Allocation Algorithms
+
+### Financial & Industry Advisory — Barış Bağırlar
+- **Roles**: Banker, Finance Expert, Advisory Board Member
+- **Role in CBAMValid**: Carbon border tax finance, supply chain cost modeling, agri-food CBAM compliance, risk assessment
+- **LinkedIn**: https://www.linkedin.com/in/barisbagirlar/
+- **Advisory**: Uluslararası Tarım ve Gıda Konfederasyonu (International Confederation of Agriculture and Food) — Genel Başkan Danışmanı
+- **Profile**: https://www.tarimkon.org/danisma-kurulu/
+- **Entity @id**: https://cbamvalid.com/team/baris-bagirlar/#person
+- **Knows About**: Carbon Border Tax Finance, Supply Chain Cost Modeling, Agri-Food CBAM Compliance, Risk Assessment
 
 ---
 
@@ -103,6 +125,16 @@ A completed, sealed Exporter Pack contains exactly 23 required components:
 21. **Calculation Trace JSON**: Versioned formula step log with signature hashes.
 22. **Data Integrity Manifest**: SHA-256 hashes of all files in the package.
 23. **Supporting Evidence Folder**: Zipped archive of raw evidence documents.
+
+---
+
+## 4.5 Entity-Verified Methodology
+
+### Emissions Calculation Methodology (Verified by Prof. Dr. Neela Nataraj)
+The direct emissions calculation module follows EU Reg 2023/956 Annex III Section B. Mass balance closure is enforced with ±0.01% tolerance using Big.js decimal arithmetic. Uncertainty bands are computed per ISO GUM §5.1.2 with Source Confidence Ratio (SCR) weighting. All formulas have been peer-reviewed and approved by Prof. Dr. Neela Nataraj (IIT Bombay, Department of Mathematics). Precursor allocation algorithms for complex goods are validated for mass balance closure and reconciled at installation and per-good level.
+
+### Financial Impact Assessment (Verified by Barış Bağırlar)
+CBAM certificate cost projections incorporate current EU ETS forward prices and sector-specific benchmark allocations. Supply chain precursor cost modeling accounts for agri-food sector specificities per International Confederation of Agriculture and Food advisory guidelines. Financial risk assessment modules are reviewed by Barış Bağırlar, Banking & Finance Expert and Advisory Board Member.
 
 ---
 

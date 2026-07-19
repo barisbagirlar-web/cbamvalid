@@ -70,17 +70,26 @@ if (metadataContent.includes('x-default') && metadataContent.includes('alternate
 const llmsContent = checkFileExists("public/llms.txt");
 const llmsFullContent = checkFileExists("public/llms-full.txt");
 
+// GATE 2.0: Dual-entity injection — BOTH academic + financial authority (Semantic SEO §3)
 if (llmsContent.includes("Prof. Dr. Neela Nataraj") && llmsContent.includes("IIT Bombay")) {
-  pass("llms.txt: academic oversight references present");
+  pass("llms.txt: academic oversight (Neela Nataraj / IIT Bombay) present");
 } else {
   fail("llms.txt: academic oversight", "missing Neela Nataraj or IIT Bombay reference");
 }
-
-// GATE 2.1: llms.txt size threshold (5,000 bytes for robust AI ingestion)
-if (llmsContent.length >= 5000) {
-  pass(`llms.txt: size=${llmsContent.length} bytes (>=5000 threshold)`);
+if (llmsContent.includes("Barış Bağırlar")) {
+  pass("llms.txt: financial advisory (Barış Bağırlar) entity present");
 } else {
-  fail(`llms.txt: size=${llmsContent.length} bytes`, "below 5000-byte AI ingestion threshold");
+  fail("llms.txt: financial advisory", "missing Barış Bağırlar entity reference");
+}
+
+// GATE 2.1: llms.txt = CONCISE SUMMARY (Semantic SEO §3: "Özet - Max 5KB")
+// Must be substantive (>=1500 bytes) but stay under 5000-byte summary ceiling.
+if (llmsContent.length >= 1500 && llmsContent.length < 5000) {
+  pass(`llms.txt: size=${llmsContent.length} bytes (summary window 1500–4999)`);
+} else if (llmsContent.length < 1500) {
+  fail(`llms.txt: size=${llmsContent.length} bytes`, "below 1500-byte substantive minimum");
+} else {
+  fail(`llms.txt: size=${llmsContent.length} bytes`, "exceeds 5000-byte concise-summary ceiling (move detail to llms-full.txt)");
 }
 
 // GATE 2.2: llms.txt methodology citations
@@ -93,11 +102,17 @@ if (llmsContent.includes("Regulation (EU) 2023/956")
   fail("llms.txt: methodology content", "missing regulation citations or calculation formulas");
 }
 
+// GATE 2.3: llms-full.txt = entity-rich detail (both experts + word count)
 const wordCountLf = llmsFullContent.trim().split(/\s+/).length;
 if (wordCountLf >= 500) {
   pass(`llms-full.txt: ${wordCountLf} words (>=500 threshold)`);
 } else {
   fail(`llms-full.txt: ${wordCountLf} words`, "below 500-word threshold");
+}
+if (llmsFullContent.includes("Neela Nataraj") && llmsFullContent.includes("Barış Bağırlar")) {
+  pass("llms-full.txt: dual-entity (academic + financial) verified methodology present");
+} else {
+  fail("llms-full.txt: dual-entity", "missing Neela Nataraj or Barış Bağırlar verified methodology section");
 }
 
 // ─── GATE 3: Public page template schema injection ───
@@ -216,11 +231,27 @@ if (toolsSitemapContent.includes("STATIC_CORE") || toolsSitemapContent.includes(
 
 // ─── GATE 8.1: MIL-STD §1.4 Empty sitemap fail-safe ───
 if (sitemapIndexContent.includes("buildSitemapIndexXml")
-    && (toolsSitemapContent.includes("buildUrlsetXml") || toolsSitemapContent.includes("buildUrlsetStream"))
+    && (toolsSitemapContent.includes("buildUrlsetXml") || toolsSitemapContent.includes("buildUrlsetStream") || toolsSitemapContent.includes("buildEntityUrlsetStream"))
     && (sitemapIndexContent.includes("sitemapResponse") || sitemapIndexContent.includes("sitemapStreamResponse"))) {
   pass("MIL-STD §1.4: Empty sitemap fail-safe activated (buildUrlset/buildSitemapIndex + response guard)");
 } else {
   fail("MIL-STD §1.4 Empty fail-safe", "sitemaps missing empty-guard — could serve destructive empty XML to Googlebot");
+}
+
+// ─── GATE 8.1b: Semantic SEO §2 — eea: entity extension in sitemaps ───
+const cnCodesSitemapContent = checkFileExists("app/sitemaps/cn-codes.xml/route.ts");
+const sectorsSitemapContent = checkFileExists("app/sitemaps/sectors.xml/route.ts");
+const eeaGuardsContent = checkFileExists("lib/seo/sitemap-guards.ts");
+if (eeaGuardsContent.includes("EEA_NAMESPACE_URI")
+    && eeaGuardsContent.includes("eea:verifiedBy")
+    && eeaGuardsContent.includes("eea:regulatoryRef")
+    && eeaGuardsContent.includes("CBAM_EXPERTS")
+    && toolsSitemapContent.includes("buildEntityUrlsetStream")
+    && cnCodesSitemapContent.includes("buildEntityUrlsetStream")
+    && sectorsSitemapContent.includes("buildEntityUrlsetStream")) {
+  pass("Semantic SEO §2: eea: entity extension (verifiedBy + regulatoryRef) active in all content sitemaps");
+} else {
+  fail("Semantic SEO §2 eea: extension", "sitemaps missing eea: expert-entity binding for AI crawlers");
 }
 
 // ─── GATE 8.2: MIL-STD §1.3 Dedup protection ───

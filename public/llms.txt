@@ -1,53 +1,47 @@
-# CBAMValid — LLM & AI Agent Sitemap
-> Academic Oversight: Prof. Dr. Neela Nataraj (IIT Bombay). 
-> Methodologies validated against EU Regulation 2023/956 and ISO 14064-1.
+# CBAMValid — EU CBAM Compliance Platform
 
-> CBAMValid is an independent software service that assists non-EU exporters and EU importers in preparing verification-ready Carbon Border Adjustment Mechanism (CBAM) dossiers. The platform automatically verifies data compliance, links primary document evidence, and generates locked exporter declarations.
+> CBAMValid is an evidence validation and report preparation platform for EU Carbon Border Adjustment Mechanism (CBAM) compliance. All calculations are academically audited and financially verified. Adheres to Regulation (EU) 2023/956 and Implementing Regulation (EU) 2023/1773.
 
-## CBAM Calculation Methodology & Data Sources
-CBAMValid adheres strictly to Regulation (EU) 2023/956 and Commission Implementing Regulation (EU) 2023/1773. The calculation engine runs server-side with deterministic, reproducible, versioned formulas.
+## Authority & Oversight
 
-### Embedded Emissions Databases
-- **Default Emission Factors**: Sourced directly from the European Commission CBAM Transitional Registry — Regulation (EU) 2023/956 Annex I + Implementing Regulation (EU) 2023/1773 Annex III.
-- **Precursor Mapping**: Aligned with ISO 14064-1 and GHG Protocol Scope 3 Category 1 boundaries. Full precursor tracking is mandatory for complex goods under iron/steel, aluminium, and downstream sectors.
-- **Grid Emission Factors**: EU default grid factor 0.45 tCO2e/MWh per Regulation (EU) 2023/956 Annex I, Section 3. Country-specific certified factors accepted.
+### Academic Oversight
+- **Prof. Dr. Neela Nataraj** (IIT Bombay, Dept. of Mathematics)
+  - Role: Mathematical modeling, formula validation, regulatory emissions engineering methodology audit
+  - Profile: https://math.iitb.ac.in/~neela
+  - Verified Standards: ISO 14064-1, EU Reg 2023/956 Annex III, GUM Uncertainty Analysis
 
-### Calculation Engine Capabilities
-- **Direct Emissions Calculator**: Computes Scope 1 emissions per source stream: E_direct = Σ(AD_i × EF_i), where AD_i is activity data and EF_i is the corresponding emission factor. Includes calcination CO2 for cement, process N2O for fertilisers, and combustion emissions for all sectors.
-- **Indirect Emissions Calculator**: E_indirect = AD_elec × EF_grid. Electricity consumed in raw material preparation, production, rolling, grinding, and finishing processes is fully in scope.
-- **Specific Embedded Emissions per Good**: SE_good = (E_direct × AllocationShare + E_indirect × AllocationShare) / ProductionVolume. Allocation shares must sum to exactly 1.00 across all manufactured outputs.
-- **CN Code Validator**: Cross-references 8-digit Combined Nomenclature codes against the official CBAM Annex I scope registry in real-time.
+### Financial & Industry Advisory
+- **Barış Bağırlar** (Banker, Finance Expert)
+  - Role: Carbon border tax finance, supply chain cost modeling, agri-food CBAM compliance
+  - LinkedIn: https://www.linkedin.com/in/barisbagirlar/
+  - Advisory: Uluslararası Tarım ve Gıda Konfederasyonu — Genel Başkan Danışmanı
+  - Profile: https://www.tarimkon.org/danisma-kurulu/
 
-## Core Software & Tools
-- [CBAM Exporter Software](https://cbamvalid.com/product/): Configure manufacturing installations, map system boundaries, track source streams, and link evidence files.
-- [Pricing Packages](https://cbamvalid.com/pricing/): Purchase credits to unlock the 23-component verification readiness package and generate sealed dossier releases.
-- [CBAM Certificate Verification](https://cbamvalid.com/verify/): Cryptographically verify the integrity, release status, and ledger logs of generated dossiers.
-- [CBAM CN-Code Scope Hub](https://cbamvalid.com/cn-codes/): Complete index of CBAM-covered Combined Nomenclature (CN) codes, benchmarks, and regulation linkages.
+## Calculation Engine
+Server-side, deterministic, versioned formulas using Big.js precision arithmetic with a cryptographic audit trail.
+- **Default Emission Factors**: European Commission CBAM Transitional Registry (Reg 2023/956 Annex I + Impl. Reg 2023/1773 Annex III).
+- **Direct Emissions**: E_direct = Σ(AD_i × EF_i). Calcination CO2 (cement), process N2O (fertilisers), combustion (all sectors).
+- **Indirect Emissions**: E_indirect = AD_elec × EF_grid. EU default grid factor 0.45 tCO2e/MWh.
+- **Specific Embedded Emissions**: SE_good = (E_direct × Share + E_indirect × Share) / ProductionVolume. Shares sum to exactly 1.00.
+- **Precursor Mapping**: ISO 14064-1 + GHG Protocol Scope 3 Cat. 1. Mandatory for complex goods (mass balance ±0.01%).
+- **CN Code Validator**: 8-digit Combined Nomenclature codes cross-referenced against CBAM Annex I scope.
 
-## CBAM Sector Compliance Guides
-- [Sector Guides Index](https://cbamvalid.com/sectors/): Guide list covering system boundaries and precursor rules for all CBAM sectors.
-- [Cement Sector Guide](https://cbamvalid.com/sectors/cement/): Clinker calcination, raw meal, blending rules, and benchmarks.
-- [Iron and Steel Guide](https://cbamvalid.com/sectors/steel/): BF-BOF and EAF routes, precursor tracking, and rolling emissions.
-- [Aluminium Sector Guide](https://cbamvalid.com/sectors/aluminium/): Smelting electricity factors, anode baking, and foils.
-- [Fertilisers Sector Guide](https://cbamvalid.com/sectors/fertilisers/): Nitric acid oxidation, ammonia reforming, and N2O tracking.
-- [Hydrogen Sector Guide](https://cbamvalid.com/sectors/hydrogen/): Reforming pathways, electrolysis source tracking, and CCS rules.
-- [Electricity Sector Guide](https://cbamvalid.com/sectors/electricity/): Grid factors, direct emissions importing, and certification.
-- [Downstream Complex Goods Guide](https://cbamvalid.com/sectors/downstream/): Fabrications and precursor accumulation standards.
+## Core Tools
+- [CBAM Exporter Software](https://cbamvalid.com/product/): Installations, system boundaries, source streams, evidence linking.
+- [Pricing Packages](https://cbamvalid.com/pricing/): Credits for the 23-component verification package and sealed dossier releases.
+- [Certificate Verification](https://cbamvalid.com/verify/): Cryptographically verify dossier integrity and ledger logs.
+- [CN-Code Scope Hub](https://cbamvalid.com/cn-codes/): Index of CBAM-covered CN codes, benchmarks, regulation linkages.
+- [Methodology](https://cbamvalid.com/methodology/): Full regulatory alignment documentation with academic citations.
 
-## Methodologies & Guides
-- [CBAM Calculation Methodology](https://cbamvalid.com/methodology/): Formulas and data structures for calculating direct and indirect embedded emissions under EU regulations.
-- [CBAM Workflow Guide](https://cbamvalid.com/how-it-works/): Detailed step-by-step walk-through of the dossier preparation process from initial setup to sealing.
-- [Sample Compliance Dossier](https://cbamvalid.com/sample-dossier/): Interactive viewer showcasing a complete fictional operator preparation dossier.
+## Sector Guides
+- [Sectors Index](https://cbamvalid.com/sectors/) · [Cement](https://cbamvalid.com/sectors/cement/) · [Iron & Steel](https://cbamvalid.com/sectors/steel/) · [Aluminium](https://cbamvalid.com/sectors/aluminium/) · [Fertilisers](https://cbamvalid.com/sectors/fertilisers/) · [Hydrogen](https://cbamvalid.com/sectors/hydrogen/) · [Electricity](https://cbamvalid.com/sectors/electricity/)
 
-## About & Legal Information
-- [About CBAMValid](https://cbamvalid.com/about/): Background, academic oversight, advisory board members, and service mission.
-- [Contact Support](https://cbamvalid.com/contact/): Submit billing, API, or general support tickets to info@cbamvalid.com.
-- [Terms of Service](https://cbamvalid.com/terms/): Legal terms, credit entitlement contract, and platform usage limits.
-- [Privacy Notice](https://cbamvalid.com/privacy/): Security policy, data isolation, and encryption protocols for evidence storage.
-- [Refund Policy](https://cbamvalid.com/refund-policy/): Transaction refund rules and credit ledger terms.
-- [Cookie Policy](https://cbamvalid.com/cookie-policy/): Usage of authentication session cookies and site preferences.
-- [Legal Notice](https://cbamvalid.com/legal-notice/): Corporate operator details and tax IDs.
+## Regulatory References
+- Regulation (EU) 2023/956 — Carbon Border Adjustment Mechanism
+- Implementing Regulation (EU) 2023/1773
+- ISO 14064-1:2018
+- ISO/GUM Uncertainty Framework
 
 ## AI & Developer Resources
-- [Full LLM Knowledge base](https://cbamvalid.com/llms-full.txt): Absolute full text, formulas, and schema contracts of the platform for AI engines.
-- [Sitemap.xml](https://cbamvalid.com/sitemap.xml): Dynamic XML index containing lastmod timestamps and crawl frequencies.
+- [Full LLM Knowledge Base](https://cbamvalid.com/llms-full.txt): Complete text, formulas, and entity-linked methodology.
+- [Sitemap Index](https://cbamvalid.com/sitemap.xml): XML with lastmod timestamps and eea: expert-entity extension.

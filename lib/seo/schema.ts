@@ -250,7 +250,7 @@ export function generateArticleSchema(opts: {
   };
 }
 
-export function generateEnterpriseGraphSchema(currentPath: string) {
+export function generateEnterpriseGraphSchema(_currentPath?: string) {
   return {
     "@context": "https://schema.org",
     "@graph": [
@@ -297,7 +297,31 @@ export function generateEnterpriseGraphSchema(currentPath: string) {
           "https://www.researchgate.net/profile/Neela-Nataraj",
           "http://math.iitb.ac.in/~neela"
         ],
-        "knowsAbout": ["Mathematical Modeling", "Formula Validation", "CBAM Compliance Standards", "Precursor Allocation Algorithms"]
+        "knowsAbout": ["Industrial Mathematics", "ISO 14064", "EU CBAM Regulation 2023/956", "Uncertainty Analysis (GUM)", "Mathematical Modeling", "Formula Validation", "Precursor Allocation Algorithms"]
+      },
+      {
+        "@type": "Person",
+        "@id": `${siteConfig.canonicalOrigin}/team/baris-bagirlar/#person`,
+        "name": "Barış Bağırlar",
+        "jobTitle": ["Banker", "Finance Expert", "Advisory Board Member"],
+        "description": "Provides financial and industry advisory for carbon border tax finance, supply chain cost modeling, and agri-food CBAM compliance.",
+        "url": "https://www.linkedin.com/in/barisbagirlar/",
+        "worksFor": { "@id": `${siteConfig.canonicalOrigin}/#organization` },
+        "memberOf": {
+          "@type": "OrganizationRole",
+          "roleName": "Genel Başkan Danışmanı",
+          "member": {
+            "@type": "Organization",
+            "name": "Uluslararası Tarım ve Gıda Konfederasyonu",
+            "url": "https://www.tarimkon.org",
+            "sameAs": "https://www.tarimkon.org/danisma-kurulu/"
+          }
+        },
+        "sameAs": [
+          "https://www.linkedin.com/in/barisbagirlar/",
+          "https://www.tarimkon.org/danisma-kurulu/"
+        ],
+        "knowsAbout": ["Carbon Border Tax Finance", "Supply Chain Cost Modeling", "Agri-Food CBAM Compliance", "Risk Assessment"]
       },
       {
         "@type": "SoftwareApplication",
@@ -305,8 +329,23 @@ export function generateEnterpriseGraphSchema(currentPath: string) {
         "name": "CBAMValid Compliance Platform",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Web",
-        "author": { "@id": `${siteConfig.canonicalOrigin}/team/neela-nataraj/#person` },
+        "author": [
+          { "@id": `${siteConfig.canonicalOrigin}/team/neela-nataraj/#person` },
+          { "@id": `${siteConfig.canonicalOrigin}/team/baris-bagirlar/#person` }
+        ],
         "provider": { "@id": `${siteConfig.canonicalOrigin}/#organization` },
+        "review": {
+          "@type": "Review",
+          "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+          "author": { "@id": `${siteConfig.canonicalOrigin}/team/neela-nataraj/#person` },
+          "reviewBody": "Mathematically verified against EU Reg 2023/956 Annex III and ISO 14064-1. Precursor allocation algorithms validated for mass balance closure."
+        },
+        "featureList": [
+          "EU CBAM Regulation 2023/956 Compliant",
+          "Big.js Precision Arithmetic",
+          "Cryptographic Audit Trail",
+          "Academic & Financial Dual Oversight"
+        ],
         "citation": [{
           "@type": "Legislation",
           "legislationType": "Regulation",
@@ -378,7 +417,11 @@ export function generateEnterpriseGraphSchema(currentPath: string) {
         "@type": "LegalService",
         "@id": `${siteConfig.canonicalOrigin}/#service`,
         "name": "CBAM Emissions Verification",
-        "provider": { "@id": `${siteConfig.canonicalOrigin}/#organization` },
+        "provider": [
+          { "@id": `${siteConfig.canonicalOrigin}/#organization` },
+          { "@id": `${siteConfig.canonicalOrigin}/team/neela-nataraj/#person` },
+          { "@id": `${siteConfig.canonicalOrigin}/team/baris-bagirlar/#person` }
+        ],
         "areaServed": { 
           "@type": "Place", 
           "name": "European Economic Area (EEA)" 

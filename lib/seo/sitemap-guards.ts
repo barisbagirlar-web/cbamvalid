@@ -144,13 +144,13 @@ export function urlHash(url: string): string {
   return createHash("sha256").update(normalizeUrl(url)).digest("hex").slice(0, 16);
 }
 
-/** Detect duplicates in list and return deduplicated set */
-export function deduplicateUrls(urls: { url: string; lastmod: string }[]): {
-  clean: { url: string; lastmod: string }[];
+/** Detect duplicates in list and return deduplicated set (generic — preserves entity metadata) */
+export function deduplicateUrls<T extends { url: string; lastmod: string }>(urls: T[]): {
+  clean: T[];
   duplicates: string[];
 } {
   const seen = new Set<string>();
-  const clean: { url: string; lastmod: string }[] = [];
+  const clean: T[] = [];
   const duplicates: string[] = [];
 
   for (const entry of urls) {
@@ -214,6 +214,111 @@ export function buildUrlsetXml(
   ).join('\n');
 
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urlsXml}\n</urlset>`;
+}
+
+// ─── E-E-A-T Entity Extension (eea: namespace) ───
+
+/**
+ * Semantic SEO Mandate §2: Custom XML namespace for AI crawler entity binding.
+ * AI bots (Perplexity, SGE) parse custom tags as semantic signals before HTML render.
+ */
+export const EEA_NAMESPACE_URI = "https://cbamvalid.com/ns/eea-v1";
+
+/** Canonical expert entity @id references (must match schema.ts @graph @id values) */
+export const CBAM_EXPERTS = {
+  NEELA_NATARAJ: "https://cbamvalid.com/team/neela-nataraj/#person",
+  BARIS_BAGIRLAR: "https://cbamvalid.com/team/baris-bagirlar/#person",
+} as const;
+
+export interface SitemapExpert {
+  /** @id reference to the Person entity in schema.ts @graph */
+  ref: string;
+  /** Role of the expert for this URL, e.g. "academic-oversight" */
+  role: string;
+}
+
+export interface EntityUrl {
+  url: string;
+  lastmod: string;
+  /** E-E-A-T experts who verified this URL's content */
+  verifiedBy?: SitemapExpert[];
+  /** Regulatory reference identifier, e.g. "EU-2023/956-Annex-III" */
+  regulatoryRef?: string;
+}
+
+/** XML-escape attribute/text values to prevent malformed XML + injection */
+function xmlEscape(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+/** Build the <eea:verifiedBy>/<eea:regulatoryRef> block for one URL entry */
+function buildEntityBlock(entry: EntityUrl): string {
+  let block = "";
+  if (entry.verifiedBy && entry.verifiedBy.length > 0) {
+    block += `    <eea:verifiedBy>\n`;
+    for (const expert of entry.verifiedBy) {
+      block += `      <eea:expert ref="${xmlEscape(expert.ref)}" role="${xmlEscape(expert.role)}"/>\n`;
+    }
+    block += `    </eea:verifiedBy>\n`;
+  }
+  if (entry.regulatoryRef) {
+    block += `    <eea:regulatoryRef>${xmlEscape(entry.regulatoryRef)}</eea:regulatoryRef>\n`;
+  }
+  return block;
+}
+
+/**
+ * Semantic SEO Mandate §2: STREAM-BASED urlset with E-E-A-T entity extension.
+ * Emits eea: namespace so AI crawlers can bind each URL to verified expert entities.
+ * O(1) memory — same streaming guarantees as buildUrlsetStream().
+ */
+export function buildEntityUrlsetStream(
+  urls: EntityUrl[],
+  options?: { previousGoodCount?: number },
+): ReadableStream<Uint8Array> | null {
+  if (urls.length === 0) {
+    console.error("[SITEMAP-GUARD] ❌ EMPTY URLSET BLOCKED — §1.4 fail-safe activated.");
+    fireAlarm("EMPTY URLSET DETECTED (entity stream)", `Previous good count: ${options?.previousGoodCount ?? "unknown"}`);
+    return null;
+  }
+
+  const encoder = new TextEncoder();
+  let index = 0;
+
+  return new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (index === 0) {
+        controller.enqueue(encoder.encode(
+          `<?xml version="1.0" encoding="UTF-8"?>\n` +
+          `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n` +
+          `        xmlns:eea="${EEA_NAMESPACE_URI}">\n`
+        ));
+      }
+
+      const chunkSize = 100;
+      const end = Math.min(index + chunkSize, urls.length);
+      let chunk = "";
+
+      for (let i = index; i < end; i++) {
+        const entry = urls[i];
+        const entityBlock = buildEntityBlock(entry);
+        chunk += `  <url>\n    <loc>${xmlEscape(entry.url)}</loc>\n    <lastmod>${safeLastMod(entry.lastmod)}</lastmod>\n${entityBlock}  </url>\n`;
+      }
+
+      controller.enqueue(encoder.encode(chunk));
+      index = end;
+
+      if (index >= urls.length) {
+        controller.enqueue(encoder.encode("</urlset>\n"));
+        controller.close();
+      }
+    },
+  });
 }
 
 /**

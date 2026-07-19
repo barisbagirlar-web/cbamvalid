@@ -122,6 +122,20 @@ async function runSitemapLock() {
     }
 
     // L6: llms.txt & llms-full.txt verification
+    // Semantic SEO §3: authoritative external entity-profile domains (sameAs targets)
+    // are whitelisted for E-E-A-T entity resolution by AI crawlers.
+    const AUTHORITY_DOMAINS = [
+      "https://cbamvalid.com",
+      "https://math.iitb.ac.in",
+      "https://www.iitb.ac.in",
+      "https://www.researchgate.net",
+      "https://www.linkedin.com",
+      "https://www.tarimkon.org",
+      "https://en.wikipedia.org",
+      "https://eur-lex.europa.eu",
+    ];
+    const isAllowedLink = (link) => AUTHORITY_DOMAINS.some(d => link.startsWith(d));
+
     const rootDir = process.cwd();
     const llmsFile = path.join(rootDir, "public", "llms.txt");
     const llmsFullFile = path.join(rootDir, "public", "llms-full.txt");
@@ -129,14 +143,14 @@ async function runSitemapLock() {
     if (!fs.existsSync(llmsFile) || fs.statSync(llmsFile).size === 0) {
       fail("L6: public/llms.txt is missing or empty.");
     } else {
-      // Ensure all links in llms.txt are on canonical domain
+      // Canonical + whitelisted authority entity-profile links only
       const content = fs.readFileSync(llmsFile, "utf8");
-      const nonCanonicalMatches = content.match(/https?:\/\/[^\s\)]+/g) || [];
-      const badLinks = nonCanonicalMatches.filter(link => !link.startsWith("https://cbamvalid.com"));
+      const linkMatches = content.match(/https?:\/\/[^\s\)]+/g) || [];
+      const badLinks = linkMatches.filter(link => !isAllowedLink(link));
       if (badLinks.length > 0) {
-        fail(`L6: Found non-canonical link references inside public/llms.txt:\n  ${badLinks.join("\n  ")}`);
+        fail(`L6: Found non-whitelisted link references inside public/llms.txt:\n  ${badLinks.join("\n  ")}`);
       } else {
-        pass("L6: public/llms.txt exists and contains strictly canonical links.");
+        pass("L6: public/llms.txt exists and contains canonical + authority entity links only.");
       }
     }
 
@@ -144,12 +158,12 @@ async function runSitemapLock() {
       fail("L6: public/llms-full.txt is missing or empty.");
     } else {
       const content = fs.readFileSync(llmsFullFile, "utf8");
-      const nonCanonicalMatches = content.match(/https?:\/\/[^\s\)]+/g) || [];
-      const badLinks = nonCanonicalMatches.filter(link => !link.startsWith("https://cbamvalid.com"));
+      const linkMatches = content.match(/https?:\/\/[^\s\)]+/g) || [];
+      const badLinks = linkMatches.filter(link => !isAllowedLink(link));
       if (badLinks.length > 0) {
-        fail(`L6: Found non-canonical link references inside public/llms-full.txt:\n  ${badLinks.join("\n  ")}`);
+        fail(`L6: Found non-whitelisted link references inside public/llms-full.txt:\n  ${badLinks.join("\n  ")}`);
       } else {
-        pass("L6: public/llms-full.txt exists and contains strictly canonical links.");
+        pass("L6: public/llms-full.txt exists and contains canonical + authority entity links only.");
       }
     }
 
