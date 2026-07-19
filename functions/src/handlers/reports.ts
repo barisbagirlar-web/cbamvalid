@@ -34,7 +34,7 @@ export const sealCbamReport = createCallable(
       caseId: CaseIdSchema,
       entitlementId: z.string().trim().min(1).max(128),
       requestId: z.string().uuid(),
-      correctionReason: z.string().trim().min(10).max(2000).optional(),
+      correctionReason: z.string().trim().min(10).max(2000).nullable().optional(),
     }),
   },
   async ({ caseId, entitlementId, requestId, correctionReason }, { auth }) => {
@@ -52,7 +52,7 @@ export const sealCbamReport = createCallable(
         entitlementId,
         requestId,
         inputData: cbamCase.data,
-        correctionReason,
+        correctionReason: correctionReason || undefined,
       });
       return { report, status: "success" };
     } catch (error) {
@@ -66,8 +66,28 @@ export const getCbamReports = createCallable({}, async (_, { auth }) => {
     .where("uid", "==", auth.uid)
     .where("status", "==", "SEALED")
     .get();
+  
+  // Resolve legacy cases to match installationName
+  const casesSnapshot = await adminDb.collection("cbam_cases")
+    .where("uid", "==", auth.uid)
+    .get();
+  const caseMap: Record<string, string> = {};
+  for (const doc of casesSnapshot.docs) {
+    const data = doc.data();
+    if (data?.data?.installation?.name?.value) {
+      caseMap[doc.id] = data.data.installation.name.value;
+    }
+  }
+
   const reports = snapshot.docs
-    .map((document) => toSealedReportView(document.data()))
+    .map((document) => {
+      const data = document.data();
+      const view = toSealedReportView(data);
+      if (!view.installationName && view.caseId) {
+        view.installationName = caseMap[view.caseId] || "Sealed dossier";
+      }
+      return view;
+    })
     .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
   return { reports, status: "success" };
 });
@@ -77,9 +97,17 @@ export const getCbamReport = createCallable(
   async ({ reportId }, { auth }) => {
     const document = await adminDb.collection("cbam_reports").doc(reportId).get();
     if (!document.exists) throw new HttpsError("not-found", "Report not found or access denied.");
-    const report = toSealedReportView(document.data());
-    if (report.uid !== auth.uid) throw new HttpsError("not-found", "Report not found or access denied.");
-    return { report, status: "success" };
+    const data = document.data();
+    if (data?.uid !== auth.uid) throw new HttpsError("not-found", "Report not found or access denied.");
+    const view = toSealedReportView(data);
+    if (!view.installationName && view.caseId) {
+      const caseDoc = await adminDb.collection("cbam_cases").doc(view.caseId).get();
+      if (caseDoc.exists) {
+        const caseData = caseDoc.data();
+        view.installationName = caseData?.data?.installation?.name?.value || "Sealed dossier";
+      }
+    }
+    return { report: view, status: "success" };
   }
 );
 

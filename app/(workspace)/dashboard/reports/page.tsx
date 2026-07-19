@@ -74,7 +74,7 @@ export default function DashboardReportsHistoryPage() {
               {reports.map((r: any) => (
                 <div key={r.reportId} className="flex items-center justify-between py-4 first:pt-0 last:pb-0 gap-4">
                   <div className="space-y-1">
-                    <p className="font-semibold text-sm">{r.calculation?.inputs?.installationName}</p>
+                    <p className="font-semibold text-sm">{r.installationName || r.calculation?.inputs?.installationName || "Sealed dossier"}</p>
                     <div className="flex items-center gap-4 text-xs text-muted font-mono">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3.5 h-3.5" strokeWidth={1.75} /> {new Date(r.createdAt).toLocaleDateString()}

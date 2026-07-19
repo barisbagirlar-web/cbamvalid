@@ -85,6 +85,7 @@ export const SealedReportViewSchema = z.object({
     z.literal("REJECTED_EXTERNAL"),
   ]),
   verificationMaterialityRate: z.literal(0.05),
+  installationName: z.string().optional(),
 });
 
 export type SealedReportView = z.infer<typeof SealedReportViewSchema>;

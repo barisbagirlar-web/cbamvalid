@@ -131,7 +131,7 @@ export default function CasesPage() {
                   <div>
                     <p className="font-semibold text-sm">{getCaseDisplayName(cbamCase.data)}</p>
                     <p className="text-xs text-muted mt-1 font-mono">
-                      CN Code: {getPrimaryCnCode(cbamCase.data)} | Updated: {formatCaseUpdatedDate(cbamCase.updatedAt)}
+                      Case ID: {cbamCase.caseId} | CN Code: {getPrimaryCnCode(cbamCase.data)} | Updated: {formatCaseUpdatedDate(cbamCase.updatedAt)}
                     </p>
                     <div className="mt-2 flex items-center gap-2">
                       <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-neutral-soft text-foreground border border-border">

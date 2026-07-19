@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Shield, ArrowRight, CheckCircle2, Globe2 } from "lucide-react";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
-import { generateOrganizationSchema, generateWebSiteSchema, generateWebApplicationSchema, generateFAQSchema } from "@/lib/seo/schema";
+import { generateOrganizationSchema, generateWebSiteSchema, generateWebApplicationSchema, generateFAQSchema, generateEeatProductSchema } from "@/lib/seo/schema";
 
 export const metadata = generateSeoMetadata("/");
 
@@ -10,6 +10,7 @@ export default function HomePage() {
     generateOrganizationSchema(),
     generateWebSiteSchema(),
     generateWebApplicationSchema("Prepare structured exporter evidence, identify documentation gaps, calculate embedded emissions, and generate auditable CBAM preparation dossiers."),
+    generateEeatProductSchema(),
     generateFAQSchema([
       {
         question: "What is a CBAM evidence dossier?",
@@ -177,6 +178,31 @@ export default function HomePage() {
                 <p className="text-muted text-sm leading-relaxed">
                   No. CBAMValid is an independent software service that assists exporters and importers with calculations and reporting preparation.
                 </p>
+              </div>
+            </div>
+          </div>
+        </section>
+        {/* Academic Oversight & Expert Review */}
+        <section className="border-t border-border bg-neutral-soft py-20">
+          <div className="max-w-4xl mx-auto px-6">
+            <div className="bg-surface border border-border rounded-2xl p-8 md:p-10 flex flex-col md:flex-row gap-8 items-center shadow-lg">
+              <div className="w-20 h-20 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center font-bold text-accent text-3xl font-serif shrink-0 shadow-inner">
+                IIT
+              </div>
+              <div className="space-y-4 text-left">
+                <div className="inline-flex items-center space-x-2 border border-accent/20 bg-accent-soft px-3 py-1 rounded-full text-xs font-semibold tracking-wider text-accent uppercase">
+                  Academic Oversight & Expert Review
+                </div>
+                <h3 className="text-2xl font-bold font-serif text-foreground">Rigorous Mathematical Integrity</h3>
+                <p className="text-sm text-muted leading-relaxed">
+                  Our embedded emissions calculation engines, allocation methodology, and compliance logic are reviewed for compliance with EU CBAM mathematical rules.
+                </p>
+                <div className="pt-4 border-t border-border/50">
+                  <p className="font-bold text-foreground text-base">Prof. Dr. Neela Nataraj</p>
+                  <p className="text-xs text-muted">
+                    Department of Mathematics · Indian Institute of Technology Bombay (IIT Bombay)
+                  </p>
+                </div>
               </div>
             </div>
           </div>

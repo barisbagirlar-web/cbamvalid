@@ -422,6 +422,7 @@ export async function sealReport(params: {
       kmsAlgorithm: signature.algorithm,
       signatureBase64: signature.signatureBase64,
       storage: Object.fromEntries(storageEntries.map((entry) => [entry.path.split("/").at(-1) || entry.path, entry])),
+      installationName: caseData.installation.name.value || "Sealed dossier",
     };
 
     let publicVerificationToken: string | undefined;
@@ -467,6 +468,15 @@ export async function sealReport(params: {
           adminDb.collection("cbam_reports")
             .where("caseId", "==", params.caseId)
         );
+        await consumeEntitlement(transaction, {
+          entitlementId: params.entitlementId,
+          uid: params.uid,
+          reportId: identity.reportId,
+          caseId: params.caseId,
+          reportHash: documentHash,
+          version: releaseVersion,
+          correctionReason: params.correctionReason,
+        });
         for (const doc of prevReports.docs) {
           if (doc.id !== identity.reportId) {
             transaction.update(doc.ref, {
@@ -475,17 +485,17 @@ export async function sealReport(params: {
             });
           }
         }
+      } else {
+        await consumeEntitlement(transaction, {
+          entitlementId: params.entitlementId,
+          uid: params.uid,
+          reportId: identity.reportId,
+          caseId: params.caseId,
+          reportHash: documentHash,
+          version: releaseVersion,
+          correctionReason: params.correctionReason,
+        });
       }
-
-      await consumeEntitlement(transaction, {
-        entitlementId: params.entitlementId,
-        uid: params.uid,
-        reportId: identity.reportId,
-        caseId: params.caseId,
-        reportHash: documentHash,
-        version: releaseVersion,
-        correctionReason: params.correctionReason,
-      });
       transaction.create(sealRef, {
         valid: true,
         documentHash,

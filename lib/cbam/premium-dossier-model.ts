@@ -179,6 +179,7 @@ export const ReadinessAssessmentSchema = z.object({
   recommendedDecision: z.enum([
     "DO_NOT_SUBMIT", "REMEDIATE_BEFORE_REVIEW", "READY_TO_HAND_OVER",
   ]),
+  canSeal: z.boolean(),
   decisionReasonCodes: z.array(z.string().min(1)),
 });
 export type ReadinessAssessment = z.infer<typeof ReadinessAssessmentSchema>;

@@ -52,29 +52,40 @@ export function calculateEntryHash(entry: Omit<LedgerEntry, "entryHash">): strin
  */
 export async function writeLedgerEntry(
   dbTransaction: admin.firestore.Transaction,
-  entryParams: Omit<LedgerEntry, "entryId" | "createdAt" | "previousEntryHash" | "entryHash">
+  entryParams: Omit<LedgerEntry, "entryId" | "createdAt" | "previousEntryHash" | "entryHash">,
+  prefetched?: {
+    existingEntry?: LedgerEntry | null;
+    previousEntryHash?: string;
+  }
 ): Promise<LedgerEntry> {
   const ledgerCollection = adminDb.collection("commerce_ledger");
 
-  // 1. Check if an entry with this idempotency key already exists to prevent duplicate operations
-  const existingQuery = await dbTransaction.get(
-    ledgerCollection.where("idempotencyKey", "==", entryParams.idempotencyKey).limit(1)
-  );
-
-  if (!existingQuery.empty) {
-    const doc = existingQuery.docs[0];
-    return doc.data() as LedgerEntry;
+  let existingEntry = prefetched?.existingEntry;
+  if (existingEntry === undefined) {
+    const existingQuery = await dbTransaction.get(
+      ledgerCollection.where("idempotencyKey", "==", entryParams.idempotencyKey).limit(1)
+    );
+    if (!existingQuery.empty) {
+      existingEntry = existingQuery.docs[0].data() as LedgerEntry;
+    } else {
+      existingEntry = null;
+    }
   }
 
-  // 2. Fetch the latest ledger entry to construct the chain link
-  const latestSnapshot = await dbTransaction.get(
-    ledgerCollection.orderBy("createdAt", "desc").limit(1)
-  );
+  if (existingEntry) {
+    return existingEntry;
+  }
 
-  let previousEntryHash = "";
-  if (!latestSnapshot.empty) {
-    const latestDoc = latestSnapshot.docs[0].data() as LedgerEntry;
-    previousEntryHash = latestDoc.entryHash;
+  let previousEntryHash = prefetched?.previousEntryHash;
+  if (previousEntryHash === undefined) {
+    const latestSnapshot = await dbTransaction.get(
+      ledgerCollection.orderBy("createdAt", "desc").limit(1)
+    );
+    previousEntryHash = "";
+    if (!latestSnapshot.empty) {
+      const latestDoc = latestSnapshot.docs[0].data() as LedgerEntry;
+      previousEntryHash = latestDoc.entryHash;
+    }
   }
 
   // 3. Construct the new entry
