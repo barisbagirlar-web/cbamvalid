@@ -34,7 +34,7 @@ export const sealCbamReport = createCallable(
       caseId: CaseIdSchema,
       entitlementId: z.string().trim().min(1).max(128),
       requestId: z.string().uuid(),
-      correctionReason: z.string().trim().min(10).max(2000).optional(),
+      correctionReason: z.string().trim().min(10).max(2000).nullable().optional(),
     }),
   },
   async ({ caseId, entitlementId, requestId, correctionReason }, { auth }) => {
@@ -52,7 +52,7 @@ export const sealCbamReport = createCallable(
         entitlementId,
         requestId,
         inputData: cbamCase.data,
-        correctionReason,
+        correctionReason: correctionReason || undefined,
       });
       return { report, status: "success" };
     } catch (error) {
