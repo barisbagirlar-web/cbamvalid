@@ -183,11 +183,11 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
                 <ShieldCheck className="h-8 w-8 text-accent" strokeWidth={1.7} aria-hidden="true" />
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Sealed verifier-preparation package</p>
-                  <h1 className="mt-1 font-serif text-3xl font-bold">Release {report.releaseVersion} · 27 controlled components</h1>
+                  <h1 className="mt-1 font-serif text-3xl font-bold">Release {report.releaseVersion} · {report.packageTopLevelComponentCount} controlled components</h1>
                 </div>
               </div>
               <p className="mt-5 max-w-3xl text-sm leading-relaxed text-muted">
-                This package supports preparation for independent accredited verification. It is not a verification opinion, accreditation decision, customs decision, CBAM Registry submission or acceptance guarantee.
+                This package supports preparation for independent verification. It is not a verification opinion, accreditation decision, customs decision, CBAM Registry submission or acceptance guarantee.
               </p>
             </div>
             <div className={`rounded-xl border px-4 py-3 ${ready ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-red-300 bg-red-50 text-red-900"}`}>

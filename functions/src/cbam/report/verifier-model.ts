@@ -240,7 +240,7 @@ export function buildVerifierPackageModel(params: {
     automatedReadiness,
     independentVerifierStatus: "NOT_REVIEWED",
     disclaimer:
-      "This package supports preparation for independent accredited verification. It is not a verification opinion, accreditation decision, customs decision, CBAM Registry submission or acceptance guarantee.",
+      "This package supports preparation for independent verification. It is not a verification opinion, accreditation decision, customs decision, CBAM Registry submission or acceptance guarantee.",
     ruleset: {
       version: ruleset.version,
       name: ruleset.name,

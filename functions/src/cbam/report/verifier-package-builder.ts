@@ -9,6 +9,14 @@ import { buildProfessionalPdf, type PdfSection } from "./professional-pdf";
 import { buildVerifierPackageModel, type VerifierPackageModel } from "./verifier-model";
 import { buildVerifierWorkbook } from "./xlsx-builder";
 
+// V5 engines imports
+import { runEvidenceSufficiency } from "../validation/evidence-sufficiency";
+import { buildVerificationCrosswalk } from "../registry/verification-template-2025-2546";
+import { generateFindingsAndActions } from "../validation/findings-engine";
+import { assessReadiness } from "../validation/readiness-score";
+import { buildPremiumDossierPdf } from "./premium-dossier-pdf";
+import type { PremiumDossierViewModel } from "./premium-dossier-schema";
+
 export const REQUIRED_TOP_LEVEL_COMPONENTS = [
   "Product and Scope Definition.pdf",
   "CN Code Classification.pdf",
@@ -39,12 +47,38 @@ export const REQUIRED_TOP_LEVEL_COMPONENTS = [
   "Supporting_Evidence/",
 ] as const;
 
+export const REQUIRED_TOP_LEVEL_COMPONENTS_V5 = [
+  "Product Scope Assessment.pdf",
+  "CN Code Reasoning.pdf",
+  "Required Data Checklist.pdf",
+  "Installation Monitoring Plan.pdf",
+  "Production Process Map.pdf",
+  "System Boundary Register.pdf",
+  "Source Stream Register.csv",
+  "Emission Source Register.csv",
+  "Measurement and Meter Register.csv",
+  "Activity Data Ledger.csv",
+  "Evidence Register.csv",
+  "Field-to-Evidence Matrix.csv",
+  "Methodology Decision Log.pdf",
+  "Embedded Emissions Calculation Annex.pdf",
+  "Operator Emissions Report.pdf",
+  "Misstatement and Non-Conformity Register.csv",
+  "Corrective Action Log.csv",
+  "O3CI Field Mapping.csv",
+  "Calculation Trace.json",
+  "Verifier Workspace.xlsx",
+  "Data Integrity Manifest.json",
+  "Manifest Signature.sig",
+  "Supporting_Evidence/",
+] as const;
+
 export type EvidenceBinary = { evidenceId: string; fileName: string; bytes: Buffer };
 export type PackageArtifact = { path: string; bytes: Buffer; mediaType: string };
 
 type ManifestFile = { path: string; sha256: string; sizeBytes: number; mediaType: string };
 export type DataIntegrityManifest = {
-  schemaVersion: "CBAMVALID-DOSSIER-4.0";
+  schemaVersion: "CBAMVALID-DOSSIER-4.0" | "CBAMVALID-DOSSIER-5.0";
   reportId: string;
   caseId: string;
   releaseVersion: number;
@@ -53,7 +87,7 @@ export type DataIntegrityManifest = {
   engineVersion: string;
   calculationRootHash: string;
   legalSourceRegistryHash: string;
-  componentContract: { requiredTopLevelComponents: readonly string[]; requiredCount: 27 };
+  componentContract: { requiredTopLevelComponents: readonly string[]; requiredCount: number };
   files: ManifestFile[];
   evidenceCount: number;
   signatureScope: "EXACT_UTF8_BYTES_OF_THIS_MANIFEST";
@@ -191,6 +225,103 @@ function buildPdfArtifacts(params: {
     item.evidenceIds.join(" | "),
   ]);
 
+  if (releaseVersion >= 5) {
+    // V5 PDFs
+    const sufficiency = runEvidenceSufficiency(caseData);
+    const crosswalk = buildVerificationCrosswalk(caseData);
+    const { findings, correctiveActions } = generateFindingsAndActions(caseData);
+    const readiness = assessReadiness({ caseData, isDraft: false });
+
+    const dossierModel: PremiumDossierViewModel = {
+      schemaVersion: "CBAMVALID-DOSSIER-5.0",
+      reportId: params.reportId,
+      caseId: params.caseData.caseId || "",
+      releaseVersion: params.releaseVersion,
+      generatedAt: params.generatedAt,
+      documentTitle: "CBAMValid Verification Readiness & Evidence Assurance Dossier",
+      legalBoundary: "This operator-prepared package supports preparation for independent CBAM review. It is not an independent verification opinion, a reasonable-assurance conclusion, a customs decision, an EU approval, a CBAM Registry submission, or a guarantee of acceptance.",
+      identity: {
+        importer: String(params.caseData.importerIdentity.legalName.value || ""),
+        eori: String(params.caseData.importerIdentity.eoriNumber.value || ""),
+        exporterOperator: String(params.caseData.exporterIdentity.legalName.value || ""),
+        installation: String(params.caseData.installation.name.value || ""),
+        country: String(params.caseData.installation.country.value || ""),
+        productionRoute: String(params.caseData.installation.productionRoute.value || ""),
+        reportingPeriod: `${params.caseData.reportingPeriod.year.value}-${params.caseData.reportingPeriod.quarter.value || "ANNUAL"}`,
+        systemBoundary: params.caseData.installation.systemBoundaries || "",
+      },
+      scope: {
+        sector: params.caseData.goods[0]?.sector || "UNKNOWN",
+        processes: params.caseData.goods.map(g => g.sector),
+        cnCodes: params.caseData.goods.map(g => String(g.cnCode.value || "")),
+      },
+      totals: model.totals,
+      goods: model.goods as any,
+      precursors: params.caseData.precursors.map(p => ({
+        name: String(p.name.value || ""),
+        quantity: String(p.quantity.value || ""),
+        directEmissions: String(p.directEmissions.value || ""),
+        indirectEmissions: String(p.indirectEmissions.value || ""),
+        countryOfOrigin: String(p.countryOfOrigin.value || ""),
+      })),
+      readiness,
+      findings,
+      correctiveActions,
+      evidenceSufficiency: sufficiency,
+      requirementCrosswalk: crosswalk,
+      calculationTrace: params.calculation.trace,
+      manifestSummary: {
+        totalFiles: 23,
+        manifestHash: "",
+        packageHash: "",
+      },
+    };
+
+    return [
+      pdfFile("Product Scope Assessment.pdf", "Product Scope Assessment", "Controlled scope, parties, reporting period and goods population", [
+        { heading: "Controlled identity", table: identityTable(model) },
+        { heading: "Goods population", table: goodsTable(model) },
+        { heading: "Scope conclusion", callout: { label: "Automated readiness", value: model.automatedReadiness } },
+        { heading: "Legal basis", table: legalSourceTable(model) },
+      ]),
+      pdfFile("CN Code Reasoning.pdf", "CN Code Reasoning", "CN-coded goods, sector mapping and customs-evidence traceability", [
+        { heading: "Classification register", table: { headers: ["Good", "CN code", "Sector", "CN evidence", "Production evidence"], widths: [15, 28, 45, 46, 46], rows: caseData.goods.map((good, index) => [index + 1, good.cnCode.value, good.sector, good.cnCode.evidenceId || "MISSING", good.productionVolume.evidenceId || "MISSING"]) } },
+        { heading: "Classification boundary", paragraphs: ["This document records the classification supplied in the sealed case. It does not replace a binding customs classification decision. Any disputed or uncertain CN code remains subject to customs review."] },
+        { heading: "Definitive legal sources", table: legalSourceTable(model) },
+      ]),
+      pdfFile("Required Data Checklist.pdf", "Required Data Checklist", "Evidence request and gap-closure schedule for independent verification", [
+        { heading: "Monitoring-plan requirements", table: monitoringTable(model) },
+        { heading: "Automated control findings", table: qualityTable(model) },
+        { heading: "Evidence coverage", table: { headers: ["Measure", "Result"], widths: [75, 105], rows: [["Registered evidence files", model.evidenceSummary.totalEvidenceFiles], ["Approved and malware-clean files", model.evidenceSummary.approvedCleanEvidenceFiles], ["Linked input fields", model.evidenceSummary.linkedInputCount], ["Linked calculation nodes", model.evidenceSummary.linkedCalculationCount], ["Coverage rate", `${model.evidenceSummary.coverageRate}%`], ["Duplicate hashes", model.evidenceSummary.duplicateHashCount]] } },
+      ]),
+      pdfFile("Installation Monitoring Plan.pdf", "Installation Monitoring Plan", "Definitive-period monitoring plan coverage and control-system evidence", [
+        { heading: "Installation and boundary", paragraphs: [model.identity.systemBoundary, `Production route: ${model.identity.productionRoute}`] },
+        { heading: "Minimum monitoring-plan elements", table: monitoringTable(model) },
+        { heading: "Input hierarchy", table: { headers: ["Input", "Value", "Unit", "Source", "Evidence", "Method"], widths: [35, 24, 22, 25, 40, 34], rows: [["Direct emissions", caseData.directEmissions.value, caseData.directEmissions.canonicalUnit, caseData.directEmissions.sourceType, caseData.directEmissions.evidenceId || "MISSING", caseData.directEmissions.measurementMethod || "NOT DOCUMENTED"], ["Electricity", caseData.electricityConsumed.value, caseData.electricityConsumed.canonicalUnit, caseData.electricityConsumed.sourceType, caseData.electricityConsumed.evidenceId || "MISSING", caseData.electricityConsumed.measurementMethod || "NOT DOCUMENTED"], ["Grid emission factor", caseData.gridEmissionFactor.value, caseData.gridEmissionFactor.canonicalUnit, caseData.gridEmissionFactor.sourceType, caseData.gridEmissionFactor.evidenceId || "MISSING", caseData.gridEmissionFactor.measurementMethod || "NOT DOCUMENTED"]] } },
+      ]),
+      pdfFile("Production Process Map.pdf", "Production Process Map", "Controlled flow from source data to verifier review", [
+        { heading: "End-to-end process", table: { headers: ["Stage", "Controlled activity", "Evidence / output"], widths: [20, 90, 70], rows: [["1", "Identify installation, operator, CN-coded goods and reporting period", "CASE and GOODS registers"], ["2", "Define production processes, source streams, boundaries and functional units", "Monitoring Plan and System Boundary"], ["3", "Capture direct, electricity and precursor data with approved evidence", "INPUTS, PRECURSORS and EVIDENCE"], ["4", "Apply unit conversions, allocation and embedded-emissions formulae", "CALCULATION_TRACE and root hash"], ["5", "Run evidence, methodology, reconciliation and integrity controls", "QUALITY_CONTROLS and MONITORING_PLAN"], ["6", "Apply per-good 5% materiality reference for verifier planning", "GOODS materiality columns"], ["7", "Freeze, hash, sign and commit immutable package", "Manifest, KMS signature and package hash"], ["8", "Independent accredited verifier performs review and records opinion", "VERIFIER_SIGN_OFF — initially NOT_REVIEWED"]] } },
+        { heading: "Production-route context", paragraphs: model.sectorMethodologies.map((sector) => `${sector.displayName}: ${sector.defaultBoundaries}`) },
+      ]),
+      pdfFile("System Boundary Register.pdf", "System Boundary Register", "Installation boundary, sector methodology and included processes", [
+        { heading: "Declared system boundary", callout: { label: "Boundary", value: model.identity.systemBoundary } },
+        { heading: "Sector methodology", table: { headers: ["Sector", "Legal status", "Boundary", "Verification focus"], widths: [30, 24, 66, 60], rows: model.sectorMethodologies.map((sector) => [sector.displayName, sector.legalStatus, sector.defaultBoundaries, sector.verificationFocus.join("; ")]) } },
+        { heading: "Boundary limitation", paragraphs: ["The sealed boundary is the operator-declared and evidence-linked preparation boundary. The independent verifier remains responsible for confirming conformity with the applicable sector-specific legal boundary."] },
+      ]),
+      pdfFile("Methodology Decision Log.pdf", "Methodology Decision Log", "Selected methods, rejected alternatives, legal basis and evidence", [
+        { heading: "Decision register", table: { headers: ["Topic", "Selected method", "Reason", "Legal / technical basis", "Review", "Evidence"], widths: [26, 35, 38, 43, 18, 20], rows: methodRows.length ? methodRows : [["NO DECISION", "—", "No methodology decision recorded", "—", "GAP", "—"]] } },
+        { heading: "Definitive legal basis", table: legalSourceTable(model) },
+        { heading: "Review boundary", paragraphs: ["An ACCEPTED status means accepted within the operator preparation workflow. It is not an accredited verifier acceptance or legal approval."] },
+      ]),
+      pdfFile("Embedded Emissions Calculation Annex.pdf", "Embedded Emissions Calculation Annex", "Closed-form formula trace, units, precision and cryptographic provenance", [
+        { heading: "Engine identity", table: { headers: ["Control", "Value"], widths: [48, 132], rows: [["Ruleset", calculation.ruleset], ["Engine version", calculation.engineVersion], ["Calculation root hash", calculation.calculationRootHash], ["Allocation share total", calculation.allocationShareTotal], ["Allocation reconciliation delta", calculation.allocationReconciliationDelta]] } },
+        { heading: "Formula trace", table: { headers: ["Formula", "Output", "Unit", "Calculation hash", "Warnings / assumptions"], widths: [43, 22, 20, 55, 40], rows: calculation.trace.map((item) => [item.formulaId, item.outputValue, item.outputUnit, item.calculationHash, [...item.warnings, ...item.assumptions].join("; ") || "None"] ) } },
+        { heading: "Per-good reconciliation", table: goodsTable(model) },
+      ]),
+      artifact("Operator Emissions Report.pdf", buildPremiumDossierPdf(dossierModel), "application/pdf"),
+    ];
+  }
+
   return [
     pdfFile("Product and Scope Definition.pdf", "Product and Scope Definition", "Controlled scope, parties, reporting period and goods population", [
       { heading: "Controlled identity", table: identityTable(model) },
@@ -232,7 +363,7 @@ function buildPdfArtifacts(params: {
       { heading: "Formula trace", table: { headers: ["Formula", "Output", "Unit", "Calculation hash", "Warnings / assumptions"], widths: [43, 22, 20, 55, 40], rows: calculation.trace.map((item) => [item.formulaId, item.outputValue, item.outputUnit, item.calculationHash, [...item.warnings, ...item.assumptions].join("; ") || "None"] ) } },
       { heading: "Per-good reconciliation", table: goodsTable(model) },
     ]),
-    pdfFile("Operator Emissions Report.pdf", "Operator Emissions Report", "Definitive-period emissions statement prepared for independent accredited verification", [
+    pdfFile("Operator Emissions Report.pdf", "Operator Emissions Report", "Definitive-period emissions statement prepared for independent verification review", [
       { heading: "Operator and installation", table: identityTable(model) },
       { heading: "Installation totals", table: { headers: ["Metric", "Value", "Unit"], widths: [90, 45, 45], rows: [["Installation direct emissions", model.totals.installationDirectEmissions, "tCO2e"], ["Electricity indirect emissions", model.totals.electricityIndirectEmissions, "tCO2e"], ["Precursor direct emissions", model.totals.precursorDirectEmissions, "tCO2e"], ["Precursor indirect emissions", model.totals.precursorIndirectEmissions, "tCO2e"], ["Total direct emissions", model.totals.totalDirectEmissions, "tCO2e"], ["Total indirect emissions", model.totals.totalIndirectEmissions, "tCO2e"], ["Total embedded emissions", model.totals.totalEmbeddedEmissions, "tCO2e"], ["Aggregate production", model.totals.productionVolume, "t"], ["Aggregate specific embedded emissions", model.totals.aggregateSpecificEmbeddedEmissions, "tCO2e/t"]] } },
       { heading: "Per-good emissions and materiality", table: goodsTable(model) },
@@ -263,6 +394,22 @@ function buildCsvArtifacts(params: {
   model: VerifierPackageModel;
 }): PackageArtifact[] {
   const { caseData, calculation, controls, model } = params;
+
+  if (model.releaseVersion >= 5) {
+    // V5 CSVs
+    return [
+      artifact("Source Stream Register.csv", csv([["Stream ID", "Name", "Country", "Quantity", "Quantity unit", "Direct tCO2e", "Indirect tCO2e", "Quantity evidence", "Direct evidence", "Indirect evidence"], ...caseData.precursors.map((item, index) => [`P${index + 1}`, item.name.value, item.countryOfOrigin.value, item.quantity.value, item.quantity.canonicalUnit, item.directEmissions.value, item.indirectEmissions.value, item.quantity.evidenceId, item.directEmissions.evidenceId, item.indirectEmissions.evidenceId])]), "text/csv"),
+      artifact("Emission Source Register.csv", csv([["Source", "Value", "Unit", "Source type", "Evidence ID", "Measurement method", "Responsible person"], ["Direct emissions", caseData.directEmissions.value, caseData.directEmissions.canonicalUnit, caseData.directEmissions.sourceType, caseData.directEmissions.evidenceId, caseData.directEmissions.measurementMethod, caseData.directEmissions.responsiblePerson], ["Electricity", caseData.electricityConsumed.value, caseData.electricityConsumed.canonicalUnit, caseData.electricityConsumed.sourceType, caseData.electricityConsumed.evidenceId, caseData.electricityConsumed.measurementMethod, caseData.electricityConsumed.responsiblePerson], ["Grid factor", caseData.gridEmissionFactor.value, caseData.gridEmissionFactor.canonicalUnit, caseData.gridEmissionFactor.sourceType, caseData.gridEmissionFactor.evidenceId, caseData.gridEmissionFactor.measurementMethod, caseData.gridEmissionFactor.responsiblePerson]]), "text/csv"),
+      artifact("Measurement and Meter Register.csv", csv([["Input", "Measurement method", "Document reference", "Responsible person", "Evidence ID"], ["Direct emissions", caseData.directEmissions.measurementMethod, caseData.directEmissions.documentReference, caseData.directEmissions.responsiblePerson, caseData.directEmissions.evidenceId], ["Electricity", caseData.electricityConsumed.measurementMethod, caseData.electricityConsumed.documentReference, caseData.electricityConsumed.responsiblePerson, caseData.electricityConsumed.evidenceId], ["Grid emission factor", caseData.gridEmissionFactor.measurementMethod, caseData.gridEmissionFactor.documentReference, caseData.gridEmissionFactor.responsiblePerson, caseData.gridEmissionFactor.evidenceId]]), "text/csv"),
+      artifact("Activity Data Ledger.csv", csv([["Good", "CN", "Sector", "Production t", "Allocation share", "Allocated direct tCO2e", "Allocated indirect tCO2e", "Allocated precursor tCO2e", "Allocated embedded tCO2e", "Specific tCO2e/t", "5% materiality tCO2e/t", "Trace ID"], ...model.goods.map((good) => { const result = calculation.goods[good.goodIndex - 1]; return [good.goodIndex, good.cnCode, good.sector, good.productionVolume, good.allocationShare, result.allocatedDirectEmissions, result.allocatedIndirectEmissions, result.allocatedPrecursorEmissions, good.allocatedEmbeddedEmissions, good.specificEmbeddedEmissions, good.materialityThresholdSpecific, good.traceCalculationId]; })]), "text/csv"),
+      artifact("Evidence Register.csv", csv([["Evidence ID", "Type", "File", "Storage path", "Issuer", "Issue date", "Reporting period", "SHA-256", "Bytes", "Review", "Support", "Malware", "Confidentiality", "Reviewer notes"], ...caseData.evidenceRegister.map((item) => [item.evidenceId, item.documentType, item.fileName, item.storagePath, item.issuer, item.issueDate, item.reportingPeriod, item.fileHash, item.sizeBytes, item.reviewStatus, item.supportStatus, item.malwareScanStatus, item.confidentiality, item.reviewerNotes])]), "text/csv"),
+      artifact("Field-to-Evidence Matrix.csv", csv([["Evidence ID", "Linked input", "Linked calculations", "Review", "Support", "Malware"], ...caseData.evidenceRegister.flatMap((item) => item.linkedInputs.map((input) => [item.evidenceId, input, item.linkedCalculations.join(" | "), item.reviewStatus, item.supportStatus, item.malwareScanStatus]))]), "text/csv"),
+      artifact("Misstatement and Non-Conformity Register.csv", csv([["Rule", "Issue", "Status", "Message", "Materiality reference"], ...controls.filter((item) => item.status !== "PASS" && item.status !== "NOT_APPLICABLE").map((item) => [item.ruleId, item.name, item.status, item.message, `${model.ruleset.materialityRate}% per-good specific emissions plus expert judgement`])]), "text/csv"),
+      artifact("Corrective Action Log.csv", csv([["Rule", "Remediation code", "Required action", "State", "Responsible party", "Target date", "Closure evidence"], ...controls.filter((item) => item.status === "BLOCKER" || item.status === "WARNING").map((item) => [item.ruleId, item.remediationCode, item.message, "OPEN", "OPERATOR", "", ""])]), "text/csv"),
+      artifact("O3CI Field Mapping.csv", csv([["Dossier field", "O3CI concept", "Value / reference"], ["caseId", "CASE_IDENTIFIER", caseData.caseId], ["reportingPeriod", "REPORTING_PERIOD", model.identity.reportingPeriod], ["installation", "INSTALLATION", model.identity.installation], ["goods[].cnCode", "GOODS_CLASSIFICATION", model.goods.map((item) => item.cnCode).join(" | ")], ["totalEmbeddedEmissions", "TOTAL_EMBEDDED_EMISSIONS", model.totals.totalEmbeddedEmissions], ["calculationRootHash", "CALCULATION_PROVENANCE", calculation.calculationRootHash], ["legalSourceRegistryHash", "LEGAL_SOURCE_PROVENANCE", model.ruleset.sourceHash]]), "text/csv"),
+    ];
+  }
+
   return [
     artifact("Source Stream Register.csv", csv([["Stream ID", "Name", "Country", "Quantity", "Quantity unit", "Direct tCO2e", "Indirect tCO2e", "Quantity evidence", "Direct evidence", "Indirect evidence"], ...caseData.precursors.map((item, index) => [`P${index + 1}`, item.name.value, item.countryOfOrigin.value, item.quantity.value, item.quantity.canonicalUnit, item.directEmissions.value, item.indirectEmissions.value, item.quantity.evidenceId, item.directEmissions.evidenceId, item.indirectEmissions.evidenceId])]), "text/csv"),
     artifact("Emission Source Register.csv", csv([["Source", "Value", "Unit", "Source type", "Evidence ID", "Measurement method", "Responsible person"], ["Direct emissions", caseData.directEmissions.value, caseData.directEmissions.canonicalUnit, caseData.directEmissions.sourceType, caseData.directEmissions.evidenceId, caseData.directEmissions.measurementMethod, caseData.directEmissions.responsiblePerson], ["Electricity", caseData.electricityConsumed.value, caseData.electricityConsumed.canonicalUnit, caseData.electricityConsumed.sourceType, caseData.electricityConsumed.evidenceId, caseData.electricityConsumed.measurementMethod, caseData.electricityConsumed.responsiblePerson], ["Grid factor", caseData.gridEmissionFactor.value, caseData.gridEmissionFactor.canonicalUnit, caseData.gridEmissionFactor.sourceType, caseData.gridEmissionFactor.evidenceId, caseData.gridEmissionFactor.measurementMethod, caseData.gridEmissionFactor.responsiblePerson]]), "text/csv"),
@@ -289,6 +436,72 @@ export async function buildUnsignedVerifierArtifacts(params: {
 }): Promise<PackageArtifact[]> {
   const model = buildVerifierPackageModel(params);
   const workbook = await buildVerifierWorkbook({ ...params, model });
+
+  if (params.releaseVersion >= 5) {
+    const suff = runEvidenceSufficiency(params.caseData);
+    const cross = buildVerificationCrosswalk(params.caseData);
+    const { findings, correctiveActions } = generateFindingsAndActions(params.caseData);
+    const read = assessReadiness({ caseData: params.caseData, isDraft: false });
+
+    const dossierModel: PremiumDossierViewModel = {
+      schemaVersion: "CBAMVALID-DOSSIER-5.0",
+      reportId: params.reportId,
+      caseId: params.caseData.caseId || "",
+      releaseVersion: params.releaseVersion,
+      generatedAt: params.generatedAt,
+      documentTitle: "CBAMValid Verification Readiness & Evidence Assurance Dossier",
+      legalBoundary: "This operator-prepared package supports preparation for independent CBAM review. It is not an independent verification opinion, a reasonable-assurance conclusion, a customs decision, an EU approval, a CBAM Registry submission, or a guarantee of acceptance.",
+      identity: {
+        importer: String(params.caseData.importerIdentity.legalName.value || ""),
+        eori: String(params.caseData.importerIdentity.eoriNumber.value || ""),
+        exporterOperator: String(params.caseData.exporterIdentity.legalName.value || ""),
+        installation: String(params.caseData.installation.name.value || ""),
+        country: String(params.caseData.installation.country.value || ""),
+        productionRoute: String(params.caseData.installation.productionRoute.value || ""),
+        reportingPeriod: `${params.caseData.reportingPeriod.year.value}-${params.caseData.reportingPeriod.quarter.value || "ANNUAL"}`,
+        systemBoundary: params.caseData.installation.systemBoundaries || "",
+      },
+      scope: {
+        sector: params.caseData.goods[0]?.sector || "UNKNOWN",
+        processes: params.caseData.goods.map(g => g.sector),
+        cnCodes: params.caseData.goods.map(g => String(g.cnCode.value || "")),
+      },
+      totals: model.totals,
+      goods: model.goods as any,
+      precursors: params.caseData.precursors.map(p => ({
+        name: String(p.name.value || ""),
+        quantity: String(p.quantity.value || ""),
+        directEmissions: String(p.directEmissions.value || ""),
+        indirectEmissions: String(p.indirectEmissions.value || ""),
+        countryOfOrigin: String(p.countryOfOrigin.value || ""),
+      })),
+      readiness: read,
+      findings,
+      correctiveActions,
+      evidenceSufficiency: suff,
+      requirementCrosswalk: cross,
+      calculationTrace: params.calculation.trace,
+      manifestSummary: {
+        totalFiles: 23,
+        manifestHash: "",
+        packageHash: "",
+      },
+    };
+
+    const artifacts = [
+      ...buildPdfArtifacts({ ...params, model }),
+      ...buildCsvArtifacts({ ...params, model }),
+      artifact("Calculation Trace.json", Buffer.from(canonical({ reportId: params.reportId, caseId: params.caseData.caseId, generatedAt: params.generatedAt, verifierModel: model, calculation: params.calculation }), "utf8"), "application/json"),
+      artifact("Verifier Workspace.xlsx", workbook, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+      artifact("Supporting_Evidence/README.txt", Buffer.from(`CBAMValid immutable evidence copies\r\nReport: ${params.reportId}\r\nCase: ${params.caseData.caseId}\r\nEvidence count: ${params.evidenceFiles.length}\r\nEach binary is verified against Evidence Register.csv and Data Integrity Manifest.json.\r\n`, "utf8"), "text/plain"),
+      ...params.evidenceFiles.map((item) => artifact(supportedEvidencePath(item), item.bytes, "application/octet-stream")),
+    ];
+
+    const paths = artifacts.map((item) => item.path);
+    if (new Set(paths).size !== paths.length) throw new Error("PACKAGE_DUPLICATE_PATH");
+    return artifacts;
+  }
+
   const artifacts = [
     ...buildPdfArtifacts({ ...params, model }),
     ...buildCsvArtifacts({ ...params, model }),
@@ -311,8 +524,9 @@ export function buildDataIntegrityManifest(params: {
   generatedAt: string;
   evidenceCount: number;
 }): { manifest: DataIntegrityManifest; bytes: Buffer } {
+  const isV5 = params.releaseVersion >= 5;
   const manifest: DataIntegrityManifest = {
-    schemaVersion: "CBAMVALID-DOSSIER-4.0",
+    schemaVersion: isV5 ? "CBAMVALID-DOSSIER-5.0" : "CBAMVALID-DOSSIER-4.0",
     reportId: params.reportId,
     caseId: params.caseData.caseId || "",
     releaseVersion: params.releaseVersion,
@@ -321,7 +535,10 @@ export function buildDataIntegrityManifest(params: {
     engineVersion: params.calculation.engineVersion,
     calculationRootHash: params.calculation.calculationRootHash,
     legalSourceRegistryHash: DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT,
-    componentContract: { requiredTopLevelComponents: REQUIRED_TOP_LEVEL_COMPONENTS, requiredCount: 27 },
+    componentContract: {
+      requiredTopLevelComponents: isV5 ? REQUIRED_TOP_LEVEL_COMPONENTS_V5 : REQUIRED_TOP_LEVEL_COMPONENTS,
+      requiredCount: isV5 ? 23 : 27,
+    },
     files: params.artifacts.map((item) => ({ path: item.path, sha256: hash(item.bytes), sizeBytes: item.bytes.byteLength, mediaType: item.mediaType })).sort((left, right) => left.path.localeCompare(right.path)),
     evidenceCount: params.evidenceCount,
     signatureScope: "EXACT_UTF8_BYTES_OF_THIS_MANIFEST",
@@ -353,9 +570,14 @@ export async function finalizeVerifierPackage(params: {
     artifact("Data Integrity Manifest.json", params.manifestBytes, "application/json"),
     artifact("Manifest Signature.sig", signatureBuffer, "application/vnd.cbamvalid.kms-signature+json"),
   ];
+  const manifest = JSON.parse(params.manifestBytes.toString("utf8")) as DataIntegrityManifest;
+  const isV5 = manifest.schemaVersion === "CBAMVALID-DOSSIER-5.0";
+
   const topLevel = topLevelComponents(allArtifacts.map((item) => item.path));
-  const expected = [...REQUIRED_TOP_LEVEL_COMPONENTS].sort();
-  if (topLevel.length !== 27 || canonical(topLevel) !== canonical(expected)) {
+  const expected = isV5 ? [...REQUIRED_TOP_LEVEL_COMPONENTS_V5].sort() : [...REQUIRED_TOP_LEVEL_COMPONENTS].sort();
+  const targetCount = isV5 ? 23 : 27;
+
+  if (topLevel.length !== targetCount || canonical(topLevel) !== canonical(expected)) {
     throw new Error(`PACKAGE_COMPONENT_CONTRACT_FAILED:${topLevel.join("|")}`);
   }
 
@@ -368,8 +590,8 @@ export async function finalizeVerifierPackage(params: {
   const reopened = await JSZip.loadAsync(buffer, { checkCRC32: true });
   const reopenedTopLevel = topLevelComponents(Object.keys(reopened.files).filter((path) => !reopened.files[path].dir || path === "Supporting_Evidence/"));
   if (canonical(reopenedTopLevel) !== canonical(expected)) throw new Error("PACKAGE_REOPEN_COMPONENT_CONTRACT_FAILED");
-  const manifest = JSON.parse(params.manifestBytes.toString("utf8")) as DataIntegrityManifest;
-  if (manifest.schemaVersion !== "CBAMVALID-DOSSIER-4.0" || manifest.legalSourceRegistryHash !== DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT) {
+  
+  if (manifest.schemaVersion !== (isV5 ? "CBAMVALID-DOSSIER-5.0" : "CBAMVALID-DOSSIER-4.0") || manifest.legalSourceRegistryHash !== DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT) {
     throw new Error("PACKAGE_MANIFEST_REGULATORY_PROVENANCE_INVALID");
   }
   for (const file of manifest.files) {
