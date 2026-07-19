@@ -94,12 +94,12 @@ export function parseSealedReportView(value: unknown): SealedReportView {
   if (parsed.success) return parsed.data;
   
   // If parsing failed only due to count or status, dynamically fix it for compatibility
-  const raw = value as any;
-  const isV5 = raw && raw.releaseVersion >= 5;
+  const raw = value as Record<string, unknown>;
+  const isV5 = raw && typeof raw.releaseVersion === "number" && raw.releaseVersion >= 5;
   return SealedReportViewSchema.parse({
     ...raw,
     packageTopLevelComponentCount: isV5 ? 23 : 27,
     automatedReadiness: isV5 ? "READY_FOR_VERIFIER_REVIEW" : "READY_FOR_INDEPENDENT_VERIFICATION",
-    independentVerifierStatus: raw.independentVerifierStatus || "NOT_REVIEWED",
+    independentVerifierStatus: (raw.independentVerifierStatus as string) || "NOT_REVIEWED",
   });
 }

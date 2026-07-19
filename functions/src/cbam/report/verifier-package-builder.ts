@@ -256,7 +256,7 @@ function buildPdfArtifacts(params: {
         cnCodes: params.caseData.goods.map(g => String(g.cnCode.value || "")),
       },
       totals: model.totals,
-      goods: model.goods as any,
+      goods: model.goods as unknown as PremiumDossierViewModel["goods"],
       precursors: params.caseData.precursors.map(p => ({
         name: String(p.name.value || ""),
         quantity: String(p.quantity.value || ""),
