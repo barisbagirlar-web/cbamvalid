@@ -12,15 +12,9 @@
  * Route: /widget/cbam-calculator
  */
 
-import { Metadata } from 'next';
-import { siteConfig } from '@/lib/site-config';
-import { CN_CODE_REGISTRY, getCnCodeEntry } from '@/lib/cbam/cn-codes/cn-code-registry';
+"use client";
 
-export const metadata: Metadata = {
-  title: 'CBAM Emissions Calculator Widget',
-  description: 'Embeddable CBAM carbon cost calculator for customs and logistics platforms. Calculate embedded emissions and border tax liability for any CN code.',
-  robots: { index: false, follow: false },
-};
+import { siteConfig } from '@/lib/site-config';
 
 export default function WidgetPage() {
   return (

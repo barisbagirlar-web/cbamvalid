@@ -8,7 +8,7 @@
  * Strategy: Every logistics/finance journalist covering CBAM costs will
  * link to this page as their primary data source.
  *
- * Route: /reports/cbam-financial-impact-:sector-2026
+ * Route: /reports/cbam-financial-impact/:sector-2026 (e.g. /reports/cbam-financial-impact/cement-2026)
  */
 
 import { Metadata } from 'next';
@@ -35,17 +35,20 @@ const SECTOR_DISPLAY: Record<string, string> = {
 const VALID_SECTORS: CbamSectorSlug[] = ['cement', 'steel', 'aluminium', 'fertilisers', 'hydrogen', 'electricity', 'downstream'];
 
 export async function generateStaticParams() {
-  return VALID_SECTORS.map((sector) => ({ sector }));
+  // Params are sector slugs with -2026 suffix for canonical URL stability
+  return VALID_SECTORS.map((sector) => ({ sector: `${sector}-2026` }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { sector } = await params;
-  if (!VALID_SECTORS.includes(sector as CbamSectorSlug)) return { title: 'Report Not Found | CBAMValid', robots: { index: false } };
-  const label = SECTOR_DISPLAY[sector] ?? sector;
+  // Strip -2026 suffix to get actual sector slug
+  const actualSector = sector.replace(/-2026$/, '') as CbamSectorSlug;
+  if (!VALID_SECTORS.includes(actualSector)) return { title: 'Report Not Found | CBAMValid', robots: { index: false } };
+  const label = SECTOR_DISPLAY[actualSector] ?? actualSector;
   return {
     title: `2026 CBAM Financial Impact Report — ${label} Sector | CBAMValid`,
     description: `Data-driven analysis: estimated carbon cost liability for ${label.toLowerCase()} importers under CBAM Regulation 2023/956. EU ETS-based projections per CN code with methodology notes.`,
-    alternates: { canonical: `${siteConfig.canonicalOrigin}/reports/cbam-financial-impact-${sector}-2026` },
+    alternates: { canonical: `${siteConfig.canonicalOrigin}/reports/cbam-financial-impact/${sector}` },
     robots: { index: true, follow: true },
   };
 }
@@ -55,10 +58,11 @@ const EU_ETS_PRICE = 85; // EUR per tCO2e — Q3 2026 average
 
 export default async function FinancialImpactReportPage({ params }: PageProps) {
   const { sector } = await params;
-  if (!VALID_SECTORS.includes(sector as CbamSectorSlug)) notFound();
+  const actualSector = sector.replace(/-2026$/, '') as CbamSectorSlug;
+  if (!VALID_SECTORS.includes(actualSector)) notFound();
 
-  const sectorLabel = SECTOR_DISPLAY[sector] ?? sector;
-  const entries = getCnCodesBySector(sector as CbamSectorSlug);
+  const sectorLabel = SECTOR_DISPLAY[actualSector] ?? actualSector;
+  const entries = getCnCodesBySector(actualSector);
 
   // ─── Financial Impact Calculations ───
   const entryStats = entries.map((e) => {
@@ -84,10 +88,10 @@ export default async function FinancialImpactReportPage({ params }: PageProps) {
   const datasetSchema = {
     '@context': 'https://schema.org',
     '@type': 'Dataset',
-    '@id': `${siteConfig.canonicalOrigin}/reports/cbam-financial-impact-${sector}-2026#dataset`,
+    '@id': `${siteConfig.canonicalOrigin}/reports/cbam-financial-impact/${sector}#dataset`,
     'name': `2026 CBAM Financial Impact — ${sectorLabel} Sector`,
     'description': `Estimated carbon cost liability for ${sectorLabel.toLowerCase()} importers under EU CBAM Regulation 2023/956. Based on ${totalCodes} CN codes with benchmark data from Implementing Regulation (EU) 2023/1773 Annex III.`,
-    'url': `${siteConfig.canonicalOrigin}/reports/cbam-financial-impact-${sector}-2026`,
+    'url': `${siteConfig.canonicalOrigin}/reports/cbam-financial-impact/${sector}`,
     'datePublished': '2026-07-19',
     'dateModified': '2026-07-19',
     'license': 'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32023R0956',
@@ -100,16 +104,16 @@ export default async function FinancialImpactReportPage({ params }: PageProps) {
     'distribution': {
       '@type': 'DataDownload',
       'encodingFormat': 'application/json',
-      'contentUrl': `${siteConfig.canonicalOrigin}/api/reports/financial-impact-${sector}-2026.json`,
+      'contentUrl': `${siteConfig.canonicalOrigin}/api/reports/financial-impact/${sector}.json`,
     },
   };
 
   const jsonLd = [
-    generateEnterpriseGraphSchema(`/reports/cbam-financial-impact-${sector}-2026`),
+    generateEnterpriseGraphSchema(`/reports/cbam-financial-impact/${sector}`),
     generateBreadcrumbSchema([
       { name: 'Home', item: '/' },
       { name: 'Reports', item: '/reports' },
-      { name: `CBAM Financial Impact — ${sectorLabel} 2026`, item: `/reports/cbam-financial-impact-${sector}-2026` },
+      { name: `CBAM Financial Impact — ${sectorLabel} 2026`, item: `/reports/cbam-financial-impact/${sector}` },
     ]),
     datasetSchema,
   ];
@@ -247,7 +251,7 @@ export default async function FinancialImpactReportPage({ params }: PageProps) {
             {VALID_SECTORS.filter(s => s !== sector).map((s) => (
               <Link
                 key={s}
-                href={`/reports/cbam-financial-impact-${s}-2026`}
+                href={`/reports/cbam-financial-impact/${s}-2026`}
                 className='block p-3 bg-surface border border-border rounded-lg hover:border-accent/40 transition-colors text-sm font-medium'
               >
                 {SECTOR_DISPLAY[s] ?? s}

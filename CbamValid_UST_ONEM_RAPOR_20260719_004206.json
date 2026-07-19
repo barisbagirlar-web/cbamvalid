@@ -1,0 +1,23 @@
+{
+  "report_type": "CbamValid-Ust-Onem-Seviyesi",
+  "version": "1.0",
+  "generated_at": "2026-07-19T00:42:16+03:00",
+  "domain": "cbamvalid.com",
+  "dns_source": "1.1.1.1 / 8.8.8.8 (fresh)",
+  "curl_mode": "fresh-connect, no-keepalive",
+  "summary": {
+    "total_checks": 36,
+    "pass": 4,
+    "fail": 16,
+    "warn": 9,
+    "info": 7,
+    "pass_rate": "11%",
+    "verdict": "BLOCKED",
+    "verdict_reason": "16 kritik hata"
+  },
+  "results": [{"test":"PRECHECK_TTFB","status":"INFO","detail":"TTFB=0.312110s"},{"test":"L1a_HSTS_Header","status":"FAIL","detail":"HSTS header yok"},{"test":"L1b_Canonical_Redirect","status":"FAIL","detail":"Non-www 200 dönüyor (301/308 bekleniyor)"},{"test":"L1c_HTTP_to_HTTPS","status":"FAIL","detail":"HTTPS hedef degil: //cbamvalid.com/"},{"test":"L1d_Protocol","status":"INFO","detail":"2"},{"test":"L2a_Sitemap_ContentType","status":"FAIL","detail":"ContentType=content-type: text/plain; charset=utf-8"},{"test":"L2b_XML_Envelope","status":"FAIL","detail":"Ilk satir: Redirecting to https://cbamvalid.com/sitemap.xml, index=0
+0"},{"test":"L2c_Sub_Sitemap_Count","status":"INFO","detail":"0
+0 alt sitemap"},{"test":"L2d_Total_URLs","status":"INFO","detail":"Toplam=0, hatali=0"},{"test":"L2e_URL_Distribution","status":"INFO","detail":"0
+0 sitemap, 0 URL"},{"test":"L3a_Duplicate_URLs","status":"WARN","detail":"URL verisi yok"},{"test":"L3b_Toxic_Sitemaps","status":"FAIL","detail":"8 canli: sitemap-flat.xml=301 sitemap-ai.xml=301 business-ideas.xml=301 business-plan.xml=301 dictionary-categories.xml=301 sitemap-0.xml=301 sitemap-index.xml=301 sitemap_dynamic.xml=301 "},{"test":"L4a_Lastmod_Monoculture","status":"FAIL","detail":"Indeks sitemap'ta lastmod hic yok"},{"test":"L4b_BuildTime_Artifact","status":"PASS","detail":"0 adet .000Z artifact"},{"test":"L4c_Sub_Artifacts","status":"PASS","detail":"Alt sitemap'ler temiz"},{"test":"L5a_LLMS_TXT","status":"FAIL","detail":"HTTP 301"},{"test":"L5b_LLMS_FULL_TXT","status":"WARN","detail":"HTTP 301"},{"test":"L5c_Robots_LLMS_Ref","status":"FAIL","detail":"llms.txt referansi yok"},{"test":"L5d_Robots_TXT","status":"INFO","detail":"HTTP 301, 1 satir"},{"test":"L6a_Meta_Description","status":"FAIL","detail":"Meta description yok"},{"test":"L6b_Canonical_Tag","status":"WARN","detail":"Canonical tag yok"},{"test":"L6c_OpenGraph","status":"WARN","detail":"Eksik OG tag'leri"},{"test":"L6d_Viewport","status":"FAIL","detail":"Viewport meta tag yok"},{"test":"L6e_E-E-A-T_DOM","status":"FAIL","detail":"3 blok da yok"},{"test":"L6f_Schema_Graph","status":"FAIL","detail":"JSON-LD bulunamadi"},{"test":"L6g_Heading_Hierarchy","status":"WARN","detail":"H1=0
+0 (1 olmali)"},{"test":"L6h_Page_Perf","status":"INFO","detail":"HTML=37B, load=0.274142s"},{"test":"L7a_CSP","status":"WARN","detail":"Content-Security-Policy yok"},{"test":"L7b_X_Frame","status":"FAIL","detail":"X-Frame-Options yok"},{"test":"L7c_X_ContentType","status":"FAIL","detail":"X-Content-Type-Options yok"},{"test":"L7d_ReferrerPolicy","status":"WARN","detail":"Referrer-Policy yok"},{"test":"L7e_Compression","status":"WARN","detail":"Content-Encoding yok"},{"test":"L7f_CacheControl","status":"WARN","detail":"Cache-Control yok"},{"test":"L8a_Trailing_Slash","status":"PASS","detail":"Redirect mevcut (/=301, no=/=301)"},{"test":"L8b_404_Page","status":"FAIL","detail":"Beklenmeyen HTTP 301"},{"test":"L9a_URL_Liveness","status":"PASS","detail":"0/0 URL canli"}]
+}

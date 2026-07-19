@@ -1,0 +1,20 @@
+{
+  "report_type": "CbamValid-Ust-Onem-v2",
+  "version": "2.0",
+  "generated_at": "2026-07-19T01:55:49+03:00",
+  "domain": "cbamvalid.com",
+  "canonical_url": "https://cbamvalid.com",
+  "dual_200_detected": 0,
+  "dns": "199.36.158.100",
+  "summary": {
+    "total_checks": 35,
+    "pass": 28,
+    "fail": 1,
+    "warn": 1,
+    "info": 5,
+    "pass_rate": "80%",
+    "verdict": "CONDITIONAL GO",
+    "verdict_reason": "1 minor hata"
+  },
+  "results": [{"test":"PRE_Canonical_Detection","status":"INFO","detail":"Canonical=https://cbamvalid.com, dual_200=0"},{"test":"PRE_Site_Live","status":"PASS","detail":"HTTP 200"},{"test":"PRE_TTFB","status":"INFO","detail":"TTFB=0.540168s"},{"test":"L1_HSTS","status":"PASS","detail":"strict-transport-security: max-age=63072000; includeSubDomains; preload"},{"test":"L1_Canonical_Redirect","status":"PASS","detail":"www 301 -> non-www"},{"test":"L1_HTTP_HTTPS","status":"FAIL","detail":"hedef: //cbamvalid.com/"},{"test":"L2_ContentType","status":"PASS","detail":"content-type: application/xml; charset=utf-8"},{"test":"L2_XML_Envelope","status":"PASS","detail":"XML decl + sitemapindex mevcut"},{"test":"L2_Total_URLs","status":"INFO","detail":"1 URL, 1 alt sitemap"},{"test":"L3_Duplicate_URLs","status":"PASS","detail":"Duplicate yok"},{"test":"L3_Toxic_Sitemaps","status":"PASS","detail":"Tüm toksik dosyalar ölü"},{"test":"L4_Lastmod_Monoculture","status":"PASS","detail":"%33 monokultur"},{"test":"L4_BuildTime_Artifact","status":"PASS","detail":"0 adet .000Z"},{"test":"L4_Sub_Artifacts","status":"PASS","detail":"Alt sitemap'ler temiz"},{"test":"L5_LLMS_TXT","status":"PASS","detail":"HTTP 200, 5652 byte"},{"test":"L5_LLMS_FULL_TXT","status":"PASS","detail":"HTTP 200, 9467 byte"},{"test":"L5_Robots_LLMS_Ref","status":"PASS","detail":"llms.txt referansı var"},{"test":"L6_Title","status":"PASS","detail":"74 karakter"},{"test":"L6_Meta_Desc","status":"PASS","detail":"146 karakter"},{"test":"L6_Canonical_Tag","status":"PASS","detail":"https://cbamvalid.com/"},{"test":"L6_OpenGraph","status":"PASS","detail":"3/3 OG tag'i mevcut"},{"test":"L6_Viewport","status":"PASS","detail":"Viewport meta tag mevcut"},{"test":"L6_Page_Perf","status":"INFO","detail":"HTML=75275B, load=0.549135s"},{"test":"L6_E-E-A-T","status":"PASS","detail":"Author+Disclaimer+Citation var"},{"test":"L6_Schema_Graph","status":"PASS","detail":"@graph+Person+Org+WP+BC"},{"test":"L6_Heading","status":"PASS","detail":"H1=1, H2=1, H3=1"},{"test":"L7_CSP","status":"PASS","detail":"Content-Security-Policy var"},{"test":"L7_X_Frame","status":"PASS","detail":"DENY"},{"test":"L7_X_CTO","status":"PASS","detail":"X-Content-Type-Options var"},{"test":"L7_ReferrerPolicy","status":"PASS","detail":"strict-origin-when-cross-origin"},{"test":"L7_Compression","status":"WARN","detail":"Content-Encoding yok"},{"test":"L7_CacheControl","status":"INFO","detail":"public, s-maxage=3600, stale-while-revalidate=86400"},{"test":"L8_Trailing_Slash","status":"PASS","detail":"Yonlendirme mevcut (/=308, no/=200)"},{"test":"L8_404","status":"PASS","detail":"Ozgun 404 (23378B)"},{"test":"L9_URL_Liveness","status":"PASS","detail":"1/1 URL canli"}]
+}

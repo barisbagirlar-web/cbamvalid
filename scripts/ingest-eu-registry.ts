@@ -141,7 +141,7 @@ function normalizeRow(row: EuDefaultValueRow, index: number): IngestionRecord {
 
   return {
     code: row.cn_code,
-    sector: row.sector,
+    sector: row.sector as CbamSectorSlug,
     description: row.goods_description,
     benchmarkTco2ePerTonne: row.benchmark_total,
     defaultDirectFactor: row.direct_emissions_default ?? 0,
