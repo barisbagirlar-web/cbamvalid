@@ -41,6 +41,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { sector } = await params;
+  if (!sector) return { title: 'Report Not Found | CBAMValid', robots: { index: false } };
   // Strip -2026 suffix to get actual sector slug
   const actualSector = sector.replace(/-2026$/, '') as CbamSectorSlug;
   if (!VALID_SECTORS.includes(actualSector)) return { title: 'Report Not Found | CBAMValid', robots: { index: false } };
@@ -58,6 +59,7 @@ const EU_ETS_PRICE = 85; // EUR per tCO2e — Q3 2026 average
 
 export default async function FinancialImpactReportPage({ params }: PageProps) {
   const { sector } = await params;
+  if (!sector) notFound();
   const actualSector = sector.replace(/-2026$/, '') as CbamSectorSlug;
   if (!VALID_SECTORS.includes(actualSector)) notFound();
 
