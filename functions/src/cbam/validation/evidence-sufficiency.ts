@@ -2,6 +2,34 @@ import type { AuditReadyCase } from "../schema";
 import type { EvidenceSufficiencyRow } from "../report/premium-dossier-schema";
 import { deriveMaterialRequirements } from "./material-input-registry";
 
+function parsePeriodDates(periodStr: string): { start: string; end: string } | null {
+  const str = periodStr.trim().toUpperCase();
+  // Check ANNUAL
+  let match = str.match(/^(\d{4})\s*ANNUAL$/) || str.match(/^(\d{4})$/);
+  if (match) {
+    return { start: `${match[1]}-01-01`, end: `${match[1]}-12-31` };
+  }
+  // Check Q1-Q4
+  match = str.match(/^(\d{4})-(Q[1-4])$/) || str.match(/^(\d{4})\s*(Q[1-4])$/);
+  if (match) {
+    const year = match[1];
+    const q = match[2];
+    if (q === "Q1") return { start: `${year}-01-01`, end: `${year}-03-31` };
+    if (q === "Q2") return { start: `${year}-04-01`, end: `${year}-06-30` };
+    if (q === "Q3") return { start: `${year}-07-01`, end: `${year}-09-30` };
+    if (q === "Q4") return { start: `${year}-10-01`, end: `${year}-12-31` };
+  }
+  // Check MONTHLY (e.g. 2026-03)
+  match = str.match(/^(\d{4})-(0[1-9]|1[0-2])$/);
+  if (match) {
+    const year = match[1];
+    const month = match[2];
+    const lastDay = new Date(parseInt(year, 10), parseInt(month, 10), 0).getDate();
+    return { start: `${year}-${month}-01`, end: `${year}-${month}-${String(lastDay).padStart(2, "0")}` };
+  }
+  return null;
+}
+
 function getValueAtPath(obj: any, path: string): any {
   const parts = path.split(".");
   let current = obj;
@@ -144,14 +172,66 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase): EvidenceSuffic
       reasonCodes.push("EVIDENCE_NOT_APPROVED_BY_OPERATOR");
     }
 
-    // Check period alignment
+    // Check period alignment and exact coverage
     const caseYear = caseData.reportingPeriod.year.value;
     const caseQuarter = caseData.reportingPeriod.quarter.value || "ANNUAL";
-    if (record.reportingPeriod && record.reportingPeriod.trim().length > 0) {
-      const evidencePeriod = record.reportingPeriod.trim();
-      if (!evidencePeriod.includes(String(caseYear)) && !evidencePeriod.includes(String(caseQuarter))) {
-        state = "OUT_OF_PERIOD";
-        reasonCodes.push("EVIDENCE_PERIOD_MISMATCH");
+
+    const requiredPeriodStart = String(caseData.reportingPeriod.startDate?.value || parsePeriodDates(`${caseYear}-${caseQuarter}`)?.start || `${caseYear}-01-01`);
+    const requiredPeriodEnd = String(caseData.reportingPeriod.endDate?.value || parsePeriodDates(`${caseYear}-${caseQuarter}`)?.end || `${caseYear}-12-31`);
+
+    let evidencePeriodStart: string | null = record.evidencePeriodStart || null;
+    let evidencePeriodEnd: string | null = record.evidencePeriodEnd || null;
+
+    if (!evidencePeriodStart || !evidencePeriodEnd) {
+      const parsed = parsePeriodDates(record.reportingPeriod);
+      if (parsed) {
+        evidencePeriodStart = evidencePeriodStart || parsed.start;
+        evidencePeriodEnd = evidencePeriodEnd || parsed.end;
+      }
+    }
+
+    let coverageDays: number | null = null;
+    let coveragePercent: string | null = null;
+
+    if (evidencePeriodStart && evidencePeriodEnd) {
+      const reqStart = new Date(requiredPeriodStart);
+      const reqEnd = new Date(requiredPeriodEnd);
+      const evStart = new Date(evidencePeriodStart);
+      const evEnd = new Date(evidencePeriodEnd);
+
+      const overlapStart = new Date(Math.max(reqStart.getTime(), evStart.getTime()));
+      const overlapEnd = new Date(Math.min(reqEnd.getTime(), evEnd.getTime()));
+
+      if (overlapStart <= overlapEnd) {
+        const overlapMs = overlapEnd.getTime() - overlapStart.getTime() + 24 * 60 * 60 * 1000;
+        coverageDays = Math.ceil(overlapMs / (24 * 60 * 60 * 1000));
+      } else {
+        coverageDays = 0;
+      }
+
+      const reqMs = reqEnd.getTime() - reqStart.getTime() + 24 * 60 * 60 * 1000;
+      const reqDays = Math.ceil(reqMs / (24 * 60 * 60 * 1000));
+      coveragePercent = ((coverageDays / reqDays) * 100).toFixed(2);
+
+      // Verify exact period alignment
+      // Case is ANNUAL, evidence must cover the full required period unless reconciled
+      if (caseQuarter === "ANNUAL" && coverageDays < reqDays) {
+        const hasReconciliation = caseData.methodologyDecisions.some(
+          d => d.topic === "EVIDENCE_RECONCILIATION" && d.reviewStatus === "ACCEPTED"
+        );
+        if (!hasReconciliation) {
+          state = "OUT_OF_PERIOD";
+          reasonCodes.push("EVIDENCE_ANNUAL_COVERAGE_INCOMPLETE");
+        }
+      }
+    } else {
+      // Fallback old includes check if dates are not parseable
+      if (record.reportingPeriod && record.reportingPeriod.trim().length > 0) {
+        const evidencePeriod = record.reportingPeriod.trim();
+        if (!evidencePeriod.includes(String(caseYear)) && !evidencePeriod.includes(String(caseQuarter))) {
+          state = "OUT_OF_PERIOD";
+          reasonCodes.push("EVIDENCE_PERIOD_MISMATCH");
+        }
       }
     }
 
@@ -168,16 +248,24 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase): EvidenceSuffic
     if (isMaterial) {
       if (state !== "SUPPORTED") {
         blocksSealing = true;
-        // Partially supported also blocks readiness for material inputs
+        // Partially supported and out of period also blocks readiness for material inputs
         blocksOperatorReadiness = true;
       }
     }
 
     let coverageNumerator = "0.0";
-    if (state === "SUPPORTED") {
-      coverageNumerator = "1.0";
-    } else if (state === "PARTIALLY_SUPPORTED") {
-      coverageNumerator = "0.5";
+    let coverageDenominator = "1.0";
+    if (coverageDays !== null && coveragePercent !== null) {
+      coverageNumerator = coverageDays.toString();
+      const reqMs = new Date(requiredPeriodEnd).getTime() - new Date(requiredPeriodStart).getTime() + 24 * 60 * 60 * 1000;
+      const reqDays = Math.ceil(reqMs / (24 * 60 * 60 * 1000));
+      coverageDenominator = reqDays.toString();
+    } else {
+      if (state === "SUPPORTED") {
+        coverageNumerator = "1.0";
+      } else if (state === "PARTIALLY_SUPPORTED") {
+        coverageNumerator = "0.5";
+      }
     }
 
     rows.push({
@@ -186,10 +274,16 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase): EvidenceSuffic
       evidenceIds: [evidenceId],
       state,
       coverageNumerator,
-      coverageDenominator: "1.0",
+      coverageDenominator,
       blocksOperatorReadiness,
       blocksSealing,
       reasonCodes: reasonCodes.length > 0 ? reasonCodes : ["PASS"],
+      evidencePeriodStart,
+      evidencePeriodEnd,
+      coverageDays,
+      requiredPeriodStart,
+      requiredPeriodEnd,
+      coveragePercent,
     });
   }
 

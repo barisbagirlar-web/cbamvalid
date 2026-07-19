@@ -11,6 +11,7 @@ import {
   buildDataIntegrityManifest,
   buildUnsignedVerifierArtifacts,
   finalizeVerifierPackage,
+  updatePdfArtifacts,
   type EvidenceBinary,
 } from "./verifier-package-builder";
 
@@ -306,6 +307,11 @@ export async function sealReport(params: {
   correctionReason?: string;
 }): Promise<SealingResult> {
   assertKmsSigningConfigured();
+  const configDoc = await adminDb.collection("system").doc("config").get();
+  const disableV5Sealing = configDoc.exists ? configDoc.data()?.disableV5Sealing !== false : true;
+  if (disableV5Sealing) {
+    throw new Error("V5_SEALING_DISABLED_BY_FEATURE_FLAG");
+  }
   const caseData = AuditReadyCaseSchema.parse(params.inputData);
   if (caseData.caseId !== params.caseId || caseData.ownerId !== params.uid) throw new Error("SEAL_CASE_IDENTITY_MISMATCH");
   const year = Number(caseData.reportingPeriod.year.value);
@@ -336,7 +342,7 @@ export async function sealReport(params: {
     const controls = runQualityControls(caseData);
     if (releaseVersion >= 5) {
       const { assessReadiness } = await import("../validation/readiness-score");
-      const readinessV5 = assessReadiness({ caseData, isDraft: false });
+      const readinessV5 = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: lease.generatedAt });
       if (readinessV5.operatorStatus === "NOT_READY" || readinessV5.criticalBlockerCount > 0 || readinessV5.missingMaterialEvidenceCount > 0) {
         throw new Error("SEALING_BLOCKED_BY_V5_READINESS_GATES");
       }
@@ -358,7 +364,7 @@ export async function sealReport(params: {
     const calculation = performDossierCalculations(caseData);
     await setState(identity.reportId, "CALCULATION_COMPLETE", { calculationRootHash: calculation.calculationRootHash });
     const evidenceFiles = await loadEvidenceFiles(caseData);
-    const artifacts = await buildUnsignedVerifierArtifacts({
+    let artifacts = await buildUnsignedVerifierArtifacts({
       caseData,
       calculation,
       controls,
@@ -380,7 +386,30 @@ export async function sealReport(params: {
 
     const signature = await signManifestWithKms(manifest.bytes);
     await setState(identity.reportId, "KMS_SIGNED", { manifestHash: signature.manifestHash, keyVersion: signature.keyVersion });
-    const packageResult = await finalizeVerifierPackage({
+    
+    // First pass to get initial ZIP hash
+    let packageResult = await finalizeVerifierPackage({
+      artifacts,
+      manifestBytes: manifest.bytes,
+      signature,
+      generatedAt: lease.generatedAt,
+    });
+
+    // Re-render PDFs with actual hashes
+    artifacts = updatePdfArtifacts({
+      artifacts,
+      caseData,
+      calculation,
+      controls,
+      reportId: identity.reportId,
+      releaseVersion,
+      generatedAt: lease.generatedAt,
+      manifestHash: signature.manifestHash,
+      packageHash: packageResult.zipHash,
+    });
+
+    // Final pass with updated PDFs
+    packageResult = await finalizeVerifierPackage({
       artifacts,
       manifestBytes: manifest.bytes,
       signature,
@@ -428,7 +457,7 @@ export async function sealReport(params: {
     let publicVerificationToken: string | undefined;
     if (releaseVersion >= 5) {
       const { assessReadiness } = await import("../validation/readiness-score");
-      const readinessV5 = assessReadiness({ caseData, isDraft: false });
+      const readinessV5 = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: lease.generatedAt });
       publicVerificationToken = crypto.randomBytes(32).toString("hex");
       const publicVerificationTokenHash = crypto.createHash("sha256").update(publicVerificationToken).digest("hex");
 

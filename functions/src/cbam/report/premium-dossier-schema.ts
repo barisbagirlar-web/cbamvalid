@@ -124,6 +124,12 @@ export const EvidenceSufficiencyRowSchema = z.object({
   blocksOperatorReadiness: z.boolean(),
   blocksSealing: z.boolean(),
   reasonCodes: z.array(z.string().min(1)),
+  evidencePeriodStart: z.string().nullable().optional(),
+  evidencePeriodEnd: z.string().nullable().optional(),
+  coverageDays: z.number().int().nonnegative().nullable().optional(),
+  requiredPeriodStart: z.string().nullable().optional(),
+  requiredPeriodEnd: z.string().nullable().optional(),
+  coveragePercent: z.string().nullable().optional(),
 });
 export type EvidenceSufficiencyRow = z.infer<typeof EvidenceSufficiencyRowSchema>;
 

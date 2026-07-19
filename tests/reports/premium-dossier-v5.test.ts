@@ -120,8 +120,9 @@ describe("premium-dossier-v5 deliverables", () => {
     
     // Enforce annual period for base readiness test
     caseData.reportingPeriod.quarter.value = "ANNUAL";
+    caseData.evidenceRegister[0].reportingPeriod = "2026 ANNUAL";
     // Test base readiness
-    const readiness = assessReadiness({ caseData, isDraft: false });
+    const readiness = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: "2027-01-15" });
     expect(readiness.operatorStatus).toBe("READY_FOR_VERIFIER_REVIEW");
     expect(parseFloat(readiness.score)).toBeGreaterThanOrEqual(90);
     expect(readiness.criticalBlockerCount).toBe(0);
@@ -130,14 +131,14 @@ describe("premium-dossier-v5 deliverables", () => {
     const dirtyCase = JSON.parse(JSON.stringify(caseData));
     dirtyCase.evidenceRegister[0].supportStatus = "PARTIALLY_SUPPORTED";
     
-    const readinessDirty = assessReadiness({ caseData: dirtyCase, isDraft: false });
+    const readinessDirty = assessReadiness({ caseData: dirtyCase, isDraft: false, assessmentTimestamp: "2027-01-15" });
     expect(readinessDirty.operatorStatus).toBe("NOT_READY");
     expect(readinessDirty.missingMaterialEvidenceCount).toBeGreaterThan(0);
 
     // Test that quarterly period blocks readiness
     const quarterlyCase = JSON.parse(JSON.stringify(caseData));
     quarterlyCase.reportingPeriod.quarter.value = "Q1";
-    const { operatorStatus: status, criticalBlockerCount, canSeal } = assessReadiness({ caseData: quarterlyCase, isDraft: false });
+    const { operatorStatus: status, criticalBlockerCount, canSeal } = assessReadiness({ caseData: quarterlyCase, isDraft: false, assessmentTimestamp: "2027-01-15" });
     expect(status).toBe("NOT_READY");
     expect(criticalBlockerCount).toBeGreaterThan(0);
     expect(canSeal).toBe(false);
@@ -166,6 +167,7 @@ describe("premium-dossier-v5 deliverables", () => {
       "goods.1.allocationShare"
     );
     caseData.reportingPeriod.quarter.value = "ANNUAL";
+    caseData.evidenceRegister[0].reportingPeriod = "2026 ANNUAL";
     const controls = runQualityControls(caseData);
     const calculation = performDossierCalculations(caseData);
     
@@ -237,6 +239,7 @@ describe("premium-dossier-v5 deliverables", () => {
       "goods.1.allocationShare"
     );
     caseData.reportingPeriod.quarter.value = "ANNUAL";
+    caseData.evidenceRegister[0].reportingPeriod = "2026 ANNUAL";
     const controls = runQualityControls(caseData);
     const calculation = performDossierCalculations(caseData);
     
@@ -313,65 +316,65 @@ describe("premium-dossier-v5 deliverables", () => {
 
     // 1. 2026-Q1
     const q1Case = makePeriodCase("2026", "Q1");
-    const q1Ass = getReportingPeriodAssessment(q1Case);
+    const q1Ass = getReportingPeriodAssessment(q1Case, "2027-01-15");
     expect(q1Ass.type).toBe("INTERIM_QUARTERLY");
     expect(q1Ass.definitiveAnnualEligible).toBe(false);
     expect(q1Ass.hardBlockerFindingIds).toContain("FND-PERIOD-NON-ANNUAL");
 
     // 2. 2026-Q2
     const q2Case = makePeriodCase("2026", "Q2");
-    const q2Ass = getReportingPeriodAssessment(q2Case);
+    const q2Ass = getReportingPeriodAssessment(q2Case, "2027-01-15");
     expect(q2Ass.type).toBe("INTERIM_QUARTERLY");
     expect(q2Ass.definitiveAnnualEligible).toBe(false);
 
     // 3. one month
     const m1Case = makePeriodCase("2026", "M01");
-    const m1Ass = getReportingPeriodAssessment(m1Case);
+    const m1Ass = getReportingPeriodAssessment(m1Case, "2027-01-15");
     expect(m1Ass.type).toBe("INTERIM_MONTHLY");
     expect(m1Ass.definitiveAnnualEligible).toBe(false);
 
     // 4. six months
     const h1Case = makePeriodCase("2026", "CUSTOM", "2026-01-01", "2026-06-30");
-    const h1Ass = getReportingPeriodAssessment(h1Case);
+    const h1Ass = getReportingPeriodAssessment(h1Case, "2027-01-15");
     expect(h1Ass.type).toBe("CUSTOM_INTERNAL");
     expect(h1Ass.definitiveAnnualEligible).toBe(false);
 
     // 5. 2026 full year
     const fyCase = makePeriodCase("2026", "ANNUAL", "2026-01-01", "2026-12-31");
-    const fyAss = getReportingPeriodAssessment(fyCase);
+    const fyAss = getReportingPeriodAssessment(fyCase, "2027-01-15");
     expect(fyAss.type).toBe("DEFINITIVE_ANNUAL");
     expect(fyAss.definitiveAnnualEligible).toBe(true);
 
     // 6. leap-year full year
     const leapCase = makePeriodCase("2024", "ANNUAL", "2024-01-01", "2024-12-31");
-    const leapAss = getReportingPeriodAssessment(leapCase);
+    const leapAss = getReportingPeriodAssessment(leapCase, "2025-01-15");
     expect(leapAss.type).toBe("DEFINITIVE_ANNUAL");
     expect(leapAss.coveredDays).toBe(366);
     expect(leapAss.definitiveAnnualEligible).toBe(true);
 
     // 7. missing start date
     const missingStart = makePeriodCase("2026", "ANNUAL", "", "2026-12-31");
-    const msAss = getReportingPeriodAssessment(missingStart);
+    const msAss = getReportingPeriodAssessment(missingStart, "2027-01-15");
     expect(msAss.hardBlockerFindingIds).toContain("FND-PERIOD-MISSING-START-DATE");
 
     // 8. missing end date
     const missingEnd = makePeriodCase("2026", "ANNUAL", "2026-01-01", "");
-    const meAss = getReportingPeriodAssessment(missingEnd);
+    const meAss = getReportingPeriodAssessment(missingEnd, "2027-01-15");
     expect(meAss.hardBlockerFindingIds).toContain("FND-PERIOD-MISSING-END-DATE");
 
     // 9. end before start
     const badChrono = makePeriodCase("2026", "ANNUAL", "2026-12-31", "2026-01-01");
-    const bcAss = getReportingPeriodAssessment(badChrono);
+    const bcAss = getReportingPeriodAssessment(badChrono, "2027-01-15");
     expect(bcAss.hardBlockerFindingIds).toContain("FND-PERIOD-INVALID-CHRONOLOGY");
 
     // 10. future year
     const futureCase = makePeriodCase("2099", "ANNUAL", "2099-01-01", "2099-12-31");
-    const futAss = getReportingPeriodAssessment(futureCase);
-    expect(futAss.hardBlockerFindingIds).toContain("FND-PERIOD-FUTURE-YEAR");
+    const futAss = getReportingPeriodAssessment(futureCase, "2027-01-15");
+    expect(futAss.hardBlockerFindingIds).toContain("FND-PERIOD-FUTURE-END-DATE");
 
     // 11. custom internal period
     const customCase = makePeriodCase("2026", "CUSTOM_PERIOD", "2026-03-01", "2026-08-15");
-    const custAss = getReportingPeriodAssessment(customCase);
+    const custAss = getReportingPeriodAssessment(customCase, "2027-01-15");
     expect(custAss.type).toBe("CUSTOM_INTERNAL");
     expect(custAss.definitiveAnnualEligible).toBe(false);
   });
@@ -395,7 +398,7 @@ describe("premium-dossier-v5 deliverables", () => {
     expect(text).toContain("11111111");
     expect(text).toContain("Prepared for Independent");
     expect(text).toContain("Verified Steel Operator GmbH");
-    expect(text).toContain("Prof. Dr. Neela Nataraj");
+    expect(text).toContain("NOT_PROVIDED");
 
     console.log(`Verified PDF Geometry successfully. Total pages: ${pages}`);
   });

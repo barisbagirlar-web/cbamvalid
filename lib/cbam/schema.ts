@@ -66,6 +66,8 @@ export const EvidenceRecordSchema = z.object({
   linkedInputs: z.array(z.string().min(1)).min(1),
   linkedCalculations: z.array(z.string()),
   reviewerNotes: z.string().trim().min(5).max(2000).optional(),
+  evidencePeriodStart: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  evidencePeriodEnd: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
 });
 
 export type EvidenceRecord = z.infer<typeof EvidenceRecordSchema>;

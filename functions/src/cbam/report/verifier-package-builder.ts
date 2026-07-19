@@ -515,7 +515,10 @@ export function buildDataIntegrityManifest(params: {
       requiredTopLevelComponents: isV5 ? REQUIRED_TOP_LEVEL_COMPONENTS_V5 : REQUIRED_TOP_LEVEL_COMPONENTS,
       requiredCount: isV5 ? 25 : 27,
     },
-    files: params.artifacts.map((item) => ({ path: item.path, sha256: hash(item.bytes), sizeBytes: item.bytes.byteLength, mediaType: item.mediaType })).sort((left, right) => left.path.localeCompare(right.path)),
+    files: params.artifacts
+      .filter((item) => !isV5 || (item.path !== "Operator Emissions Report.pdf" && item.path !== "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf"))
+      .map((item) => ({ path: item.path, sha256: hash(item.bytes), sizeBytes: item.bytes.byteLength, mediaType: item.mediaType }))
+      .sort((left, right) => left.path.localeCompare(right.path)),
     evidenceCount: params.evidenceCount,
     signatureScope: "EXACT_UTF8_BYTES_OF_THIS_MANIFEST",
   };
@@ -585,4 +588,79 @@ export async function finalizeVerifierPackage(params: {
   const workbook = allArtifacts.find((item) => item.path === "Verifier Workspace.xlsx")?.bytes;
   if (!primaryPdf || !workbook || primaryPdf.byteLength < 5000 || workbook.byteLength < 5000) throw new Error("PACKAGE_PRIMARY_ARTIFACT_MISSING_OR_TRIVIAL");
   return { zip: buffer, zipHash: hash(buffer), primaryPdf, workbook, signatureBytes: signatureBuffer };
+}
+
+export function updatePdfArtifacts(params: {
+  artifacts: PackageArtifact[];
+  caseData: AuditReadyCase;
+  calculation: DossierCalculationResult;
+  controls: QualityControlResult[];
+  reportId: string;
+  releaseVersion: number;
+  generatedAt: string;
+  manifestHash: string;
+  packageHash: string;
+}): PackageArtifact[] {
+  const isV5 = params.releaseVersion >= 5;
+  if (!isV5) return params.artifacts;
+
+  const { caseData, calculation, controls, reportId, releaseVersion, generatedAt, manifestHash, packageHash } = params;
+  const model = buildVerifierPackageModel({ caseData, calculation, controls, reportId, releaseVersion, generatedAt });
+  const periodAssessment = getReportingPeriodAssessment(caseData);
+  const { findings, correctiveActions } = generateFindingsAndActions(caseData);
+
+  const dossierModel = {
+    schemaVersion: "CBAMVALID-DOSSIER-5.0",
+    reportingPeriodAssessment: periodAssessment,
+    reportId,
+    caseId: caseData.caseId || "",
+    releaseVersion,
+    generatedAt,
+    documentTitle: "CBAMValid Verification Readiness & Evidence Assurance Dossier",
+    legalBoundary: "This operator-prepared package supports preparation for independent CBAM review. It is not an independent verification opinion, a reasonable-assurance conclusion, a customs decision, an EU approval, a CBAM Registry submission, or a guarantee of acceptance.",
+    identity: {
+      importer: String(caseData.importerIdentity.legalName.value || ""),
+      eori: String(caseData.importerIdentity.eoriNumber.value || ""),
+      exporterOperator: String(caseData.exporterIdentity.legalName.value || ""),
+      installation: String(caseData.installation.name.value || ""),
+      country: String(caseData.installation.country.value || ""),
+      productionRoute: String(caseData.installation.productionRoute.value || ""),
+      reportingPeriod: `${caseData.reportingPeriod.year.value}-${caseData.reportingPeriod.quarter.value || "ANNUAL"}`,
+      systemBoundary: caseData.installation.systemBoundaries || "",
+    },
+    scope: {
+      sector: caseData.goods[0]?.sector || "UNKNOWN",
+      processes: caseData.goods.map(g => g.sector),
+      cnCodes: caseData.goods.map(g => String(g.cnCode.value || "")),
+    },
+    totals: model.totals,
+    goods: model.goods,
+    precursors: caseData.precursors.map(p => ({
+      name: String(p.name.value || ""),
+      quantity: String(p.quantity.value || ""),
+      directEmissions: String(p.directEmissions.value || ""),
+      indirectEmissions: String(p.indirectEmissions.value || ""),
+      countryOfOrigin: String(p.countryOfOrigin.value || ""),
+    })),
+    readiness: assessReadiness({ caseData, isDraft: false }),
+    findings,
+    correctiveActions,
+    evidenceSufficiency: runEvidenceSufficiency(caseData),
+    requirementCrosswalk: buildVerificationCrosswalk(caseData),
+    calculationTrace: calculation.trace,
+    manifestSummary: {
+      totalFiles: 25,
+      manifestHash,
+      packageHash,
+    },
+  };
+
+  const updatedPdf = buildPremiumDossierPdf(dossierModel as unknown as PremiumDossierViewModel, caseData);
+
+  return params.artifacts.map((art) => {
+    if (art.path === "Operator Emissions Report.pdf" || art.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf") {
+      return { ...art, bytes: updatedPdf };
+    }
+    return art;
+  });
 }

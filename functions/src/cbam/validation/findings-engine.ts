@@ -9,7 +9,7 @@ function stableHashPrefix(subject: string): string {
   return crypto.createHash("sha256").update(subject).digest("hex").slice(0, 8);
 }
 
-export function generateFindingsAndActions(caseData: AuditReadyCase): {
+export function generateFindingsAndActions(caseData: AuditReadyCase, assessmentTimestamp?: string): {
   findings: Finding[];
   correctiveActions: CorrectiveAction[];
 } {
@@ -80,10 +80,13 @@ export function generateFindingsAndActions(caseData: AuditReadyCase): {
       continue;
     }
 
-    const findingId = `FND-EVD-${row.requirementId}-${stableHashPrefix(row.inputPath)}`;
+    let findingId = `FND-EVD-${row.requirementId}-${stableHashPrefix(row.inputPath)}`;
 
     let severity: Finding["severity"] = "MINOR";
-    if (row.state === "MISSING" || row.state === "MALWARE_UNCLEARED" || row.state === "HASH_MISMATCH" || row.state === "BYTE_SIZE_MISMATCH") {
+    if (row.reasonCodes.includes("EVIDENCE_ANNUAL_COVERAGE_INCOMPLETE")) {
+      findingId = "FND-EVIDENCE-ANNUAL-COVERAGE-INCOMPLETE";
+      severity = "CRITICAL";
+    } else if (row.state === "MISSING" || row.state === "MALWARE_UNCLEARED" || row.state === "HASH_MISMATCH" || row.state === "BYTE_SIZE_MISMATCH") {
       severity = "CRITICAL";
     } else if (row.state === "PARTIALLY_SUPPORTED") {
       severity = "MATERIAL";
@@ -187,44 +190,108 @@ export function generateFindingsAndActions(caseData: AuditReadyCase): {
   });
 
   // 4. Period Assessment Check
-  const period = getReportingPeriodAssessment(caseData);
+  const period = getReportingPeriodAssessment(caseData, assessmentTimestamp);
   if (!period.definitiveAnnualEligible) {
-    const findingId = "FND-PERIOD-NON-ANNUAL";
-    const action: CorrectiveAction = {
-      actionId: `ACT-${findingId}`,
-      findingId,
-      priority: "P0",
-      requiredAction: "Update the reporting period to a definitive annual period (e.g., ANNUAL) or supply full-year data to enable verifier review.",
-      responsibleRole: "OPERATOR_ADMIN",
-      targetDate: null,
-      closureCondition: "Reporting period is updated to a definitive annual period.",
-      closureEvidenceIds: [],
-      state: "OPEN",
-    };
+    if (period.type !== "DEFINITIVE_ANNUAL") {
+      const findingId = "FND-PERIOD-NON-ANNUAL";
+      const action: CorrectiveAction = {
+        actionId: `ACT-${findingId}`,
+        findingId,
+        priority: "P0",
+        requiredAction: "Update the reporting period to a definitive annual period (e.g., ANNUAL) or supply full-year data to enable verifier review.",
+        responsibleRole: "OPERATOR_ADMIN",
+        targetDate: null,
+        closureCondition: "Reporting period is updated to a definitive annual period.",
+        closureEvidenceIds: [],
+        state: "OPEN",
+      };
 
-    findings.push({
-      findingId,
-      ruleId: "REQ-PERIOD-ANNUAL",
-      severity: "CRITICAL_BLOCKER",
-      category: "REPORTING_PERIOD",
-      status: "OPEN",
-      title: "Definitive Annual Reporting Period Required",
-      description: "This case covers an interim or partial-year period. It is not a definitive annual operator reporting period and cannot be marked ready for verifier handover.",
-      regulatoryOrTechnicalBasis: "Commission Implementing Regulation (EU) 2025/2546 - Article 5",
-      affectedInputIds: ["reportingPeriod.quarter"],
-      affectedCalculationIds: [],
-      affectedEvidenceIds: [],
-      affectedReportSectionIds: [],
-      impactStatement: "Quarterly or partial-year data blocks definitive annual readiness and package sealing.",
-      remediationRequirement: "Change the reporting period to a full year (ANNUAL) and link corresponding annual data.",
-      blocksOperatorReadiness: true,
-      blocksSealing: true,
-      blocksVerifierHandover: true,
-      createdDeterministicallyFrom: "getReportingPeriodAssessment",
-      action,
-    });
+      findings.push({
+        findingId,
+        ruleId: "REQ-PERIOD-ANNUAL",
+        severity: "CRITICAL_BLOCKER",
+        category: "REPORTING_PERIOD",
+        status: "OPEN",
+        title: "Definitive Annual Reporting Period Required",
+        description: "This case covers an interim or partial-year period. It is not a definitive annual operator reporting period and cannot be marked ready for verifier handover.",
+        regulatoryOrTechnicalBasis: "Commission Implementing Regulation (EU) 2025/2546 - Article 5",
+        affectedInputIds: ["reportingPeriod.quarter"],
+        affectedCalculationIds: [],
+        affectedEvidenceIds: [],
+        affectedReportSectionIds: [],
+        impactStatement: "Quarterly or partial-year data blocks definitive annual readiness and package sealing.",
+        remediationRequirement: "Change the reporting period to a full year (ANNUAL) and link corresponding annual data.",
+        blocksOperatorReadiness: true,
+        blocksSealing: true,
+        blocksVerifierHandover: true,
+        createdDeterministicallyFrom: "getReportingPeriodAssessment",
+        action,
+      });
 
-    correctiveActions.push(action);
+      correctiveActions.push(action);
+    }
+
+    // Add other specific hard blockers from period assessment
+    for (const bhId of period.hardBlockerFindingIds) {
+      if (bhId === "FND-PERIOD-NON-ANNUAL") continue;
+      
+      let title = "Reporting Period Assessment Blocker";
+      let desc = `The reporting period fails verification due to ${bhId}.`;
+      let inputId = "reportingPeriod.year";
+      
+      if (bhId === "FND-PERIOD-FUTURE-END-DATE") {
+        title = "Future Reporting Period End Date";
+        desc = "The reporting period end date is in the future relative to the assessment timestamp. Future periods are blocked from sealing.";
+        inputId = "reportingPeriod.endDate";
+      } else if (bhId === "FND-PERIOD-MISSING-START-DATE") {
+        title = "Missing Start Date";
+        desc = "The reporting period start date is missing.";
+        inputId = "reportingPeriod.startDate";
+      } else if (bhId === "FND-PERIOD-MISSING-END-DATE") {
+        title = "Missing End Date";
+        desc = "The reporting period end date is missing.";
+        inputId = "reportingPeriod.endDate";
+      } else if (bhId === "FND-PERIOD-INVALID-CHRONOLOGY") {
+        title = "Invalid Chronology";
+        desc = "The reporting period end date is chronologically before the start date.";
+        inputId = "reportingPeriod.endDate";
+      }
+      
+      const action: CorrectiveAction = {
+        actionId: `ACT-${bhId}`,
+        findingId: bhId,
+        priority: "P0",
+        requiredAction: "Correct the reporting period dates to reflect completed, non-future durations.",
+        responsibleRole: "OPERATOR_ADMIN",
+        targetDate: null,
+        closureCondition: "Reporting period dates are valid and complete.",
+        closureEvidenceIds: [],
+        state: "OPEN",
+      };
+      
+      findings.push({
+        findingId: bhId,
+        ruleId: "REQ-PERIOD-VALID",
+        severity: "CRITICAL_BLOCKER",
+        category: "REPORTING_PERIOD",
+        status: "OPEN",
+        title,
+        description: desc,
+        regulatoryOrTechnicalBasis: "Commission Implementing Regulation (EU) 2025/2546",
+        affectedInputIds: [inputId],
+        affectedCalculationIds: [],
+        affectedEvidenceIds: [],
+        affectedReportSectionIds: [],
+        impactStatement: "Invalid, future, or incomplete reporting period dates block sealing and readiness.",
+        remediationRequirement: "Ensure all reporting period bounds are complete and in the past.",
+        blocksOperatorReadiness: true,
+        blocksSealing: true,
+        blocksVerifierHandover: true,
+        createdDeterministicallyFrom: "getReportingPeriodAssessment",
+        action,
+      });
+      correctiveActions.push(action);
+    }
   }
 
   return { findings, correctiveActions };

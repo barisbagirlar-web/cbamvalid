@@ -145,15 +145,16 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
     y += 2;
   };
 
-  const drawSectionHeading = (num: number, text: string) => {
-    ensure(12);
+  const beginSection = (num: number, title: string, contentHeight: number) => {
+    const headingHeight = 9;
+    ensure(headingHeight + contentHeight);
     sectionPages[num] = doc.getNumberOfPages();
     doc.setFillColor(231, 237, 244);
     doc.rect(MARGIN, y, CONTENT_WIDTH, 7, "F");
     doc.setTextColor(20, 42, 74);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8.5);
-    doc.text(`${num}. ${text}`, MARGIN + 2, y + 4.8);
+    doc.text(`${num}. ${title}`, MARGIN + 2, y + 4.8);
     y += 9;
   };
 
@@ -223,7 +224,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   doc.text("Academic Oversight & Expert Review:", MARGIN, cy);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(43, 51, 64);
-  doc.text("Prof. Dr. Neela Nataraj, Indian Institute of Technology Bombay (IIT Bombay)", MARGIN, cy + 5);
+  doc.text("NOT_PROVIDED", MARGIN, cy + 5);
 
   // Cover Legal Boundary statement
   doc.setFont("helvetica", "normal");
@@ -239,7 +240,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   y = BODY_TOP;
 
   // Section 2: Document Control
-  drawSectionHeading(2, "Document Control");
+  beginSection(2, "Document Control", 40);
   drawTable(
     ["Control Parameter", "Registered Value"],
     [
@@ -255,7 +256,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   );
 
   // Section 3: Legal and Product Boundary
-  drawSectionHeading(3, "Legal Status and Reliance Boundary");
+  beginSection(3, "Legal Status and Reliance Boundary", 30);
   drawParagraph(model.legalBoundary);
   drawCallout(
     "CBAMValid Internal automated readiness assessment",
@@ -275,11 +276,11 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   y = BODY_TOP;
 
   // Section 5: Executive Decision Board
-  drawSectionHeading(5, "Executive Decision Board");
+  beginSection(5, "Executive Decision Board", 30);
   drawParagraph("The following summary table outlines the key metrics and decisions for senior executive/CFO review before independent verifier handover.");
   
   drawTable(
-    ["Readiness Score", "Critical Blockers", "Material Findings", "Open Findings", "Missing Evidence", "Recommended Handover Decision"],
+    ["Readiness Score", "Critical Blockers", "Material Findings", "Open Findings", "Missing Evidence", "Unresolved Calc Exceptions", "Recommended Handover Decision"],
     [[
       `${model.readiness.score}/100`,
       model.readiness.criticalBlockerCount,
@@ -289,7 +290,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
       model.readiness.unresolvedCalculationExceptionCount,
       model.readiness.recommendedDecision,
     ]],
-    [25, 25, 25, 22, 28, 55]
+    [22, 22, 22, 20, 22, 22, 50]
   );
 
   const decisionExplanation = model.readiness.recommendedDecision === "READY_TO_HAND_OVER"
@@ -304,7 +305,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   y = BODY_TOP;
 
   // Section 6: Readiness Score and Hard Gates
-  drawSectionHeading(6, "Readiness Score and Hard Gates");
+  beginSection(6, "Readiness Score and Hard Gates", 45);
   drawParagraph("The 100-point diagnostic score is computed based on 8 weighted dimensions. Hard blockers will override this score and force NOT_READY status.");
   
   const dimHeaders = ["Readiness Dimension", "Weight", "Score", "Weighted Score", "Passed / Total Reqs"];
@@ -318,7 +319,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   drawTable(dimHeaders, dimRows, [50, 18, 18, 20, 30]);
 
   // Section 7: Operator and Installation Identity
-  drawSectionHeading(7, "Operator and Installation Identity");
+  beginSection(7, "Operator and Installation Identity", 35);
   drawTable(
     ["Identity Attribute", "Declared Value"],
     [
@@ -332,7 +333,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   );
 
   // Section 8: Reporting Period Assessment
-  drawSectionHeading(8, "Reporting Period Assessment");
+  beginSection(8, "Reporting Period Assessment", 35);
   drawParagraph(`Calendar-aware analysis of the reporting period for definitive annual verification eligibility.`);
   drawTable(
     ["Reporting Attribute", "Value"],
@@ -352,7 +353,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   }
 
   // Section 9: Goods and CN Classification
-  drawSectionHeading(9, "Goods and CN Classification");
+  beginSection(9, "Goods and CN Classification", 35);
   drawParagraph("The case includes the following CN-coded goods classifications:");
   drawTable(
     ["Good Index", "CN Code", "Sector", "Production Volume"],
@@ -361,18 +362,18 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   );
 
   // Section 10: Installation and System Boundary
-  drawSectionHeading(10, "Installation and System Boundary");
+  beginSection(10, "Installation and System Boundary", 30);
   drawCallout("Declared System Boundary", model.identity.systemBoundary);
 
   // Section 11: Production Processes and Functional Units
-  drawSectionHeading(11, "Production Processes and Functional Units");
+  beginSection(11, "Production Processes and Functional Units", 35);
   drawParagraph("Controlled production processes and default boundaries of matching sectors:");
   methodologies.forEach((sec) => {
     drawCallout(sec.displayName, `Legal Status: ${sec.legalStatus}. Default boundaries: ${sec.defaultBoundaries}`);
   });
 
   // Section 12: Material Input Register
-  drawSectionHeading(12, "Material Input Register");
+  beginSection(12, "Material Input Register", 35);
   drawParagraph("Material activity data inputs required for the production route:");
   drawTable(
     ["Input Path", "Value", "Unit", "Source Type"],
@@ -385,7 +386,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   );
 
   // Section 13: Evidence Sufficiency Matrix
-  drawSectionHeading(13, "Evidence Sufficiency Matrix");
+  beginSection(13, "Evidence Sufficiency Matrix", 35);
   drawParagraph("Requirement-level analysis of evidence linkages. PARTIALLY_SUPPORTED or missing evidence blocks sealing.");
   drawTable(
     ["Req ID", "Input Path", "Evidence IDs", "State", "Coverage", "Reason Codes"],
@@ -401,7 +402,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   );
 
   // Section 14: Evidence Register
-  drawSectionHeading(14, "Evidence Register");
+  beginSection(14, "Evidence Register", 35);
   const approvedRows = caseData.evidenceRegister.map(e => [
     e.evidenceId,
     e.fileName,
@@ -417,7 +418,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   );
 
   // Section 15: Data Lineage Matrix
-  drawSectionHeading(15, "Data Lineage Matrix");
+  beginSection(15, "Data Lineage Matrix", 35);
   drawParagraph("Cryptographic audit path linking physical evidence hash to final calculation results:");
   const lineageRows = caseData.evidenceRegister.map(e => [
     e.evidenceId,
@@ -432,7 +433,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   );
 
   // Section 16: Direct Emissions
-  drawSectionHeading(16, "Direct Emissions");
+  beginSection(16, "Direct Emissions", 35);
   drawTable(
     ["Parameter", "Value", "Unit"],
     [
@@ -443,7 +444,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   );
 
   // Section 17: Indirect Emissions
-  drawSectionHeading(17, "Indirect Emissions");
+  beginSection(17, "Indirect Emissions", 35);
   drawTable(
     ["Parameter", "Value", "Unit"],
     [
@@ -454,7 +455,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   );
 
   // Section 18: Precursors
-  drawSectionHeading(18, "Precursors");
+  beginSection(18, "Precursors", 35);
   if (model.precursors.length > 0) {
     drawTable(
       ["Precursor Name", "Quantity", "Direct Emissions", "Indirect Emissions", "Country of Origin"],
@@ -466,7 +467,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   }
 
   // Section 19: Allocation and Per-good Results
-  drawSectionHeading(19, "Allocation and Per-good Results");
+  beginSection(19, "Allocation and Per-good Results", 35);
   drawTable(
     ["Good", "CN Code", "Allocation Share", "Allocated Embedded", "Specific Embedded Emissions"],
     model.goods.map(g => [g.goodIndex, g.cnCode, g.allocationShare, g.allocatedEmbeddedEmissions, g.specificEmbeddedEmissions]),
@@ -474,7 +475,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   );
 
   // Section 20: Calculation Integrity and Reconciliation
-  drawSectionHeading(20, "Calculation Integrity and Reconciliation");
+  beginSection(20, "Calculation Integrity and Reconciliation", 35);
   drawTable(
     ["Parameter", "Value", "Unit", "Verification Status"],
     [
@@ -485,11 +486,11 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   );
 
   // Section 21: Data Quality, Uncertainty, and Missing Data
-  drawSectionHeading(21, "Data Quality, Uncertainty, and Missing Data");
+  beginSection(21, "Data Quality, Uncertainty, and Missing Data", 35);
   drawParagraph("The operator-supplied data is assessed for compliance with measurement instrument uncertainty thresholds. No data gaps or missing default values were automatically resolved using unverified sources.");
 
   // Section 22: Methodology Decision Register
-  drawSectionHeading(22, "Methodology Decision Register");
+  beginSection(22, "Methodology Decision Register", 35);
   const methodRows = caseData.methodologyDecisions.map(item => [
     item.topic,
     item.selectedMethod,
@@ -503,7 +504,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   );
 
   // Section 23: Findings Register
-  drawSectionHeading(23, "Findings Register");
+  beginSection(23, "Findings Register", 35);
   const openFindings = model.findings.filter(f => f.status === "OPEN");
   if (openFindings.length > 0) {
     drawTable(
@@ -516,7 +517,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   }
 
   // Section 24: Corrective Action Plan
-  drawSectionHeading(24, "Corrective Action Plan");
+  beginSection(24, "Corrective Action Plan", 35);
   const openActions = model.correctiveActions.filter(a => a.state === "OPEN");
   if (openActions.length > 0) {
     drawTable(
@@ -529,7 +530,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   }
 
   // Section 25: EU Verification Template Crosswalk
-  drawSectionHeading(25, "EU Verification Template Crosswalk");
+  beginSection(25, "EU Verification Template Crosswalk", 35);
   drawTable(
     ["Req ID", "Legal Basis", "Crosswalk Requirement", "Owner", "Status"],
     model.requirementCrosswalk.map(c => [
@@ -543,7 +544,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   );
 
   // Section 26: Verifier Handover Checklist
-  drawSectionHeading(26, "Verifier Handover Checklist");
+  beginSection(26, "Verifier Handover Checklist", 35);
   drawParagraph("The following fields require manual review and completion by the independent accredited verifier:");
   drawTable(
     ["Verifier Reserved Field", "Status", "Comment"],
@@ -556,43 +557,48 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   );
 
   // Section 27: Package Manifest and Digital Integrity
-  drawSectionHeading(27, "Package Manifest and Digital Integrity");
+  beginSection(27, "Package Manifest and Digital Integrity", 35);
   drawTable(
     ["Integrity Parameter", "Value"],
     [
-      ["Manifest Hash", model.manifestSummary.manifestHash || digest(model.reportId).slice(0, 32)],
-      ["Package Hash", model.manifestSummary.packageHash || digest(model.reportId + "pkg").slice(0, 32)],
+      ["Manifest Hash", model.manifestSummary.manifestHash || "NOT_AVAILABLE"],
+      ["Package Hash", model.manifestSummary.packageHash || "NOT_AVAILABLE"],
       ["Schema Version", model.schemaVersion],
     ],
     [50, 130]
   );
 
   // Section 28: Version Comparison
-  drawSectionHeading(28, "Version Comparison");
+  beginSection(28, "Version Comparison", 35);
   drawParagraph("This register tracks the history of released and sealed package versions under this case scope:");
+  const versionRows = model.releaseVersion === 1
+    ? [
+        [`V${model.releaseVersion}`, model.generatedAt, "Initial base release version.", "OPERATOR_ADMIN", "ACTIVE_RELEASE"]
+      ]
+    : [
+        ["V1.0", "NOT_AVAILABLE", "Previous release history not dynamically recorded.", "NOT_AVAILABLE", "SUPERSEDED"],
+        [`V${model.releaseVersion}`, model.generatedAt, "Dossier correction/update release.", "OPERATOR_ADMIN", "ACTIVE_RELEASE"]
+      ];
   drawTable(
     ["Version", "Sealed Timestamp", "Release Reason / Changes", "Author", "Status"],
-    [
-      ["V1.0", model.generatedAt, "Initial base release version.", "OPERATOR_ADMIN", "SUPERSEDED"],
-      [`V${model.releaseVersion}`, model.generatedAt, "Current active release under the V5 mandate.", "OPERATOR_ADMIN", "ACTIVE_RELEASE"]
-    ],
+    versionRows,
     [20, 40, 70, 30, 20]
   );
 
   // Section 29: Sign-off and Limitations
-  drawSectionHeading(29, "Sign-off and Limitations");
+  beginSection(29, "Sign-off and Limitations", 35);
   drawParagraph("The operator hereby signs off on this verifier-preparation dossier as complete and accurate to the best of their knowledge. This package does not constitute a legally binding verifier certificate.");
   drawTable(
     ["Sign-off Role", "Name & Title", "Signature", "Sign-off Date"],
     [
-      ["Operator Author", "John Doe (Operator Admin)", "[ Signed Electronically ]", model.generatedAt],
-      ["Accredited Verifier", "Pending Independent Review", "[ Pending Audit Completion ]", "Pending"]
+      ["Operator Author", "NOT_PROVIDED", "NOT_SIGNED", "NOT_AVAILABLE"],
+      ["Accredited Verifier", "NOT_AVAILABLE", "NOT_SIGNED", "NOT_AVAILABLE"]
     ],
     [50, 50, 50, 30]
   );
 
   // Section 30: Technical Annex Index
-  drawSectionHeading(30, "Technical Annex Index");
+  beginSection(30, "Technical Annex Index", 35);
   drawParagraph("The ZIP package contains the following 25 components:");
   drawTable(
     ["Filename in ZIP", "Format", "Description"],
@@ -610,20 +616,15 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   // SECOND PASS: TABLE OF CONTENTS (PAGE 3)
   // ==========================================
   doc.setPage(3);
-  doc.setFillColor(20, 42, 74);
-  doc.rect(0, 0, PAGE_WIDTH, 20, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.text("TABLE OF CONTENTS", MARGIN, 13);
+  y = BODY_TOP;
+  beginSection(4, "Table of Contents", 120);
 
-  y = 30;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
   doc.setTextColor(44, 62, 80);
 
   const writeTocRow = (num: number, title: string) => {
-    const page = sectionPages[num] || 4;
+    const page = sectionPages[num] || 3;
     doc.setFont("helvetica", "bold");
     doc.text(`${num}.`, MARGIN, y);
     doc.setFont("helvetica", "normal");
@@ -634,6 +635,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
 
   writeTocRow(2, "Document Control");
   writeTocRow(3, "Legal and Product Boundary");
+  writeTocRow(4, "Table of Contents");
   writeTocRow(5, "Executive Decision Board");
   writeTocRow(6, "Readiness Score and Hard Gates");
   writeTocRow(7, "Operator and Installation Identity");

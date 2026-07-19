@@ -4,7 +4,7 @@ import type { ReadinessAssessment, ReadinessDimension, ReadinessDimensionId, Ope
 import { runEvidenceSufficiency } from "./evidence-sufficiency";
 import { generateFindingsAndActions } from "./findings-engine";
 
-export function getReportingPeriodAssessment(caseData: AuditReadyCase): ReportingPeriodAssessment {
+export function getReportingPeriodAssessment(caseData: AuditReadyCase, assessmentTimestamp?: string): ReportingPeriodAssessment {
   const yearVal = String(caseData.reportingPeriod.year.value || "");
   const quarterVal = String(caseData.reportingPeriod.quarter.value || "").toUpperCase().trim();
   const year = Number(yearVal) || new Date().getFullYear();
@@ -110,9 +110,12 @@ export function getReportingPeriodAssessment(caseData: AuditReadyCase): Reportin
     ? Math.min(100, Math.round((coveredDays / expectedDays) * 100)).toString()
     : "0";
 
-  const currentYear = new Date().getFullYear();
-  if (year > currentYear + 1) {
-    hardBlockerFindingIds.push("FND-PERIOD-FUTURE-YEAR");
+  const now = assessmentTimestamp ? new Date(assessmentTimestamp) : new Date();
+  if (endDate) {
+    const periodEndDate = new Date(endDate);
+    if (periodEndDate.getTime() > now.getTime()) {
+      hardBlockerFindingIds.push("FND-PERIOD-FUTURE-END-DATE");
+    }
   }
 
   if (type !== "DEFINITIVE_ANNUAL") {
@@ -141,12 +144,13 @@ export function getReportingPeriodAssessment(caseData: AuditReadyCase): Reportin
 export function assessReadiness(params: {
   caseData: AuditReadyCase;
   isDraft: boolean;
+  assessmentTimestamp?: string;
 }): ReadinessAssessment {
-  const { caseData, isDraft } = params;
+  const { caseData, isDraft, assessmentTimestamp } = params;
 
   // 1. Run validation engines
   const sufficiency = runEvidenceSufficiency(caseData);
-  const { findings } = generateFindingsAndActions(caseData);
+  const { findings } = generateFindingsAndActions(caseData, assessmentTimestamp);
 
   // 2. Map requirements & findings to dimensions
   const dimensionDefinitions: Record<ReadinessDimensionId, {
@@ -266,7 +270,7 @@ export function assessReadiness(params: {
   const missingMaterialEvidenceCount = sufficiency.filter(r => r.blocksSealing && r.state !== "SUPPORTED").length;
   const unresolvedCalculationExceptionCount = findings.filter(f => f.category === "CALCULATION_EXCEPTION" && f.status === "OPEN").length;
 
-  const period = getReportingPeriodAssessment(caseData);
+  const period = getReportingPeriodAssessment(caseData, assessmentTimestamp);
   const hasCriticalBlocker = criticalBlockerCount > 0 || !period.definitiveAnnualEligible;
   const hasUnsupportedMaterialEvidence = missingMaterialEvidenceCount > 0;
   const hasIntegrityFailure = findings.some(f => f.category === "EVIDENCE_INTEGRITY" && f.status === "OPEN");
@@ -312,9 +316,9 @@ export function assessReadiness(params: {
     score: finalScore.toString(),
     scoreScale: "0-100",
     dimensions: dimensions as any,
-    criticalBlockerCount: criticalBlockerCount + (!period.definitiveAnnualEligible ? 1 : 0),
+    criticalBlockerCount,
     materialFindingCount,
-    openFindingCount: openFindingCount + (!period.definitiveAnnualEligible ? 1 : 0),
+    openFindingCount,
     missingMaterialEvidenceCount,
     unresolvedCalculationExceptionCount,
     recommendedDecision,
