@@ -66,7 +66,7 @@
     "canvas": "^3.2.3",
     "decimal.js": "^10.6.0",
     "firebase": "^12.16.0",
-    "firebase-admin": "13.10.0",
+    "firebase-admin": "14.2.0",
     "firebase-admin-a14c8a5423a75469": "npm:firebase-admin@^13.10.0",
     "jspdf": "^4.2.1",
     "jszip": "^3.10.1",
