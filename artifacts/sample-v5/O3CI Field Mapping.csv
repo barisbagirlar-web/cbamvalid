@@ -1,6 +1,6 @@
 Dossier field,O3CI concept,Value / reference
 caseId,CASE_IDENTIFIER,case_verifier_grade_fixture
-reportingPeriod,REPORTING_PERIOD,2026-Q1
+reportingPeriod,REPORTING_PERIOD,2026-ANNUAL
 installation,INSTALLATION,Verified Integrated Steel Installation
 goods[].cnCode,GOODS_CLASSIFICATION,72011011 | 72011019
 totalEmbeddedEmissions,TOTAL_EMBEDDED_EMISSIONS,120

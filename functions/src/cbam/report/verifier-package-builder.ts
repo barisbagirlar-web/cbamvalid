@@ -48,6 +48,8 @@ export const REQUIRED_TOP_LEVEL_COMPONENTS = [
 ] as const;
 
 export const REQUIRED_TOP_LEVEL_COMPONENTS_V5 = [
+  "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf",
+  "Complete Dossier Compilation.pdf",
   "Product Scope Assessment.pdf",
   "CN Code Reasoning.pdf",
   "Required Data Checklist.pdf",
@@ -271,7 +273,7 @@ function buildPdfArtifacts(params: {
       requirementCrosswalk: crosswalk,
       calculationTrace: params.calculation.trace,
       manifestSummary: {
-        totalFiles: 23,
+        totalFiles: 25,
         manifestHash: "",
         packageHash: "",
       },
@@ -318,7 +320,44 @@ function buildPdfArtifacts(params: {
         { heading: "Formula trace", table: { headers: ["Formula", "Output", "Unit", "Calculation hash", "Warnings / assumptions"], widths: [43, 22, 20, 55, 40], rows: calculation.trace.map((item) => [item.formulaId, item.outputValue, item.outputUnit, item.calculationHash, [...item.warnings, ...item.assumptions].join("; ") || "None"] ) } },
         { heading: "Per-good reconciliation", table: goodsTable(model) },
       ]),
-      artifact("Operator Emissions Report.pdf", buildPremiumDossierPdf(dossierModel), "application/pdf"),
+      artifact("Operator Emissions Report.pdf", buildPremiumDossierPdf(dossierModel, caseData), "application/pdf"),
+      artifact("CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf", buildPremiumDossierPdf(dossierModel, caseData), "application/pdf"),
+      pdfFile("Complete Dossier Compilation.pdf", "Technical Compilation and Calculation Annex", "Consolidated CBAM evidence dossier and preparation statements", [
+        // Product Scope Assessment
+        { heading: "Product Scope - Controlled identity", table: identityTable(model) },
+        { heading: "Product Scope - Goods population", table: goodsTable(model) },
+        { heading: "Product Scope - Scope conclusion", callout: { label: "Automated readiness", value: model.automatedReadiness } },
+        { heading: "Product Scope - Legal basis", table: legalSourceTable(model) },
+
+        // CN Code Reasoning
+        { heading: "CN Code - Classification register", table: { headers: ["Good", "CN code", "Sector", "CN evidence", "Production evidence"], widths: [15, 28, 45, 46, 46], rows: caseData.goods.map((good, index) => [index + 1, good.cnCode.value, good.sector, good.cnCode.evidenceId || "MISSING", good.productionVolume.evidenceId || "MISSING"]) } },
+        { heading: "CN Code - Classification boundary", paragraphs: ["This document records the classification supplied in the sealed case. It does not replace a binding customs classification decision. Any disputed or uncertain CN code remains subject to customs review."] },
+
+        // Required Data Checklist
+        { heading: "Checklist - Monitoring-plan requirements", table: monitoringTable(model) },
+        { heading: "Checklist - Automated control findings", table: qualityTable(model) },
+        { heading: "Checklist - Evidence coverage", table: { headers: ["Measure", "Result"], widths: [75, 105], rows: [["Registered evidence files", model.evidenceSummary.totalEvidenceFiles], ["Approved and malware-clean files", model.evidenceSummary.approvedCleanEvidenceFiles], ["Linked input fields", model.evidenceSummary.linkedInputCount], ["Linked calculation nodes", model.evidenceSummary.linkedCalculationCount], ["Coverage rate", `${model.evidenceSummary.coverageRate}%`], ["Duplicate hashes", model.evidenceSummary.duplicateHashCount]] } },
+
+        // Installation Monitoring Plan
+        { heading: "Monitoring Plan - Installation and boundary", paragraphs: [model.identity.systemBoundary, `Production route: ${model.identity.productionRoute}`] },
+        { heading: "Monitoring Plan - Minimum monitoring-plan elements", table: monitoringTable(model) },
+        { heading: "Monitoring Plan - Input hierarchy", table: { headers: ["Input", "Value", "Unit", "Source", "Evidence", "Method"], widths: [35, 24, 22, 25, 40, 34], rows: [["Direct emissions", caseData.directEmissions.value, caseData.directEmissions.canonicalUnit, caseData.directEmissions.sourceType, caseData.directEmissions.evidenceId || "MISSING", caseData.directEmissions.measurementMethod || "NOT DOCUMENTED"], ["Electricity", caseData.electricityConsumed.value, caseData.electricityConsumed.canonicalUnit, caseData.electricityConsumed.sourceType, caseData.electricityConsumed.evidenceId || "MISSING", caseData.electricityConsumed.measurementMethod || "NOT DOCUMENTED"], ["Grid emission factor", caseData.gridEmissionFactor.value, caseData.gridEmissionFactor.canonicalUnit, caseData.gridEmissionFactor.sourceType, caseData.gridEmissionFactor.evidenceId || "MISSING", caseData.gridEmissionFactor.measurementMethod || "NOT DOCUMENTED"]] } },
+
+        // Production Process Map
+        { heading: "Process Map - End-to-end process", table: { headers: ["Stage", "Controlled activity", "Evidence / output"], widths: [20, 90, 70], rows: [["1", "Identify installation, operator, CN-coded goods and reporting period", "CASE and GOODS registers"], ["2", "Define production processes, source streams, boundaries and functional units", "Monitoring Plan and System Boundary"], ["3", "Capture direct, electricity and precursor data with approved evidence", "INPUTS, PRECURSORS and EVIDENCE"], ["4", "Apply unit conversions, allocation and embedded-emissions formulae", "CALCULATION_TRACE and root hash"], ["5", "Run evidence, methodology, reconciliation and integrity controls", "QUALITY_CONTROLS and MONITORING_PLAN"], ["6", "Apply per-good 5% materiality reference for verifier planning", "GOODS materiality columns"], ["7", "Freeze, hash, sign and commit immutable package", "Manifest, KMS signature and package hash"], ["8", "Independent accredited verifier performs review and records opinion", "VERIFIER_SIGN_OFF — initially NOT_REVIEWED"]] } },
+
+        // System Boundary Register
+        { heading: "System Boundary - Declared system boundary", callout: { label: "Boundary", value: model.identity.systemBoundary } },
+        { heading: "System Boundary - Sector methodology", table: { headers: ["Sector", "Legal status", "Boundary", "Verification focus"], widths: [30, 24, 66, 60], rows: model.sectorMethodologies.map((sector) => [sector.displayName, sector.legalStatus, sector.defaultBoundaries, sector.verificationFocus.join("; ")]) } },
+
+        // Methodology Decision Log
+        { heading: "Methodology - Decision register", table: { headers: ["Topic", "Selected method", "Reason", "Legal / technical basis", "Review", "Evidence"], widths: [26, 35, 38, 43, 18, 20], rows: methodRows.length ? methodRows : [["NO DECISION", "—", "No methodology decision recorded", "—", "GAP", "—"]] } },
+
+        // Embedded Emissions Calculation Annex
+        { heading: "Calculation Annex - Engine identity", table: { headers: ["Control", "Value"], widths: [48, 132], rows: [["Ruleset", calculation.ruleset], ["Engine version", calculation.engineVersion], ["Calculation root hash", calculation.calculationRootHash], ["Allocation share total", calculation.allocationShareTotal], ["Allocation reconciliation delta", calculation.allocationReconciliationDelta]] } },
+        { heading: "Calculation Annex - Formula trace", table: { headers: ["Formula", "Output", "Unit", "Calculation hash", "Warnings / assumptions"], widths: [43, 22, 20, 55, 40], rows: calculation.trace.map((item) => [item.formulaId, item.outputValue, item.outputUnit, item.calculationHash, [...item.warnings, ...item.assumptions].join("; ") || "None"] ) } },
+        { heading: "Calculation Annex - Per-good reconciliation", table: goodsTable(model) },
+      ]),
     ];
   }
 
@@ -472,7 +511,7 @@ export function buildDataIntegrityManifest(params: {
     legalSourceRegistryHash: DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT,
     componentContract: {
       requiredTopLevelComponents: isV5 ? REQUIRED_TOP_LEVEL_COMPONENTS_V5 : REQUIRED_TOP_LEVEL_COMPONENTS,
-      requiredCount: isV5 ? 23 : 27,
+      requiredCount: isV5 ? 25 : 27,
     },
     files: params.artifacts.map((item) => ({ path: item.path, sha256: hash(item.bytes), sizeBytes: item.bytes.byteLength, mediaType: item.mediaType })).sort((left, right) => left.path.localeCompare(right.path)),
     evidenceCount: params.evidenceCount,
@@ -510,7 +549,7 @@ export async function finalizeVerifierPackage(params: {
 
   const topLevel = topLevelComponents(allArtifacts.map((item) => item.path));
   const expected = isV5 ? [...REQUIRED_TOP_LEVEL_COMPONENTS_V5].sort() : [...REQUIRED_TOP_LEVEL_COMPONENTS].sort();
-  const targetCount = isV5 ? 23 : 27;
+  const targetCount = isV5 ? 25 : 27;
 
   if (topLevel.length !== targetCount || canonical(topLevel) !== canonical(expected)) {
     throw new Error(`PACKAGE_COMPONENT_CONTRACT_FAILED:${topLevel.join("|")}`);

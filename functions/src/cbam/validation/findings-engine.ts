@@ -3,6 +3,7 @@ import type { AuditReadyCase } from "../schema";
 import type { Finding, CorrectiveAction } from "../report/premium-dossier-schema";
 import { runQualityControls } from "./quality-controls";
 import { runEvidenceSufficiency } from "./evidence-sufficiency";
+import { getReportingPeriodAssessment } from "./readiness-score";
 
 function stableHashPrefix(subject: string): string {
   return crypto.createHash("sha256").update(subject).digest("hex").slice(0, 8);
@@ -184,6 +185,46 @@ export function generateFindingsAndActions(caseData: AuditReadyCase): {
 
     correctiveActions.push(action);
   });
+
+  // 4. Period Assessment Check
+  const period = getReportingPeriodAssessment(caseData);
+  if (!period.definitiveAnnualEligible) {
+    const findingId = "FND-PERIOD-NON-ANNUAL";
+    const action: CorrectiveAction = {
+      actionId: `ACT-${findingId}`,
+      findingId,
+      priority: "P0",
+      requiredAction: "Update the reporting period to a definitive annual period (e.g., ANNUAL) or supply full-year data to enable verifier review.",
+      responsibleRole: "OPERATOR_ADMIN",
+      targetDate: null,
+      closureCondition: "Reporting period is updated to a definitive annual period.",
+      closureEvidenceIds: [],
+      state: "OPEN",
+    };
+
+    findings.push({
+      findingId,
+      ruleId: "REQ-PERIOD-ANNUAL",
+      severity: "CRITICAL",
+      category: "PERIOD_MISMATCH",
+      status: "OPEN",
+      title: "Definitive Annual Reporting Period Required",
+      description: `The selected reporting period is not a definitive annual period (detected type: ${period.type}). A quarterly or partial-year period cannot pass definitive annual verifier readiness.`,
+      regulatoryOrTechnicalBasis: "Commission Implementing Regulation (EU) 2025/2546 - Article 5",
+      affectedInputIds: ["reportingPeriod.quarter"],
+      affectedCalculationIds: [],
+      affectedEvidenceIds: [],
+      affectedReportSectionIds: [],
+      impactStatement: "Quarterly or partial-year data blocks definitive annual readiness and package sealing.",
+      remediationRequirement: "Change the reporting period to a full year (ANNUAL) and link corresponding annual data.",
+      blocksOperatorReadiness: true,
+      blocksSealing: true,
+      createdDeterministicallyFrom: "getReportingPeriodAssessment",
+      action,
+    });
+
+    correctiveActions.push(action);
+  }
 
   return { findings, correctiveActions };
 }

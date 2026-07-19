@@ -80,6 +80,26 @@ export function MethodologyContent({ showTitle = true }: MethodologyContentProps
             CBAMValid is an independent software service and is not an official European Commission or CBAM Registry service. Outputs support CBAM evidence and verification preparation; user-supplied data remains the user&apos;s responsibility. The service does not constitute legal or tax advice, does not issue an accredited verification opinion, and does not guarantee regulatory acceptance.
           </p>
         </div>
+
+        <div className="border-t border-border pt-8 mt-8">
+          <div className="bg-accent-soft/20 border border-accent/20 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row gap-6 items-start">
+            <div className="w-12 h-12 rounded-full bg-accent/10 text-accent flex items-center justify-center font-bold text-lg shrink-0">
+              IIT
+            </div>
+            <div className="space-y-3">
+              <h3 className="text-lg font-bold font-serif text-foreground">Academic Oversight & Expert Review</h3>
+              <p className="text-sm text-muted leading-relaxed">
+                To guarantee mathematical rigour and absolute compliance with EU CBAM allocation formulas, our computational engines undergo continuous expert peer-review.
+              </p>
+              <div className="pt-2 border-t border-border/50">
+                <p className="font-semibold text-foreground text-sm">Prof. Dr. Neela Nataraj</p>
+                <p className="text-xs text-muted">
+                  Department of Mathematics · Indian Institute of Technology Bombay (IIT Bombay)
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
     </div>
   );

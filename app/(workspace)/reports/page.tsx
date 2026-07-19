@@ -70,7 +70,7 @@ export default function ReportsPage() {
                   className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors"
                 >
                   <div>
-                    <p className="font-semibold text-sm">{r.calculation?.inputs?.installationName}</p>
+                    <p className="font-semibold text-sm">{r.installationName || r.calculation?.inputs?.installationName || "Sealed dossier"}</p>
                     <p className="text-xs text-muted mt-1 font-mono">
                       Release ID: {r.reportId.substring(0, 8)}... | Sealed: {new Date(r.createdAt).toLocaleDateString()}
                     </p>

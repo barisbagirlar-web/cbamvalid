@@ -161,13 +161,13 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
         addPage();
         drawHeader();
       }
-      document.setFillColor(rowIndex % 2 === 0 ? 248 : 239, rowIndex % 2 === 0 ? 250 : 244, rowIndex % 2 === 0 ? 252 : 248);
       document.setDrawColor(215, 221, 229);
       document.setTextColor(43, 51, 64);
       document.setFont("helvetica", "normal");
       document.setFontSize(7.2);
       let x = MARGIN;
       wrapped.forEach((lines, columnIndex) => {
+        document.setFillColor(rowIndex % 2 === 0 ? 248 : 239, rowIndex % 2 === 0 ? 250 : 244, rowIndex % 2 === 0 ? 252 : 248);
         document.rect(x, y, widths[columnIndex], rowHeight, "FD");
         document.text(lines.slice(0, 6), x + 1.5, y + 3.5);
         x += widths[columnIndex];

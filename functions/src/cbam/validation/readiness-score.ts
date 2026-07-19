@@ -4,6 +4,70 @@ import type { ReadinessAssessment, ReadinessDimension, ReadinessDimensionId, Ope
 import { runEvidenceSufficiency } from "./evidence-sufficiency";
 import { generateFindingsAndActions } from "./findings-engine";
 
+export function getReportingPeriodAssessment(caseData: AuditReadyCase): {
+  type: "DEFINITIVE_ANNUAL" | "INTERIM_QUARTERLY" | "INTERIM_MONTHLY" | "CUSTOM_INTERNAL";
+  startDate: string;
+  endDate: string;
+  reportingYear: number;
+  coveredDays: number;
+  expectedDays: number;
+  completenessPercent: number;
+  definitiveAnnualEligible: boolean;
+} {
+  const yearVal = String(caseData.reportingPeriod.year.value || "");
+  const quarterVal = String(caseData.reportingPeriod.quarter.value || "").toUpperCase().trim();
+  const year = Number(yearVal) || new Date().getFullYear();
+
+  let type: "DEFINITIVE_ANNUAL" | "INTERIM_QUARTERLY" | "INTERIM_MONTHLY" | "CUSTOM_INTERNAL" = "DEFINITIVE_ANNUAL";
+  let startDate = `${year}-01-01`;
+  let endDate = `${year}-12-31`;
+
+  if (!quarterVal || quarterVal === "ANNUAL") {
+    type = "DEFINITIVE_ANNUAL";
+  } else if (/^Q[1-4]$/.test(quarterVal)) {
+    type = "INTERIM_QUARTERLY";
+    const q = Number(quarterVal[1]);
+    if (q === 1) {
+      startDate = `${year}-01-01`;
+      endDate = `${year}-03-31`;
+    } else if (q === 2) {
+      startDate = `${year}-04-01`;
+      endDate = `${year}-06-30`;
+    } else if (q === 3) {
+      startDate = `${year}-07-01`;
+      endDate = `${year}-09-30`;
+    } else if (q === 4) {
+      startDate = `${year}-10-01`;
+      endDate = `${year}-12-31`;
+    }
+  } else if (/^M(0[1-9]|1[0-2])$/.test(quarterVal) || /^(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)/.test(quarterVal)) {
+    type = "INTERIM_MONTHLY";
+    startDate = `${year}-01-01`;
+    endDate = `${year}-01-31`;
+  } else {
+    type = "CUSTOM_INTERNAL";
+  }
+
+  const startMs = Date.parse(startDate);
+  const endMs = Date.parse(endDate);
+  const coveredDays = Math.round((endMs - startMs) / (1000 * 60 * 60 * 24)) + 1;
+  const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+  const expectedDays = type === "DEFINITIVE_ANNUAL" ? (isLeap ? 366 : 365) : coveredDays;
+  const completenessPercent = Math.round((coveredDays / expectedDays) * 100);
+  const definitiveAnnualEligible = type === "DEFINITIVE_ANNUAL";
+
+  return {
+    type,
+    startDate,
+    endDate,
+    reportingYear: year,
+    coveredDays,
+    expectedDays,
+    completenessPercent,
+    definitiveAnnualEligible,
+  };
+}
+
 export function assessReadiness(params: {
   caseData: AuditReadyCase;
   isDraft: boolean;
@@ -27,7 +91,7 @@ export function assessReadiness(params: {
     },
     SCOPE_AND_METHODOLOGY: {
       weight: new Decimal("15"),
-      reqIds: ["REQ-INST-ROUTE", "REQ-INST-BOUNDS", "REQ-PERIOD-YEAR"],
+      reqIds: ["REQ-INST-ROUTE", "REQ-INST-BOUNDS", "REQ-PERIOD-YEAR", "REQ-PERIOD-ANNUAL"],
       rulePrefixes: ["QC_02", "QC_03"],
     },
     ACTIVITY_DATA: {
@@ -133,7 +197,8 @@ export function assessReadiness(params: {
   const missingMaterialEvidenceCount = sufficiency.filter(r => r.blocksSealing && r.state !== "SUPPORTED").length;
   const unresolvedCalculationExceptionCount = findings.filter(f => f.category === "CALCULATION_EXCEPTION" && f.status === "OPEN").length;
 
-  const hasCriticalBlocker = criticalBlockerCount > 0;
+  const period = getReportingPeriodAssessment(caseData);
+  const hasCriticalBlocker = criticalBlockerCount > 0 || !period.definitiveAnnualEligible;
   const hasMaterialOperatorBlocker = materialFindingCount > 0;
   const hasUnsupportedMaterialEvidence = missingMaterialEvidenceCount > 0;
   const hasIntegrityFailure = findings.some(f => f.category === "EVIDENCE_INTEGRITY" && f.status === "OPEN");
@@ -156,7 +221,9 @@ export function assessReadiness(params: {
 
   if (hasCriticalBlocker || hasIntegrityFailure) {
     recommendedDecision = "DO_NOT_SUBMIT";
-    decisionReasonCodes.push("CRITICAL_BLOCKERS_PRESENT");
+    if (criticalBlockerCount > 0) decisionReasonCodes.push("CRITICAL_BLOCKERS_PRESENT");
+    if (!period.definitiveAnnualEligible) decisionReasonCodes.push("NON_ANNUAL_PERIOD_BLOCKED");
+    if (hasIntegrityFailure) decisionReasonCodes.push("EVIDENCE_INTEGRITY_FAILURE");
   } else if (hasMaterialOperatorBlocker || hasUnsupportedMaterialEvidence || finalScore.lessThan(90)) {
     recommendedDecision = "REMEDIATE_BEFORE_REVIEW";
     decisionReasonCodes.push("MATERIAL_GAPS_OR_LOW_SCORE");
@@ -164,18 +231,25 @@ export function assessReadiness(params: {
     decisionReasonCodes.push("READINESS_THRESHOLD_MET");
   }
 
+  const canSeal = operatorStatus !== "NOT_READY" &&
+    criticalBlockerCount === 0 &&
+    !hasCriticalBlocker &&
+    !hasIntegrityFailure &&
+    missingMaterialEvidenceCount === 0;
+
   return {
     operatorStatus,
     independentVerifierStatus: "NOT_REVIEWED",
     score: finalScore.toString(),
     scoreScale: "0-100",
     dimensions: dimensions as any,
-    criticalBlockerCount,
+    criticalBlockerCount: criticalBlockerCount + (!period.definitiveAnnualEligible ? 1 : 0),
     materialFindingCount,
-    openFindingCount,
+    openFindingCount: openFindingCount + (!period.definitiveAnnualEligible ? 1 : 0),
     missingMaterialEvidenceCount,
     unresolvedCalculationExceptionCount,
     recommendedDecision,
+    canSeal,
     decisionReasonCodes,
   };
 }

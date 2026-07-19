@@ -62,6 +62,7 @@ export const PersistedSealedReportSchema = z.object({
   kmsAlgorithm: z.string().regex(/^RSA_SIGN_PKCS1_(2048|3072|4096)_SHA256$/),
   signatureBase64: z.string().min(32),
   storage: z.record(z.string(), StorageEntrySchema),
+  installationName: z.string().optional(),
 });
 
 export const SealedReportViewSchema = PersistedSealedReportSchema.extend({

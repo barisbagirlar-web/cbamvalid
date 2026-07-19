@@ -85,6 +85,8 @@ describe("premium-dossier-v5 deliverables", () => {
       "goods.1.allocationShare"
     );
     
+    // Enforce annual period for base readiness test
+    caseData.reportingPeriod.quarter.value = "ANNUAL";
     // Test base readiness
     const readiness = assessReadiness({ caseData, isDraft: false });
     expect(readiness.operatorStatus).toBe("READY_FOR_VERIFIER_REVIEW");
@@ -98,6 +100,14 @@ describe("premium-dossier-v5 deliverables", () => {
     const readinessDirty = assessReadiness({ caseData: dirtyCase, isDraft: false });
     expect(readinessDirty.operatorStatus).toBe("NOT_READY");
     expect(readinessDirty.missingMaterialEvidenceCount).toBeGreaterThan(0);
+
+    // Test that quarterly period blocks readiness
+    const quarterlyCase = JSON.parse(JSON.stringify(caseData));
+    quarterlyCase.reportingPeriod.quarter.value = "Q1";
+    const { operatorStatus: status, criticalBlockerCount, canSeal } = assessReadiness({ caseData: quarterlyCase, isDraft: false });
+    expect(status).toBe("NOT_READY");
+    expect(criticalBlockerCount).toBeGreaterThan(0);
+    expect(canSeal).toBe(false);
   });
 
   it("seals and reopens the exact 23-component V5 package", async () => {
@@ -117,6 +127,7 @@ describe("premium-dossier-v5 deliverables", () => {
       "goods.1.cnCode",
       "goods.1.allocationShare"
     );
+    caseData.reportingPeriod.quarter.value = "ANNUAL";
     const controls = runQualityControls(caseData);
     const calculation = performDossierCalculations(caseData);
     
@@ -142,7 +153,7 @@ describe("premium-dossier-v5 deliverables", () => {
 
     const manifest = JSON.parse(manifestResult.bytes.toString("utf8")) as DataIntegrityManifest;
     expect(manifest.schemaVersion).toBe("CBAMVALID-DOSSIER-5.0");
-    expect(manifest.componentContract.requiredCount).toBe(23);
+    expect(manifest.componentContract.requiredCount).toBe(25);
 
     const finalized = await finalizeVerifierPackage({
       artifacts,
@@ -162,6 +173,12 @@ describe("premium-dossier-v5 deliverables", () => {
     const pdf = await pdfText(primaryPdf!.bytes);
     expect(pdf.text).toContain("CBAMValid");
     expect(pdf.text).toContain("Verification Readiness & Evidence Assurance Dossier");
+
+    const premiumPdf = artifacts.find((item) => item.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
+    expect(premiumPdf).toBeDefined();
+    const pdfPremium = await pdfText(premiumPdf!.bytes);
+    expect(pdfPremium.text).toContain("CBAMValid");
+    expect(pdfPremium.text).toContain("Verification Readiness & Evidence Assurance Dossier");
   }, 30_000);
 
   it("exports the sample-v5 dossier to artifacts/sample-v5", async () => {
@@ -181,6 +198,7 @@ describe("premium-dossier-v5 deliverables", () => {
       "goods.1.cnCode",
       "goods.1.allocationShare"
     );
+    caseData.reportingPeriod.quarter.value = "ANNUAL";
     const controls = runQualityControls(caseData);
     const calculation = performDossierCalculations(caseData);
     
@@ -231,6 +249,7 @@ describe("premium-dossier-v5 deliverables", () => {
     
     // Check that files exist in outputDir
     expect(fs.existsSync(path.join(outputDir, "Operator Emissions Report.pdf"))).toBe(true);
+    expect(fs.existsSync(path.join(outputDir, "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf"))).toBe(true);
     expect(fs.existsSync(path.join(outputDir, "Data Integrity Manifest.json"))).toBe(true);
   }, 30_000);
 });

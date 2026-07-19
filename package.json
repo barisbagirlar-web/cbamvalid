@@ -29,6 +29,7 @@
     "sync:cbam-data": "node scripts/guard-cbam-regulatory-data.mjs --sync",
     "diff:cbam-data": "node scripts/guard-cbam-regulatory-data.mjs --diff",
     "guard:commerce": "node scripts/guard-commercial-architecture.mjs",
+    "guard:premium-dossier-release": "node scripts/guard-premium-dossier-release.mjs",
     "guard:cbam-data": "npx tsx scripts/guard-cbam-regulatory-data.mjs",
     "guard:english-only": "node scripts/guard-english-only.mjs",
     "guard:report-claims": "node scripts/guard-report-claims.mjs",

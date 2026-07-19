@@ -422,6 +422,7 @@ export async function sealReport(params: {
       kmsAlgorithm: signature.algorithm,
       signatureBase64: signature.signatureBase64,
       storage: Object.fromEntries(storageEntries.map((entry) => [entry.path.split("/").at(-1) || entry.path, entry])),
+      installationName: caseData.installation.name.value || "Sealed dossier",
     };
 
     let publicVerificationToken: string | undefined;
