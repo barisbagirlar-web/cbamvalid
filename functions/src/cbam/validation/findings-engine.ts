@@ -205,11 +205,11 @@ export function generateFindingsAndActions(caseData: AuditReadyCase): {
     findings.push({
       findingId,
       ruleId: "REQ-PERIOD-ANNUAL",
-      severity: "CRITICAL",
-      category: "PERIOD_MISMATCH",
+      severity: "CRITICAL_BLOCKER",
+      category: "REPORTING_PERIOD",
       status: "OPEN",
       title: "Definitive Annual Reporting Period Required",
-      description: `The selected reporting period is not a definitive annual period (detected type: ${period.type}). A quarterly or partial-year period cannot pass definitive annual verifier readiness.`,
+      description: "This case covers an interim or partial-year period. It is not a definitive annual operator reporting period and cannot be marked ready for verifier handover.",
       regulatoryOrTechnicalBasis: "Commission Implementing Regulation (EU) 2025/2546 - Article 5",
       affectedInputIds: ["reportingPeriod.quarter"],
       affectedCalculationIds: [],
@@ -219,6 +219,7 @@ export function generateFindingsAndActions(caseData: AuditReadyCase): {
       remediationRequirement: "Change the reporting period to a full year (ANNUAL) and link corresponding annual data.",
       blocksOperatorReadiness: true,
       blocksSealing: true,
+      blocksVerifierHandover: true,
       createdDeterministicallyFrom: "getReportingPeriodAssessment",
       action,
     });

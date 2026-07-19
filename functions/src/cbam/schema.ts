@@ -176,6 +176,8 @@ export const AuditReadyCaseSchema = z.object({
   reportingPeriod: z.object({
     year: InputDatumSchema,
     quarter: InputDatumSchema,
+    startDate: InputDatumSchema.nullable().optional(),
+    endDate: InputDatumSchema.nullable().optional(),
   }),
   goods: z.array(z.object({
     cnCode: InputDatumSchema,

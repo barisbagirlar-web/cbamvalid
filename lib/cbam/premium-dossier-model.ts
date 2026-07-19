@@ -2,11 +2,12 @@ import { z } from "zod";
 import { CalculationTraceNodeSchema } from "./schema";
 
 export const FindingSeveritySchema = z.enum([
-  "CRITICAL", "MATERIAL", "MAJOR", "MINOR", "ADVISORY",
+  "CRITICAL_BLOCKER", "CRITICAL", "MATERIAL", "MAJOR", "MINOR", "ADVISORY",
 ]);
 export type FindingSeverity = z.infer<typeof FindingSeveritySchema>;
 
 export const FindingCategorySchema = z.enum([
+  "REPORTING_PERIOD",
   "IDENTITY_GAP",
   "SCOPE_GAP",
   "METHODOLOGY_GAP",
@@ -76,6 +77,7 @@ export const FindingSchema = z.object({
   remediationRequirement: z.string().min(1),
   blocksOperatorReadiness: z.boolean(),
   blocksSealing: z.boolean(),
+  blocksVerifierHandover: z.boolean().optional(),
   createdDeterministicallyFrom: z.string().min(1),
   action: CorrectiveActionSchema.nullable(),
 });
@@ -213,8 +215,30 @@ export const VerificationRequirementCrosswalkRowSchema = z.object({
 });
 export type VerificationRequirementCrosswalkRow = z.infer<typeof VerificationRequirementCrosswalkRowSchema>;
 
+export const ReportingPeriodTypeSchema = z.enum([
+  "DEFINITIVE_ANNUAL",
+  "INTERIM_QUARTERLY",
+  "INTERIM_MONTHLY",
+  "CUSTOM_INTERNAL",
+]);
+export type ReportingPeriodType = z.infer<typeof ReportingPeriodTypeSchema>;
+
+export const ReportingPeriodAssessmentSchema = z.object({
+  type: ReportingPeriodTypeSchema,
+  startDate: z.string(),
+  endDate: z.string(),
+  reportingYear: z.number().int(),
+  coveredDays: z.number().int(),
+  expectedDays: z.number().int(),
+  completenessPercent: z.string(),
+  definitiveAnnualEligible: z.boolean(),
+  hardBlockerFindingIds: z.array(z.string()),
+});
+export type ReportingPeriodAssessment = z.infer<typeof ReportingPeriodAssessmentSchema>;
+
 export const PremiumDossierViewModelSchema = z.object({
   schemaVersion: z.literal("CBAMVALID-DOSSIER-5.0"),
+  reportingPeriodAssessment: ReportingPeriodAssessmentSchema,
   reportId: z.string().min(1),
   caseId: z.string().min(1),
   releaseVersion: z.number().int().min(1),

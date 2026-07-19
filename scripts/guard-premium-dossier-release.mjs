@@ -65,6 +65,23 @@ if (violations.length > 0) {
 }
 console.log("Compliance checks: PASS");
 
+// 1.1 Truncation and section checks
+console.log("Checking PDF renderer code invariants...");
+const pdfRendererPath = path.join(rootDir, "functions", "src", "cbam", "report", "premium-dossier-pdf.ts");
+if (fs.existsSync(pdfRendererPath)) {
+  const pdfRendererContent = fs.readFileSync(pdfRendererPath, "utf8");
+  if (pdfRendererContent.includes("slice(0, 6)") || pdfRendererContent.includes("slice(0,6)")) {
+    console.error("FAIL: Renderer contains 'slice(0, 6)' truncation!");
+    process.exit(1);
+  }
+  if (pdfRendererContent.includes("Math.min(lines.length, 6)") || pdfRendererContent.includes("Math.min(lines.length,6)")) {
+    console.error("FAIL: Renderer contains line-count truncation 'Math.min(lines.length, 6)'!");
+    process.exit(1);
+  }
+}
+console.log("PDF renderer code invariants: PASS");
+
+
 // 2. Run TypeScript check
 if (!runCommand("npm run typecheck")) {
   process.exit(1);
