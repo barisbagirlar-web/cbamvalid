@@ -139,7 +139,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
 
   const usableEntitlements = useMemo(() => availableEntitlements.filter((entitlement) => {
     const status = String(entitlement.status || "").toUpperCase();
-    const caseMatches = !entitlement.caseId || entitlement.caseId === caseData.caseId;
+    const caseMatches = !entitlement.scopeCaseId || entitlement.scopeCaseId === caseData.caseId;
     return caseMatches && ["AVAILABLE", "ACTIVE", "PURCHASED"].includes(status);
   }), [availableEntitlements, caseData.caseId]);
 
