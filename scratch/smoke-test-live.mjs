@@ -149,12 +149,12 @@ async function runSmokeTest() {
     version: 1,
     ownerId: uid,
     importerIdentity: {
-      legalName: datum("CBAMValid Importer B.V.", undefined, undefined),
+      legalName: datum("CBAMValid Importer B.V. (smoke_test)", undefined, undefined),
       eoriNumber: datum("NL123456789AB"),
       address: null,
     },
     exporterIdentity: {
-      legalName: datum("Verified Steel Operator GmbH", undefined, undefined),
+      legalName: datum("Verified Steel Operator GmbH (smoke_test)", undefined, undefined),
       address: datum("Duisburg, Germany", undefined, FIXTURE_EVIDENCE_ID),
     },
     reportingPeriod: {
@@ -180,7 +180,7 @@ async function runSmokeTest() {
       },
     ],
     installation: {
-      name: datum("Verified Integrated Steel Installation", undefined, undefined),
+      name: datum("Verified Integrated Steel Installation (smoke_test)", undefined, undefined),
       unloCode: null,
       country: datum("DE", undefined, undefined),
       productionRoute: datum("Blast Furnace Route (BF-BOF)", undefined, undefined),
