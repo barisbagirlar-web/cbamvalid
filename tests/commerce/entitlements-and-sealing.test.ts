@@ -132,7 +132,7 @@ describe("5-Release Commercial Entitlement State Machine", () => {
       orderId: "ord-1",
       transactionId: "txn-1",
       eventId: "evt-1",
-      productCode: "CBAM_EXPORTER_FINAL_REPORT",
+      productCode: "pack_premium_dossier_v5",
       quantity: 1,
     });
 
@@ -147,7 +147,7 @@ describe("5-Release Commercial Entitlement State Machine", () => {
       orderId: "ord-1",
       transactionId: "txn-1",
       eventId: "evt-1",
-      productCode: "CBAM_EXPORTER_FINAL_REPORT",
+      productCode: "pack_premium_dossier_v5",
       quantity: 1,
     });
 
@@ -177,7 +177,7 @@ describe("5-Release Commercial Entitlement State Machine", () => {
       orderId: "ord-1",
       transactionId: "txn-1",
       eventId: "evt-1",
-      productCode: "CBAM_EXPORTER_FINAL_REPORT",
+      productCode: "pack_premium_dossier_v5",
       quantity: 1,
     });
 
@@ -213,7 +213,7 @@ describe("5-Release Commercial Entitlement State Machine", () => {
       orderId: "ord-1",
       transactionId: "txn-1",
       eventId: "evt-1",
-      productCode: "CBAM_EXPORTER_FINAL_REPORT",
+      productCode: "pack_premium_dossier_v5",
       quantity: 1,
     });
 

@@ -504,6 +504,27 @@ export async function sealReport(params: {
       publicVerificationToken = crypto.randomBytes(32).toString("hex");
       const publicVerificationTokenHash = crypto.createHash("sha256").update(publicVerificationToken).digest("hex");
 
+      const manifestObj = manifest.manifest;
+      const evidenceFiles = manifestObj.files.filter((f: any) => f.path.startsWith("Supporting_Evidence/"));
+      
+      const components = new Set();
+      manifestObj.files.forEach((f: any) => {
+        const slash = f.path.indexOf("/");
+        components.add(slash >= 0 ? `${f.path.slice(0, slash)}/` : f.path);
+      });
+      const actualTopLevelComponentCount = components.size;
+
+      const packageMetadata = {
+        schemaVersion: manifestObj.schemaVersion,
+        requiredTopLevelComponentCount: 25,
+        actualTopLevelComponentCount,
+        manifestFileCount: manifestObj.files.length,
+        evidenceFileCount: evidenceFiles.length,
+        primaryDossierFileName: "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf",
+        technicalCompilationFileName: "Complete Dossier Compilation.pdf",
+        operatorEmissionsReportFileName: "Operator Emissions Report.pdf",
+      };
+
       Object.assign(reportRecord, {
         productCode: entitlement.productCode,
         releaseContractVersion: 5,
@@ -519,6 +540,7 @@ export async function sealReport(params: {
         publicVerificationTokenHash,
         publicVerificationState: "ACTIVE",
         isCurrentRelease: true,
+        packageMetadata,
       });
     } else {
       Object.assign(reportRecord, {

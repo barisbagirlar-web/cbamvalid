@@ -8,6 +8,9 @@ export interface CommerceOrder {
   uid: string;
   caseId: string;
   productCode: string;
+  canonicalProductCode: string;
+  paddlePriceId: string;
+  catalogVersion: string;
   status:
     | "DRAFT"
     | "CHECKOUT_CREATED"
@@ -38,6 +41,9 @@ export async function createOrder(
     uid: string;
     caseId: string;
     productCode: string;
+    canonicalProductCode: string;
+    paddlePriceId: string;
+    catalogVersion: string;
     currency: string;
     amountMinor: number;
   }
@@ -54,6 +60,9 @@ export async function createOrder(
     uid: params.uid,
     caseId: params.caseId,
     productCode: params.productCode,
+    canonicalProductCode: params.canonicalProductCode,
+    paddlePriceId: params.paddlePriceId,
+    catalogVersion: params.catalogVersion,
     status: "CHECKOUT_CREATED",
     currency: params.currency,
     amountMinor: params.amountMinor,

@@ -33,6 +33,14 @@ const forbiddenClaims = [
   "approved by the EU",
   "EU approved",
   "officially certified",
+  "official compiled evidence package",
+  "official registry format",
+  "instant import",
+  "verified ZIP",
+  "zero variance",
+  "guarantees exact compliance",
+  "official declaration",
+  "xml registry format output",
 ];
 
 // Scan files
