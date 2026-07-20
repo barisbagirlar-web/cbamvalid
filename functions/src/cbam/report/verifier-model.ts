@@ -60,6 +60,7 @@ export interface VerifierPackageModel {
   automatedReadiness: AutomatedReadinessStatus;
   independentVerifierStatus: VerifierReviewStatus;
   productCode?: string;
+  releaseContractVersion?: 5;
   disclaimer: string;
   ruleset: {
     version: string;
@@ -221,6 +222,7 @@ export function buildVerifierPackageModel(params: {
   releaseVersion: number;
   generatedAt: string;
   productCode?: string;
+  releaseContractVersion?: 5;
 }): VerifierPackageModel {
   const year = Number(params.caseData.reportingPeriod.year.value);
   if (!Number.isInteger(year) || year < 2026) throw new Error("VERIFIER_MODEL_REPORTING_YEAR_INVALID");
@@ -242,6 +244,7 @@ export function buildVerifierPackageModel(params: {
     automatedReadiness,
     independentVerifierStatus: "NOT_REVIEWED",
     productCode: params.productCode,
+    releaseContractVersion: params.releaseContractVersion,
     disclaimer:
       "This package supports preparation for independent verification. It is not a verification opinion, accreditation decision, customs decision, CBAM Registry submission or acceptance guarantee.",
     ruleset: {

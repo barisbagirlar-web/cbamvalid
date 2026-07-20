@@ -96,7 +96,13 @@ export function parseSealedReportView(value: unknown): SealedReportView {
   
   // If parsing failed only due to count or status, dynamically fix it for compatibility
   const raw = value as Record<string, unknown>;
-  const isV5 = raw && (raw.packageTopLevelComponentCount === 23 || (typeof raw.releaseVersion === "number" && raw.releaseVersion >= 5));
+  const isV5 = Boolean(
+    raw &&
+      (raw.productCode === "pack_premium_dossier_v5" ||
+        raw.releaseContractVersion === 5 ||
+        raw.dossierSchemaVersion === "CBAMVALID-DOSSIER-5.0" ||
+        raw.packageTopLevelComponentCount === 23)
+  );
   return SealedReportViewSchema.parse({
     ...raw,
     packageTopLevelComponentCount: isV5 ? 23 : 27,

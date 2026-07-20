@@ -183,6 +183,15 @@ describe("premium-dossier-v5 deliverables", () => {
       releaseVersion: 5,
       generatedAt: FIXTURE_GENERATED_AT,
       evidenceFiles: createVerifierEvidenceFiles(),
+      assessmentContext: {
+        generatedAt: FIXTURE_GENERATED_AT,
+        assessmentTimestamp: FIXTURE_GENERATED_AT,
+        reportId: FIXTURE_REPORT_ID,
+        releaseVersion: 5,
+        rulesetVersion: "test",
+        productCode: "pack_premium_dossier_v5",
+        releaseContractVersion: 5,
+      },
     });
 
     const manifestResult = buildDataIntegrityManifest({
@@ -193,6 +202,8 @@ describe("premium-dossier-v5 deliverables", () => {
       releaseVersion: 5,
       generatedAt: FIXTURE_GENERATED_AT,
       evidenceCount: 1,
+      productCode: "pack_premium_dossier_v5",
+      releaseContractVersion: 5,
     });
 
     const manifest = JSON.parse(manifestResult.bytes.toString("utf8")) as DataIntegrityManifest;
@@ -257,6 +268,15 @@ describe("premium-dossier-v5 deliverables", () => {
       releaseVersion: 5,
       generatedAt: FIXTURE_GENERATED_AT,
       evidenceFiles: createVerifierEvidenceFiles(),
+      assessmentContext: {
+        generatedAt: FIXTURE_GENERATED_AT,
+        assessmentTimestamp: FIXTURE_GENERATED_AT,
+        reportId: FIXTURE_REPORT_ID,
+        releaseVersion: 5,
+        rulesetVersion: "test",
+        productCode: "pack_premium_dossier_v5",
+        releaseContractVersion: 5,
+      },
     });
 
     const manifestResult = buildDataIntegrityManifest({
@@ -267,6 +287,8 @@ describe("premium-dossier-v5 deliverables", () => {
       releaseVersion: 5,
       generatedAt: FIXTURE_GENERATED_AT,
       evidenceCount: 1,
+      productCode: "pack_premium_dossier_v5",
+      releaseContractVersion: 5,
     });
 
     const finalized = await finalizeVerifierPackage({

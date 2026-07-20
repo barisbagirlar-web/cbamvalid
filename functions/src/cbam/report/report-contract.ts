@@ -87,7 +87,12 @@ export type SealedReportView = z.infer<typeof SealedReportViewSchema>;
 
 export function toSealedReportView(value: unknown): SealedReportView {
   const report = PersistedSealedReportSchema.parse(value);
-  const isV5 = (value as Record<string, unknown>)?.packageTopLevelComponentCount === 23 || report.releaseVersion >= 5;
+  const raw = value as Record<string, unknown>;
+  const isV5 =
+    raw.productCode === "pack_premium_dossier_v5" ||
+    raw.releaseContractVersion === 5 ||
+    raw.dossierSchemaVersion === "CBAMVALID-DOSSIER-5.0" ||
+    raw.packageTopLevelComponentCount === 23;
   return SealedReportViewSchema.parse({
     ...report,
     packageTopLevelComponentCount: isV5 ? 23 : 27,

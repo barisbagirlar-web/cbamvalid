@@ -228,7 +228,9 @@ function buildPdfArtifacts(params: {
     item.evidenceIds.join(" | "),
   ]);
 
-  const isV5 = releaseVersion >= 5 || assessmentContext?.productCode === "pack_premium_dossier_v5";
+  const isV5 =
+    assessmentContext?.productCode === "pack_premium_dossier_v5" ||
+    assessmentContext?.releaseContractVersion === 5;
   if (isV5) {
     // V5 PDFs
     const timestamp = assessmentContext?.assessmentTimestamp || generatedAt;
@@ -439,7 +441,9 @@ function buildCsvArtifacts(params: {
 }): PackageArtifact[] {
   const { caseData, calculation, controls, model } = params;
 
-  const isV5 = model.releaseVersion >= 5 || model.productCode === "pack_premium_dossier_v5";
+  const isV5 =
+    model.productCode === "pack_premium_dossier_v5" ||
+    model.releaseContractVersion === 5;
   if (isV5) {
     // V5 CSVs
     return [
@@ -480,7 +484,11 @@ export async function buildUnsignedVerifierArtifacts(params: {
   evidenceFiles: EvidenceBinary[];
   assessmentContext?: SealAssessmentContext;
 }): Promise<PackageArtifact[]> {
-  const model = buildVerifierPackageModel({ ...params, productCode: params.assessmentContext?.productCode });
+  const model = buildVerifierPackageModel({
+    ...params,
+    productCode: params.assessmentContext?.productCode,
+    releaseContractVersion: params.assessmentContext?.releaseContractVersion,
+  });
   const workbook = await buildVerifierWorkbook({ ...params, model });
 
   const artifacts = [
@@ -504,8 +512,12 @@ export function buildDataIntegrityManifest(params: {
   releaseVersion: number;
   generatedAt: string;
   evidenceCount: number;
+  productCode?: string;
+  releaseContractVersion?: 5;
 }): { manifest: DataIntegrityManifest; bytes: Buffer } {
-  const isV5 = params.releaseVersion >= 5 || (params.artifacts.some(a => a.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf"));
+  const isV5 =
+    params.productCode === "pack_premium_dossier_v5" ||
+    params.releaseContractVersion === 5;
   const manifest: DataIntegrityManifest = {
     schemaVersion: isV5 ? "CBAMVALID-DOSSIER-5.0" : "CBAMVALID-DOSSIER-4.0",
     reportId: params.reportId,

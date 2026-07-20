@@ -56,13 +56,7 @@ async function requireAdmin(auth: { uid: string; token: Record<string, unknown> 
   if (auth.token.admin === true || auth.token.ownerAdmin === true) {
     return;
   }
-  const configDoc = await adminDb.collection("system").doc("config").get();
-  const allowedUid = configDoc.exists ? configDoc.data()?.smokeTestUid : null;
-  if (allowedUid && auth.uid === allowedUid) {
-    if (auth.token.smokeTestAllowed === true) {
-      return;
-    }
-  }
+  // Production-smoke UID must NEVER satisfy requireAdmin (no general admin capability).
   throw new HttpsError("permission-denied", "Requires administrator privileges.");
 }
 
