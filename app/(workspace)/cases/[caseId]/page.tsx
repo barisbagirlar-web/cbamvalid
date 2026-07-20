@@ -39,13 +39,15 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
     try {
       const cachedCase = localStorage.getItem(`cbam_case_cache_${caseId}`);
       const cachedEntitlements = localStorage.getItem(`cbam_entitlements_cache_${user.uid}`);
-      if (cachedCase) {
-        setInitialCase(JSON.parse(cachedCase));
-        setDataLoading(false);
-      }
-      if (cachedEntitlements) {
-        setAvailableEntitlements(JSON.parse(cachedEntitlements));
-      }
+      setTimeout(() => {
+        if (cachedCase) {
+          setInitialCase(JSON.parse(cachedCase));
+          setDataLoading(false);
+        }
+        if (cachedEntitlements) {
+          setAvailableEntitlements(JSON.parse(cachedEntitlements));
+        }
+      }, 0);
     } catch (e) {
       console.warn("Failed to load case cache:", e);
     }

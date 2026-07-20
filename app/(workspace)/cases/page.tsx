@@ -29,8 +29,11 @@ export default function CasesPage() {
     try {
       const cached = localStorage.getItem(`cbam_cases_cache_${user.uid}`);
       if (cached) {
-        setCases(JSON.parse(cached));
-        setDataLoading(false);
+        const parsed = JSON.parse(cached);
+        setTimeout(() => {
+          setCases(parsed);
+          setDataLoading(false);
+        }, 0);
       }
     } catch (e) {
       console.warn("Failed to load cases cache:", e);

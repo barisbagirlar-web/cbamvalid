@@ -91,12 +91,14 @@ export default function CbamLandingPage() {
       const cached = localStorage.getItem(`cbam_dashboard_cache_${user.uid}`);
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (parsed.cases) setCases(parsed.cases);
-        if (parsed.reports) setReports(parsed.reports);
-        if (typeof parsed.entitlementsCount === "number") {
-          setAvailableEntitlementsCount(parsed.entitlementsCount);
-        }
-        setDataLoading(false);
+        setTimeout(() => {
+          if (parsed.cases) setCases(parsed.cases);
+          if (parsed.reports) setReports(parsed.reports);
+          if (typeof parsed.entitlementsCount === "number") {
+            setAvailableEntitlementsCount(parsed.entitlementsCount);
+          }
+          setDataLoading(false);
+        }, 0);
       }
     } catch (e) {
       console.warn("Failed to load dashboard cache:", e);
