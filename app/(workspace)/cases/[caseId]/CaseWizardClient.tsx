@@ -152,12 +152,18 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       const applicable = controls.filter((control) => control.status !== "NOT_APPLICABLE");
       const passed = applicable.filter((control) => control.status === "PASS");
 
+      const mapFindingSeverity = (severity: string): "BLOCKER" | "MAJOR" | "ADVISORY" => {
+        if (severity === "CRITICAL_BLOCKER" || severity === "CRITICAL" || severity === "BLOCKER") return "BLOCKER";
+        if (severity === "MATERIAL" || severity === "MAJOR") return "MAJOR";
+        return "ADVISORY";
+      };
+
       const allGaps = [
         ...findings.map((f) => ({
           gapId: f.findingId,
           issueType: f.category,
           requirement: f.title,
-          severity: f.severity as any,
+          severity: mapFindingSeverity(f.severity),
           affectedResult: f.ruleId,
           whyItMatters: f.description,
           requiredEvidence: f.remediationRequirement,
@@ -169,7 +175,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           gapId: s.requirementId,
           issueType: "evidence",
           requirement: `Evidence sufficiency for ${s.inputPath}`,
-          severity: (s.blocksSealing ? "BLOCKER" : "MAJOR") as any,
+          severity: (s.blocksSealing ? "BLOCKER" : "MAJOR") as "BLOCKER" | "MAJOR",
           affectedResult: s.inputPath,
           whyItMatters: `Evidence status is ${s.state}. Reason codes: ${s.reasonCodes.join(", ")}`,
           requiredEvidence: `Upload approved and valid evidence for ${s.inputPath}`,

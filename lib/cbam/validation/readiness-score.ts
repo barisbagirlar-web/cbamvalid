@@ -316,7 +316,7 @@ export function assessReadiness(params: {
     independentVerifierStatus: "NOT_REVIEWED",
     score: finalScore.toString(),
     scoreScale: "0-100",
-    dimensions: dimensions as any,
+    dimensions: dimensions as unknown as ReadinessDimension[],
     criticalBlockerCount,
     materialFindingCount,
     openFindingCount,
