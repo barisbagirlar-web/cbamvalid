@@ -79,6 +79,15 @@ async function callCallableFunction(functionName, data, idToken) {
 
   if (!response.ok) {
     const text = await response.text();
+    let parsed = null;
+    try {
+      parsed = JSON.parse(text);
+    } catch (e) {}
+    if (parsed && parsed.error) {
+      const err = new Error(parsed.error.message || `HTTP ${response.status}`);
+      err.details = parsed.error.details || null;
+      throw err;
+    }
     throw new Error(`HTTP ${response.status} calling ${functionName}: ${text}`);
   }
 
