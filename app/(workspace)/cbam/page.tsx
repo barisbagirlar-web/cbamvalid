@@ -84,6 +84,27 @@ export default function CbamLandingPage() {
   const [attempt, setAttempt] = useState(0);
   const [showChecklist, setShowChecklist] = useState(false);
 
+  // Load from cache on mount
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const cached = localStorage.getItem(`cbam_dashboard_cache_${user.uid}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        setTimeout(() => {
+          if (parsed.cases) setCases(parsed.cases);
+          if (parsed.reports) setReports(parsed.reports);
+          if (typeof parsed.entitlementsCount === "number") {
+            setAvailableEntitlementsCount(parsed.entitlementsCount);
+          }
+          setDataLoading(false);
+        }, 0);
+      }
+    } catch (e) {
+      console.warn("Failed to load dashboard cache:", e);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (loading || !user) return;
 
@@ -108,16 +129,20 @@ export default function CbamLandingPage() {
         setError("");
 
         const warnings: string[] = [];
+        let reportsValue: ReportRecord[] = [];
         if (reportsResult.status === "fulfilled") {
-          setReports(reportsResult.value);
+          reportsValue = reportsResult.value;
+          setReports(reportsValue);
         } else {
           console.error("Dashboard report loading failed", reportsResult.reason);
           setReports([]);
           warnings.push("Report history is temporarily unavailable.");
         }
 
+        let entitlementsCount = 0;
         if (entitlementsResult.status === "fulfilled") {
-          setAvailableEntitlementsCount(entitlementsResult.value.length);
+          entitlementsCount = entitlementsResult.value.length;
+          setAvailableEntitlementsCount(entitlementsCount);
         } else {
           console.error("Dashboard entitlement loading failed", entitlementsResult.reason);
           setAvailableEntitlementsCount(0);
@@ -126,6 +151,20 @@ export default function CbamLandingPage() {
 
         setWarning(warnings.join(" "));
         setDataLoading(false);
+
+        // Save to cache
+        try {
+          localStorage.setItem(
+            `cbam_dashboard_cache_${user.uid}`,
+            JSON.stringify({
+              cases: casesResult.value,
+              reports: reportsValue,
+              entitlementsCount,
+            })
+          );
+        } catch (e) {
+          console.warn("Failed to save dashboard cache:", e);
+        }
       })
       .catch((unexpectedError: unknown) => {
         if (cancelled) return;

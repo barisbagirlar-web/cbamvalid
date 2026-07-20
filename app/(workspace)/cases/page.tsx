@@ -23,6 +23,23 @@ export default function CasesPage() {
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
 
+  // Load from cache on mount
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const cached = localStorage.getItem(`cbam_cases_cache_${user.uid}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        setTimeout(() => {
+          setCases(parsed);
+          setDataLoading(false);
+        }, 0);
+      }
+    } catch (e) {
+      console.warn("Failed to load cases cache:", e);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (loading || !user) return;
 
@@ -34,6 +51,11 @@ export default function CasesPage() {
         setCases(result);
         setError("");
         setDataLoading(false);
+        try {
+          localStorage.setItem(`cbam_cases_cache_${user.uid}`, JSON.stringify(result));
+        } catch (e) {
+          console.warn("Failed to save cases cache:", e);
+        }
       })
       .catch((loadError: unknown) => {
         if (cancelled) return;

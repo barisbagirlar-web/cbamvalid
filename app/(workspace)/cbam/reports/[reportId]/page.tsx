@@ -220,6 +220,21 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
                 )}
                 Download Complete Signed Dossier Package
               </button>
+
+              <button
+                type="button"
+                disabled={activeDownload !== null}
+                onClick={() => void download("pdf")}
+                className="inline-flex h-11 items-center justify-center gap-3 rounded-xl border border-border bg-surface text-foreground px-6 font-semibold hover:bg-muted/10 active:bg-muted/20 transition-colors shadow-sm disabled:opacity-75 disabled:cursor-not-allowed"
+              >
+                {activeDownload === "pdf" ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <FileText className="h-5 w-5 text-accent" />
+                )}
+                Download Main Dossier PDF
+              </button>
+
               {zipFileIndex && (
                 <span className="text-[11px] text-muted text-center md:text-right font-mono">
                   ZIP Size: {formatBytes(zipFileIndex.sizeBytes)} · SHA: {shortHash(zipFileIndex.sha256)}
