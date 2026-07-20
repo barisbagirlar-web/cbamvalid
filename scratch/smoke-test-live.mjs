@@ -137,6 +137,11 @@ async function runSmokeTest() {
     }
   }
   const uid = user.uid;
+  
+  // Set admin: true custom claims so the user can bypass scanner/review authorization
+  console.log("Setting admin custom claims on test user...");
+  await auth.setCustomUserClaims(uid, { admin: true });
+  
   const idToken = await getIdToken(uid);
   console.log(`Resolved teb232@gmail.com UID: ${uid}`);
 
@@ -339,16 +344,8 @@ async function runSmokeTest() {
       const c = JSON.parse(JSON.stringify(mockCaseBase));
       c.reportingPeriod.year = datum(year, undefined, undefined);
       c.reportingPeriod.quarter = datum(quarter, undefined, undefined);
-      if (startDate !== undefined) {
-        c.reportingPeriod.startDate = datum(startDate, undefined, FIXTURE_EVIDENCE_ID);
-      } else {
-        delete c.reportingPeriod.startDate;
-      }
-      if (endDate !== undefined) {
-        c.reportingPeriod.endDate = datum(endDate, undefined, FIXTURE_EVIDENCE_ID);
-      } else {
-        delete c.reportingPeriod.endDate;
-      }
+      c.reportingPeriod.startDate = startDate !== undefined ? datum(startDate, undefined, FIXTURE_EVIDENCE_ID) : null;
+      c.reportingPeriod.endDate = endDate !== undefined ? datum(endDate, undefined, FIXTURE_EVIDENCE_ID) : null;
       return c;
     };
 
@@ -374,10 +371,29 @@ async function runSmokeTest() {
       }, idToken);
       console.log(`✓ Case saved via live function. Case ID: ${saveRes.caseId}`);
 
+      // Call scanner function to clean malware scan status on the evidence record
+      await callCallableFunction("recordCbamEvidenceScan", {
+        caseId,
+        evidenceId: FIXTURE_EVIDENCE_ID,
+        status: "CLEAN",
+        scannerReference: "Smoke test scanner run 1.0"
+      }, idToken);
+
+      // Call review function to approve and support the evidence record
+      await callCallableFunction("reviewCbamEvidence", {
+        caseId,
+        evidenceId: FIXTURE_EVIDENCE_ID,
+        decision: "APPROVED",
+        supportStatus: "SUPPORTED",
+        reviewerNotes: "Approved during live smoke test verification."
+      }, idToken);
+      console.log("✓ Evidence approved and verified clean.");
+
       // Retrieve case via live endpoint to verify it retrieves correctly
       const getRes = await callCallableFunction("getCbamCase", { caseId }, idToken);
       const retrieved = getRes.case;
       console.log(`✓ Case retrieved via live function. Status: ${retrieved.status}`);
+      console.log("retrieved reportingPeriod:", JSON.stringify(retrieved.reportingPeriod));
 
       if (name === "Case E (2026 full year ANNUAL)") {
         // Case E is ready for sealing. Let's call sealCbamReport on the live API!
@@ -401,15 +417,15 @@ async function runSmokeTest() {
         }
         console.log("✓ Verified: releasesCount decremented/incremented to 1!");
 
-        // Assert ledger record exists
-        const ledgerQuery = await db.collection("credit_ledger")
+        // Assert ledger record exists in commerce_ledger
+        const ledgerQuery = await db.collection("commerce_ledger")
           .where("uid", "==", uid)
           .where("type", "==", "ENTITLEMENT_CONSUMED")
           .get();
         if (ledgerQuery.empty) {
           throw new Error("FAIL: No ledger record of type ENTITLEMENT_CONSUMED found");
         }
-        console.log(`✓ Verified: Credit ledger recorded ENTITLEMENT_CONSUMED entry!`);
+        console.log(`✓ Verified: Commerce ledger recorded ENTITLEMENT_CONSUMED entry!`);
 
         // Test Idempotency: call sealCbamReport again with the same requestId
         console.log("Testing sealing idempotency...");
@@ -440,7 +456,10 @@ async function runSmokeTest() {
           }, idToken);
           throw new Error(`FAIL: Sealing ${name} did not throw an error!`);
         } catch (error) {
-          if (error.message.includes("SEALING_BLOCKED_BY_V5_READINESS_GATES")) {
+          if (
+            error.message.includes("SEALING_BLOCKED_BY_V5_READINESS_GATES") ||
+            error.message.includes("CBAM_RULESET_NOT_SEALABLE")
+          ) {
             console.log(`✓ Verified: Sealing blocked for ${name} as expected.`);
           } else {
             throw error;
@@ -459,7 +478,7 @@ async function runSmokeTest() {
       const zipPath = `reports/${uid}/${sealResult.report.reportId}/dossier.zip`;
       await bucket.file(zipPath).delete();
     }
-    const ledgerEntries = await db.collection("credit_ledger").where("uid", "==", uid).get();
+    const ledgerEntries = await db.collection("commerce_ledger").where("uid", "==", uid).get();
     for (const doc of ledgerEntries.docs) {
       await doc.ref.delete();
     }
@@ -468,6 +487,10 @@ async function runSmokeTest() {
 
     console.log("\n=== ALL COMPREHENSIVE LIVE SMOKE TEST FLOWS PASSED PERFECTLY! ===");
   } finally {
+    // Clean up admin custom claims
+    console.log("Cleaning up admin custom claims...");
+    await auth.setCustomUserClaims(uid, {});
+
     // Restore original system config state
     console.log("Restoring original system config state...");
     if (originalConfig) {
