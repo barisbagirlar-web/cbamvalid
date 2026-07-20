@@ -139,7 +139,15 @@ async function runSmokeTest() {
     excludedFromBusinessMetrics: true,
     environment: "production-smoke",
     testRunId,
+    smokeTestAllowed: true,
   });
+
+  // Exact server-side UID allowlist for narrowly scoped production-smoke identity.
+  // This MUST NOT grant requireAdmin / ownerAdmin.
+  await db.collection("system").doc("config").set(
+    { smokeTestUid: uid, disableV5Sealing: true },
+    { merge: true }
+  );
 
   const idToken = await getIdToken(uid);
   console.log(`Resolved synthetic user UID: ${uid}`);
@@ -294,8 +302,22 @@ async function runSmokeTest() {
   const originalConfigSnap = await configDocRef.get();
   const originalConfig = originalConfigSnap.data();
 
-  const entitlementId = `ent_smoke_${testRunId}`;
-  const requestId = crypto.randomUUID();
+    const entitlementId = `ent_smoke_${testRunId}`;
+    const requestId = crypto.randomUUID();
+
+    async function countEntitlementsForUid(targetUid) {
+      const snap = await db.collection("entitlements").where("uid", "==", targetUid).get();
+      return snap.size;
+    }
+    async function countLedgerForUid(targetUid) {
+      const snap = await db.collection("commerce_ledger").where("uid", "==", targetUid).get();
+      return snap.size;
+    }
+
+    const ENTITLEMENT_BEFORE = await countEntitlementsForUid(uid);
+    const LEDGER_BEFORE = await countLedgerForUid(uid);
+    console.log(`ENTITLEMENT_BEFORE=${ENTITLEMENT_BEFORE}`);
+    console.log(`LEDGER_BEFORE=${LEDGER_BEFORE}`);
 
   // Helper to upload evidence to GCS
   async function uploadEvidence(evidenceId, filename) {
@@ -336,6 +358,11 @@ async function runSmokeTest() {
       releasesCount: 0,
       releasesList: []
     });
+
+    const ENTITLEMENT_PRE_SEAL = await countEntitlementsForUid(uid);
+    const LEDGER_PRE_SEAL = await countLedgerForUid(uid);
+    console.log(`ENTITLEMENT_PRE_SEAL=${ENTITLEMENT_PRE_SEAL}`);
+    console.log(`LEDGER_PRE_SEAL=${LEDGER_PRE_SEAL}`);
 
     const makePeriodCase = (year, quarter, startDate, endDate, evidencePeriod = "2026 ANNUAL", supportStatus = "SUPPORTED") => {
       const c = JSON.parse(JSON.stringify(mockCaseBase));
@@ -541,6 +568,10 @@ async function runSmokeTest() {
         console.log(`  Report ID: ${result.report.reportId}`);
         if (name === "Case A (Completed annual period)") {
           caseAReport = result;
+          const ENTITLEMENT_POST_FIRST_SEAL = await countEntitlementsForUid(uid);
+          const LEDGER_POST_FIRST_SEAL = await countLedgerForUid(uid);
+          console.log(`ENTITLEMENT_POST_FIRST_SEAL=${ENTITLEMENT_POST_FIRST_SEAL}`);
+          console.log(`LEDGER_POST_FIRST_SEAL=${LEDGER_POST_FIRST_SEAL}`);
         }
       } else {
         console.log(`Asserting sealing is blocked on server for ${name}...`);
@@ -571,6 +602,11 @@ async function runSmokeTest() {
         data: cases["Case A (Completed annual period)"].data
       }, idToken);
 
+      const ENTITLEMENT_BEFORE_RETRY = await countEntitlementsForUid(uid);
+      const LEDGER_BEFORE_RETRY = await countLedgerForUid(uid);
+      console.log(`ENTITLEMENT_BEFORE_RETRY=${ENTITLEMENT_BEFORE_RETRY}`);
+      console.log(`LEDGER_BEFORE_RETRY=${LEDGER_BEFORE_RETRY}`);
+
       const retryResult = await callCallableFunction("sealCbamReport", {
         caseId,
         entitlementId,
@@ -582,6 +618,20 @@ async function runSmokeTest() {
         throw new Error("Idempotency FAIL: retry returned different package hash");
       }
       console.log("✓ Verified: Idempotent retry returned identical package hash.");
+
+      const ENTITLEMENT_POST_RETRY = await countEntitlementsForUid(uid);
+      const LEDGER_POST_RETRY = await countLedgerForUid(uid);
+      const ENTITLEMENT_RETRY_DELTA = ENTITLEMENT_POST_RETRY - ENTITLEMENT_BEFORE_RETRY;
+      const LEDGER_RETRY_DELTA = LEDGER_POST_RETRY - LEDGER_BEFORE_RETRY;
+      console.log(`ENTITLEMENT_POST_RETRY=${ENTITLEMENT_POST_RETRY}`);
+      console.log(`LEDGER_POST_RETRY=${LEDGER_POST_RETRY}`);
+      console.log(`ENTITLEMENT_RETRY_DELTA=${ENTITLEMENT_RETRY_DELTA}`);
+      console.log(`LEDGER_RETRY_DELTA=${LEDGER_RETRY_DELTA}`);
+      if (ENTITLEMENT_RETRY_DELTA !== 0 || LEDGER_RETRY_DELTA !== 0) {
+        throw new Error(
+          `Retry delta FAIL: ENTITLEMENT_RETRY_DELTA=${ENTITLEMENT_RETRY_DELTA} LEDGER_RETRY_DELTA=${LEDGER_RETRY_DELTA}`
+        );
+      }
 
       // Check releasesCount
       const entitlementDoc = await db.collection("entitlements").doc(entitlementId).get();
@@ -641,13 +691,25 @@ async function runSmokeTest() {
     await auth.deleteUser(uid);
     console.log("✓ Synthetic test user deleted.");
 
-    // Restore original system config state
-    console.log("Restoring original system config state...");
-    if (originalConfig) {
-      await configDocRef.set(originalConfig);
-    } else {
-      await configDocRef.delete();
-    }
+    // Restore mandatory sealing kill-switch and clear smoke allowlist.
+    // Do not leave sealing enabled after smoke cleanup.
+    console.log("Forcing system/config.disableV5Sealing=true and clearing smokeTestUid...");
+    await configDocRef.set(
+      {
+        ...(originalConfig || {}),
+        disableV5Sealing: true,
+        smokeTestUid: null,
+        deployedSha: originalConfig?.deployedSha || "992a3f074f498957949a3cfe50b2a71f2c71e3f9",
+      },
+      { merge: true }
+    );
+    const flagSnap = await configDocRef.get();
+    console.log(
+      `FEATURE_FLAG_AFTER_CLEANUP=${JSON.stringify({
+        disableV5Sealing: flagSnap.data()?.disableV5Sealing,
+        smokeTestUid: flagSnap.data()?.smokeTestUid ?? null,
+      })}`
+    );
   }
 }
 

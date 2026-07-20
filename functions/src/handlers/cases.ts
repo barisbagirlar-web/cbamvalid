@@ -14,6 +14,9 @@ import {
 import { toCaseWorkspaceView } from "../cbam/storage/case-contract";
 import { AuditReadyCaseSchema, type AuditReadyCase } from "../cbam/schema";
 import { CaseIdSchema } from "../cbam/case-id";
+import {
+  isProductionSmokeIdentity,
+} from "../auth/production-smoke-identity";
 
 const CreationRequestIdSchema = z.string().uuid();
 
@@ -51,12 +54,24 @@ function resolveCreationRequestId(
   return parsed.data;
 }
 
-async function requireAdmin(auth: { uid: string; token: Record<string, unknown> }): Promise<void> {
+/**
+ * Malware-scan recording: real admins OR narrowly scoped production-smoke identity.
+ * Smoke identity does not unlock listAllUsers / adminSetUserTokens / other admin callables.
+ * requireAdmin remains unbypassable elsewhere — smoke UID never satisfies full admin.
+ */
+async function requireAdminOrProductionSmoke(
+  auth: { uid: string; token: Record<string, unknown> }
+): Promise<void> {
   if (auth.token.admin === true || auth.token.ownerAdmin === true) {
     return;
   }
-  // Production-smoke UID must NEVER satisfy requireAdmin (no general admin capability).
-  throw new HttpsError("permission-denied", "Requires administrator privileges.");
+  if (await isProductionSmokeIdentity(auth)) {
+    return;
+  }
+  throw new HttpsError(
+    "permission-denied",
+    "Requires administrator privileges or production-smoke identity."
+  );
 }
 
 function translateEvidenceError(error: unknown): never {
@@ -162,7 +177,7 @@ export const recordCbamEvidenceScan = createCallable(
     }),
   },
   async (data, { auth }) => {
-    await requireAdmin(auth);
+    await requireAdminOrProductionSmoke(auth);
     try {
       const updated = await recordEvidenceMalwareScan({
         ...data,
