@@ -448,12 +448,13 @@ async function runSmokeTest() {
         console.log(`Asserting sealing is blocked for ${name}...`);
         const blockRequestId = crypto.randomUUID();
         try {
-          await callCallableFunction("sealCbamReport", {
+          const res = await callCallableFunction("sealCbamReport", {
             caseId,
             entitlementId,
             requestId: blockRequestId,
             correctionReason: "Blocked case sealing attempt"
           }, idToken);
+          console.log(`SUCCESS result for ${name}:`, JSON.stringify(res));
           throw new Error(`FAIL: Sealing ${name} did not throw an error!`);
         } catch (error) {
           if (
