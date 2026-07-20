@@ -20,13 +20,15 @@ export type AuthPrincipal = {
  * Does not imply admin.
  */
 export async function isProductionSmokeIdentity(auth: AuthPrincipal): Promise<boolean> {
+  console.log("[DEBUG ISPRODSMOKE] auth.uid:", auth.uid);
+  console.log("[DEBUG ISPRODSMOKE] token claims:", JSON.stringify(auth.token));
   const claimAllowed = auth.token.smokeTestAllowed === true;
+  console.log("[DEBUG ISPRODSMOKE] claimAllowed:", claimAllowed);
   if (!claimAllowed) return false;
 
-  // Reject caller-controlled synthetic markers as authorization.
-  // syntheticTest may be set for ledger tagging only after identity is proven.
   const configDoc = await adminDb.collection("system").doc("config").get();
   const allowedUid = configDoc.exists ? configDoc.data()?.smokeTestUid : null;
+  console.log("[DEBUG ISPRODSMOKE] allowedUid:", allowedUid);
   if (typeof allowedUid !== "string" || allowedUid.length < 8) return false;
   return auth.uid === allowedUid;
 }
