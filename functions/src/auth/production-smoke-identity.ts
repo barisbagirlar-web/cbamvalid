@@ -23,8 +23,6 @@ export async function isProductionSmokeIdentity(auth: AuthPrincipal): Promise<bo
   const claimAllowed = auth.token.smokeTestAllowed === true;
   if (!claimAllowed) return false;
 
-  // Reject caller-controlled synthetic markers as authorization.
-  // syntheticTest may be set for ledger tagging only after identity is proven.
   const configDoc = await adminDb.collection("system").doc("config").get();
   const allowedUid = configDoc.exists ? configDoc.data()?.smokeTestUid : null;
   if (typeof allowedUid !== "string" || allowedUid.length < 8) return false;

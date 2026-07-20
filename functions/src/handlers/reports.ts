@@ -10,8 +10,11 @@ import { toSealedReportView } from "../cbam/report/report-contract";
 function sealError(error: unknown): HttpsError {
   if (error instanceof HttpsError) return error;
   const message = error instanceof Error ? error.message : "REPORT_GENERATION_FAILED";
-  if (message === "SEAL_REQUEST_IN_PROGRESS") return new HttpsError("aborted", message);
-  if (message.includes("NOT_FOUND") || message.includes("MISSING")) return new HttpsError("not-found", message);
+  const details = error && typeof error === "object" && "details" in error
+    ? (error as { details: unknown }).details
+    : null;
+  if (message === "SEAL_REQUEST_IN_PROGRESS") return new HttpsError("aborted", message, details);
+  if (message.includes("NOT_FOUND") || message.includes("MISSING")) return new HttpsError("not-found", message, details);
   if (
     message.includes("REQUIRED") ||
     message.includes("BLOCKED") ||
@@ -23,9 +26,9 @@ function sealError(error: unknown): HttpsError {
     message.includes("LIMIT") ||
     message.includes("CONFIGURED") ||
     message.includes("KMS_")
-  ) return new HttpsError("failed-precondition", message);
-  if (message.includes("COLLISION") || message.includes("INPUT_CHANGED")) return new HttpsError("already-exists", message);
-  return new HttpsError("internal", message);
+  ) return new HttpsError("failed-precondition", message, details);
+  if (message.includes("COLLISION") || message.includes("INPUT_CHANGED")) return new HttpsError("already-exists", message, details);
+  return new HttpsError("internal", message, details);
 }
 
 export const sealCbamReport = createCallable(
