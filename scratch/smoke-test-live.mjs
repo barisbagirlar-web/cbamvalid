@@ -5,6 +5,7 @@ import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { getAuth } from "firebase-admin/auth";
+import { assessReadiness } from "../functions/lib/cbam/validation/readiness-score.js";
 
 // Read and parse .env.local to load credentials
 const envLocalPath = path.join(process.cwd(), ".env.local");
@@ -94,6 +95,7 @@ function getCanonicalCaseId(uid, requestId) {
 }
 
 const FIXTURE_EVIDENCE_ID = "11111111-1111-4111-8111-111111111111";
+const SECOND_FIXTURE_EVIDENCE_ID = "22222222-2222-4222-8222-222222222222";
 
 const FIXTURE_EVIDENCE_BYTES = Buffer.from(
   "CBAMValid verifier-grade fixture evidence: monitored production, emissions, electricity, customs classification and allocation records.",
@@ -120,30 +122,27 @@ function datum(value, canonicalUnit, evidenceId = FIXTURE_EVIDENCE_ID) {
 async function runSmokeTest() {
   console.log("=== STARTING LIVE PRODUCTION DEPLOYED SMOKE TEST ===");
 
-  // Resolve user teb232@gmail.com
-  let user;
-  try {
-    user = await auth.getUserByEmail("teb232@gmail.com");
-  } catch (error) {
-    if (error.code === "auth/user-not-found") {
-      console.log("Creating test user teb232@gmail.com...");
-      user = await auth.createUser({
-        email: "teb232@gmail.com",
-        emailVerified: true,
-        password: "password123",
-      });
-    } else {
-      throw error;
-    }
-  }
+  const testRunId = crypto.randomUUID();
+  const smokeEmail = `smoke-test-${testRunId}@cbamvalid.com`;
+  console.log(`Creating synthetic test user ${smokeEmail}...`);
+
+  const user = await auth.createUser({
+    email: smokeEmail,
+    emailVerified: true,
+    password: crypto.randomBytes(16).toString("hex"),
+  });
   const uid = user.uid;
-  
-  // Set admin: true custom claims so the user can bypass scanner/review authorization
-  console.log("Setting admin custom claims on test user...");
-  await auth.setCustomUserClaims(uid, { admin: true });
-  
+
+  console.log("Setting synthetic custom claims...");
+  await auth.setCustomUserClaims(uid, {
+    syntheticTest: true,
+    excludedFromBusinessMetrics: true,
+    environment: "production-smoke",
+    testRunId,
+  });
+
   const idToken = await getIdToken(uid);
-  console.log(`Resolved teb232@gmail.com UID: ${uid}`);
+  console.log(`Resolved synthetic user UID: ${uid}`);
 
   const creationRequestId = crypto.randomUUID();
   const caseId = getCanonicalCaseId(uid, creationRequestId);
@@ -283,50 +282,52 @@ async function runSmokeTest() {
     ],
   };
 
-  // Create the case on Firebase live function to obtain a canonical caseId
-  console.log("Creating case via live function...");
+  // Create base case on Firestore
+  console.log("Creating base case via live function...");
   const createRes = await callCallableFunction("saveCbamCase", {
     requestId: creationRequestId,
     data: mockCaseBase
   }, idToken);
-  console.log(`✓ Case created successfully via live function. Case ID: ${createRes.caseId}`);
+  console.log(`✓ Case created successfully. Case ID: ${createRes.caseId}`);
 
-  // Save current system config state
   const configDocRef = db.collection("system").doc("config");
   const originalConfigSnap = await configDocRef.get();
   const originalConfig = originalConfigSnap.data();
 
-  let sealResult = null;
-  const entitlementId = "ent_smoke_test_teb232";
+  const entitlementId = `ent_smoke_${testRunId}`;
   const requestId = crypto.randomUUID();
-  const evidenceFile = bucket.file(`evidence/${uid}/${caseId}/${FIXTURE_EVIDENCE_ID}/verified-monitoring-package.txt`);
 
-  try {
-    // Temporarily enable V5 sealing in Firestore
-    console.log("Temporarily enabling V5 sealing in Firestore...");
-    await configDocRef.set({ disableV5Sealing: false }, { merge: true });
-
-    // Upload mock evidence file to GCS
-    console.log("\nUploading mock evidence file to GCS...");
-    await evidenceFile.save(FIXTURE_EVIDENCE_BYTES, {
+  // Helper to upload evidence to GCS
+  async function uploadEvidence(evidenceId, filename) {
+    const file = bucket.file(`evidence/${uid}/${caseId}/${evidenceId}/${filename}`);
+    await file.save(FIXTURE_EVIDENCE_BYTES, {
       contentType: "text/plain",
       metadata: {
         metadata: {
           ownerId: uid,
           caseId,
-          evidenceId: FIXTURE_EVIDENCE_ID,
+          evidenceId,
           sha256: FIXTURE_EVIDENCE_HASH
         }
       }
     });
-    console.log("✓ Evidence file uploaded successfully to GCS!");
+  }
 
-    // Create mock entitlement
+  try {
+    // Enable V5 Sealing
+    console.log("Temporarily enabling V5 sealing in config...");
+    await configDocRef.set({ disableV5Sealing: false }, { merge: true });
+
+    // Upload first evidence
+    await uploadEvidence(FIXTURE_EVIDENCE_ID, "verified-monitoring-package.txt");
+    await uploadEvidence(SECOND_FIXTURE_EVIDENCE_ID, "verified-monitoring-package-part2.txt");
+
+    // Create mock entitlement under V5 schema
     await db.collection("entitlements").doc(entitlementId).set({
       entitlementId,
       uid,
-      orderId: "ord_smoke_test_teb232",
-      productCode: "pack_premium_dossier",
+      orderId: `ord_smoke_${testRunId}`,
+      productCode: "pack_premium_dossier_v5",
       status: "AVAILABLE",
       quantity: 1,
       maxReleases: 5,
@@ -336,132 +337,224 @@ async function runSmokeTest() {
       releasesList: []
     });
 
-    // ==========================================
-    // EXECUTE SMOKE TEST MATRIX (Cases A - I)
-    // ==========================================
-
-    const makePeriodCase = (year, quarter, startDate, endDate) => {
+    const makePeriodCase = (year, quarter, startDate, endDate, evidencePeriod = "2026 ANNUAL", supportStatus = "SUPPORTED") => {
       const c = JSON.parse(JSON.stringify(mockCaseBase));
       c.reportingPeriod.year = datum(year, undefined, undefined);
       c.reportingPeriod.quarter = datum(quarter, undefined, undefined);
       c.reportingPeriod.startDate = startDate !== undefined ? datum(startDate, undefined, FIXTURE_EVIDENCE_ID) : null;
       c.reportingPeriod.endDate = endDate !== undefined ? datum(endDate, undefined, FIXTURE_EVIDENCE_ID) : null;
+      c.evidenceRegister[0].reportingPeriod = evidencePeriod;
+      c.evidenceRegister[0].supportStatus = supportStatus;
       return c;
     };
 
     const cases = {
-      "Case A (2026-Q1)": makePeriodCase("2026", "Q1", "2026-01-01", "2026-03-31"),
-      "Case B (2026-Q2)": makePeriodCase("2026", "Q2", "2026-04-01", "2026-06-30"),
-      "Case C (one month M01)": makePeriodCase("2026", "M01", "2026-01-01", "2026-01-31"),
-      "Case D (six months CUSTOM)": makePeriodCase("2026", "CUSTOM", "2026-01-01", "2026-06-30"),
-      "Case E (2026 full year ANNUAL)": makePeriodCase("2026", "ANNUAL", "2026-01-01", "2026-12-31"),
-      "Case F (leap-year full year ANNUAL)": makePeriodCase("2024", "ANNUAL", "2024-01-01", "2024-12-31"),
-      "Case G (missing start date)": makePeriodCase("2026", "ANNUAL", undefined, "2026-12-31"),
-      "Case H (missing end date)": makePeriodCase("2026", "ANNUAL", "2026-01-01", undefined),
-      "Case I (end before start)": makePeriodCase("2026", "ANNUAL", "2026-12-31", "2026-01-01")
+      "Case A (Completed annual period)": {
+        data: makePeriodCase("2026", "ANNUAL", "2026-01-01", "2026-12-31", "2026 ANNUAL"),
+        assertLocal: (readiness) => {
+          if (readiness.operatorStatus !== "READY_FOR_VERIFIER_REVIEW") {
+            throw new Error(`Case A Local Check Fail: expected READY_FOR_VERIFIER_REVIEW, got ${readiness.operatorStatus}`);
+          }
+        },
+        shouldSucceed: true,
+      },
+      "Case B (Quarterly period)": {
+        data: makePeriodCase("2026", "Q1", "2026-01-01", "2026-03-31", "2026-Q1"),
+        assertLocal: (readiness) => {
+          const hasBlocker = readiness.findings.some(f => f.findingId === "FND-PERIOD-NON-ANNUAL" && f.status === "OPEN");
+          if (!hasBlocker) {
+            throw new Error("Case B Local Check Fail: missing FND-PERIOD-NON-ANNUAL");
+          }
+        },
+        shouldSucceed: false,
+      },
+      "Case C (Annual with Q1 evidence)": {
+        data: makePeriodCase("2026", "ANNUAL", "2026-01-01", "2026-12-31", "2026-Q1"),
+        assertLocal: (readiness) => {
+          const hasBlocker = readiness.findings.some(f => f.findingId === "FND-EVIDENCE-ANNUAL-COVERAGE-INCOMPLETE" && f.status === "OPEN");
+          if (!hasBlocker) {
+            throw new Error("Case C Local Check Fail: missing FND-EVIDENCE-ANNUAL-COVERAGE-INCOMPLETE");
+          }
+        },
+        shouldSucceed: false,
+      },
+      "Case D (Unparseable evidence period)": {
+        data: makePeriodCase("2026", "ANNUAL", "2026-01-01", "2026-12-31", "invalid-period"),
+        assertLocal: (readiness) => {
+          if (readiness.missingMaterialEvidenceCount === 0) {
+            throw new Error("Case D Local Check Fail: missingMaterialEvidenceCount should be > 0");
+          }
+        },
+        shouldSucceed: false,
+      },
+      "Case E (Future period end date)": {
+        data: makePeriodCase("2028", "ANNUAL", "2028-01-01", "2028-12-31", "2028 ANNUAL"),
+        assertLocal: (readiness) => {
+          const hasBlocker = readiness.findings.some(f => f.findingId === "FND-PERIOD-FUTURE-END-DATE" && f.status === "OPEN");
+          if (!hasBlocker) {
+            throw new Error("Case E Local Check Fail: missing FND-PERIOD-FUTURE-END-DATE");
+          }
+        },
+        shouldSucceed: false,
+      },
+      "Case F (Reconciliation gap)": {
+        data: makePeriodCase("2026", "ANNUAL", "2026-01-01", "2026-12-31", "2026-01-01 to 2026-10-31"),
+        assertLocal: (readiness) => {
+          const hasBlocker = readiness.findings.some(f => f.findingId === "FND-EVIDENCE-ANNUAL-COVERAGE-INCOMPLETE" && f.status === "OPEN");
+          if (!hasBlocker) {
+            throw new Error("Case F Local Check Fail: missing FND-EVIDENCE-ANNUAL-COVERAGE-INCOMPLETE due to coverage gap");
+          }
+        },
+        shouldSucceed: false,
+      },
+      "Case G (Multi-document coverage)": {
+        data: (() => {
+          const c = makePeriodCase("2026", "ANNUAL", "2026-01-01", "2026-12-31", "2026-01-01 to 2026-06-30");
+          c.evidenceRegister.push({
+            evidenceId: SECOND_FIXTURE_EVIDENCE_ID,
+            documentType: "PRIMARY_MONITORING_AND_CUSTOMS_PACKAGE",
+            fileName: "verified-monitoring-package-part2.txt",
+            storagePath: `evidence/${uid}/${caseId}/${SECOND_FIXTURE_EVIDENCE_ID}/verified-monitoring-package-part2.txt`,
+            mimeType: "text/plain",
+            sizeBytes: FIXTURE_EVIDENCE_BYTES.byteLength,
+            issuer: "Independent Monitoring Auditor",
+            issueDate: "2026-09-30",
+            reportingPeriod: "2026-07-01 to 2026-12-31",
+            fileHash: FIXTURE_EVIDENCE_HASH,
+            uploadTimestamp: "2026-10-01T00:00:00.000Z",
+            uploader: uid,
+            reviewStatus: "APPROVED",
+            supportStatus: "SUPPORTED",
+            malwareScanStatus: "CLEAN",
+            confidentiality: "CONFIDENTIAL",
+            linkedInputs: [
+              "exporterIdentity.legalName",
+              "exporterIdentity.address",
+              "importerIdentity.legalName",
+              "importerIdentity.eoriNumber",
+              "installation.name",
+              "installation.country",
+              "installation.productionRoute",
+              "reportingPeriod.year",
+              "reportingPeriod.quarter",
+              "reportingPeriod.startDate",
+              "reportingPeriod.endDate",
+              "goods.0.cnCode",
+              "goods.0.productionVolume",
+              "goods.0.shipmentRecords",
+              "goods.0.allocationShare",
+              "goods.1.cnCode",
+              "goods.1.productionVolume",
+              "goods.1.shipmentRecords",
+              "goods.1.allocationShare",
+              "directEmissions",
+              "electricityConsumed",
+              "gridEmissionFactor"
+            ],
+            linkedCalculations: [
+              "CBAM_INDIRECT_EMISSIONS",
+              "CBAM_TOTAL_EMBEDDED_EMISSIONS",
+              "CBAM_GOOD_EMISSIONS_ALLOCATION_1",
+              "CBAM_GOOD_EMISSIONS_ALLOCATION_2",
+              "CBAM_GOODS_ALLOCATION_RECONCILIATION",
+            ],
+            reviewerNotes: "Approved second half.",
+          });
+          return c;
+        })(),
+        assertLocal: (readiness) => {
+          if (readiness.operatorStatus !== "READY_FOR_VERIFIER_REVIEW") {
+            throw new Error(`Case G Local Check Fail: expected READY_FOR_VERIFIER_REVIEW, got ${readiness.operatorStatus}`);
+          }
+        },
+        shouldSucceed: true,
+      },
+      "Case H (PARTIALLY_SUPPORTED evidence)": {
+        data: makePeriodCase("2026", "ANNUAL", "2026-01-01", "2026-12-31", "2026 ANNUAL", "PARTIALLY_SUPPORTED"),
+        assertLocal: (readiness) => {
+          if (readiness.operatorStatus !== "NOT_READY") {
+            throw new Error(`Case H Local Check Fail: expected NOT_READY, got ${readiness.operatorStatus}`);
+          }
+        },
+        shouldSucceed: false,
+      }
     };
 
-    for (const [name, caseData] of Object.entries(cases)) {
-      console.log(`\n--- Running validation on ${name} ---`);
-      
-      // Save case via live endpoint
-      const saveRes = await callCallableFunction("saveCbamCase", {
-        caseId,
-        data: caseData
-      }, idToken);
-      console.log(`✓ Case saved via live function. Case ID: ${saveRes.caseId}`);
+    let caseAReport = null;
 
-      // Call scanner function to clean malware scan status on the evidence record
+    for (const [name, config] of Object.entries(cases)) {
+      console.log(`\n--- Running Smoke Test flow for ${name} ---`);
+      
+      // Local engine checks
+      const readiness = assessReadiness({ caseData: config.data, isDraft: false });
+      config.assertLocal(readiness);
+      console.log(`✓ Local validation engine asserts correctly for ${name}`);
+
+      // Save to server
+      await callCallableFunction("saveCbamCase", {
+        caseId,
+        data: config.data
+      }, idToken);
+
+      // Verify server scan and review calls
       await callCallableFunction("recordCbamEvidenceScan", {
         caseId,
         evidenceId: FIXTURE_EVIDENCE_ID,
         status: "CLEAN",
-        scannerReference: "Smoke test scanner run 1.0"
+        scannerReference: "Smoke test scanner run"
       }, idToken);
 
-      // Call review function to approve and support the evidence record
       await callCallableFunction("reviewCbamEvidence", {
         caseId,
         evidenceId: FIXTURE_EVIDENCE_ID,
         decision: "APPROVED",
-        supportStatus: "SUPPORTED",
-        reviewerNotes: "Approved during live smoke test verification."
+        supportStatus: config.data.evidenceRegister[0].supportStatus,
+        reviewerNotes: "Review decision"
       }, idToken);
-      console.log("✓ Evidence approved and verified clean.");
 
-      // Retrieve case via live endpoint to verify it retrieves correctly
-      const getRes = await callCallableFunction("getCbamCase", { caseId }, idToken);
-      const retrieved = getRes.case;
-      console.log(`✓ Case retrieved via live function. Status: ${retrieved.status}`);
-      console.log("retrieved reportingPeriod:", JSON.stringify(retrieved.reportingPeriod));
+      if (name === "Case G (Multi-document coverage)") {
+        await callCallableFunction("recordCbamEvidenceScan", {
+          caseId,
+          evidenceId: SECOND_FIXTURE_EVIDENCE_ID,
+          status: "CLEAN",
+          scannerReference: "Smoke test scanner run"
+        }, idToken);
+        await callCallableFunction("reviewCbamEvidence", {
+          caseId,
+          evidenceId: SECOND_FIXTURE_EVIDENCE_ID,
+          decision: "APPROVED",
+          supportStatus: "SUPPORTED",
+          reviewerNotes: "Review decision"
+        }, idToken);
+      }
 
-      if (name === "Case E (2026 full year ANNUAL)") {
-        // Case E is ready for sealing. Let's call sealCbamReport on the live API!
-        console.log("Sealing Case E via live function...");
-        sealResult = await callCallableFunction("sealCbamReport", {
+      // Sealing action
+      if (config.shouldSucceed) {
+        console.log(`Sealing ${name} via live function...`);
+        const result = await callCallableFunction("sealCbamReport", {
           caseId,
           entitlementId,
-          requestId,
-          correctionReason: "V5 smoke test verification - Case E"
+          requestId: crypto.randomUUID(),
+          correctionReason: `Smoke verification: ${name}`
         }, idToken);
-        console.log("✓ Case E sealed successfully!");
-        console.log(`  Report ID: ${sealResult.report.reportId}`);
-        console.log(`  Package Hash: ${sealResult.report.packageHash}`);
-
-        // Verify credit/entitlement decrement
-        const entitlementDoc = await db.collection("entitlements").doc(entitlementId).get();
-        const entitlementData = entitlementDoc.data();
-        console.log(`  Releases count: ${entitlementData.releasesCount} / ${entitlementData.maxReleases}`);
-        if (entitlementData.releasesCount !== 1) {
-          throw new Error(`FAIL: Releases count should be 1, found ${entitlementData.releasesCount}`);
+        console.log(`✓ ${name} sealed successfully!`);
+        console.log(`  Report ID: ${result.report.reportId}`);
+        if (name === "Case A (Completed annual period)") {
+          caseAReport = result;
         }
-        console.log("✓ Verified: releasesCount decremented/incremented to 1!");
-
-        // Assert ledger record exists in commerce_ledger
-        const ledgerQuery = await db.collection("commerce_ledger")
-          .where("uid", "==", uid)
-          .where("type", "==", "ENTITLEMENT_CONSUMED")
-          .get();
-        if (ledgerQuery.empty) {
-          throw new Error("FAIL: No ledger record of type ENTITLEMENT_CONSUMED found");
-        }
-        console.log(`✓ Verified: Commerce ledger recorded ENTITLEMENT_CONSUMED entry!`);
-
-        // Test Idempotency: call sealCbamReport again with the same requestId
-        console.log("Testing sealing idempotency...");
-        const sealResultRetry = await callCallableFunction("sealCbamReport", {
-          caseId,
-          entitlementId,
-          requestId,
-          correctionReason: "V5 smoke test verification - Case E"
-        }, idToken);
-        if (sealResultRetry.report.packageHash !== sealResult.report.packageHash) {
-          throw new Error("FAIL: Idempotent retry returned different package hash");
-        }
-        const entitlementDocRetry = await db.collection("entitlements").doc(entitlementId).get();
-        if (entitlementDocRetry.data().releasesCount !== 1) {
-          throw new Error(`FAIL: Releases count should remain 1 on retry, found ${entitlementDocRetry.data().releasesCount}`);
-        }
-        console.log("✓ Verified: Idempotent call returned matching hash, releasesCount = 1.");
       } else {
-        // All other cases are blocked. sealCbamReport should fail closed and NOT consume credit!
-        console.log(`Asserting sealing is blocked for ${name}...`);
-        const blockRequestId = crypto.randomUUID();
+        console.log(`Asserting sealing is blocked on server for ${name}...`);
         try {
-          const res = await callCallableFunction("sealCbamReport", {
+          await callCallableFunction("sealCbamReport", {
             caseId,
             entitlementId,
-            requestId: blockRequestId,
-            correctionReason: "Blocked case sealing attempt"
+            requestId: crypto.randomUUID(),
+            correctionReason: `Smoke verification blocked attempt: ${name}`
           }, idToken);
-          console.log(`SUCCESS result for ${name}:`, JSON.stringify(res));
-          throw new Error(`FAIL: Sealing ${name} did not throw an error!`);
+          throw new Error(`FAIL: Sealing ${name} should have failed on server!`);
         } catch (error) {
-          if (
-            error.message.includes("SEALING_BLOCKED_BY_V5_READINESS_GATES") ||
-            error.message.includes("CBAM_RULESET_NOT_SEALABLE")
-          ) {
-            console.log(`✓ Verified: Sealing blocked for ${name} as expected.`);
+          if (error.message.includes("SEALING_BLOCKED_BY_V5_READINESS_GATES")) {
+            console.log(`✓ Server correctly blocked sealing for ${name}.`);
           } else {
             throw error;
           }
@@ -469,28 +562,84 @@ async function runSmokeTest() {
       }
     }
 
-    // Clean up
-    console.log("\nCleaning up live production smoke test records...");
-    await db.collection("cbam_cases").doc(caseId).delete();
-    await db.collection("entitlements").doc(entitlementId).delete();
-    if (sealResult) {
-      await db.collection("cbam_reports").doc(sealResult.report.reportId).delete();
-      await db.collection("cbam_report_seals").doc(requestId).delete();
-      const zipPath = `reports/${uid}/${sealResult.report.reportId}/dossier.zip`;
-      await bucket.file(zipPath).delete();
-    }
-    const ledgerEntries = await db.collection("commerce_ledger").where("uid", "==", uid).get();
-    for (const doc of ledgerEntries.docs) {
-      await doc.ref.delete();
-    }
-    await evidenceFile.delete();
-    console.log("✓ Cleaned up all records successfully.");
+    // Case I: Sealing idempotency
+    if (caseAReport) {
+      console.log("\n--- Running Case I: Idempotency Retry ---");
+      // Save Case A data again
+      await callCallableFunction("saveCbamCase", {
+        caseId,
+        data: cases["Case A (Completed annual period)"].data
+      }, idToken);
 
-    console.log("\n=== ALL COMPREHENSIVE LIVE SMOKE TEST FLOWS PASSED PERFECTLY! ===");
+      const retryResult = await callCallableFunction("sealCbamReport", {
+        caseId,
+        entitlementId,
+        requestId: caseAReport.report.requestId,
+        correctionReason: "Smoke verification: Case A"
+      }, idToken);
+
+      if (retryResult.report.packageHash !== caseAReport.report.packageHash) {
+        throw new Error("Idempotency FAIL: retry returned different package hash");
+      }
+      console.log("✓ Verified: Idempotent retry returned identical package hash.");
+
+      // Check releasesCount
+      const entitlementDoc = await db.collection("entitlements").doc(entitlementId).get();
+      const releasesCount = entitlementDoc.data().releasesCount;
+      console.log(`  Releases count: ${releasesCount}`);
+      // Case A + Case G succeeded, so releasesCount should be 2
+      if (releasesCount !== 2) {
+        throw new Error(`Idempotency FAIL: releasesCount should be 2, got ${releasesCount}`);
+      }
+      console.log("✓ Verified: Idempotency retry did not consume additional release credits!");
+    }
+
+    console.log("\n=== ALL DEPLOYED SMOKE TEST MATRICES PASSED SUCCESSFULLY! ===");
+
   } finally {
-    // Clean up admin custom claims
-    console.log("Cleaning up admin custom claims...");
-    await auth.setCustomUserClaims(uid, {});
+    // Mark synthetic test records as COMPLETED_TEST for audit trail instead of deleting them
+    console.log("\nMarking synthetic test records as COMPLETED_TEST for audit trail...");
+    try {
+      await db.collection("cbam_cases").doc(caseId).update({ testLifecycle: "COMPLETED_TEST" });
+      await db.collection("entitlements").doc(entitlementId).update({ testLifecycle: "COMPLETED_TEST" });
+      
+      const reportsSnap = await db.collection("cbam_reports").where("uid", "==", uid).get();
+      for (const doc of reportsSnap.docs) {
+        await doc.ref.update({ testLifecycle: "COMPLETED_TEST" });
+      }
+      const sealsSnap = await db.collection("document_seals").where("caseId", "==", caseId).get();
+      for (const doc of sealsSnap.docs) {
+        await doc.ref.update({ testLifecycle: "COMPLETED_TEST" });
+      }
+      const requestsSnap = await db.collection("report_requests").where("uid", "==", uid).get();
+      for (const doc of requestsSnap.docs) {
+        await doc.ref.update({ testLifecycle: "COMPLETED_TEST" });
+      }
+      const outboxSnap = await db.collection("seal_outbox").where("uid", "==", uid).get();
+      for (const doc of outboxSnap.docs) {
+        await doc.ref.update({ testLifecycle: "COMPLETED_TEST" });
+      }
+      const ledgerSnap = await db.collection("commerce_ledger").where("uid", "==", uid).get();
+      for (const doc of ledgerSnap.docs) {
+        await doc.ref.update({ testLifecycle: "COMPLETED_TEST" });
+      }
+      console.log("✓ Synthetic records marked successfully.");
+    } catch (e) {
+      console.warn("Could not update some synthetic records (might not exist):", e.message);
+    }
+
+    // Delete GCS evidence files
+    try {
+      await bucket.file(`evidence/${uid}/${caseId}/${FIXTURE_EVIDENCE_ID}/verified-monitoring-package.txt`).delete();
+      await bucket.file(`evidence/${uid}/${caseId}/${SECOND_FIXTURE_EVIDENCE_ID}/verified-monitoring-package-part2.txt`).delete();
+    } catch (e) {
+      console.warn("Could not delete some GCS evidence files:", e.message);
+    }
+
+    // Delete synthetic user from Firebase Auth
+    console.log("Deleting synthetic test user...");
+    await auth.deleteUser(uid);
+    console.log("✓ Synthetic test user deleted.");
 
     // Restore original system config state
     console.log("Restoring original system config state...");

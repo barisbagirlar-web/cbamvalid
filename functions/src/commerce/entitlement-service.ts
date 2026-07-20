@@ -122,7 +122,7 @@ export async function createEntitlement(
 
 export async function reserveEntitlement(
   transaction: admin.firestore.Transaction,
-  params: { entitlementId: string; uid: string; reportId: string; caseId: string; expiresInSeconds?: number }
+  params: { entitlementId: string; uid: string; reportId: string; caseId: string; expiresInSeconds?: number; auth?: any }
 ): Promise<Entitlement> {
   validateIdentifier("entitlementId", params.entitlementId);
   validateIdentifier("uid", params.uid);
@@ -143,9 +143,8 @@ export async function reserveEntitlement(
   if (entitlement.scopeCaseId && entitlement.scopeCaseId !== params.caseId) {
     throw new EntitlementUnavailableError(`The pack is scope-locked to case ${entitlement.scopeCaseId}.`);
   }
-
   const now = new Date();
-  const reservationExpired = entitlement.status === "RESERVED" && entitlement.reservationExpiresAt
+  const reservationExpired = entitlement.reservationExpiresAt
     ? new Date(entitlement.reservationExpiresAt).getTime() < now.getTime()
     : false;
   if (entitlement.status !== "AVAILABLE" && !reservationExpired) {
@@ -163,6 +162,12 @@ export async function reserveEntitlement(
     type: "ENTITLEMENT_RESERVED",
     quantity: 1,
     idempotencyKey: `reserve:${params.entitlementId}:${params.reportId}`,
+    ...(params.auth?.token?.syntheticTest ? {
+      syntheticTest: true,
+      environment: params.auth.token.environment || "",
+      testRunId: params.auth.token.testRunId || "",
+      testLifecycle: "ACTIVE_TEST",
+    } : {}),
   });
   transaction.update(entitlementRef, {
     status: "RESERVED",
@@ -183,6 +188,7 @@ export async function consumeEntitlement(
     reportHash: string;
     version: number;
     correctionReason?: string;
+    auth?: any;
   }
 ): Promise<Entitlement> {
   validateIdentifier("entitlementId", params.entitlementId);
@@ -228,6 +234,12 @@ export async function consumeEntitlement(
     type: "ENTITLEMENT_CONSUMED",
     quantity: 1,
     idempotencyKey: `consume:${params.entitlementId}:${params.reportId}:${newCount}`,
+    ...(params.auth?.token?.syntheticTest ? {
+      syntheticTest: true,
+      environment: params.auth.token.environment || "",
+      testRunId: params.auth.token.testRunId || "",
+      testLifecycle: "COMPLETED_TEST",
+    } : {}),
   });
   transaction.update(entitlementRef, {
     status,

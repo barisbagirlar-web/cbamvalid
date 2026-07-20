@@ -74,7 +74,7 @@ function errorMessage(error: unknown): string {
 
 function setAtPath<T>(source: T, path: string, updater: (value: unknown) => unknown): T {
   const next = structuredClone(source);
-  const parts = path.split(".");
+  const parts = path.split(/[.]/);
   let cursor: Record<string, unknown> | unknown[] = next as Record<string, unknown>;
   for (let index = 0; index < parts.length - 1; index += 1) {
     const key = /^\d+$/.test(parts[index]) ? Number(parts[index]) : parts[index];
@@ -370,7 +370,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           ["reportingPeriod.year", "Reporting year", "number"],
           ["reportingPeriod.quarter", "Reporting period / quarter", "text"],
         ].map(([path, label, type]) => {
-          const parts = path.split(".");
+          const parts = path.split(/[.]/);
           const datum = parts.reduce<unknown>((value, part) => (value as Record<string, unknown>)[part], caseData) as InputDatum;
           return <div key={path}><FieldLabel>{label}</FieldLabel><input aria-label={label} type={type} value={datumValue(datum.value)} onChange={(event) => updateDatum(path, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>;
         })}

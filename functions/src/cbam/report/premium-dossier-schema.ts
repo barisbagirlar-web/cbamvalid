@@ -359,6 +359,7 @@ export const SealAssessmentContextSchema = z.object({
   reportId: z.string(),
   releaseVersion: z.number().int().positive(),
   rulesetVersion: z.string(),
+  productCode: z.string().optional(),
   previousReleases: z.array(PreviousReleaseSchema).optional(),
 });
 export type SealAssessmentContext = z.infer<typeof SealAssessmentContextSchema>;
