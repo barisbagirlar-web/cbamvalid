@@ -54,17 +54,10 @@ function resolveCreationRequestId(
   return parsed.data;
 }
 
-async function requireAdmin(auth: { uid: string; token: Record<string, unknown> }): Promise<void> {
-  if (auth.token.admin === true || auth.token.ownerAdmin === true) {
-    return;
-  }
-  // Production-smoke UID must NEVER satisfy requireAdmin (no general admin capability).
-  throw new HttpsError("permission-denied", "Requires administrator privileges.");
-}
-
 /**
  * Malware-scan recording: real admins OR narrowly scoped production-smoke identity.
  * Smoke identity does not unlock listAllUsers / adminSetUserTokens / other admin callables.
+ * requireAdmin remains unbypassable elsewhere — smoke UID never satisfies full admin.
  */
 async function requireAdminOrProductionSmoke(
   auth: { uid: string; token: Record<string, unknown> }
