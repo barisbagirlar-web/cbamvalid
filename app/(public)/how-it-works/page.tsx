@@ -3,6 +3,8 @@ import Link from "next/link";
 import { PlayCircle, ArrowRight, CheckCircle2 } from "lucide-react";
 import type { Metadata } from "next";
 
+import VideoPlayer from "@/components/ui/VideoPlayer";
+
 export const metadata: Metadata = {
   title: "How CBAMValid Works | CBAM Dossier Workflow",
   description: "See how CBAMValid guides users from case creation and evidence collection to quality review, secure credit purchase and sealed dossier delivery.",
@@ -29,23 +31,9 @@ export default function HowItWorksPage() {
           <h1 className="text-4xl md:text-5xl font-extrabold font-serif text-foreground tracking-tight mb-6">
             How CBAMValid Works
           </h1>
-          <p className="text-xl text-muted mb-8">
-            Follow the complete workflow from account access and structured data entry to evidence linking, quality control and sealed report delivery.
+          <p className="text-muted text-lg max-w-2xl mx-auto">
+            Build a structured dossier for one installation and one reporting year. Enter production and emissions data, link supporting evidence, resolve quality findings, and generate a sealed verifier-preparation package.
           </p>
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-            <Link 
-              href="/register?next=/cases/new" 
-              className="bg-accent text-surface px-8 py-3 rounded-full font-medium hover:bg-accent-hover transition-colors flex items-center justify-center w-full sm:w-auto"
-            >
-              Start a Dossier <ArrowRight className="ml-2 w-4 h-4" />
-            </Link>
-            <Link 
-              href="/sample-dossier" 
-              className="bg-surface border border-border text-foreground px-8 py-3 rounded-full font-medium hover:bg-muted/10 transition-colors flex items-center justify-center w-full sm:w-auto"
-            >
-              View Sample Dossier
-            </Link>
-          </div>
         </div>
 
         {/* Premium Video Section */}
@@ -58,17 +46,12 @@ export default function HowItWorksPage() {
           </div>
 
           <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-border bg-black aspect-video group">
-            <video
-              controls
-              playsInline
-              preload="metadata"
+            <VideoPlayer
+              src="/media/cbamvalid-product-walkthrough.mp4"
               poster="/media/cbamvalid-product-walkthrough-poster.webp"
-              aria-label="CBAMValid product workflow walkthrough"
+              ariaLabel="CBAMValid product workflow walkthrough"
               className="w-full h-full object-cover"
-            >
-              <source src="/media/cbamvalid-product-walkthrough.mp4#t=3" type="video/mp4" />
-              <p className="text-white p-4">Your browser does not support the video tag.</p>
-            </video>
+            />
           </div>
         </div>
 
