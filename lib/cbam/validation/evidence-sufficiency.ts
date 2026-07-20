@@ -33,16 +33,17 @@ function parsePeriodDates(periodStr: unknown): { start: string; end: string } | 
   return null;
 }
 
-function getValueAtPath(obj: any, path: string): any {
+function getValueAtPath(obj: unknown, path: string): unknown {
   const parts = path.split(".");
   let current = obj;
   for (const part of parts) {
     if (current === null || current === undefined) return undefined;
     const match = part.match(/^(\w+)\[(\d+)\]$/);
     if (match) {
-      current = current[match[1]]?.[parseInt(match[2], 10)];
+      const arr = (current as Record<string, unknown>)[match[1]];
+      current = Array.isArray(arr) ? arr[parseInt(match[2], 10)] : undefined;
     } else {
-      current = current[part];
+      current = (current as Record<string, unknown>)[part];
     }
   }
   return current;
@@ -180,7 +181,7 @@ function calculateIntervalUnionCoverage(
   };
 }
 
-export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimestamp?: string): EvidenceSufficiencyRow[] {
+export function runEvidenceSufficiency(caseData: AuditReadyCase, _assessmentTimestamp?: string): EvidenceSufficiencyRow[] {
   const requirements = deriveMaterialRequirements(caseData);
   const rows: EvidenceSufficiencyRow[] = [];
 
@@ -192,8 +193,9 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
     let datumExists = false;
 
     if (datum && typeof datum === "object") {
-      datumExists = datum.value !== null && datum.value !== "" && datum.value !== undefined;
-      datumEvidenceId = datum.evidenceId || null;
+      const obj = datum as Record<string, unknown>;
+      datumExists = obj.value !== null && obj.value !== "" && obj.value !== undefined;
+      datumEvidenceId = (obj.evidenceId as string) || null;
     } else if (typeof datum === "string" && datum.trim().length > 0) {
       datumExists = true;
       if (req.inputPath.endsWith("EvidenceId")) {
