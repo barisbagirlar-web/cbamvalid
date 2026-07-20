@@ -202,7 +202,7 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
                 </div>
               </div>
               <p className="max-w-xl text-sm leading-relaxed text-muted">
-                CBAMValid prepares an operator/exporter dossier for independent verification. It does not issue an accredited verification opinion, customs decision, EU approval or CBAM Registry acceptance guarantee.
+                CBAMValid prepares an operator/exporter dossier for independent verification. It does not issue an accredited independent verification opinion, customs decision, EU approval or CBAM Registry acceptance guarantee.
               </p>
             </div>
 

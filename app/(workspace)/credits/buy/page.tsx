@@ -137,7 +137,7 @@ export default function BuyCreditsPage() {
           Purchase Preparation Pack
         </h1>
         <p className="text-muted text-sm md:text-base leading-relaxed">
-          Unlock your verifier-preparation dossier compilation for independent accredited verification.
+          Unlock your verifier-preparation dossier compilation for independent accredited-verification.
         </p>
       </div>
 
