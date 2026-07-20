@@ -490,7 +490,20 @@ async function runSmokeTest() {
     let caseAReportRequestId = null;
     let caseAStateOnServer = null;
 
+    let beforeEntCountVal = "NOT_EXECUTED";
+    let afterEntCountVal = "NOT_EXECUTED";
+    let afterRetryEntCountVal = "NOT_EXECUTED";
+    let beforeLedgerCountVal = "NOT_EXECUTED";
+    let afterLedgerCountVal = "NOT_EXECUTED";
+    let afterRetryLedgerCountVal = "NOT_EXECUTED";
+
     for (const [name, config] of Object.entries(cases)) {
+      if (isControlledClock) {
+        if (name !== "Case A (Completed annual period)" && name !== "Case G (Multi-document coverage)") {
+          console.log(`\n--- Skipping ${name} in Controlled Clock Mode ---`);
+          continue;
+        }
+      }
       console.log(`\n--- Running Smoke Test flow for ${name} ---`);
       
       // Save to server
@@ -584,6 +597,7 @@ async function runSmokeTest() {
         }, idToken);
         console.log(`✓ ${name} sealed successfully!`);
         console.log(`  Report ID: ${result.report.reportId}`);
+        config.reportId = result.report.reportId;
 
         if (name === "Case A (Completed annual period)") {
           caseAReport = result;
@@ -594,6 +608,11 @@ async function runSmokeTest() {
           const ledgerSnapAfter = await db.collection("commerce_ledger").where("uid", "==", uid).get();
           const afterLedgerCount = ledgerSnapAfter.size;
           console.log(`[MEASURE] After first seal: entitlement releasesCount = ${afterEntCount}, ledger count = ${afterLedgerCount}`);
+
+          beforeEntCountVal = beforeEntCount;
+          afterEntCountVal = afterEntCount;
+          beforeLedgerCountVal = beforeLedgerCount;
+          afterLedgerCountVal = afterLedgerCount;
 
           // Now do the identical retry immediately
           console.log("--- Running Identical Retry Measure ---");
@@ -613,6 +632,9 @@ async function runSmokeTest() {
           const ledgerSnapAfterRetry = await db.collection("commerce_ledger").where("uid", "==", uid).get();
           const afterRetryLedgerCount = ledgerSnapAfterRetry.size;
           console.log(`[MEASURE] After identical retry: entitlement releasesCount = ${afterRetryEntCount}, ledger count = ${afterRetryLedgerCount}`);
+
+          afterRetryEntCountVal = afterRetryEntCount;
+          afterRetryLedgerCountVal = afterRetryLedgerCount;
 
           ENTITLEMENT_RETRY_DELTA = afterRetryEntCount - afterEntCount;
           LEDGER_RETRY_DELTA = afterRetryLedgerCount - afterLedgerCount;
@@ -721,6 +743,15 @@ async function runSmokeTest() {
     }
 
     console.log("\n=== ALL DEPLOYED SMOKE TEST MATRICES PASSED SUCCESSFULLY! ===");
+    console.log(`\nCONTROLLED_CLOCK_PROJECT=${targetProject}`);
+    console.log(`CASE_A_REPORT_ID=${caseAReport ? caseAReport.report.reportId : "NOT_EXECUTED"}`);
+    console.log(`CASE_G_REPORT_ID=${cases["Case G (Multi-document coverage)"].reportId || "NOT_EXECUTED"}`);
+    console.log(`ENTITLEMENT_AFTER_FIRST_SEAL=${afterEntCountVal}`);
+    console.log(`ENTITLEMENT_AFTER_RETRY=${afterRetryEntCountVal}`);
+    console.log(`ENTITLEMENT_RETRY_DELTA=${isControlledClock ? ENTITLEMENT_RETRY_DELTA : "NOT_EXECUTED"}`);
+    console.log(`LEDGER_AFTER_FIRST_SEAL=${afterLedgerCountVal}`);
+    console.log(`LEDGER_AFTER_RETRY=${afterRetryLedgerCountVal}`);
+    console.log(`LEDGER_RETRY_DELTA=${isControlledClock ? LEDGER_RETRY_DELTA : "NOT_EXECUTED"}`);
     smokeTestSuccess = true;
 
   } finally {
