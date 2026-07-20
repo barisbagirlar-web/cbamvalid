@@ -18,15 +18,16 @@ export function getReportingPeriodAssessment(caseData: AuditReadyCase, assessmen
   let type: "DEFINITIVE_ANNUAL" | "INTERIM_QUARTERLY" | "INTERIM_MONTHLY" | "CUSTOM_INTERNAL" = "DEFINITIVE_ANNUAL";
   const hardBlockerFindingIds: string[] = [];
 
+  // Check if dates are missing
+  if (!startDate) {
+    hardBlockerFindingIds.push("FND-PERIOD-MISSING-START-DATE");
+  }
+  if (!endDate) {
+    hardBlockerFindingIds.push("FND-PERIOD-MISSING-END-DATE");
+  }
+
   // Default dates if not provided
   if (!startDate || !endDate) {
-    if (!startDate && startVal !== undefined && startVal !== null && String(startVal).trim() === "") {
-      hardBlockerFindingIds.push("FND-PERIOD-MISSING-START-DATE");
-    }
-    if (!endDate && endVal !== undefined && endVal !== null && String(endVal).trim() === "") {
-      hardBlockerFindingIds.push("FND-PERIOD-MISSING-END-DATE");
-    }
-
     if (!startDate) {
       if (!quarterVal || quarterVal === "ANNUAL") {
         startDate = `${year}-01-01`;
