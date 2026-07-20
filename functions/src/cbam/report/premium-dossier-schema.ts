@@ -359,7 +359,18 @@ export const SealAssessmentContextSchema = z.object({
   reportId: z.string(),
   releaseVersion: z.number().int().positive(),
   rulesetVersion: z.string(),
+  /** Server-trusted product code from reserved entitlement — never client-supplied. */
   productCode: z.string().optional(),
+  /** Explicit V5 contract marker derived from entitlement.productCode only. */
+  releaseContractVersion: z.literal(5).optional(),
   previousReleases: z.array(PreviousReleaseSchema).optional(),
 });
 export type SealAssessmentContext = z.infer<typeof SealAssessmentContextSchema>;
+
+/** Explicit V5 gate — productCode or releaseContractVersion from server assessment context only. */
+export function isExplicitV5Contract(ctx?: {
+  productCode?: string;
+  releaseContractVersion?: number;
+}): boolean {
+  return ctx?.productCode === "pack_premium_dossier_v5" || ctx?.releaseContractVersion === 5;
+}
