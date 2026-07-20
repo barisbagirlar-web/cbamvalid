@@ -317,7 +317,7 @@ console.log(intensity.toFixed(6));
             <h3 className="text-lg font-bold text-foreground">Mandatory Limitation & Verification Boundary</h3>
           </div>
           <p className="text-muted">
-            CBAMValid prepares an operator/exporter dossier for independent verification. It does not issue an accredited verification opinion, customs decision, EU approval or CBAM Registry acceptance guarantee.
+            CBAMValid prepares an operator/exporter dossier for independent verification. It does not issue an accredited independent verification opinion, customs decision, EU approval or CBAM Registry acceptance guarantee.
           </p>
         </div>
       </section>

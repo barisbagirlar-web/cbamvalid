@@ -7,5 +7,5 @@ export const CANONICAL_PRICING = {
   includedReportingYears: 1,
   includedSealedReleases: 5,
   draftPolicy: "Unlimited drafts",
-  description: "Prepared for Independent Accredited Verification",
+  description: "Prepared for Independent Accredited-Verification",
 };
