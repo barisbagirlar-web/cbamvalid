@@ -135,44 +135,73 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
   const drawTable = (table: PdfTable) => {
     if (table.headers.length === 0) return;
     const widths = normalizedWidths(table.headers.length, table.widths);
+    
+    const headerLines = table.headers.map((header, index) =>
+      document.splitTextToSize(header, widths[index] - 3) as string[]
+    );
+    const maxHeaderLines = Math.max(1, ...headerLines.map(lines => lines.length));
+    const headerHeight = maxHeaderLines * 3.6 + 3.5;
+
     const drawHeader = () => {
-      ensure(9);
+      ensure(headerHeight + 10);
       document.setFillColor(31, 64, 104);
       document.setTextColor(255, 255, 255);
       document.setFont("helvetica", "bold");
       document.setFontSize(7.2);
       let x = MARGIN;
       table.headers.forEach((header, index) => {
-        document.rect(x, y, widths[index], 8, "F");
-        const lines = document.splitTextToSize(header, widths[index] - 3) as string[];
-        document.text(lines.slice(0, 2), x + 1.5, y + 3.3);
+        document.rect(x, y, widths[index], headerHeight, "F");
+        const lines = headerLines[index];
+        document.text(lines, x + 1.5, y + 4);
         x += widths[index];
       });
-      y += 8;
+      y += headerHeight;
     };
 
     drawHeader();
     table.rows.forEach((row, rowIndex) => {
-      const wrapped = table.headers.map((_, columnIndex) =>
+      let cellLines = table.headers.map((_, columnIndex) =>
         document.splitTextToSize(asText(row[columnIndex]), widths[columnIndex] - 3) as string[]
       );
-      const rowHeight = Math.max(7, Math.max(...wrapped.map((lines) => Math.min(lines.length, 6))) * 3.6 + 2.5);
-      if (y + rowHeight > BODY_BOTTOM) {
-        addPage();
-        drawHeader();
+
+      while (cellLines.some(lines => lines.length > 0)) {
+        const availableHeight = BODY_BOTTOM - y;
+        let linesThatFit = Math.floor((availableHeight - 4) / 3.6);
+        
+        if (linesThatFit < 1) {
+          addPage();
+          drawHeader();
+          continue;
+        }
+
+        const maxLinesInCells = Math.max(...cellLines.map(lines => lines.length));
+        const chunkLineCount = Math.min(linesThatFit, maxLinesInCells);
+        const chunkHeight = Math.max(7, chunkLineCount * 3.6 + 2.5);
+
+        document.setDrawColor(215, 221, 229);
+        document.setTextColor(43, 51, 64);
+        document.setFont("helvetica", "normal");
+        document.setFontSize(7.2);
+
+        let x = MARGIN;
+        cellLines.forEach((lines, columnIndex) => {
+          document.setFillColor(rowIndex % 2 === 0 ? 248 : 239, rowIndex % 2 === 0 ? 250 : 244, rowIndex % 2 === 0 ? 252 : 248);
+          document.rect(x, y, widths[columnIndex], chunkHeight, "FD");
+
+          const chunkText = lines.slice(0, chunkLineCount);
+          document.text(chunkText, x + 1.5, y + 4);
+
+          x += widths[columnIndex];
+        });
+
+        cellLines = cellLines.map(lines => lines.slice(chunkLineCount));
+        y += chunkHeight;
+
+        if (cellLines.some(lines => lines.length > 0)) {
+          addPage();
+          drawHeader();
+        }
       }
-      document.setDrawColor(215, 221, 229);
-      document.setTextColor(43, 51, 64);
-      document.setFont("helvetica", "normal");
-      document.setFontSize(7.2);
-      let x = MARGIN;
-      wrapped.forEach((lines, columnIndex) => {
-        document.setFillColor(rowIndex % 2 === 0 ? 248 : 239, rowIndex % 2 === 0 ? 250 : 244, rowIndex % 2 === 0 ? 252 : 248);
-        document.rect(x, y, widths[columnIndex], rowHeight, "FD");
-        document.text(lines.slice(0, 6), x + 1.5, y + 3.5);
-        x += widths[columnIndex];
-      });
-      y += rowHeight;
     });
     y += 3;
   };

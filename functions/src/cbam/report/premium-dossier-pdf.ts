@@ -77,21 +77,27 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
       ? widths.map(w => (w / widths.reduce((s, x) => s + x, 0)) * CONTENT_WIDTH)
       : Array.from({ length: headers.length }, () => CONTENT_WIDTH / headers.length);
 
+    const headerLines = headers.map((header, index) =>
+      doc.splitTextToSize(header, colWidths[index] - 2) as string[]
+    );
+    const maxHeaderLines = Math.max(1, ...headerLines.map(lines => lines.length));
+    const headerHeight = maxHeaderLines * 3.5 + 3.5;
+
     const drawHeader = () => {
       // Başlık + minimum iki satır birlikte tutulmalı
-      ensure(7 + 12);
+      ensure(headerHeight + 12);
       doc.setFillColor(31, 64, 104);
       doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7.0);
       let x = MARGIN;
       headers.forEach((header, index) => {
-        doc.rect(x, y, colWidths[index], 7, "F");
-        const lines = doc.splitTextToSize(header, colWidths[index] - 2) as string[];
-        doc.text(lines.slice(0, 2), x + 1, y + 4.5);
+        doc.rect(x, y, colWidths[index], headerHeight, "F");
+        const lines = headerLines[index];
+        doc.text(lines, x + 1, y + 4.5);
         x += colWidths[index];
       });
-      y += 7;
+      y += headerHeight;
     };
 
     drawHeader();
@@ -145,16 +151,71 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
     y += 2;
   };
 
-  const beginSection = (num: number, title: string, contentHeight: number) => {
+  interface SectionPreview {
+    height: number;
+  }
+
+  const paragraphPreview = (text: string, width = CONTENT_WIDTH): SectionPreview => {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    const lines = doc.splitTextToSize(asText(text), width);
+    return { height: lines.length * 3.5 + 3 };
+  };
+
+
+  const tablePreview = (headers: string[], rows: any[][], widths?: number[]): SectionPreview => {
+    const colWidths = widths && widths.length === headers.length
+      ? widths.map(w => (w / widths.reduce((s, x) => s + x, 0)) * CONTENT_WIDTH)
+      : Array.from({ length: headers.length }, () => CONTENT_WIDTH / headers.length);
+    const headerLines = headers.map((header, index) =>
+      doc.splitTextToSize(header, colWidths[index] - 2) as string[]
+    );
+    const maxHeaderLines = Math.max(1, ...headerLines.map(lines => lines.length));
+    const headerHeight = maxHeaderLines * 3.5 + 3.5;
+    
+    let rowsHeight = 0;
+    const firstTwo = rows.slice(0, 2);
+    firstTwo.forEach((row, rowIndex) => {
+      const cellLines = headers.map((_, colIndex) =>
+        doc.splitTextToSize(asText(row[colIndex]), colWidths[colIndex] - 2) as string[]
+      );
+      const maxLines = Math.max(...cellLines.map(lines => lines.length));
+      rowsHeight += Math.max(6, maxLines * 3.5 + 2);
+    });
+    if (firstTwo.length < 2) {
+      rowsHeight += (2 - firstTwo.length) * 8;
+    }
+    return { height: headerHeight + rowsHeight };
+  };
+
+  const beginSection = (
+    numOrParams: number | { number: number; title: string; preview: () => SectionPreview },
+    title?: string,
+    contentHeight?: number
+  ) => {
+    let num: number;
+    let sectionTitle: string;
+    let requiredHeight: number;
+
+    if (typeof numOrParams === "object") {
+      num = numOrParams.number;
+      sectionTitle = numOrParams.title;
+      requiredHeight = numOrParams.preview().height;
+    } else {
+      num = numOrParams;
+      sectionTitle = title || "";
+      requiredHeight = contentHeight || 35;
+    }
+
     const headingHeight = 9;
-    ensure(headingHeight + contentHeight);
+    ensure(headingHeight + requiredHeight);
     sectionPages[num] = doc.getNumberOfPages();
     doc.setFillColor(231, 237, 244);
     doc.rect(MARGIN, y, CONTENT_WIDTH, 7, "F");
     doc.setTextColor(20, 42, 74);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8.5);
-    doc.text(`${num}. ${title}`, MARGIN + 2, y + 4.8);
+    doc.text(`${num}. ${sectionTitle}`, MARGIN + 2, y + 4.8);
     y += 9;
   };
 
@@ -217,14 +278,6 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   writeCoverDetail("Installation Name", model.identity.installation);
   writeCoverDetail("Regulatory Basis", "Regulation (EU) 2023/956 & Implementing Regulation (EU) 2025/2546");
 
-  // Expert Review Panel on Cover
-  cy += 5;
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(31, 64, 104);
-  doc.text("Academic Oversight & Expert Review:", MARGIN, cy);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(43, 51, 64);
-  doc.text("NOT_PROVIDED", MARGIN, cy + 5);
 
   // Cover Legal Boundary statement
   doc.setFont("helvetica", "normal");
@@ -240,7 +293,23 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   y = BODY_TOP;
 
   // Section 2: Document Control
-  beginSection(2, "Document Control", 40);
+  beginSection({
+    number: 2,
+    title: "Document Control",
+    preview: () => tablePreview(
+      ["Control Parameter", "Registered Value"],
+      [
+        ["Report ID", model.reportId],
+        ["Case ID", model.caseId],
+        ["Release Version", `V${model.releaseVersion}`],
+        ["Generated Timestamp", model.generatedAt],
+        ["Ruleset Version", "EU-CBAM-DEFINITIVE-2026"],
+        ["Calculation Engine Version", "3.0.0"],
+        ["Verification Class", "Prepared for Independent Accredited Review"],
+      ],
+      [50, 130]
+    )
+  });
   drawTable(
     ["Control Parameter", "Registered Value"],
     [
@@ -256,7 +325,11 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   );
 
   // Section 3: Legal and Product Boundary
-  beginSection(3, "Legal Status and Reliance Boundary", 30);
+  beginSection({
+    number: 3,
+    title: "Legal Status and Reliance Boundary",
+    preview: () => paragraphPreview(model.legalBoundary)
+  });
   drawParagraph(model.legalBoundary);
   drawCallout(
     "CBAMValid Internal automated readiness assessment",
@@ -276,7 +349,11 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   y = BODY_TOP;
 
   // Section 5: Executive Decision Board
-  beginSection(5, "Executive Decision Board", 30);
+  beginSection({
+    number: 5,
+    title: "Executive Decision Board",
+    preview: () => paragraphPreview("The following summary table outlines the key metrics and decisions for senior executive/CFO review before independent verifier handover.")
+  });
   drawParagraph("The following summary table outlines the key metrics and decisions for senior executive/CFO review before independent verifier handover.");
   
   drawTable(
@@ -292,22 +369,19 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
     ]],
     [22, 22, 22, 20, 22, 22, 50]
   );
-
+ 
   const decisionExplanation = model.readiness.recommendedDecision === "READY_TO_HAND_OVER"
     ? "All hard gates passed. No critical blockers or unapproved evidence records. The case is ready to hand over to an independent accredited verifier."
     : "Gaps or blockers detected. Remediation is required before submitting to an independent accredited verifier. Please check the corrective action plan.";
   drawCallout("Recommended Action Context", decisionExplanation);
-
+ 
   // ==========================================
   // PAGE 5: READINESS SCORE AND HARD GATES
   // ==========================================
   doc.addPage();
   y = BODY_TOP;
-
+ 
   // Section 6: Readiness Score and Hard Gates
-  beginSection(6, "Readiness Score and Hard Gates", 45);
-  drawParagraph("The 100-point diagnostic score is computed based on 8 weighted dimensions. Hard blockers will override this score and force NOT_READY status.");
-  
   const dimHeaders = ["Readiness Dimension", "Weight", "Score", "Weighted Score", "Passed / Total Reqs"];
   const dimRows = model.readiness.dimensions.map(d => [
     d.dimensionId,
@@ -316,10 +390,30 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
     `${d.weightedScore}%`,
     `${d.passedRequirementCount} / ${d.applicableRequirementCount}`,
   ]);
+  beginSection({
+    number: 6,
+    title: "Readiness Score and Hard Gates",
+    preview: () => tablePreview(dimHeaders, dimRows, [50, 18, 18, 20, 30])
+  });
+  drawParagraph("The 100-point diagnostic score is computed based on 8 weighted dimensions. Hard blockers will override this score and force NOT_READY status.");
   drawTable(dimHeaders, dimRows, [50, 18, 18, 20, 30]);
-
+ 
   // Section 7: Operator and Installation Identity
-  beginSection(7, "Operator and Installation Identity", 35);
+  beginSection({
+    number: 7,
+    title: "Operator and Installation Identity",
+    preview: () => tablePreview(
+      ["Identity Attribute", "Declared Value"],
+      [
+        ["Operator Name", model.identity.exporterOperator],
+        ["Importer Name", model.identity.importer],
+        ["EORI Number", model.identity.eori],
+        ["Installation Name", model.identity.installation],
+        ["Country of Origin", model.identity.country],
+      ],
+      [50, 130]
+    )
+  });
   drawTable(
     ["Identity Attribute", "Declared Value"],
     [
@@ -331,23 +425,24 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
     ],
     [50, 130]
   );
-
+ 
   // Section 8: Reporting Period Assessment
-  beginSection(8, "Reporting Period Assessment", 35);
+  const periodRows = [
+    ["Reporting Year", String(periodAssessment.reportingYear)],
+    ["Reporting Period Type", periodAssessment.type],
+    ["Covered Dates", `${periodAssessment.startDate} to ${periodAssessment.endDate}`],
+    ["Covered Days count", `${periodAssessment.coveredDays} days`],
+    ["Expected Days count", `${periodAssessment.expectedDays} days`],
+    ["Completeness Percentage", `${periodAssessment.completenessPercent}%`],
+    ["Definitive Annual Eligible", periodAssessment.definitiveAnnualEligible ? "YES (PASSED)" : "NO (BLOCKED - Quarterly or partial-year period detected)"],
+  ];
+  beginSection({
+    number: 8,
+    title: "Reporting Period Assessment",
+    preview: () => tablePreview(["Reporting Attribute", "Value"], periodRows, [60, 120])
+  });
   drawParagraph(`Calendar-aware analysis of the reporting period for definitive annual verification eligibility.`);
-  drawTable(
-    ["Reporting Attribute", "Value"],
-    [
-      ["Reporting Year", String(periodAssessment.reportingYear)],
-      ["Reporting Period Type", periodAssessment.type],
-      ["Covered Dates", `${periodAssessment.startDate} to ${periodAssessment.endDate}`],
-      ["Covered Days count", `${periodAssessment.coveredDays} days`],
-      ["Expected Days count", `${periodAssessment.expectedDays} days`],
-      ["Completeness Percentage", `${periodAssessment.completenessPercent}%`],
-      ["Definitive Annual Eligible", periodAssessment.definitiveAnnualEligible ? "YES (PASSED)" : "NO (BLOCKED - Quarterly or partial-year period detected)"],
-    ],
-    [60, 120]
-  );
+  drawTable(["Reporting Attribute", "Value"], periodRows, [60, 120]);
   if (!periodAssessment.definitiveAnnualEligible) {
     drawCallout("Reporting Period Hard Blocker", "The reporting period is not a definitive annual period. A quarterly or partial-year period cannot pass definitive annual verifier readiness.");
   }
@@ -569,16 +664,35 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   );
 
   // Section 28: Version Comparison
-  beginSection(28, "Version Comparison", 35);
+  const versionRows: string[][] = [];
+  if (model.previousReleases && model.previousReleases.length > 0) {
+    model.previousReleases.forEach(r => {
+      versionRows.push([
+        `V${r.version}`,
+        r.sealedAt,
+        r.correctionReason || "Dossier release.",
+        "OPERATOR_ADMIN",
+        r.status,
+      ]);
+    });
+  }
+  versionRows.push([
+    `V${model.releaseVersion}`,
+    model.generatedAt,
+    model.releaseVersion > 1 ? "Dossier correction/update release." : "Initial base release version.",
+    "OPERATOR_ADMIN",
+    "ACTIVE_RELEASE"
+  ]);
+
+  beginSection({
+    number: 28,
+    title: "Version Comparison",
+    preview: () => paragraphPreview("This register tracks the history of released and sealed package versions under this case scope:")
+  });
   drawParagraph("This register tracks the history of released and sealed package versions under this case scope:");
-  const versionRows = model.releaseVersion === 1
-    ? [
-        [`V${model.releaseVersion}`, model.generatedAt, "Initial base release version.", "OPERATOR_ADMIN", "ACTIVE_RELEASE"]
-      ]
-    : [
-        ["V1.0", "NOT_AVAILABLE", "Previous release history not dynamically recorded.", "NOT_AVAILABLE", "SUPERSEDED"],
-        [`V${model.releaseVersion}`, model.generatedAt, "Dossier correction/update release.", "OPERATOR_ADMIN", "ACTIVE_RELEASE"]
-      ];
+  if (!model.previousReleases || model.previousReleases.length === 0) {
+    drawParagraph("No previous sealed release exists.");
+  }
   drawTable(
     ["Version", "Sealed Timestamp", "Release Reason / Changes", "Author", "Status"],
     versionRows,

@@ -149,7 +149,7 @@ export function assessReadiness(params: {
   const { caseData, isDraft, assessmentTimestamp } = params;
 
   // 1. Run validation engines
-  const sufficiency = runEvidenceSufficiency(caseData);
+  const sufficiency = runEvidenceSufficiency(caseData, assessmentTimestamp);
   const { findings } = generateFindingsAndActions(caseData, assessmentTimestamp);
 
   // 2. Map requirements & findings to dimensions

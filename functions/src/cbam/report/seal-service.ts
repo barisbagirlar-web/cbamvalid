@@ -11,9 +11,9 @@ import {
   buildDataIntegrityManifest,
   buildUnsignedVerifierArtifacts,
   finalizeVerifierPackage,
-  updatePdfArtifacts,
   type EvidenceBinary,
 } from "./verifier-package-builder";
+import type { SealAssessmentContext } from "./premium-dossier-schema";
 
 export type SealState =
   | "SEAL_REQUESTED"
@@ -325,24 +325,50 @@ export async function sealReport(params: {
   const lease = await acquireSealLease({ ...params, ...identity, inputHash: caseDataHash, leaseOwner });
   if (lease.completed) return lease.completed;
 
-  let reserved = false;
-  try {
-    await setState(identity.reportId, "SEAL_REQUESTED", { requestId: identity.requestId, caseDataHash });
-    const entitlement = await adminDb.runTransaction((transaction) => reserveEntitlement(transaction, {
-      entitlementId: params.entitlementId,
-      uid: params.uid,
-      reportId: identity.reportId,
-      caseId: params.caseId,
-      expiresInSeconds: 1800,
-    }));
-    reserved = true;
-    const releaseVersion = entitlement.releasesCount + 1;
-    if (releaseVersion > 1 && !params.correctionReason?.trim()) throw new Error("CORRECTION_REASON_REQUIRED_AFTER_FIRST_RELEASE");
+    const prevReportsSnap = await adminDb.collection("cbam_reports")
+      .where("caseId", "==", params.caseId)
+      .get();
+    const previousReleases = prevReportsSnap.docs
+      .filter(doc => doc.id !== identity.reportId && doc.data().status === "SEALED")
+      .map(doc => {
+        const data = doc.data();
+        return {
+          version: Number(data.releaseVersion) || 0,
+          reportId: String(data.reportId || ""),
+          sealedAt: String(data.createdAt || data.updatedAt || ""),
+          status: "SUPERSEDED",
+          correctionReason: data.correctionReason ? String(data.correctionReason) : null,
+        };
+      })
+      .sort((left, right) => left.version - right.version);
+
+    let reserved = false;
+    try {
+      await setState(identity.reportId, "SEAL_REQUESTED", { requestId: identity.requestId, caseDataHash });
+      const entitlement = await adminDb.runTransaction((transaction) => reserveEntitlement(transaction, {
+        entitlementId: params.entitlementId,
+        uid: params.uid,
+        reportId: identity.reportId,
+        caseId: params.caseId,
+        expiresInSeconds: 1800,
+      }));
+      reserved = true;
+      const releaseVersion = entitlement.releasesCount + 1;
+      if (releaseVersion > 1 && !params.correctionReason?.trim()) throw new Error("CORRECTION_REASON_REQUIRED_AFTER_FIRST_RELEASE");
+
+      const assessmentContext: SealAssessmentContext = {
+        generatedAt: lease.generatedAt,
+        assessmentTimestamp: lease.generatedAt,
+        reportId: identity.reportId,
+        releaseVersion,
+        rulesetVersion: ruleset.version,
+        previousReleases,
+      };
 
     const controls = runQualityControls(caseData);
     if (releaseVersion >= 5) {
       const { assessReadiness } = await import("../validation/readiness-score");
-      const readinessV5 = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: lease.generatedAt });
+      const readinessV5 = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: assessmentContext.assessmentTimestamp });
       if (readinessV5.operatorStatus === "NOT_READY" || readinessV5.criticalBlockerCount > 0 || readinessV5.missingMaterialEvidenceCount > 0) {
         throw new Error("SEALING_BLOCKED_BY_V5_READINESS_GATES");
       }
@@ -364,7 +390,7 @@ export async function sealReport(params: {
     const calculation = performDossierCalculations(caseData);
     await setState(identity.reportId, "CALCULATION_COMPLETE", { calculationRootHash: calculation.calculationRootHash });
     const evidenceFiles = await loadEvidenceFiles(caseData);
-    let artifacts = await buildUnsignedVerifierArtifacts({
+    const artifacts = await buildUnsignedVerifierArtifacts({
       caseData,
       calculation,
       controls,
@@ -372,6 +398,7 @@ export async function sealReport(params: {
       releaseVersion,
       generatedAt: lease.generatedAt,
       evidenceFiles,
+      assessmentContext,
     });
     const manifest = buildDataIntegrityManifest({
       artifacts,
@@ -387,29 +414,7 @@ export async function sealReport(params: {
     const signature = await signManifestWithKms(manifest.bytes);
     await setState(identity.reportId, "KMS_SIGNED", { manifestHash: signature.manifestHash, keyVersion: signature.keyVersion });
     
-    // First pass to get initial ZIP hash
-    let packageResult = await finalizeVerifierPackage({
-      artifacts,
-      manifestBytes: manifest.bytes,
-      signature,
-      generatedAt: lease.generatedAt,
-    });
-
-    // Re-render PDFs with actual hashes
-    artifacts = updatePdfArtifacts({
-      artifacts,
-      caseData,
-      calculation,
-      controls,
-      reportId: identity.reportId,
-      releaseVersion,
-      generatedAt: lease.generatedAt,
-      manifestHash: signature.manifestHash,
-      packageHash: packageResult.zipHash,
-    });
-
-    // Final pass with updated PDFs
-    packageResult = await finalizeVerifierPackage({
+    const packageResult = await finalizeVerifierPackage({
       artifacts,
       manifestBytes: manifest.bytes,
       signature,
@@ -426,9 +431,20 @@ export async function sealReport(params: {
       commitImmutableArtifact({ path: `${basePath}/manifest.sig`, bytes: packageResult.signatureBytes, contentType: "application/vnd.cbamvalid.kms-signature+json", metadata: commonMetadata }),
       commitImmutableArtifact({ path: `${basePath}/case-snapshot.json`, bytes: frozenJson, contentType: "application/json", metadata: commonMetadata }),
     ]);
+    if (packageResult.zipHash !== storageEntries[0].sha256) {
+      throw new Error("PACKAGE_RECEIPT_HASH_MISMATCH");
+    }
     await setState(identity.reportId, "ARTIFACTS_COMMITTED", { packageHash: packageResult.zipHash });
 
-    const documentHash = signature.manifestHash;
+    const primaryDossier = artifacts.find(a => a.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
+    const operatorEmissionsReport = artifacts.find(a => a.path === "Operator Emissions Report.pdf");
+    const technicalCompilation = artifacts.find(a => a.path === "Complete Dossier Compilation.pdf");
+    
+    const primaryDossierHash = primaryDossier ? sha256(primaryDossier.bytes) : "";
+    const operatorEmissionsReportHash = operatorEmissionsReport ? sha256(operatorEmissionsReport.bytes) : "";
+    const technicalCompilationHash = technicalCompilation ? sha256(technicalCompilation.bytes) : "";
+
+    const documentHash = signature.manifestHash; // redefined as manifestHash compatible with old schema
     const caseDocumentId = await resolveCaseDocumentId(params.caseId);
     const reportRecord: any = {
       reportId: identity.reportId,
@@ -440,11 +456,15 @@ export async function sealReport(params: {
       documentHash,
       manifestHash: signature.manifestHash,
       packageHash: packageResult.zipHash,
+      primaryDossierHash,
+      operatorEmissionsReportHash,
+      technicalCompilationHash,
+      caseDataHash,
+      calculationRootHash: calculation.calculationRootHash,
       status: "SEALED",
       createdAt: lease.generatedAt,
       updatedAt: new Date().toISOString(),
       calculation,
-      caseDataHash,
       rulesetVersion: ruleset.version,
       sourceHash: ruleset.sourceHash,
       kmsKeyVersion: signature.keyVersion,
