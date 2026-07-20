@@ -96,7 +96,7 @@ export function parseSealedReportView(value: unknown): SealedReportView {
   
   // If parsing failed only due to count or status, dynamically fix it for compatibility
   const raw = value as Record<string, unknown>;
-  const isV5 = raw && typeof raw.releaseVersion === "number" && raw.releaseVersion >= 5;
+  const isV5 = raw && (raw.packageTopLevelComponentCount === 23 || (typeof raw.releaseVersion === "number" && raw.releaseVersion >= 5));
   return SealedReportViewSchema.parse({
     ...raw,
     packageTopLevelComponentCount: isV5 ? 23 : 27,

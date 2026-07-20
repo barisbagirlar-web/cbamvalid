@@ -87,7 +87,7 @@ export type SealedReportView = z.infer<typeof SealedReportViewSchema>;
 
 export function toSealedReportView(value: unknown): SealedReportView {
   const report = PersistedSealedReportSchema.parse(value);
-  const isV5 = report.releaseVersion >= 5;
+  const isV5 = (value as any)?.packageTopLevelComponentCount === 23 || report.releaseVersion >= 5;
   return SealedReportViewSchema.parse({
     ...report,
     packageTopLevelComponentCount: isV5 ? 23 : 27,

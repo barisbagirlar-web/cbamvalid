@@ -228,7 +228,8 @@ function buildPdfArtifacts(params: {
     item.evidenceIds.join(" | "),
   ]);
 
-  if (releaseVersion >= 5) {
+  const isV5 = releaseVersion >= 5 || process.env.NODE_ENV === "production" || process.env.V5_RELEASE_ACTIVE === "true";
+  if (isV5) {
     // V5 PDFs
     const timestamp = assessmentContext?.assessmentTimestamp || generatedAt;
     const sufficiency = runEvidenceSufficiency(caseData, timestamp);
@@ -438,7 +439,8 @@ function buildCsvArtifacts(params: {
 }): PackageArtifact[] {
   const { caseData, calculation, controls, model } = params;
 
-  if (model.releaseVersion >= 5) {
+  const isV5 = model.releaseVersion >= 5 || process.env.NODE_ENV === "production" || process.env.V5_RELEASE_ACTIVE === "true";
+  if (isV5) {
     // V5 CSVs
     return [
       artifact("Source Stream Register.csv", csv([["Stream ID", "Name", "Country", "Quantity", "Quantity unit", "Direct tCO2e", "Indirect tCO2e", "Quantity evidence", "Direct evidence", "Indirect evidence"], ...caseData.precursors.map((item, index) => [`P${index + 1}`, item.name.value, item.countryOfOrigin.value, item.quantity.value, item.quantity.canonicalUnit, item.directEmissions.value, item.indirectEmissions.value, item.quantity.evidenceId, item.directEmissions.evidenceId, item.indirectEmissions.evidenceId])]), "text/csv"),
@@ -503,7 +505,7 @@ export function buildDataIntegrityManifest(params: {
   generatedAt: string;
   evidenceCount: number;
 }): { manifest: DataIntegrityManifest; bytes: Buffer } {
-  const isV5 = params.releaseVersion >= 5;
+  const isV5 = params.releaseVersion >= 5 || process.env.NODE_ENV === "production" || process.env.V5_RELEASE_ACTIVE === "true";
   const manifest: DataIntegrityManifest = {
     schemaVersion: isV5 ? "CBAMVALID-DOSSIER-5.0" : "CBAMVALID-DOSSIER-4.0",
     reportId: params.reportId,
