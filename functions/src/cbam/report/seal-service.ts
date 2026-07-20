@@ -312,6 +312,7 @@ export async function sealReport(params: {
   if (disableV5Sealing) {
     throw new Error("V5_SEALING_DISABLED_BY_FEATURE_FLAG");
   }
+  let isV5 = false;
   const caseData = AuditReadyCaseSchema.parse(params.inputData);
   if (caseData.caseId !== params.caseId || caseData.ownerId !== params.uid) throw new Error("SEAL_CASE_IDENTITY_MISMATCH");
   const year = Number(caseData.reportingPeriod.year.value);
@@ -354,6 +355,7 @@ export async function sealReport(params: {
       }));
       reserved = true;
       const releaseVersion = entitlement.releasesCount + 1;
+      isV5 = releaseVersion >= 5 || process.env.NODE_ENV === "production" || process.env.V5_RELEASE_ACTIVE === "true";
       if (releaseVersion > 1 && !params.correctionReason?.trim()) throw new Error("CORRECTION_REASON_REQUIRED_AFTER_FIRST_RELEASE");
 
       const assessmentContext: SealAssessmentContext = {
@@ -366,7 +368,7 @@ export async function sealReport(params: {
       };
 
     const controls = runQualityControls(caseData);
-    if (releaseVersion >= 5) {
+    if (isV5) {
       const { assessReadiness } = await import("../validation/readiness-score");
       const readinessV5 = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: assessmentContext.assessmentTimestamp });
       if (readinessV5.operatorStatus === "NOT_READY" || readinessV5.criticalBlockerCount > 0 || readinessV5.missingMaterialEvidenceCount > 0) {
@@ -475,7 +477,7 @@ export async function sealReport(params: {
     };
 
     let publicVerificationToken: string | undefined;
-    if (releaseVersion >= 5) {
+    if (isV5) {
       const { assessReadiness } = await import("../validation/readiness-score");
       const readinessV5 = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: lease.generatedAt });
       publicVerificationToken = crypto.randomBytes(32).toString("hex");
@@ -512,7 +514,7 @@ export async function sealReport(params: {
       if (marker.status !== "IN_PROGRESS" || marker.leaseOwner !== leaseOwner || marker.inputHash !== caseDataHash) throw new Error("SEAL_FINALIZATION_LEASE_LOST");
       if (sealSnapshot.exists) throw new Error("DOCUMENT_HASH_ALREADY_SEALED");
 
-      if (releaseVersion >= 5) {
+      if (isV5) {
         const prevReports = await transaction.get(
           adminDb.collection("cbam_reports")
             .where("caseId", "==", params.caseId)
