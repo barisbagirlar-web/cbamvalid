@@ -228,7 +228,7 @@ function buildPdfArtifacts(params: {
     item.evidenceIds.join(" | "),
   ]);
 
-  const isV5 = releaseVersion >= 5 || assessmentContext?.productCode === "pack_premium_dossier_v5" || reportId.startsWith("v5_");
+  const isV5 = releaseVersion >= 5 || assessmentContext?.productCode === "pack_premium_dossier_v5";
   if (isV5) {
     // V5 PDFs
     const timestamp = assessmentContext?.assessmentTimestamp || generatedAt;
@@ -439,7 +439,7 @@ function buildCsvArtifacts(params: {
 }): PackageArtifact[] {
   const { caseData, calculation, controls, model } = params;
 
-  const isV5 = model.releaseVersion >= 5 || model.productCode === "pack_premium_dossier_v5" || model.reportId.startsWith("v5_");
+  const isV5 = model.releaseVersion >= 5 || model.productCode === "pack_premium_dossier_v5";
   if (isV5) {
     // V5 CSVs
     return [
@@ -505,7 +505,7 @@ export function buildDataIntegrityManifest(params: {
   generatedAt: string;
   evidenceCount: number;
 }): { manifest: DataIntegrityManifest; bytes: Buffer } {
-  const isV5 = params.releaseVersion >= 5 || (params.artifacts.some(a => a.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf")) || params.reportId.startsWith("v5_");
+  const isV5 = params.releaseVersion >= 5 || (params.artifacts.some(a => a.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf"));
   const manifest: DataIntegrityManifest = {
     schemaVersion: isV5 ? "CBAMVALID-DOSSIER-5.0" : "CBAMVALID-DOSSIER-4.0",
     reportId: params.reportId,

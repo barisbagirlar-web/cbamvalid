@@ -357,7 +357,7 @@ export async function sealReport(params: {
       }));
       reserved = true;
       const releaseVersion = entitlement.releasesCount + 1;
-      isV5 = releaseVersion >= 5 || entitlement.productCode === "pack_premium_dossier_v5" || params.requestId.startsWith("v5_");
+      isV5 = releaseVersion >= 5 || entitlement.productCode === "pack_premium_dossier_v5";
       if (releaseVersion > 1 && !params.correctionReason?.trim()) throw new Error("CORRECTION_REASON_REQUIRED_AFTER_FIRST_RELEASE");
 
       const assessmentContext: SealAssessmentContext = {
