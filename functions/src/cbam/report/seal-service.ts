@@ -382,14 +382,16 @@ export async function sealReport(params: {
         const { generateFindingsAndActions } = await import("../validation/findings-engine");
         const sufficiency = runEvidenceSufficiency(caseData, assessmentContext.assessmentTimestamp);
         const { findings } = generateFindingsAndActions(caseData, assessmentContext.assessmentTimestamp);
-        console.error("SEALING_BLOCKED_BY_V5_READINESS_GATES detail:", JSON.stringify({
+        const err = new Error("SEALING_BLOCKED_BY_V5_READINESS_GATES");
+        (err as any).details = {
           operatorStatus: readinessV5.operatorStatus,
           criticalBlockerCount: readinessV5.criticalBlockerCount,
           missingMaterialEvidenceCount: readinessV5.missingMaterialEvidenceCount,
+          decisionReasonCodes: readinessV5.decisionReasonCodes,
           findings: findings.filter((f: any) => f.status === "OPEN"),
           sufficiency: sufficiency.filter((r: any) => r.state !== "SUPPORTED")
-        }));
-        throw new Error("SEALING_BLOCKED_BY_V5_READINESS_GATES");
+        };
+        throw err;
       }
     } else {
       const readiness = assessCaseReadiness(caseData);

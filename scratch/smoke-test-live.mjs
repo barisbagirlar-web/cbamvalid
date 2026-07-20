@@ -6,7 +6,6 @@ import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { getAuth } from "firebase-admin/auth";
 import { assessReadiness } from "../functions/build/cbam/validation/readiness-score.js";
-import { AuditReadyCaseSchema } from "../functions/build/cbam/schema.js";
 import { generateFindingsAndActions } from "../functions/build/cbam/validation/findings-engine.js";
 
 // Read and parse .env.local to load credentials
@@ -18,7 +17,6 @@ if (fs.existsSync(envLocalPath)) {
     if (match) {
       const key = match[1];
       let value = match[2];
-      // Unescape \n in private key
       if (key === "FIREBASE_ADMIN_PRIVATE_KEY") {
         value = value.replace(/\\n/g, "\n");
       }
@@ -27,12 +25,16 @@ if (fs.existsSync(envLocalPath)) {
   });
 }
 
-process.env.GCLOUD_PROJECT = "cbam-desk";
-process.env.FIREBASE_CONFIG = JSON.stringify({ storageBucket: "cbam-desk.firebasestorage.app" });
+const targetProject = process.env.FIREBASE_ADMIN_PROJECT_ID || "cbam-desk";
+const isProduction = targetProject === "cbam-desk" && !process.env.FIRESTORE_EMULATOR_HOST;
+const isControlledClock = process.env.CONTROLLED_CLOCK === "true" || !isProduction;
+
+process.env.GCLOUD_PROJECT = targetProject;
+process.env.FIREBASE_CONFIG = JSON.stringify({ storageBucket: `${targetProject}.firebasestorage.app` });
 
 const credential = process.env.FIREBASE_ADMIN_PRIVATE_KEY && process.env.FIREBASE_ADMIN_CLIENT_EMAIL
   ? cert({
-      projectId: process.env.FIREBASE_ADMIN_PROJECT_ID || "cbam-desk",
+      projectId: targetProject,
       clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
       privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY,
     })
@@ -40,12 +42,12 @@ const credential = process.env.FIREBASE_ADMIN_PRIVATE_KEY && process.env.FIREBAS
 
 initializeApp({
   ...(credential ? { credential } : {}),
-  projectId: "cbam-desk",
-  storageBucket: "cbam-desk.firebasestorage.app"
+  projectId: targetProject,
+  storageBucket: `${targetProject}.firebasestorage.app`
 });
 
 const db = getFirestore();
-const bucket = getStorage().bucket("cbam-desk.firebasestorage.app");
+const bucket = getStorage().bucket(`${targetProject}.firebasestorage.app`);
 const auth = getAuth();
 
 const FIREBASE_API_KEY = "AIzaSyD719QlNheW-iiRLbCU9TGk0yymm3QS90Q";
@@ -65,7 +67,7 @@ async function getIdToken(uid, claims = {}) {
 }
 
 async function callCallableFunction(functionName, data, idToken) {
-  const url = `https://europe-west1-cbam-desk.cloudfunctions.net/${functionName}`;
+  const url = `https://europe-west1-${targetProject}.cloudfunctions.net/${functionName}`;
   const response = await fetch(url, {
     method: "POST",
     headers: {
@@ -85,16 +87,6 @@ async function callCallableFunction(functionName, data, idToken) {
     throw new Error(`Firebase Function error: ${JSON.stringify(body.error)}`);
   }
   return body.result;
-}
-
-async function countEntitlementsForUid(uid) {
-  const snap = await db.collection("entitlements").where("uid", "==", uid).get();
-  return snap.size;
-}
-
-async function countLedgerForUid(uid) {
-  const snap = await db.collection("commerce_ledger").where("uid", "==", uid).get();
-  return snap.size;
 }
 
 function getCanonicalCaseId(uid, requestId) {
@@ -153,20 +145,17 @@ function sha256(str) {
 }
 
 async function runSmokeTest() {
-  console.log("=== STARTING LIVE PRODUCTION DEPLOYED SMOKE TEST ===");
+  console.log(`=== STARTING LIVE ${isProduction ? "PRODUCTION" : "TEST"} DEPLOYED SMOKE TEST ===`);
+  console.log(`Target Project: ${targetProject}`);
+  console.log(`Mode: Clock mode = ${isControlledClock ? "Controlled" : "Real Production Clock"}`);
 
   const testRunId = crypto.randomUUID();
   const smokeEmail = `smoke-test-${testRunId}@cbamvalid.com`;
-  const uid = "production-smoke-test-user-uid";
+  // Requirement 8: use unique smoke UID per testRunId
+  const uid = "smoke-" + testRunId.replace(/-/g, "").slice(0, 20);
 
-  // Clean up user if already exists from previous runs
-  try {
-    console.log(`Deleting existing user with UID ${uid}...`);
-    await auth.deleteUser(uid);
-  } catch (e) {}
-
-  console.log(`Creating synthetic test user ${smokeEmail} with exact allowed UID...`);
-  const user = await auth.createUser({
+  console.log(`Creating synthetic test user ${smokeEmail} with unique UID ${uid}...`);
+  await auth.createUser({
     uid,
     email: smokeEmail,
     emailVerified: true,
@@ -181,7 +170,7 @@ async function runSmokeTest() {
   await configDocRef.set({
     ...originalConfig,
     smokeTestUid: uid,
-    disableV5Sealing: false // temporarily enable sealing during test
+    disableV5Sealing: false // temporarily enable sealing during test run
   });
 
   console.log("Setting synthetic custom claims including short-lived scoped claim...");
@@ -362,6 +351,8 @@ async function runSmokeTest() {
   }
 
   let smokeTestSuccess = false;
+  let ENTITLEMENT_RETRY_DELTA = 0;
+  let LEDGER_RETRY_DELTA = 0;
 
   try {
     // Upload evidence
@@ -399,61 +390,26 @@ async function runSmokeTest() {
     const cases = {
       "Case A (Completed annual period)": {
         data: makePeriodCase("2026", "ANNUAL", "2026-01-01", "2026-12-31", "2026 ANNUAL"),
-        assertLocal: (readiness, findings) => {
-          if (readiness.operatorStatus !== "READY_FOR_VERIFIER_REVIEW") {
-            console.error("Local readiness check failed. Full readiness output:", JSON.stringify(readiness, null, 2));
-            throw new Error(`Case A Local Check Fail: expected READY_FOR_VERIFIER_REVIEW, got ${readiness.operatorStatus}`);
-          }
-        },
-        shouldSucceed: true,
+        shouldSucceed: isControlledClock, // succeeds only when clock is controlled/future simulated
       },
       "Case B (Quarterly period)": {
         data: makePeriodCase("2026", "Q1", "2026-01-01", "2026-03-31", "2026-Q1"),
-        assertLocal: (readiness, findings) => {
-          const hasBlocker = readiness.decisionReasonCodes.includes("NON_ANNUAL_PERIOD_BLOCKED");
-          if (!hasBlocker) {
-            throw new Error("Case B Local Check Fail: missing NON_ANNUAL_PERIOD_BLOCKED");
-          }
-        },
         shouldSucceed: false,
       },
       "Case C (Annual with Q1 evidence)": {
         data: makePeriodCase("2026", "ANNUAL", "2026-01-01", "2026-12-31", "2026-Q1"),
-        assertLocal: (readiness, findings) => {
-          const hasBlocker = findings.some(f => f.findingId === "FND-EVIDENCE-ANNUAL-COVERAGE-INCOMPLETE" && f.status === "OPEN");
-          if (!hasBlocker) {
-            throw new Error("Case C Local Check Fail: missing FND-EVIDENCE-ANNUAL-COVERAGE-INCOMPLETE");
-          }
-        },
         shouldSucceed: false,
       },
       "Case D (Unparseable evidence period)": {
         data: makePeriodCase("2026", "ANNUAL", "2026-01-01", "2026-12-31", "invalid-period"),
-        assertLocal: (readiness, findings) => {
-          if (readiness.missingMaterialEvidenceCount === 0) {
-            throw new Error("Case D Local Check Fail: missingMaterialEvidenceCount should be > 0");
-          }
-        },
         shouldSucceed: false,
       },
       "Case E (Future period end date)": {
         data: makePeriodCase("2028", "ANNUAL", "2028-01-01", "2028-12-31", "2028 ANNUAL"),
-        assertLocal: (readiness, findings) => {
-          const hasBlocker = findings.some(f => f.findingId === "FND-PERIOD-FUTURE-END-DATE" && f.status === "OPEN");
-          if (!hasBlocker) {
-            throw new Error("Case E Local Check Fail: missing FND-PERIOD-FUTURE-END-DATE");
-          }
-        },
         shouldSucceed: false,
       },
       "Case F (Reconciliation gap)": {
         data: makePeriodCase("2026", "ANNUAL", "2026-01-01", "2026-12-31", "2026-01-01 to 2026-10-31", "SUPPORTED", "2026-01-01", "2026-10-31"),
-        assertLocal: (readiness, findings) => {
-          const hasBlocker = findings.some(f => f.findingId === "FND-EVIDENCE-ANNUAL-COVERAGE-INCOMPLETE" && f.status === "OPEN");
-          if (!hasBlocker) {
-            throw new Error("Case F Local Check Fail: missing FND-EVIDENCE-ANNUAL-COVERAGE-INCOMPLETE due to coverage gap");
-          }
-        },
         shouldSucceed: false,
       },
       "Case G (Multi-document coverage)": {
@@ -513,22 +469,10 @@ async function runSmokeTest() {
           });
           return c;
         })(),
-        assertLocal: (readiness, findings) => {
-          if (readiness.operatorStatus !== "READY_FOR_VERIFIER_REVIEW") {
-            console.error("Case G Local Check Fail. Full readiness:", JSON.stringify(readiness, null, 2));
-            console.error("Findings:", JSON.stringify(findings, null, 2));
-            throw new Error(`Case G Local Check Fail: expected READY_FOR_VERIFIER_REVIEW, got ${readiness.operatorStatus}`);
-          }
-        },
-        shouldSucceed: true,
+        shouldSucceed: isControlledClock, // succeeds only when clock is controlled/future simulated
       },
       "Case H (PARTIALLY_SUPPORTED evidence)": {
         data: makePeriodCase("2026", "ANNUAL", "2026-01-01", "2026-12-31", "2026 ANNUAL", "PARTIALLY_SUPPORTED"),
-        assertLocal: (readiness, findings) => {
-          if (readiness.operatorStatus !== "NOT_READY") {
-            throw new Error(`Case H Local Check Fail: expected NOT_READY, got ${readiness.operatorStatus}`);
-          }
-        },
         shouldSucceed: false,
       }
     };
@@ -540,12 +484,6 @@ async function runSmokeTest() {
     for (const [name, config] of Object.entries(cases)) {
       console.log(`\n--- Running Smoke Test flow for ${name} ---`);
       
-      // Local engine checks
-      const readiness = assessReadiness({ caseData: config.data, isDraft: false, assessmentTimestamp: "2027-01-15" });
-      const { findings } = generateFindingsAndActions(config.data, "2027-01-15");
-      config.assertLocal(readiness, findings);
-      console.log(`✓ Local validation engine asserts correctly for ${name}`);
-
       // Save to server
       await callCallableFunction("saveCbamCase", {
         caseId,
@@ -584,34 +522,36 @@ async function runSmokeTest() {
         }, idToken);
       }
 
-      // Fetch the actual parsed/sanitized case from Firestore!
+      // Fetch the actual parsed/sanitized case from Firestore
       const caseDoc = await db.collection("cbam_cases").doc(caseId).get();
       if (!caseDoc.exists) throw new Error("Case doc not found in Firestore!");
-      const serverCaseData = caseDoc.data().data;
+      const serverCaseDocData = caseDoc.data();
+      const serverCaseData = serverCaseDocData.data;
 
       if (name === "Case A (Completed annual period)") {
-        // Capture the exact server case document right before sealing Case A!
-        caseAStateOnServer = caseDoc.data();
+        caseAStateOnServer = serverCaseDocData;
       }
 
-      // Calculate data hash and mock request marker with future assessmentTimestamp using the server's case data!
-      const caseDataHash = sha256(canonical(serverCaseData));
       const currentRequestId = crypto.randomUUID();
-      const digest = sha256(`${uid}\u0000${caseId}\u0000${entitlementId}\u0000${currentRequestId}`);
       
-      console.log(`Pre-creating report request marker with future assessmentTimestamp...`);
-      await db.collection("report_requests").doc(digest).set({
-        uid,
-        caseId,
-        entitlementId,
-        requestId: currentRequestId,
-        reportId: `report_${digest}`,
-        inputHash: caseDataHash,
-        status: "IN_PROGRESS",
-        leaseOwner: "pre-lease-owner",
-        leaseExpiresAt: new Date(0).toISOString(), // expired lease to allow takeover
-        generatedAt: "2027-01-15T12:00:00.000Z", // future date to pass future-date blocker check
-      });
+      // Controlled clock lease creation (Requirement 5: only in non-production/controlled clock)
+      if (isControlledClock) {
+        const caseDataHash = sha256(canonical(serverCaseData));
+        const digest = sha256(`${uid}\u0000${caseId}\u0000${entitlementId}\u0000${currentRequestId}`);
+        console.log(`[TEST PROJECT] Pre-creating report request marker with future assessmentTimestamp...`);
+        await db.collection("report_requests").doc(digest).set({
+          uid,
+          caseId,
+          entitlementId,
+          requestId: currentRequestId,
+          reportId: `report_${digest}`,
+          inputHash: caseDataHash,
+          status: "IN_PROGRESS",
+          leaseOwner: "pre-lease-owner",
+          leaseExpiresAt: new Date(0).toISOString(),
+          generatedAt: "2027-01-15T12:00:00.000Z",
+        });
+      }
 
       // Sealing action
       if (config.shouldSucceed) {
@@ -665,8 +605,8 @@ async function runSmokeTest() {
           const afterRetryLedgerCount = ledgerSnapAfterRetry.size;
           console.log(`[MEASURE] After identical retry: entitlement releasesCount = ${afterRetryEntCount}, ledger count = ${afterRetryLedgerCount}`);
 
-          const ENTITLEMENT_RETRY_DELTA = afterRetryEntCount - afterEntCount;
-          const LEDGER_RETRY_DELTA = afterRetryLedgerCount - afterLedgerCount;
+          ENTITLEMENT_RETRY_DELTA = afterRetryEntCount - afterEntCount;
+          LEDGER_RETRY_DELTA = afterRetryLedgerCount - afterLedgerCount;
           console.log(`ENTITLEMENT_RETRY_DELTA=${ENTITLEMENT_RETRY_DELTA}`);
           console.log(`LEDGER_RETRY_DELTA=${LEDGER_RETRY_DELTA}`);
 
@@ -686,26 +626,69 @@ async function runSmokeTest() {
           }, idToken);
           throw new Error(`FAIL: Sealing ${name} should have failed on server!`);
         } catch (error) {
-          if (error.message.includes("SEALING_BLOCKED_BY_V5_READINESS_GATES")) {
-            console.log(`✓ Server correctly blocked sealing for ${name}.`);
-          } else {
+          if (!error.message.includes("SEALING_BLOCKED_BY_V5_READINESS_GATES")) {
             throw error;
+          }
+          console.log(`✓ Server correctly blocked sealing for ${name}.`);
+          
+          // Requirement 7: prove the exact remote reason codes for blocked requests
+          const details = error.details || {};
+          console.log(`[REMOTE PROOF] Error details:`, JSON.stringify(details));
+
+          if (name === "Case A (Completed annual period)" && isProduction) {
+            const hasFutureDate = details.findings?.some(f => f.findingId === "FND-PERIOD-FUTURE-END-DATE");
+            if (!hasFutureDate) throw new Error("Missing remote proof for Case A: FND-PERIOD-FUTURE-END-DATE");
+            console.log("✓ Deployed Proof: Case A = FND-PERIOD-FUTURE-END-DATE");
+          }
+          if (name === "Case B (Quarterly period)") {
+            const hasNonAnnual = details.decisionReasonCodes?.includes("NON_ANNUAL_PERIOD_BLOCKED");
+            if (!hasNonAnnual) throw new Error("Missing remote proof for Case B: NON_ANNUAL_PERIOD_BLOCKED");
+            console.log("✓ Deployed Proof: Case B = NON_ANNUAL_PERIOD_BLOCKED");
+          }
+          if (name === "Case C (Annual with Q1 evidence)") {
+            const hasCoverage = details.findings?.some(f => f.findingId === "FND-EVIDENCE-ANNUAL-COVERAGE-INCOMPLETE");
+            if (!hasCoverage) throw new Error("Missing remote proof for Case C: FND-EVIDENCE-ANNUAL-COVERAGE-INCOMPLETE");
+            console.log("✓ Deployed Proof: Case C = FND-EVIDENCE-ANNUAL-COVERAGE-INCOMPLETE");
+          }
+          if (name === "Case D (Unparseable evidence period)") {
+            const hasUnparseable = details.sufficiency?.some(r => r.reasonCodes?.includes("EVIDENCE_PERIOD_UNPARSEABLE"));
+            if (!hasUnparseable) throw new Error("Missing remote proof for Case D: EVIDENCE_PERIOD_UNPARSEABLE");
+            console.log("✓ Deployed Proof: Case D = EVIDENCE_PERIOD_UNPARSEABLE");
+          }
+          if (name === "Case E (Future period end date)") {
+            const hasFutureDate = details.findings?.some(f => f.findingId === "FND-PERIOD-FUTURE-END-DATE");
+            if (!hasFutureDate) throw new Error("Missing remote proof for Case E: FND-PERIOD-FUTURE-END-DATE");
+            console.log("✓ Deployed Proof: Case E = FND-PERIOD-FUTURE-END-DATE");
+          }
+          if (name === "Case F (Reconciliation gap)") {
+            const hasCoverage = details.findings?.some(f => f.findingId === "FND-EVIDENCE-ANNUAL-COVERAGE-INCOMPLETE");
+            if (!hasCoverage) throw new Error("Missing remote proof for Case F: FND-EVIDENCE-ANNUAL-COVERAGE-INCOMPLETE");
+            console.log("✓ Deployed Proof: Case F = FND-EVIDENCE-ANNUAL-COVERAGE-INCOMPLETE");
+          }
+          if (name === "Case G (Multi-document coverage)" && isProduction) {
+            const hasFutureDate = details.findings?.some(f => f.findingId === "FND-PERIOD-FUTURE-END-DATE");
+            if (!hasFutureDate) throw new Error("Missing remote proof for Case G: FND-PERIOD-FUTURE-END-DATE");
+            console.log("✓ Deployed Proof: Case G = FND-PERIOD-FUTURE-END-DATE");
+          }
+          if (name === "Case H (PARTIALLY_SUPPORTED evidence)") {
+            const hasPartiallySupported = details.sufficiency?.some(r => r.state === "PARTIALLY_SUPPORTED" && r.blocksSealing === true);
+            if (!hasPartiallySupported) throw new Error("Missing remote proof for Case H: PARTIALLY_SUPPORTED blocker");
+            console.log("✓ Deployed Proof: Case H = PARTIALLY_SUPPORTED blocker");
           }
         }
       }
     }
 
-    // Case I: Sealing idempotency
-    if (caseAReport) {
+    // Case I: Sealing idempotency (only under controlled clock)
+    if (caseAReport && isControlledClock) {
       console.log("\n--- Running Case I: Idempotency Retry ---");
-      // Restore Case A's exact server state (including audit events, timestamps and approved statuses) directly!
-      // This ensures the input data and its calculated hash match Case A's original run EXACTLY.
-      // We also ensure status is set to "DRAFT" since only draft cases can be sealed.
-      const restoredCaseRecord = {
-        ...caseAStateOnServer,
-        status: "DRAFT",
-      };
-      await db.collection("cbam_cases").doc(caseId).set(restoredCaseRecord);
+      // Requirement 6: Do not restore cbam_cases directly through Firestore.
+      // Call saveCbamCase (edit path) to update/restore Case A state.
+      const caseADataToRestore = caseAStateOnServer.data;
+      await callCallableFunction("saveCbamCase", {
+        caseId,
+        data: caseADataToRestore
+      }, idToken);
 
       const retryResult = await callCallableFunction("sealCbamReport", {
         caseId,
@@ -719,11 +702,9 @@ async function runSmokeTest() {
       }
       console.log("✓ Verified: Idempotent retry returned identical package hash.");
 
-      // Check releasesCount
       const entitlementDoc = await db.collection("entitlements").doc(entitlementId).get();
       const releasesCount = entitlementDoc.data().releasesCount;
       console.log(`  Releases count: ${releasesCount}`);
-      // Case A + Case G succeeded, so releasesCount should be 2
       if (releasesCount !== 2) {
         throw new Error("Idempotency FAIL: releasesCount should be 2");
       }
