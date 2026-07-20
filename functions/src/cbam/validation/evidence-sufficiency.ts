@@ -1,9 +1,12 @@
 import type { AuditReadyCase } from "../schema";
-import type { EvidenceSufficiencyRow } from "../report/premium-dossier-schema";
+import type { EvidenceSufficiencyRow, EvidenceCoverageAssessment } from "../report/premium-dossier-schema";
 import { deriveMaterialRequirements } from "./material-input-registry";
 
-function parsePeriodDates(periodStr: string): { start: string; end: string } | null {
+function parsePeriodDates(periodStr: unknown): { start: string; end: string } | null {
+  if (typeof periodStr !== "string") return null;
   const str = periodStr.trim().toUpperCase();
+  if (!str) return null;
+
   // Check ANNUAL
   let match = str.match(/^(\d{4})\s*ANNUAL$/) || str.match(/^(\d{4})$/);
   if (match) {
@@ -45,7 +48,139 @@ function getValueAtPath(obj: any, path: string): any {
   return current;
 }
 
-export function runEvidenceSufficiency(caseData: AuditReadyCase): EvidenceSufficiencyRow[] {
+const STATE_SEVERITY: Record<string, number> = {
+  MISSING: 10,
+  UNLINKED: 9,
+  HASH_MISMATCH: 8,
+  BYTE_SIZE_MISMATCH: 7,
+  MALWARE_UNCLEARED: 6,
+  UNAPPROVED: 5,
+  PARTIALLY_SUPPORTED: 4,
+  OUT_OF_PERIOD: 3,
+  SUPPORTED: 1,
+};
+
+function calculateIntervalUnionCoverage(
+  inputPath: string,
+  requiredStartStr: string,
+  requiredEndStr: string,
+  validRecords: Array<{ id: string; start: string; end: string }>
+): EvidenceCoverageAssessment {
+  const reqStart = new Date(requiredStartStr);
+  const reqEnd = new Date(requiredEndStr);
+
+  const reqMs = reqEnd.getTime() - reqStart.getTime() + 24 * 60 * 60 * 1000;
+  const requiredDays = Math.ceil(reqMs / (24 * 60 * 60 * 1000));
+
+  // 1. Clip intervals to required period
+  const clipped: Array<{ start: Date; end: Date; id: string }> = [];
+  for (const rec of validRecords) {
+    const evStart = new Date(rec.start);
+    const evEnd = new Date(rec.end);
+
+    const overlapStart = new Date(Math.max(reqStart.getTime(), evStart.getTime()));
+    const overlapEnd = new Date(Math.min(reqEnd.getTime(), evEnd.getTime()));
+
+    if (overlapStart <= overlapEnd) {
+      clipped.push({ start: overlapStart, end: overlapEnd, id: rec.id });
+    }
+  }
+
+  // 2. Sort intervals by start date
+  clipped.sort((left, right) => left.start.getTime() - right.start.getTime());
+
+  // 3. Merge overlaps/contiguous intervals
+  const merged: Array<{ start: string; end: string; evidenceIds: string[] }> = [];
+  for (const interval of clipped) {
+    if (merged.length === 0) {
+      merged.push({
+        start: interval.start.toISOString().split("T")[0],
+        end: interval.end.toISOString().split("T")[0],
+        evidenceIds: [interval.id],
+      });
+    } else {
+      const prev = merged[merged.length - 1];
+      const prevEndMs = new Date(prev.end).getTime();
+      const currentStartMs = interval.start.getTime();
+
+      // Contiguous or overlapping (allowing 1 day gap to merge contiguous, e.g. Jan 31 and Feb 1)
+      if (currentStartMs <= prevEndMs + 24 * 60 * 60 * 1000) {
+        const maxEnd = new Date(Math.max(prevEndMs, interval.end.getTime()));
+        prev.end = maxEnd.toISOString().split("T")[0];
+        if (!prev.evidenceIds.includes(interval.id)) {
+          prev.evidenceIds.push(interval.id);
+        }
+      } else {
+        merged.push({
+          start: interval.start.toISOString().split("T")[0],
+          end: interval.end.toISOString().split("T")[0],
+          evidenceIds: [interval.id],
+        });
+      }
+    }
+  }
+
+  // 4. Calculate Unique Covered Days
+  let coveredDays = 0;
+  for (const prev of merged) {
+    const startMs = new Date(prev.start).getTime();
+    const endMs = new Date(prev.end).getTime();
+    const diffMs = endMs - startMs + 24 * 60 * 60 * 1000;
+    coveredDays += Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+  }
+
+  // 5. Detect Uncovered Gaps
+  const uncovered: Array<{ start: string; end: string; missingDays: number }> = [];
+  let currentExpected = reqStart.getTime();
+
+  for (const interval of merged) {
+    const intStartMs = new Date(interval.start).getTime();
+    const intEndMs = new Date(interval.end).getTime();
+
+    if (intStartMs > currentExpected) {
+      const gapStart = new Date(currentExpected);
+      const gapEnd = new Date(intStartMs - 24 * 60 * 60 * 1000);
+      const gapMs = gapEnd.getTime() - gapStart.getTime() + 24 * 60 * 60 * 1000;
+      const missingDays = Math.ceil(gapMs / (24 * 60 * 60 * 1000));
+      uncovered.push({
+        start: gapStart.toISOString().split("T")[0],
+        end: gapEnd.toISOString().split("T")[0],
+        missingDays,
+      });
+    }
+    currentExpected = intEndMs + 24 * 60 * 60 * 1000;
+  }
+
+  if (currentExpected <= reqEnd.getTime()) {
+    const gapStart = new Date(currentExpected);
+    const gapEnd = reqEnd;
+    const gapMs = gapEnd.getTime() - gapStart.getTime() + 24 * 60 * 60 * 1000;
+    const missingDays = Math.ceil(gapMs / (24 * 60 * 60 * 1000));
+    uncovered.push({
+      start: gapStart.toISOString().split("T")[0],
+      end: gapEnd.toISOString().split("T")[0],
+      missingDays,
+    });
+  }
+
+  const coveragePercent = ((coveredDays / requiredDays) * 100).toFixed(2);
+  const complete = coveragePercent === "100.00" && uncovered.length === 0;
+
+  return {
+    inputPath,
+    requiredPeriodStart: requiredStartStr,
+    requiredPeriodEnd: requiredEndStr,
+    requiredDays,
+    coveredDays,
+    coveragePercent,
+    mergedIntervals: merged,
+    uncoveredIntervals: uncovered,
+    supportingEvidenceIds: validRecords.map(r => r.id),
+    complete,
+  };
+}
+
+export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimestamp?: string): EvidenceSufficiencyRow[] {
   const requirements = deriveMaterialRequirements(caseData);
   const rows: EvidenceSufficiencyRow[] = [];
 
@@ -53,18 +188,16 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase): EvidenceSuffic
     const datum = getValueAtPath(caseData, req.inputPath);
     const isMaterial = req.requirementLevel === "MATERIAL_REQUIRED" || req.requirementLevel === "REQUIRED";
 
-    let evidenceId: string | null = null;
+    let datumEvidenceId: string | null = null;
     let datumExists = false;
 
     if (datum && typeof datum === "object") {
       datumExists = datum.value !== null && datum.value !== "" && datum.value !== undefined;
-      evidenceId = datum.evidenceId || null;
+      datumEvidenceId = datum.evidenceId || null;
     } else if (typeof datum === "string" && datum.trim().length > 0) {
       datumExists = true;
       if (req.inputPath.endsWith("EvidenceId")) {
-        evidenceId = datum;
-      } else {
-        evidenceId = null;
+        datumEvidenceId = datum;
       }
     }
 
@@ -83,7 +216,18 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase): EvidenceSuffic
       continue;
     }
 
-    if (!evidenceId) {
+    // Collect all evidence explicitly linked to this input path
+    const linkedEvidenceIds = new Set<string>();
+    if (datumEvidenceId) {
+      linkedEvidenceIds.add(datumEvidenceId);
+    }
+    caseData.evidenceRegister.forEach((rec) => {
+      if (rec.linkedInputs.includes(req.inputPath)) {
+        linkedEvidenceIds.add(rec.evidenceId);
+      }
+    });
+
+    if (linkedEvidenceIds.size === 0) {
       if (req.minimumEvidenceCount === 0) {
         rows.push({
           requirementId: req.requirementId,
@@ -112,178 +256,138 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase): EvidenceSuffic
       continue;
     }
 
-    // Look up evidence in caseData
-    const record = caseData.evidenceRegister.find((r) => r.evidenceId === evidenceId);
-    if (!record) {
-      rows.push({
-        requirementId: req.requirementId,
-        inputPath: req.inputPath,
-        evidenceIds: [evidenceId],
-        state: "MISSING",
-        coverageNumerator: "0.0",
-        coverageDenominator: "1.0",
-        blocksOperatorReadiness: isMaterial,
-        blocksSealing: isMaterial,
-        reasonCodes: ["EVIDENCE_RECORD_NOT_FOUND"],
-      });
-      continue;
-    }
-
-    const reasonCodes: string[] = [];
-    let state: EvidenceSufficiencyRow["state"] = "SUPPORTED";
-    let blocksOperatorReadiness = false;
-    let blocksSealing = false;
-
-    // Check tenant/case isolation path
-    const expectedPrefix = `evidence/${caseData.ownerId}/${caseData.caseId}/${record.evidenceId}/`;
-    if (caseData.caseId && !record.storagePath.startsWith(expectedPrefix)) {
-      state = "UNLINKED";
-      reasonCodes.push("CROSS_TENANT_OR_CASE_MISMATCH");
-    }
-
-    // Check linked inputs
-    if (!record.linkedInputs.includes(req.inputPath)) {
-      state = "UNLINKED";
-      reasonCodes.push("INPUT_PATH_NOT_LINKED_TO_EVIDENCE");
-    }
-
-    // Check file integrity
-    if (!/^[a-f0-9]{64}$/i.test(record.fileHash)) {
-      state = "HASH_MISMATCH";
-      reasonCodes.push("INVALID_SHA256_HASH_FORMAT");
-    }
-    if (record.sizeBytes <= 0) {
-      state = "BYTE_SIZE_MISMATCH";
-      reasonCodes.push("ZERO_OR_NEGATIVE_BYTE_SIZE");
-    }
-
-    // Check malware
-    if (record.malwareScanStatus === "PENDING") {
-      state = "MALWARE_UNCLEARED";
-      reasonCodes.push("MALWARE_SCAN_PENDING");
-    } else if (record.malwareScanStatus === "INFECTED") {
-      state = "MALWARE_UNCLEARED";
-      reasonCodes.push("MALWARE_SCAN_INFECTED");
-    }
-
-    // Check review status
-    if (record.reviewStatus !== "APPROVED") {
-      state = "UNAPPROVED";
-      reasonCodes.push("EVIDENCE_NOT_APPROVED_BY_OPERATOR");
-    }
-
-    // Check period alignment and exact coverage
     const caseYear = caseData.reportingPeriod.year.value;
     const caseQuarter = caseData.reportingPeriod.quarter.value || "ANNUAL";
-
     const requiredPeriodStart = String(caseData.reportingPeriod.startDate?.value || parsePeriodDates(`${caseYear}-${caseQuarter}`)?.start || `${caseYear}-01-01`);
     const requiredPeriodEnd = String(caseData.reportingPeriod.endDate?.value || parsePeriodDates(`${caseYear}-${caseQuarter}`)?.end || `${caseYear}-12-31`);
 
-    let evidencePeriodStart: string | null = record.evidencePeriodStart || null;
-    let evidencePeriodEnd: string | null = record.evidencePeriodEnd || null;
+    const reqMs = new Date(requiredPeriodEnd).getTime() - new Date(requiredPeriodStart).getTime() + 24 * 60 * 60 * 1000;
+    const requiredDays = Math.ceil(reqMs / (24 * 60 * 60 * 1000));
 
-    if (!evidencePeriodStart || !evidencePeriodEnd) {
-      const parsed = parsePeriodDates(record.reportingPeriod);
-      if (parsed) {
-        evidencePeriodStart = evidencePeriodStart || parsed.start;
-        evidencePeriodEnd = evidencePeriodEnd || parsed.end;
-      }
-    }
+    let worstState: EvidenceSufficiencyRow["state"] = "SUPPORTED";
+    const allReasonCodes = new Set<string>();
+    const validIntervalsForUnion: Array<{ id: string; start: string; end: string }> = [];
 
-    let coverageDays: number | null = null;
-    let coveragePercent: string | null = null;
-
-    if (evidencePeriodStart && evidencePeriodEnd) {
-      const reqStart = new Date(requiredPeriodStart);
-      const reqEnd = new Date(requiredPeriodEnd);
-      const evStart = new Date(evidencePeriodStart);
-      const evEnd = new Date(evidencePeriodEnd);
-
-      const overlapStart = new Date(Math.max(reqStart.getTime(), evStart.getTime()));
-      const overlapEnd = new Date(Math.min(reqEnd.getTime(), evEnd.getTime()));
-
-      if (overlapStart <= overlapEnd) {
-        const overlapMs = overlapEnd.getTime() - overlapStart.getTime() + 24 * 60 * 60 * 1000;
-        coverageDays = Math.ceil(overlapMs / (24 * 60 * 60 * 1000));
-      } else {
-        coverageDays = 0;
+    for (const evidenceId of linkedEvidenceIds) {
+      const record = caseData.evidenceRegister.find((r) => r.evidenceId === evidenceId);
+      if (!record) {
+        worstState = "MISSING";
+        allReasonCodes.add("EVIDENCE_RECORD_NOT_FOUND");
+        continue;
       }
 
-      const reqMs = reqEnd.getTime() - reqStart.getTime() + 24 * 60 * 60 * 1000;
-      const reqDays = Math.ceil(reqMs / (24 * 60 * 60 * 1000));
-      coveragePercent = ((coverageDays / reqDays) * 100).toFixed(2);
+      let recordState: EvidenceSufficiencyRow["state"] = "SUPPORTED";
+      const recordReasons: string[] = [];
 
-      // Verify exact period alignment
-      // Case is ANNUAL, evidence must cover the full required period unless reconciled
-      if (caseQuarter === "ANNUAL" && coverageDays < reqDays) {
-        const hasReconciliation = caseData.methodologyDecisions.some(
-          d => d.topic === "EVIDENCE_RECONCILIATION" && d.reviewStatus === "ACCEPTED"
-        );
-        if (!hasReconciliation) {
-          state = "OUT_OF_PERIOD";
-          reasonCodes.push("EVIDENCE_ANNUAL_COVERAGE_INCOMPLETE");
+      // Check tenant/case isolation path
+      const expectedPrefix = `evidence/${caseData.ownerId}/${caseData.caseId}/${record.evidenceId}/`;
+      if (caseData.caseId && !record.storagePath.startsWith(expectedPrefix)) {
+        recordState = "UNLINKED";
+        recordReasons.push("CROSS_TENANT_OR_CASE_MISMATCH");
+      }
+
+      // Check linked inputs
+      if (!record.linkedInputs.includes(req.inputPath)) {
+        recordState = "UNLINKED";
+        recordReasons.push("INPUT_PATH_NOT_LINKED_TO_EVIDENCE");
+      }
+
+      // Check file integrity
+      if (!/^[a-f0-9]{64}$/i.test(record.fileHash)) {
+        recordState = "HASH_MISMATCH";
+        recordReasons.push("INVALID_SHA256_HASH_FORMAT");
+      }
+      if (record.sizeBytes <= 0) {
+        recordState = "BYTE_SIZE_MISMATCH";
+        recordReasons.push("ZERO_OR_NEGATIVE_BYTE_SIZE");
+      }
+
+      // Check malware
+      if (record.malwareScanStatus === "PENDING") {
+        recordState = "MALWARE_UNCLEARED";
+        recordReasons.push("MALWARE_SCAN_PENDING");
+      } else if (record.malwareScanStatus === "INFECTED") {
+        recordState = "MALWARE_UNCLEARED";
+        recordReasons.push("MALWARE_SCAN_INFECTED");
+      }
+
+      // Check review status
+      if (record.reviewStatus !== "APPROVED") {
+        recordState = "UNAPPROVED";
+        recordReasons.push("EVIDENCE_NOT_APPROVED_BY_OPERATOR");
+      }
+
+      // Parse dates for this specific evidence record
+      let evStart = record.evidencePeriodStart || null;
+      let evEnd = record.evidencePeriodEnd || null;
+
+      if (!evStart || !evEnd) {
+        const parsed = parsePeriodDates(record.reportingPeriod);
+        if (parsed) {
+          evStart = evStart || parsed.start;
+          evEnd = evEnd || parsed.end;
         }
       }
-    } else {
-      // Fallback old includes check if dates are not parseable
-      if (record.reportingPeriod && record.reportingPeriod.trim().length > 0) {
-        const evidencePeriod = record.reportingPeriod.trim();
-        if (!evidencePeriod.includes(String(caseYear)) && !evidencePeriod.includes(String(caseQuarter))) {
-          state = "OUT_OF_PERIOD";
-          reasonCodes.push("EVIDENCE_PERIOD_MISMATCH");
+
+      if (!evStart || !evEnd) {
+        recordState = "OUT_OF_PERIOD";
+        recordReasons.push("EVIDENCE_PERIOD_UNPARSEABLE");
+      }
+
+      // Check support status
+      if (record.supportStatus === "PARTIALLY_SUPPORTED") {
+        recordState = "PARTIALLY_SUPPORTED";
+        recordReasons.push("EVIDENCE_PARTIALLY_SUPPORTED_ONLY");
+      } else if (record.supportStatus === "UNSUPPORTED") {
+        recordState = "MISSING";
+        recordReasons.push("EVIDENCE_SUPPORT_STATUS_UNSUPPORTED");
+      }
+
+      // If this record had any invalidation, update worstState
+      if (recordState !== "SUPPORTED") {
+        if (STATE_SEVERITY[recordState] > STATE_SEVERITY[worstState]) {
+          worstState = recordState;
         }
+        recordReasons.forEach(r => allReasonCodes.add(r));
+      } else if (evStart && evEnd) {
+        validIntervalsForUnion.push({ id: evidenceId, start: evStart, end: evEnd });
       }
     }
 
-    // Check support status
-    if (record.supportStatus === "PARTIALLY_SUPPORTED") {
-      state = "PARTIALLY_SUPPORTED";
-      reasonCodes.push("EVIDENCE_PARTIALLY_SUPPORTED_ONLY");
-    } else if (record.supportStatus === "UNSUPPORTED") {
-      state = "MISSING";
-      reasonCodes.push("EVIDENCE_SUPPORT_STATUS_UNSUPPORTED");
+    // Now assess union coverage using only the valid intervals
+    const coverageAssessment = calculateIntervalUnionCoverage(
+      req.inputPath,
+      requiredPeriodStart,
+      requiredPeriodEnd,
+      validIntervalsForUnion
+    );
+
+    // If all individual records were valid but union doesn't cover 100.00%, row state becomes OUT_OF_PERIOD
+    if (worstState === "SUPPORTED" && !coverageAssessment.complete) {
+      worstState = "OUT_OF_PERIOD";
+      allReasonCodes.add("EVIDENCE_ANNUAL_COVERAGE_INCOMPLETE");
     }
 
-    // Determine blocks
-    if (isMaterial) {
-      if (state !== "SUPPORTED") {
-        blocksSealing = true;
-        // Partially supported and out of period also blocks readiness for material inputs
-        blocksOperatorReadiness = true;
-      }
-    }
-
-    let coverageNumerator = "0.0";
-    let coverageDenominator = "1.0";
-    if (coverageDays !== null && coveragePercent !== null) {
-      coverageNumerator = coverageDays.toString();
-      const reqMs = new Date(requiredPeriodEnd).getTime() - new Date(requiredPeriodStart).getTime() + 24 * 60 * 60 * 1000;
-      const reqDays = Math.ceil(reqMs / (24 * 60 * 60 * 1000));
-      coverageDenominator = reqDays.toString();
-    } else {
-      if (state === "SUPPORTED") {
-        coverageNumerator = "1.0";
-      } else if (state === "PARTIALLY_SUPPORTED") {
-        coverageNumerator = "0.5";
-      }
-    }
+    const blocksSealing = isMaterial && worstState !== "SUPPORTED";
+    const blocksOperatorReadiness = isMaterial && worstState !== "SUPPORTED";
 
     rows.push({
       requirementId: req.requirementId,
       inputPath: req.inputPath,
-      evidenceIds: [evidenceId],
-      state,
-      coverageNumerator,
-      coverageDenominator,
+      evidenceIds: Array.from(linkedEvidenceIds),
+      state: worstState,
+      coverageNumerator: coverageAssessment.coveredDays.toString(),
+      coverageDenominator: requiredDays.toString(),
       blocksOperatorReadiness,
       blocksSealing,
-      reasonCodes: reasonCodes.length > 0 ? reasonCodes : ["PASS"],
-      evidencePeriodStart,
-      evidencePeriodEnd,
-      coverageDays,
+      reasonCodes: allReasonCodes.size > 0 ? Array.from(allReasonCodes) : ["PASS"],
+      evidencePeriodStart: validIntervalsForUnion[0]?.start || null,
+      evidencePeriodEnd: validIntervalsForUnion[0]?.end || null,
+      coverageDays: coverageAssessment.coveredDays,
       requiredPeriodStart,
       requiredPeriodEnd,
-      coveragePercent,
+      coveragePercent: coverageAssessment.coveragePercent,
+      coverageAssessment,
     });
   }
 

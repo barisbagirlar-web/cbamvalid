@@ -74,7 +74,7 @@ export function generateFindingsAndActions(caseData: AuditReadyCase, assessmentT
   }
 
   // 2. Process Evidence Sufficiency Gaps
-  const sufficiencies = runEvidenceSufficiency(caseData);
+  const sufficiencies = runEvidenceSufficiency(caseData, assessmentTimestamp);
   for (const row of sufficiencies) {
     if (row.state === "SUPPORTED") {
       continue;

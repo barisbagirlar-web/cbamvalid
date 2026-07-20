@@ -114,6 +114,34 @@ export const MaterialInputRequirementSchema = z.object({
 });
 export type MaterialInputRequirement = z.infer<typeof MaterialInputRequirementSchema>;
 
+export const EvidenceIntervalSchema = z.object({
+  start: z.string(),
+  end: z.string(),
+  evidenceIds: z.array(z.string()),
+});
+export type EvidenceInterval = z.infer<typeof EvidenceIntervalSchema>;
+
+export const UncoveredIntervalSchema = z.object({
+  start: z.string(),
+  end: z.string(),
+  missingDays: z.number().int().nonnegative(),
+});
+export type UncoveredInterval = z.infer<typeof UncoveredIntervalSchema>;
+
+export const EvidenceCoverageAssessmentSchema = z.object({
+  inputPath: z.string(),
+  requiredPeriodStart: z.string(),
+  requiredPeriodEnd: z.string(),
+  requiredDays: z.number().int().nonnegative(),
+  coveredDays: z.number().int().nonnegative(),
+  coveragePercent: z.string(),
+  mergedIntervals: z.array(EvidenceIntervalSchema),
+  uncoveredIntervals: z.array(UncoveredIntervalSchema),
+  supportingEvidenceIds: z.array(z.string()),
+  complete: z.boolean(),
+});
+export type EvidenceCoverageAssessment = z.infer<typeof EvidenceCoverageAssessmentSchema>;
+
 export const EvidenceSufficiencyRowSchema = z.object({
   requirementId: z.string().min(1),
   inputPath: z.string().min(1),
@@ -130,6 +158,7 @@ export const EvidenceSufficiencyRowSchema = z.object({
   requiredPeriodStart: z.string().nullable().optional(),
   requiredPeriodEnd: z.string().nullable().optional(),
   coveragePercent: z.string().nullable().optional(),
+  coverageAssessment: EvidenceCoverageAssessmentSchema.nullable().optional(),
 });
 export type EvidenceSufficiencyRow = z.infer<typeof EvidenceSufficiencyRowSchema>;
 
@@ -242,6 +271,15 @@ export const ReportingPeriodAssessmentSchema = z.object({
 });
 export type ReportingPeriodAssessment = z.infer<typeof ReportingPeriodAssessmentSchema>;
 
+export const PreviousReleaseSchema = z.object({
+  version: z.number().int(),
+  reportId: z.string(),
+  sealedAt: z.string(),
+  status: z.string(),
+  correctionReason: z.string().nullable().optional(),
+});
+export type PreviousRelease = z.infer<typeof PreviousReleaseSchema>;
+
 export const PremiumDossierViewModelSchema = z.object({
   schemaVersion: z.literal("CBAMVALID-DOSSIER-5.0"),
   reportingPeriodAssessment: ReportingPeriodAssessmentSchema,
@@ -310,6 +348,17 @@ export const PremiumDossierViewModelSchema = z.object({
     manifestHash: z.string(),
     packageHash: z.string(),
   }),
+  previousReleases: z.array(PreviousReleaseSchema).optional(),
 });
 
 export type PremiumDossierViewModel = z.infer<typeof PremiumDossierViewModelSchema>;
+
+export const SealAssessmentContextSchema = z.object({
+  generatedAt: z.string(),
+  assessmentTimestamp: z.string(),
+  reportId: z.string(),
+  releaseVersion: z.number().int().positive(),
+  rulesetVersion: z.string(),
+  previousReleases: z.array(PreviousReleaseSchema).optional(),
+});
+export type SealAssessmentContext = z.infer<typeof SealAssessmentContextSchema>;
