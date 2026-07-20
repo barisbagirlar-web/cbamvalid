@@ -228,7 +228,7 @@ function buildPdfArtifacts(params: {
     item.evidenceIds.join(" | "),
   ]);
 
-  const isV5 = releaseVersion >= 5 || process.env.GCLOUD_PROJECT === "cbam-desk" || process.env.NODE_ENV === "production" || process.env.V5_RELEASE_ACTIVE === "true";
+  const isV5 = releaseVersion >= 5 || assessmentContext?.productCode === "pack_premium_dossier_v5" || reportId.startsWith("v5_");
   if (isV5) {
     // V5 PDFs
     const timestamp = assessmentContext?.assessmentTimestamp || generatedAt;
@@ -439,7 +439,7 @@ function buildCsvArtifacts(params: {
 }): PackageArtifact[] {
   const { caseData, calculation, controls, model } = params;
 
-  const isV5 = model.releaseVersion >= 5 || process.env.GCLOUD_PROJECT === "cbam-desk" || process.env.NODE_ENV === "production" || process.env.V5_RELEASE_ACTIVE === "true";
+  const isV5 = model.releaseVersion >= 5 || model.productCode === "pack_premium_dossier_v5" || model.reportId.startsWith("v5_");
   if (isV5) {
     // V5 CSVs
     return [
@@ -480,7 +480,7 @@ export async function buildUnsignedVerifierArtifacts(params: {
   evidenceFiles: EvidenceBinary[];
   assessmentContext?: SealAssessmentContext;
 }): Promise<PackageArtifact[]> {
-  const model = buildVerifierPackageModel(params);
+  const model = buildVerifierPackageModel({ ...params, productCode: params.assessmentContext?.productCode });
   const workbook = await buildVerifierWorkbook({ ...params, model });
 
   const artifacts = [
@@ -505,7 +505,7 @@ export function buildDataIntegrityManifest(params: {
   generatedAt: string;
   evidenceCount: number;
 }): { manifest: DataIntegrityManifest; bytes: Buffer } {
-  const isV5 = params.releaseVersion >= 5 || process.env.GCLOUD_PROJECT === "cbam-desk" || process.env.NODE_ENV === "production" || process.env.V5_RELEASE_ACTIVE === "true";
+  const isV5 = params.releaseVersion >= 5 || (params.artifacts.some(a => a.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf")) || params.reportId.startsWith("v5_");
   const manifest: DataIntegrityManifest = {
     schemaVersion: isV5 ? "CBAMVALID-DOSSIER-5.0" : "CBAMVALID-DOSSIER-4.0",
     reportId: params.reportId,
@@ -592,13 +592,13 @@ export async function finalizeVerifierPackage(params: {
     const entry = reopened.file(file.path);
     if (!entry) throw new Error(`PACKAGE_MANIFEST_FILE_MISSING:${file.path}`);
     const bytes = await entry.async("nodebuffer");
-    if (bytes.byteLength !== file.sizeBytes) throw new Error(`PACKAGE_MANIFEST_SIZE_MISMATCH:${file.path}`);
-    if (hash(bytes) !== file.sha256) throw new Error(`PACKAGE_MANIFEST_HASH_MISMATCH:${file.path}`);
+    if (bytes.byteLength !== file.sizeBytes) throw new Error(`PACKAGE_REOPEN_SIZE_MISMATCH:${file.path}`);
+    if (hash(bytes) !== file.sha256) throw new Error(`PACKAGE_REOPEN_HASH_MISMATCH:${file.path}`);
   }
   const reopenedManifest = await reopened.file("Data Integrity Manifest.json")?.async("nodebuffer");
   const reopenedSignature = await reopened.file("Manifest Signature.sig")?.async("nodebuffer");
   if (!reopenedManifest || !reopenedSignature || !reopenedManifest.equals(params.manifestBytes) || !reopenedSignature.equals(signatureBuffer)) throw new Error("PACKAGE_REOPEN_TRUST_COMPONENT_MISMATCH");
-  if (!crypto.verify("sha256", reopenedManifest, params.signature.publicKeyPem, Buffer.from(params.signature.signatureBase64, "base64"))) throw new Error("PACKAGE_MANIFEST_SIGNATURE_INVALID");
+  if (!crypto.verify("sha256", reopenedManifest, params.signature.publicKeyPem, Buffer.from(params.signature.signatureBase64, "base64"))) throw new Error("PACKAGE_REOPEN_SIGNATURE_INVALID");
 
   const primaryPdfPath = isV5 ? "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf" : "Operator Emissions Report.pdf";
   const primaryPdf = allArtifacts.find((item) => item.path === primaryPdfPath)?.bytes;

@@ -305,6 +305,7 @@ export async function sealReport(params: {
   requestId: string;
   inputData: unknown;
   correctionReason?: string;
+  auth?: any;
 }): Promise<SealingResult> {
   assertKmsSigningConfigured();
   const configDoc = await adminDb.collection("system").doc("config").get();
@@ -352,10 +353,11 @@ export async function sealReport(params: {
         reportId: identity.reportId,
         caseId: params.caseId,
         expiresInSeconds: 1800,
+        auth: params.auth,
       }));
       reserved = true;
       const releaseVersion = entitlement.releasesCount + 1;
-      isV5 = releaseVersion >= 5 || process.env.GCLOUD_PROJECT === "cbam-desk" || process.env.NODE_ENV === "production" || process.env.V5_RELEASE_ACTIVE === "true";
+      isV5 = releaseVersion >= 5 || entitlement.productCode === "pack_premium_dossier_v5" || params.requestId.startsWith("v5_");
       if (releaseVersion > 1 && !params.correctionReason?.trim()) throw new Error("CORRECTION_REASON_REQUIRED_AFTER_FIRST_RELEASE");
 
       const assessmentContext: SealAssessmentContext = {
@@ -364,6 +366,7 @@ export async function sealReport(params: {
         reportId: identity.reportId,
         releaseVersion,
         rulesetVersion: ruleset.version,
+        productCode: entitlement.productCode,
         previousReleases,
       };
 
@@ -538,6 +541,7 @@ export async function sealReport(params: {
           reportHash: documentHash,
           version: releaseVersion,
           correctionReason: params.correctionReason,
+          auth: params.auth,
         });
         for (const doc of prevReports.docs) {
           if (doc.id !== identity.reportId) {
@@ -556,6 +560,7 @@ export async function sealReport(params: {
           reportHash: documentHash,
           version: releaseVersion,
           correctionReason: params.correctionReason,
+          auth: params.auth,
         });
       }
       transaction.create(sealRef, {

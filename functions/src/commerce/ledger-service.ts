@@ -24,6 +24,10 @@ export interface LedgerEntry {
   idempotencyKey: string;
   previousEntryHash?: string;
   entryHash: string;
+  syntheticTest?: boolean;
+  environment?: string;
+  testRunId?: string;
+  testLifecycle?: "ACTIVE_TEST" | "COMPLETED_TEST" | "REVOKED_TEST" | "RETAINED_FOR_AUDIT";
 }
 
 /**
@@ -43,6 +47,10 @@ export function calculateEntryHash(entry: Omit<LedgerEntry, "entryHash">): strin
     createdAt: entry.createdAt,
     idempotencyKey: entry.idempotencyKey,
     previousEntryHash: entry.previousEntryHash || "",
+    syntheticTest: entry.syntheticTest || false,
+    environment: entry.environment || "",
+    testRunId: entry.testRunId || "",
+    testLifecycle: entry.testLifecycle || "",
   });
   return crypto.createHash("sha256").update(dataString).digest("hex");
 }

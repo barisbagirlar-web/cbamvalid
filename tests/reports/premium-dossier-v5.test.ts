@@ -120,6 +120,8 @@ describe("premium-dossier-v5 deliverables", () => {
     
     // Enforce annual period for base readiness test
     caseData.reportingPeriod.quarter.value = "ANNUAL";
+    caseData.reportingPeriod.startDate = { value: "2026-01-01", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
+    caseData.reportingPeriod.endDate = { value: "2026-12-31", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
     caseData.evidenceRegister[0].reportingPeriod = "2026 ANNUAL";
     // Test base readiness
     const readiness = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: "2027-01-15" });
@@ -167,6 +169,8 @@ describe("premium-dossier-v5 deliverables", () => {
       "goods.1.allocationShare"
     );
     caseData.reportingPeriod.quarter.value = "ANNUAL";
+    caseData.reportingPeriod.startDate = { value: "2026-01-01", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
+    caseData.reportingPeriod.endDate = { value: "2026-12-31", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
     caseData.evidenceRegister[0].reportingPeriod = "2026 ANNUAL";
     const controls = runQualityControls(caseData);
     const calculation = performDossierCalculations(caseData);
@@ -239,6 +243,8 @@ describe("premium-dossier-v5 deliverables", () => {
       "goods.1.allocationShare"
     );
     caseData.reportingPeriod.quarter.value = "ANNUAL";
+    caseData.reportingPeriod.startDate = { value: "2026-01-01", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
+    caseData.reportingPeriod.endDate = { value: "2026-12-31", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
     caseData.evidenceRegister[0].reportingPeriod = "2026 ANNUAL";
     const controls = runQualityControls(caseData);
     const calculation = performDossierCalculations(caseData);

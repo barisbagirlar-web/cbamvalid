@@ -53,6 +53,7 @@ export const sealCbamReport = createCallable(
         requestId,
         inputData: cbamCase.data,
         correctionReason: correctionReason || undefined,
+        auth,
       });
       return { report, status: "success" };
     } catch (error) {

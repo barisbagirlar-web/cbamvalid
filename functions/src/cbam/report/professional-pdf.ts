@@ -166,7 +166,7 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
 
       while (cellLines.some(lines => lines.length > 0)) {
         const availableHeight = BODY_BOTTOM - y;
-        let linesThatFit = Math.floor((availableHeight - 4) / 3.6);
+        const linesThatFit = Math.floor((availableHeight - 4) / 3.6);
         
         if (linesThatFit < 1) {
           addPage();
