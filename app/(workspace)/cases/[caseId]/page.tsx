@@ -33,6 +33,24 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
     ? ""
     : "The case link is malformed. Open the dossier again from Cases.";
 
+  // Load from cache on mount
+  useEffect(() => {
+    if (!user || !validCaseId) return;
+    try {
+      const cachedCase = localStorage.getItem(`cbam_case_cache_${caseId}`);
+      const cachedEntitlements = localStorage.getItem(`cbam_entitlements_cache_${user.uid}`);
+      if (cachedCase) {
+        setInitialCase(JSON.parse(cachedCase));
+        setDataLoading(false);
+      }
+      if (cachedEntitlements) {
+        setAvailableEntitlements(JSON.parse(cachedEntitlements));
+      }
+    } catch (e) {
+      console.warn("Failed to load case cache:", e);
+    }
+  }, [user, caseId, validCaseId]);
+
   useEffect(() => {
     if (loading || !user || !validCaseId) return;
 
@@ -53,10 +71,20 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
 
         setInitialCase(caseResult.value);
         setError("");
+        try {
+          localStorage.setItem(`cbam_case_cache_${caseId}`, JSON.stringify(caseResult.value));
+        } catch (e) {
+          console.warn("Failed to save case cache:", e);
+        }
 
         if (entitlementResult.status === "fulfilled") {
           setAvailableEntitlements(entitlementResult.value);
           setEntitlementWarning("");
+          try {
+            localStorage.setItem(`cbam_entitlements_cache_${user.uid}`, JSON.stringify(entitlementResult.value));
+          } catch (e) {
+            console.warn("Failed to save entitlements cache:", e);
+          }
         } else {
           console.error("Entitlement status could not be loaded", entitlementResult.reason);
           setAvailableEntitlements([]);
