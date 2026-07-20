@@ -31,43 +31,73 @@ async function handleTransactionCompleted(eventId: string, transaction: any): Pr
   const transactionId = transaction.id;
   const status = transaction.status;
   const customData = transaction.customData || {};
-  const uid = customData.uid;
   const orderId = customData.orderId;
-  const productCode = customData.productCode;
 
   if (status !== "completed") {
     console.log(`[PADDLE-PROCESSOR] Transaction ${transactionId} status is ${status}. Skipping fulfillment.`);
     return;
   }
 
-  if (!uid || !orderId || !productCode) {
-    console.error(`[PADDLE-PROCESSOR] Missing metadata in transaction completed customData:`, customData);
+  if (!orderId) {
+    console.error(`[PADDLE-PROCESSOR] Missing orderId in transaction completed customData:`, customData);
     return;
   }
 
-  // Cross-check transaction items against server catalog
+  // Load the order server-side
+  const orderDoc = await adminDb.collection("commerce_orders").doc(orderId).get();
+  if (!orderDoc.exists) {
+    console.error(`[PADDLE-PROCESSOR] Order ${orderId} not found in database.`);
+    return;
+  }
+  const order = orderDoc.data() as any;
+
+  const productCode = order.canonicalProductCode || "pack_premium_dossier_v5";
   const catalogProduct = PRODUCT_CATALOG[productCode];
   if (!catalogProduct) {
     console.error(`[PADDLE-PROCESSOR] Product code ${productCode} not found in server catalog.`);
     return;
   }
 
-  // Verify currency and amount (Paddle transaction details)
-  const currency = transaction.currencyCode || "";
-  if (currency !== catalogProduct.currency) {
-    console.error(`[PADDLE-PROCESSOR] Currency mismatch: expected ${catalogProduct.currency}, got ${currency}`);
-    return;
-  }
-
+  // Verify Paddle price ID
+  const priceId = order.paddlePriceId;
   const items = transaction.items || [];
   if (items.length === 0) {
     console.error(`[PADDLE-PROCESSOR] Transaction has no items.`);
     return;
   }
 
-  // Calculate total quantity across items matching the productCode
-  // (Assuming one line item for simplicity, but summing is safer)
+  const matchesPrice = items.some((item: any) => {
+    const itemPriceId = item.priceId || item.price?.id || "";
+    return itemPriceId === priceId;
+  });
+
+  if (!matchesPrice) {
+    console.error(`[PADDLE-PROCESSOR] Price ID mismatch. Expected ${priceId}, items:`, items);
+    return;
+  }
+
+  // Verify currency
+  const currency = transaction.currencyCode || "";
+  if (currency !== order.currency) {
+    console.error(`[PADDLE-PROCESSOR] Currency mismatch: expected ${order.currency}, got ${currency}`);
+    return;
+  }
+
+  // Verify amount
+  const transactionAmount = Math.round(Number(transaction.details?.totals?.grandTotal || transaction.totals?.grandTotal || 0));
+  if (transactionAmount !== order.amountMinor) {
+    console.error(`[PADDLE-PROCESSOR] Amount mismatch: expected ${order.amountMinor}, got ${transactionAmount}`);
+    return;
+  }
+
+  // Verify quantity
   const purchasedQuantity = items.reduce((acc: number, item: any) => acc + (item.quantity || 1), 0);
+  if (purchasedQuantity !== 1) {
+    console.error(`[PADDLE-PROCESSOR] Quantity mismatch: expected 1, got ${purchasedQuantity}`);
+    return;
+  }
+
+  const uid = order.uid;
   const totalEntitlementsToGrant = catalogProduct.entitlementQuantity * purchasedQuantity;
 
   // Execute atomic transactional updates
@@ -81,7 +111,7 @@ async function handleTransactionCompleted(eventId: string, transaction: any): Pr
       type: "PAYMENT_CAPTURED",
       quantity: purchasedQuantity,
       currency,
-      amountMinor: catalogProduct.expectedUnitAmount * purchasedQuantity,
+      amountMinor: order.amountMinor,
       idempotencyKey: `payment:${transactionId}`,
     });
 

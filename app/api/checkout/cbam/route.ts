@@ -2,6 +2,8 @@ import { requireFirebaseSession, AuthError } from "@/lib/auth/require-firebase-s
 import { getCreditPackageBySlug } from "@/lib/billing/catalog";
 import { getPaddleConfig } from "@/lib/billing/paddle-config.server";
 import { apiSuccess, apiFailure } from "@/lib/http/api-response";
+import { adminDb } from "@/lib/firebase/admin";
+import crypto from "crypto";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +20,22 @@ export async function POST(request: Request) {
       }
       console.error("[PADDLE CHECKOUT AUTH ERROR]:", authError.message || authError);
       return apiFailure("UNAUTHORIZED", "Session expired or authentication failed.", 401);
+    }
+
+    // 0. IMMEDIATE COMMERCIAL CONTAINMENT: Check publicPaidLaunchEnabled flag
+    let publicPaidLaunchEnabled = false;
+    try {
+      const configDoc = await adminDb.collection("system").doc("config").get();
+      if (configDoc.exists) {
+        publicPaidLaunchEnabled = configDoc.data()?.publicPaidLaunchEnabled === true;
+      }
+    } catch (e) {
+      console.error("Failed to read system/config:", e);
+    }
+
+    const isPrivileged = decoded.role === "admin" || decoded.admin === true || decoded.role === "pilot" || decoded.pilot === true || decoded.role === "Owner";
+    if (!publicPaidLaunchEnabled && !isPrivileged) {
+      return apiFailure("PAYMENT_DISABLED", "Purchasing is temporarily unavailable while final launch checks are completed.", 403);
     }
 
     // 2. Validate Paddle runtime config
@@ -37,10 +55,8 @@ export async function POST(request: Request) {
       return apiFailure("BAD_REQUEST", "Malformed JSON request payload.", 400);
     }
 
-    const slug = payload.slug;
-    if (!slug) {
-      return apiFailure("INVALID_PACKAGE", "Missing package selection identifier.", 400);
-    }
+    const slug = payload.slug || "pack_premium_dossier_v5";
+    const caseId = payload.caseId || "";
 
     // 4. Resolve package from server catalog
     const packageDef = getCreditPackageBySlug(slug);
@@ -48,12 +64,35 @@ export async function POST(request: Request) {
       return apiFailure("INVALID_PACKAGE", "Selected credit package is invalid or inactive.", 400);
     }
 
-    const productCode = slug === "cbam-5-reports" ? "CBAM_CREDIT_PACK_5" : "CBAM_EXPORTER_FINAL_REPORT";
+    const canonicalProductCode = "pack_premium_dossier_v5";
+    const orderId = `ord_${crypto.randomBytes(12).toString("hex")}`;
+    const now = new Date().toISOString();
+
+    // Create server-side immutable commerce order
+    const orderRef = adminDb.collection("commerce_orders").doc(orderId);
+    const orderData = {
+      orderId,
+      uid: decoded.uid,
+      caseId: caseId,
+      productCode: canonicalProductCode,
+      canonicalProductCode: canonicalProductCode,
+      paddlePriceId: packageDef.paddlePriceId,
+      currency: "USD",
+      amountMinor: 14900,
+      status: "CHECKOUT_CREATED",
+      createdAt: now,
+      updatedAt: now,
+      catalogVersion: "v5",
+    };
+
+    await orderRef.set(orderData);
+
     const transactionUrl = paddleConfig.isSandbox
       ? "https://sandbox-api.paddle.com/transactions"
       : "https://api.paddle.com/transactions";
 
-    // 5. Create Paddle transaction
+    // 5. Create Paddle transaction with OPAQUE customData (orderId and correlationId only)
+    const correlationId = crypto.randomUUID();
     const paddleRes = await fetch(transactionUrl, {
       method: "POST",
       headers: {
@@ -68,9 +107,8 @@ export async function POST(request: Request) {
           }
         ],
         custom_data: {
-          uid: decoded.uid,
-          productCode: productCode,
-          orderId: `ord_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+          orderId: orderId,
+          correlationId: correlationId,
         }
       })
     });
@@ -78,6 +116,7 @@ export async function POST(request: Request) {
     if (!paddleRes.ok) {
       const errorText = await paddleRes.text();
       console.error("[PADDLE API TRANSACTION FAILURE]:", paddleRes.status, errorText);
+      await orderRef.update({ status: "PAYMENT_FAILED", updatedAt: new Date().toISOString() });
       if (paddleRes.status === 403) {
         return apiFailure(
           "PADDLE_TRANSACTION_CREATE_FAILED",
@@ -88,8 +127,17 @@ export async function POST(request: Request) {
       return apiFailure("PADDLE_TRANSACTION_CREATE_FAILED", "Checkout could not be started.", 500);
     }
 
-    const data = await paddleRes.json();
-    return apiSuccess({ transactionId: data.data.id });
+    const responseData = await paddleRes.json();
+    const transactionId = responseData.data.id;
+
+    // Update order status and transaction ID
+    await orderRef.update({
+      paddleTransactionId: transactionId,
+      status: "PAYMENT_PENDING",
+      updatedAt: new Date().toISOString(),
+    });
+
+    return apiSuccess({ transactionId });
 
   } catch (err: any) {
     console.error("[PADDLE CHECKOUT UNEXPECTED SERVER ERROR]:", err.message || err);

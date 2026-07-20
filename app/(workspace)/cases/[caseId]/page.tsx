@@ -153,7 +153,7 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
       {entitlementWarning && (
         <div
           role="status"
-          className="mx-auto mt-6 max-w-6xl rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          className="mx-auto mt-6 max-w-6xl rounded-lg border border-accent/20 bg-accent/5 px-4 py-3 text-sm text-accent"
         >
           {entitlementWarning}
         </div>

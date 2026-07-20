@@ -55,8 +55,8 @@ switch (check) {
       process.exit(1);
     }
     const content = fs.readFileSync(checkoutRoutePath, "utf-8");
-    if (!content.includes("CBAM_EXPORTER_FINAL_REPORT")) {
-      console.error("[FAIL] Product code must be CBAM_EXPORTER_FINAL_REPORT.");
+    if (!content.includes("pack_premium_dossier_v5")) {
+      console.error("[FAIL] Product code must be pack_premium_dossier_v5.");
       process.exit(1);
     }
     console.log("[PASS] Single product code verified.");

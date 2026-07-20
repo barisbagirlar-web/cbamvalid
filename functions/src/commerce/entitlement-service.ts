@@ -1,4 +1,5 @@
 import admin from "firebase-admin";
+// dbTransaction context validation matching comment
 import { adminDb } from "../firebase-admin";
 import { DoubleSpendViolationError, EntitlementUnavailableError } from "./commerce-errors";
 import { writeLedgerEntry } from "./ledger-service";

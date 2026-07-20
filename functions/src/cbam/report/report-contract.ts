@@ -41,6 +41,17 @@ const StorageEntrySchema = z.object({
   sizeBytes: z.number().int().positive(),
 });
 
+const PackageMetadataSchema = z.object({
+  schemaVersion: z.string(),
+  requiredTopLevelComponentCount: z.number(),
+  actualTopLevelComponentCount: z.number(),
+  manifestFileCount: z.number(),
+  evidenceFileCount: z.number(),
+  primaryDossierFileName: z.string(),
+  technicalCompilationFileName: z.string(),
+  operatorEmissionsReportFileName: z.string(),
+});
+
 export const PersistedSealedReportSchema = z.object({
   reportId: ReportIdSchema,
   uid: z.string().min(1),
@@ -63,10 +74,11 @@ export const PersistedSealedReportSchema = z.object({
   signatureBase64: z.string().min(32),
   storage: z.record(z.string(), StorageEntrySchema),
   installationName: z.string().optional(),
+  packageMetadata: PackageMetadataSchema.optional(),
 });
 
 export const SealedReportViewSchema = PersistedSealedReportSchema.extend({
-  packageTopLevelComponentCount: z.union([z.literal(27), z.literal(23)]),
+  packageTopLevelComponentCount: z.number(),
   automatedReadiness: z.enum([
     "READY_FOR_INDEPENDENT_VERIFICATION",
     "BLOCKED_BEFORE_INDEPENDENT_VERIFICATION",
@@ -91,11 +103,14 @@ export function toSealedReportView(value: unknown): SealedReportView {
   const isV5 =
     raw.productCode === "pack_premium_dossier_v5" ||
     raw.releaseContractVersion === 5 ||
-    raw.dossierSchemaVersion === "CBAMVALID-DOSSIER-5.0" ||
-    raw.packageTopLevelComponentCount === 23;
+    raw.dossierSchemaVersion === "CBAMVALID-DOSSIER-5.0";
+
+  const manifestCount = report.packageMetadata?.actualTopLevelComponentCount;
+  const defaultCount = isV5 ? 25 : 27;
+
   return SealedReportViewSchema.parse({
     ...report,
-    packageTopLevelComponentCount: isV5 ? 23 : 27,
+    packageTopLevelComponentCount: manifestCount !== undefined ? manifestCount : defaultCount,
     automatedReadiness: isV5 ? "READY_FOR_VERIFIER_REVIEW" : "READY_FOR_INDEPENDENT_VERIFICATION",
     independentVerifierStatus: "NOT_REVIEWED",
     verificationMaterialityRate: VERIFICATION_MATERIALITY_RATE,

@@ -17,7 +17,7 @@ export default function HowItWorksPage() {
     { title: "Precursors & Adjustments", desc: "Account for complex supply chains." },
     { title: "Evidence Register", desc: "Link primary documents to calculation nodes." },
     { title: "Quality Review", desc: "Automated integrity checks against EU guidelines." },
-    { title: "Seal & Deliverables", desc: "Generate the final locked dossier and XML." }
+    { title: "Seal & Deliverables", desc: "Generate the final locked dossier and structured data export." }
   ];
 
   return (

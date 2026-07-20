@@ -20,7 +20,7 @@ export default function ProductPage() {
     { num: "05", title: "Run Quality Controls", desc: "Trigger the validation engine to scan for arithmetic gaps or missing records." },
     { num: "06", title: "Resolve Blockers", desc: "Rectify flagged compliance inconsistencies with direct system feedback." },
     { num: "07", title: "Purchase Seal Credit", desc: "Review the finalized package and purchase report credits." },
-    { num: "08", title: "Export Sealed Dossier", desc: "Generate and download the tamper-proof PDF, XML, and verified ZIP package." }
+    { num: "08", title: "Export Sealed Dossier", desc: "Generate and download the cryptographically sealed integrity package containing the operator-prepared verifier-preparation dossier." }
   ];
 
   return (
@@ -160,7 +160,7 @@ console.log(intensity.toFixed(6));
             </span>
             <h2 className="text-3xl font-serif font-black tracking-tight">Decimal-Safe Calculations</h2>
             <p className="text-muted leading-relaxed">
-              Standard JavaScript binary float calculations create precision errors (e.g. 0.1 + 0.2 = 0.30000000000000004). CBAMValid runs isolated, decimal-safe calculations using Decimal.js. This guarantees exact compliance calculations, ensuring zero variance when data is cross-referenced by authorities.
+              Standard JavaScript binary float calculations create precision errors (e.g. 0.1 + 0.2 = 0.30000000000000004). CBAMValid runs isolated, decimal-safe calculations using Decimal.js. This provides highly precise calculation results, minimizing rounding errors when data is cross-referenced during verification.
             </p>
           </div>
         </div>
@@ -229,7 +229,7 @@ console.log(intensity.toFixed(6));
             </span>
             <h2 className="text-3xl font-serif font-black tracking-tight">Review a Sample Dossier</h2>
             <p className="text-muted leading-relaxed">
-              See what an official compiled evidence package looks like. Our dossier covers embedded greenhouse gas emissions reports, precursors mapping, and digital signature records.
+              See what an operator-prepared verifier-preparation dossier looks like. Our dossier covers embedded greenhouse gas emissions reports, precursors mapping, and digital signature records.
             </p>
             <div>
               <Link 
@@ -287,7 +287,7 @@ console.log(intensity.toFixed(6));
           <div className="text-center max-w-xl mx-auto space-y-4">
             <h2 className="text-3xl font-serif font-black tracking-tight">Comprehensive Deliverables</h2>
             <p className="text-muted leading-relaxed">
-              Every sealed CBAMValid case generates a unified ZIP file containing compliance-ready assets.
+              Every sealed CBAMValid case generates a cryptographically sealed integrity package containing verifier-preparation assets.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -296,8 +296,8 @@ console.log(intensity.toFixed(6));
               <p className="text-muted text-sm leading-relaxed">A human-readable dossier document containing emissions calculations, linked evidence tables, and digital signature logs.</p>
             </div>
             <div className="bg-surface border border-border rounded-2xl p-6 space-y-3 shadow-sm">
-              <h3 className="font-bold text-foreground text-lg">2. XML Reporting Payload</h3>
-              <p className="text-muted text-sm leading-relaxed">Structured data payload mapping to the official European Commission CBAM Registry format for instant import.</p>
+              <h3 className="font-bold text-foreground text-lg">2. Structured Data Export</h3>
+              <p className="text-muted text-sm leading-relaxed">O3CI field-mapped structured data export matching the reporting fields to assist import preparation.</p>
             </div>
             <div className="bg-surface border border-border rounded-2xl p-6 space-y-3 shadow-sm">
               <h3 className="font-bold text-foreground text-lg">3. Cryptographic Signatures</h3>
@@ -317,7 +317,7 @@ console.log(intensity.toFixed(6));
             <h3 className="text-lg font-bold text-foreground">Mandatory Limitation & Verification Boundary</h3>
           </div>
           <p className="text-muted">
-            CBAMValid prepares calculation worksheets, precursor evidence matrices, and standardized XML/PDF dossiers. We are not an official EU institution, government customs authority, or accredited CBAM verifier. CBAMValid helps exporters compile compliance packages, but official verification remains the user’s legal responsibility.
+            CBAMValid prepares an operator/exporter dossier for independent verification. It does not issue an accredited verification opinion, customs decision, EU approval or CBAM Registry acceptance guarantee.
           </p>
         </div>
       </section>
@@ -327,7 +327,7 @@ console.log(intensity.toFixed(6));
         <div className="max-w-4xl mx-auto px-6 text-center space-y-8">
           <h2 className="text-3xl md:text-4xl font-serif font-black tracking-tight">Ready to compile compliant CBAM evidence?</h2>
           <p className="text-muted max-w-xl mx-auto leading-relaxed">
-            Start preparing structured carbon emission dossiers now. Run quality checks, link support records, and finalize report XMLs.
+            Start preparing structured carbon emission dossiers now. Run quality checks and link support records.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
             <Link 

@@ -39,6 +39,14 @@ export const createCheckoutSession = createCallable(
     }),
   },
   async ({ productCode, caseId }, { auth }) => {
+    // 0. IMMEDIATE COMMERCIAL CONTAINMENT: Check publicPaidLaunchEnabled flag
+    const configDoc = await adminDb.collection("system").doc("config").get();
+    const publicPaidLaunchEnabled = configDoc.exists ? configDoc.data()?.publicPaidLaunchEnabled === true : false;
+    const isPrivileged = auth.token.role === "admin" || auth.token.admin === true || auth.token.role === "pilot" || auth.token.pilot === true || auth.token.role === "Owner";
+    if (!publicPaidLaunchEnabled && !isPrivileged) {
+      throw new HttpsError("failed-precondition", "Purchasing is temporarily unavailable while final launch checks are completed.");
+    }
+
     const { createCheckout } = await import("../commerce/paddle/checkout-service");
     try {
       const transactionId = await createCheckout(auth.uid, auth.token.email || "", productCode, { caseId });
@@ -92,7 +100,7 @@ export const unlockCbamUses = createCallable(
           entitlementId,
           uid: auth.uid,
           orderId: `UNLOCK_${requestId}`,
-          productCode: "CBAM_EXPORTER_FINAL_REPORT",
+          productCode: "pack_premium_dossier_v5",
           status: "AVAILABLE",
           quantity: 1,
           maxReleases: MAX_RELEASES_PER_PACK,

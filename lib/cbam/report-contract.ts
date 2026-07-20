@@ -50,6 +50,17 @@ const StorageEntrySchema = z.object({
   sizeBytes: z.number().int().positive(),
 });
 
+export const PackageMetadataSchema = z.object({
+  schemaVersion: z.string(),
+  requiredTopLevelComponentCount: z.number(),
+  actualTopLevelComponentCount: z.number(),
+  manifestFileCount: z.number(),
+  evidenceFileCount: z.number(),
+  primaryDossierFileName: z.string(),
+  technicalCompilationFileName: z.string(),
+  operatorEmissionsReportFileName: z.string(),
+});
+
 export const SealedReportViewSchema = z.object({
   reportId: ReportIdSchema,
   uid: z.string().min(1),
@@ -71,7 +82,7 @@ export const SealedReportViewSchema = z.object({
   kmsAlgorithm: z.string().regex(/^RSA_SIGN_PKCS1_(2048|3072|4096)_SHA256$/),
   signatureBase64: z.string().min(32),
   storage: z.record(z.string(), StorageEntrySchema),
-  packageTopLevelComponentCount: z.union([z.literal(27), z.literal(23)]),
+  packageTopLevelComponentCount: z.number(),
   automatedReadiness: z.enum([
     "READY_FOR_INDEPENDENT_VERIFICATION",
     "BLOCKED_BEFORE_INDEPENDENT_VERIFICATION",
@@ -86,6 +97,8 @@ export const SealedReportViewSchema = z.object({
   ]),
   verificationMaterialityRate: z.literal(0.05),
   installationName: z.string().optional(),
+  dossierSchemaVersion: z.string().optional(),
+  packageMetadata: PackageMetadataSchema.optional(),
 });
 
 export type SealedReportView = z.infer<typeof SealedReportViewSchema>;
@@ -95,7 +108,8 @@ export function parseSealedReportView(value: unknown): SealedReportView {
   if (parsed.success) return parsed.data;
   
   // If parsing failed only due to count or status, dynamically fix it for compatibility
-  const raw = value as Record<string, unknown>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = value as Record<string, any>;
   const isV5 = Boolean(
     raw &&
       (raw.productCode === "pack_premium_dossier_v5" ||
@@ -103,9 +117,13 @@ export function parseSealedReportView(value: unknown): SealedReportView {
         raw.dossierSchemaVersion === "CBAMVALID-DOSSIER-5.0" ||
         raw.packageTopLevelComponentCount === 23)
   );
+
+  const manifestCount = raw.packageMetadata?.actualTopLevelComponentCount;
+  const defaultCount = isV5 ? 25 : 27;
+
   return SealedReportViewSchema.parse({
     ...raw,
-    packageTopLevelComponentCount: isV5 ? 23 : 27,
+    packageTopLevelComponentCount: manifestCount !== undefined ? manifestCount : defaultCount,
     automatedReadiness: isV5 ? "READY_FOR_VERIFIER_REVIEW" : "READY_FOR_INDEPENDENT_VERIFICATION",
     independentVerifierStatus: (raw.independentVerifierStatus as string) || "NOT_REVIEWED",
   });

@@ -3,13 +3,29 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 // Mock server-only in Vitest environment
 vi.mock("server-only", () => ({}));
 
-const { verifySessionCookie, createSessionCookie, verifyIdToken, mockCookiesSet, mockCookiesGet } = vi.hoisted(() => {
+const { verifySessionCookie, createSessionCookie, verifyIdToken, mockCookiesSet, mockCookiesGet, mockCollection } = vi.hoisted(() => {
+  const mockGet = vi.fn().mockResolvedValue({
+    exists: true,
+    data: () => ({ publicPaidLaunchEnabled: true })
+  });
+
+  const mockDoc = vi.fn().mockReturnValue({
+    get: mockGet,
+    set: vi.fn().mockResolvedValue(true),
+    update: vi.fn().mockResolvedValue(true),
+  });
+
+  const mockCollectionFn = vi.fn().mockReturnValue({
+    doc: mockDoc,
+  });
+
   return {
     verifySessionCookie: vi.fn(),
     createSessionCookie: vi.fn(),
     verifyIdToken: vi.fn(),
     mockCookiesSet: vi.fn(),
     mockCookiesGet: vi.fn(),
+    mockCollection: mockCollectionFn,
   };
 });
 
@@ -21,7 +37,9 @@ vi.mock("@/lib/firebase/admin", () => {
       createSessionCookie,
       verifyIdToken,
     },
-    adminDb: {},
+    adminDb: {
+      collection: mockCollection,
+    },
   };
 });
 
@@ -245,6 +263,46 @@ describe("Production Security & Foundation Audits", () => {
       return await callback(mockDbTransaction);
     });
 
+    const mockOrderGet = vi.fn().mockResolvedValue({
+      exists: true,
+      data: () => ({
+        uid: "test-user-uid",
+        orderId: "ord_test_123",
+        canonicalProductCode: "pack_premium_dossier_v5",
+        paddlePriceId: "pri_testprice",
+        currency: "USD",
+        amountMinor: 14900,
+      })
+    });
+
+    const mockOrderDoc = vi.fn().mockReturnValue({
+      get: mockOrderGet,
+    });
+
+    adminDb.collection = vi.fn().mockImplementation((colName) => {
+      const mockQuery = {
+        orderBy: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        get: vi.fn().mockResolvedValue({ empty: true }),
+      };
+      const colObj = {
+        doc: mockOrderDoc,
+        where: vi.fn().mockReturnValue(mockQuery),
+        orderBy: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        get: vi.fn().mockResolvedValue({ empty: true }),
+      };
+      if (colName === "commerce_orders") {
+        return colObj;
+      }
+      return {
+        ...colObj,
+        doc: vi.fn().mockReturnValue({
+          get: vi.fn().mockResolvedValue({ exists: false })
+        }),
+      };
+    });
+
     const event = {
       eventId: "evt_sandbox_payment_123",
       eventType: "transaction.completed",
@@ -253,15 +311,19 @@ describe("Production Security & Foundation Audits", () => {
         status: "completed",
         currencyCode: "USD",
         customData: {
-          uid: "test-user-uid",
           orderId: "ord_test_123",
-          productCode: "CBAM_EXPORTER_FINAL_REPORT",
         },
         items: [
           {
+            priceId: "pri_testprice",
             quantity: 1,
           }
-        ]
+        ],
+        details: {
+          totals: {
+            grandTotal: 14900,
+          }
+        }
       }
     };
 
