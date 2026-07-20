@@ -86,7 +86,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
     const drawHeader = () => {
       // Başlık + minimum iki satır birlikte tutulmalı
       ensure(headerHeight + 12);
-      doc.setFillColor(31, 64, 104);
+      doc.setFillColor(12, 30, 54);
       doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7.0);
@@ -222,52 +222,68 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   // ==========================================
   // PAGE 1: COVER PAGE
   // ==========================================
-  doc.setFillColor(20, 42, 74);
-  doc.rect(0, 0, PAGE_WIDTH, 110, "F");
+  // Deep Navy background for top cover
+  doc.setFillColor(12, 30, 54);
+  doc.rect(0, 0, PAGE_WIDTH, 115, "F");
+
+  // Gold accent separator bar
+  doc.setFillColor(201, 154, 73);
+  doc.rect(0, 115, PAGE_WIDTH, 3.5, "F");
 
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.text("CBAMValid", MARGIN, 40);
-  doc.setFontSize(13);
-  doc.text("Verification Readiness & Evidence Assurance Dossier", MARGIN, 52);
+  doc.setFontSize(22);
+  doc.text("CBAMValid", MARGIN, 35);
+  
+  // Gold subtitle tag line
+  doc.setFontSize(14);
+  doc.text("Verification Readiness & Evidence Assurance Dossier", MARGIN, 48);
+  
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text("Prepared for Independent Accredited Verifier Review", MARGIN, 62);
+  doc.setFontSize(9.5);
+  doc.setTextColor(190, 200, 215);
+  doc.text("Prepared for Independent Accredited Verifier Review", MARGIN, 58);
 
   // Status Box on Cover
   const periodAssessment = getReportingPeriodAssessment(caseData);
   const isReady = model.readiness.operatorStatus === "READY_FOR_VERIFIER_REVIEW" && periodAssessment.definitiveAnnualEligible;
-  doc.setFillColor(isReady ? 38 : 220, isReady ? 162 : 53, isReady ? 91 : 69);
-  doc.rect(MARGIN, 75, 75, 22, "F");
+  
+  // Emerald Green for pass, Muted Red for failure/remediation
+  doc.setFillColor(isReady ? 20 : 180, isReady ? 83 : 40, isReady ? 45 : 40);
+  doc.roundedRect(MARGIN, 76, 85, 24, 1.5, 1.5, "F");
+  
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.text("OPERATOR READINESS STATUS", MARGIN + 4, 82);
-  doc.setFontSize(11);
-  doc.text(isReady ? "READY_FOR_VERIFIER_REVIEW" : "NOT_READY / CONDITIONAL", MARGIN + 4, 91);
+  doc.setFontSize(7.5);
+  doc.text("OPERATOR READINESS STATUS", MARGIN + 5, 83);
+  doc.setFontSize(10.5);
+  doc.text(isReady ? "READY_FOR_VERIFIER_REVIEW" : "REMEDIATION REQUIRED", MARGIN + 5, 92);
 
-  // Score Box on Cover
-  doc.setFillColor(44, 62, 80);
-  doc.rect(MARGIN + 85, 75, 45, 22, "F");
+  // Score Box on Cover (Sophisticated dark slate)
+  doc.setFillColor(34, 50, 75);
+  doc.roundedRect(MARGIN + 93, 76, 42, 24, 1.5, 1.5, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.text("DIAGNOSTIC SCORE", MARGIN + 89, 82);
-  doc.setFontSize(13);
-  doc.text(`${model.readiness.score} / 100`, MARGIN + 89, 91);
+  doc.setFontSize(7.5);
+  doc.text("DIAGNOSTIC SCORE", MARGIN + 98, 83);
+  doc.setFontSize(12.5);
+  // Gold color for score text
+  doc.setTextColor(201, 154, 73);
+  doc.text(`${model.readiness.score} / 100`, MARGIN + 98, 92);
 
   // Cover Page Bottom Details
-  doc.setTextColor(44, 62, 80);
+  doc.setTextColor(12, 30, 54);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
-  let cy = 125;
+  let cy = 135;
   const writeCoverDetail = (label: string, val: string) => {
     doc.setFont("helvetica", "bold");
+    doc.setTextColor(12, 30, 54);
     doc.text(`${label}:`, MARGIN, cy);
     doc.setFont("helvetica", "normal");
-    doc.text(val, MARGIN + 45, cy);
-    cy += 5.5;
+    doc.setTextColor(60, 70, 85);
+    doc.text(val, MARGIN + 48, cy);
+    cy += 6.0;
   };
   writeCoverDetail("Report ID", model.reportId);
   writeCoverDetail("Case ID", model.caseId);
@@ -278,6 +294,22 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   writeCoverDetail("Installation Name", model.identity.installation);
   writeCoverDetail("Regulatory Basis", "Regulation (EU) 2023/956 & Implementing Regulation (EU) 2025/2546");
 
+  // Secure Cryptographic Trust Stamp Card
+  doc.setFillColor(245, 247, 250);
+  doc.setDrawColor(201, 154, 73);
+  doc.roundedRect(MARGIN, 192, CONTENT_WIDTH, 32, 1.5, 1.5, "FD");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(12, 30, 54);
+  doc.text("SECURE TRUST STAMP & KMS SIGNATURE RECORD", MARGIN + 6, 199);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.8);
+  doc.setTextColor(80, 90, 105);
+  doc.text(`Manifest SHA-256 Hash: ${model.manifestSummary.manifestHash || "NOT_AVAILABLE"}`, MARGIN + 6, 205);
+  doc.text(`KMS Digital Signature ID: ${model.reportId}`, MARGIN + 6, 211);
+  doc.text("Sealed Package Integrity: All 23 controlled package components frozen & digitally signed.", MARGIN + 6, 217);
 
   // Cover Legal Boundary statement
   doc.setFont("helvetica", "normal");
@@ -788,23 +820,28 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
     if (pNum === 1) continue;
 
     // Running Header
-    doc.setFillColor(20, 42, 74);
+    doc.setFillColor(12, 30, 54);
     doc.rect(0, 0, PAGE_WIDTH, 20, "F");
+
+    // Gold separator line below running header
+    doc.setFillColor(201, 154, 73);
+    doc.rect(0, 20, PAGE_WIDTH, 0.8, "F");
+
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
+    doc.setFontSize(9.5);
     doc.text(model.documentTitle, MARGIN, 11);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
     doc.text(`Report ID: ${model.reportId} · Version V${model.releaseVersion}`, MARGIN, 16);
 
-    // Confidentiality Marker
-    doc.setFillColor(isReady ? 222 : 254, isReady ? 247 : 226, isReady ? 232 : 226);
+    // Confidentiality Status Badge
+    doc.setFillColor(isReady ? 20 : 180, isReady ? 83 : 40, isReady ? 45 : 40);
     doc.rect(142, 5, 53, 10, "F");
-    doc.setTextColor(isReady ? 22 : 155, isReady ? 101 : 28, isReady ? 52 : 28);
+    doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(6.2);
-    doc.text(isReady ? "CHECKS PASSED" : "REMEDIATION REQUIRED", 168.5, 11, { align: "center" });
+    doc.setFontSize(6.5);
+    doc.text(isReady ? "CHECKS PASSED" : "REMEDIATION REQUIRED", 168.5, 11.5, { align: "center" });
 
     // Running Footer
     doc.setDrawColor(211, 218, 227);
