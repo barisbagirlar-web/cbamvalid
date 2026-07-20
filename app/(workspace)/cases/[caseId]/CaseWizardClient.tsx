@@ -16,6 +16,10 @@ import {
   Trash2,
 } from "lucide-react";
 import { assessCaseReadiness } from "@/lib/cbam/validation/readiness-assessor";
+import { assessReadiness } from "@/lib/cbam/validation/readiness-score";
+import { generateFindingsAndActions } from "@/lib/cbam/validation/findings-engine";
+import { runEvidenceSufficiency } from "@/lib/cbam/validation/evidence-sufficiency";
+import { runQualityControls } from "@/lib/cbam/validation/quality-controls";
 import { performDossierCalculations } from "@/lib/cbam/calculator";
 import {
   AuditReadyCaseSchema,
@@ -128,7 +132,67 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const [evidenceLinkedInput, setEvidenceLinkedInput] = useState("directEmissions");
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
 
-  const readiness = useMemo(() => assessCaseReadiness(caseData), [caseData]);
+  const usableEntitlements = useMemo(() => availableEntitlements.filter((entitlement) => {
+    const status = String(entitlement.status || "").toUpperCase();
+    const caseMatches = !entitlement.scopeCaseId || entitlement.scopeCaseId === caseData.caseId;
+    return caseMatches && ["AVAILABLE", "ACTIVE", "PURCHASED"].includes(status);
+  }), [availableEntitlements, caseData.caseId]);
+
+  const hasV5 = useMemo(() => {
+    return usableEntitlements.some(ent => ent.productCode === "pack_premium_dossier_v5");
+  }, [usableEntitlements]);
+
+  const readiness = useMemo(() => {
+    if (hasV5) {
+      const readinessV5 = assessReadiness({ caseData, isDraft: false });
+      const { findings } = generateFindingsAndActions(caseData);
+      const sufficiency = runEvidenceSufficiency(caseData);
+      const controls = runQualityControls(caseData);
+
+      const applicable = controls.filter((control) => control.status !== "NOT_APPLICABLE");
+      const passed = applicable.filter((control) => control.status === "PASS");
+
+      const allGaps = [
+        ...findings.map((f) => ({
+          gapId: f.findingId,
+          issueType: f.category,
+          requirement: f.title,
+          severity: f.severity as any,
+          affectedResult: f.ruleId,
+          whyItMatters: f.description,
+          requiredEvidence: f.remediationRequirement,
+          suggestedAction: f.action?.requiredAction || f.remediationRequirement,
+          isBlocking: f.blocksSealing,
+          resolutionStatus: f.status,
+        })),
+        ...sufficiency.filter((s) => s.state !== "SUPPORTED").map((s) => ({
+          gapId: s.requirementId,
+          issueType: "evidence",
+          requirement: `Evidence sufficiency for ${s.inputPath}`,
+          severity: (s.blocksSealing ? "BLOCKER" : "MAJOR") as any,
+          affectedResult: s.inputPath,
+          whyItMatters: `Evidence status is ${s.state}. Reason codes: ${s.reasonCodes.join(", ")}`,
+          requiredEvidence: `Upload approved and valid evidence for ${s.inputPath}`,
+          suggestedAction: `Provide full coverage evidence (${s.coverageNumerator} / ${s.coverageDenominator} days covered)`,
+          isBlocking: s.blocksSealing,
+          resolutionStatus: "OPEN",
+        }))
+      ];
+
+      return {
+        status: readinessV5.operatorStatus,
+        criticalBlockers: allGaps.filter((gap) => gap.isBlocking),
+        allGaps,
+        isEligibleForSealing: readinessV5.canSeal,
+        completenessPercentage: Math.round(Number(readinessV5.score)),
+        passedControls: passed.length,
+        applicableControls: applicable.length,
+      };
+    } else {
+      return assessCaseReadiness(caseData);
+    }
+  }, [caseData, hasV5]);
+
   const calculation = useMemo(() => {
     try {
       return { result: performDossierCalculations(caseData), error: "" };
@@ -136,12 +200,6 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       return { result: null, error: errorMessage(error) };
     }
   }, [caseData]);
-
-  const usableEntitlements = useMemo(() => availableEntitlements.filter((entitlement) => {
-    const status = String(entitlement.status || "").toUpperCase();
-    const caseMatches = !entitlement.scopeCaseId || entitlement.scopeCaseId === caseData.caseId;
-    return caseMatches && ["AVAILABLE", "ACTIVE", "PURCHASED"].includes(status);
-  }), [availableEntitlements, caseData.caseId]);
 
   const updateDatum = (path: string, patch: Partial<InputDatum>) => {
     setCaseData((previous) => setAtPath(previous, path, (current) => ({
