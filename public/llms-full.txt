@@ -46,4 +46,4 @@
 ## Structural Quality Controls & Fail-Closed Gates
 - **Fail-Closed Sealing:** Requires 100% evidence coverage, zero missing material inputs, APPROVED evidence review status, and reconciled allocation shares.
 - **Data Privacy & Tenant Isolation:** User cases, raw evidence files, and sealed reports are encrypted and strictly excluded from public AI indexing.
-- **Last Updated:** 2026-07-21
+- **Last Updated:** 2026-07-22
