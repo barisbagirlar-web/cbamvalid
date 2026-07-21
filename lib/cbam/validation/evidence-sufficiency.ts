@@ -34,7 +34,7 @@ function parsePeriodDates(periodStr: unknown): { start: string; end: string } | 
 }
 
 function getValueAtPath(obj: unknown, path: string): unknown {
-  const parts = path.split(".");
+  const parts = path.split(/[.]/);
   let current = obj;
   for (const part of parts) {
     if (current === null || current === undefined) return undefined;

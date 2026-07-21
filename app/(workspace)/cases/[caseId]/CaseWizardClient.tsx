@@ -16,7 +16,6 @@ import {
   Shield,
   Trash2,
 } from "lucide-react";
-import { assessCaseReadiness } from "@/lib/cbam/validation/readiness-assessor";
 import { assessReadiness } from "@/lib/cbam/validation/readiness-score";
 import { generateFindingsAndActions } from "@/lib/cbam/validation/findings-engine";
 import { runEvidenceSufficiency } from "@/lib/cbam/validation/evidence-sufficiency";
@@ -74,6 +73,23 @@ const EVIDENCE_LINK_OPTIONS = [
 ] as const;
 
 function errorMessage(error: unknown): string {
+  if (error && typeof error === "object") {
+    const errObj = error as { message?: string; details?: Record<string, unknown> };
+    const msg = String(errObj.message || "").trim();
+    if (msg === "SEALING_BLOCKED_BY_V5_READINESS_GATES" || msg.includes("SEALING_BLOCKED")) {
+      let detailSummary = "";
+      if (errObj.details && typeof errObj.details === "object") {
+        const d = errObj.details;
+        const blockers = typeof d.criticalBlockerCount === "number" ? d.criticalBlockerCount : 0;
+        const missingEv = typeof d.missingMaterialEvidenceCount === "number" ? d.missingMaterialEvidenceCount : 0;
+        if (blockers > 0 || missingEv > 0) {
+          detailSummary = ` (${blockers} critical blocker(s), ${missingEv} missing evidence requirement(s)).`;
+        }
+      }
+      return `Sealing blocked: Your dossier has unresolved readiness blockers or unapproved evidence${detailSummary} Please review the Verification Readiness checklist below to resolve all blocking items.`;
+    }
+    if (msg) return msg;
+  }
   if (error instanceof Error && error.message.trim()) return error.message;
   return "The requested operation failed.";
 }

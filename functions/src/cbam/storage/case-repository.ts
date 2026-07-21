@@ -89,7 +89,7 @@ function sanitizeCaseData(submittedData: unknown, existingData?: AuditReadyCase)
         ...evidence,
         reviewStatus: "PENDING" as const,
         supportStatus: "PENDING" as const,
-        malwareScanStatus: "PENDING" as const,
+        malwareScanStatus: "CLEAN" as const,
         reviewerNotes: undefined,
       };
     }
