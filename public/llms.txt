@@ -1,25 +1,30 @@
-# CBAMValid — CBAM Evidence Validation and Report Preparation
+# CBAMValid — Exporter Verification Preparation Pack V5
 
-> CBAMValid is an independent software service that helps EU importers, third-country operators, and authorised declarants prepare structured evidence, identify documentation gaps, calculate embedded emissions deterministically according to EU rules, and generate auditable compliance dossiers.
+> CBAMValid is a production-grade verifier-preparation platform for non-EU producers, exporters, operators, importers, and CBAM reporting teams. It produces a serious operator-prepared dossier that reduces the work required for independent accredited verification under Regulation (EU) 2023/956 and Implementing Regulations (EU) 2023/1776, 2023/1778, and 2025/2546.
 
-## Core Product
+## Product & Deliverables
 - [Homepage](https://cbamvalid.com/)
-- [Methodology](https://cbamvalid.com/methodology)
-- [Regulatory Sources](https://cbamvalid.com/regulatory-sources)
-- [CN-Code Hub](https://cbamvalid.com/cn-code)
+- [Product Overview](https://cbamvalid.com/product)
+- [How It Works](https://cbamvalid.com/how-it-works)
+- [Pricing](https://cbamvalid.com/pricing)
+- [Sample Dossier Verification](https://cbamvalid.com/sample-dossier)
+- [Public Document Verification](https://cbamvalid.com/verify)
+- [Methodology & Technical Engine](https://cbamvalid.com/methodology)
+- [CN-Code Scope Hub](https://cbamvalid.com/cn-code)
 
-## Compliance Preparation
-- Evidence Readiness: Evaluates completeness of actual vs default emissions data.
-- Calculation Traceability: Provides a cryptographic-style audit trail mapping inputs to the exact EU formula.
-- Report Preparation: Compiles sealed XML and PDF versions for registry upload.
+## Canonical Deliverable Contract (23 Components)
+- **Primary Verifier Dossier PDF**: 14-page, 6-chapter structured PDF document organized into Chapter I (Executive), Chapter II (Readiness), Chapter III (Installation), Chapter IV (Evidence Lineage), Chapter V (Calculations), and Chapter VI (Handover & Annexes).
+- **Interactive Verifier Workspace**: `Verifier Workspace.xlsx` multi-sheet navigation workbook.
+- **Cryptographic Audit Trace**: `Calculation Trace.json` node hash tree.
+- **Digital Integrity Manifest**: `Data Integrity Manifest.json` and KMS RSA signature `.sig` seal.
+- **18 Technical Annexes & CSV Ledgers**: Source streams, emission sources, measurement meters, activity ledger, evidence matrix, methodology decision log, findings register, O3CI mapping.
 
-## Trust and Policies
-- [About](https://cbamvalid.com/about)
-- [Contact](https://cbamvalid.com/contact)
-- [Privacy Notice](https://cbamvalid.com/privacy)
-- [Terms of Service](https://cbamvalid.com/terms)
-- [Refund Policy](https://cbamvalid.com/refund-policy)
+## Regulatory Compliance Standard
+- Built for **Definitive 2026 Reporting** under EU Regulation 2025/2546.
+- Enforces strict fail-closed quality gates (100% evidence interval coverage, zero missing data, approved review status).
+- Provides O3CI field-mapped structured data export for accredited verifier review.
 
-## About
-CBAMValid is operated independently. Not EU certified. Not an official European Commission or CBAM Registry service.
-Last updated: 2024-01-01
+## Legal Disclaimer
+CBAMValid is operated independently. CBAMValid does not produce an accredited verification opinion or official registry XML submission.
+Prepared for Independent Accredited Verification.
+Last updated: 2026-07-21
