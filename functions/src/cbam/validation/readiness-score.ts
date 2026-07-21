@@ -113,7 +113,7 @@ export function getReportingPeriodAssessment(caseData: AuditReadyCase, assessmen
   const now = assessmentTimestamp ? new Date(assessmentTimestamp) : new Date();
   if (endDate) {
     const periodEndDate = new Date(endDate);
-    if (periodEndDate.getFullYear() > now.getFullYear()) {
+    if (periodEndDate.getTime() > now.getTime()) {
       hardBlockerFindingIds.push("FND-PERIOD-FUTURE-END-DATE");
     }
   }

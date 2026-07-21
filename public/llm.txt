@@ -4,15 +4,15 @@
 
 ## Product Overview & Navigation
 - [Homepage](https://cbamvalid.com/) — Executive summary, platform positioning, live ROI calculator.
-- [Product & Deliverables](https://cbamvalid.com/product) — 23-component dossier package breakdown and verifier readiness gates.
+- [Product & Deliverables](https://cbamvalid.com/product) — 25-component dossier package breakdown and verifier readiness gates.
 - [How It Works](https://cbamvalid.com/how-it-works) — 4-step workflow from case setup to immutable release package.
-- [Pricing & Entitlements](https://cbamvalid.com/pricing) — $149 per legal operator/installation year (100 credits = 1 Preparation Pack, 5 sealed releases included).
+- [Pricing & Entitlements](https://cbamvalid.com/pricing) — $300 per legal operator/installation year (100 credits = 1 Preparation Pack, 5 sealed releases included).
 - [Sample Dossier Preview](https://cbamvalid.com/sample-dossier) — Interactive verifier dossier preview with visual geometry validation.
 - [Public Signature Verification](https://cbamvalid.com/verify) — KMS RSA-4096 signature and document SHA-256 integrity verification engine.
 - [Methodology & Calculation Rules](https://cbamvalid.com/methodology) — Server-side deterministic engine, ROUND_HALF_UP rounding, allocation reconciliation.
 - [Combined Nomenclature (CN) Hub](https://cbamvalid.com/cn-code) — CN classification search and sectoral eligibility directory (Iron & Steel, Aluminum, Cement, Fertilizers, Hydrogen, Electricity).
 
-## Canonical Deliverable Contract (23 Components)
+## Canonical Deliverable Contract (25 Components)
 1. **CBAMValid Verification Readiness & Evidence Assurance Dossier**: 14-page, 6-chapter structured PDF document (Executive Summary, Readiness Score, Installation & Process Boundaries, Evidence Lineage, Embedded Emission Calculations, Handover & Annexes).
 2. **Complete Dossier Compilation**: Consolidated PDF of all technical annexes and operational registers.
 3. **Product Scope Assessment**: System boundary and sectoral scope evaluation.
@@ -33,9 +33,11 @@
 18. **Misstatement and Non-Conformity Register**: Detailed quality control and readiness findings.
 19. **Corrective Action Log**: Corrective actions and remediation tracking.
 20. **O3CI Field Mapping**: Registry-compatible structured data export mapping.
-21. **Calculation Trace**: JSON node hash tree for machine-reproducible audit.
+21. **Calculation Trace**: JSON node hash tree for machine-reproducible audit (`Calculation Trace.json`).
 22. **Verifier Workspace**: Multi-sheet interactive Excel workbook (`Verifier Workspace.xlsx`).
-23. **Data Integrity Manifest**: Signed JSON manifest (`Data Integrity Manifest.json` & `.sig`).
+23. **Data Integrity Manifest**: Cryptographic JSON manifest metadata (`Data Integrity Manifest.json`).
+24. **Manifest Signature**: KMS RSA-4096 verification signature record (`Manifest Signature.sig`).
+25. **Supporting Evidence Folder**: Folder containing all linked evidence files (`Supporting_Evidence/`).
 
 ## Regulatory & Quality Assurance Standards
 - **Definitive Period Compliance**: Configured for 2026+ definitive reporting rules under EU Regulation 2025/2546.
