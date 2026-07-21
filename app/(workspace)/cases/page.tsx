@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { AlertCircle, ArrowRight, Clock, Plus, RefreshCw } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertCircle, ArrowRight, ChevronLeft, ChevronRight, Clock, Plus, RefreshCw } from "lucide-react";
 import { useAuth } from "@/context/AuthProvider";
 import {
   formatCaseUpdatedDate,
@@ -16,12 +16,98 @@ function describeError(error: unknown): string {
   return "Cases could not be loaded.";
 }
 
+function PaginationControls({
+  currentPage,
+  totalPages,
+  onPageChange,
+  totalItems,
+  pageSize = 5,
+  itemLabel = "items",
+}: {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  totalItems: number;
+  pageSize?: number;
+  itemLabel?: string;
+}) {
+  if (totalPages <= 1) return null;
+
+  const startItem = (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(currentPage * pageSize, totalItems);
+
+  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+
+  return (
+    <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border pt-4 text-xs">
+      <div className="text-muted font-medium">
+        Showing <span className="font-semibold text-foreground">{startItem}–{endItem}</span> of{" "}
+        <span className="font-semibold text-foreground">{totalItems}</span> {itemLabel}
+      </div>
+
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-border bg-surface text-foreground hover:bg-muted/10 disabled:opacity-40 disabled:pointer-events-none transition-colors font-medium"
+          aria-label="Previous Page"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" /> Previous
+        </button>
+
+        {pages.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => onPageChange(p)}
+            className={`min-w-[28px] h-7 px-2 rounded-md font-semibold text-xs transition-colors ${
+              p === currentPage
+                ? "bg-accent text-surface shadow-sm"
+                : "border border-border bg-surface text-foreground hover:bg-muted/10"
+            }`}
+          >
+            {p}
+          </button>
+        ))}
+
+        <button
+          type="button"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-border bg-surface text-foreground hover:bg-muted/10 disabled:opacity-40 disabled:pointer-events-none transition-colors font-medium"
+          aria-label="Next Page"
+        >
+          Next <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function CasesPage() {
   const { user, loading } = useAuth();
   const [cases, setCases] = useState<CbamCaseRecord[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
+
+  // Sort cases by latest updated/created date descending
+  const sortedCases = useMemo(() => {
+    return [...cases].sort((a, b) => {
+      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
+  }, [cases]);
+
+  const totalPages = Math.ceil(sortedCases.length / ITEMS_PER_PAGE) || 1;
+  const paginatedCases = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return sortedCases.slice(start, start + ITEMS_PER_PAGE);
+  }, [sortedCases, currentPage]);
 
   // Load from cache on mount
   useEffect(() => {
@@ -144,8 +230,12 @@ export default function CasesPage() {
           </div>
         ) : (
           <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold font-serif">Draft Cases</h3>
+              <span className="text-xs text-muted font-mono">{cases.length} Total</span>
+            </div>
             <div className="space-y-4">
-              {cases.map((cbamCase) => (
+              {paginatedCases.map((cbamCase) => (
                 <div
                   key={cbamCase.caseId}
                   className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors"
@@ -170,6 +260,14 @@ export default function CasesPage() {
                 </div>
               ))}
             </div>
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              totalItems={cases.length}
+              pageSize={ITEMS_PER_PAGE}
+              itemLabel="draft cases"
+            />
           </div>
         )}
       </div>

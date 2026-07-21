@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   ArrowRight,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   FileText,
   HelpCircle,
@@ -73,6 +75,75 @@ function reportInstallationName(report: ReportRecord): string {
   return typeof value === "string" && value.trim() ? value.trim() : "Sealed dossier";
 }
 
+function PaginationControls({
+  currentPage,
+  totalPages,
+  onPageChange,
+  totalItems,
+  pageSize = 5,
+  itemLabel = "items",
+}: {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  totalItems: number;
+  pageSize?: number;
+  itemLabel?: string;
+}) {
+  if (totalPages <= 1) return null;
+
+  const startItem = (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(currentPage * pageSize, totalItems);
+
+  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+
+  return (
+    <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border pt-4 text-xs">
+      <div className="text-muted font-medium">
+        Showing <span className="font-semibold text-foreground">{startItem}–{endItem}</span> of{" "}
+        <span className="font-semibold text-foreground">{totalItems}</span> {itemLabel}
+      </div>
+
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-border bg-surface text-foreground hover:bg-muted/10 disabled:opacity-40 disabled:pointer-events-none transition-colors font-medium"
+          aria-label="Previous Page"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" /> Previous
+        </button>
+
+        {pages.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => onPageChange(p)}
+            className={`min-w-[28px] h-7 px-2 rounded-md font-semibold text-xs transition-colors ${
+              p === currentPage
+                ? "bg-accent text-surface shadow-sm"
+                : "border border-border bg-surface text-foreground hover:bg-muted/10"
+            }`}
+          >
+            {p}
+          </button>
+        ))}
+
+        <button
+          type="button"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-border bg-surface text-foreground hover:bg-muted/10 disabled:opacity-40 disabled:pointer-events-none transition-colors font-medium"
+          aria-label="Next Page"
+        >
+          Next <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function CbamLandingPage() {
   const { user, loading } = useAuth();
   const [cases, setCases] = useState<CbamCaseRecord[]>([]);
@@ -83,6 +154,39 @@ export default function CbamLandingPage() {
   const [warning, setWarning] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [showChecklist, setShowChecklist] = useState(false);
+  const [draftsPage, setDraftsPage] = useState(1);
+  const [reportsPage, setReportsPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
+
+  // Sort cases by latest updated/created date descending
+  const sortedCases = useMemo(() => {
+    return [...cases].sort((a, b) => {
+      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
+  }, [cases]);
+
+  // Sort reports by latest created date descending
+  const sortedReports = useMemo(() => {
+    return [...reports].sort((a, b) => {
+      const timeA = new Date(readString(a, "createdAt") || 0).getTime();
+      const timeB = new Date(readString(b, "createdAt") || 0).getTime();
+      return timeB - timeA;
+    });
+  }, [reports]);
+
+  const totalDraftPages = Math.ceil(sortedCases.length / ITEMS_PER_PAGE) || 1;
+  const paginatedCases = useMemo(() => {
+    const start = (draftsPage - 1) * ITEMS_PER_PAGE;
+    return sortedCases.slice(start, start + ITEMS_PER_PAGE);
+  }, [sortedCases, draftsPage]);
+
+  const totalReportPages = Math.ceil(sortedReports.length / ITEMS_PER_PAGE) || 1;
+  const paginatedReports = useMemo(() => {
+    const start = (reportsPage - 1) * ITEMS_PER_PAGE;
+    return sortedReports.slice(start, start + ITEMS_PER_PAGE);
+  }, [sortedReports, reportsPage]);
 
   // Load from cache on mount
   useEffect(() => {
@@ -370,60 +474,93 @@ export default function CbamLandingPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
               <section className="bg-surface border border-border rounded-xl p-6 shadow-sm">
-                <h3 className="text-lg font-bold mb-4 font-serif">Draft Cases</h3>
-                <div className="space-y-4">
-                  {cases.map((cbamCase) => (
-                    <div key={cbamCase.caseId} className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors">
-                      <div>
-                        <p className="font-semibold text-sm">{getCaseDisplayName(cbamCase.data)}</p>
-                        <p className="text-xs text-muted mt-1 font-mono">
-                          Case ID: {cbamCase.caseId} | CN Code: {getPrimaryCnCode(cbamCase.data)} | Updated: {formatCaseUpdatedDate(cbamCase.updatedAt)}
-                        </p>
-                        <div className="mt-2 flex items-center gap-2">
-                          <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-neutral-soft text-foreground border border-border">Draft mode</span>
-                        </div>
-                      </div>
-                      <Link href={`/cases/${cbamCase.caseId}`} className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center gap-1 self-end sm:self-auto">
-                        Resume Draft <ArrowRight className="w-3 h-3" />
-                      </Link>
-                    </div>
-                  ))}
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold font-serif">Draft Cases</h3>
+                  <span className="text-xs text-muted font-mono">{cases.length} Total</span>
                 </div>
+                {cases.length === 0 ? (
+                  <div className="p-8 text-center bg-background border border-dashed border-border/80 rounded-lg">
+                    <Clock className="w-8 h-8 text-muted/65 mx-auto mb-3" />
+                    <p className="text-sm text-subtle">No active drafts found.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-4">
+                      {paginatedCases.map((cbamCase) => (
+                        <div key={cbamCase.caseId} className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors">
+                          <div>
+                            <p className="font-semibold text-sm">{getCaseDisplayName(cbamCase.data)}</p>
+                            <p className="text-xs text-muted mt-1 font-mono">
+                              Case ID: {cbamCase.caseId} | CN Code: {getPrimaryCnCode(cbamCase.data)} | Updated: {formatCaseUpdatedDate(cbamCase.updatedAt)}
+                            </p>
+                            <div className="mt-2 flex items-center gap-2">
+                              <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-neutral-soft text-foreground border border-border">Draft mode</span>
+                            </div>
+                          </div>
+                          <Link href={`/cases/${cbamCase.caseId}`} className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center gap-1 self-end sm:self-auto">
+                            Resume Draft <ArrowRight className="w-3 h-3" />
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                    <PaginationControls
+                      currentPage={draftsPage}
+                      totalPages={totalDraftPages}
+                      onPageChange={setDraftsPage}
+                      totalItems={cases.length}
+                      pageSize={ITEMS_PER_PAGE}
+                      itemLabel="draft cases"
+                    />
+                  </>
+                )}
               </section>
 
               <section className="bg-surface border border-border rounded-xl p-6 shadow-sm">
-                <h3 className="text-lg font-bold mb-4 font-serif">Sealed Reports History</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold font-serif">Sealed Reports History</h3>
+                  <span className="text-xs text-muted font-mono">{reports.length} Total</span>
+                </div>
                 {reports.length === 0 ? (
                   <div className="p-8 text-center bg-background border border-dashed border-border/80 rounded-lg">
                     <Lock className="w-8 h-8 text-muted/65 mx-auto mb-3" />
                     <p className="text-sm text-subtle">No sealed reports found. Complete the draft checklist to generate verifier-preparation deliverables.</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {reports.map((report, index) => {
-                      const reportId = readString(report, "reportId");
-                      const createdAt = readString(report, "createdAt");
-                      const documentHash = readString(report, "documentHash");
-                      return (
-                        <div key={reportId || `report-${index}`} className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors">
-                          <div>
-                            <p className="font-semibold text-sm">{reportInstallationName(report)}</p>
-                            <p className="text-xs text-muted mt-1 font-mono">
-                              Release ID: {reportId ? `${reportId.slice(0, 8)}...` : "Unavailable"} | Sealed: {createdAt ? formatCaseUpdatedDate(createdAt) : "Unknown"}
-                            </p>
-                            <p className="text-[11px] text-muted truncate mt-1">Hash: {documentHash || "Unavailable"}</p>
+                  <>
+                    <div className="space-y-4">
+                      {paginatedReports.map((report, index) => {
+                        const reportId = readString(report, "reportId");
+                        const createdAt = readString(report, "createdAt");
+                        const documentHash = readString(report, "documentHash");
+                        return (
+                          <div key={reportId || `report-${index}`} className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors">
+                            <div>
+                              <p className="font-semibold text-sm">{reportInstallationName(report)}</p>
+                              <p className="text-xs text-muted mt-1 font-mono">
+                                Release ID: {reportId ? `${reportId.slice(0, 8)}...` : "Unavailable"} | Sealed: {createdAt ? formatCaseUpdatedDate(createdAt) : "Unknown"}
+                              </p>
+                              <p className="text-[11px] text-muted truncate mt-1">Hash: {documentHash || "Unavailable"}</p>
+                            </div>
+                            {reportId ? (
+                              <Link href={`/cbam/reports/${reportId}`} className="bg-foreground hover:bg-foreground/90 text-background text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center justify-center">
+                                View Dossier
+                              </Link>
+                            ) : (
+                              <span className="text-xs text-muted">Report link unavailable</span>
+                            )}
                           </div>
-                          {reportId ? (
-                            <Link href={`/cbam/reports/${reportId}`} className="bg-foreground hover:bg-foreground/90 text-background text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center justify-center">
-                              View Dossier
-                            </Link>
-                          ) : (
-                            <span className="text-xs text-muted">Report link unavailable</span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                    <PaginationControls
+                      currentPage={reportsPage}
+                      totalPages={totalReportPages}
+                      onPageChange={setReportsPage}
+                      totalItems={reports.length}
+                      pageSize={ITEMS_PER_PAGE}
+                      itemLabel="sealed reports"
+                    />
+                  </>
                 )}
               </section>
             </div>
