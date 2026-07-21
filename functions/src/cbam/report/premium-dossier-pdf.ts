@@ -84,7 +84,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
     const headerHeight = maxHeaderLines * 3.5 + 3.5;
 
     const drawHeader = () => {
-      // Başlık + minimum iki satır birlikte tutulmalı
+      // Header + minimum 2 rows must be kept together
       ensure(headerHeight + 12);
       doc.setFillColor(12, 30, 54);
       doc.setTextColor(255, 255, 255);

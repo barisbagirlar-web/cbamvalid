@@ -5,7 +5,7 @@ export default function Loading() {
         {/* Minimalist Spinner */}
         <div className="w-8 h-8 border-2 border-kil-text/20 border-t-kil-accent rounded-full animate-spin mb-6"></div>
         <p className="font-mono text-sm text-kil-text/60 tracking-widest uppercase">
-          Veriler Hazırlanıyor...
+          Loading Data...
         </p>
       </div>
     </div>
