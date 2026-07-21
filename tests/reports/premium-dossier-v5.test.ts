@@ -380,13 +380,13 @@ describe("premium-dossier-v5 deliverables", () => {
     expect(leapAss.coveredDays).toBe(366);
     expect(leapAss.definitiveAnnualEligible).toBe(true);
 
-    // 7. missing start date
-    const missingStart = makePeriodCase("2026", "ANNUAL", "", "2026-12-31");
+    // 7. missing start date and year
+    const missingStart = makePeriodCase("", "ANNUAL", "", "2026-12-31");
     const msAss = getReportingPeriodAssessment(missingStart, "2027-01-15");
     expect(msAss.hardBlockerFindingIds).toContain("FND-PERIOD-MISSING-START-DATE");
 
-    // 8. missing end date
-    const missingEnd = makePeriodCase("2026", "ANNUAL", "2026-01-01", "");
+    // 8. missing end date and year
+    const missingEnd = makePeriodCase("", "ANNUAL", "2026-01-01", "");
     const meAss = getReportingPeriodAssessment(missingEnd, "2027-01-15");
     expect(meAss.hardBlockerFindingIds).toContain("FND-PERIOD-MISSING-END-DATE");
 

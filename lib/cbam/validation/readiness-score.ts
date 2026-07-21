@@ -7,28 +7,19 @@ import { generateFindingsAndActions } from "./findings-engine";
 export function getReportingPeriodAssessment(caseData: AuditReadyCase, assessmentTimestamp?: string): ReportingPeriodAssessment {
   const yearVal = String(caseData.reportingPeriod.year.value || "");
   const quarterVal = String(caseData.reportingPeriod.quarter.value || "").toUpperCase().trim();
-  const year = Number(yearVal) || new Date().getFullYear();
+  const year = Number(yearVal) || 0;
 
   const rawStartDate = caseData.reportingPeriod.startDate?.value ?? "";
   const rawEndDate = caseData.reportingPeriod.endDate?.value ?? "";
 
   const hardBlockerFindingIds: string[] = [];
-
-  if (rawStartDate === "" || rawStartDate === null || rawStartDate === undefined) {
-    hardBlockerFindingIds.push("FND-PERIOD-MISSING-START-DATE");
-  }
-  if (rawEndDate === "" || rawEndDate === null || rawEndDate === undefined) {
-    hardBlockerFindingIds.push("FND-PERIOD-MISSING-END-DATE");
-  }
-
   let startDate = String(rawStartDate).trim();
   let endDate = String(rawEndDate).trim();
-
   let type: "DEFINITIVE_ANNUAL" | "INTERIM_QUARTERLY" | "INTERIM_MONTHLY" | "CUSTOM_INTERNAL" = "DEFINITIVE_ANNUAL";
 
   // Default dates if not provided
   if (!startDate || !endDate) {
-    if (!startDate) {
+    if (!startDate && year > 1900) {
       if (!quarterVal || quarterVal === "ANNUAL") {
         startDate = `${year}-01-01`;
       } else if (quarterVal === "Q1") startDate = `${year}-01-01`;
@@ -43,7 +34,7 @@ export function getReportingPeriodAssessment(caseData: AuditReadyCase, assessmen
       }
     }
 
-    if (!endDate) {
+    if (!endDate && year > 1900) {
       if (!quarterVal || quarterVal === "ANNUAL") {
         endDate = `${year}-12-31`;
       } else if (quarterVal === "Q1") endDate = `${year}-03-31`;
@@ -59,6 +50,14 @@ export function getReportingPeriodAssessment(caseData: AuditReadyCase, assessmen
         endDate = `${year}-12-31`;
       }
     }
+  }
+
+  // Check if dates are missing (only if still empty after defaulting)
+  if (!startDate) {
+    hardBlockerFindingIds.push("FND-PERIOD-MISSING-START-DATE");
+  }
+  if (!endDate) {
+    hardBlockerFindingIds.push("FND-PERIOD-MISSING-END-DATE");
   }
 
   // Parse dates
