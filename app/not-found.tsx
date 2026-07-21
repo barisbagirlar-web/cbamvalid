@@ -9,17 +9,17 @@ export default function NotFound() {
           404
         </div>
         
-        <h2 className="font-serif text-2xl text-kil-text mb-4 tracking-tight">Kayıt Bulunamadı</h2>
+        <h2 className="font-serif text-2xl text-kil-text mb-4 tracking-tight">Record Not Found</h2>
         
         <p className="text-sm text-kil-text/70 leading-relaxed mb-8">
-          Aradığınız rapor, bağlantı veya sayfa sistemimizde yer almıyor veya taşınmış olabilir.
+          The requested report, link, or page does not exist in our system or may have been moved.
         </p>
 
         <Link 
           href="/dashboard"
           className="inline-block border border-kil-text/20 text-kil-text px-8 py-3 text-sm font-medium rounded-sm hover:bg-kil-text/5 transition-colors cursor-pointer"
         >
-          Kontrol Paneline Dön
+          Return to Dashboard
         </Link>
       </div>
     </div>
