@@ -432,8 +432,10 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           ["importerIdentity.legalName", "Importer legal name", "text"],
           ["exporterIdentity.legalName", "Exporter/operator legal name", "text"],
           ["importerIdentity.eoriNumber", "Declarant EORI number", "text"],
-          ["reportingPeriod.year", "Reporting year", "number"],
-          ["reportingPeriod.quarter", "Reporting period / quarter", "text"],
+          ["reportingPeriod.year", "Reporting year (e.g. 2025)", "number"],
+          ["reportingPeriod.quarter", "Reporting period / quarter (e.g. ANNUAL, Q1-Q4)", "text"],
+          ["reportingPeriod.startDate", "Reporting period start date (YYYY-MM-DD)", "date"],
+          ["reportingPeriod.endDate", "Reporting period end date (YYYY-MM-DD)", "date"],
         ].map(([path, label, type]) => {
           const parts = path.split(/[.]/);
           const datum = parts.reduce<unknown>((value, part) => (value as Record<string, unknown>)[part], caseData) as InputDatum;
