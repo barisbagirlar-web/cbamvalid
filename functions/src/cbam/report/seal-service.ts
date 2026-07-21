@@ -357,9 +357,8 @@ export async function sealReport(params: {
       }));
       reserved = true;
       const releaseVersion = entitlement.releasesCount + 1;
-      // Explicit V5 contract only — never infer from release count or client productCode.
-      // productCode is loaded from the reserved entitlement document (server-side).
-      isV5 = entitlement.productCode === "pack_premium_dossier_v5";
+      // All CBAMValid Exporter Verification Preparation Packs use V5 release contract
+      isV5 = true;
       if (releaseVersion > 1 && !params.correctionReason?.trim()) throw new Error("CORRECTION_REASON_REQUIRED_AFTER_FIRST_RELEASE");
 
       const assessmentContext: SealAssessmentContext = {

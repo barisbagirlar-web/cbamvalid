@@ -3,6 +3,7 @@
 // fieldHelpData inline declarations
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
@@ -150,66 +151,58 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     return caseMatches && ["AVAILABLE", "ACTIVE", "PURCHASED"].includes(status);
   }), [availableEntitlements, caseData.caseId]);
 
-  const hasV5 = useMemo(() => {
-    return usableEntitlements.some(ent => ent.productCode === "pack_premium_dossier_v5");
-  }, [usableEntitlements]);
-
   const readiness = useMemo(() => {
-    if (hasV5) {
-      const readinessV5 = assessReadiness({ caseData, isDraft: false });
-      const { findings } = generateFindingsAndActions(caseData);
-      const sufficiency = runEvidenceSufficiency(caseData);
-      const controls = runQualityControls(caseData);
+    const readinessV5 = assessReadiness({ caseData, isDraft: false });
+    const { findings } = generateFindingsAndActions(caseData);
+    const sufficiency = runEvidenceSufficiency(caseData);
+    const controls = runQualityControls(caseData);
 
-      const applicable = controls.filter((control) => control.status !== "NOT_APPLICABLE");
-      const passed = applicable.filter((control) => control.status === "PASS");
+    const applicable = controls.filter((control) => control.status !== "NOT_APPLICABLE");
+    const passed = applicable.filter((control) => control.status === "PASS");
 
-      const mapFindingSeverity = (severity: string): "BLOCKER" | "MAJOR" | "ADVISORY" => {
-        if (severity === "CRITICAL_BLOCKER" || severity === "CRITICAL" || severity === "BLOCKER") return "BLOCKER";
-        if (severity === "MATERIAL" || severity === "MAJOR") return "MAJOR";
-        return "ADVISORY";
-      };
+    const mapFindingSeverity = (severity: string): "BLOCKER" | "MAJOR" | "ADVISORY" => {
+      if (severity === "CRITICAL_BLOCKER" || severity === "CRITICAL" || severity === "BLOCKER") return "BLOCKER";
+      if (severity === "MATERIAL" || severity === "MAJOR") return "MAJOR";
+      return "ADVISORY";
+    };
 
-      const allGaps = [
-        ...findings.map((f) => ({
-          gapId: f.findingId,
-          issueType: f.category,
-          requirement: f.title,
-          severity: mapFindingSeverity(f.severity),
-          affectedResult: f.ruleId,
-          whyItMatters: f.description,
-          requiredEvidence: f.remediationRequirement,
-          suggestedAction: f.action?.requiredAction || f.remediationRequirement,
-          isBlocking: f.blocksSealing,
-          resolutionStatus: f.status,
-        })),
-        ...sufficiency.filter((s) => s.state !== "SUPPORTED").map((s) => ({
-          gapId: s.requirementId,
-          issueType: "evidence",
-          requirement: `Evidence sufficiency for ${s.inputPath}`,
-          severity: (s.blocksSealing ? "BLOCKER" : "MAJOR") as "BLOCKER" | "MAJOR",
-          affectedResult: s.inputPath,
-          whyItMatters: `Evidence status is ${s.state}. Reason codes: ${s.reasonCodes.join(", ")}`,
-          requiredEvidence: `Upload approved and valid evidence for ${s.inputPath}`,
-          suggestedAction: `Provide full coverage evidence (${s.coverageNumerator} / ${s.coverageDenominator} days covered)`,
-          isBlocking: s.blocksSealing,
-          resolutionStatus: "OPEN",
-        }))
-      ];
+    const allGaps = [
+      ...findings.map((f) => ({
+        gapId: f.findingId,
+        issueType: f.category,
+        requirement: f.title,
+        severity: mapFindingSeverity(f.severity),
+        affectedResult: f.ruleId,
+        whyItMatters: f.description,
+        requiredEvidence: f.remediationRequirement,
+        suggestedAction: f.action?.requiredAction || f.remediationRequirement,
+        isBlocking: f.blocksSealing,
+        resolutionStatus: f.status,
+      })),
+      ...sufficiency.filter((s) => s.state !== "SUPPORTED").map((s) => ({
+        gapId: s.requirementId,
+        issueType: "evidence",
+        requirement: `Evidence sufficiency for ${s.inputPath}`,
+        severity: (s.blocksSealing ? "BLOCKER" : "MAJOR") as "BLOCKER" | "MAJOR",
+        affectedResult: s.inputPath,
+        whyItMatters: `Evidence status is ${s.state}. Reason codes: ${s.reasonCodes.join(", ")}`,
+        requiredEvidence: `Upload approved and valid evidence for ${s.inputPath}`,
+        suggestedAction: `Provide full coverage evidence (${s.coverageNumerator} / ${s.coverageDenominator} days covered)`,
+        isBlocking: s.blocksSealing,
+        resolutionStatus: "OPEN",
+      }))
+    ];
 
-      return {
-        status: readinessV5.operatorStatus,
-        criticalBlockers: allGaps.filter((gap) => gap.isBlocking),
-        allGaps,
-        isEligibleForSealing: readinessV5.canSeal,
-        completenessPercentage: Math.round(Number(readinessV5.score)),
-        passedControls: passed.length,
-        applicableControls: applicable.length,
-      };
-    } else {
-      return assessCaseReadiness(caseData);
-    }
-  }, [caseData, hasV5]);
+    return {
+      status: readinessV5.operatorStatus,
+      criticalBlockers: allGaps.filter((gap) => gap.isBlocking),
+      allGaps,
+      isEligibleForSealing: readinessV5.canSeal,
+      completenessPercentage: Math.round(Number(readinessV5.score)),
+      passedControls: passed.length,
+      applicableControls: applicable.length,
+    };
+  }, [caseData]);
 
   const calculation = useMemo(() => {
     try {
@@ -535,7 +528,33 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     const currentReleasesCount = usableEntitlements[0]?.releasesCount || 0;
     return (
       <div className="space-y-6"><h2 className="text-xl font-bold">8. Verification readiness and dossier generation</h2><div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-xl border border-border bg-surface p-6"><h3 className="mb-4 flex items-center gap-2 font-bold"><Shield className="h-5 w-5 text-accent" /> Verification readiness</h3><div className={`rounded border p-3 text-sm font-semibold ${readiness.isEligibleForSealing ? "border-accent/30 bg-accent-soft text-accent" : "border-red-300 bg-red-50 text-red-900"}`}>{readiness.status} · {readiness.completenessPercentage}% · {readiness.passedControls}/{readiness.applicableControls} controls passed</div><div className="mt-4 max-h-80 space-y-2 overflow-y-auto">{readiness.allGaps.map((gap) => <div key={gap.gapId} className="border-l-2 border-red-500 pl-3 text-xs"><strong>{gap.requirement}</strong><p className="text-muted">{gap.whyItMatters}</p></div>)}</div>{currentReleasesCount > 0 && <div className="mt-5"><FieldLabel>Correction Reason (Required for Release {currentReleasesCount + 1})</FieldLabel><textarea aria-label="Correction reason" value={correctionReason} onChange={(event) => setCorrectionReason(event.target.value)} placeholder="Describe the corrections made in this release (e.g., corrected CN code, updated precursor emissions)." rows={3} className="w-full rounded border border-border bg-background p-2.5 text-sm" /></div>}<button type="button" aria-label="Generate sealed dossier" onClick={handleSeal} disabled={sealing || !readiness.isEligibleForSealing || usableEntitlements.length === 0} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-40">{sealing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Generate sealed dossier</button><StatusBanner status={sealStatus} tone="error" /><p className="mt-3 text-xs text-muted">Generation consumes a successful release only after server validation, immutable artifact commit and signature completion.</p></section>
+        <section className="rounded-xl border border-border bg-surface p-6">
+          <h3 className="mb-4 flex items-center gap-2 font-bold"><Shield className="h-5 w-5 text-accent" /> Verification readiness</h3>
+          <div className={`rounded border p-3 text-sm font-semibold ${readiness.isEligibleForSealing ? "border-accent/30 bg-accent-soft text-accent" : "border-red-300 bg-red-50 text-red-900"}`}>{readiness.status} · {readiness.completenessPercentage}% · {readiness.passedControls}/{readiness.applicableControls} controls passed</div>
+          <div className="mt-4 max-h-80 space-y-2 overflow-y-auto">{readiness.allGaps.map((gap) => <div key={gap.gapId} className="border-l-2 border-red-500 pl-3 text-xs"><strong>{gap.requirement}</strong><p className="text-muted">{gap.whyItMatters}</p></div>)}</div>
+          {currentReleasesCount > 0 && <div className="mt-5"><FieldLabel>Correction Reason (Required for Release {currentReleasesCount + 1})</FieldLabel><textarea aria-label="Correction reason" value={correctionReason} onChange={(event) => setCorrectionReason(event.target.value)} placeholder="Describe the corrections made in this release (e.g., corrected CN code, updated precursor emissions)." rows={3} className="w-full rounded border border-border bg-background p-2.5 text-sm" /></div>}
+          {usableEntitlements.length === 0 && (
+            <div className="mt-4 rounded-lg border border-accent/20 bg-accent/5 p-4 text-xs text-foreground">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <span className="font-bold text-accent block text-sm mb-0.5">Preparation Pack Required</span>
+                  <p className="text-muted leading-relaxed">
+                    Your dossier is ready for verification preparation. Purchase an Exporter Verification Preparation Pack ($149) to seal and download final verifier-preparation deliverables.
+                  </p>
+                </div>
+                <Link
+                  href="/credits/buy"
+                  className="shrink-0 rounded bg-accent hover:bg-accent-hover px-4 py-2 text-xs font-semibold text-surface transition-colors shadow-sm text-center"
+                >
+                  Buy Pack — $149
+                </Link>
+              </div>
+            </div>
+          )}
+          <button type="button" aria-label="Generate sealed dossier" onClick={handleSeal} disabled={sealing || !readiness.isEligibleForSealing || usableEntitlements.length === 0} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-40">{sealing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Generate sealed dossier</button>
+          <StatusBanner status={sealStatus} tone="error" />
+          <p className="mt-3 text-xs text-muted">Generation consumes a successful release only after server validation, immutable artifact commit and signature completion.</p>
+        </section>
         <section className="rounded-xl border border-border bg-surface p-6"><h3 className="mb-4 flex items-center gap-2 font-bold"><FileCode2 className="h-5 w-5 text-accent" /> Mathematical audit preview</h3>{calculation.error ? <StatusBanner status={calculation.error} tone="warning" /> : <><div className="grid grid-cols-2 gap-3 text-sm"><div><span className="text-muted">Total embedded</span><strong className="block">{calculation.result?.totalEmbeddedEmissions} tCO2e</strong></div><div><span className="text-muted">Aggregate intensity</span><strong className="block">{calculation.result?.specificEmbeddedEmissions} tCO2e/t</strong></div><div><span className="text-muted">Allocation total</span><strong className="block">{calculation.result?.allocationShareTotal}</strong></div><div><span className="text-muted">Reconciliation delta</span><strong className="block">{calculation.result?.allocationReconciliationDelta}</strong></div></div><div className="mt-4 max-h-80 space-y-3 overflow-y-auto">{calculation.result?.trace.map((trace) => <div key={trace.calculationId} className="rounded border border-border bg-neutral-soft p-3 font-mono text-xs"><div className="font-bold text-accent">{trace.formulaId}</div><div>{String(trace.outputValue)} {trace.outputUnit}</div><div className="break-all text-[10px] text-muted">{trace.calculationHash}</div></div>)}</div></>}</section>
       </div></div>
     );
