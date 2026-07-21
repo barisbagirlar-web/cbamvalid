@@ -29,13 +29,23 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: route === '' ? 1 : route === '/pricing' || route === '/product' ? 0.9 : 0.8,
   }));
 
-  // Add CN code pages for valid CBAM sector sample codes
-  const validCnCodes = ["72085120", "76011000", "25231000", "31021010", "28041000"];
+  // Add CN code pages for representative CBAM sector codes across all 6 sectors
+  const validCnCodes = [
+    "72011011", // Pig iron (Iron & Steel)
+    "72085120", // Flat-rolled products (Iron & Steel)
+    "76011000", // Unwrought aluminum (Aluminum)
+    "25231000", // Cement clinkers (Cement)
+    "25232900", // Portland cement (Cement)
+    "31021010", // Urea (Fertilizers)
+    "28080000", // Nitric acid (Fertilizers)
+    "28041000", // Hydrogen (Hydrogen)
+    "27160000", // Electrical energy (Electricity)
+  ];
   const cnCodeEntries = validCnCodes.map((code) => ({
     url: `${baseUrl}/cn-code/${code}`,
     lastModified: new Date(),
     changeFrequency: 'monthly' as any,
-    priority: 0.6,
+    priority: 0.7,
   }));
 
   return [...sitemapEntries, ...cnCodeEntries];

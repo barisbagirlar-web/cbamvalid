@@ -1,46 +1,47 @@
 # CBAMValid Full Content Catalog & Architecture Guide for LLMs
 
-## Platform Positioning
+## Platform Positioning & Governance
 - **Canonical Product Name:** CBAMValid Exporter Verification Preparation Pack V5
 - **Canonical Positioning:** Prepared for Independent Accredited Verification
-- **Legal Authority:** EU Regulation 2023/956, EU ETS AVR 2018/2067, Implementing Regulations (EU) 2023/1776, 2023/1778, and 2025/2546.
+- **Legal & Regulatory Foundation:** EU Regulation 2023/956, EU ETS AVR 2018/2067, Implementing Regulations (EU) 2023/1776, 2023/1778, and 2025/2546.
+- **Commercial Contract:** $149 per legal operator/installation reporting year (100 account credits = 1 Exporter Verification Preparation Pack, unlocking 5 successful sealed release versions).
 
-## Core Web Endpoints
-- **Homepage:** https://cbamvalid.com/ — Executive introduction, feature overview, live ROI calculation.
-- **Product:** https://cbamvalid.com/product — 23-component package contract breakdown, verifier readiness score engine.
-- **How It Works:** https://cbamvalid.com/how-it-works — Step-by-step workflow (Setup → Evidence Linkage → Server Calculation → Sealed Package).
-- **Pricing:** https://cbamvalid.com/pricing — Commercial unit contract: 100 credits = 1 Exporter Verification Preparation Pack (5 sealed releases included).
-- **Sample Dossier:** https://cbamvalid.com/sample-dossier — Interactive browser preview of a sealed V5 verifier dossier.
-- **Verification:** https://cbamvalid.com/verify — Public KMS signature and document hash verification engine.
-- **Methodology:** https://cbamvalid.com/methodology — Deterministic calculation engine rules, rounding policy (ROUND_HALF_UP), and unit conversion algebra.
-- **CN-Code Hub:** https://cbamvalid.com/cn-code — Combined Nomenclature classification search and sector eligibility lookup.
+## Core Public Web Endpoints
+- **Homepage:** https://cbamvalid.com/ — Executive introduction, verifier-grade positioning, live ROI & penalty risk calculator.
+- **Product:** https://cbamvalid.com/product — Complete 23-component dossier package breakdown and verifier readiness score engine.
+- **How It Works:** https://cbamvalid.com/how-it-works — Step-by-step workflow (Setup Scope → Link Evidence → Server Calculation → Generate Sealed Deliverables).
+- **Pricing:** https://cbamvalid.com/pricing — Commercial unit contract ($149 / 100 credits), Paddle payment integration, multi-release license rules.
+- **Sample Dossier:** https://cbamvalid.com/sample-dossier — Interactive browser preview of a sealed V5 verifier dossier (14-page PDF, XLSX workspace, JSON traces).
+- **Verification:** https://cbamvalid.com/verify — Public KMS signature and document hash verification engine for accredited verifiers and customs declariants.
+- **Methodology:** https://cbamvalid.com/methodology — Deterministic calculation engine rules, rounding policy (`ROUND_HALF_UP`), precursor inclusion rules, and allocation algebra.
+- **CN-Code Hub:** https://cbamvalid.com/cn-code — Combined Nomenclature classification search and sector eligibility directory (Iron & Steel, Aluminum, Cement, Fertilizers, Hydrogen, Electricity).
 
 ## Deliverable Architecture (23 Controlled Components)
 1. `CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf` (14 Pages, 6 Chapters, 30 Audit Sections)
-2. `Complete Dossier Compilation.pdf` (Technical Annexes Compilation)
+2. `Complete Dossier Compilation.pdf` (Consolidated Technical Annexes & Operational Registers)
 3. `Product Scope Assessment.pdf` (System Boundary & Sectoral Scope Register)
 4. `CN Code Reasoning.pdf` (Combined Nomenclature Classification Logic)
 5. `Required Data Checklist.pdf` (Input Data Completeness Ledger)
-6. `Installation Monitoring Plan.pdf` (Metering & Calibration Plan)
-7. `Production Process Map.pdf` (Functional Process Units & Flow Diagram)
+6. `Installation Monitoring Plan.pdf` (Metering, Calibration & Source Stream Monitoring Plan)
+7. `Production Process Map.pdf` (Functional Process Units & Energy/Material Balance Diagram)
 8. `System Boundary Register.pdf` (Direct & Indirect Boundary Register)
-9. `Source Stream Register.csv` (Combustion Fuels & Raw Materials Balance)
-10. `Emission Source Register.csv` (Stack, Burner & Process Emission Points)
-11. `Measurement and Meter Register.csv` (Metering Instruments & Uncertainty Log)
-12. `Activity Data Ledger.csv` (Daily/Monthly Activity Records)
-13. `Evidence Register.csv` (Physical Evidence Index & SHA-256 Hashes)
+9. `Source Stream Register.csv` (Combustion Fuels, Raw Materials & Precursors Balance)
+10. `Emission Source Register.csv` (Process Vents, Stacks & Burner Points)
+11. `Measurement and Meter Register.csv` (Metering Instruments, Calibration & Uncertainty Log)
+12. `Activity Data Ledger.csv` (Monthly/Daily Activity Records)
+13. `Evidence Register.csv` (Physical Evidence Index with SHA-256 Hashes)
 14. `Field-to-Evidence Matrix.csv` (Input Path to File Hash Audit Crosswalk)
-15. `Methodology Decision Log.pdf` (Operator Justification Log)
+15. `Methodology Decision Log.pdf` (Operator Justification Log & Regulatory References)
 16. `Embedded Emissions Calculation Annex.pdf` (Step-by-Step Formula Trace)
 17. `Operator Emissions Report.pdf` (Official Operator Declaration)
-18. `Misstatement and Non-Conformity Register.csv` (Quality Controls & Findings)
+18. `Misstatement and Non-Conformity Register.csv` (Quality Controls & Readiness Findings)
 19. `Corrective Action Log.csv` (Remediation Action Tracking)
 20. `O3CI Field Mapping.csv` (Registry Export Crosswalk)
 21. `Calculation Trace.json` (Machine-Readable Node Hash Tree)
-22. `Verifier Workspace.xlsx` (Multi-Sheet Navigation Workbook)
-23. `Data Integrity Manifest.json` (Cryptographic Manifest & KMS RSA Signature `.sig`)
+22. `Verifier Workspace.xlsx` (Multi-Sheet Interactive Navigation Workbook)
+23. `Data Integrity Manifest.json` (Cryptographic Manifest & KMS RSA-4096 Signature `.sig`)
 
-## Structural Quality Controls
+## Structural Quality Controls & Fail-Closed Gates
 - **Fail-Closed Sealing:** Requires 100% evidence coverage, zero missing material inputs, APPROVED evidence review status, and reconciled allocation shares.
-- **Data Privacy:** User cases, raw evidence files, and sealed reports are encrypted and strictly excluded from public AI indexing.
+- **Data Privacy & Tenant Isolation:** User cases, raw evidence files, and sealed reports are encrypted and strictly excluded from public AI indexing.
 - **Last Updated:** 2026-07-21
