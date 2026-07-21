@@ -14,7 +14,7 @@ async function setFlag() {
   await db.collection("system").doc("config").set({
     disableV5Sealing: false,
     publicPaidLaunchEnabled: true,
-    deployedSha: "8519d5ec423d2ae6d6b1d4ef633aa9cf1d9efc5b",
+    deployedSha: "5ce7e7c14fad2aac702ab5b2f0711c09e96effca",
     deployedFrom: "origin/main",
     deployedAtUtc: new Date().toISOString()
   }, { merge: true });
