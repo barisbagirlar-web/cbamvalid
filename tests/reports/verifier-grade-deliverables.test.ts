@@ -176,7 +176,7 @@ describe("verifier-grade deliverables", () => {
       reportId: FIXTURE_REPORT_ID,
       releaseVersion: 1,
       generatedAt: FIXTURE_GENERATED_AT,
-      evidenceCount: 1,
+      evidenceCount: 4,
     });
     const manifest = JSON.parse(manifestResult.bytes.toString("utf8")) as DataIntegrityManifest;
     expect(manifest.schemaVersion).toBe("CBAMVALID-DOSSIER-4.0");

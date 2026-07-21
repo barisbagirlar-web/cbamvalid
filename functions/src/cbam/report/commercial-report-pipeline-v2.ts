@@ -7,9 +7,12 @@ import {
   buildDataIntegrityManifest,
   finalizeVerifierPackage,
   type EvidenceBinary,
+  identityTable,
+  goodsTable,
 } from "./verifier-package-builder";
 import { buildPremiumDossierPdf } from "./premium-dossier-pdf";
 import { buildVerifierPackageModel } from "./verifier-model";
+import { buildProfessionalPdf } from "./professional-pdf";
 import { assessReadiness, getReportingPeriodAssessment } from "../validation/readiness-score";
 import { generateFindingsAndActions } from "../validation/findings-engine";
 import { runEvidenceSufficiency } from "../validation/evidence-sufficiency";
@@ -168,12 +171,25 @@ export class CommercialReportPipelineV2 {
     // Re-render PDF with actual hashes
     const updatedPdfBuffer = buildPremiumDossierPdf(updatedDossierModel, params.caseData);
 
+    const updatedOperatorReportBuffer = buildProfessionalPdf({
+      title: "Operator-Prepared Emissions Statement",
+      subtitle: "Definitive-period emissions statement prepared for independent verification review",
+      model: verifierModel,
+      sections: [
+        { heading: "Operator and installation", table: identityTable(verifierModel) },
+        { heading: "Installation totals", table: { headers: ["Metric", "Value", "Unit"], widths: [90, 45, 45], rows: [["Installation direct emissions", verifierModel.totals.installationDirectEmissions, "tCO2e"], ["Electricity indirect emissions", verifierModel.totals.electricityIndirectEmissions, "tCO2e"], ["Precursor direct emissions", verifierModel.totals.precursorDirectEmissions, "tCO2e"], ["Precursor indirect emissions", verifierModel.totals.precursorIndirectEmissions, "tCO2e"], ["Total direct emissions", verifierModel.totals.totalDirectEmissions, "tCO2e"], ["Total indirect emissions", verifierModel.totals.totalIndirectEmissions, "tCO2e"], ["Total embedded emissions", verifierModel.totals.totalEmbeddedEmissions, "tCO2e"], ["Aggregate production", verifierModel.totals.productionVolume, "t"], ["Aggregate specific embedded emissions", verifierModel.totals.aggregateSpecificEmbeddedEmissions, "tCO2e/t"]] } },
+        { heading: "Per-good emissions and materiality", table: goodsTable(verifierModel) },
+        { heading: "Evidence and controls", table: { headers: ["Measure", "Result"], widths: [90, 90], rows: [["Automated readiness", verifierModel.automatedReadiness], ["Quality-control blockers", verifierModel.qualitySummary.blockers], ["Approved clean evidence", verifierModel.evidenceSummary.approvedCleanEvidenceFiles], ["Calculation trace nodes", verifierModel.calculationTraceCount], ["Independent verifier status", verifierModel.independentVerifierStatus]] } },
+        { heading: "Legal boundary", callout: { label: "Important", value: verifierModel.disclaimer } },
+      ],
+    });
+
     const updatedArtifacts = unsignedArtifacts.map((art) => {
-      if (
-        art.path === "Operator Emissions Report.pdf" ||
-        art.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf"
-      ) {
+      if (art.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf") {
         return { ...art, bytes: updatedPdfBuffer };
+      }
+      if (art.path === "Operator Emissions Report.pdf") {
+        return { ...art, bytes: updatedOperatorReportBuffer };
       }
       return art;
     });

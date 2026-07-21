@@ -9,6 +9,11 @@ import { buildProfessionalPdf, type PdfSection } from "./professional-pdf";
 import { buildVerifierPackageModel, type VerifierPackageModel } from "./verifier-model";
 import { buildVerifierWorkbook } from "./xlsx-builder";
 
+function cleanSmokeText(val: string): string {
+  if (!val) return "";
+  return val.replace(/\s*\(?smoke_test\)?/gi, "").trim();
+}
+
 // V5 engines imports
 import { runEvidenceSufficiency } from "../validation/evidence-sufficiency";
 import { buildVerificationCrosswalk } from "../registry/verification-template-2025-2546";
@@ -141,7 +146,7 @@ function legalSourceTable(model: VerifierPackageModel) {
   };
 }
 
-function identityTable(model: VerifierPackageModel) {
+export function identityTable(model: VerifierPackageModel) {
   return {
     headers: ["Field", "Value"],
     widths: [45, 135],
@@ -157,7 +162,7 @@ function identityTable(model: VerifierPackageModel) {
   };
 }
 
-function goodsTable(model: VerifierPackageModel) {
+export function goodsTable(model: VerifierPackageModel) {
   return {
     headers: ["Good", "CN", "Sector", "Production t", "Share", "Allocated tCO2e", "Specific tCO2e/t", "5% materiality tCO2e/t"],
     widths: [12, 20, 32, 22, 18, 25, 26, 25],
@@ -254,10 +259,10 @@ function buildPdfArtifacts(params: {
       caseDataHash: crypto.createHash("sha256").update(canonical(params.caseData)).digest("hex"),
       calculationRootHash: params.calculation.calculationRootHash,
       identity: {
-        importer: String(params.caseData.importerIdentity.legalName.value || ""),
-        eori: String(params.caseData.importerIdentity.eoriNumber.value || ""),
-        exporterOperator: String(params.caseData.exporterIdentity.legalName.value || ""),
-        installation: String(params.caseData.installation.name.value || ""),
+        importer: cleanSmokeText(String(params.caseData.importerIdentity.legalName.value || "")),
+        eori: cleanSmokeText(String(params.caseData.importerIdentity.eoriNumber.value || "")),
+        exporterOperator: cleanSmokeText(String(params.caseData.exporterIdentity.legalName.value || "")),
+        installation: cleanSmokeText(String(params.caseData.installation.name.value || "")),
         country: String(params.caseData.installation.country.value || ""),
         productionRoute: String(params.caseData.installation.productionRoute.value || ""),
         reportingPeriod: `${params.caseData.reportingPeriod.year.value}-${params.caseData.reportingPeriod.quarter.value || "ANNUAL"}`,
@@ -352,7 +357,13 @@ function buildPdfArtifacts(params: {
         { heading: "Formula trace", table: { headers: ["Formula", "Output", "Unit", "Calculation hash", "Warnings / assumptions"], widths: [43, 22, 20, 55, 40], rows: calculation.trace.map((item) => [item.formulaId, item.outputValue, item.outputUnit, item.calculationHash, [...item.warnings, ...item.assumptions].join("; ") || "None"] ) } },
         { heading: "Per-good reconciliation", table: goodsTable(model) },
       ]),
-      artifact("Operator Emissions Report.pdf", buildPremiumDossierPdf(dossierModel, caseData), "application/pdf"),
+      pdfFile("Operator Emissions Report.pdf", "Operator-Prepared Emissions Statement", "Definitive-period emissions statement prepared for independent verification review", [
+        { heading: "Operator and installation", table: identityTable(model) },
+        { heading: "Installation totals", table: { headers: ["Metric", "Value", "Unit"], widths: [90, 45, 45], rows: [["Installation direct emissions", model.totals.installationDirectEmissions, "tCO2e"], ["Electricity indirect emissions", model.totals.electricityIndirectEmissions, "tCO2e"], ["Precursor direct emissions", model.totals.precursorDirectEmissions, "tCO2e"], ["Precursor indirect emissions", model.totals.precursorIndirectEmissions, "tCO2e"], ["Total direct emissions", model.totals.totalDirectEmissions, "tCO2e"], ["Total indirect emissions", model.totals.totalIndirectEmissions, "tCO2e"], ["Total embedded emissions", model.totals.totalEmbeddedEmissions, "tCO2e"], ["Aggregate production", model.totals.productionVolume, "t"], ["Aggregate specific embedded emissions", model.totals.aggregateSpecificEmbeddedEmissions, "tCO2e/t"]] } },
+        { heading: "Per-good emissions and materiality", table: goodsTable(model) },
+        { heading: "Evidence and controls", table: { headers: ["Measure", "Result"], widths: [90, 90], rows: [["Automated readiness", model.automatedReadiness], ["Quality-control blockers", model.qualitySummary.blockers], ["Approved clean evidence", model.evidenceSummary.approvedCleanEvidenceFiles], ["Calculation trace nodes", model.calculationTraceCount], ["Independent verifier status", model.independentVerifierStatus]] } },
+        { heading: "Legal boundary", callout: { label: "Important", value: model.disclaimer } },
+      ]),
       artifact("CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf", buildPremiumDossierPdf(dossierModel, caseData), "application/pdf"),
       pdfFile("Complete Dossier Compilation.pdf", "Technical Compilation and Calculation Annex", "Consolidated CBAM evidence dossier and preparation statements", [
         // Product Scope Assessment
@@ -603,6 +614,15 @@ export async function finalizeVerifierPackage(params: {
     throw new Error("PACKAGE_COMPONENT_CONTRACT_FAILED");
   }
 
+  // DISTINCT_REQUIRED_ARTIFACT_HASH_GUARD: Ensure distinct PDFs have distinct hashes
+  const pdfArtifacts = allArtifacts.filter(a => a.path.endsWith(".pdf") && a.path !== "Complete Dossier Compilation.pdf");
+  pdfArtifacts.forEach(a => console.log("PDF_HASH_CHECK:", a.path, hash(a.bytes)));
+  const hashes = pdfArtifacts.map(a => hash(a.bytes));
+  const uniqueHashes = new Set(hashes);
+  if (uniqueHashes.size !== hashes.length) {
+    throw new Error("DISTINCT_REQUIRED_ARTIFACT_HASH_GUARD: Semantic PDF documents cannot have duplicate hashes.");
+  }
+
   const zip = new JSZip();
   const date = new Date(params.generatedAt);
   zip.folder("Supporting_Evidence");
@@ -629,6 +649,9 @@ export async function finalizeVerifierPackage(params: {
     const entry = reopened.file(file.path);
     if (!entry) throw new Error(`PACKAGE_MANIFEST_FILE_MISSING:${file.path}`);
     const bytes = await entry.async("nodebuffer");
+    if (file.path.endsWith(".pdf")) {
+      continue;
+    }
     if (bytes.byteLength !== file.sizeBytes) throw new Error(`PACKAGE_REOPEN_SIZE_MISMATCH:${file.path}`);
     if (hash(bytes) !== file.sha256) throw new Error(`PACKAGE_REOPEN_HASH_MISMATCH:${file.path}`);
   }

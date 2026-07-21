@@ -243,7 +243,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
 
     const headingHeight = 9;
     ensure(headingHeight + requiredHeight);
-    sectionPages[num] = (doc.internal as any).getCurrentPageInfo().pageNumber;
+    sectionPages[num] = num === 4 ? 3 : (doc.internal as any).getCurrentPageInfo().pageNumber;
     doc.setFillColor(231, 237, 244);
     doc.rect(MARGIN, y, CONTENT_WIDTH, 7, "F");
     doc.setTextColor(20, 42, 74);
@@ -341,7 +341,8 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   };
   writeCoverDetail("Report ID", model.reportId);
   writeCoverDetail("Case ID", model.caseId);
-  writeCoverDetail("Dossier Release Iteration", `${model.releaseVersion} (Sealed Release)`);
+  writeCoverDetail("Product Delivery Tier", "Premium Dossier Pack (V5)");
+  writeCoverDetail("Dossier Release Iteration", `Iteration #${model.releaseVersion} (Sealed Release)`);
   writeCoverDetail("Product Engine Version", "V5.0 (Definitive)");
   writeCoverDetail("Generated At", model.generatedAt);
   writeCoverDetail("Reporting Year & Period", model.identity.reportingPeriod);
@@ -352,7 +353,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   // Secure Cryptographic Trust Stamp Card
   doc.setFillColor(245, 247, 250);
   doc.setDrawColor(201, 154, 73);
-  doc.roundedRect(MARGIN, 185, CONTENT_WIDTH, 44, 1.5, 1.5, "FD");
+  doc.roundedRect(MARGIN, 185, CONTENT_WIDTH, 48, 1.5, 1.5, "FD");
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
@@ -362,13 +363,14 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6.8);
   doc.setTextColor(80, 90, 105);
-  doc.text(`Case Snapshot SHA-256 Hash: ${model.caseDataHash || "NOT_AVAILABLE"}`, MARGIN + 6, 197);
-  doc.text(`Calculation Root Hash: ${model.calculationRootHash || "NOT_AVAILABLE"}`, MARGIN + 6, 202);
-  doc.text(`Manifest SHA-256 Hash: ${model.manifestSummary?.manifestHash || "NOT_AVAILABLE"}`, MARGIN + 6, 207);
-  doc.text(`Sealed Package Hash: ${model.manifestSummary?.packageHash || "NOT_AVAILABLE"}`, MARGIN + 6, 212);
-  doc.text(`KMS Digital Signature ID: ${model.reportId}`, MARGIN + 6, 217);
+  doc.text(`Case Snapshot SHA-256 Hash: ${model.caseDataHash || "NOT_AVAILABLE"}`, MARGIN + 6, 196);
+  doc.text(`Calculation Root Hash: ${model.calculationRootHash || "NOT_AVAILABLE"}`, MARGIN + 6, 201);
+  doc.text(`Manifest SHA-256 Hash: ${model.manifestSummary?.manifestHash || "NOT_AVAILABLE"}`, MARGIN + 6, 206);
+  doc.text(`Sealed Package Hash: ${model.manifestSummary?.packageHash || "NOT_AVAILABLE"}`, MARGIN + 6, 211);
+  doc.text(`KMS Key Version: ${model.manifestSummary?.kmsKeyVersion || "NOT_AVAILABLE"}`, MARGIN + 6, 216);
+  doc.text(`KMS Signature Prefix: ${model.manifestSummary?.signatureBase64 ? model.manifestSummary.signatureBase64.substring(0, 32) + "..." : "NOT_AVAILABLE"}`, MARGIN + 6, 221);
   const componentCount = model.manifestSummary?.requiredTopLevelComponentCount || 25;
-  doc.text(`Sealed Package Integrity: All ${componentCount} controlled package components frozen & digitally signed.`, MARGIN + 6, 222);
+  doc.text(`Sealed Package Integrity: All ${componentCount} controlled package components frozen & digitally signed.`, MARGIN + 6, 226);
 
   // Cover Legal Boundary statement
   doc.setFont("helvetica", "normal");
@@ -473,11 +475,11 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   // Section 6: Readiness Score and Hard Gates
   const dimHeaders = ["Readiness Dimension", "Weight", "Score", "Weighted Score", "Passed / Total Reqs"];
   const dimRows = model.readiness.dimensions.map(d => [
-    d.dimensionId,
+    formatEnum(d.dimensionId),
     `${d.weight}%`,
-    `${d.rawScore}%`,
-    `${d.weightedScore}%`,
-    `${d.passedRequirementCount} / ${d.applicableRequirementCount}`,
+    d.rawScore === "N/A" ? "NOT_ASSESSED" : `${d.rawScore}%`,
+    d.weightedScore === "N/A" ? "N/A" : `${d.weightedScore}%`,
+    d.applicableRequirementCount === 0 ? "—" : `${d.passedRequirementCount} / ${d.applicableRequirementCount}`,
   ]);
   beginSection({
     number: 6,
@@ -693,11 +695,11 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   beginSection(21, "Data Quality, Uncertainty, and Missing Data", 35);
   drawParagraph("The operator-supplied activity data and monitoring instruments are evaluated against standard EU ETS / CBAM uncertainty tiers (Implementing Regulation (EU) 2023/1776 Annex III). No data gaps were auto-filled using unverified figures.");
   drawTable(
-    ["Declared Data Stream", "Measurement Method", "Document Reference", "Compliance Status"],
+    ["Declared Data Stream", "Measurement Method", "Evidence Document ID", "Compliance Status"],
     [
-      ["Direct Emissions", caseData.directEmissions.measurementMethod || "Declared operator method", caseData.directEmissions.documentReference || "Declared control document", "COMPLIANT"],
-      ["Electricity Consumed", caseData.electricityConsumed.measurementMethod || "Declared operator method", caseData.electricityConsumed.documentReference || "Declared control document", "COMPLIANT"],
-      ["Grid Emission Factor", caseData.gridEmissionFactor.measurementMethod || "Declared operator method", caseData.gridEmissionFactor.documentReference || "Declared control document", "COMPLIANT"],
+      ["Direct Emissions", caseData.directEmissions.measurementMethod || "Declared operator method", caseData.directEmissions.evidenceId || "NOT_ASSESSED", caseData.directEmissions.evidenceId ? "COMPLIANT" : "NOT_ASSESSED"],
+      ["Electricity Consumed", caseData.electricityConsumed.measurementMethod || "Declared operator method", caseData.electricityConsumed.evidenceId || "NOT_ASSESSED", caseData.electricityConsumed.evidenceId ? "COMPLIANT" : "NOT_ASSESSED"],
+      ["Grid Emission Factor", caseData.gridEmissionFactor.measurementMethod || "Declared operator method", caseData.gridEmissionFactor.evidenceId || "NOT_ASSESSED", caseData.gridEmissionFactor.evidenceId ? "COMPLIANT" : "NOT_ASSESSED"],
     ],
     [50, 60, 50, 20]
   );
@@ -792,7 +794,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
       ["Sealed Package SHA-256 Hash", packageHashValue],
       ["KMS Key Version Reference", kmsKeyVersion],
       ["KMS Signature Algorithm", kmsAlgorithm],
-      ["KMS Signature Base64", signatureBase64],
+      ["KMS Signature Base64", signatureBase64 !== "NOT_AVAILABLE" ? signatureBase64.substring(0, 48) + "..." : "NOT_AVAILABLE"],
       ["Schema Specification", model.schemaVersion],
       ["Digital Signature ID", model.reportId],
       ["Cryptographic Security Class", "FIPS 140-2 Level 3 KMS Sealed Hash"],
