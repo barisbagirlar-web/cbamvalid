@@ -23,13 +23,20 @@ export const InputDatumSchema = z.object({
   id: z.string().uuid().optional(),
   value: z.union([z.number().finite(), z.string(), z.null()]),
   rawUnit: z.string().optional(),
-  canonicalUnit: UnitCodeSchema.optional(),
+  canonicalUnit: z.string().optional(),
+  unit: z.string().optional(),
   reportingPeriod: z.string().optional(),
   sourceType: z.enum(["PRIMARY", "DEFAULT", "SECONDARY", "ESTIMATED", "REGULATORY"]),
   evidenceId: z.string().uuid().optional(),
   documentReference: z.string().optional(),
   measurementMethod: z.string().optional(),
-  confidenceStatus: z.enum(["HIGH_VERIFIED", "MEDIUM_DOCUMENTED", "LOW_ESTIMATE", "DEFAULT_ASSIGNED"]),
+  confidenceStatus: z.enum([
+    "HIGH_VERIFIED",
+    "MEDIUM_DOCUMENTED",
+    "LOW_ESTIMATE",
+    "DEFAULT",
+    "DEFAULT_ASSIGNED",
+  ]),
   responsiblePerson: z.string().optional(),
   reviewerNote: z.string().optional(),
 });
@@ -232,9 +239,9 @@ export const AuditReadyCaseSchema = z.object({
 
 export type AuditReadyCase = z.infer<typeof AuditReadyCaseSchema>;
 
-export const createEmptyInput = (canonicalUnit?: UnitCode): InputDatum => ({
+export const createEmptyInput = (canonicalUnit?: string): InputDatum => ({
   value: null,
-  canonicalUnit,
+  ...(canonicalUnit ? { canonicalUnit } : {}),
   sourceType: "ESTIMATED",
   confidenceStatus: "LOW_ESTIMATE",
 });
