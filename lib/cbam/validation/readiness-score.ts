@@ -9,14 +9,22 @@ export function getReportingPeriodAssessment(caseData: AuditReadyCase, assessmen
   const quarterVal = String(caseData.reportingPeriod.quarter.value || "").toUpperCase().trim();
   const year = Number(yearVal) || new Date().getFullYear();
 
-  const startVal = caseData.reportingPeriod.startDate?.value;
-  const endVal = caseData.reportingPeriod.endDate?.value;
+  const rawStartDate = caseData.reportingPeriod.startDate?.value ?? "";
+  const rawEndDate = caseData.reportingPeriod.endDate?.value ?? "";
 
-  let startDate = startVal ? String(startVal).trim() : "";
-  let endDate = endVal ? String(endVal).trim() : "";
+  const hardBlockerFindingIds: string[] = [];
+
+  if (rawStartDate === "" || rawStartDate === null || rawStartDate === undefined) {
+    hardBlockerFindingIds.push("FND-PERIOD-MISSING-START-DATE");
+  }
+  if (rawEndDate === "" || rawEndDate === null || rawEndDate === undefined) {
+    hardBlockerFindingIds.push("FND-PERIOD-MISSING-END-DATE");
+  }
+
+  let startDate = String(rawStartDate).trim();
+  let endDate = String(rawEndDate).trim();
 
   let type: "DEFINITIVE_ANNUAL" | "INTERIM_QUARTERLY" | "INTERIM_MONTHLY" | "CUSTOM_INTERNAL" = "DEFINITIVE_ANNUAL";
-  const hardBlockerFindingIds: string[] = [];
 
   // Default dates if not provided
   if (!startDate || !endDate) {
@@ -51,14 +59,6 @@ export function getReportingPeriodAssessment(caseData: AuditReadyCase, assessmen
         endDate = `${year}-12-31`;
       }
     }
-  }
-
-  // Check if dates are missing
-  if (!startDate) {
-    hardBlockerFindingIds.push("FND-PERIOD-MISSING-START-DATE");
-  }
-  if (!endDate) {
-    hardBlockerFindingIds.push("FND-PERIOD-MISSING-END-DATE");
   }
 
   // Parse dates

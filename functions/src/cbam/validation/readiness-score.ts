@@ -9,22 +9,22 @@ export function getReportingPeriodAssessment(caseData: AuditReadyCase, assessmen
   const quarterVal = String(caseData.reportingPeriod.quarter.value || "").toUpperCase().trim();
   const year = Number(yearVal) || new Date().getFullYear();
 
-  const startVal = caseData.reportingPeriod.startDate?.value;
-  const endVal = caseData.reportingPeriod.endDate?.value;
+  const rawStartDate = caseData.reportingPeriod.startDate?.value ?? "";
+  const rawEndDate = caseData.reportingPeriod.endDate?.value ?? "";
 
-  let startDate = startVal ? String(startVal).trim() : "";
-  let endDate = endVal ? String(endVal).trim() : "";
-
-  let type: "DEFINITIVE_ANNUAL" | "INTERIM_QUARTERLY" | "INTERIM_MONTHLY" | "CUSTOM_INTERNAL" = "DEFINITIVE_ANNUAL";
   const hardBlockerFindingIds: string[] = [];
 
-  // Check if dates are missing
-  if (!startDate) {
+  if (rawStartDate === "" || rawStartDate === null || rawStartDate === undefined) {
     hardBlockerFindingIds.push("FND-PERIOD-MISSING-START-DATE");
   }
-  if (!endDate) {
+  if (rawEndDate === "" || rawEndDate === null || rawEndDate === undefined) {
     hardBlockerFindingIds.push("FND-PERIOD-MISSING-END-DATE");
   }
+
+  let startDate = String(rawStartDate).trim();
+  let endDate = String(rawEndDate).trim();
+
+  let type: "DEFINITIVE_ANNUAL" | "INTERIM_QUARTERLY" | "INTERIM_MONTHLY" | "CUSTOM_INTERNAL" = "DEFINITIVE_ANNUAL";
 
   // Default dates if not provided
   if (!startDate || !endDate) {
@@ -114,7 +114,7 @@ export function getReportingPeriodAssessment(caseData: AuditReadyCase, assessmen
   const now = assessmentTimestamp ? new Date(assessmentTimestamp) : new Date();
   if (endDate) {
     const periodEndDate = new Date(endDate);
-    if (periodEndDate.getTime() > now.getTime()) {
+    if (periodEndDate.getFullYear() > now.getFullYear()) {
       hardBlockerFindingIds.push("FND-PERIOD-FUTURE-END-DATE");
     }
   }
@@ -316,7 +316,7 @@ export function assessReadiness(params: {
     independentVerifierStatus: "NOT_REVIEWED",
     score: finalScore.toString(),
     scoreScale: "0-100",
-    dimensions: dimensions as any,
+    dimensions: dimensions as unknown as ReadinessDimension[],
     criticalBlockerCount,
     materialFindingCount,
     openFindingCount,
