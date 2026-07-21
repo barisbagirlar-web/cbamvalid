@@ -8,12 +8,10 @@ import { assessCaseReadiness } from "../validation/readiness-assessor";
 import { getActiveRuleset } from "../registry/rulesets";
 import { assertKmsSigningConfigured, signManifestWithKms } from "./kms-signature";
 import {
-  buildDataIntegrityManifest,
-  buildUnsignedVerifierArtifacts,
-  finalizeVerifierPackage,
   type EvidenceBinary,
 } from "./verifier-package-builder";
 import type { SealAssessmentContext } from "./premium-dossier-schema";
+import { CommercialReportPipelineV2 } from "./commercial-report-pipeline-v2";
 
 export type SealState =
   | "SEAL_REQUESTED"
@@ -410,7 +408,7 @@ export async function sealReport(params: {
     const calculation = performDossierCalculations(caseData);
     await setState(identity.reportId, "CALCULATION_COMPLETE", { calculationRootHash: calculation.calculationRootHash });
     const evidenceFiles = await loadEvidenceFiles(caseData);
-    const artifacts = await buildUnsignedVerifierArtifacts({
+    const { artifacts, manifestBytes, signature, packageResult } = await CommercialReportPipelineV2.executeSealingPipeline({
       caseData,
       calculation,
       controls,
@@ -418,30 +416,17 @@ export async function sealReport(params: {
       releaseVersion,
       generatedAt: lease.generatedAt,
       evidenceFiles,
-      assessmentContext,
-    });
-    const manifest = buildDataIntegrityManifest({
-      artifacts,
-      caseData,
-      calculation,
-      reportId: identity.reportId,
-      releaseVersion,
-      generatedAt: lease.generatedAt,
-      evidenceCount: evidenceFiles.length,
       productCode: entitlement.productCode,
-      releaseContractVersion: isV5 ? 5 : undefined,
+      releaseContractVersion: isV5 ? 5 : 4,
+      signManifest: async (bytes) => {
+        const sig = await signManifestWithKms(bytes);
+        await setState(identity.reportId, "KMS_SIGNED", { manifestHash: sig.manifestHash, keyVersion: sig.keyVersion });
+        return sig;
+      }
     });
-    await setState(identity.reportId, "ARTIFACTS_GENERATED", { manifestFiles: manifest.manifest.files.length });
 
-    const signature = await signManifestWithKms(manifest.bytes);
-    await setState(identity.reportId, "KMS_SIGNED", { manifestHash: signature.manifestHash, keyVersion: signature.keyVersion });
-    
-    const packageResult = await finalizeVerifierPackage({
-      artifacts,
-      manifestBytes: manifest.bytes,
-      signature,
-      generatedAt: lease.generatedAt,
-    });
+    const manifest = { bytes: manifestBytes, manifest: JSON.parse(manifestBytes.toString("utf8")) };
+    await setState(identity.reportId, "ARTIFACTS_GENERATED", { manifestFiles: manifest.manifest.files.length });
 
     const basePath = `reports/${params.uid}/${identity.reportId}`;
     const commonMetadata = { reportId: identity.reportId, caseId: params.caseId, requestId: identity.requestId };

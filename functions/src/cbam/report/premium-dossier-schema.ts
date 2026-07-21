@@ -355,6 +355,27 @@ export const PremiumDossierViewModelSchema = z.object({
 
 export type PremiumDossierViewModel = z.infer<typeof PremiumDossierViewModelSchema>;
 
+export const PremiumDossierViewModelV2Schema = PremiumDossierViewModelSchema.extend({
+  productCode: z.literal("pack_premium_dossier_v5"),
+  releaseContractVersion: z.literal(5),
+  dossierSchemaVersion: z.literal("CBAMVALID-DOSSIER-5.0"),
+  manifestSummary: z.object({
+    totalFiles: z.number().int(),
+    manifestHash: z.string(),
+    packageHash: z.string(),
+    requiredTopLevelComponentCount: z.number().int(),
+    actualTopLevelComponentCount: z.number().int(),
+    manifestFileCount: z.number().int(),
+    evidenceFileCount: z.number().int(),
+    kmsKeyVersion: z.string(),
+    kmsAlgorithm: z.string(),
+    signatureBase64: z.string(),
+    publicVerificationState: z.string(),
+  }),
+});
+
+export type PremiumDossierViewModelV2 = z.infer<typeof PremiumDossierViewModelV2Schema>;
+
 export const SealAssessmentContextSchema = z.object({
   generatedAt: z.string(),
   assessmentTimestamp: z.string(),

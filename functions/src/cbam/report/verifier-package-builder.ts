@@ -15,7 +15,7 @@ import { buildVerificationCrosswalk } from "../registry/verification-template-20
 import { generateFindingsAndActions } from "../validation/findings-engine";
 import { assessReadiness, getReportingPeriodAssessment } from "../validation/readiness-score";
 import { buildPremiumDossierPdf } from "./premium-dossier-pdf";
-import type { PremiumDossierViewModel, SealAssessmentContext } from "./premium-dossier-schema";
+import type { PremiumDossierViewModel, PremiumDossierViewModelV2, SealAssessmentContext } from "./premium-dossier-schema";
 
 export const REQUIRED_TOP_LEVEL_COMPONENTS = [
   "Product and Scope Definition.pdf",
@@ -239,9 +239,11 @@ function buildPdfArtifacts(params: {
     const { findings, correctiveActions } = generateFindingsAndActions(caseData, timestamp);
     const readiness = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: timestamp });
     const periodAssessment = getReportingPeriodAssessment(caseData, timestamp);
-
-    const dossierModel: PremiumDossierViewModel = {
+    const dossierModel: PremiumDossierViewModelV2 = {
       schemaVersion: "CBAMVALID-DOSSIER-5.0",
+      productCode: "pack_premium_dossier_v5",
+      releaseContractVersion: 5,
+      dossierSchemaVersion: "CBAMVALID-DOSSIER-5.0",
       reportingPeriodAssessment: periodAssessment,
       reportId: params.reportId,
       caseId: params.caseData.caseId || "",
@@ -266,7 +268,20 @@ function buildPdfArtifacts(params: {
         processes: params.caseData.goods.map(g => g.sector),
         cnCodes: params.caseData.goods.map(g => String(g.cnCode.value || "")),
       },
-      totals: model.totals,
+      totals: {
+        installationDirectEmissions: params.calculation.installationDirectEmissions,
+        electricityIndirectEmissions: params.calculation.electricityIndirectEmissions,
+        precursorDirectEmissions: params.calculation.precursorDirectEmissions,
+        precursorIndirectEmissions: params.calculation.precursorIndirectEmissions,
+        totalDirectEmissions: params.calculation.totalDirectEmissions,
+        totalIndirectEmissions: params.calculation.totalIndirectEmissions,
+        totalEmbeddedEmissions: params.calculation.totalEmbeddedEmissions,
+        productionVolume: params.calculation.productionVolume,
+        aggregateSpecificEmbeddedEmissions: params.calculation.specificEmbeddedEmissions,
+        allocationShareTotal: params.calculation.allocationShareTotal,
+        allocationReconciliationDelta: params.calculation.allocationReconciliationDelta,
+        eligibleCertificateReduction: params.calculation.eligibleCertificateReduction,
+      },
       goods: model.goods as unknown as PremiumDossierViewModel["goods"],
       precursors: params.caseData.precursors.map(p => ({
         name: String(p.name.value || ""),
@@ -285,6 +300,14 @@ function buildPdfArtifacts(params: {
         totalFiles: 25,
         manifestHash: "",
         packageHash: "",
+        requiredTopLevelComponentCount: 25,
+        actualTopLevelComponentCount: 25,
+        manifestFileCount: 25,
+        evidenceFileCount: model.evidenceSummary.totalEvidenceFiles,
+        kmsKeyVersion: "",
+        kmsAlgorithm: "",
+        signatureBase64: "",
+        publicVerificationState: "ACTIVE",
       },
     };
 

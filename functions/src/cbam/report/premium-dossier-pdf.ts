@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { jsPDF } from "jspdf";
-import type { PremiumDossierViewModel } from "./premium-dossier-schema";
+import type { PremiumDossierViewModelV2 } from "./premium-dossier-schema";
 import { getReportingPeriodAssessment } from "../validation/readiness-score";
 import type { AuditReadyCase } from "../schema";
 import { assertSectorSealable, type CbamSector } from "../sectors/sector-adapter";
@@ -27,7 +27,7 @@ function formatEnum(val: string): string {
     .join(" ");
 }
 
-export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData: AuditReadyCase): Buffer {
+export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseData: AuditReadyCase): Buffer {
   const uniqueSectors = new Set(caseData.goods.map((item) => item.sector));
   const methodologies = [...uniqueSectors].map((sector) => assertSectorSealable(sector as CbamSector));
 
@@ -352,27 +352,30 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   // Secure Cryptographic Trust Stamp Card
   doc.setFillColor(245, 247, 250);
   doc.setDrawColor(201, 154, 73);
-  doc.roundedRect(MARGIN, 191, CONTENT_WIDTH, 34, 1.5, 1.5, "FD");
+  doc.roundedRect(MARGIN, 185, CONTENT_WIDTH, 44, 1.5, 1.5, "FD");
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
   doc.setTextColor(12, 30, 54);
-  doc.text("SECURE TRUST STAMP & KMS SIGNATURE RECORD", MARGIN + 6, 197);
+  doc.text("SECURE TRUST STAMP & KMS SIGNATURE RECORD", MARGIN + 6, 191);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6.8);
   doc.setTextColor(80, 90, 105);
-  doc.text(`Case Snapshot SHA-256 Hash: ${model.caseDataHash || "NOT_AVAILABLE"}`, MARGIN + 6, 203);
-  doc.text(`Calculation Root Hash: ${model.calculationRootHash || "NOT_AVAILABLE"}`, MARGIN + 6, 208);
-  doc.text(`KMS Digital Signature ID: ${model.reportId}`, MARGIN + 6, 213);
-  doc.text("Sealed Package Integrity: All 23 controlled package components frozen & digitally signed.", MARGIN + 6, 218);
+  doc.text(`Case Snapshot SHA-256 Hash: ${model.caseDataHash || "NOT_AVAILABLE"}`, MARGIN + 6, 197);
+  doc.text(`Calculation Root Hash: ${model.calculationRootHash || "NOT_AVAILABLE"}`, MARGIN + 6, 202);
+  doc.text(`Manifest SHA-256 Hash: ${model.manifestSummary?.manifestHash || "NOT_AVAILABLE"}`, MARGIN + 6, 207);
+  doc.text(`Sealed Package Hash: ${model.manifestSummary?.packageHash || "NOT_AVAILABLE"}`, MARGIN + 6, 212);
+  doc.text(`KMS Digital Signature ID: ${model.reportId}`, MARGIN + 6, 217);
+  const componentCount = model.manifestSummary?.requiredTopLevelComponentCount || 25;
+  doc.text(`Sealed Package Integrity: All ${componentCount} controlled package components frozen & digitally signed.`, MARGIN + 6, 222);
 
   // Cover Legal Boundary statement
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
   doc.setTextColor(120, 130, 140);
   const boundaryLines = doc.splitTextToSize(model.legalBoundary, CONTENT_WIDTH) as string[];
-  doc.text(boundaryLines, MARGIN, 255);
+  doc.text(boundaryLines, MARGIN, 250);
 
   // ==========================================
   // PAGE 2: CHAPTER I - EXECUTIVE & LEGAL OVERVIEW
@@ -773,16 +776,29 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
 
   // Section 27: Package Manifest and Digital Integrity
   beginSection(27, "Package Manifest and Digital Integrity", 35);
+
+  const manifestHashValue = model.manifestSummary?.manifestHash || "NOT_AVAILABLE";
+  const packageHashValue = model.manifestSummary?.packageHash || "NOT_AVAILABLE";
+  const signatureBase64 = model.manifestSummary?.signatureBase64 || "NOT_AVAILABLE";
+  const kmsKeyVersion = model.manifestSummary?.kmsKeyVersion || "NOT_AVAILABLE";
+  const kmsAlgorithm = model.manifestSummary?.kmsAlgorithm || "NOT_AVAILABLE";
+
   drawTable(
     ["Integrity Parameter", "Registered Value"],
     [
       ["Case Snapshot SHA-256 Hash", model.caseDataHash || "NOT_AVAILABLE"],
       ["Calculation Root Hash", model.calculationRootHash || "NOT_AVAILABLE"],
+      ["Manifest SHA-256 Hash", manifestHashValue],
+      ["Sealed Package SHA-256 Hash", packageHashValue],
+      ["KMS Key Version Reference", kmsKeyVersion],
+      ["KMS Signature Algorithm", kmsAlgorithm],
+      ["KMS Signature Base64", signatureBase64],
       ["Schema Specification", model.schemaVersion],
       ["Digital Signature ID", model.reportId],
       ["Cryptographic Security Class", "FIPS 140-2 Level 3 KMS Sealed Hash"],
+      ["Public Verification State", model.manifestSummary?.publicVerificationState || "ACTIVE"],
     ],
-    [50, 130]
+    [65, 115]
   );
 
   // Section 28: Version Comparison
