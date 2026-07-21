@@ -6,10 +6,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const routes = [
     '',
     '/about',
+    '/product',
+    '/how-it-works',
+    '/pricing',
+    '/methodology',
+    '/cbam/methodology',
+    '/sample-dossier',
+    '/verify',
+    '/cn-code',
     '/contact',
     '/cookie-policy',
     '/legal-notice',
-    '/methodology',
     '/privacy',
     '/refund-policy',
     '/terms'
@@ -19,11 +26,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
     changeFrequency: 'weekly' as any,
-    priority: route === '' ? 1 : 0.8,
+    priority: route === '' ? 1 : route === '/pricing' || route === '/product' ? 0.9 : 0.8,
   }));
 
-  // Add CN code pages only if they are the valid chapters (Quality gate in sitemap generation)
-  const validCnCodes = ["72085120", "76011000", "25231000", "31021010", "28041000"]; // Representing some sample compliant codes
+  // Add CN code pages for valid CBAM sector sample codes
+  const validCnCodes = ["72085120", "76011000", "25231000", "31021010", "28041000"];
   const cnCodeEntries = validCnCodes.map((code) => ({
     url: `${baseUrl}/cn-code/${code}`,
     lastModified: new Date(),
