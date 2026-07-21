@@ -5,7 +5,7 @@ import type { EvidenceBinary } from "../../functions/src/cbam/report/verifier-pa
 export const FIXTURE_OWNER_ID = "verifier-grade-user";
 export const FIXTURE_CASE_ID = "case_verifier_grade_fixture";
 export const FIXTURE_EVIDENCE_ID = "11111111-1111-4111-8111-111111111111";
-export const FIXTURE_GENERATED_AT = "2026-07-16T12:00:00.000Z";
+export const FIXTURE_GENERATED_AT = "2027-01-15T12:00:00.000Z";
 export const FIXTURE_REPORT_ID = `report_${"a".repeat(64)}`;
 
 export const FIXTURE_EVIDENCE_BYTES = Buffer.from(

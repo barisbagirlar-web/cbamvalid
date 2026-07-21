@@ -249,6 +249,8 @@ function buildPdfArtifacts(params: {
       generatedAt: params.generatedAt,
       documentTitle: "CBAMValid Verification Readiness & Evidence Assurance Dossier",
       legalBoundary: "This operator-prepared package supports preparation for independent CBAM review. It is not an independent verification opinion, a reasonable-assurance conclusion, a customs decision, an EU approval, a CBAM Registry submission, or a guarantee of acceptance.",
+      caseDataHash: crypto.createHash("sha256").update(canonical(params.caseData)).digest("hex"),
+      calculationRootHash: params.calculation.calculationRootHash,
       identity: {
         importer: String(params.caseData.importerIdentity.legalName.value || ""),
         eori: String(params.caseData.importerIdentity.eoriNumber.value || ""),

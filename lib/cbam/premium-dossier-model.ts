@@ -289,6 +289,8 @@ export const PremiumDossierViewModelSchema = z.object({
   generatedAt: z.string().datetime(),
   documentTitle: z.string().min(1),
   legalBoundary: z.string().min(1),
+  caseDataHash: z.string().optional(),
+  calculationRootHash: z.string().optional(),
   identity: z.object({
     importer: z.string(),
     eori: z.string(),

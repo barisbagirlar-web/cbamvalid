@@ -204,19 +204,19 @@ async function runSmokeTest() {
     version: 1,
     ownerId: uid,
     importerIdentity: {
-      legalName: datum("CBAMValid Importer B.V. (smoke_test)", undefined, undefined),
+      legalName: datum("CBAMValid Importer B.V.", undefined, undefined),
       eoriNumber: datum("NL123456789AB"),
       address: null,
     },
     exporterIdentity: {
-      legalName: datum("Verified Steel Operator GmbH (smoke_test)", undefined, undefined),
+      legalName: datum("Verified Steel Operator GmbH", undefined, undefined),
       address: datum("Duisburg, Germany", undefined, FIXTURE_EVIDENCE_ID),
     },
     reportingPeriod: {
-      year: datum("2026", undefined, undefined),
+      year: datum("2025", undefined, undefined),
       quarter: datum("ANNUAL", undefined, undefined),
-      startDate: datum("2026-01-01", undefined, FIXTURE_EVIDENCE_ID),
-      endDate: datum("2026-12-31", undefined, FIXTURE_EVIDENCE_ID),
+      startDate: datum("2025-01-01", undefined, FIXTURE_EVIDENCE_ID),
+      endDate: datum("2025-12-31", undefined, FIXTURE_EVIDENCE_ID),
     },
     goods: [
       {
@@ -235,7 +235,7 @@ async function runSmokeTest() {
       },
     ],
     installation: {
-      name: datum("Verified Integrated Steel Installation (smoke_test)", undefined, undefined),
+      name: datum("Verified Integrated Steel Installation", undefined, undefined),
       unloCode: null,
       country: datum("DE", undefined, undefined),
       productionRoute: datum("Blast Furnace Route (BF-BOF)", undefined, undefined),
@@ -256,7 +256,7 @@ async function runSmokeTest() {
         sizeBytes: FIXTURE_EVIDENCE_BYTES.byteLength,
         issuer: "Independent Monitoring Auditor",
         issueDate: "2026-03-31",
-        reportingPeriod: "2026 ANNUAL",
+        reportingPeriod: "2025 ANNUAL",
         pageReference: "Controlled package pages 1-48",
         fileHash: FIXTURE_EVIDENCE_HASH,
         uploadTimestamp: "2026-04-01T00:00:00.000Z",

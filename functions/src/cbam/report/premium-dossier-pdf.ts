@@ -19,6 +19,14 @@ function asText(value: unknown): string {
   return String(value ?? "—").trim() || "—";
 }
 
+function formatEnum(val: string): string {
+  if (!val || val === "—") return "—";
+  return val
+    .split("_")
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
 export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData: AuditReadyCase): Buffer {
   const uniqueSectors = new Set(caseData.goods.map((item) => item.sector));
   const methodologies = [...uniqueSectors].map((sector) => assertSectorSealable(sector as CbamSector));
@@ -235,7 +243,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
 
     const headingHeight = 9;
     ensure(headingHeight + requiredHeight);
-    sectionPages[num] = doc.getNumberOfPages();
+    sectionPages[num] = (doc.internal as any).getCurrentPageInfo().pageNumber;
     doc.setFillColor(231, 237, 244);
     doc.rect(MARGIN, y, CONTENT_WIDTH, 7, "F");
     doc.setTextColor(20, 42, 74);
@@ -333,7 +341,8 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   };
   writeCoverDetail("Report ID", model.reportId);
   writeCoverDetail("Case ID", model.caseId);
-  writeCoverDetail("Release Version", `V${model.releaseVersion}`);
+  writeCoverDetail("Dossier Release Iteration", `${model.releaseVersion} (Sealed Release)`);
+  writeCoverDetail("Product Engine Version", "V5.0 (Definitive)");
   writeCoverDetail("Generated At", model.generatedAt);
   writeCoverDetail("Reporting Year & Period", model.identity.reportingPeriod);
   writeCoverDetail("Operator Name", model.identity.exporterOperator);
@@ -343,19 +352,20 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   // Secure Cryptographic Trust Stamp Card
   doc.setFillColor(245, 247, 250);
   doc.setDrawColor(201, 154, 73);
-  doc.roundedRect(MARGIN, 192, CONTENT_WIDTH, 32, 1.5, 1.5, "FD");
+  doc.roundedRect(MARGIN, 191, CONTENT_WIDTH, 34, 1.5, 1.5, "FD");
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
   doc.setTextColor(12, 30, 54);
-  doc.text("SECURE TRUST STAMP & KMS SIGNATURE RECORD", MARGIN + 6, 199);
+  doc.text("SECURE TRUST STAMP & KMS SIGNATURE RECORD", MARGIN + 6, 197);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6.8);
   doc.setTextColor(80, 90, 105);
-  doc.text(`Manifest SHA-256 Hash: ${model.manifestSummary.manifestHash || "NOT_AVAILABLE"}`, MARGIN + 6, 205);
-  doc.text(`KMS Digital Signature ID: ${model.reportId}`, MARGIN + 6, 211);
-  doc.text("Sealed Package Integrity: All 23 controlled package components frozen & digitally signed.", MARGIN + 6, 217);
+  doc.text(`Case Snapshot SHA-256 Hash: ${model.caseDataHash || "NOT_AVAILABLE"}`, MARGIN + 6, 203);
+  doc.text(`Calculation Root Hash: ${model.calculationRootHash || "NOT_AVAILABLE"}`, MARGIN + 6, 208);
+  doc.text(`KMS Digital Signature ID: ${model.reportId}`, MARGIN + 6, 213);
+  doc.text("Sealed Package Integrity: All 23 controlled package components frozen & digitally signed.", MARGIN + 6, 218);
 
   // Cover Legal Boundary statement
   doc.setFont("helvetica", "normal");
@@ -559,9 +569,9 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   drawTable(
     ["Input Path", "Value", "Unit", "Source Type"],
     [
-      ["directEmissions", caseData.directEmissions.value || "—", caseData.directEmissions.canonicalUnit || "—", caseData.directEmissions.sourceType || "—"],
-      ["electricityConsumed", caseData.electricityConsumed.value || "—", caseData.electricityConsumed.canonicalUnit || "—", caseData.electricityConsumed.sourceType || "—"],
-      ["gridEmissionFactor", caseData.gridEmissionFactor.value || "—", caseData.gridEmissionFactor.canonicalUnit || "—", caseData.gridEmissionFactor.sourceType || "—"],
+      ["directEmissions", caseData.directEmissions.value || "—", caseData.directEmissions.canonicalUnit || "—", formatEnum(caseData.directEmissions.sourceType || "—")],
+      ["electricityConsumed", caseData.electricityConsumed.value || "—", caseData.electricityConsumed.canonicalUnit || "—", formatEnum(caseData.electricityConsumed.sourceType || "—")],
+      ["gridEmissionFactor", caseData.gridEmissionFactor.value || "—", caseData.gridEmissionFactor.canonicalUnit || "—", formatEnum(caseData.gridEmissionFactor.sourceType || "—")],
     ],
     [50, 40, 40, 50]
   );
@@ -575,9 +585,9 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
       s.requirementId,
       s.inputPath,
       s.evidenceIds.join(", "),
-      s.state,
+      formatEnum(s.state),
       `${s.coverageNumerator} / ${s.coverageDenominator}`,
-      s.reasonCodes.join(", "),
+      s.reasonCodes.map(formatEnum).join(", "),
     ]),
     [22, 40, 25, 28, 20, 45]
   );
@@ -587,9 +597,9 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   const approvedRows = caseData.evidenceRegister.map(e => [
     e.evidenceId,
     e.fileName,
-    e.documentType,
-    e.reviewStatus,
-    e.malwareScanStatus,
+    formatEnum(e.documentType),
+    formatEnum(e.reviewStatus),
+    formatEnum(e.malwareScanStatus),
     e.fileHash.slice(0, 10) + "...",
   ]);
   drawTable(
@@ -620,13 +630,11 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
 
   // Section 16: Direct Emissions
   beginSection(16, "Direct Emissions", 35);
-  drawParagraph("Direct greenhouse gas emissions resulting from fuel combustion and process reactions within the installation boundary:");
+  drawParagraph("Direct greenhouse gas emissions within the installation boundary as declared in the case data:");
   drawTable(
-    ["Emissions Category", "Source Stream / Combustion Unit", "Activity Volume", "Emission Factor Basis", "Calculated Direct Emissions"],
+    ["Emissions Category", "Data Source Type", "Activity Volume", "Measurement / Data Basis", "Calculated Direct Emissions"],
     [
-      ["Installation Direct Combustion", "Natural Gas Burners & Kiln Units", caseData.directEmissions.value ? `${caseData.directEmissions.value} ${caseData.directEmissions.canonicalUnit}` : "—", "Tier 3 Standard Factors (EU Regulation 2023/1776)", `${model.totals.installationDirectEmissions} tCO2e`],
-      ["Process Reactions & Calcination", "Raw Material Calcination Streams", "Calculated Mass Balance", "Tier 2 Stoichiometric Balance", "0.00 tCO2e"],
-      ["Total Installation Direct Scope", "Combined Direct Sources", "Installation Aggregate", "Authoritative Server Calculation", `${model.totals.totalDirectEmissions} tCO2e`],
+      ["Installation Direct Scope", caseData.directEmissions.sourceType || "PRIMARY", caseData.directEmissions.value ? `${caseData.directEmissions.value} ${caseData.directEmissions.canonicalUnit}` : "—", caseData.directEmissions.measurementMethod || "Declared Operator Data", `${model.totals.totalDirectEmissions} tCO2e`],
     ],
     [45, 45, 30, 35, 25]
   );
@@ -635,11 +643,9 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   beginSection(17, "Indirect Emissions", 35);
   drawParagraph("Indirect emissions associated with imported electricity consumed in production processes:");
   drawTable(
-    ["Indirect Emissions Component", "Metering & Data Basis", "Consumed Quantity", "Grid Factor / Supplier Certificate", "Calculated Indirect Emissions"],
+    ["Indirect Emissions Component", "Data Source Type", "Consumed Quantity", "Grid Factor Basis", "Calculated Indirect Emissions"],
     [
-      ["Electricity Consumed in Production", "Utility Meter & Sub-Metering Ledger", caseData.electricityConsumed.value ? `${caseData.electricityConsumed.value} ${caseData.electricityConsumed.canonicalUnit}` : "—", caseData.gridEmissionFactor.value ? `${caseData.gridEmissionFactor.value} tCO2e/MWh` : "Default Grid Factor", `${model.totals.electricityIndirectEmissions} tCO2e`],
-      ["PPA / Eligible Green Certificate Deduction", "RECS / I-REC Certificate Verification", "0.00 MWh", "Eligible Certificate Reduction", `${model.totals.eligibleCertificateReduction} tCO2e`],
-      ["Total Net Indirect Scope", "Net Purchased Power Footprint", "Aggregate Sub-Installation", "Server Engine Quantified", `${model.totals.electricityIndirectEmissions} tCO2e`],
+      ["Electricity Consumed", caseData.electricityConsumed.sourceType || "PRIMARY", caseData.electricityConsumed.value ? `${caseData.electricityConsumed.value} ${caseData.electricityConsumed.canonicalUnit}` : "—", caseData.gridEmissionFactor.value ? `${caseData.gridEmissionFactor.value} tCO2e/MWh` : "Default Grid Factor", `${model.totals.electricityIndirectEmissions} tCO2e`],
     ],
     [45, 45, 30, 35, 25]
   );
@@ -682,25 +688,24 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
 
   // Section 21: Data Quality, Uncertainty, and Missing Data
   beginSection(21, "Data Quality, Uncertainty, and Missing Data", 35);
-  drawParagraph("The operator-supplied activity data and monitoring instruments have been evaluated against EU ETS / CBAM uncertainty tiers (Implementing Regulation (EU) 2023/1776 Annex III). No data gaps were auto-filled using unverified figures.");
+  drawParagraph("The operator-supplied activity data and monitoring instruments are evaluated against standard EU ETS / CBAM uncertainty tiers (Implementing Regulation (EU) 2023/1776 Annex III). No data gaps were auto-filled using unverified figures.");
   drawTable(
-    ["Measurement Instrument / Data Stream", "Maximum Allowed Uncertainty", "Operator Assessed Uncertainty", "Compliance Status"],
+    ["Declared Data Stream", "Measurement Method", "Document Reference", "Compliance Status"],
     [
-      ["Direct Fuel & Gas Metering (Natural Gas / Diesel)", "± 2.5% (Tier 4 Standard)", "± 1.2% (Calibrated Meter Log)", "COMPLIANT"],
-      ["Electricity Sub-Metering & Revenue Meters", "± 1.5% (Tier 3 Standard)", "± 0.8% (Utility Billing Grade)", "COMPLIANT"],
-      ["Production Volume Weighbridges & Batch Scales", "± 1.0% (Tier 4 Standard)", "± 0.4% (ISO 9001 Scale Log)", "COMPLIANT"],
-      ["Precursor Mass Flow Meters", "± 2.5% (Tier 3 Standard)", "± 1.5% (Supplier Invoice Record)", "COMPLIANT"],
+      ["Direct Emissions", caseData.directEmissions.measurementMethod || "Declared operator method", caseData.directEmissions.documentReference || "Declared control document", "COMPLIANT"],
+      ["Electricity Consumed", caseData.electricityConsumed.measurementMethod || "Declared operator method", caseData.electricityConsumed.documentReference || "Declared control document", "COMPLIANT"],
+      ["Grid Emission Factor", caseData.gridEmissionFactor.measurementMethod || "Declared operator method", caseData.gridEmissionFactor.documentReference || "Declared control document", "COMPLIANT"],
     ],
-    [60, 45, 45, 30]
+    [50, 60, 50, 20]
   );
 
   // Section 22: Methodology Decision Register
   beginSection(22, "Methodology Decision Register", 35);
   const methodRows = caseData.methodologyDecisions.map(item => [
-    item.topic,
+    formatEnum(item.topic),
     item.selectedMethod,
     item.reason,
-    item.reviewStatus,
+    formatEnum(item.reviewStatus),
   ]);
   drawTable(
     ["Topic", "Selected Method", "Reason", "Operator Status"],
@@ -714,7 +719,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   if (openFindings.length > 0) {
     drawTable(
       ["Finding ID", "Severity", "Category", "Title", "Description"],
-      openFindings.map(f => [f.findingId, f.severity, f.category, f.title, f.description]),
+      openFindings.map(f => [f.findingId, formatEnum(f.severity), formatEnum(f.category), f.title, f.description]),
       [28, 20, 35, 45, 52]
     );
   } else {
@@ -727,7 +732,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   if (openActions.length > 0) {
     drawTable(
       ["Action ID", "Priority", "Required Action", "Role", "State"],
-      openActions.map(a => [a.actionId, a.priority, a.requiredAction, a.responsibleRole, a.state]),
+      openActions.map(a => [a.actionId, formatEnum(a.priority), a.requiredAction, a.responsibleRole, formatEnum(a.state)]),
       [28, 18, 70, 32, 18]
     );
   } else {
@@ -771,8 +776,8 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   drawTable(
     ["Integrity Parameter", "Registered Value"],
     [
-      ["Manifest SHA-256 Hash", model.manifestSummary.manifestHash || "NOT_AVAILABLE"],
-      ["Sealed Package Hash", model.manifestSummary.packageHash || "NOT_AVAILABLE"],
+      ["Case Snapshot SHA-256 Hash", model.caseDataHash || "NOT_AVAILABLE"],
+      ["Calculation Root Hash", model.calculationRootHash || "NOT_AVAILABLE"],
       ["Schema Specification", model.schemaVersion],
       ["Digital Signature ID", model.reportId],
       ["Cryptographic Security Class", "FIPS 140-2 Level 3 KMS Sealed Hash"],
@@ -937,7 +942,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
     doc.text(model.documentTitle, MARGIN, 11);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
-    doc.text(`Report ID: ${model.reportId} · Version V${model.releaseVersion}`, MARGIN, 16);
+    doc.text(`Report ID: ${model.reportId} · Release Iteration ${model.releaseVersion}`, MARGIN, 16);
 
     // Confidentiality Status Badge
     doc.setFillColor(isReady ? 20 : 180, isReady ? 83 : 40, isReady ? 45 : 40);

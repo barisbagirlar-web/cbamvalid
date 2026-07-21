@@ -201,7 +201,8 @@ export function assessReadiness(params: {
   };
 
   const dimensions: ReadinessDimension[] = [];
-  let totalWeightedScore = new Decimal(0);
+  let totalWeightedScoreSum = new Decimal(0);
+  let totalApplicableWeight = new Decimal(0);
 
   // Helper to check if a requirement belongs to a dimension
   const reqBelongsTo = (reqId: string, dimId: ReadinessDimensionId): boolean => {
@@ -237,31 +238,41 @@ export function assessReadiness(params: {
     const blockerFindingIds = dimFindings.filter(f => f.blocksOperatorReadiness || f.blocksSealing).map(f => f.findingId);
     const materialFindingIds = dimFindings.filter(f => f.severity === "MATERIAL" || f.severity === "CRITICAL").map(f => f.findingId);
 
-    let passedCount = dimSufficiency.filter(row => row.state === "SUPPORTED").length;
-    let applicableCount = dimSufficiency.length;
+    const passedCount = dimSufficiency.filter(row => row.state === "SUPPORTED").length;
+    const applicableCount = dimSufficiency.length;
 
-    // Default to at least 1 applicable check to avoid divide by zero if empty
     if (applicableCount === 0) {
-      applicableCount = 1;
-      passedCount = blockerFindingIds.length === 0 ? 1 : 0;
+      dimensions.push({
+        dimensionId: dimId,
+        weight: def.weight.toString(),
+        rawScore: "N/A",
+        weightedScore: "N/A",
+        passedRequirementCount: 0,
+        applicableRequirementCount: 0,
+        blockerFindingIds,
+        materialFindingIds,
+      });
+    } else {
+      const rawScore = new Decimal(passedCount).dividedBy(applicableCount).times(100);
+      const weightedScore = rawScore.times(def.weight).dividedBy(100);
+      totalWeightedScoreSum = totalWeightedScoreSum.plus(weightedScore);
+      totalApplicableWeight = totalApplicableWeight.plus(def.weight);
+
+      dimensions.push({
+        dimensionId: dimId,
+        weight: def.weight.toString(),
+        rawScore: rawScore.toDecimalPlaces(2).toString(),
+        weightedScore: weightedScore.toDecimalPlaces(2).toString(),
+        passedRequirementCount: passedCount,
+        applicableRequirementCount: applicableCount,
+        blockerFindingIds,
+        materialFindingIds,
+      });
     }
-
-    const rawScore = new Decimal(passedCount).dividedBy(applicableCount).times(100);
-    const weightedScore = rawScore.times(def.weight).dividedBy(100);
-    totalWeightedScore = totalWeightedScore.plus(weightedScore);
-
-    dimensions.push({
-      dimensionId: dimId,
-      weight: def.weight.toString(),
-      rawScore: rawScore.toDecimalPlaces(2).toString(),
-      weightedScore: weightedScore.toDecimalPlaces(2).toString(),
-      passedRequirementCount: dimSufficiency.filter(row => row.state === "SUPPORTED").length,
-      applicableRequirementCount: dimSufficiency.length,
-      blockerFindingIds,
-      materialFindingIds,
-    });
   }
-  const finalScore = totalWeightedScore.toDecimalPlaces(2);
+  const finalScore = totalApplicableWeight.greaterThan(0)
+    ? totalWeightedScoreSum.dividedBy(totalApplicableWeight).times(100).toDecimalPlaces(2)
+    : new Decimal(0);
 
   // 3. Count gates & indicators
   const criticalBlockerCount = findings.filter(f => (f.severity === "CRITICAL" || f.severity === "CRITICAL_BLOCKER") && f.status === "OPEN").length;

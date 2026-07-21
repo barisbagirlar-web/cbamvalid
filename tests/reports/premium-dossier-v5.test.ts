@@ -118,7 +118,6 @@ describe("premium-dossier-v5 deliverables", () => {
       "goods.1.allocationShare"
     );
     
-    // Enforce annual period for base readiness test
     caseData.reportingPeriod.quarter.value = "ANNUAL";
     caseData.reportingPeriod.startDate = { value: "2026-01-01", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
     caseData.reportingPeriod.endDate = { value: "2026-12-31", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
