@@ -116,7 +116,19 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const router = useRouter();
   const sealRequestId = useRef<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
-  const [caseData, setCaseData] = useState<AuditReadyCase>(() => AuditReadyCaseSchema.parse(initialCase));
+  const [caseData, setCaseData] = useState<AuditReadyCase>(() => {
+    const parsed = AuditReadyCaseSchema.parse(initialCase);
+    const year = Number(parsed.reportingPeriod?.year?.value) || 2025;
+    if (!parsed.reportingPeriod.startDate?.value) {
+      parsed.reportingPeriod.startDate = createEmptyInput();
+      parsed.reportingPeriod.startDate.value = `${year}-01-01`;
+    }
+    if (!parsed.reportingPeriod.endDate?.value) {
+      parsed.reportingPeriod.endDate = createEmptyInput();
+      parsed.reportingPeriod.endDate.value = `${year}-12-31`;
+    }
+    return parsed;
+  });
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
   const [saveTone, setSaveTone] = useState<"neutral" | "success" | "error">("neutral");
