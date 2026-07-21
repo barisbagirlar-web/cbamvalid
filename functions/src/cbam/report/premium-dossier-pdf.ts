@@ -55,20 +55,46 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
   };
 
   const drawCallout = (label: string, value: string) => {
-    const lines = doc.splitTextToSize(asText(value), CONTENT_WIDTH - 42) as string[];
-    const height = Math.max(12, lines.length * 4.2 + 6);
-    ensure(height + 3);
+    const labelText = label.toUpperCase().trim();
+    const valueText = asText(value);
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    const labelLines = doc.splitTextToSize(labelText, CONTENT_WIDTH - 10) as string[];
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.0);
+    const valueLines = doc.splitTextToSize(valueText, CONTENT_WIDTH - 10) as string[];
+
+    const labelHeight = labelLines.length * 3.8;
+    const valueHeight = valueLines.length * 4.0;
+    const paddingY = 3.5;
+    const totalHeight = paddingY + labelHeight + 1.5 + valueHeight + paddingY;
+
+    ensure(totalHeight + 3);
+
+    // Callout Container Box
     doc.setFillColor(244, 247, 250);
     doc.setDrawColor(190, 199, 210);
-    doc.roundedRect(MARGIN, y, CONTENT_WIDTH, height, 1.5, 1.5, "FD");
+    doc.roundedRect(MARGIN, y, CONTENT_WIDTH, totalHeight, 1.5, 1.5, "FD");
+
+    // Gold Left Accent Bar
+    doc.setFillColor(201, 154, 73);
+    doc.rect(MARGIN, y, 2.5, totalHeight, "F");
+
+    // Label Text
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7.5);
     doc.setTextColor(20, 42, 74);
-    doc.text(label.toUpperCase(), MARGIN + 4, y + 5.5);
+    doc.text(labelLines, MARGIN + 5, y + paddingY + 3);
+
+    // Value Text
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.0);
     doc.setTextColor(43, 51, 64);
-    doc.text(lines, MARGIN + 39, y + 5.5);
-    y += height + 3;
+    doc.text(valueLines, MARGIN + 5, y + paddingY + labelHeight + 3);
+
+    y += totalHeight + 3;
   };
 
   const drawTable = (headers: string[], rows: any[][], widths?: number[]) => {
@@ -78,10 +104,10 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
       : Array.from({ length: headers.length }, () => CONTENT_WIDTH / headers.length);
 
     const headerLines = headers.map((header, index) =>
-      doc.splitTextToSize(header, colWidths[index] - 2) as string[]
+      doc.splitTextToSize(header, colWidths[index] - 4) as string[]
     );
     const maxHeaderLines = Math.max(1, ...headerLines.map(lines => lines.length));
-    const headerHeight = maxHeaderLines * 3.5 + 3.5;
+    const headerHeight = maxHeaderLines * 3.6 + 4.0;
 
     const drawHeader = () => {
       // Header + minimum 2 rows must be kept together
@@ -94,7 +120,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
       headers.forEach((header, index) => {
         doc.rect(x, y, colWidths[index], headerHeight, "F");
         const lines = headerLines[index];
-        doc.text(lines, x + 1, y + 4.5);
+        doc.text(lines, x + 2, y + 4.5);
         x += colWidths[index];
       });
       y += headerHeight;
@@ -104,12 +130,12 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
     
     rows.forEach((row, rowIndex) => {
       let cellLines = headers.map((_, colIndex) =>
-        doc.splitTextToSize(asText(row[colIndex]), colWidths[colIndex] - 2) as string[]
+        doc.splitTextToSize(asText(row[colIndex]), colWidths[colIndex] - 4) as string[]
       );
 
       while (cellLines.some(lines => lines.length > 0)) {
         const availableHeight = BODY_BOTTOM - y;
-        let linesThatFit = Math.floor((availableHeight - 4) / 3.5);
+        let linesThatFit = Math.floor((availableHeight - 4) / 3.6);
         
         if (linesThatFit < 1) {
           doc.addPage();
@@ -120,7 +146,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
 
         const maxLinesInCells = Math.max(...cellLines.map(lines => lines.length));
         const chunkLineCount = Math.min(linesThatFit, maxLinesInCells);
-        const chunkHeight = Math.max(6, chunkLineCount * 3.5 + 2);
+        const chunkHeight = Math.max(6.5, chunkLineCount * 3.6 + 2.5);
 
         doc.setDrawColor(215, 221, 229);
         doc.setTextColor(43, 51, 64);
@@ -133,7 +159,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
           doc.rect(x, y, colWidths[colIndex], chunkHeight, "FD");
 
           const chunkText = lines.slice(0, chunkLineCount);
-          doc.text(chunkText, x + 1, y + 4);
+          doc.text(chunkText, x + 2, y + 4.2);
 
           x += colWidths[colIndex];
         });
@@ -148,7 +174,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModel, caseData:
         }
       }
     });
-    y += 2;
+    y += 2.5;
   };
 
   interface SectionPreview {

@@ -116,20 +116,42 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
   };
 
   const drawCallout = (label: string, value: string) => {
-    const lines = document.splitTextToSize(asText(value), CONTENT_WIDTH - 42) as string[];
-    const height = Math.max(13, lines.length * 4.2 + 7);
-    ensure(height + 3);
+    const labelText = label.toUpperCase().trim();
+    const valueText = asText(value);
+
+    document.setFont("helvetica", "bold");
+    document.setFontSize(7.5);
+    const labelLines = document.splitTextToSize(labelText, CONTENT_WIDTH - 10) as string[];
+
+    document.setFont("helvetica", "normal");
+    document.setFontSize(8.0);
+    const valueLines = document.splitTextToSize(valueText, CONTENT_WIDTH - 10) as string[];
+
+    const labelHeight = labelLines.length * 3.8;
+    const valueHeight = valueLines.length * 4.0;
+    const paddingY = 3.5;
+    const totalHeight = paddingY + labelHeight + 1.5 + valueHeight + paddingY;
+
+    ensure(totalHeight + 3);
+
     document.setFillColor(244, 247, 250);
     document.setDrawColor(190, 199, 210);
-    document.roundedRect(MARGIN, y, CONTENT_WIDTH, height, 1.5, 1.5, "FD");
+    document.roundedRect(MARGIN, y, CONTENT_WIDTH, totalHeight, 1.5, 1.5, "FD");
+
+    document.setFillColor(201, 154, 73);
+    document.rect(MARGIN, y, 2.5, totalHeight, "F");
+
     document.setFont("helvetica", "bold");
     document.setFontSize(7.5);
     document.setTextColor(20, 42, 74);
-    document.text(label.toUpperCase(), MARGIN + 4, y + 6);
+    document.text(labelLines, MARGIN + 5, y + paddingY + 3);
+
     document.setFont("helvetica", "normal");
+    document.setFontSize(8.0);
     document.setTextColor(43, 51, 64);
-    document.text(lines, MARGIN + 39, y + 6);
-    y += height + 3;
+    document.text(valueLines, MARGIN + 5, y + paddingY + labelHeight + 3);
+
+    y += totalHeight + 3;
   };
 
   const drawTable = (table: PdfTable) => {
@@ -137,10 +159,10 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
     const widths = normalizedWidths(table.headers.length, table.widths);
     
     const headerLines = table.headers.map((header, index) =>
-      document.splitTextToSize(header, widths[index] - 3) as string[]
+      document.splitTextToSize(header, widths[index] - 4) as string[]
     );
     const maxHeaderLines = Math.max(1, ...headerLines.map(lines => lines.length));
-    const headerHeight = maxHeaderLines * 3.6 + 3.5;
+    const headerHeight = maxHeaderLines * 3.6 + 4.0;
 
     const drawHeader = () => {
       ensure(headerHeight + 10);
@@ -152,7 +174,7 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
       table.headers.forEach((header, index) => {
         document.rect(x, y, widths[index], headerHeight, "F");
         const lines = headerLines[index];
-        document.text(lines, x + 1.5, y + 4);
+        document.text(lines, x + 2, y + 4.5);
         x += widths[index];
       });
       y += headerHeight;
@@ -161,7 +183,7 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
     drawHeader();
     table.rows.forEach((row, rowIndex) => {
       let cellLines = table.headers.map((_, columnIndex) =>
-        document.splitTextToSize(asText(row[columnIndex]), widths[columnIndex] - 3) as string[]
+        document.splitTextToSize(asText(row[columnIndex]), widths[columnIndex] - 4) as string[]
       );
 
       while (cellLines.some(lines => lines.length > 0)) {
@@ -176,7 +198,7 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
 
         const maxLinesInCells = Math.max(...cellLines.map(lines => lines.length));
         const chunkLineCount = Math.min(linesThatFit, maxLinesInCells);
-        const chunkHeight = Math.max(7, chunkLineCount * 3.6 + 2.5);
+        const chunkHeight = Math.max(6.5, chunkLineCount * 3.6 + 2.5);
 
         document.setDrawColor(215, 221, 229);
         document.setTextColor(43, 51, 64);
@@ -189,7 +211,7 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
           document.rect(x, y, widths[columnIndex], chunkHeight, "FD");
 
           const chunkText = lines.slice(0, chunkLineCount);
-          document.text(chunkText, x + 1.5, y + 4);
+          document.text(chunkText, x + 2, y + 4.2);
 
           x += widths[columnIndex];
         });
