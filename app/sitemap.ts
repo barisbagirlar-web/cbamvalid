@@ -5,6 +5,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const routes = [
     '',
+    '/calculators/company-valuation',
     '/about',
     '/product',
     '/how-it-works',
