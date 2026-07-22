@@ -365,7 +365,7 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, _assessmentTime
     );
 
     // If all individual records were valid but union doesn't cover 100.00%, row state becomes OUT_OF_PERIOD
-    if (worstState === "SUPPORTED" && !coverageAssessment.complete) {
+    if (worstState === "SUPPORTED" && req.reportingPeriodRequired && !coverageAssessment.complete) {
       worstState = "OUT_OF_PERIOD";
       allReasonCodes.add("EVIDENCE_ANNUAL_COVERAGE_INCOMPLETE");
     }
