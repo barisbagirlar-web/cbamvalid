@@ -1,5 +1,9 @@
 import { Decimal } from "decimal.js";
 import { AuditReadyCase, CalculationTraceNode } from "./schema";
+import {
+  GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH,
+  GRID_EMISSION_FACTOR_SCALE_ERROR,
+} from "./input-constraints";
 
 Decimal.set({ precision: 28, rounding: Decimal.ROUND_HALF_UP });
 
@@ -95,6 +99,10 @@ export type GoodCalculationPreview = {
 export type DossierCalculationPreview = {
   trace: CalculationTraceNode[];
   goods: GoodCalculationPreview[];
+  installationDirectEmissions: string;
+  electricityIndirectEmissions: string;
+  precursorDirectEmissions: string;
+  precursorIndirectEmissions: string;
   totalDirectEmissions: string;
   totalIndirectEmissions: string;
   totalPrecursorEmissions: string;
@@ -110,6 +118,10 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
   const direct = decimal(caseData.directEmissions.value, "directEmissions");
   const electricity = decimal(caseData.electricityConsumed.value, "electricityConsumed");
   const gridFactor = decimal(caseData.gridEmissionFactor.value, "gridEmissionFactor");
+
+  if (gridFactor?.gt(GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH)) {
+    throw new Error(`CALCULATION_GRID_FACTOR_SCALE_INVALID:${GRID_EMISSION_FACTOR_SCALE_ERROR}`);
+  }
 
   const productionRecords = caseData.goods.map((good, index) => ({
     good,
@@ -219,6 +231,10 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
   return {
     trace,
     goods,
+    installationDirectEmissions: direct?.toString() ?? "NOT_CALCULATED",
+    electricityIndirectEmissions: indirect?.toString() ?? "NOT_CALCULATED",
+    precursorDirectEmissions: precursorComplete ? precursorDirect.toString() : "NOT_CALCULATED",
+    precursorIndirectEmissions: precursorComplete ? precursorIndirect.toString() : "NOT_CALCULATED",
     totalDirectEmissions: totalDirect?.toString() ?? "NOT_CALCULATED",
     totalIndirectEmissions: totalIndirect?.toString() ?? "NOT_CALCULATED",
     totalPrecursorEmissions: precursorTotal?.toString() ?? "NOT_CALCULATED",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createNewCaseDraft } from "@/lib/cbam/new-case";
+import { createBlankCaseDraft, createNewCaseDraft } from "@/lib/cbam/new-case";
 import {
   formatCaseUpdatedDate,
   getCaseDisplayName,
@@ -17,7 +17,7 @@ function draft() {
 
 describe("case summary projection", () => {
   it("returns explicit fallbacks for a blank draft", () => {
-    const caseData = draft();
+    const caseData = createBlankCaseDraft(OWNER_ID, { eventId: EVENT_ID, timestamp: TIMESTAMP });
     expect(getCaseDisplayName(caseData)).toBe("Unnamed Installation");
     expect(getPrimaryCnCode(caseData)).toBe("Pending");
   });
@@ -39,7 +39,7 @@ describe("case summary projection", () => {
   });
 
   it("does not render whitespace, NaN, or invalid dates as business data", () => {
-    const caseData = draft();
+    const caseData = createBlankCaseDraft(OWNER_ID, { eventId: EVENT_ID, timestamp: TIMESTAMP });
     caseData.installation.name.value = "   ";
     caseData.goods = [
       {

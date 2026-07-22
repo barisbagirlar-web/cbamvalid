@@ -22,6 +22,7 @@ function rejectText(source, rejected, label) {
 }
 
 const repository = read("functions/src/cbam/storage/case-repository.ts");
+const legacyCaseAdapter = read("functions/src/cbam/storage/legacy-case-adapter.ts");
 const idempotency = read("functions/src/cbam/storage/case-creation-idempotency.ts");
 const caseHandler = read("functions/src/handlers/cases.ts");
 const reportHandler = read("functions/src/handlers/reports.ts");
@@ -32,6 +33,8 @@ const saveContract = read("lib/functions/case-save-contract.ts");
 const caseSummary = read("lib/cbam/case-summary.ts");
 const newCasePage = read("app/(workspace)/cases/new/page.tsx");
 const casePage = read("app/(workspace)/cases/[caseId]/page.tsx");
+const caseWizard = read("app/(workspace)/cases/[caseId]/CaseWizardClient.tsx");
+const fieldHelp = read("components/cbam/FieldHelp.tsx");
 const casesPage = read("app/(workspace)/cases/page.tsx");
 const dashboardPage = read("app/(workspace)/cbam/page.tsx");
 const firebaseConfig = read("firebase.json");
@@ -51,7 +54,16 @@ requireText(repository, "transaction.create(caseRef, persistedRecord)", "Canonic
 requireText(repository, "transaction.create(markerRef, creationMarker)", "Atomic idempotency marker create");
 requireText(repository, '.where("caseId", "==", normalizedCaseId).limit(2)', "Legacy case lookup");
 requireText(repository, "document.id === record.caseId", "Canonical record deduplication");
+requireText(repository, "adaptLegacyCaseData", "Legacy case read compatibility adapter");
+requireText(repository, "Skipping unsupported CBAM case record", "Per-record dashboard failure isolation");
 rejectText(repository, "await caseRef.set(cbamCase)", "Raw auto-ID write pattern");
+
+requireText(legacyCaseAdapter, '"LEGACY_FLAT_V1"', "Legacy source schema marker");
+requireText(legacyCaseAdapter, '"READ_COMPATIBILITY_VIEW"', "Non-destructive legacy migration mode");
+requireText(legacyCaseAdapter, '"LEGACY_CASE_ADAPTED"', "Observable legacy adaptation audit event");
+requireText(legacyCaseAdapter, 'gridEmissionFactor: datum(source.gridEmissionFactor, "tCO2e/MWh")', "Legacy grid-factor preservation");
+requireText(legacyCaseAdapter, "evidenceRegister: []", "No fabricated legacy evidence");
+requireText(legacyCaseAdapter, "carbonPriceRecords: []", "No fabricated legacy carbon-price record");
 
 requireText(idempotency, "deriveCaseCreationIdentity", "Deterministic creation identity");
 requireText(idempotency, 'return "RETURN_EXISTING"', "Idempotent retry state");
@@ -96,6 +108,15 @@ rejectText(casePage, "useCallback", "Effect-owned synchronous state loader");
 rejectText(casePage, "void loadWorkspace()", "Effect-owned synchronous state loader invocation");
 rejectText(casePage, 'router.push("/dashboard")', "Silent workspace dashboard fallback");
 rejectText(casePage, 'router.replace("/dashboard")', "Silent workspace dashboard fallback");
+
+requireText(fieldHelp, 'className="fixed inset-0 z-[100]', "Viewport-bound field guidance overlay");
+requireText(fieldHelp, 'max-h-[calc(100dvh-2rem)]', "Field guidance viewport height bound");
+requireText(fieldHelp, 'aria-modal="true"', "Accessible field guidance dialog");
+requireText(fieldHelp, 'event.key === "Escape"', "Keyboard-close field guidance dialog");
+requireText(fieldHelp, "Close data-source help", "Visible close control contract");
+requireText(caseWizard, "What the Preparation Pack actually delivers", "Paid package value disclosure");
+requireText(caseWizard, "How to fix:", "Readiness remediation guidance");
+requireText(caseWizard, "Resolve evidence blockers", "Actionable blocked sealing state");
 
 requireText(caseSummary, "caseData.installation.name", "Canonical installation summary path");
 requireText(caseSummary, "caseData.goods[0]?.cnCode", "Canonical CN-code summary path");
@@ -151,7 +172,10 @@ console.log("CASE_CREATE_SINGLE_FLIGHT=PASS");
 console.log("CASE_CREATE_IDEMPOTENCY=PASS");
 console.log("CASE_ROLLING_DEPLOY_COMPATIBILITY=PASS");
 console.log("CASE_LOAD_FAILURE_ISOLATION=PASS");
+console.log("CASE_LEGACY_READ_COMPATIBILITY=PASS");
 console.log("CASE_LOAD_CANCELLATION=PASS");
+console.log("CASE_FIELD_HELP_VIEWPORT=PASS");
+console.log("CASE_READINESS_REMEDIATION=PASS");
 console.log("CASE_SEALING_RESOLVER=PASS");
 console.log("CASE_SUMMARY_SCHEMA_PATHS=PASS");
 console.log("CASE_CREATION_MARKER_RULES=PASS");

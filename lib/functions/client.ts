@@ -1,5 +1,14 @@
-import { httpsCallable } from "firebase/functions";
-import { firebaseFunctions } from "@/lib/firebase/client";
+import {
+  httpsCallable as createFirebaseCallable,
+  type Functions,
+  type HttpsCallable,
+} from "firebase/functions";
+import {
+  firebaseAuth,
+  firebaseAuthPersistenceReady,
+  firebaseFunctions,
+} from "@/lib/firebase/client";
+import { withCallableAuthentication } from "@/lib/functions/authenticated-callable";
 import {
   AuditReadyCaseSchema,
   type AuditReadyCase,
@@ -55,6 +64,18 @@ export type ReportDownloadDescriptor = {
   sizeBytes: number;
   status: "success";
 };
+
+function httpsCallable<RequestData, ResponseData>(
+  functions: Functions,
+  name: string
+): HttpsCallable<RequestData, ResponseData> {
+  const callable = createFirebaseCallable<RequestData, ResponseData>(functions, name);
+  return withCallableAuthentication(
+    firebaseAuth,
+    firebaseAuthPersistenceReady,
+    callable
+  );
+}
 
 export const getCbamCasesCallable = httpsCallable<void, { cases: CbamCaseRecord[] }>(firebaseFunctions, "getCbamCases");
 export const getCbamCaseCallable = httpsCallable<{ caseId: string }, { case: unknown }>(firebaseFunctions, "getCbamCase");

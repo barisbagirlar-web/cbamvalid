@@ -5,7 +5,10 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { firebaseAuth as auth } from "@/lib/firebase/client";
+import {
+  firebaseAuth as auth,
+  firebaseAuthPersistenceReady,
+} from "@/lib/firebase/client";
 import { resolvePostLoginRoute } from "@/lib/auth/post-login-routing";
 import { finalizeServerSession } from "@/lib/auth/finalize-server-session";
 
@@ -32,6 +35,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
+      await firebaseAuthPersistenceReady;
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
@@ -63,6 +67,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
+      await firebaseAuthPersistenceReady;
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({
         prompt: "select_account",

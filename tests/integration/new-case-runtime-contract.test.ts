@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { AuditReadyCaseSchema as BrowserCaseSchema, createEmptyInput } from "@/lib/cbam/schema";
-import { createNewCaseDraft } from "@/lib/cbam/new-case";
+import {
+  createBlankCaseDraft,
+  createNewCaseDraft,
+  isIllustrativeScenarioActive,
+  replaceIllustrativeScenarioWithBlank,
+} from "@/lib/cbam/new-case";
 import { createCaseSaveRequest } from "@/lib/functions/case-save-contract";
 import { performDossierCalculations } from "@/lib/cbam/calculator";
+import { runQualityControls as runBrowserQualityControls } from "@/lib/cbam/validation/quality-controls";
 import { AuditReadyCaseSchema as FunctionsCaseSchema } from "../../functions/src/cbam/schema";
+import { runQualityControls as runServerQualityControls } from "../../functions/src/cbam/validation/quality-controls";
 import { buildCaseRecord, toCaseWorkspaceView } from "../../functions/src/cbam/storage/case-contract";
 import {
   decideCaseCreationState,
@@ -13,12 +20,21 @@ import {
 
 const OWNER_ID = "user_case_contract_123";
 const EVENT_ID = "11111111-1111-4111-8111-111111111111";
+const SCENARIO_EVENT_ID = "11111111-1111-4111-8111-111111111112";
 const REQUEST_ID = "22222222-2222-4222-8222-222222222222";
 const OTHER_REQUEST_ID = "33333333-3333-4333-8333-333333333333";
 const TIMESTAMP = "2026-07-15T12:00:00.000Z";
 
 function validDraft() {
-  return createNewCaseDraft(OWNER_ID, { eventId: EVENT_ID, timestamp: TIMESTAMP });
+  return createNewCaseDraft(OWNER_ID, {
+    eventId: EVENT_ID,
+    scenarioEventId: SCENARIO_EVENT_ID,
+    timestamp: TIMESTAMP,
+  });
+}
+
+function blankDraft() {
+  return createBlankCaseDraft(OWNER_ID, { eventId: EVENT_ID, timestamp: TIMESTAMP });
 }
 
 describe("new case runtime contract", () => {
@@ -41,7 +57,8 @@ describe("new case runtime contract", () => {
     expect(record.data.caseId).toBe(record.caseId);
     expect(workspace.caseId).toBe(record.caseId);
     expect(workspace.ownerId).toBe(OWNER_ID);
-    expect(workspace.goods).toEqual([]);
+    expect(workspace.goods).toHaveLength(2);
+    expect(workspace.goods[0]?.cnCode.value).toBe("72085120");
     expect("data" in workspace).toBe(false);
   });
 
@@ -121,14 +138,14 @@ describe("case creation idempotency state machine", () => {
 
 describe("new case calculation safety", () => {
   it("does not divide by zero or throw for a blank draft", () => {
-    expect(() => performDossierCalculations(validDraft())).not.toThrow();
-    const result = performDossierCalculations(validDraft());
+    expect(() => performDossierCalculations(blankDraft())).not.toThrow();
+    const result = performDossierCalculations(blankDraft());
     expect(result.totalEmbeddedEmissions).toBe("NOT_CALCULATED");
     expect(result.specificEmbeddedEmissions).toBe("NOT_CALCULATED");
   });
 
   it("matches the closed-form emissions identity and is monotonic", () => {
-    const base = validDraft();
+    const base = blankDraft();
     base.goods = [{
       cnCode: { ...createEmptyInput(), value: "72081000" },
       sector: "IRON_AND_STEEL",
@@ -162,7 +179,7 @@ describe("new case calculation safety", () => {
   });
 
   it("preserves total emissions and fails closed only for division by zero", () => {
-    const draft = validDraft();
+    const draft = blankDraft();
     draft.goods = [{
       cnCode: { ...createEmptyInput(), value: "72081000" },
       sector: "IRON_AND_STEEL",
@@ -179,5 +196,61 @@ describe("new case calculation safety", () => {
     expect(result.specificEmbeddedEmissions).toBe("NOT_CALCULATED");
     expect(result.goods).toEqual([]);
     expect(JSON.stringify(result)).not.toMatch(/Infinity|NaN/);
+  });
+});
+
+describe("default illustrative scenario", () => {
+  it("prefills every workflow section with a coherent, calculable example", () => {
+    const scenario = validDraft();
+    const result = performDossierCalculations(scenario);
+
+    expect(isIllustrativeScenarioActive(scenario)).toBe(true);
+    expect(scenario.importerIdentity.legalName.value).toBeTruthy();
+    expect(scenario.exporterIdentity.legalName.value).toBeTruthy();
+    expect(scenario.goods).toHaveLength(2);
+    expect(scenario.installation.systemBoundaries).toContain("Illustrative boundary");
+    expect(scenario.precursors).toHaveLength(1);
+    expect(scenario.carbonPriceRecords).toHaveLength(1);
+    expect(scenario.evidenceRegister).toEqual([]);
+    expect(result.totalDirectEmissions).toBe("770");
+    expect(result.totalIndirectEmissions).toBe("387.24");
+    expect(result.totalPrecursorEmissions).toBe("168");
+    expect(result.totalEmbeddedEmissions).toBe("1157.24");
+    expect(result.productionVolume).toBe("1000");
+    expect(result.specificEmbeddedEmissions).toBe("1.15724");
+    expect(result.allocationShareTotal).toBe("1");
+    expect(result.allocationReconciliationDelta).toBe("0");
+    expect(result.goods).toHaveLength(2);
+  });
+
+  it("blocks sealing in both runtimes until example data is explicitly removed", () => {
+    const scenario = validDraft();
+
+    for (const controls of [
+      runBrowserQualityControls(scenario),
+      runServerQualityControls(scenario),
+    ]) {
+      const guard = controls.find((control) => control.ruleId === "QC_SCENARIO");
+      expect(guard?.status).toBe("BLOCKER");
+      expect(guard?.remediationCode).toBe("REM_REPLACE_ILLUSTRATIVE_SCENARIO");
+    }
+  });
+
+  it("clears all example values while preserving case identity and audit history", () => {
+    const scenario = { ...validDraft(), caseId: "case_FirestoreAutoId123" };
+    const blank = replaceIllustrativeScenarioWithBlank(
+      scenario,
+      OWNER_ID,
+      "2026-07-15T13:00:00.000Z"
+    );
+
+    expect(blank.caseId).toBe(scenario.caseId);
+    expect(blank.ownerId).toBe(OWNER_ID);
+    expect(blank.importerIdentity.legalName.value).toBeNull();
+    expect(blank.goods).toEqual([]);
+    expect(blank.precursors).toEqual([]);
+    expect(blank.carbonPriceRecords).toEqual([]);
+    expect(isIllustrativeScenarioActive(blank)).toBe(false);
+    expect(blank.auditEvents.at(-1)?.action).toBe("ILLUSTRATIVE_SCENARIO_REPLACED");
   });
 });
