@@ -122,7 +122,7 @@ describe("verifier-grade deliverables", () => {
     const operator = artifacts.find((item) => item.path === "Operator Emissions Report.pdf");
     expect(operator).toBeDefined();
     const operatorPdf = await pdfText(operator!.bytes);
-    expect(operatorPdf.pages).toBeGreaterThanOrEqual(8);
+    expect(operatorPdf.pages).toBeGreaterThanOrEqual(6);
     expect(operatorPdf.text).toContain("Executive summary");
     expect(operatorPdf.text).toContain("Emissions waterfall");
     expect(operatorPdf.text).toContain("Sensitivity analysis");

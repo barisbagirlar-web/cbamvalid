@@ -104,6 +104,7 @@ export const SealedReportViewSchema = z.object({
 export type SealedReportView = z.infer<typeof SealedReportViewSchema>;
 
 export function parseSealedReportView(value: unknown): SealedReportView {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const raw = { ...value as Record<string, any> };
   if (raw.packageMetadata && typeof raw.packageMetadata === "object") {
     const metaParse = PackageMetadataSchema.safeParse(raw.packageMetadata);

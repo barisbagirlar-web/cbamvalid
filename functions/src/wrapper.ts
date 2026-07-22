@@ -1,6 +1,5 @@
 import { CallableRequest, HttpsError, onCall, CallableOptions } from "firebase-functions/v2/https";
 import { z } from "zod";
-import { resolveAppCheckEnforcement } from "./app-check-policy";
 
 export interface AuthenticatedCallableRequest<T = unknown> extends CallableRequest<T> {
   auth: NonNullable<CallableRequest<T>["auth"]>;
