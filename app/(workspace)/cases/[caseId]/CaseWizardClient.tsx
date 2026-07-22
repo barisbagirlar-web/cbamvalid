@@ -378,6 +378,59 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     }));
   };
 
+  const handleCsvImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      if (!text) return;
+      const lines = text.split(/\r?\n/);
+      if (lines.length < 2) {
+        alert("Invalid CSV: The file must contain a header row and at least one data row.");
+        return;
+      }
+      
+      const newPrecursors: any[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        
+        const parts = line.split(",").map(item => item.trim().replace(/^["']|["']$/g, ""));
+        if (parts.length < 5) continue;
+        
+        const [name, country, quantity, direct, indirect] = parts;
+        if (!name || !country) continue;
+        
+        const qtyVal = parseFloat(quantity);
+        const directVal = parseFloat(direct);
+        const indirectVal = parseFloat(indirect);
+        
+        newPrecursors.push({
+          name: { value: name, sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED" },
+          quantity: { value: isNaN(qtyVal) ? null : qtyVal, canonicalUnit: "t", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED" },
+          directEmissions: { value: isNaN(directVal) ? null : directVal, canonicalUnit: "tCO2e", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED" },
+          indirectEmissions: { value: isNaN(indirectVal) ? null : indirectVal, canonicalUnit: "tCO2e", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED" },
+          countryOfOrigin: { value: country, sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED" },
+        });
+      }
+      
+      if (newPrecursors.length === 0) {
+        alert("No valid rows matched the format (Name, Country, Quantity, DirectEmissions, IndirectEmissions).");
+        return;
+      }
+      
+      setCaseData((prev) => ({
+        ...prev,
+        precursors: [...prev.precursors, ...newPrecursors],
+      }));
+      
+      alert(`Successfully imported ${newPrecursors.length} precursors!`);
+      event.target.value = "";
+    };
+    reader.readAsText(file);
+  };
+
   const addMethodologyDecision = (topic: string) => {
     if (caseData.methodologyDecisions.some((decision) => decision.topic === topic)) return;
     setCaseData((previous) => ({
@@ -693,13 +746,24 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold">6. Precursors and methodology decisions</h2>
-          <button
-            type="button"
-            onClick={addPrecursor}
-            className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-sm font-semibold text-surface"
-          >
-            <Plus className="h-4 w-4" /> Add precursor
-          </button>
+          <div className="flex items-center gap-3">
+            <label className="inline-flex items-center gap-2 rounded border border-border bg-neutral-soft px-4 py-2 text-sm font-semibold text-foreground cursor-pointer hover:bg-border/30">
+              <FileUp className="h-4 w-4" /> Import CSV
+              <input
+                type="file"
+                accept=".csv"
+                className="hidden"
+                onChange={handleCsvImport}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={addPrecursor}
+              className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-sm font-semibold text-surface"
+            >
+              <Plus className="h-4 w-4" /> Add precursor
+            </button>
+          </div>
         </div>
 
         {caseData.precursors.length === 0 && (
@@ -1096,5 +1160,5 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
 
   const stepContent = [renderStep1, renderStep2, renderStep3, renderStep4, renderStep5, renderStep6, renderStep7, renderStep8][currentStep - 1];
 
-  return <main className="min-h-screen bg-background px-4 py-8 pb-32 text-foreground md:px-8"><div className="mx-auto max-w-6xl space-y-6"><header className="flex flex-col justify-between gap-4 border-b border-border pb-4 md:flex-row md:items-center"><div><h1 className="text-2xl font-bold">Case workflow</h1><p className="text-sm text-muted">ID: {caseData.caseId || "UNASSIGNED"} · User: {sessionUser.email || sessionUser.uid}</p></div><button type="button" onClick={handleSave} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded border border-border bg-neutral-soft px-4 py-2 text-sm font-medium disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {saving ? "Saving…" : "Save draft"}</button></header><StatusBanner status={saveStatus} tone={saveTone} /><nav aria-label="Dossier steps" className="flex gap-3 overflow-x-auto pb-3">{STEPS.map((step) => <button type="button" key={step.id} onClick={() => setCurrentStep(step.id)} className={`min-w-28 rounded-lg border px-3 py-2 text-xs font-bold ${currentStep === step.id ? "border-accent bg-accent text-surface" : "border-border bg-surface text-muted"}`}><span className="block text-sm">{step.id}</span>{step.label}</button>)}</nav><section className="py-4">{stepContent()}</section></div><div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface p-4 shadow-[0_-4px_8px_rgba(0,0,0,0.08)]"><div className="mx-auto flex max-w-6xl items-center justify-between"><button type="button" onClick={() => setCurrentStep((step) => Math.max(1, step - 1))} disabled={currentStep === 1} className="inline-flex items-center gap-2 rounded border border-border px-4 py-2 disabled:opacity-40"><ArrowLeft className="h-4 w-4" /> Previous</button><span className="text-sm font-bold text-muted">Step {currentStep} of 8</span><button type="button" onClick={() => setCurrentStep((step) => Math.min(8, step + 1))} disabled={currentStep === 8} className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-surface disabled:opacity-40">Next <ArrowRight className="h-4 w-4" /></button></div></div></main>;
+  return <main className="min-h-screen bg-background px-4 py-8 pb-32 text-foreground md:px-8"><div className="mx-auto max-w-6xl space-y-6"><header className="flex flex-col justify-between gap-4 border-b border-border pb-4 md:flex-row md:items-center"><div><h1 className="text-2xl font-bold">Case workflow</h1><p className="text-sm text-muted">ID: {caseData.caseId || "UNASSIGNED"} · User: {sessionUser.email || sessionUser.uid}</p></div><button type="button" onClick={handleSave} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded border border-border bg-neutral-soft px-4 py-2 text-sm font-medium disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {saving ? "Saving…" : "Save draft"}</button></header><div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4 text-xs text-amber-900 leading-relaxed print:hidden flex gap-3 items-start"><Shield className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" /><div className="space-y-1"><strong>Regulatory Disclaimer:</strong> This platform generates an exporter-prepared verification dossier to streamline independent audit preparation. It is <strong>NOT</strong> an official European Commission verification opinion and does not substitute for independent verification by an EU accredited body.</div></div><StatusBanner status={saveStatus} tone={saveTone} /><nav aria-label="Dossier steps" className="flex gap-3 overflow-x-auto pb-3">{STEPS.map((step) => <button type="button" key={step.id} onClick={() => setCurrentStep(step.id)} className={`min-w-28 rounded-lg border px-3 py-2 text-xs font-bold ${currentStep === step.id ? "border-accent bg-accent text-surface" : "border-border bg-surface text-muted"}`}><span className="block text-sm">{step.id}</span>{step.label}</button>)}</nav><section className="py-4">{stepContent()}</section></div><div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface p-4 shadow-[0_-4px_8px_rgba(0,0,0,0.08)]"><div className="mx-auto flex max-w-6xl items-center justify-between"><button type="button" onClick={() => setCurrentStep((step) => Math.max(1, step - 1))} disabled={currentStep === 1} className="inline-flex items-center gap-2 rounded border border-border px-4 py-2 disabled:opacity-40"><ArrowLeft className="h-4 w-4" /> Previous</button><span className="text-sm font-bold text-muted">Step {currentStep} of 8</span><button type="button" onClick={() => setCurrentStep((step) => Math.min(8, step + 1))} disabled={currentStep === 8} className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-surface disabled:opacity-40">Next <ArrowRight className="h-4 w-4" /></button></div></div></main>;
 }
