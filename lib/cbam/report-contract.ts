@@ -104,12 +104,20 @@ export const SealedReportViewSchema = z.object({
 export type SealedReportView = z.infer<typeof SealedReportViewSchema>;
 
 export function parseSealedReportView(value: unknown): SealedReportView {
-  const parsed = SealedReportViewSchema.safeParse(value);
+  const raw = { ...value as Record<string, any> };
+  if (raw.packageMetadata && typeof raw.packageMetadata === "object") {
+    const metaParse = PackageMetadataSchema.safeParse(raw.packageMetadata);
+    if (!metaParse.success) {
+      delete raw.packageMetadata;
+    } else {
+      raw.packageMetadata = metaParse.data;
+    }
+  }
+
+  const parsed = SealedReportViewSchema.safeParse(raw);
   if (parsed.success) return parsed.data;
   
   // If parsing failed only due to count or status, dynamically fix it for compatibility
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const raw = value as Record<string, any>;
   const isV5 = Boolean(
     raw &&
       (raw.productCode === "pack_premium_dossier_v5" ||
