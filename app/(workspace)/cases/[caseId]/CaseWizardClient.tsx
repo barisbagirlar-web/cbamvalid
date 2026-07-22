@@ -38,6 +38,39 @@ import {
   type PreparationPackEntitlement,
 } from "@/lib/functions/client";
 
+const FIELD_HINTS: Record<string, string> = {
+  "importerIdentity.legalName": "EU importer's registered legal entity name matching official customs documents.",
+  "exporterIdentity.legalName": "Operator's legal corporate name responsible for manufacturing the goods.",
+  "importerIdentity.eoriNumber": "17-character EU Economic Operator Registration Identification (EORI), e.g., DE12345678901234.",
+  "reportingPeriod.year": "Annual reporting calendar year (e.g. 2025). Future periods (>=2026) are blocked until they end.",
+  "reportingPeriod.quarter": "Enter 'ANNUAL' for full year reports, or Q1-Q4 for quarterly declarations.",
+  "reportingPeriod.startDate": "The start date of the reporting period (YYYY-MM-DD), representing the first day of operations.",
+  "reportingPeriod.endDate": "The end date of the period (YYYY-MM-DD). Must be in the past to allow sealing.",
+  "goods.cnCode": "8-digit Combined Nomenclature customs code of the declared product (e.g., 73063077).",
+  "goods.sector": "The official CBAM sector categories associated with the goods CN classification.",
+  "goods.productionVolume": "The net production quantity produced in the facility during the reporting period.",
+  "goods.shipmentRecords": "Identify specific commercial invoices, shipping bills, or Bill of Lading numbers.",
+  "goods.allocationShare": "The allocation fraction of total emissions assigned to this good (value must be between 0 and 1).",
+  "installation.name": "The registered legal name of the manufacturing facility or plant.",
+  "installation.country": "The 2-letter ISO country code of the facility location (e.g. TR, CN).",
+  "installation.productionRoute": "Technology name (e.g., Blast Furnace Route BF-BOF, Electric Arc Furnace EAF).",
+  "installation.systemBoundaries": "Description of boundaries (processes, material inputs/outputs included or excluded).",
+  "directEmissions": "Total direct greenhouse gas emissions in metric tonnes of CO2 equivalent (tCO2e) generated inside the boundary.",
+  "electricityConsumed": "Total electricity imported/consumed by production processes in Megawatt-hours (MWh).",
+  "gridEmissionFactor": "The grid emission factor of electricity in tCO2e/MWh (default is 0.4 if unknown).",
+  "amountPaid": "Total carbon price paid in the origin country for the relevant emissions volume.",
+  "applicableEmissions": "Total metric tonnes of greenhouse gas emissions covered by the carbon pricing scheme.",
+  "currency": "Select currency matching the official tax payment receipt.",
+  "legislationReference": "Cite the specific local carbon tax law or emissions trading scheme regulation name.",
+  "proofOfPaymentEvidenceId": "Select the uploaded file proving the actual tax payment to the national registry.",
+  "evidenceFile": "Choose a document to upload (PDF, CSV, Excel, Images, or Text formats up to 50MB).",
+  "evidenceDocumentType": "E.g., Customs declaration, monitoring plan, utility bill, invoice, mass balance ledger.",
+  "evidenceIssuer": "The legal name of the entity that issued/certified this document.",
+  "evidenceIssueDate": "The official issue date printed on the document.",
+  "evidenceLinkedInput": "Select which wizard field this document verifies to build the digital audit trail.",
+  "correctionReason": "Describe what modifications were done compared to the previous sealed release."
+};
+
 const METHODOLOGY_TOPICS = [
   { id: "SYSTEM_BOUNDARY", label: "System boundary" },
   { id: "PRODUCTION_ROUTE", label: "Production route" },
@@ -550,7 +583,11 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         ].map(([path, label, type]) => {
           const parts = path.split(/[.]/);
           const datum = parts.reduce<unknown>((val, part) => (val && typeof val === "object" ? (val as Record<string, unknown>)[part] : undefined), caseData) as InputDatum | null | undefined;
-          return <div key={path}><FieldLabel>{label}</FieldLabel><input aria-label={label} type={type} value={datumValue(datum?.value)} onChange={(event) => updateDatum(path, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>;
+          return <div key={path}>
+            <FieldLabel>{label}</FieldLabel>
+            <input aria-label={label} type={type} value={datumValue(datum?.value)} onChange={(event) => updateDatum(path, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" />
+            <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS[path]}</p>
+          </div>;
         })}
       </div>
     </div>
@@ -562,13 +599,37 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       {caseData.goods.length === 0 && <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted">No goods declared.</div>}
       {caseData.goods.map((good, index) => (
         <div key={`good-${index}`} className="grid gap-4 rounded-xl border border-border bg-surface p-5 md:grid-cols-2">
-          <div><FieldLabel>CN code</FieldLabel><input aria-label={`Good ${index + 1} CN code`} inputMode="numeric" value={datumValue(good?.cnCode?.value)} onChange={(event) => updateDatum(`goods.${index}.cnCode`, { value: event.target.value.replace(/\D/g, "").slice(0, 8) })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-          <div><FieldLabel>CBAM sector</FieldLabel><select aria-label={`Good ${index + 1} sector`} value={good.sector} onChange={(event) => updatePlain(`goods.${index}.sector`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm">{SECTORS.map((sector) => <option key={sector} value={sector}>{sector.replaceAll("_", " ")}</option>)}</select></div>
-          <div><FieldLabel>Production quantity</FieldLabel><input aria-label={`Good ${index + 1} production quantity`} type="number" min="0" step="any" value={datumValue(good?.productionVolume?.value)} onChange={(event) => updateDatum(`goods.${index}.productionVolume`, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-          <div><FieldLabel>Production unit</FieldLabel><select aria-label={`Good ${index + 1} production unit`} value={good?.productionVolume?.canonicalUnit || "t"} onChange={(event) => updateDatum(`goods.${index}.productionVolume`, { canonicalUnit: event.target.value as UnitCode })} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="t">tonnes</option><option value="kg">kilograms</option></select></div>
-          <div><FieldLabel>Shipment / product description</FieldLabel><input aria-label={`Good ${index + 1} shipment description`} value={datumValue(good?.shipmentRecords?.value)} onChange={(event) => updateDatum(`goods.${index}.shipmentRecords`, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-          {caseData.goods.length > 1 && <div><FieldLabel>Allocation share (0–1)</FieldLabel><input aria-label={`Good ${index + 1} allocation share`} type="number" min="0" max="1" step="0.000001" value={datumValue(good?.allocationShare?.value ?? null)} onChange={(event) => updateDatum(`goods.${index}.allocationShare`, { value: event.target.value, canonicalUnit: "fraction" })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>}
-          <button type="button" onClick={() => removeGood(index)} className="inline-flex items-center gap-2 text-sm text-red-700"><Trash2 className="h-4 w-4" /> Remove good</button>
+          <div>
+            <FieldLabel>CN code</FieldLabel>
+            <input aria-label={`Good ${index + 1} CN code`} inputMode="numeric" value={datumValue(good?.cnCode?.value)} onChange={(event) => updateDatum(`goods.${index}.cnCode`, { value: event.target.value.replace(/\D/g, "").slice(0, 8) })} className="w-full rounded border border-border bg-background p-2 text-sm" />
+            <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["goods.cnCode"]}</p>
+          </div>
+          <div>
+            <FieldLabel>CBAM sector</FieldLabel>
+            <select aria-label={`Good ${index + 1} sector`} value={good.sector} onChange={(event) => updatePlain(`goods.${index}.sector`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm">{SECTORS.map((sector) => <option key={sector} value={sector}>{sector.replaceAll("_", " ")}</option>)}</select>
+            <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["goods.sector"]}</p>
+          </div>
+          <div>
+            <FieldLabel>Production quantity</FieldLabel>
+            <input aria-label={`Good ${index + 1} production quantity`} type="number" min="0" step="any" value={datumValue(good?.productionVolume?.value)} onChange={(event) => updateDatum(`goods.${index}.productionVolume`, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" />
+            <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["goods.productionVolume"]}</p>
+          </div>
+          <div>
+            <FieldLabel>Production unit</FieldLabel>
+            <select aria-label={`Good ${index + 1} production unit`} value={good?.productionVolume?.canonicalUnit || "t"} onChange={(event) => updateDatum(`goods.${index}.productionVolume`, { canonicalUnit: event.target.value as UnitCode })} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="t">tonnes</option><option value="kg">kilograms</option></select>
+            <p className="mt-1 text-[11px] text-muted leading-normal">Choose 'tonnes' (t) or 'kilograms' (kg) as the unit for this good's quantity.</p>
+          </div>
+          <div>
+            <FieldLabel>Shipment / product description</FieldLabel>
+            <input aria-label={`Good ${index + 1} shipment description`} value={datumValue(good?.shipmentRecords?.value)} onChange={(event) => updateDatum(`goods.${index}.shipmentRecords`, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" />
+            <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["goods.shipmentRecords"]}</p>
+          </div>
+          {caseData.goods.length > 1 && <div>
+            <FieldLabel>Allocation share (0–1)</FieldLabel>
+            <input aria-label={`Good ${index + 1} allocation share`} type="number" min="0" max="1" step="0.000001" value={datumValue(good?.allocationShare?.value ?? null)} onChange={(event) => updateDatum(`goods.${index}.allocationShare`, { value: event.target.value, canonicalUnit: "fraction" })} className="w-full rounded border border-border bg-background p-2 text-sm" />
+            <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["goods.allocationShare"]}</p>
+          </div>}
+          <button type="button" onClick={() => removeGood(index)} className="inline-flex items-center gap-2 text-sm text-red-700 md:col-span-2"><Trash2 className="h-4 w-4" /> Remove good</button>
         </div>
       ))}
     </div>
@@ -576,19 +637,47 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
 
   const renderStep3 = () => (
     <div className="space-y-6"><h2 className="text-xl font-bold">3. Installation and system boundary</h2><div className="grid gap-4 rounded-xl border border-border bg-surface p-6 md:grid-cols-2">
-      <div><FieldLabel>Installation name</FieldLabel><input aria-label="Installation name" value={datumValue(caseData?.installation?.name?.value)} onChange={(event) => updateDatum("installation.name", { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-      <div><FieldLabel>Installation country</FieldLabel><input aria-label="Installation country" value={datumValue(caseData?.installation?.country?.value)} onChange={(event) => updateDatum("installation.country", { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-      <div><FieldLabel>Production route</FieldLabel><input aria-label="Production route" value={datumValue(caseData?.installation?.productionRoute?.value)} onChange={(event) => updateDatum("installation.productionRoute", { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-      <div className="md:col-span-2"><FieldLabel>System-boundary statement</FieldLabel><textarea aria-label="System-boundary statement" value={caseData?.installation?.systemBoundaries || ""} onChange={(event) => updatePlain("installation.systemBoundaries", event.target.value)} rows={5} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
+      <div>
+        <FieldLabel>Installation name</FieldLabel>
+        <input aria-label="Installation name" value={datumValue(caseData?.installation?.name?.value)} onChange={(event) => updateDatum("installation.name", { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" />
+        <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["installation.name"]}</p>
+      </div>
+      <div>
+        <FieldLabel>Installation country</FieldLabel>
+        <input aria-label="Installation country" value={datumValue(caseData?.installation?.country?.value)} onChange={(event) => updateDatum("installation.country", { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" />
+        <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["installation.country"]}</p>
+      </div>
+      <div>
+        <FieldLabel>Production route</FieldLabel>
+        <input aria-label="Production route" value={datumValue(caseData?.installation?.productionRoute?.value)} onChange={(event) => updateDatum("installation.productionRoute", { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" />
+        <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["installation.productionRoute"]}</p>
+      </div>
+      <div className="md:col-span-2">
+        <FieldLabel>System-boundary statement</FieldLabel>
+        <textarea aria-label="System-boundary statement" value={caseData?.installation?.systemBoundaries || ""} onChange={(event) => updatePlain("installation.systemBoundaries", event.target.value)} rows={5} className="w-full rounded border border-border bg-background p-2 text-sm" />
+        <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["installation.systemBoundaries"]}</p>
+      </div>
     </div></div>
   );
 
   const emissionInput = (path: "directEmissions" | "electricityConsumed" | "gridEmissionFactor", label: string, unit: UnitCode) => {
     const datum = caseData?.[path];
     return <div className="grid gap-4 rounded-xl border border-border bg-surface p-6 md:grid-cols-3">
-      <div><FieldLabel>{label}</FieldLabel><input aria-label={label} type="number" min="0" step="any" value={datumValue(datum?.value)} onChange={(event) => updateDatum(path, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-      <div><FieldLabel>Unit</FieldLabel><select aria-label={`${label} unit`} value={datum?.canonicalUnit || unit} onChange={(event) => updateDatum(path, { canonicalUnit: event.target.value as UnitCode })} className="w-full rounded border border-border bg-background p-2 text-sm"><option value={unit}>{unit}</option></select></div>
-      <div><FieldLabel>Source type</FieldLabel><select aria-label={`${label} source type`} value={datum?.sourceType || "PRIMARY"} onChange={(event) => updateDatum(path, { sourceType: event.target.value as InputDatum["sourceType"] })} className="w-full rounded border border-border bg-background p-2 text-sm">{SOURCE_TYPES.map((source) => <option key={source} value={source}>{source}</option>)}</select></div>
+      <div>
+        <FieldLabel>{label}</FieldLabel>
+        <input aria-label={label} type="number" min="0" step="any" value={datumValue(datum?.value)} onChange={(event) => updateDatum(path, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" />
+        <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS[path]}</p>
+      </div>
+      <div>
+        <FieldLabel>Unit</FieldLabel>
+        <select aria-label={`${label} unit`} value={datum?.canonicalUnit || unit} onChange={(event) => updateDatum(path, { canonicalUnit: event.target.value as UnitCode })} className="w-full rounded border border-border bg-background p-2 text-sm"><option value={unit}>{unit}</option></select>
+        <p className="mt-1 text-[11px] text-muted leading-normal">The required reporting unit for this field ({unit}).</p>
+      </div>
+      <div>
+        <FieldLabel>Source type</FieldLabel>
+        <select aria-label={`${label} source type`} value={datum?.sourceType || "PRIMARY"} onChange={(event) => updateDatum(path, { sourceType: event.target.value as InputDatum["sourceType"] })} className="w-full rounded border border-border bg-background p-2 text-sm">{SOURCE_TYPES.map((source) => <option key={source} value={source}>{source}</option>)}</select>
+        <p className="mt-1 text-[11px] text-muted leading-normal">Data verification origin (PRIMARY = directly measured/verified, ESTIMATE = calculated/assumed).</p>
+      </div>
     </div>;
   };
 
@@ -630,6 +719,11 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
                   onChange={(event) => updateDatum(`precursors.${index}.${field}`, { value: event.target.value })}
                   className="w-full rounded border border-border bg-background p-2 text-sm"
                 />
+                <p className="mt-1 text-[11px] text-muted leading-normal">
+                  {field === "name"
+                    ? "The commercial or chemical name of the precursor (e.g. steel billets, pig iron, iron ore)."
+                    : "The 2-letter ISO country code of manufacture/origin of this precursor (e.g. TR, CN, IN)."}
+                </p>
               </div>
             ))}
             {[["quantity", "Quantity", "t"], ["directEmissions", "Direct emissions", "tCO2e"], ["indirectEmissions", "Indirect emissions", "tCO2e"]].map(([field, label, unit]) => (
@@ -644,6 +738,13 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
                   onChange={(event) => updateDatum(`precursors.${index}.${field}`, { value: event.target.value, canonicalUnit: unit as UnitCode })}
                   className="w-full rounded border border-border bg-background p-2 text-sm"
                 />
+                <p className="mt-1 text-[11px] text-muted leading-normal">
+                  {field === "quantity"
+                    ? "Total metric tonnage of the precursor consumed during the production period."
+                    : field === "directEmissions"
+                      ? "Direct embedded emissions associated with the precursor quantity used (tCO2e)."
+                      : "Indirect embedded emissions associated with the precursor quantity used (tCO2e)."}
+                </p>
               </div>
             ))}
             <button
@@ -672,6 +773,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
                   <option key={topic.id} value={topic.id}>{topic.label}</option>
                 ))}
               </select>
+              <p className="mt-1 text-[11px] text-muted leading-normal">Choose the regulatory methodology topic being defined.</p>
             </div>
 
             <div>
@@ -685,6 +787,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
                 <option value="EU-CBAM-DEFINITIVE-2026">EU-CBAM-DEFINITIVE-2026</option>
                 <option value="EU-CBAM-TRANSITIONAL">EU-CBAM-TRANSITIONAL</option>
               </select>
+              <p className="mt-1 text-[11px] text-muted leading-normal">Select regime ruleset. EU-CBAM-DEFINITIVE-2026 starts from year 2026.</p>
             </div>
 
             <div className="md:col-span-2">
@@ -695,7 +798,9 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
                 onChange={(e) => setSelectedMethodText(e.target.value)}
                 placeholder="Method description"
                 className="w-full rounded border border-border bg-background p-2 text-sm"
-              />
+              >
+              </input>
+              <p className="mt-1 text-[11px] text-muted leading-normal">Operational name of the selected method or system boundary configuration.</p>
             </div>
 
             <div className="md:col-span-2">
@@ -708,6 +813,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
                 rows={3}
                 className="w-full rounded border border-border bg-background p-2 text-sm"
               />
+              <p className="mt-1 text-[11px] text-muted leading-normal">Technical or operational explanation justifying why this method was chosen.</p>
             </div>
 
             <div>
@@ -719,6 +825,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
                 placeholder="Regulatory basis"
                 className="w-full rounded border border-border bg-background p-2 text-sm"
               />
+              <p className="mt-1 text-[11px] text-muted leading-normal">Cite specific EU regulations, implementing acts, or national guidelines.</p>
             </div>
 
             <div>
@@ -733,10 +840,12 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
                 <option value="PENDING">PENDING (Draft)</option>
                 <option value="REVIEW_REQUIRED">REVIEW_REQUIRED (Flagged)</option>
               </select>
+              <p className="mt-1 text-[11px] text-muted leading-normal">Internal review status. Sealing requires 'ACCEPTED' status.</p>
             </div>
 
             <div className="md:col-span-2">
               <FieldLabel>Linked evidence documents</FieldLabel>
+              <p className="mb-1 text-[11px] text-muted leading-normal">Select uploaded files supporting the validity of this decision.</p>
               <div className="max-h-36 overflow-y-auto border border-border rounded-lg p-3 bg-background space-y-1.5">
                 {caseData.evidenceRegister.length === 0 && (
                   <p className="text-xs text-muted">No evidence files registered yet. Upload them in Step 7 first.</p>
@@ -886,19 +995,59 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const renderStep7 = () => (
     <div className="space-y-8"><div className="flex items-center justify-between"><h2 className="text-xl font-bold">7. Carbon price and evidence register</h2><button type="button" onClick={addCarbonPriceRecord} className="inline-flex items-center gap-2 rounded border border-border px-4 py-2 text-sm"><Plus className="h-4 w-4" /> Add carbon-price record</button></div>
       {caseData.carbonPriceRecords.map((record, index) => <div key={record.id} className="grid gap-4 rounded-xl border border-border bg-surface p-5 md:grid-cols-2">
-        <div><FieldLabel>Amount paid</FieldLabel><input aria-label={`Carbon price ${index + 1} amount paid`} type="number" min="0" step="any" value={record.amountPaid} onChange={(event) => updatePlain(`carbonPriceRecords.${index}.amountPaid`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-        <div><FieldLabel>Applicable emissions</FieldLabel><input aria-label={`Carbon price ${index + 1} applicable emissions`} type="number" min="0" step="any" value={record.applicableEmissions} onChange={(event) => updatePlain(`carbonPriceRecords.${index}.applicableEmissions`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-        <div><FieldLabel>Currency</FieldLabel><select aria-label={`Carbon price ${index + 1} currency`} value={record.currency} onChange={(event) => updatePlain(`carbonPriceRecords.${index}.currency`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm">{["EUR", "USD", "GBP", "TRY"].map((currency) => <option key={currency}>{currency}</option>)}</select></div>
-        <div><FieldLabel>Legislation reference</FieldLabel><input aria-label={`Carbon price ${index + 1} legislation reference`} value={record.legislationReference} onChange={(event) => updatePlain(`carbonPriceRecords.${index}.legislationReference`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-        <div><FieldLabel>Payment evidence</FieldLabel><select aria-label={`Carbon price ${index + 1} payment evidence`} value={record.proofOfPaymentEvidenceId || ""} onChange={(event) => updatePlain(`carbonPriceRecords.${index}.proofOfPaymentEvidenceId`, event.target.value || undefined)} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="">Select evidence</option>{caseData.evidenceRegister.map((evidence) => <option key={evidence.evidenceId} value={evidence.evidenceId}>{evidence.fileName}</option>)}</select></div>
+        <div>
+          <FieldLabel>Amount paid</FieldLabel>
+          <input aria-label={`Carbon price ${index + 1} amount paid`} type="number" min="0" step="any" value={record.amountPaid} onChange={(event) => updatePlain(`carbonPriceRecords.${index}.amountPaid`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" />
+          <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["amountPaid"]}</p>
+        </div>
+        <div>
+          <FieldLabel>Applicable emissions</FieldLabel>
+          <input aria-label={`Carbon price ${index + 1} applicable emissions`} type="number" min="0" step="any" value={record.applicableEmissions} onChange={(event) => updatePlain(`carbonPriceRecords.${index}.applicableEmissions`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" />
+          <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["applicableEmissions"]}</p>
+        </div>
+        <div>
+          <FieldLabel>Currency</FieldLabel>
+          <select aria-label={`Carbon price ${index + 1} currency`} value={record.currency} onChange={(event) => updatePlain(`carbonPriceRecords.${index}.currency`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm">{["EUR", "USD", "GBP", "TRY"].map((currency) => <option key={currency}>{currency}</option>)}</select>
+          <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["currency"]}</p>
+        </div>
+        <div>
+          <FieldLabel>Legislation reference</FieldLabel>
+          <input aria-label={`Carbon price ${index + 1} legislation reference`} value={record.legislationReference} onChange={(event) => updatePlain(`carbonPriceRecords.${index}.legislationReference`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" />
+          <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["legislationReference"]}</p>
+        </div>
+        <div className="md:col-span-2">
+          <FieldLabel>Payment evidence</FieldLabel>
+          <select aria-label={`Carbon price ${index + 1} payment evidence`} value={record.proofOfPaymentEvidenceId || ""} onChange={(event) => updatePlain(`carbonPriceRecords.${index}.proofOfPaymentEvidenceId`, event.target.value || undefined)} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="">Select evidence</option>{caseData.evidenceRegister.map((evidence) => <option key={evidence.evidenceId} value={evidence.evidenceId}>{evidence.fileName}</option>)}</select>
+          <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["proofOfPaymentEvidenceId"]}</p>
+        </div>
       </div>)}
 
       <div className="space-y-4 rounded-xl border border-border bg-surface p-6"><h3 className="font-bold">Upload immutable evidence</h3><div className="grid gap-4 md:grid-cols-2">
-        <div><FieldLabel>File</FieldLabel><input aria-label="Evidence file" type="file" accept=".pdf,.csv,.xls,.xlsx,.png,.jpg,.jpeg,.txt" onChange={(event) => setEvidenceFile(event.target.files?.[0] || null)} /></div>
-        <div><FieldLabel>Document type</FieldLabel><input aria-label="Evidence document type" value={evidenceDocumentType} onChange={(event) => setEvidenceDocumentType(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-        <div><FieldLabel>Issuer</FieldLabel><input aria-label="Evidence issuer" value={evidenceIssuer} onChange={(event) => setEvidenceIssuer(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-        <div><FieldLabel>Issue date</FieldLabel><input aria-label="Evidence issue date" type="date" value={evidenceIssueDate} onChange={(event) => setEvidenceIssueDate(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-        <div><FieldLabel>Linked input</FieldLabel><select aria-label="Evidence linked input" value={evidenceLinkedInput} onChange={(event) => setEvidenceLinkedInput(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm">{EVIDENCE_LINK_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}{caseData.goods.flatMap((_, index) => [[`goods.${index}.cnCode`, `Good ${index + 1} CN code`], [`goods.${index}.productionVolume`, `Good ${index + 1} production`], [`goods.${index}.allocationShare`, `Good ${index + 1} allocation`]]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}{caseData.precursors.flatMap((_, index) => [[`precursors.${index}.quantity`, `Precursor ${index + 1} quantity`], [`precursors.${index}.directEmissions`, `Precursor ${index + 1} direct emissions`], [`precursors.${index}.indirectEmissions`, `Precursor ${index + 1} indirect emissions`]]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
+        <div>
+          <FieldLabel>File</FieldLabel>
+          <input aria-label="Evidence file" type="file" accept=".pdf,.csv,.xls,.xlsx,.png,.jpg,.jpeg,.txt" onChange={(event) => setEvidenceFile(event.target.files?.[0] || null)} className="text-sm" />
+          <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["evidenceFile"]}</p>
+        </div>
+        <div>
+          <FieldLabel>Document type</FieldLabel>
+          <input aria-label="Evidence document type" value={evidenceDocumentType} onChange={(event) => setEvidenceDocumentType(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" />
+          <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["evidenceDocumentType"]}</p>
+        </div>
+        <div>
+          <FieldLabel>Issuer</FieldLabel>
+          <input aria-label="Evidence issuer" value={evidenceIssuer} onChange={(event) => setEvidenceIssuer(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" />
+          <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["evidenceIssuer"]}</p>
+        </div>
+        <div>
+          <FieldLabel>Issue date</FieldLabel>
+          <input aria-label="Evidence issue date" type="date" value={evidenceIssueDate} onChange={(event) => setEvidenceIssueDate(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" />
+          <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["evidenceIssueDate"]}</p>
+        </div>
+        <div className="md:col-span-2">
+          <FieldLabel>Linked input</FieldLabel>
+          <select aria-label="Evidence linked input" value={evidenceLinkedInput} onChange={(event) => setEvidenceLinkedInput(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm">{EVIDENCE_LINK_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}{caseData.goods.flatMap((_, index) => [[`goods.${index}.cnCode`, `Good ${index + 1} CN code`], [`goods.${index}.productionVolume`, `Good ${index + 1} production`], [`goods.${index}.allocationShare`, `Good ${index + 1} allocation`]]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}{caseData.precursors.flatMap((_, index) => [[`precursors.${index}.quantity`, `Precursor ${index + 1} quantity`], [`precursors.${index}.directEmissions`, `Precursor ${index + 1} direct emissions`], [`precursors.${index}.indirectEmissions`, `Precursor ${index + 1} indirect emissions`]]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
+          <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["evidenceLinkedInput"]}</p>
+        </div>
       </div><button type="button" onClick={handleEvidenceUpload} disabled={uploading} className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-sm font-semibold text-surface disabled:opacity-50">{uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />} Upload and register evidence</button><StatusBanner status={evidenceStatus} tone={evidenceStatus.toLowerCase().includes("failed") || evidenceStatus.includes("EVIDENCE_") ? "error" : "warning"} /></div>
 
       <div className="space-y-3">{caseData.evidenceRegister.map((evidence) => <div key={evidence.evidenceId} className="rounded-xl border border-border bg-surface p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{evidence.fileName}</p><p className="text-xs text-muted">{evidence.documentType} · {evidence.sizeBytes} bytes · {evidence.reviewStatus}/{evidence.supportStatus}/{evidence.malwareScanStatus}</p><p className="mt-1 break-all font-mono text-[10px] text-muted">SHA-256 {evidence.fileHash}</p></div></div><div className="mt-3 flex flex-col gap-2 md:flex-row"><input aria-label={`Review notes for ${evidence.fileName}`} value={reviewNotes[evidence.evidenceId] || ""} onChange={(event) => setReviewNotes((previous) => ({ ...previous, [evidence.evidenceId]: event.target.value }))} placeholder="Internal review note" className="flex-1 rounded border border-border bg-background p-2 text-sm" /><button type="button" disabled={evidence.malwareScanStatus !== "CLEAN"} onClick={() => handleEvidenceReview(evidence.evidenceId, "APPROVED")} className="rounded bg-accent hover:bg-accent-hover px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">Approve</button><button type="button" onClick={() => handleEvidenceReview(evidence.evidenceId, "REJECTED")} className="rounded bg-red-700 px-3 py-2 text-xs font-semibold text-white">Reject</button></div>{evidence.malwareScanStatus !== "CLEAN" && <p className="mt-2 text-xs text-accent">Approval is disabled until an administrator records an external malware scan as CLEAN.</p>}</div>)}</div>
@@ -913,7 +1062,11 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           <h3 className="mb-4 flex items-center gap-2 font-bold"><Shield className="h-5 w-5 text-accent" /> Verification readiness</h3>
           <div className={`rounded border p-3 text-sm font-semibold ${readiness.isEligibleForSealing ? "border-accent/30 bg-accent-soft text-accent" : "border-red-300 bg-red-50 text-red-900"}`}>{readiness.status} · {readiness.completenessPercentage}% · {readiness.passedControls}/{readiness.applicableControls} controls passed</div>
           <div className="mt-4 max-h-80 space-y-2 overflow-y-auto">{readiness.allGaps.map((gap) => <div key={gap.gapId} className="border-l-2 border-red-500 pl-3 text-xs"><strong>{gap.requirement}</strong><p className="text-muted">{gap.whyItMatters}</p></div>)}</div>
-          {currentReleasesCount > 0 && <div className="mt-5"><FieldLabel>Correction Reason (Required for Release {currentReleasesCount + 1})</FieldLabel><textarea aria-label="Correction reason" value={correctionReason} onChange={(event) => setCorrectionReason(event.target.value)} placeholder="Describe the corrections made in this release (e.g., corrected CN code, updated precursor emissions)." rows={3} className="w-full rounded border border-border bg-background p-2.5 text-sm" /></div>}
+          {currentReleasesCount > 0 && <div className="mt-5">
+            <FieldLabel>Correction Reason (Required for Release {currentReleasesCount + 1})</FieldLabel>
+            <textarea aria-label="Correction reason" value={correctionReason} onChange={(event) => setCorrectionReason(event.target.value)} placeholder="Describe the corrections made in this release (e.g., corrected CN code, updated precursor emissions)." rows={3} className="w-full rounded border border-border bg-background p-2.5 text-sm" />
+            <p className="mt-1 text-[11px] text-muted leading-normal">{FIELD_HINTS["correctionReason"]}</p>
+          </div>}
           {usableEntitlements.length === 0 && (
             <div className="mt-4 rounded-lg border border-accent/20 bg-accent/5 p-4 text-xs text-foreground">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
