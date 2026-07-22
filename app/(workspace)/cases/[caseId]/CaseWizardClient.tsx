@@ -747,15 +747,24 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold">6. Precursors and methodology decisions</h2>
           <div className="flex items-center gap-3">
-            <label className="inline-flex items-center gap-2 rounded border border-border bg-neutral-soft px-4 py-2 text-sm font-semibold text-foreground cursor-pointer hover:bg-border/30">
-              <FileUp className="h-4 w-4" /> Import CSV
-              <input
-                type="file"
-                accept=".csv"
-                className="hidden"
-                onChange={handleCsvImport}
-              />
-            </label>
+            <div className="group relative">
+              <label className="inline-flex items-center gap-2 rounded border border-border bg-neutral-soft px-4 py-2 text-sm font-semibold text-foreground cursor-pointer hover:bg-border/30">
+                <FileUp className="h-4 w-4" /> Import CSV
+                <input
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={handleCsvImport}
+                />
+              </label>
+              <div className="absolute right-0 top-full mt-2 w-72 rounded-lg border border-border bg-surface p-3 text-xs text-muted shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity z-50 leading-relaxed">
+                <strong>CSV Format (with header):</strong><br />
+                <code className="block bg-neutral-soft p-1 rounded font-mono my-1 overflow-x-auto text-[10px]">
+                  Name,Country,Quantity,DirectEmissions,IndirectEmissions
+                </code>
+                <em>Example:</em> Steel Billets,TR,120.5,23.4,12.1
+              </div>
+            </div>
             <button
               type="button"
               onClick={addPrecursor}
