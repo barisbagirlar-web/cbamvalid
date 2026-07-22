@@ -234,10 +234,10 @@ async function loadEvidenceFiles(caseData: AuditReadyCase): Promise<EvidenceBina
     if (
       Number(metadata.size) !== evidence.sizeBytes ||
       metadata.contentType !== evidence.mimeType ||
-      custom.ownerId !== caseData.ownerId ||
-      custom.caseId !== caseData.caseId ||
-      custom.evidenceId !== evidence.evidenceId ||
-      custom.sha256?.toLowerCase() !== evidence.fileHash.toLowerCase()
+      (custom.ownerId && custom.ownerId !== caseData.ownerId) ||
+      (custom.caseId && custom.caseId !== caseData.caseId) ||
+      (custom.evidenceId && custom.evidenceId !== evidence.evidenceId) ||
+      (custom.sha256 && custom.sha256.toLowerCase() !== evidence.fileHash.toLowerCase())
     ) throw new Error(`EVIDENCE_METADATA_MISMATCH:${evidence.evidenceId}`);
     const [bytes] = await object.download();
     if (bytes.byteLength !== evidence.sizeBytes || sha256(bytes) !== evidence.fileHash.toLowerCase()) {

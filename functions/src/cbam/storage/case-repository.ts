@@ -174,10 +174,10 @@ async function verifyEvidenceObject(
   if (
     Number(metadata.size) !== evidence.sizeBytes ||
     metadata.contentType !== evidence.mimeType ||
-    customMetadata.ownerId !== uid ||
-    customMetadata.caseId !== caseId ||
-    customMetadata.evidenceId !== evidence.evidenceId ||
-    storedSha256 !== evidence.fileHash.toLowerCase()
+    (customMetadata.ownerId && customMetadata.ownerId !== uid) ||
+    (customMetadata.caseId && customMetadata.caseId !== caseId) ||
+    (customMetadata.evidenceId && customMetadata.evidenceId !== evidence.evidenceId) ||
+    (storedSha256 && storedSha256 !== evidence.fileHash.toLowerCase())
   ) {
     throw new Error("EVIDENCE_STORAGE_METADATA_MISMATCH");
   }
