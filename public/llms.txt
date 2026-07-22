@@ -45,4 +45,4 @@
 - **Evidence Review & Scan Workflow**: Uploaded evidence files undergo byte and SHA-256 verification and status checks before operator approval for V5 readiness gating.
 - **Data Confidentiality & Privacy**: User cases, raw evidence files, and generated dossiers are encrypted and isolated per tenant. All private case data is excluded from public search engines and AI indexing.
 
-Last updated: 2026-07-22
+Last updated: 2026-07-23

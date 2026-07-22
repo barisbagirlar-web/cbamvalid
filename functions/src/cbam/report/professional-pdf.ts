@@ -62,6 +62,10 @@ function chartNumber(value: unknown): number {
   return Number.isFinite(num) ? num : 0;
 }
 
+function compactIdentifier(value: string): string {
+  return value.length > 44 ? `${value.slice(0, 27)}...${value.slice(-12)}` : value;
+}
+
 function normalizedWidths(count: number, requested?: number[]): number[] {
   if (!requested || requested.length !== count || requested.some((width) => !Number.isFinite(width) || width <= 0)) {
     return Array.from({ length: count }, () => CONTENT_WIDTH / count);
@@ -100,7 +104,7 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
     document.setFont("helvetica", "normal");
     document.setFontSize(8.5);
     document.text(input.subtitle, MARGIN, 19);
-    document.text(`Report ${input.model.reportId} · Release ${input.model.releaseVersion}`, MARGIN, 25);
+    document.text(`Report ${compactIdentifier(input.model.reportId)} | Release ${input.model.releaseVersion}`, MARGIN, 25);
 
     const ready = input.model.automatedReadiness === "READY_FOR_INDEPENDENT_VERIFICATION";
     document.setFillColor(ready ? 222 : 254, ready ? 247 : 226, ready ? 232 : 226);
@@ -384,7 +388,9 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
     document.setFont("helvetica", "normal");
     document.setFontSize(7);
     document.setTextColor(90, 99, 112);
-    document.text(`CBAMValid · ${input.model.reportId}`, MARGIN, 288);
+    const companyName = String(input.model.identity?.exporterOperator || "CBAMExporter").trim();
+    const companyShort = companyName.length > 30 ? companyName.slice(0, 27) + "..." : companyName;
+    document.text(`${companyShort} | ${compactIdentifier(input.model.reportId)}`, MARGIN, 288);
     document.text(`Page ${pageNumber} of ${pageCount}`, PAGE_WIDTH - MARGIN, 288, { align: "right" });
   }
 

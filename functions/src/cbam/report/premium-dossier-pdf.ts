@@ -286,8 +286,15 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
 
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.text("CBAMValid", MARGIN, 35);
+  const companyName = String(model.identity?.exporterOperator || caseData.exporterIdentity?.legalName?.value || "CBAMExporter").trim();
+  if (companyName.length > 25) {
+    doc.setFontSize(16);
+  } else if (companyName.length > 15) {
+    doc.setFontSize(19);
+  } else {
+    doc.setFontSize(22);
+  }
+  doc.text(companyName, MARGIN, 35);
   
   // Gold subtitle tag line
   doc.setFontSize(14);

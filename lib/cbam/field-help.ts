@@ -185,6 +185,11 @@ export const fieldHelpData = {
     evidence: "Reviewer observations from inspecting the uploaded file.",
     format: "State what was checked, the supported field and any limitation; avoid generic approval text.",
   },
+  correctionReason: {
+    source: "Explain the changes made in this new release compared to the previous sealed release.",
+    evidence: "Internal change log, correction request, or auditor comment.",
+    format: "Provide a clear description of the updated fields and the reason for modification.",
+  },
 } as const satisfies Record<string, FieldHelpContent>;
 
 export type FieldHelpKey = keyof typeof fieldHelpData;

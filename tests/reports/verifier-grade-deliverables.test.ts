@@ -114,8 +114,8 @@ describe("verifier-grade deliverables", () => {
       expect(item.bytes.byteLength).toBeGreaterThan(5000);
       const parsed = await pdfText(item.bytes);
       expect(parsed.pages).toBeGreaterThanOrEqual(1);
-      expect(parsed.text).toContain("CBAMValid");
-      expect(parsed.text).toContain("independent");
+       expect(parsed.text).toContain("Verified Steel");
+       expect(parsed.text).toContain("independent");
       expect(parsed.text).toContain("Page 1 of");
     }
 

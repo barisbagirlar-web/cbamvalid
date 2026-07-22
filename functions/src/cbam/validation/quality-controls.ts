@@ -4,6 +4,7 @@ import {
   GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH,
   GRID_EMISSION_FACTOR_SCALE_ERROR,
 } from "../input-constraints";
+import { getActiveRuleset } from "../registry/rulesets";
 
 export type QualityControlStatus = "PASS" | "WARNING" | "BLOCKER" | "NOT_APPLICABLE";
 export interface QualityControlResult { ruleId: string; name: string; status: QualityControlStatus; message?: string; remediationCode?: string; }
@@ -54,7 +55,17 @@ export function runQualityControls(caseData: AuditReadyCase): QualityControlResu
   else add("QC_01", "EORI format and evidence", "PASS");
 
   const year = Number(caseData.reportingPeriod.year.value);
-  add("QC_02", "Definitive-period reporting year", Number.isInteger(year) && year >= 2023 && year <= 2100 ? "PASS" : "BLOCKER", Number.isInteger(year) && year >= 2023 && year <= 2100 ? undefined : "Reporting year must be an integer from 2023 through 2100.", "REM_CORRECT_REPORTING_YEAR");
+  let yearPass = Number.isInteger(year) && year >= 2023 && year <= 2100;
+  let yearMessage = yearPass ? undefined : "Reporting year must be an integer from 2023 through 2100.";
+  if (yearPass) {
+    try {
+      getActiveRuleset(new Date(Date.UTC(year, 0, 1)));
+    } catch (error) {
+      yearPass = false;
+      yearMessage = error instanceof Error ? error.message : String(error);
+    }
+  }
+  add("QC_02", "Definitive-period reporting year", yearPass ? "PASS" : "BLOCKER", yearMessage, "REM_CORRECT_REPORTING_YEAR");
   if (caseData.goods.length === 0) add("QC_03", "Goods definition", "BLOCKER", "At least one good is required.", "REM_ADD_GOOD");
 
   caseData.goods.forEach((good, index) => {

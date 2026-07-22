@@ -24,7 +24,7 @@ import { DecimalInput } from "@/components/cbam/DecimalInput";
 import { FieldHelp } from "@/components/cbam/FieldHelp";
 import { assessCaseReadiness } from "@/lib/cbam/validation/readiness-assessor";
 import { performDossierCalculations } from "@/lib/cbam/calculator";
-import type { FieldHelpKey } from "@/lib/cbam/field-help";
+import { fieldHelpData, type FieldHelpKey } from "@/lib/cbam/field-help";
 import { GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH } from "@/lib/cbam/input-constraints";
 import {
   ILLUSTRATIVE_SCENARIO_ID,
@@ -179,6 +179,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const [evidenceIssueDate, setEvidenceIssueDate] = useState("");
   const [evidenceLinkedInput, setEvidenceLinkedInput] = useState("directEmissions");
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
+  const [correctionReason, setCorrectionReason] = useState("");
 
   const readiness = useMemo(() => assessCaseReadiness(caseData), [caseData]);
   const scenarioActive = useMemo(() => isIllustrativeScenarioActive(caseData), [caseData]);
@@ -190,9 +191,17 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     }
   }, [caseData]);
 
+  const currentReleasesCount = useMemo(() => {
+    const entitlement = availableEntitlements.find(
+      (e) => e.scopeCaseId === caseData.caseId || e.caseId === caseData.caseId
+    );
+    return entitlement?.releasesCount || 0;
+  }, [availableEntitlements, caseData.caseId]);
+
   const usableEntitlements = useMemo(() => availableEntitlements.filter((entitlement) => {
     const status = String(entitlement.status || "").toUpperCase();
-    const caseMatches = !entitlement.caseId || entitlement.caseId === caseData.caseId;
+    const caseId = entitlement.scopeCaseId || entitlement.caseId;
+    const caseMatches = !caseId || caseId === caseData.caseId;
     return caseMatches && ["AVAILABLE", "ACTIVE", "PURCHASED"].includes(status);
   }), [availableEntitlements, caseData.caseId]);
 
@@ -209,7 +218,40 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
 
   const persistDraft = async (data = caseData): Promise<void> => {
     if (!data.caseId) throw new Error("CASE_ID_REQUIRED_FOR_SAVE");
-    const parsed = AuditReadyCaseSchema.parse(data);
+    
+    // Deep clone to keep React state immutable
+    const cloned = JSON.parse(JSON.stringify(data));
+    
+    // Automatically align reporting period start/end dates to match the year and quarter
+    const yearVal = cloned.reportingPeriod?.year?.value;
+    const quarterVal = cloned.reportingPeriod?.quarter?.value;
+    if (yearVal && quarterVal && cloned.reportingPeriod) {
+      if (!cloned.reportingPeriod.startDate) {
+        cloned.reportingPeriod.startDate = { sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", value: "" };
+      }
+      if (!cloned.reportingPeriod.endDate) {
+        cloned.reportingPeriod.endDate = { sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", value: "" };
+      }
+      
+      if (quarterVal === "ANNUAL") {
+        cloned.reportingPeriod.startDate.value = `${yearVal}-01-01`;
+        cloned.reportingPeriod.endDate.value = `${yearVal}-12-31`;
+      } else if (quarterVal === "Q1") {
+        cloned.reportingPeriod.startDate.value = `${yearVal}-01-01`;
+        cloned.reportingPeriod.endDate.value = `${yearVal}-03-31`;
+      } else if (quarterVal === "Q2") {
+        cloned.reportingPeriod.startDate.value = `${yearVal}-04-01`;
+        cloned.reportingPeriod.endDate.value = `${yearVal}-06-30`;
+      } else if (quarterVal === "Q3") {
+        cloned.reportingPeriod.startDate.value = `${yearVal}-07-01`;
+        cloned.reportingPeriod.endDate.value = `${yearVal}-09-30`;
+      } else if (quarterVal === "Q4") {
+        cloned.reportingPeriod.startDate.value = `${yearVal}-10-01`;
+        cloned.reportingPeriod.endDate.value = `${yearVal}-12-31`;
+      }
+    }
+    
+    const parsed = AuditReadyCaseSchema.parse(cloned);
     await saveCase(parsed, parsed.caseId);
   };
 
@@ -456,6 +498,10 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       setSealStatus("Resolve every blocker before generating a sealed dossier.");
       return;
     }
+    if (currentReleasesCount > 0 && (!correctionReason || correctionReason.trim().length < 10)) {
+      setSealStatus("Correction reason is required and must be at least 10 characters long.");
+      return;
+    }
     const entitlementId = usableEntitlements[0]?.entitlementId;
     if (!entitlementId) {
       setSealStatus("No case-compatible Preparation Pack release is available.");
@@ -466,7 +512,12 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     setSealStatus("");
     try {
       await persistDraft();
-      const response = await sealReport(caseData.caseId, entitlementId, sealRequestId.current);
+      const response = await sealReport(
+        caseData.caseId,
+        entitlementId,
+        sealRequestId.current,
+        correctionReason || undefined
+      );
       const reportId = response.report?.reportId;
       if (!reportId) throw new Error("SEALED_REPORT_ID_MISSING");
       router.push(`/cbam/reports/${reportId}`);
@@ -480,7 +531,10 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
 
   const renderStep1 = () => (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold">1. Case identity and reporting scope</h2>
+      <div>
+        <h2 className="text-xl font-bold">1. Case setup</h2>
+        <p className="mt-1 text-sm text-muted">Define the legal identity of the importer and exporter, and select the reporting calendar year and period.</p>
+      </div>
       <div className="grid gap-4 rounded-xl border border-border bg-surface p-6 md:grid-cols-2">
         {[
           ["importerIdentity.legalName", "Importer legal name", "text", "importerLegalName"],
@@ -491,7 +545,13 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         ].map(([path, label, type, helpKey]) => {
           const parts = path.split(".");
           const datum = parts.reduce<unknown>((value, part) => (value as Record<string, unknown>)[part], caseData) as InputDatum;
-          return <div key={path}><FieldLabel helpKey={helpKey as FieldHelpKey}>{label}</FieldLabel><input aria-label={label} type={type} value={datumValue(datum.value)} onChange={(event) => updateDatum(path, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>;
+          return (
+            <div key={path}>
+              <FieldLabel helpKey={helpKey as FieldHelpKey}>{label}</FieldLabel>
+              <input aria-label={label} type={type} value={datumValue(datum.value)} onChange={(event) => updateDatum(path, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" />
+              <p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData[helpKey as FieldHelpKey]?.source}</p>
+            </div>
+          );
         })}
       </div>
     </div>
@@ -499,29 +559,38 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
 
   const renderStep2 = () => (
     <div className="space-y-5">
-      <div className="flex items-center justify-between"><h2 className="text-xl font-bold">2. Goods, units and allocation</h2><button type="button" onClick={addGood} className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-sm font-semibold text-surface"><Plus className="h-4 w-4" /> Add good</button></div>
+      <div>
+        <h2 className="text-xl font-bold">2. Goods, units and allocation</h2>
+        <p className="mt-1 text-sm text-muted">Add the Combined Nomenclature (CN) codes of the goods, specify production quantities, and allocate installation-level emissions if declaring multiple goods.</p>
+      </div>
       {caseData.goods.length === 0 && <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted">No goods declared.</div>}
       {caseData.goods.map((good, index) => (
         <div key={`good-${index}`} className="grid gap-4 rounded-xl border border-border bg-surface p-5 md:grid-cols-2">
-          <div><FieldLabel helpKey="cnCode">CN code</FieldLabel><input aria-label={`Good ${index + 1} CN code`} inputMode="numeric" value={datumValue(good.cnCode.value)} onChange={(event) => updateDatum(`goods.${index}.cnCode`, { value: event.target.value.replace(/\D/g, "").slice(0, 8) })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-          <div><FieldLabel helpKey="cbamSector">CBAM sector</FieldLabel><select aria-label={`Good ${index + 1} sector`} value={good.sector} onChange={(event) => updatePlain(`goods.${index}.sector`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm">{SECTORS.map((sector) => <option key={sector} value={sector}>{sector.replaceAll("_", " ")}</option>)}</select></div>
-          <div><FieldLabel helpKey="productionQuantity">Production quantity</FieldLabel><DecimalInput ariaLabel={`Good ${index + 1} production quantity`} min="0" value={datumValue(good.productionVolume.value)} onValueChange={(value) => updateDatum(`goods.${index}.productionVolume`, { value })} /></div>
-          <div><FieldLabel helpKey="productionUnit">Production unit</FieldLabel><select aria-label={`Good ${index + 1} production unit`} value={good.productionVolume.canonicalUnit || "t"} onChange={(event) => updateDatum(`goods.${index}.productionVolume`, { canonicalUnit: event.target.value as UnitCode })} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="t">tonnes</option><option value="kg">kilograms</option></select></div>
-          <div><FieldLabel helpKey="shipmentDescription">Shipment / product description</FieldLabel><input aria-label={`Good ${index + 1} shipment description`} value={datumValue(good.shipmentRecords.value)} onChange={(event) => updateDatum(`goods.${index}.shipmentRecords`, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-          {caseData.goods.length > 1 && <div><FieldLabel helpKey="allocationShare">Allocation share (0–1)</FieldLabel><DecimalInput ariaLabel={`Good ${index + 1} allocation share`} min="0" max="1" value={datumValue(good.allocationShare?.value ?? null)} onValueChange={(value) => updateDatum(`goods.${index}.allocationShare`, { value, canonicalUnit: "fraction" })} /></div>}
-          <button type="button" onClick={() => removeGood(index)} className="inline-flex items-center gap-2 text-sm text-red-700"><Trash2 className="h-4 w-4" /> Remove good</button>
+          <div><FieldLabel helpKey="cnCode">CN code</FieldLabel><input aria-label={`Good ${index + 1} CN code`} inputMode="numeric" value={datumValue(good.cnCode.value)} onChange={(event) => updateDatum(`goods.${index}.cnCode`, { value: event.target.value.replace(/\D/g, "").slice(0, 8) })} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.cnCode.source}</p></div>
+          <div><FieldLabel helpKey="cbamSector">CBAM sector</FieldLabel><select aria-label={`Good ${index + 1} sector`} value={good.sector} onChange={(event) => updatePlain(`goods.${index}.sector`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm">{SECTORS.map((sector) => <option key={sector} value={sector}>{sector.replaceAll("_", " ")}</option>)}</select><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.cbamSector.source}</p></div>
+          <div><FieldLabel helpKey="productionQuantity">Production quantity</FieldLabel><DecimalInput ariaLabel={`Good ${index + 1} production quantity`} min="0" value={datumValue(good.productionVolume.value)} onValueChange={(value) => updateDatum(`goods.${index}.productionVolume`, { value })} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.productionQuantity.source}</p></div>
+          <div><FieldLabel helpKey="productionUnit">Production unit</FieldLabel><select aria-label={`Good ${index + 1} production unit`} value={good.productionVolume.canonicalUnit || "t"} onChange={(event) => updateDatum(`goods.${index}.productionVolume`, { canonicalUnit: event.target.value as UnitCode })} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="t">tonnes</option><option value="kg">kilograms</option></select><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.productionUnit.source}</p></div>
+          <div><FieldLabel helpKey="shipmentDescription">Shipment / product description</FieldLabel><input aria-label={`Good ${index + 1} shipment description`} value={datumValue(good.shipmentRecords.value)} onChange={(event) => updateDatum(`goods.${index}.shipmentRecords`, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.shipmentDescription.source}</p></div>
+          {caseData.goods.length > 1 && <div><FieldLabel helpKey="allocationShare">Allocation share (0–1)</FieldLabel><DecimalInput ariaLabel={`Good ${index + 1} allocation share`} min="0" max="1" value={datumValue(good.allocationShare?.value ?? null)} onValueChange={(value) => updateDatum(`goods.${index}.allocationShare`, { value, canonicalUnit: "fraction" })} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.allocationShare.source}</p></div>}
+          <button type="button" onClick={() => removeGood(index)} className="inline-flex items-center gap-2 text-sm text-red-700 md:col-span-2"><Trash2 className="h-4 w-4" /> Remove good</button>
         </div>
       ))}
     </div>
   );
 
   const renderStep3 = () => (
-    <div className="space-y-6"><h2 className="text-xl font-bold">3. Installation and system boundary</h2><div className="grid gap-4 rounded-xl border border-border bg-surface p-6 md:grid-cols-2">
-      <div><FieldLabel helpKey="installationName">Installation name</FieldLabel><input aria-label="Installation name" value={datumValue(caseData.installation.name.value)} onChange={(event) => updateDatum("installation.name", { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-      <div><FieldLabel helpKey="installationCountry">Installation country</FieldLabel><input aria-label="Installation country" value={datumValue(caseData.installation.country.value)} onChange={(event) => updateDatum("installation.country", { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-      <div><FieldLabel helpKey="productionRoute">Production route</FieldLabel><input aria-label="Production route" value={datumValue(caseData.installation.productionRoute.value)} onChange={(event) => updateDatum("installation.productionRoute", { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-      <div className="md:col-span-2"><FieldLabel helpKey="systemBoundary">System-boundary statement</FieldLabel><textarea aria-label="System-boundary statement" value={caseData.installation.systemBoundaries || ""} onChange={(event) => updatePlain("installation.systemBoundaries", event.target.value)} rows={5} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-    </div></div>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold">3. Installation and system boundary</h2>
+        <p className="mt-1 text-sm text-muted">Specify the manufacturing facility details, geographic location, production technology route, and write a system-boundary statement.</p>
+      </div>
+      <div className="grid gap-4 rounded-xl border border-border bg-surface p-6 md:grid-cols-2">
+        <div><FieldLabel helpKey="installationName">Installation name</FieldLabel><input aria-label="Installation name" value={datumValue(caseData.installation.name.value)} onChange={(event) => updateDatum("installation.name", { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.installationName.source}</p></div>
+        <div><FieldLabel helpKey="installationCountry">Installation country</FieldLabel><input aria-label="Installation country" value={datumValue(caseData.installation.country.value)} onChange={(event) => updateDatum("installation.country", { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.installationCountry.source}</p></div>
+        <div><FieldLabel helpKey="productionRoute">Production route</FieldLabel><input aria-label="Production route" value={datumValue(caseData.installation.productionRoute.value)} onChange={(event) => updateDatum("installation.productionRoute", { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.productionRoute.source}</p></div>
+        <div className="md:col-span-2"><FieldLabel helpKey="systemBoundary">System-boundary statement</FieldLabel><textarea aria-label="System-boundary statement" value={caseData.installation.systemBoundaries || ""} onChange={(event) => updatePlain("installation.systemBoundaries", event.target.value)} rows={5} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.systemBoundary.source}</p></div>
+      </div>
+    </div>
   );
 
   const emissionInput = (
@@ -533,19 +602,41 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     const datum = caseData[path];
     const isGridFactor = path === "gridEmissionFactor";
     return <div className="grid gap-4 rounded-xl border border-border bg-surface p-6 md:grid-cols-3">
-      <div><FieldLabel helpKey={helpKey}>{label}</FieldLabel><DecimalInput ariaLabel={label} min="0" max={isGridFactor ? GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH : undefined} placeholder={isGridFactor ? "0.4344" : undefined} value={datumValue(datum.value)} onValueChange={(value) => updateDatum(path, { value })} />{isGridFactor && Number(datum.value) > Number(GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH) && <p role="alert" className="mt-2 text-xs font-semibold text-red-700">Value exceeds 5 tCO2e/MWh. Check the source unit and decimal separator before continuing.</p>}</div>
-      <div><FieldLabel helpKey="emissionsUnit">Unit</FieldLabel><select aria-label={`${label} unit`} value={datum.canonicalUnit || unit} onChange={(event) => updateDatum(path, { canonicalUnit: event.target.value as UnitCode })} className="w-full rounded border border-border bg-background p-2 text-sm"><option value={unit}>{unit}</option></select></div>
-      <div><FieldLabel helpKey="sourceType">Source type</FieldLabel><select aria-label={`${label} source type`} value={datum.sourceType} onChange={(event) => updateDatum(path, { sourceType: event.target.value as InputDatum["sourceType"] })} className="w-full rounded border border-border bg-background p-2 text-sm">{SOURCE_TYPES.map((source) => <option key={source} value={source}>{source}</option>)}</select></div>
+      <div><FieldLabel helpKey={helpKey}>{label}</FieldLabel><DecimalInput ariaLabel={label} min="0" max={isGridFactor ? GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH : undefined} placeholder={isGridFactor ? "0.4344" : undefined} value={datumValue(datum.value)} onValueChange={(value) => updateDatum(path, { value })} />{isGridFactor && Number(datum.value) > Number(GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH) && <p role="alert" className="mt-2 text-xs font-semibold text-red-700">Value exceeds 5 tCO2e/MWh. Check the source unit and decimal separator before continuing.</p>}<p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData[helpKey]?.source}</p></div>
+      <div><FieldLabel helpKey="emissionsUnit">Unit</FieldLabel><select aria-label={`${label} unit`} value={datum.canonicalUnit || unit} onChange={(event) => updateDatum(path, { canonicalUnit: event.target.value as UnitCode })} className="w-full rounded border border-border bg-background p-2 text-sm"><option value={unit}>{unit}</option></select><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.emissionsUnit.source}</p></div>
+      <div><FieldLabel helpKey="sourceType">Source type</FieldLabel><select aria-label={`${label} source type`} value={datum.sourceType} onChange={(event) => updateDatum(path, { sourceType: event.target.value as InputDatum["sourceType"] })} className="w-full rounded border border-border bg-background p-2 text-sm">{SOURCE_TYPES.map((source) => <option key={source} value={source}>{source}</option>)}</select><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.sourceType.source}</p></div>
     </div>;
   };
 
-  const renderStep4 = () => <div className="space-y-6"><h2 className="text-xl font-bold">4. Direct emissions</h2>{emissionInput("directEmissions", "Total direct emissions", "tCO2e", "directEmissions")}</div>;
-  const renderStep5 = () => <div className="space-y-6"><h2 className="text-xl font-bold">5. Indirect emissions</h2>{emissionInput("electricityConsumed", "Electricity consumed", "MWh", "electricityConsumed")}{emissionInput("gridEmissionFactor", "Grid emission factor", "tCO2e/MWh", "gridEmissionFactor")}</div>;
+  const renderStep4 = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold">4. Direct emissions</h2>
+        <p className="mt-1 text-sm text-muted">Enter the total direct greenhouse gas emissions (tCO2e) generated inside the installation boundary for the reporting period.</p>
+      </div>
+      {emissionInput("directEmissions", "Total direct emissions", "tCO2e", "directEmissions")}
+    </div>
+  );
+
+  const renderStep5 = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold">5. Indirect emissions</h2>
+        <p className="mt-1 text-sm text-muted">Report total electricity consumed by production processes (MWh) and the grid emission factor (tCO2e/MWh) applied.</p>
+      </div>
+      {emissionInput("electricityConsumed", "Electricity consumed", "MWh", "electricityConsumed")}
+      {emissionInput("gridEmissionFactor", "Grid emission factor", "tCO2e/MWh", "gridEmissionFactor")}
+    </div>
+  );
 
   const renderStep6 = () => (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div>
         <h2 className="text-xl font-bold">6. Precursors and methodology decisions</h2>
+        <p className="mt-1 text-sm text-muted">Declare embedded emissions from precursor materials or record a methodology decision confirming the absence of precursors. You can import precursor records via CSV.</p>
+      </div>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-bold">Precursors</h3>
         <div className="flex items-center gap-3">
           <div className="group relative">
             <label className="inline-flex items-center gap-2 rounded border border-border bg-neutral-soft px-4 py-2 text-sm font-semibold text-foreground cursor-pointer hover:bg-border/30">
@@ -572,9 +663,9 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       </div>
       {caseData.precursors.length === 0 && <button type="button" onClick={() => addMethodologyDecision("PRECURSOR_SCOPE")} className="rounded border border-border bg-surface px-4 py-3 text-sm">Record accepted no-precursor scope decision</button>}
       {caseData.precursors.map((precursor, index) => <div key={`precursor-${index}`} className="grid gap-4 rounded-xl border border-border bg-surface p-5 md:grid-cols-2">
-        {[["name", "Precursor name", "precursorName"], ["countryOfOrigin", "Country of origin", "precursorCountry"]].map(([field, label, helpKey]) => <div key={field}><FieldLabel helpKey={helpKey as FieldHelpKey}>{label}</FieldLabel><input aria-label={`Precursor ${index + 1} ${label}`} value={datumValue(precursor[field as "name" | "countryOfOrigin"].value)} onChange={(event) => updateDatum(`precursors.${index}.${field}`, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>)}
-        {[["quantity", "Quantity", "t", "precursorQuantity"], ["directEmissions", "Direct emissions", "tCO2e", "precursorDirectEmissions"], ["indirectEmissions", "Indirect emissions", "tCO2e", "precursorIndirectEmissions"]].map(([field, label, unit, helpKey]) => <div key={field}><FieldLabel helpKey={helpKey as FieldHelpKey}>{label} ({unit})</FieldLabel><DecimalInput ariaLabel={`Precursor ${index + 1} ${label}`} min="0" value={datumValue(precursor[field as "quantity" | "directEmissions" | "indirectEmissions"].value)} onValueChange={(value) => updateDatum(`precursors.${index}.${field}`, { value, canonicalUnit: unit as UnitCode })} /></div>)}
-        <button type="button" onClick={() => setCaseData((previous) => ({ ...previous, precursors: previous.precursors.filter((_, itemIndex) => itemIndex !== index) }))} className="inline-flex items-center gap-2 text-sm text-red-700"><Trash2 className="h-4 w-4" /> Remove precursor</button>
+        {[["name", "Precursor name", "precursorName"], ["countryOfOrigin", "Country of origin", "precursorCountry"]].map(([field, label, helpKey]) => <div key={field}><FieldLabel helpKey={helpKey as FieldHelpKey}>{label}</FieldLabel><input aria-label={`Precursor ${index + 1} ${label}`} value={datumValue(precursor[field as "name" | "countryOfOrigin"].value)} onChange={(event) => updateDatum(`precursors.${index}.${field}`, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData[helpKey as FieldHelpKey]?.source}</p></div>)}
+        {[["quantity", "Quantity", "t", "precursorQuantity"], ["directEmissions", "Direct emissions", "tCO2e", "precursorDirectEmissions"], ["indirectEmissions", "Indirect emissions", "tCO2e", "precursorIndirectEmissions"]].map(([field, label, unit, helpKey]) => <div key={field}><FieldLabel helpKey={helpKey as FieldHelpKey}>{label} ({unit})</FieldLabel><DecimalInput ariaLabel={`Precursor ${index + 1} ${label}`} min="0" value={datumValue(precursor[field as "quantity" | "directEmissions" | "indirectEmissions"].value)} onValueChange={(value) => updateDatum(`precursors.${index}.${field}`, { value, canonicalUnit: unit as UnitCode })} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData[helpKey as FieldHelpKey]?.source}</p></div>)}
+        <button type="button" onClick={() => setCaseData((previous) => ({ ...previous, precursors: previous.precursors.filter((_, itemIndex) => itemIndex !== index) }))} className="inline-flex items-center gap-2 text-sm text-red-700 md:col-span-2"><Trash2 className="h-4 w-4" /> Remove precursor</button>
       </div>)}
       {caseData.goods.length > 1 && <button type="button" onClick={() => addMethodologyDecision("GOODS_EMISSIONS_ALLOCATION")} className="rounded border border-border bg-surface px-4 py-3 text-sm">Record accepted allocation methodology</button>}
       <div className="space-y-2">{caseData.methodologyDecisions.map((decision) => <div key={decision.decisionId} className="rounded border border-border bg-neutral-soft p-3 text-sm"><strong>{decision.topic}</strong><p>{decision.selectedMethod}</p><p className="text-xs text-muted">{decision.reviewStatus} · {decision.rulesetVersion}</p></div>)}</div>
@@ -582,21 +673,30 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   );
 
   const renderStep7 = () => (
-    <div className="space-y-8"><div className="flex items-center justify-between"><h2 className="text-xl font-bold">7. Carbon price and evidence register</h2><button type="button" onClick={addCarbonPriceRecord} className="inline-flex items-center gap-2 rounded border border-border px-4 py-2 text-sm"><Plus className="h-4 w-4" /> Add carbon-price record</button></div>
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-xl font-bold">7. Carbon price and evidence register</h2>
+        <p className="mt-1 text-sm text-muted">Record any carbon price paid in the country of origin, upload supporting files, and link them to inputs to construct a digital audit trail.</p>
+      </div>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-bold">Carbon price records</h3>
+        <button type="button" onClick={addCarbonPriceRecord} className="inline-flex items-center gap-2 rounded border border-border px-4 py-2 text-sm"><Plus className="h-4 w-4" /> Add carbon-price record</button>
+      </div>
       {caseData.carbonPriceRecords.map((record, index) => <div key={record.id} className="grid gap-4 rounded-xl border border-border bg-surface p-5 md:grid-cols-2">
-        <div><FieldLabel helpKey="carbonPriceAmountPaid">Amount paid</FieldLabel><DecimalInput ariaLabel={`Carbon price ${index + 1} amount paid`} min="0" value={record.amountPaid} onValueChange={(value) => updatePlain(`carbonPriceRecords.${index}.amountPaid`, value)} /></div>
-        <div><FieldLabel helpKey="carbonPriceApplicableEmissions">Applicable emissions</FieldLabel><DecimalInput ariaLabel={`Carbon price ${index + 1} applicable emissions`} min="0" value={record.applicableEmissions} onValueChange={(value) => updatePlain(`carbonPriceRecords.${index}.applicableEmissions`, value)} /></div>
-        <div><FieldLabel helpKey="carbonPriceCurrency">Currency</FieldLabel><select aria-label={`Carbon price ${index + 1} currency`} value={record.currency} onChange={(event) => updatePlain(`carbonPriceRecords.${index}.currency`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm">{["EUR", "USD", "GBP", "TRY"].map((currency) => <option key={currency}>{currency}</option>)}</select></div>
-        <div><FieldLabel helpKey="legislationReference">Legislation reference</FieldLabel><input aria-label={`Carbon price ${index + 1} legislation reference`} value={record.legislationReference} onChange={(event) => updatePlain(`carbonPriceRecords.${index}.legislationReference`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-        <div><FieldLabel helpKey="paymentEvidence">Payment evidence</FieldLabel><select aria-label={`Carbon price ${index + 1} payment evidence`} value={record.proofOfPaymentEvidenceId || ""} onChange={(event) => updatePlain(`carbonPriceRecords.${index}.proofOfPaymentEvidenceId`, event.target.value || undefined)} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="">Select evidence</option>{caseData.evidenceRegister.map((evidence) => <option key={evidence.evidenceId} value={evidence.evidenceId}>{evidence.fileName}</option>)}</select></div>
+        <div><FieldLabel helpKey="carbonPriceAmountPaid">Amount paid</FieldLabel><DecimalInput ariaLabel={`Carbon price ${index + 1} amount paid`} min="0" value={record.amountPaid} onValueChange={(value) => updatePlain(`carbonPriceRecords.${index}.amountPaid`, value)} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.carbonPriceAmountPaid.source}</p></div>
+        <div><FieldLabel helpKey="carbonPriceApplicableEmissions">Applicable emissions</FieldLabel><DecimalInput ariaLabel={`Carbon price ${index + 1} applicable emissions`} min="0" value={record.applicableEmissions} onValueChange={(value) => updatePlain(`carbonPriceRecords.${index}.applicableEmissions`, value)} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.carbonPriceApplicableEmissions.source}</p></div>
+        <div><FieldLabel helpKey="carbonPriceCurrency">Currency</FieldLabel><select aria-label={`Carbon price ${index + 1} currency`} value={record.currency} onChange={(event) => updatePlain(`carbonPriceRecords.${index}.currency`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm">{["EUR", "USD", "GBP", "TRY"].map((currency) => <option key={currency}>{currency}</option>)}</select><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.carbonPriceCurrency.source}</p></div>
+        <div><FieldLabel helpKey="legislationReference">Legislation reference</FieldLabel><input aria-label={`Carbon price ${index + 1} legislation reference`} value={record.legislationReference} onChange={(event) => updatePlain(`carbonPriceRecords.${index}.legislationReference`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.legislationReference.source}</p></div>
+        <div className="md:col-span-2"><FieldLabel helpKey="paymentEvidence">Payment evidence</FieldLabel><select aria-label={`Carbon price ${index + 1} payment evidence`} value={record.proofOfPaymentEvidenceId || ""} onChange={(event) => updatePlain(`carbonPriceRecords.${index}.proofOfPaymentEvidenceId`, event.target.value || undefined)} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="">Select evidence</option>{caseData.evidenceRegister.map((evidence) => <option key={evidence.evidenceId} value={evidence.evidenceId}>{evidence.fileName}</option>)}</select><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.paymentEvidence.source}</p></div>
+        <button type="button" onClick={() => setCaseData((previous) => ({ ...previous, carbonPriceRecords: previous.carbonPriceRecords.filter((_, itemIndex) => itemIndex !== index) }))} className="inline-flex items-center gap-2 text-sm text-red-700 md:col-span-2"><Trash2 className="h-4 w-4" /> Remove carbon-price record</button>
       </div>)}
 
       <div className="space-y-4 rounded-xl border border-border bg-surface p-6"><h3 className="font-bold">Upload immutable evidence</h3><div className="grid gap-4 md:grid-cols-2">
-        <div><FieldLabel helpKey="evidenceFile">File</FieldLabel><input aria-label="Evidence file" type="file" accept=".pdf,.csv,.xls,.xlsx,.png,.jpg,.jpeg,.txt" onChange={(event) => setEvidenceFile(event.target.files?.[0] || null)} /></div>
-        <div><FieldLabel helpKey="evidenceDocumentType">Document type</FieldLabel><input aria-label="Evidence document type" value={evidenceDocumentType} onChange={(event) => setEvidenceDocumentType(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-        <div><FieldLabel helpKey="evidenceIssuer">Issuer</FieldLabel><input aria-label="Evidence issuer" value={evidenceIssuer} onChange={(event) => setEvidenceIssuer(event.target.value)} placeholder="Example: electricity supplier or installation operator" className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-        <div><FieldLabel helpKey="evidenceIssueDate">Issue date</FieldLabel><input aria-label="Evidence issue date" type="date" value={evidenceIssueDate} onChange={(event) => setEvidenceIssueDate(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
-        <div><FieldLabel helpKey="evidenceLinkedInput">Linked input</FieldLabel><select aria-label="Evidence linked input" value={evidenceLinkedInput} onChange={(event) => setEvidenceLinkedInput(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm">{EVIDENCE_LINK_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}{caseData.goods.flatMap((_, index) => [[`goods.${index}.cnCode`, `Good ${index + 1} CN code`], [`goods.${index}.productionVolume`, `Good ${index + 1} production`], [`goods.${index}.allocationShare`, `Good ${index + 1} allocation`]]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}{caseData.precursors.flatMap((_, index) => [[`precursors.${index}.quantity`, `Precursor ${index + 1} quantity`], [`precursors.${index}.directEmissions`, `Precursor ${index + 1} direct emissions`], [`precursors.${index}.indirectEmissions`, `Precursor ${index + 1} indirect emissions`]]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
+        <div><FieldLabel helpKey="evidenceFile">File</FieldLabel><input aria-label="Evidence file" type="file" accept=".pdf,.csv,.xls,.xlsx,.png,.jpg,.jpeg,.txt" onChange={(event) => setEvidenceFile(event.target.files?.[0] || null)} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.evidenceFile.source}</p></div>
+        <div><FieldLabel helpKey="evidenceDocumentType">Document type</FieldLabel><input aria-label="Evidence document type" value={evidenceDocumentType} onChange={(event) => setEvidenceDocumentType(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.evidenceDocumentType.source}</p></div>
+        <div><FieldLabel helpKey="evidenceIssuer">Issuer</FieldLabel><input aria-label="Evidence issuer" value={evidenceIssuer} onChange={(event) => setEvidenceIssuer(event.target.value)} placeholder="Example: electricity supplier or installation operator" className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.evidenceIssuer.source}</p></div>
+        <div><FieldLabel helpKey="evidenceIssueDate">Issue date</FieldLabel><input aria-label="Evidence issue date" type="date" value={evidenceIssueDate} onChange={(event) => setEvidenceIssueDate(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.evidenceIssueDate.source}</p></div>
+        <div className="md:col-span-2"><FieldLabel helpKey="evidenceLinkedInput">Linked input</FieldLabel><select aria-label="Evidence linked input" value={evidenceLinkedInput} onChange={(event) => setEvidenceLinkedInput(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm">{EVIDENCE_LINK_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}{caseData.goods.flatMap((_, index) => [[`goods.${index}.cnCode`, `Good ${index + 1} CN code`], [`goods.${index}.productionVolume`, `Good ${index + 1} production`], [`goods.${index}.allocationShare`, `Good ${index + 1} allocation`]]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}{caseData.precursors.flatMap((_, index) => [[`precursors.${index}.quantity`, `Precursor ${index + 1} quantity`], [`precursors.${index}.directEmissions`, `Precursor ${index + 1} direct emissions`], [`precursors.${index}.indirectEmissions`, `Precursor ${index + 1} indirect emissions`]]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.evidenceLinkedInput.source}</p></div>
       </div><button type="button" onClick={handleEvidenceUpload} disabled={uploading} className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-sm font-semibold text-surface disabled:opacity-50">{uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />} Upload and register evidence</button><StatusBanner status={evidenceStatus} tone={evidenceStatus.toLowerCase().includes("failed") || evidenceStatus.includes("EVIDENCE_") ? "error" : "warning"} /></div>
 
       <div className="space-y-3">{caseData.evidenceRegister.map((evidence) => <div key={evidence.evidenceId} className="rounded-xl border border-border bg-surface p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{evidence.fileName}</p><p className="text-xs text-muted">{evidence.documentType} · {evidence.sizeBytes} bytes · {evidence.reviewStatus}/{evidence.supportStatus}/{evidence.malwareScanStatus}</p><p className="mt-1 break-all font-mono text-[10px] text-muted">SHA-256 {evidence.fileHash}</p></div></div><div className="mt-3"><FieldLabel helpKey="evidenceReviewNotes">Internal review note</FieldLabel><div className="flex flex-col gap-2 md:flex-row"><input aria-label={`Review notes for ${evidence.fileName}`} value={reviewNotes[evidence.evidenceId] || ""} onChange={(event) => setReviewNotes((previous) => ({ ...previous, [evidence.evidenceId]: event.target.value }))} placeholder="Internal review note" className="flex-1 rounded border border-border bg-background p-2 text-sm" /><button type="button" disabled={evidence.malwareScanStatus !== "CLEAN"} onClick={() => handleEvidenceReview(evidence.evidenceId, "APPROVED")} className="rounded bg-emerald-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">Approve</button><button type="button" onClick={() => handleEvidenceReview(evidence.evidenceId, "REJECTED")} className="rounded bg-red-700 px-3 py-2 text-xs font-semibold text-white">Reject</button></div></div>{evidence.malwareScanStatus !== "CLEAN" && <p className="mt-2 text-xs text-amber-800">Approval is disabled until an administrator records an external malware scan as CLEAN.</p>}</div>)}</div>
@@ -604,7 +704,11 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   );
 
   const renderStep8 = () => (
-    <div className="space-y-6"><h2 className="text-xl font-bold">8. Verification readiness and dossier generation</h2>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold">8. Verification readiness and dossier generation</h2>
+        <p className="mt-1 text-sm text-muted">Review the automated quality controls, inspect the mathematical audit trace, and generate the final sealed verifier package.</p>
+      </div>
       {scenarioActive && calculation.result && (
         <section className="rounded-xl border-2 border-blue-300 bg-blue-50 p-6 text-blue-950" aria-label="Illustrative scenario report">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
@@ -682,6 +786,21 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
               })}
             </div>
           ) : <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"><CheckCircle2 className="mb-2 h-5 w-5" />Every automated preparation control has passed. The independent verifier status remains separate.</div>}
+
+          {currentReleasesCount > 0 && (
+            <div className="mt-5 border-t border-border pt-4">
+              <FieldLabel helpKey="correctionReason">Correction Reason (Required for Release {currentReleasesCount + 1})</FieldLabel>
+              <textarea
+                aria-label="Correction reason"
+                value={correctionReason}
+                onChange={(event) => setCorrectionReason(event.target.value)}
+                placeholder="Describe the corrections made in this release (e.g., corrected CN code, updated precursor emissions)."
+                rows={3}
+                className="w-full rounded border border-border bg-background p-2.5 text-sm"
+              />
+              <p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.correctionReason.source}</p>
+            </div>
+          )}
 
           {readiness.isEligibleForSealing ? (
             <button type="button" aria-label="Generate sealed dossier" onClick={handleSeal} disabled={sealing || usableEntitlements.length === 0} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-40">{sealing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Generate sealed dossier</button>
