@@ -1,7 +1,7 @@
 "use client";
 
 // fieldHelpData inline declarations
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -28,6 +28,7 @@ import {
   type EvidenceSupportStatus,
   type InputDatum,
   type UnitCode,
+  type MethodologyDecision,
 } from "@/lib/cbam/schema";
 import { uploadEvidenceFile } from "@/lib/cbam/evidence-upload";
 import {
@@ -36,6 +37,38 @@ import {
   sealReport,
   type PreparationPackEntitlement,
 } from "@/lib/functions/client";
+
+const METHODOLOGY_TOPICS = [
+  { id: "SYSTEM_BOUNDARY", label: "System boundary" },
+  { id: "PRODUCTION_ROUTE", label: "Production route" },
+  { id: "CN_CLASSIFICATION", label: "CN classification" },
+  { id: "PRECURSOR_SCOPE", label: "Precursor applicability" },
+  { id: "GOODS_EMISSIONS_ALLOCATION", label: "Allocation method" },
+  { id: "NON_ASSOCIATED_FLOWS", label: "Non-associated flows" },
+  { id: "DIRECT_EMISSION_METHOD", label: "Direct-emission method" },
+  { id: "ELECTRICITY_FACTOR_METHOD", label: "Electricity-factor method" },
+  { id: "ACTUAL_DEFAULT_VALUE_CHOICE", label: "Actual/default value choice" },
+  { id: "ESTIMATE_METHOD", label: "Estimate method" },
+  { id: "CARBON_PRICE_TREATMENT", label: "Carbon-price treatment" },
+  { id: "MATERIALITY_TREATMENT", label: "Materiality treatment" },
+  { id: "INSTALLATION_VISIT_PREPARATION", label: "Installation-visit preparation" }
+];
+
+const TOPIC_DEFAULTS: Record<string, { method: string; basis: string }> = {
+  SYSTEM_BOUNDARY: { method: "Defined installational boundary including all production routes", basis: "Regulation (EU) 2023/956, Annex IV." },
+  PRODUCTION_ROUTE: { method: "Default sector production route", basis: "Implementing Regulation (EU) 2025/2546." },
+  CN_CLASSIFICATION: { method: "Standard Combined Nomenclature classification", basis: "Regulation (EU) 2023/956, Annex II." },
+  PRECURSOR_SCOPE: { method: "No applicable precursors identified", basis: "Implementing Regulation (EU) 2025/2546." },
+  GOODS_EMISSIONS_ALLOCATION: { method: "Mass-based allocation share", basis: "Implementing Regulation (EU) 2025/2546 Annex IV." },
+  NON_ASSOCIATED_FLOWS: { method: "Excluded from direct boundaries", basis: "Implementing Regulation (EU) 2025/2546." },
+  DIRECT_EMISSION_METHOD: { method: "Calculation-based methodology (standard factors)", basis: "Implementing Regulation (EU) 2025/2546 Annex III." },
+  ELECTRICITY_FACTOR_METHOD: { method: "Location-based grid emission factor", basis: "Implementing Regulation (EU) 2025/2546 Annex III." },
+  ACTUAL_DEFAULT_VALUE_CHOICE: { method: "Actual emissions based on primary monitoring data", basis: "Implementing Regulation (EU) 2025/2546." },
+  ESTIMATE_METHOD: { method: "No estimates used (100% primary data)", basis: "Implementing Regulation (EU) 2025/2546." },
+  CARBON_PRICE_TREATMENT: { method: "No carbon price paid in country of origin", basis: "Regulation (EU) 2023/956 Article 9." },
+  MATERIALITY_TREATMENT: { method: "5% specific emissions threshold applied", basis: "Implementing Regulation (EU) 2025/2546." },
+  INSTALLATION_VISIT_PREPARATION: { method: "Preparer pre-verification workspace visit plan", basis: "Commission Implementing Regulation (EU) 2023/1779." }
+};
 
 interface CaseWizardClientProps {
   sessionUser: { uid: string; email: string };
@@ -160,6 +193,21 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const [evidenceIssueDate, setEvidenceIssueDate] = useState("");
   const [evidenceLinkedInput, setEvidenceLinkedInput] = useState("directEmissions");
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
+  const [selectedTopic, setSelectedTopic] = useState("SYSTEM_BOUNDARY");
+  const [selectedRulesetVersion, setSelectedRulesetVersion] = useState("EU-CBAM-DEFINITIVE-2026");
+  const [selectedMethodText, setSelectedMethodText] = useState("");
+  const [decisionReason, setDecisionReason] = useState("");
+  const [decisionLegalBasis, setDecisionLegalBasis] = useState("");
+  const [decisionReviewStatus, setDecisionReviewStatus] = useState("ACCEPTED");
+  const [decisionEvidenceIds, setDecisionEvidenceIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    const defaults = TOPIC_DEFAULTS[selectedTopic];
+    if (defaults) {
+      setSelectedMethodText(defaults.method);
+      setDecisionLegalBasis(defaults.basis);
+    }
+  }, [selectedTopic]);
 
   const usableEntitlements = useMemo(() => availableEntitlements.filter((entitlement) => {
     const status = String(entitlement.status || "").toUpperCase();
@@ -314,6 +362,48 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           rulesetVersion: "EU-CBAM-DEFINITIVE-2026",
         },
       ],
+    }));
+  };
+
+  const addCustomMethodologyDecision = () => {
+    if (caseData.methodologyDecisions.some((d) => d.topic === selectedTopic)) {
+      alert("A decision for this topic already exists.");
+      return;
+    }
+    const newDecision = {
+      decisionId: crypto.randomUUID(),
+      topic: selectedTopic,
+      selectedMethod: selectedMethodText.trim() || "Documented operator method",
+      reason: decisionReason.trim() || "Operator assessment recorded for independent verifier challenge.",
+      legalOrTechnicalBasis: decisionLegalBasis.trim() || "Regulation (EU) 2023/956, Annex IV.",
+      evidenceIds: decisionEvidenceIds,
+      reviewStatus: decisionReviewStatus as "PENDING" | "ACCEPTED" | "REVIEW_REQUIRED",
+      rulesetVersion: selectedRulesetVersion,
+    };
+    setCaseData((previous) => ({
+      ...previous,
+      methodologyDecisions: [...previous.methodologyDecisions, newDecision],
+    }));
+    // Reset fields
+    setSelectedMethodText("");
+    setDecisionReason("");
+    setDecisionLegalBasis("");
+    setDecisionEvidenceIds([]);
+  };
+
+  const updateMethodologyDecision = (decisionId: string, updates: Partial<MethodologyDecision>) => {
+    setCaseData((previous) => ({
+      ...previous,
+      methodologyDecisions: previous.methodologyDecisions.map((d) =>
+        d.decisionId === decisionId ? { ...d, ...updates } : d
+      ),
+    }));
+  };
+
+  const removeMethodologyDecision = (decisionId: string) => {
+    setCaseData((previous) => ({
+      ...previous,
+      methodologyDecisions: previous.methodologyDecisions.filter((d) => d.decisionId !== decisionId),
     }));
   };
 
@@ -505,18 +595,293 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const renderStep4 = () => <div className="space-y-6"><h2 className="text-xl font-bold">4. Direct emissions</h2>{emissionInput("directEmissions", "Total direct emissions", "tCO2e")}</div>;
   const renderStep5 = () => <div className="space-y-6"><h2 className="text-xl font-bold">5. Indirect emissions</h2>{emissionInput("electricityConsumed", "Electricity consumed", "MWh")}{emissionInput("gridEmissionFactor", "Grid emission factor", "tCO2e/MWh")}</div>;
 
-  const renderStep6 = () => (
-    <div className="space-y-5"><div className="flex items-center justify-between"><h2 className="text-xl font-bold">6. Precursors and methodology decisions</h2><button type="button" onClick={addPrecursor} className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-sm font-semibold text-surface"><Plus className="h-4 w-4" /> Add precursor</button></div>
-      {caseData.precursors.length === 0 && <button type="button" onClick={() => addMethodologyDecision("PRECURSOR_SCOPE")} className="rounded border border-border bg-surface px-4 py-3 text-sm">Record accepted no-precursor scope decision</button>}
-      {caseData.precursors.map((precursor, index) => <div key={`precursor-${index}`} className="grid gap-4 rounded-xl border border-border bg-surface p-5 md:grid-cols-2">
-        {[["name", "Precursor name"], ["countryOfOrigin", "Country of origin"]].map(([field, label]) => <div key={field}><FieldLabel>{label}</FieldLabel><input aria-label={`Precursor ${index + 1} ${label}`} value={datumValue(precursor[field as "name" | "countryOfOrigin"]?.value)} onChange={(event) => updateDatum(`precursors.${index}.${field}`, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>)}
-        {[["quantity", "Quantity", "t"], ["directEmissions", "Direct emissions", "tCO2e"], ["indirectEmissions", "Indirect emissions", "tCO2e"]].map(([field, label, unit]) => <div key={field}><FieldLabel>{label} ({unit})</FieldLabel><input aria-label={`Precursor ${index + 1} ${label}`} type="number" min="0" step="any" value={datumValue(precursor[field as "quantity" | "directEmissions" | "indirectEmissions"]?.value)} onChange={(event) => updateDatum(`precursors.${index}.${field}`, { value: event.target.value, canonicalUnit: unit as UnitCode })} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>)}
-        <button type="button" onClick={() => setCaseData((previous) => ({ ...previous, precursors: previous.precursors.filter((_, itemIndex) => itemIndex !== index) }))} className="inline-flex items-center gap-2 text-sm text-red-700"><Trash2 className="h-4 w-4" /> Remove precursor</button>
-      </div>)}
-      {caseData.goods.length > 1 && <button type="button" onClick={() => addMethodologyDecision("GOODS_EMISSIONS_ALLOCATION")} className="rounded border border-border bg-surface px-4 py-3 text-sm">Record accepted allocation methodology</button>}
-      <div className="space-y-2">{caseData.methodologyDecisions.map((decision) => <div key={decision.decisionId} className="rounded border border-border bg-neutral-soft p-3 text-sm"><strong>{decision.topic}</strong><p>{decision.selectedMethod}</p><p className="text-xs text-muted">{decision.reviewStatus} · {decision.rulesetVersion}</p></div>)}</div>
-    </div>
-  );
+  const renderStep6 = () => {
+    const availableTopics = METHODOLOGY_TOPICS.filter(
+      (topic) => !caseData.methodologyDecisions.some((d) => d.topic === topic.id)
+    );
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold">6. Precursors and methodology decisions</h2>
+          <button
+            type="button"
+            onClick={addPrecursor}
+            className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-sm font-semibold text-surface"
+          >
+            <Plus className="h-4 w-4" /> Add precursor
+          </button>
+        </div>
+
+        {caseData.precursors.length === 0 && (
+          <div className="rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted">
+            No precursors declared.
+          </div>
+        )}
+
+        {caseData.precursors.map((precursor, index) => (
+          <div key={`precursor-${index}`} className="grid gap-4 rounded-xl border border-border bg-surface p-5 md:grid-cols-2">
+            {[["name", "Precursor name"], ["countryOfOrigin", "Country of origin"]].map(([field, label]) => (
+              <div key={field}>
+                <FieldLabel>{label}</FieldLabel>
+                <input
+                  aria-label={`Precursor ${index + 1} ${label}`}
+                  value={datumValue(precursor[field as "name" | "countryOfOrigin"]?.value)}
+                  onChange={(event) => updateDatum(`precursors.${index}.${field}`, { value: event.target.value })}
+                  className="w-full rounded border border-border bg-background p-2 text-sm"
+                />
+              </div>
+            ))}
+            {[["quantity", "Quantity", "t"], ["directEmissions", "Direct emissions", "tCO2e"], ["indirectEmissions", "Indirect emissions", "tCO2e"]].map(([field, label, unit]) => (
+              <div key={field}>
+                <FieldLabel>{label} ({unit})</FieldLabel>
+                <input
+                  aria-label={`Precursor ${index + 1} ${label}`}
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={datumValue(precursor[field as "quantity" | "directEmissions" | "indirectEmissions"]?.value)}
+                  onChange={(event) => updateDatum(`precursors.${index}.${field}`, { value: event.target.value, canonicalUnit: unit as UnitCode })}
+                  className="w-full rounded border border-border bg-background p-2 text-sm"
+                />
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setCaseData((previous) => ({ ...previous, precursors: previous.precursors.filter((_, itemIndex) => itemIndex !== index) }))}
+              className="inline-flex items-center gap-2 text-sm text-red-700 md:col-span-2"
+            >
+              <Trash2 className="h-4 w-4" /> Remove precursor
+            </button>
+          </div>
+        ))}
+
+        <div className="rounded-xl border border-border bg-surface p-6 space-y-4">
+          <h3 className="text-lg font-bold text-foreground">Register methodology decision</h3>
+          
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <FieldLabel>Topic</FieldLabel>
+              <select
+                aria-label="Decision topic"
+                value={selectedTopic}
+                onChange={(e) => setSelectedTopic(e.target.value)}
+                className="w-full rounded border border-border bg-background p-2 text-sm"
+              >
+                {METHODOLOGY_TOPICS.map((topic) => (
+                  <option key={topic.id} value={topic.id}>{topic.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <FieldLabel>Ruleset version</FieldLabel>
+              <select
+                aria-label="Ruleset version"
+                value={selectedRulesetVersion}
+                onChange={(e) => setSelectedRulesetVersion(e.target.value)}
+                className="w-full rounded border border-border bg-background p-2 text-sm"
+              >
+                <option value="EU-CBAM-DEFINITIVE-2026">EU-CBAM-DEFINITIVE-2026</option>
+                <option value="EU-CBAM-TRANSITIONAL">EU-CBAM-TRANSITIONAL</option>
+              </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <FieldLabel>Selected method</FieldLabel>
+              <input
+                aria-label="Selected method"
+                value={selectedMethodText}
+                onChange={(e) => setSelectedMethodText(e.target.value)}
+                placeholder="Method description"
+                className="w-full rounded border border-border bg-background p-2 text-sm"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <FieldLabel>Reason / justification</FieldLabel>
+              <textarea
+                aria-label="Reason / justification"
+                value={decisionReason}
+                onChange={(e) => setDecisionReason(e.target.value)}
+                placeholder="Justification for choice"
+                rows={3}
+                className="w-full rounded border border-border bg-background p-2 text-sm"
+              />
+            </div>
+
+            <div>
+              <FieldLabel>Legal or technical basis</FieldLabel>
+              <input
+                aria-label="Legal or technical basis"
+                value={decisionLegalBasis}
+                onChange={(e) => setDecisionLegalBasis(e.target.value)}
+                placeholder="Regulatory basis"
+                className="w-full rounded border border-border bg-background p-2 text-sm"
+              />
+            </div>
+
+            <div>
+              <FieldLabel>Review status</FieldLabel>
+              <select
+                aria-label="Review status"
+                value={decisionReviewStatus}
+                onChange={(e) => setDecisionReviewStatus(e.target.value)}
+                className="w-full rounded border border-border bg-background p-2 text-sm"
+              >
+                <option value="ACCEPTED">ACCEPTED (Approved)</option>
+                <option value="PENDING">PENDING (Draft)</option>
+                <option value="REVIEW_REQUIRED">REVIEW_REQUIRED (Flagged)</option>
+              </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <FieldLabel>Linked evidence documents</FieldLabel>
+              <div className="max-h-36 overflow-y-auto border border-border rounded-lg p-3 bg-background space-y-1.5">
+                {caseData.evidenceRegister.length === 0 && (
+                  <p className="text-xs text-muted">No evidence files registered yet. Upload them in Step 7 first.</p>
+                )}
+                {caseData.evidenceRegister.map((ev) => (
+                  <label key={ev.evidenceId} className="flex items-center gap-2 text-xs text-foreground cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={decisionEvidenceIds.includes(ev.evidenceId)}
+                      onChange={(e) => {
+                        if (e.target.checked) setDecisionEvidenceIds((prev) => [...prev, ev.evidenceId]);
+                        else setDecisionEvidenceIds((prev) => prev.filter((id) => id !== ev.evidenceId));
+                      }}
+                      className="rounded border-border text-accent focus:ring-accent"
+                    />
+                    <span className="truncate">{ev.fileName} ({ev.documentType})</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={addCustomMethodologyDecision}
+            className="inline-flex items-center gap-2 rounded bg-accent hover:bg-accent-hover px-4 py-2 text-sm font-semibold text-surface transition-colors"
+          >
+            <Plus className="h-4 w-4" /> Register methodology decision
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-foreground">Registered methodology decisions</h3>
+          {caseData.methodologyDecisions.length === 0 && (
+            <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted">
+              No methodology decisions recorded yet.
+            </div>
+          )}
+          {caseData.methodologyDecisions.map((decision) => {
+            const topicLabel = METHODOLOGY_TOPICS.find((t) => t.id === decision.topic)?.label || decision.topic;
+            return (
+              <div key={decision.decisionId} className="rounded-xl border border-border bg-surface p-5 space-y-4">
+                <div className="flex items-center justify-between border-b border-border pb-2">
+                  <strong className="text-sm font-bold text-accent">{topicLabel}</strong>
+                  <button
+                    type="button"
+                    onClick={() => removeMethodologyDecision(decision.decisionId)}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-800 transition-colors"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Delete decision
+                  </button>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2 text-sm">
+                  <div>
+                    <FieldLabel>Ruleset version</FieldLabel>
+                    <select
+                      aria-label={`${topicLabel} ruleset version`}
+                      value={decision.rulesetVersion}
+                      onChange={(e) => updateMethodologyDecision(decision.decisionId, { rulesetVersion: e.target.value })}
+                      className="w-full rounded border border-border bg-background p-1.5 text-xs"
+                    >
+                      <option value="EU-CBAM-DEFINITIVE-2026">EU-CBAM-DEFINITIVE-2026</option>
+                      <option value="EU-CBAM-TRANSITIONAL">EU-CBAM-TRANSITIONAL</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <FieldLabel>Review status</FieldLabel>
+                    <select
+                      aria-label={`${topicLabel} review status`}
+                      value={decision.reviewStatus}
+                      onChange={(e) => updateMethodologyDecision(decision.decisionId, { reviewStatus: e.target.value as any })}
+                      className="w-full rounded border border-border bg-background p-1.5 text-xs"
+                    >
+                      <option value="ACCEPTED">ACCEPTED (Approved)</option>
+                      <option value="PENDING">PENDING (Draft)</option>
+                      <option value="REVIEW_REQUIRED">REVIEW_REQUIRED (Flagged)</option>
+                    </select>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <FieldLabel>Selected method</FieldLabel>
+                    <input
+                      aria-label={`${topicLabel} method`}
+                      value={decision.selectedMethod}
+                      onChange={(e) => updateMethodologyDecision(decision.decisionId, { selectedMethod: e.target.value })}
+                      className="w-full rounded border border-border bg-background p-1.5 text-xs"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <FieldLabel>Reason / justification</FieldLabel>
+                    <textarea
+                      aria-label={`${topicLabel} reason`}
+                      value={decision.reason}
+                      onChange={(e) => updateMethodologyDecision(decision.decisionId, { reason: e.target.value })}
+                      rows={2}
+                      className="w-full rounded border border-border bg-background p-1.5 text-xs"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <FieldLabel>Legal or technical basis</FieldLabel>
+                    <input
+                      aria-label={`${topicLabel} legal basis`}
+                      value={decision.legalOrTechnicalBasis}
+                      onChange={(e) => updateMethodologyDecision(decision.decisionId, { legalOrTechnicalBasis: e.target.value })}
+                      className="w-full rounded border border-border bg-background p-1.5 text-xs"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <FieldLabel>Linked evidence documents</FieldLabel>
+                    <div className="max-h-24 overflow-y-auto border border-border rounded p-2 bg-background space-y-1">
+                      {caseData.evidenceRegister.length === 0 && (
+                        <p className="text-[11px] text-muted">No evidence files registered.</p>
+                      )}
+                      {caseData.evidenceRegister.map((ev) => (
+                        <label key={ev.evidenceId} className="flex items-center gap-2 text-[11px] text-foreground cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={decision.evidenceIds.includes(ev.evidenceId)}
+                            onChange={(e) => {
+                              const currentIds = decision.evidenceIds;
+                              const nextIds = e.target.checked
+                                ? [...currentIds, ev.evidenceId]
+                                : currentIds.filter((id) => id !== ev.evidenceId);
+                              updateMethodologyDecision(decision.decisionId, { evidenceIds: nextIds });
+                            }}
+                            className="rounded border-border text-accent focus:ring-accent"
+                          />
+                          <span className="truncate">{ev.fileName}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   const renderStep7 = () => (
     <div className="space-y-8"><div className="flex items-center justify-between"><h2 className="text-xl font-bold">7. Carbon price and evidence register</h2><button type="button" onClick={addCarbonPriceRecord} className="inline-flex items-center gap-2 rounded border border-border px-4 py-2 text-sm"><Plus className="h-4 w-4" /> Add carbon-price record</button></div>

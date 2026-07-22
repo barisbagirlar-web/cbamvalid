@@ -33,7 +33,7 @@ export function runQualityControls(caseData: AuditReadyCase): QualityControlResu
   else add("QC_01", "EORI format and evidence", "PASS");
 
   const year = Number(caseData.reportingPeriod.year.value);
-  add("QC_02", "Definitive-period reporting year", Number.isInteger(year) && year >= 2026 && year <= 2100 ? "PASS" : "BLOCKER", Number.isInteger(year) && year >= 2026 && year <= 2100 ? undefined : "Reporting year must be an integer from 2026 through 2100.", "REM_CORRECT_REPORTING_YEAR");
+  add("QC_02", "Definitive-period reporting year", Number.isInteger(year) && year >= 2023 && year <= 2100 ? "PASS" : "BLOCKER", Number.isInteger(year) && year >= 2023 && year <= 2100 ? undefined : "Reporting year must be an integer from 2023 through 2100.", "REM_CORRECT_REPORTING_YEAR");
   if (caseData.goods.length === 0) add("QC_03", "Goods definition", "BLOCKER", "At least one good is required.", "REM_ADD_GOOD");
 
   caseData.goods.forEach((good, index) => {
