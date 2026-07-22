@@ -1,13 +1,16 @@
-# CBAMValid — Niche Finance & Accounting Calculators Hub
+# CBAMValid — Exporter Verification Preparation Pack V5
 
-> CBAMValid (https://cbamvalid.com) is a free, high-performance, and mathematically rigorous calculators hub focusing on niche finance, corporate accounting, investment budgeting, and taxation tools.
+> CBAMValid (https://cbamvalid.com) is a production-grade, verifier-preparation platform for non-EU producers, exporters, operators, importers, and CBAM reporting teams. It produces a serious operator-prepared dossier that reduces the work required for independent accredited verification under Regulation (EU) 2023/956, EU ETS AVR 2018/2067, and Implementing Regulations (EU) 2023/1776, 2023/1778, and 2025/2546.
 
 ## Product Overview & Navigation
-- [Homepage](https://cbamvalid.com/) — Hub landing page with search, categories, and direct links to financial tools.
-- [Company Valuation Calculator](https://cbamvalid.com/calculators/company-valuation) — Pilot calculator utilizing WACC-discounted DCF and EBITDA multiples with Net Debt adjustments to calculate Equity Value. Includes interactive charts and print-ready report exports.
-- [How It Works](https://cbamvalid.com/how-it-works) — Guide on using calculators and verifying formulas.
-- [Verify a Dossier](https://cbamvalid.com/verify) — Legacy CBAM dossier RSA signature verification page.
-- [Combined Nomenclature (CN) Hub](https://cbamvalid.com/cn-code) — Legacy CN classification search.
+- [Homepage](https://cbamvalid.com/) — Executive summary, platform positioning, live ROI calculator.
+- [Product & Deliverables](https://cbamvalid.com/product) — 25-component dossier package breakdown and verifier readiness gates.
+- [How It Works](https://cbamvalid.com/how-it-works) — 4-step workflow from case setup to immutable release package.
+- [Pricing & Entitlements](https://cbamvalid.com/pricing) — $300 per legal operator/installation year (100 credits = 1 Preparation Pack, 5 sealed releases included).
+- [Sample Dossier Preview](https://cbamvalid.com/sample-dossier) — Interactive verifier dossier preview with visual geometry validation.
+- [Public Signature Verification](https://cbamvalid.com/verify) — KMS RSA-4096 signature and document SHA-256 integrity verification engine.
+- [Methodology & Calculation Rules](https://cbamvalid.com/methodology) — Server-side deterministic engine, ROUND_HALF_UP rounding, allocation reconciliation.
+- [Combined Nomenclature (CN) Hub](https://cbamvalid.com/cn-code) — CN classification search and sectoral eligibility directory (Iron & Steel, Aluminum, Cement, Fertilizers, Hydrogen, Electricity).
 
 ## Canonical Deliverable Contract (25 Components)
 1. **CBAMValid Verification Readiness & Evidence Assurance Dossier**: 14-page, 6-chapter structured PDF document (Executive Summary, Readiness Score, Installation & Process Boundaries, Evidence Lineage, Embedded Emission Calculations, Handover & Annexes).

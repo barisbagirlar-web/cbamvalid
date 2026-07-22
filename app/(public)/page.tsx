@@ -1,305 +1,236 @@
-"use client";
-
-import React, { useState, useMemo } from "react";
 import Link from "next/link";
-import { 
-  Calculator, 
-  Search, 
-  TrendingUp, 
-  DollarSign, 
-  Percent, 
-  Briefcase, 
-  ArrowRight, 
-  Info,
-  Layers,
-  Heart
-} from "lucide-react";
+import { Shield, ArrowRight, CheckCircle2, Globe2 } from "lucide-react";
+import { generateSeoMetadata } from "@/lib/seo/build-metadata";
+import { generateOrganizationSchema, generateWebSiteSchema, generateWebApplicationSchema, generateFAQSchema, generateEeatProductSchema } from "@/lib/seo/schema";
 
-interface CalculatorItem {
-  id: string;
-  name: string;
-  nameEn: string;
-  description: string;
-  category: "valuation" | "analysis" | "investment" | "tax";
-  href: string;
-  isPilot: boolean;
-}
-
-const CALCULATORS: CalculatorItem[] = [
-  {
-    id: "company-valuation",
-    name: "Şirket Değeri Hesaplama",
-    nameEn: "Company Valuation Calculator",
-    description: "DCF (İndirgenmiş Nakit Akımı) ve EBITDA Çarpanı yöntemlerini bir arada kullanarak şirketinizin Equity Value değerini saniyeler içinde belirleyin.",
-    category: "valuation",
-    href: "/calculators/company-valuation",
-    isPilot: true
-  },
-  {
-    id: "dcf-valuation",
-    name: "İndirgenmiş Nakit Akımları (DCF)",
-    nameEn: "Discounted Cash Flow Model",
-    description: "Gelecek yılların FCF projeksiyonlarını WACC (Ağırlıklı Ortalama Sermaye Maliyeti) ile indirgeyerek Enterprise Value hesaplayın.",
-    category: "valuation",
-    href: "#",
-    isPilot: false
-  },
-  {
-    id: "ebitda-multiple",
-    name: "EBITDA Çarpanı Değerlemesi",
-    nameEn: "EBITDA Multiple Valuation",
-    description: "Şirketinizin sektör ortalaması EV/EBITDA çarpanlarına göre piyasa değerlemesini yapın.",
-    category: "valuation",
-    href: "#",
-    isPilot: false
-  },
-  {
-    id: "dupont-analysis",
-    name: "Dupont Analizi",
-    nameEn: "Dupont Analysis",
-    description: "Özkaynak Karlılığını (ROE) Net Kar Marjı, Varlık Devir Hızı ve Finansal Kaldıraç bileşenlerine ayırarak analiz edin.",
-    category: "analysis",
-    href: "#",
-    isPilot: false
-  },
-  {
-    id: "wacc-calc",
-    name: "WACC Sermaye Maliyeti",
-    nameEn: "WACC Calculator",
-    description: "Borç ve özkaynak maliyetlerini ağırlıklandırarak şirketinizin ağırlıklı ortalama sermaye maliyetini hesaplayın.",
-    category: "analysis",
-    href: "#",
-    isPilot: false
-  },
-  {
-    id: "cash-cycle",
-    name: "Nakit Dönüşüm Süresi",
-    nameEn: "Cash Conversion Cycle",
-    description: "Stokta Kalma Süresi, Tahsilat Süresi ve Ödeme Süresi verilerinden işletme sermayesi döngüsünü hesaplayın.",
-    category: "analysis",
-    href: "#",
-    isPilot: false
-  },
-  {
-    id: "npv-irr",
-    name: "NPV & IRR Yatırım Analizi",
-    nameEn: "NPV & IRR Investment Analysis",
-    description: "Sermaye bütçelemesi projelerinizin Net Bugünkü Değer (NPV) ve İç Verim Oranı (IRR) metriklerini hesaplayın.",
-    category: "investment",
-    href: "#",
-    isPilot: false
-  },
-  {
-    id: "break-even",
-    name: "Başabaş Noktası Analizi",
-    nameEn: "Break-even Point Analysis",
-    description: "Sabit ve değişken maliyetlere göre kâra geçmek için yapılması gereken minimum satış miktarını ve tutarını bulun.",
-    category: "investment",
-    href: "#",
-    isPilot: false
-  },
-  {
-    id: "roi-calc",
-    name: "Yatırımın Geri Dönüşü (ROI)",
-    nameEn: "Return on Investment",
-    description: "Finansal veya operasyonel yatırımların getiri oranını ve net karlılık çarpanını hesaplayın.",
-    category: "investment",
-    href: "#",
-    isPilot: false
-  },
-  {
-    id: "corporate-tax",
-    name: "Kurumlar Vergisi Hesaplama",
-    nameEn: "Corporate Income Tax",
-    description: "Dönem net karı, kanunen kabul edilmeyen giderler ve istisnalara göre ödenecek kurumlar vergisini hesaplayın.",
-    category: "tax",
-    href: "#",
-    isPilot: false
-  },
-  {
-    id: "depreciation",
-    name: "Amortisman Hesaplama",
-    nameEn: "Depreciation Calculator",
-    description: "Maddi duran varlıklar için normal ve azalan bakiyeler yöntemlerine göre amortisman tabloları oluşturun.",
-    category: "tax",
-    href: "#",
-    isPilot: false
-  },
-  {
-    id: "vat-withholding",
-    name: "KDV Tevkifatı Hesaplama",
-    nameEn: "VAT Withholding Calculator",
-    description: "Hizmet ve teslim türlerine göre KDV tevkifatı oranlarını uygulayarak net fatura tutarlarını hesaplayın.",
-    category: "tax",
-    href: "#",
-    isPilot: false
-  }
-];
+export const metadata = generateSeoMetadata("/");
 
 export default function HomePage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<"all" | "valuation" | "analysis" | "investment" | "tax">("all");
-
-  const filteredCalculators = useMemo(() => {
-    return CALCULATORS.filter(calc => {
-      const matchesSearch = 
-        calc.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        calc.nameEn.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        calc.description.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesCategory = selectedCategory === "all" || calc.category === selectedCategory;
-      
-      return matchesSearch && matchesCategory;
-    });
-  }, [searchTerm, selectedCategory]);
+  const jsonLd = [
+    generateOrganizationSchema(),
+    generateWebSiteSchema(),
+    generateWebApplicationSchema("Prepare structured exporter evidence, identify documentation gaps, calculate embedded emissions, and generate auditable CBAM preparation dossiers."),
+    generateEeatProductSchema(),
+    generateFAQSchema([
+      {
+        question: "What is a CBAM evidence dossier?",
+        answer: "A CBAM evidence dossier is a compiled report containing the direct and indirect embedded emissions data of imported goods, structured to align with EU regulations."
+      },
+      {
+        question: "Is CBAMValid an official European Commission service?",
+        answer: "No. CBAMValid is an independent software service that assists exporters and importers with calculations and reporting preparation."
+      }
+    ])
+  ];
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans flex flex-col">
-      
-      {/* Hero Section */}
-      <section className="bg-surface border-b border-border/80 py-16 lg:py-24">
-        <div className="max-w-7xl mx-auto px-6 text-center space-y-6">
-          <div className="inline-flex items-center gap-1.5 bg-accent-soft text-accent text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">
-            <Calculator className="w-3.5 h-3.5" /> Niche Financial Calculators Hub
-          </div>
-          
-          <h1 className="text-4xl lg:text-6xl font-bold font-serif tracking-tight leading-[1.15] max-w-4xl mx-auto">
-            Finansal ve Muhasebe <br />
-            <span className="text-accent">Hesaplama Motorları</span>
-          </h1>
-          
-          <p className="text-base md:text-lg text-muted max-w-2xl mx-auto leading-relaxed">
-            Kurumsal finans, şirket değerleme, yatırım analizi ve niş muhasebe hesaplamalarını sıfır hata ve gerçek matematiksel doğruluk ile yapın. Reklamsız ve tamamen ücretsiz.
-          </p>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
-          {/* Search Bar */}
-          <div className="max-w-xl mx-auto relative pt-4">
-            <span className="absolute left-4 top-7 text-muted">
-              <Search className="w-5 h-5" />
-            </span>
-            <input 
-              aria-label="Search financial calculators"
-              type="text" 
-              placeholder="Değerleme, WACC, NPV, Vergi..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-full border border-border bg-background py-3 pl-12 pr-6 text-sm font-semibold tracking-wide shadow-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
-            />
-          </div>
-        </div>
-      </section>
 
-      {/* Main Section */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-12 space-y-10">
-        
-        {/* Category Selector Tabs */}
-        <div className="flex flex-wrap items-center justify-center gap-2 border-b border-border pb-4">
-          {[
-            { id: "all", label: "Tümü (All)" },
-            { id: "valuation", label: "Değerleme (Valuation)" },
-            { id: "analysis", label: "Analiz (Analysis)" },
-            { id: "investment", label: "Yatırım (Investment)" },
-            { id: "tax", label: "Vergi & Muhasebe" }
-          ].map((cat) => (
-            <button 
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id as any)}
-              className={`px-4 py-2 text-sm font-semibold rounded-full border transition-all cursor-pointer ${selectedCategory === cat.id ? "bg-accent border-accent text-surface" : "bg-surface border-border text-muted hover:border-foreground"}`}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Featured Pilot Product Hero Card */}
-        {selectedCategory === "all" && searchTerm === "" && (
-          <div className="rounded-2xl border border-accent bg-accent-soft/30 p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center shadow-sm">
-            <div className="lg:col-span-8 space-y-4">
-              <span className="inline-flex bg-accent text-surface text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Pilot Product</span>
-              <h3 className="text-2xl sm:text-3xl font-serif font-bold text-foreground">Şirket Değeri Hesaplama (Company Valuation)</h3>
-              <p className="text-sm sm:text-base text-muted leading-relaxed">
-                Şirketlerin gelecekteki nakit akışlarının bugünkü değerini (DCF) ve piyasa çarpanlarını (EBITDA Multiples) birleştirerek gerçek finansal değerini mühürlü formüllerle hesaplayan gelişmiş motorumuz yayında.
+      {/* 2. Hero Section */}
+      <main className="flex-1">
+        <section className="max-w-7xl mx-auto px-6 py-20 lg:py-28">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div className="max-w-2xl space-y-6">
+              <div className="inline-flex items-center space-x-2 border border-border bg-accent-soft px-3 py-1.5 rounded-full text-xs font-semibold tracking-wider text-accent uppercase">
+                <Globe2 className="w-4 h-4 mr-1" strokeWidth={1.75} /> 
+                EU Regulatory Method Alignment
+              </div>
+              
+              <h1 className="text-4xl lg:text-6xl font-bold tracking-tight leading-[1.1]">
+                CBAM Exporter <br />
+                <span className="text-accent">Final Evidence Report</span>
+              </h1>
+              
+              <p className="text-base md:text-lg text-muted leading-relaxed">
+                Prepare a buyer-ready CBAM emissions and evidence package in one guided workflow. 
+                Enter your product, shipment, installation and emissions data. Review missing evidence, 
+                pay once, and download your final report in PDF, JSON and Excel formats.
               </p>
-              <div className="flex flex-wrap gap-4 text-xs font-semibold text-muted">
-                <span className="flex items-center gap-1.5"><Percent className="w-4 h-4 text-accent" /> Gordon Growth Guard</span>
-                <span className="flex items-center gap-1.5"><DollarSign className="w-4 h-4 text-accent" /> Balance Sheet Debt Adjustment</span>
-                <span className="flex items-center gap-1.5"><Layers className="w-4 h-4 text-accent" /> Custom SVG Charts & Print Layout</span>
+
+              <div className="text-sm text-subtle font-semibold font-mono">
+                USD 149 per Exporter Verification Preparation Pack. No subscription.
+              </div>
+              
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                <Link 
+                  href="/register?next=/cases/new" 
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent px-5 py-3 font-medium text-surface transition-colors hover:bg-accent-hover active:bg-accent-active cursor-pointer"
+                >
+                  Start a Dossier <ArrowRight size={18} strokeWidth={1.75} />
+                </Link>
+                <Link 
+                  href="/how-it-works" 
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-strong bg-transparent px-5 py-3 font-medium text-foreground transition-colors hover:bg-neutral-soft"
+                >
+                  Watch the Workflow
+                </Link>
+                <Link 
+                  href="/sample-dossier" 
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-strong bg-transparent px-5 py-3 font-medium text-foreground transition-colors hover:bg-neutral-soft"
+                >
+                  View the Sample Dossier
+                </Link>
               </div>
             </div>
-            <div className="lg:col-span-4 lg:text-right">
+
+            {/* Right side graphical placeholder */}
+            <section className="hidden lg:block relative p-8 bg-surface border border-border rounded-xl shadow-[var(--shadow-card)]">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-border/50 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-accent" strokeWidth={1.75} />
+                    <span className="font-semibold text-sm">Evidence Dossier Preview</span>
+                  </div>
+                  <span className="text-xs bg-accent-soft text-accent px-2.5 py-1 rounded-full font-semibold border border-border">
+                    USD 149
+                  </span>
+                </div>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between py-1 border-b border-border/30">
+                    <span className="text-muted">PDF Evidence Manifest</span>
+                    <span className="text-accent font-semibold">Included</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-border/30">
+                    <span className="text-muted">Canonical JSON Format</span>
+                    <span className="text-accent font-semibold">Included</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-border/30">
+                    <span className="text-muted">O3CI Field-Mapped Structured Data</span>
+                    <span className="text-accent font-semibold">Included</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        {/* Video CTA Section */}
+        <section className="border-t border-border bg-surface py-20">
+          <div className="max-w-7xl mx-auto px-6 text-center">
+            <h2 className="text-3xl font-bold font-serif mb-4">See CBAMValid in Action</h2>
+            <p className="text-muted text-lg mb-10 max-w-2xl mx-auto">
+              Review the full evidence-linked workflow before creating your first case.
+            </p>
+            <div className="relative max-w-4xl mx-auto rounded-xl overflow-hidden shadow-2xl border border-border bg-black group block">
+              <div className="aspect-video relative">
+                <img 
+                  src="/media/cbamvalid-product-walkthrough-poster.webp" 
+                  alt="Video Walkthrough Poster" 
+                  className="w-full h-full object-cover opacity-80"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-16 h-16 bg-accent/90 rounded-full flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
+                    <div className="w-0 h-0 border-y-8 border-y-transparent border-l-12 border-l-white ml-2" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-8">
               <Link 
-                href="/calculators/company-valuation"
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent px-6 py-3 font-semibold text-surface hover:bg-accent-hover transition-colors shadow"
+                href="/how-it-works" 
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-accent px-8 py-3 font-medium text-surface transition-colors hover:bg-accent-hover"
               >
-                Hesaplamaya Başla <ArrowRight className="w-4 h-4" />
+                Open Full Walkthrough <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
-        )}
+        </section>
 
-        {/* Calculators List Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCalculators.map((calc) => (
-            <div 
-              key={calc.id} 
-              className={`rounded-xl border p-5 flex flex-col justify-between transition-all ${calc.isPilot ? "border-accent bg-surface hover:shadow-md" : "border-border bg-surface/50 opacity-80"}`}
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${calc.category === "valuation" ? "bg-blue-100 text-blue-900" : calc.category === "analysis" ? "bg-purple-100 text-purple-900" : calc.category === "investment" ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"}`}>
-                    {calc.category}
-                  </span>
-                  {calc.isPilot ? (
-                    <span className="text-[10px] font-bold text-accent uppercase tracking-wider">Aktif</span>
-                  ) : (
-                    <span className="text-[10px] font-bold text-muted uppercase tracking-wider">Yakında</span>
-                  )}
-                </div>
+        {/* 3. Steps section */}
+        <section id="how-it-works" className="border-t border-border bg-neutral-soft py-20">
+          <div className="max-w-7xl mx-auto px-6">
+            <h2 className="text-xl md:text-2xl font-bold mb-12 text-center">Five-Step Evidence Compilation Workflow</h2>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-6 text-sm">
+              {[
+                "Add your exported goods",
+                "Add factory and production data",
+                "Review emissions and missing evidence",
+                "Pay USD 149",
+                "Download premium dossier"
+              ].map((step, idx) => (
+                <section key={idx} className="p-5 bg-surface border border-border rounded-xl space-y-3 shadow-[var(--shadow-card)]">
+                  <span className="text-xs font-bold text-accent font-mono">Step {idx + 1}</span>
+                  <p className="font-semibold text-foreground">{step}</p>
+                </section>
+              ))}
+            </div>
+          </div>
+        </section>
 
-                <div className="space-y-1">
-                  <h4 className="font-bold text-lg text-foreground font-serif">{calc.name}</h4>
-                  <h5 className="text-xs text-muted font-mono">{calc.nameEn}</h5>
-                </div>
-
-                <p className="text-xs text-muted leading-relaxed line-clamp-3">{calc.description}</p>
+        {/* 4. Frequently Asked Questions */}
+        <section className="border-t border-border bg-background py-20">
+          <div className="max-w-7xl mx-auto px-6">
+            <h2 className="text-xl md:text-2xl font-bold mb-12 text-center">Frequently Asked Questions</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              <div className="bg-surface border border-border p-6 rounded-xl">
+                <h3 className="font-semibold text-lg mb-2">What is a CBAM evidence dossier?</h3>
+                <p className="text-muted text-sm leading-relaxed">
+                  A CBAM evidence dossier is a compiled report containing the direct and indirect embedded emissions data of imported goods, structured to align with EU regulations.
+                </p>
               </div>
-
-              <div className="pt-4 border-t border-border/60 mt-4 flex items-center justify-between">
-                <span className="text-xs font-semibold text-muted">Tamamen Ücretsiz</span>
-                {calc.isPilot ? (
-                  <Link 
-                    href={calc.href}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-accent hover:underline"
-                  >
-                    Kullan <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                ) : (
-                  <span className="text-xs font-semibold text-muted/60">Geliştiriliyor</span>
-                )}
+              <div className="bg-surface border border-border p-6 rounded-xl">
+                <h3 className="font-semibold text-lg mb-2">Is CBAMValid an official European Commission service?</h3>
+                <p className="text-muted text-sm leading-relaxed">
+                  No. CBAMValid is an independent software service that assists exporters and importers with calculations and reporting preparation.
+                </p>
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* Empty State */}
-        {filteredCalculators.length === 0 && (
-          <div className="text-center py-12 rounded-xl border border-dashed border-border text-muted">
-            Arama kriterlerine uygun hesaplama motoru bulunamadı.
           </div>
-        )}
+        </section>
+        {/* Academic Oversight & Expert Review */}
+        <section className="border-t border-border bg-neutral-soft py-20">
+          <div className="max-w-4xl mx-auto px-6">
+            <div className="bg-surface border border-border rounded-2xl p-8 md:p-10 flex flex-col md:flex-row gap-8 items-center shadow-lg">
+              <div className="w-20 h-20 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center font-bold text-accent text-3xl font-serif shrink-0 shadow-inner">
+                IIT
+              </div>
+              <div className="space-y-4 text-left">
+                <div className="inline-flex items-center space-x-2 border border-accent/20 bg-accent-soft px-3 py-1 rounded-full text-xs font-semibold tracking-wider text-accent uppercase">
+                  Academic Oversight & Expert Review
+                </div>
+                <h3 className="text-2xl font-bold font-serif text-foreground">Rigorous Mathematical Integrity</h3>
+                <p className="text-sm text-muted leading-relaxed">
+                  Our embedded emissions calculation engines, allocation methodology, and compliance logic are reviewed for compliance with EU CBAM mathematical rules.
+                </p>
+                <div className="pt-4 border-t border-border/50">
+                  <p className="font-bold text-foreground text-base">Prof. Dr. Neela Nataraj</p>
+                  <p className="text-xs text-muted">
+                    Department of Mathematics · Indian Institute of Technology Bombay (IIT Bombay)
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
+        {/* 5. Trust & Disclaimers */}
+        <section className="border-t border-border max-w-7xl mx-auto px-6 py-20 space-y-8">
+          <div className="bg-surface border border-border rounded-xl p-6 md:p-10 space-y-6 shadow-[var(--shadow-card)]">
+            <div className="flex gap-3">
+              <CheckCircle2 className="w-6 h-6 text-foreground mt-0.5 shrink-0" strokeWidth={1.75} />
+              <div>
+                <h3 className="font-bold text-lg text-foreground">Trust Statement</h3>
+                <p className="mt-2 text-sm text-muted leading-relaxed">
+                  Built around current published EU CBAM rules and official source data. 
+                  Designed for exporter-to-importer evidence transfer and verification readiness.
+                </p>
+              </div>
+            </div>
+            <div className="border-t border-border pt-6 space-y-2">
+              <span className="text-xs font-bold text-subtle uppercase tracking-wider block">Mandatory Limitation & Regulatory Disclaimer</span>
+              <p className="text-xs text-subtle leading-relaxed">
+                CBAMValid prepares calculation and evidence packages. It is not an EU institution, customs authority, 
+                or accredited CBAM verifier. Actual emissions must be independently verified where verification is legally required.
+              </p>
+            </div>
+          </div>
+        </section>
       </main>
-
-      {/* Footer Details */}
-      <footer className="border-t border-border/80 py-8 bg-surface text-center text-xs text-muted space-y-2">
-        <p className="flex items-center justify-center gap-1">
-          Made with <Heart className="w-3.5 h-3.5 text-red-600 fill-red-600" /> by CBAMValid Financial Engineering Group
-        </p>
-        <p className="text-[10px]">
-          All formulas are locked to ground truth financial theory. Outputs are verified deterministically.
-        </p>
-      </footer>
-
     </div>
   );
 }
