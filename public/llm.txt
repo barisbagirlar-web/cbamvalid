@@ -6,7 +6,7 @@
 - [Homepage](https://cbamvalid.com/) — Executive summary, platform positioning, live ROI calculator.
 - [Product & Deliverables](https://cbamvalid.com/product) — 25-component dossier package breakdown and verifier readiness gates.
 - [How It Works](https://cbamvalid.com/how-it-works) — 4-step workflow from case setup to immutable release package.
-- [Pricing & Entitlements](https://cbamvalid.com/pricing) — $300 per legal operator/installation year (100 credits = 1 Preparation Pack, 5 sealed releases included).
+- [Pricing & Entitlements](https://cbamvalid.com/pricing) — $149 per Exporter Verification Preparation Pack (no subscription, drafts are free, 5 sealed releases included).
 - [Sample Dossier Preview](https://cbamvalid.com/sample-dossier) — Interactive verifier dossier preview with visual geometry validation.
 - [Public Signature Verification](https://cbamvalid.com/verify) — KMS RSA-4096 signature and document SHA-256 integrity verification engine.
 - [Methodology & Calculation Rules](https://cbamvalid.com/methodology) — Server-side deterministic engine, ROUND_HALF_UP rounding, allocation reconciliation.
