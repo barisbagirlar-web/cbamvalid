@@ -69,7 +69,11 @@ export function PublicHeader() {
       </header>
 
       {/* Mobile Nav */}
-      <nav className={`mobile-nav ${isMobileMenuOpen ? "open" : ""}`} aria-label="Mobile navigation">
+      <nav
+        className={`mobile-nav ${isMobileMenuOpen ? "open" : ""}`}
+        aria-label="Mobile navigation"
+        style={{ display: isMobileMenuOpen ? "flex" : "none" }}
+      >
         <Link href="/product">Product</Link>
         <Link href="/how-it-works">How It Works</Link>
         <Link href="/sample-dossier">Sample Dossier</Link>
