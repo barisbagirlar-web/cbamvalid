@@ -114,15 +114,21 @@ describe("verifier-grade deliverables", () => {
       expect(item.bytes.byteLength).toBeGreaterThan(5000);
       const parsed = await pdfText(item.bytes);
       expect(parsed.pages).toBeGreaterThanOrEqual(1);
-      expect(parsed.text).toContain("CBAMValid");
-      expect(parsed.text).toContain("independent");
+       expect(parsed.text).toContain("Verified Steel");
+       expect(parsed.text).toContain("independent");
       expect(parsed.text).toContain("Page 1 of");
     }
 
     const operator = artifacts.find((item) => item.path === "Operator Emissions Report.pdf");
     expect(operator).toBeDefined();
     const operatorPdf = await pdfText(operator!.bytes);
-    expect(operatorPdf.pages).toBeGreaterThanOrEqual(2);
+    expect(operatorPdf.pages).toBeGreaterThanOrEqual(6);
+    expect(operatorPdf.text).toContain("Executive summary");
+    expect(operatorPdf.text).toContain("Emissions waterfall");
+    expect(operatorPdf.text).toContain("Sensitivity analysis");
+    expect(operatorPdf.text).toContain("Evidence register");
+    expect(operatorPdf.text).toContain("Mathematical audit trail");
+    expect(operatorPdf.text).toContain("Time-series availability");
     expect(operatorPdf.text).toContain("Total embedded emissions");
     expect(operatorPdf.text).toContain("5% materiality");
     expect(operatorPdf.text).toContain("NOT_REVIEWED");
@@ -176,7 +182,7 @@ describe("verifier-grade deliverables", () => {
       reportId: FIXTURE_REPORT_ID,
       releaseVersion: 1,
       generatedAt: FIXTURE_GENERATED_AT,
-      evidenceCount: 1,
+      evidenceCount: 4,
     });
     const manifest = JSON.parse(manifestResult.bytes.toString("utf8")) as DataIntegrityManifest;
     expect(manifest.schemaVersion).toBe("CBAMVALID-DOSSIER-4.0");

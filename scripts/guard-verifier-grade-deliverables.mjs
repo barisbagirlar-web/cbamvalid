@@ -38,6 +38,7 @@ const reportClient = read("lib/functions/client.ts");
 const reportPage = read("app/(workspace)/cbam/reports/[reportId]/page.tsx");
 const reportTests = read("tests/reports/verifier-grade-deliverables.test.ts");
 const regulatoryTests = read("tests/cbam-engine/regulatory-registry.test.ts");
+const functionsPackage = read("functions/package.json");
 
 if (rootLegal !== functionsLegal) failures.push("Browser and Functions legal-source registries must be byte-identical");
 if (rootRulesets !== functionsRulesets) failures.push("Browser and Functions rulesets must be byte-identical");
@@ -78,7 +79,22 @@ for (const text of [
   "Page ${pageNumber} of ${pageCount}",
   "input.model.documentClassification",
   "input.model.disclaimer",
+  "PdfWaterfallChart",
+  "drawWaterfallChart",
+  "drawBarChart",
+  "compactIdentifier",
 ]) requireText(pdf, text, "Professional PDF contract");
+if ((pdf.match(/document\.setFillColor/g) || []).length < 8) failures.push("Professional PDF must reset fill state for chart and table cells");
+
+for (const text of [
+  "Executive summary",
+  "Emissions waterfall",
+  "Sensitivity analysis",
+  "Evidence register",
+  "Mathematical audit trail",
+  "Time-series availability",
+]) requireText(packageBuilder, text, "Professional operator report content");
+requireText(functionsPackage, '"decimal.js": "^10.6.0"', "Direct Decimal.js Functions runtime dependency");
 
 for (const text of [
   'name: "VERIFIER_SIGN_OFF"',
@@ -115,6 +131,8 @@ rejectText(reportPage, "alert(", "Report page observable errors");
 requireText(reportPage, "controlled components", "Report package component disclosure");
 requireText(reportPage, "Independent verifier status", "Verifier boundary disclosure");
 requireText(reportPage, "getReportDownload", "Controlled download client");
+requireText(reportPage, "Direct to indirect composition", "Sealed-report emissions visualization");
+requireText(reportPage, "CN-code emissions allocation", "Sealed-report allocation visualization");
 
 for (const text of [
   "5% materiality",
@@ -122,6 +140,9 @@ for (const text of [
   "<conditionalFormatting",
   "CBAMVALID-DOSSIER-4.0",
   "REQUIRED_TOP_LEVEL_COMPONENTS",
+  "Emissions waterfall",
+  "Sensitivity analysis",
+  "Time-series availability",
 ]) requireText(reportTests, text, "Behavioral deliverable tests");
 requireText(regulatoryTests, "recomputes the pinned fingerprint", "Regulatory fingerprint test");
 requireText(regulatoryTests, "contains no speculative legal instruments", "Speculative-source rejection test");
@@ -137,6 +158,7 @@ console.log("REGULATORY_SINGLE_SOURCE=PASS");
 console.log("REGULATORY_SOURCE_FINGERPRINT=PASS");
 console.log("VERIFICATION_MATERIALITY_5_PERCENT=PASS");
 console.log("PROFESSIONAL_PDF_CONTRACT=PASS");
+console.log("PROFESSIONAL_REPORT_VISUALS=PASS");
 console.log("VERIFIER_XLSX_CONTRACT=PASS");
 console.log("PACKAGE_27_COMPONENT_CONTRACT=PASS");
 console.log("SEALED_REPORT_TYPED_BOUNDARY=PASS");

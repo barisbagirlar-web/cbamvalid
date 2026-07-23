@@ -75,11 +75,18 @@ switch (check) {
   }
 
   case "field-help-coverage": {
-    // Verify help text fields in sector adapter and wizard client
+    // Verify the typed field-help registry and wizard bindings are both present.
     const wizardClientPath = path.join(rootDir, "app/(workspace)/cases/[caseId]/CaseWizardClient.tsx");
+    const fieldHelpPath = path.join(rootDir, "lib/cbam/field-help.ts");
+    const fieldHelpComponentPath = path.join(rootDir, "components/cbam/FieldHelp.tsx");
+    if (!fs.existsSync(fieldHelpPath) || !fs.existsSync(fieldHelpComponentPath)) {
+      console.error("[FAIL] Typed field-help registry or accessible field-help component is missing.");
+      process.exit(1);
+    }
     const content = fs.readFileSync(wizardClientPath, "utf-8");
-    if (!content.includes("fieldHelpData")) {
-      console.error("[FAIL] Wizard client must include inline fieldHelpData declarations.");
+    const fieldHelpContent = fs.readFileSync(fieldHelpPath, "utf-8");
+    if (!content.includes("<FieldHelp") || !content.includes("helpKey=") || !fieldHelpContent.includes("fieldHelpData")) {
+      console.error("[FAIL] Wizard fields are not bound to the typed field-help registry.");
       process.exit(1);
     }
     console.log("[PASS] Field help coverage verified.");

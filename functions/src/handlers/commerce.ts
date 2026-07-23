@@ -67,7 +67,13 @@ export const unlockCbamUses = createCallable(
         const idempotencyRef = adminDb.collection("idempotency").doc(`unlock_${digest}`);
         const idempotencyDoc = await transaction.get(idempotencyRef);
         if (idempotencyDoc.exists) {
-          return { status: "success", message: "The five-release pack was already unlocked." };
+          const prior = idempotencyDoc.data() || {};
+          return {
+            status: "success",
+            message: "The five-release pack was already unlocked.",
+            entitlementId: typeof prior.entitlementId === "string" ? prior.entitlementId : undefined,
+            releasesGranted: Number(prior.releasesGranted || MAX_RELEASES_PER_PACK),
+          };
         }
 
         const creditRef = adminDb.collection("users").doc(auth.uid).collection("creditSummary").doc("current");

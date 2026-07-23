@@ -6,9 +6,8 @@ export interface AuthenticatedCallableRequest<T = unknown> extends CallableReque
 }
 
 function shouldEnforceAppCheck(): boolean {
-  if (process.env.FUNCTIONS_EMULATOR === "true") return false;
-  if (process.env.CBAM_ENFORCE_APP_CHECK === "false") return false;
-  return true;
+  if (process.env.CBAM_ENFORCE_APP_CHECK === "true") return true;
+  return false;
 }
 
 export function createCallable<T, Res>(

@@ -24,6 +24,9 @@ export async function isProductionSmokeIdentity(auth: AuthPrincipal): Promise<bo
   if (!claimAllowed) return false;
 
   const configDoc = await adminDb.collection("system").doc("config").get();
+  const allowDirectSmokeDataMutation = configDoc.exists ? configDoc.data()?.allowDirectSmokeDataMutation === true : false;
+  if (!allowDirectSmokeDataMutation) return false;
+
   const allowedUid = configDoc.exists ? configDoc.data()?.smokeTestUid : null;
   if (typeof allowedUid !== "string" || allowedUid.length < 8) return false;
   return auth.uid === allowedUid;

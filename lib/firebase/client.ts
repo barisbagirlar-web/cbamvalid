@@ -33,6 +33,14 @@ export const firebaseFunctions = getFunctions(app, "europe-west1");
 export const firebaseDb = getFirestore(app);
 export const firebaseStorage = getStorage(app);
 
+export const firebaseAuthPersistenceReady = setPersistence(
+  firebaseAuth,
+  browserLocalPersistence
+).catch((error: unknown) => {
+  console.error("Failed to set Firebase Auth persistence to browserLocalPersistence:", error);
+  throw error;
+});
+
 if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true") {
   connectFunctionsEmulator(firebaseFunctions, "127.0.0.1", 5001);
   connectFirestoreEmulator(firebaseDb, "127.0.0.1", 8080);
@@ -49,7 +57,3 @@ if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRIS
     isTokenAutoRefreshEnabled: true,
   });
 }
-
-setPersistence(firebaseAuth, browserLocalPersistence).catch((error: unknown) => {
-  console.error("Failed to set Firebase Auth persistence to browserLocalPersistence:", error);
-});

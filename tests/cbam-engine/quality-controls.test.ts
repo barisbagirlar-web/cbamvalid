@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { runQualityControls } from "../../lib/cbam/validation/quality-controls";
+import { runQualityControls as runServerQualityControls } from "../../functions/src/cbam/validation/quality-controls";
 import type { AuditReadyCase } from "../../lib/cbam/schema";
 
 const OWNER_ID = "user123";
@@ -149,5 +150,32 @@ describe("CBAM Quality Controls Traceability", () => {
     expect(results.find((result) => result.ruleId === "QC_09")?.status).toBe("PASS");
     expect(results.find((result) => result.ruleId === "QC_10")?.status).toBe("PASS");
     expect(blockers).toEqual([]);
+  });
+
+  it("blocks a grid factor entered at an incompatible scale in both runtimes", () => {
+    const caseData = createValidCase();
+    caseData.gridEmissionFactor.value = "4344";
+
+    for (const controls of [
+      runQualityControls(caseData),
+      runServerQualityControls(caseData),
+    ]) {
+      const factorControl = controls.find((result) => result.ruleId === "QC_08");
+      expect(factorControl?.status).toBe("BLOCKER");
+      expect(factorControl?.message).toContain("decimal separator");
+    }
+  });
+
+  it("does not treat partially supported evidence as seal-ready", () => {
+    const caseData = createValidCase();
+    caseData.evidenceRegister[0].supportStatus = "PARTIALLY_SUPPORTED";
+
+    for (const controls of [
+      runQualityControls(caseData),
+      runServerQualityControls(caseData),
+    ]) {
+      expect(controls.find((result) => result.ruleId === "QC_06")?.status).toBe("BLOCKER");
+      expect(controls.find((result) => result.ruleId === "QC_10")?.status).toBe("BLOCKER");
+    }
   });
 });

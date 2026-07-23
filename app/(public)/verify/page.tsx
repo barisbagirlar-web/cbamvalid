@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Search, RotateCcw, ShieldCheck, ShieldAlert, Loader2, FileCheck, HelpCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
 
 type VerificationState = 
   | "IDLE" 
@@ -31,11 +31,27 @@ export default function VerifyPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [requestId, setRequestId] = useState("");
 
+  useEffect(() => {
+    const revealEls = document.querySelectorAll('.reveal');
+    if ('IntersectionObserver' in window && revealEls.length) {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add('in');
+            io.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.12 });
+      revealEls.forEach((el) => io.observe(el));
+    } else {
+      revealEls.forEach((el) => el.classList.add('in'));
+    }
+  }, []);
+
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!hash.trim()) return;
 
-    // Clean space/newline inputs
     const cleanHash = hash.trim();
 
     setState("VALIDATING");
@@ -89,13 +105,12 @@ export default function VerifyPage() {
     setRequestId("");
   };
 
-  const renderStatusCard = () => {
+  const renderStatus = () => {
     switch (state) {
       case "VALIDATING":
         return (
-          <div className="flex flex-col items-center justify-center p-12 bg-surface/40 backdrop-blur-md border border-border/60 rounded-2xl shadow-sm animate-pulse">
-            <Loader2 className="w-10 h-10 text-accent animate-spin mb-4" />
-            <p className="text-muted font-medium text-[15px]">Verifying cryptographic signature integrity...</p>
+          <div className="verify-result show validating" style={{ padding: "20px", background: "var(--paper-2)", borderRadius: "8px", border: "1px solid var(--line)" }}>
+            <p style={{ fontWeight: "bold" }}>Verifying cryptographic signature integrity...</p>
           </div>
         );
       case "VALID":
@@ -105,84 +120,58 @@ export default function VerifyPage() {
         const formattedDate = typeof result.issuedAt === "number" 
           ? new Date(result.issuedAt).toUTCString()
           : result.issuedAt;
-          
+
         return (
-          <div className="bg-surface/60 backdrop-blur-md border border-border/80 rounded-2xl p-8 shadow-lg space-y-6 animate-in fade-in slide-in-from-bottom-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/50 pb-6">
-              <div className="flex items-center gap-3">
-                {state === "VALID" && (
-                  <>
-                    <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center text-accent">
-                      <ShieldCheck className="w-7 h-7" />
-                    </div>
-                    <div>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-accent/10 text-accent uppercase tracking-wide mb-1">Authentic Seal</span>
-                      <h3 className="text-lg font-bold text-foreground">Signature Verified</h3>
-                    </div>
-                  </>
-                )}
-                {state === "SUPERSEDED" && (
-                  <>
-                    <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-600">
-                      <HelpCircle className="w-7 h-7" />
-                    </div>
-                    <div>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/10 text-rose-700 uppercase tracking-wide mb-1">Superseded</span>
-                      <h3 className="text-lg font-bold text-foreground">Document Replaced</h3>
-                    </div>
-                  </>
-                )}
-                {state === "REVOKED" && (
-                  <>
-                    <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-600">
-                      <ShieldAlert className="w-7 h-7" />
-                    </div>
-                    <div>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/10 text-rose-700 uppercase tracking-wide mb-1">Revoked</span>
-                      <h3 className="text-lg font-bold text-foreground">Seal Invalidated</h3>
-                    </div>
-                  </>
-                )}
+          <div className="verify-result show success" style={{ padding: "24px", background: "var(--ok-soft)", color: "var(--ok)", borderRadius: "12px", border: "1.5px solid var(--ok)", marginTop: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--ok)", paddingBottom: "12px", flexWrap: "wrap", gap: "12px" }}>
+              <div>
+                <span className="eyebrow" style={{ display: "inline-block", background: "var(--ok)", color: "#fff", borderColor: "transparent", fontSize: "0.65rem", padding: "0.2em 0.8em", marginBottom: "8px" }}>
+                  {state === "VALID" ? "AUTHENTIC SEAL" : state === "SUPERSEDED" ? "SUPERSEDED" : "REVOKED"}
+                </span>
+                <h3 style={{ margin: 0, fontFamily: "var(--sans)", fontWeight: "bold" }}>Cryptographic Seal Verified</h3>
               </div>
-              <div className="text-xs text-muted md:text-right font-mono">
-                Request ID: {requestId || "N/A"}
-              </div>
+              <span style={{ fontFamily: "var(--mono)", fontSize: "0.75rem", alignSelf: "center", color: "var(--faint)" }}>
+                Request: {requestId || "N/A"}
+              </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 text-sm">
-              <div className="space-y-1">
-                <span className="text-[11px] font-bold text-muted uppercase tracking-wider block">Document Hash</span>
-                <span className="font-mono text-xs text-foreground select-all break-all bg-border/20 px-2 py-1 rounded block">{result.documentHash}</span>
+            <div className="mono" style={{ display: "grid", gridTemplateColumns: "1fr", gap: "14px", fontSize: "0.8rem", color: "var(--ink)" }}>
+              <div>
+                <span style={{ fontWeight: "bold", fontSize: "0.7rem", color: "var(--muted)", textTransform: "uppercase", display: "block" }}>Document Hash (SHA-256)</span>
+                <span style={{ background: "rgba(255,255,255,0.6)", padding: "4px 8px", borderRadius: "4px", wordBreak: "break-all", display: "block", marginTop: "4px" }}>{result.documentHash}</span>
               </div>
-              <div className="space-y-1">
-                <span className="text-[11px] font-bold text-muted uppercase tracking-wider block">Report Reference</span>
-                <span className="font-mono text-xs text-foreground select-all break-all bg-border/20 px-2 py-1 rounded block">{result.reportId}</span>
+              <div>
+                <span style={{ fontWeight: "bold", fontSize: "0.7rem", color: "var(--muted)", textTransform: "uppercase", display: "block" }}>Report ID</span>
+                <span style={{ background: "rgba(255,255,255,0.6)", padding: "4px 8px", borderRadius: "4px", wordBreak: "break-all", display: "block", marginTop: "4px" }}>{result.reportId}</span>
               </div>
-              <div className="space-y-1">
-                <span className="text-[11px] font-bold text-muted uppercase tracking-wider block">Sealing Timestamp</span>
-                <span className="text-foreground font-medium block">{formattedDate}</span>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[11px] font-bold text-muted uppercase tracking-wider block">Dossier Version</span>
-                <span className="text-foreground font-medium block">v{result.version}</span>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[11px] font-bold text-muted uppercase tracking-wider block">Regulatory Scope</span>
-                <span className="text-foreground font-medium block">{result.regulatorySnapshotId}</span>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[11px] font-bold text-muted uppercase tracking-wider block">Ruleset / Engine Version</span>
-                <span className="text-foreground font-medium block">{result.methodologyVersion}</span>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "14px" }}>
+                <div>
+                  <span style={{ fontWeight: "bold", fontSize: "0.7rem", color: "var(--muted)", textTransform: "uppercase", display: "block" }}>Issued Timestamp</span>
+                  <span>{formattedDate}</span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: "bold", fontSize: "0.7rem", color: "var(--muted)", textTransform: "uppercase", display: "block" }}>Version</span>
+                  <span>v{result.version}</span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: "bold", fontSize: "0.7rem", color: "var(--muted)", textTransform: "uppercase", display: "block" }}>Regulatory Scope</span>
+                  <span>{result.regulatorySnapshotId}</span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: "bold", fontSize: "0.7rem", color: "var(--muted)", textTransform: "uppercase", display: "block" }}>Ruleset / Engine</span>
+                  <span>{result.methodologyVersion}</span>
+                </div>
               </div>
             </div>
 
             {state === "SUPERSEDED" && (
-              <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-700 text-xs leading-relaxed">
+              <div style={{ padding: "12px", background: "var(--warn-soft)", color: "var(--warn)", border: "1px solid var(--warn)", borderRadius: "8px", fontSize: "0.78rem", lineHeight: "1.4" }}>
                 <strong>Attention:</strong> This report has been replaced by a newer version. Importers are recommended to request the latest active revision of the sealed dossier.
               </div>
             )}
+
             {state === "REVOKED" && (
-              <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs leading-relaxed">
+              <div style={{ padding: "12px", background: "var(--err-soft)", color: "var(--err)", border: "1px solid var(--err)", borderRadius: "8px", fontSize: "0.78rem", lineHeight: "1.4" }}>
                 <strong>Warning:</strong> The exporter or CBAMValid authority has explicitly revoked this document seal. It should not be used for compliance submissions.
               </div>
             )}
@@ -192,19 +181,12 @@ export default function VerifyPage() {
       case "NOT_FOUND":
       case "SERVICE_UNAVAILABLE":
         return (
-          <div className="bg-rose-500/[0.03] backdrop-blur-md border border-rose-500/20 rounded-2xl p-8 shadow-sm space-y-4 animate-in fade-in slide-in-from-bottom-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-600 shrink-0">
-                <ShieldAlert className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-foreground">Verification Failed</h3>
-                <p className="text-rose-700 text-sm font-medium">{errorMsg}</p>
-              </div>
-            </div>
-            <div className="text-[11px] text-muted font-mono pt-2 border-t border-rose-500/10">
+          <div className="verify-result show error" style={{ padding: "20px", background: "var(--err-soft)", color: "var(--err)", borderRadius: "12px", border: "1.5px solid var(--err)", marginTop: "24px" }}>
+            <h3 style={{ margin: "0 0 6px 0", fontFamily: "var(--sans)", fontWeight: "bold" }}>Verification Failed</h3>
+            <p style={{ fontSize: "0.86rem", margin: 0 }}>{errorMsg}</p>
+            <span style={{ display: "block", fontFamily: "var(--mono)", fontSize: "0.7rem", marginTop: "12px", color: "var(--faint)" }}>
               Request ID: {requestId || "N/A"}
-            </div>
+            </span>
           </div>
         );
       default:
@@ -213,59 +195,60 @@ export default function VerifyPage() {
   };
 
   return (
-    <div className="flex-1 bg-surface text-foreground py-16 md:py-24 px-6">
-      <div className="max-w-3xl mx-auto space-y-12">
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl md:text-5xl font-serif font-black tracking-tight text-foreground">
-            Verify a CBAMValid Dossier
-          </h1>
-          <p className="text-muted text-base max-w-xl mx-auto leading-relaxed">
-            Validate the integrity, ruleset snapshot, and authenticity of a sealed exporter carbon emissions dossier. Enter the cryptographic signature signature below.
-          </p>
-        </div>
+    <main id="main">
+      <section className="section">
+        <div className="wrap">
+          <div className="section-head center reveal" style={{ marginBottom: "40px" }}>
+            <span className="eyebrow">Public Integrity Check</span>
+            <h1>Verify a dossier</h1>
+            <p>Received a CBAMValid dossier from an exporter? Enter its document hash signature below to confirm the cryptographic seal — proof it hasn&apos;t been tampered with.</p>
+          </div>
 
-        <form onSubmit={handleVerify} className="space-y-4">
-          <div className="relative flex flex-col md:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted/80 pointer-events-none" />
+          <div className="verify-box reveal">
+            <form onSubmit={handleVerify}>
+              <label htmlFor="dossier-id">Dossier Document Hash / Seal Signature</label>
               <input
+                className="verify-input"
+                id="dossier-id"
+                name="dossier-id"
                 type="text"
                 value={hash}
                 onChange={(e) => setHash(e.target.value)}
                 placeholder="Enter 64-character SHA-256 document seal signature..."
-                className="w-full h-14 pl-12 pr-4 bg-surface border border-border hover:border-border/100 focus:border-accent rounded-xl outline-none transition-colors font-mono text-sm shadow-sm"
-                aria-label="Document hash or verification ID"
+                autoComplete="off"
                 required
               />
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={state === "VALIDATING" || !hash.trim()}
-                className="h-14 px-8 bg-accent text-surface hover:bg-accent-hover active:bg-accent-active font-medium rounded-xl shadow-sm cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2 justify-center flex-1 md:flex-none"
-              >
-                {state === "VALIDATING" ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <FileCheck className="w-5 h-5" />
+              <p id="verify-help" style={{ fontSize: "0.78rem", color: "var(--faint)", margin: "-8px 0 18px" }}>
+                You&apos;ll find the signature in the integrity manifest and on the dossier cover page.
+              </p>
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button className="btn btn-primary" type="submit" style={{ flex: 1 }} disabled={state === "VALIDATING"}>
+                  Check Integrity Manifest <span className="arr">→</span>
+                </button>
+                {hash && (
+                  <button className="btn btn-ghost" type="button" onClick={handleClear}>
+                    Clear
+                  </button>
                 )}
-                Verify Dossier
-              </button>
-              <button
-                type="button"
-                onClick={handleClear}
-                className="w-14 h-14 bg-surface border border-border hover:bg-border/30 text-muted hover:text-foreground rounded-xl flex items-center justify-center cursor-pointer transition-colors shadow-sm"
-                title="Clear input"
-                aria-label="Clear"
-              >
-                <RotateCcw className="w-5 h-5" />
-              </button>
+              </div>
+            </form>
+            {renderStatus()}
+          </div>
+
+          <div className="method-grid" style={{ marginTop: "64px" }}>
+            <div className="method-card reveal">
+              <h3>What verification confirms</h3>
+              <p>The SHA-256 hashes of the sealed PDF and JSON, the UTC seal timestamp, and the exact ruleset version the dossier was calculated against.</p>
+              <span className="ref">SHA-256 · UTC · RULESET</span>
+            </div>
+            <div className="method-card reveal">
+              <h3>What it does not confirm</h3>
+              <p>Verification proves integrity, not regulatory approval. CBAMValid is not an accredited verifier; legal verification of emissions remains a separate step where required.</p>
+              <span className="ref">LIMITATION NOTICE</span>
             </div>
           </div>
-        </form>
-
-        {renderStatusCard()}
-      </div>
-    </div>
+        </div>
+      </section>
+    </main>
   );
 }

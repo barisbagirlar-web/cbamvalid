@@ -205,7 +205,7 @@ export const AuditReadyCaseSchema = z.object({
     productionVolume: InputDatumSchema,
     shipmentRecords: InputDatumSchema,
     allocationShare: InputDatumSchema.nullable().optional(),
-  })),
+  })).default([]),
   installation: z.object({
     name: InputDatumSchema,
     unloCode: InputDatumSchema.nullable().optional(),
@@ -222,11 +222,11 @@ export const AuditReadyCaseSchema = z.object({
     directEmissions: InputDatumSchema,
     indirectEmissions: InputDatumSchema,
     countryOfOrigin: InputDatumSchema,
-  })),
-  carbonPriceRecords: z.array(CarbonPricePaidSchema),
-  evidenceRegister: z.array(EvidenceRecordSchema),
-  calculationTrace: z.array(CalculationTraceNodeSchema),
-  gapAssessment: z.array(GapRecordSchema),
+  })).default([]),
+  carbonPriceRecords: z.array(CarbonPricePaidSchema).default([]),
+  evidenceRegister: z.array(EvidenceRecordSchema).default([]),
+  calculationTrace: z.array(CalculationTraceNodeSchema).default([]),
+  gapAssessment: z.array(GapRecordSchema).default([]),
   methodologyDecisions: z.array(MethodologyDecisionSchema).default([]),
   auditEvents: z.array(z.object({
     eventId: z.string().uuid(),
@@ -234,7 +234,7 @@ export const AuditReadyCaseSchema = z.object({
     actor: z.string(),
     action: z.string(),
     metadata: z.record(z.string(), z.unknown()).optional(),
-  })),
+  })).default([]),
 });
 
 export type AuditReadyCase = z.infer<typeof AuditReadyCaseSchema>;

@@ -1,58 +1,74 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
-import { legalConfig } from "@/lib/legal-config";
-import { BrandLockup } from "@/components/brand/BrandLockup";
 
 export default function AppFooter() {
   return (
-    <footer className="border-t border-border bg-background py-12 text-sm text-muted font-sans" data-testid="app-footer">
-      <div className="max-w-7xl mx-auto px-6 flex flex-col items-center text-center space-y-8">
-        
-        {/* CENTERED BRAND */}
-        <div className="flex flex-col items-center space-y-3">
-          <BrandLockup />
-          <p className="max-w-md leading-relaxed text-muted/90">
-            Independent software for deterministic Carbon Border Adjustment Mechanism calculations and compliance documentation.
+    <footer className="site-footer">
+      <div className="wrap">
+        <div className="footer-grid">
+          <div className="footer-brand">
+            <Link href="/" className="brand" aria-label="CBAMValid home">
+              <svg className="brand-mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                <path d="M20 3 35 9.5v9.7c0 8.9-6.2 15-15 17.8C11.2 34.2 5 28.1 5 19.2V9.5L20 3Z" stroke="#C0562F" strokeWidth="2.6" fill="rgba(192,86,47,.15)"/>
+                <path d="m13.5 20.2 4.3 4.3 8.7-9" stroke="#C0562F" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span>
+                <span className="brand-name" style={{ color: "#fff" }}>CBAM<em>Valid</em></span>
+                <span className="brand-sub">Carbon Border Compliance Validation</span>
+              </span>
+            </Link>
+            <p>
+              Independent software for Carbon Border Adjustment Mechanism (CBAM) calculations and compliance documentation.
+            </p>
+            <div className="footer-badges">
+              <span className="f-badge">Data hosted in the EU</span>
+              <span className="f-badge">GDPR</span>
+              <span className="f-badge">SSL Secured</span>
+            </div>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <ul>
+              <li><Link href="/product">Product</Link></li>
+              <li><Link href="/how-it-works">How It Works</Link></li>
+              <li><Link href="/sample-dossier">Sample Dossier</Link></li>
+              <li><Link href="/methodology">Methodology &amp; Sources</Link></li>
+              <li><Link href="/pricing">Pricing</Link></li>
+              <li><Link href="/verify">Verify a Dossier</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4>Legal</h4>
+            <ul>
+              <li><Link href="/privacy">Privacy Notice</Link></li>
+              <li><Link href="/terms">Terms of Service</Link></li>
+              <li><Link href="/cookie-policy">Cookie Policy</Link></li>
+              <li><Link href="/refund-policy">Refund Policy</Link></li>
+              <li><Link href="/legal-notice">Legal Notice</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4>Contact &amp; Support</h4>
+            <ul>
+              <li>
+                <span className="f-lbl">Email Support</span>
+                <a className="mono font-semibold" href="mailto:info@cbamvalid.com">info@cbamvalid.com</a>
+              </li>
+              <li>
+                <span className="f-lbl">Location</span>
+                <span className="f-val">Republic of Ireland</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div className="footer-bottom">
+          <p>&copy; {new Date().getFullYear()} SectorCalc Corporation (CBAMValid). All rights reserved.</p>
+          <p className="disclaimer">
+            <b>Independence Notice:</b> CBAMValid is an independent software service for exporter-to-importer evidence packaging. It is not an EU institution, customs authority or accredited CBAM verifier. Actual emissions data must be independently verified where verification is legally required.
           </p>
         </div>
-
-        {/* CENTERED NAVIGATION */}
-        <nav className="flex flex-wrap justify-center gap-x-8 gap-y-2 font-medium" aria-label="Footer Navigation">
-          <Link href="/product" className="hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1">Product</Link>
-          <Link href="/how-it-works" className="hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1">How It Works</Link>
-          <Link href="/sample-dossier" className="hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1">Sample Dossier</Link>
-          <Link href="/methodology" className="hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1">Methodology & Sources</Link>
-          <Link href="/pricing" className="hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1">Pricing</Link>
-          <Link href="/verify" className="hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1">Verify a Dossier</Link>
-          <Link href="/contact" className="hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1">Contact Support</Link>
-        </nav>
-
-        {/* CENTERED SUPPORT */}
-        <div className="text-center font-medium">
-          Support: <a href={`mailto:${legalConfig.supportEmail}`} className="text-accent hover:underline font-mono outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1">{legalConfig.supportEmail}</a>
-        </div>
-
-        {/* CENTERED LEGAL */}
-        <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs" aria-label="Footer Legal Links">
-          <Link href="/privacy" className="hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1">Privacy Notice</Link>
-          <Link href="/terms" className="hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1">Terms of Service</Link>
-          <Link href="/cookie-policy" className="hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1">Cookie Policy</Link>
-          <Link href="/refund-policy" className="hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1">Refund Policy</Link>
-          <Link href="/legal-notice" className="hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1">Legal Notice</Link>
-        </nav>
-
-        {/* CENTERED COPYRIGHT */}
-        <div className="text-xs text-muted/75 space-y-1">
-          <p>&copy; {new Date().getFullYear()} {legalConfig.legalEntityName}. All rights reserved.</p>
-          <p>{legalConfig.country}</p>
-        </div>
-      </div>
-
-      {/* INDEPENDENCE NOTICE */}
-      <div className="max-w-4xl mx-auto px-6 mt-10 pt-6 border-t border-border/60 text-xs text-center text-subtle leading-relaxed">
-        <strong>Independence Notice:</strong> CBAMValid is an independent software service and is not an official European Commission or CBAM Registry service. <br/>
-        Not officially endorsed by the EU, not guaranteed for official authority acceptance. Users are fully responsible for their declarative data.
       </div>
     </footer>
   );

@@ -63,7 +63,7 @@ const nextConfig = {
       },
       // Protected/Auth routes should not be cached
       {
-        source: '/(login|register|cbam|admin|account|dashboard)(.*)',
+        source: '/(login|register|cbam|admin|account|dashboard|cases)(.*)',
         headers: [
           {
             key: 'Cache-Control',

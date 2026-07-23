@@ -57,6 +57,12 @@ jobs:
           set -o pipefail
           npm run guard:hosting-architecture 2>&1 | tee artifacts/ci/hosting-architecture.log
 
+      - name: Verify Firebase authentication architecture
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run guard:auth-architecture 2>&1 | tee artifacts/ci/auth-architecture.log
+
       - name: Verify workspace navigation contract
         shell: bash
         run: |

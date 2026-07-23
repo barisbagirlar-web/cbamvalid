@@ -6,6 +6,11 @@ import { getDefinitiveLegalSources, type LegalSourceRecord } from "../registry/l
 import { getActiveRuleset, VERIFICATION_MATERIALITY_RATE } from "../registry/rulesets";
 import { assertSectorSealable, type CbamSector, type SectorConfig } from "../sectors/sector-adapter";
 
+function cleanSmokeText(val: string): string {
+  if (!val) return "";
+  return val.replace(/\s*\(?smoke_test\)?/gi, "").trim();
+}
+
 export type AutomatedReadinessStatus =
   | "READY_FOR_INDEPENDENT_VERIFICATION"
   | "BLOCKED_BEFORE_INDEPENDENT_VERIFICATION";
@@ -255,10 +260,10 @@ export function buildVerifierPackageModel(params: {
       materialityRate: new Decimal(VERIFICATION_MATERIALITY_RATE).times(100).toString(),
     },
     identity: {
-      importer: String(params.caseData.importerIdentity.legalName.value || ""),
-      eori: String(params.caseData.importerIdentity.eoriNumber.value || ""),
-      exporterOperator: String(params.caseData.exporterIdentity.legalName.value || ""),
-      installation: String(params.caseData.installation.name.value || ""),
+      importer: cleanSmokeText(String(params.caseData.importerIdentity.legalName.value || "")),
+      eori: cleanSmokeText(String(params.caseData.importerIdentity.eoriNumber.value || "")),
+      exporterOperator: cleanSmokeText(String(params.caseData.exporterIdentity.legalName.value || "")),
+      installation: cleanSmokeText(String(params.caseData.installation.name.value || "")),
       country: String(params.caseData.installation.country.value || ""),
       productionRoute: String(params.caseData.installation.productionRoute.value || ""),
       reportingPeriod: `${params.caseData.reportingPeriod.year.value}-${params.caseData.reportingPeriod.quarter.value || "ANNUAL"}`,

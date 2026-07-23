@@ -118,13 +118,29 @@ describe("premium-dossier-v5 deliverables", () => {
       "goods.1.allocationShare"
     );
     
-    // Enforce annual period for base readiness test
+    const firstEvId = caseData.evidenceRegister[0].evidenceId;
+    caseData.importerIdentity.legalName.evidenceId = firstEvId;
+    caseData.importerIdentity.eoriNumber.evidenceId = firstEvId;
+    caseData.importerIdentity.address!.evidenceId = firstEvId;
+    caseData.exporterIdentity.legalName.evidenceId = firstEvId;
+    caseData.exporterIdentity.address!.evidenceId = firstEvId;
+    caseData.installation.name.evidenceId = firstEvId;
+    caseData.installation.country.evidenceId = firstEvId;
+    caseData.installation.productionRoute.evidenceId = firstEvId;
+    caseData.reportingPeriod.year.evidenceId = firstEvId;
+    caseData.reportingPeriod.quarter.evidenceId = firstEvId;
+    caseData.goods[0]!.cnCode.evidenceId = firstEvId;
+    caseData.goods[0]!.allocationShare!.evidenceId = firstEvId;
+    caseData.goods[1]!.cnCode.evidenceId = firstEvId;
+    caseData.goods[1]!.allocationShare!.evidenceId = firstEvId;
+
     caseData.reportingPeriod.quarter.value = "ANNUAL";
     caseData.reportingPeriod.startDate = { value: "2026-01-01", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
     caseData.reportingPeriod.endDate = { value: "2026-12-31", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
-    caseData.evidenceRegister[0].reportingPeriod = "2026 ANNUAL";
+    caseData.evidenceRegister.forEach(e => { e.reportingPeriod = "2026 ANNUAL"; });
     // Test base readiness
     const readiness = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: "2027-01-15" });
+    console.log("DEBUG_READINESS:", JSON.stringify(readiness, null, 2));
     expect(readiness.operatorStatus).toBe("READY_FOR_VERIFIER_REVIEW");
     expect(parseFloat(readiness.score)).toBeGreaterThanOrEqual(90);
     expect(readiness.criticalBlockerCount).toBe(0);
@@ -168,10 +184,27 @@ describe("premium-dossier-v5 deliverables", () => {
       "goods.1.cnCode",
       "goods.1.allocationShare"
     );
+    
+    const firstEvId = caseData.evidenceRegister[0].evidenceId;
+    caseData.importerIdentity.legalName.evidenceId = firstEvId;
+    caseData.importerIdentity.eoriNumber.evidenceId = firstEvId;
+    caseData.importerIdentity.address!.evidenceId = firstEvId;
+    caseData.exporterIdentity.legalName.evidenceId = firstEvId;
+    caseData.exporterIdentity.address!.evidenceId = firstEvId;
+    caseData.installation.name.evidenceId = firstEvId;
+    caseData.installation.country.evidenceId = firstEvId;
+    caseData.installation.productionRoute.evidenceId = firstEvId;
+    caseData.reportingPeriod.year.evidenceId = firstEvId;
+    caseData.reportingPeriod.quarter.evidenceId = firstEvId;
+    caseData.goods[0]!.cnCode.evidenceId = firstEvId;
+    caseData.goods[0]!.allocationShare!.evidenceId = firstEvId;
+    caseData.goods[1]!.cnCode.evidenceId = firstEvId;
+    caseData.goods[1]!.allocationShare!.evidenceId = firstEvId;
+
     caseData.reportingPeriod.quarter.value = "ANNUAL";
     caseData.reportingPeriod.startDate = { value: "2026-01-01", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
     caseData.reportingPeriod.endDate = { value: "2026-12-31", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
-    caseData.evidenceRegister[0].reportingPeriod = "2026 ANNUAL";
+    caseData.evidenceRegister.forEach(e => { e.reportingPeriod = "2026 ANNUAL"; });
     const controls = runQualityControls(caseData);
     const calculation = performDossierCalculations(caseData);
     
@@ -201,7 +234,7 @@ describe("premium-dossier-v5 deliverables", () => {
       reportId: FIXTURE_REPORT_ID,
       releaseVersion: 5,
       generatedAt: FIXTURE_GENERATED_AT,
-      evidenceCount: 1,
+      evidenceCount: 4,
       productCode: "pack_premium_dossier_v5",
       releaseContractVersion: 5,
     });
@@ -227,7 +260,7 @@ describe("premium-dossier-v5 deliverables", () => {
     expect(primaryPdf).toBeDefined();
     const pdf = await pdfText(primaryPdf!.bytes);
     expect(pdf.text).toContain("CBAMValid");
-    expect(pdf.text).toContain("Verification Readiness & Evidence Assurance Dossier");
+    expect(pdf.text).toContain("Operator-Prepared Emissions Statement");
 
     const premiumPdf = artifacts.find((item) => item.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
     expect(premiumPdf).toBeDefined();
@@ -253,10 +286,27 @@ describe("premium-dossier-v5 deliverables", () => {
       "goods.1.cnCode",
       "goods.1.allocationShare"
     );
+    
+    const firstEvId = caseData.evidenceRegister[0].evidenceId;
+    caseData.importerIdentity.legalName.evidenceId = firstEvId;
+    caseData.importerIdentity.eoriNumber.evidenceId = firstEvId;
+    caseData.importerIdentity.address!.evidenceId = firstEvId;
+    caseData.exporterIdentity.legalName.evidenceId = firstEvId;
+    caseData.exporterIdentity.address!.evidenceId = firstEvId;
+    caseData.installation.name.evidenceId = firstEvId;
+    caseData.installation.country.evidenceId = firstEvId;
+    caseData.installation.productionRoute.evidenceId = firstEvId;
+    caseData.reportingPeriod.year.evidenceId = firstEvId;
+    caseData.reportingPeriod.quarter.evidenceId = firstEvId;
+    caseData.goods[0]!.cnCode.evidenceId = firstEvId;
+    caseData.goods[0]!.allocationShare!.evidenceId = firstEvId;
+    caseData.goods[1]!.cnCode.evidenceId = firstEvId;
+    caseData.goods[1]!.allocationShare!.evidenceId = firstEvId;
+
     caseData.reportingPeriod.quarter.value = "ANNUAL";
     caseData.reportingPeriod.startDate = { value: "2026-01-01", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
     caseData.reportingPeriod.endDate = { value: "2026-12-31", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
-    caseData.evidenceRegister[0].reportingPeriod = "2026 ANNUAL";
+    caseData.evidenceRegister.forEach(e => { e.reportingPeriod = "2026 ANNUAL"; });
     const controls = runQualityControls(caseData);
     const calculation = performDossierCalculations(caseData);
     
@@ -286,7 +336,7 @@ describe("premium-dossier-v5 deliverables", () => {
       reportId: FIXTURE_REPORT_ID,
       releaseVersion: 5,
       generatedAt: FIXTURE_GENERATED_AT,
-      evidenceCount: 1,
+      evidenceCount: 4,
       productCode: "pack_premium_dossier_v5",
       releaseContractVersion: 5,
     });

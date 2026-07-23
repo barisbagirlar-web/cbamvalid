@@ -98,8 +98,17 @@ export type PersistedSealedReport = z.infer<typeof PersistedSealedReportSchema>;
 export type SealedReportView = z.infer<typeof SealedReportViewSchema>;
 
 export function toSealedReportView(value: unknown): SealedReportView {
-  const report = PersistedSealedReportSchema.parse(value);
-  const raw = value as Record<string, unknown>;
+  const raw = { ...value as Record<string, unknown> };
+  if (raw.packageMetadata && typeof raw.packageMetadata === "object") {
+    const metaParse = PackageMetadataSchema.safeParse(raw.packageMetadata);
+    if (!metaParse.success) {
+      delete raw.packageMetadata;
+    } else {
+      raw.packageMetadata = metaParse.data;
+    }
+  }
+
+  const report = PersistedSealedReportSchema.parse(raw);
   const isV5 =
     raw.productCode === "pack_premium_dossier_v5" ||
     raw.releaseContractVersion === 5 ||

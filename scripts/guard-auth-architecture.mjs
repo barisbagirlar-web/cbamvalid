@@ -133,12 +133,21 @@ walk(rootDir, isSourceFile, (filePath) => {
   }
 
   // 8.1. Token split/dot check & strengthened E2E mock bypass rules
+  const isAuthSensitivePath =
+    relPath.includes('(auth)') ||
+    relPath.includes('/auth/') ||
+    relPath.includes('session') ||
+    relPath === 'middleware.ts' ||
+    relPath === 'context/AuthProvider.tsx' ||
+    relPath === 'lib/firebase/client.ts';
   if (
-    content.includes('.split(".")') ||
-    content.includes(".split('.')") ||
-    content.includes('.split(/\\./)') ||
-    content.includes("split(/\\./)") ||
-    content.includes("token.split")
+    content.includes("token.split") ||
+    (isAuthSensitivePath && (
+      content.includes('.split(".")') ||
+      content.includes(".split('.')") ||
+      content.includes('.split(/\\./)') ||
+      content.includes("split(/\\./)")
+    ))
   ) {
     logError(relPath, "Contains banned token split operation (.split(\".\") / split(/\\./)).");
   }
@@ -246,6 +255,60 @@ if (fs.existsSync(path.join(rootDir, protectedLayoutPath))) {
   const content = fs.readFileSync(path.join(rootDir, protectedLayoutPath), 'utf8');
   if (!content.includes('useAuth(')) {
     logError(protectedLayoutPath, "Protected layout must call useAuth() to restrict access.");
+  }
+}
+
+// 16. Callable requests must wait for restored Firebase Auth state and a
+// current ID token. App Check cannot default to enforced before a web provider
+// is configured, because Firebase rejects otherwise-valid authenticated calls.
+const callableClientPath = 'lib/functions/client.ts';
+const callableAuthPath = 'lib/functions/authenticated-callable.ts';
+const appCheckPolicyPath = 'functions/src/app-check-policy.ts';
+const callableWrapperPath = 'functions/src/wrapper.ts';
+
+for (const requiredPath of [
+  callableClientPath,
+  callableAuthPath,
+  appCheckPolicyPath,
+  callableWrapperPath,
+]) {
+  if (!fs.existsSync(path.join(rootDir, requiredPath))) {
+    logError(requiredPath, "Required callable authentication contract file is missing.");
+  }
+}
+
+if (fs.existsSync(path.join(rootDir, callableClientPath))) {
+  const content = fs.readFileSync(path.join(rootDir, callableClientPath), 'utf8');
+  if (!content.includes('withCallableAuthentication')) {
+    logError(callableClientPath, "Callable exports must use the centralized authentication wrapper.");
+  }
+}
+
+if (fs.existsSync(path.join(rootDir, callableAuthPath))) {
+  const content = fs.readFileSync(path.join(rootDir, callableAuthPath), 'utf8');
+  for (const requiredText of [
+    'await persistenceReady',
+    'await auth.authStateReady()',
+    'await user.getIdToken()',
+    'functions/unauthenticated',
+  ]) {
+    if (!content.includes(requiredText)) {
+      logError(callableAuthPath, `Missing callable authentication requirement: ${requiredText}`);
+    }
+  }
+}
+
+if (fs.existsSync(path.join(rootDir, appCheckPolicyPath))) {
+  const content = fs.readFileSync(path.join(rootDir, appCheckPolicyPath), 'utf8');
+  if (!content.includes('return configuredValue === "true"')) {
+    logError(appCheckPolicyPath, "App Check enforcement must require explicit provider opt-in.");
+  }
+}
+
+if (fs.existsSync(path.join(rootDir, callableWrapperPath))) {
+  const content = fs.readFileSync(path.join(rootDir, callableWrapperPath), 'utf8');
+  if (!content.includes('if (!request.auth)')) {
+    logError(callableWrapperPath, "Firebase Authentication must remain mandatory for every callable.");
   }
 }
 

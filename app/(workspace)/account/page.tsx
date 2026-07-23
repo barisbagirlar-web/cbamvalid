@@ -2,7 +2,21 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthProvider";
-import { getAccountOverview, listCreditLedger, listPurchaseHistory, requestAccountClosure } from "@/lib/functions/client";
+import {
+  getAccountOverview,
+  getEntitlements,
+  listCreditLedger,
+  listPurchaseHistory,
+  requestAccountClosure,
+  type PreparationPackEntitlement,
+} from "@/lib/functions/client";
+import {
+  CREDITS_PER_PREPARATION_PACK,
+  RELEASES_PER_PREPARATION_PACK,
+  packsUnlockableFromCredits,
+  potentialReleasesFromCredits,
+} from "@/lib/billing/credit-contract";
+import { UnlockPreparationPackPanel } from "@/components/billing/UnlockPreparationPackPanel";
 import { User, CreditCard, History, ShieldAlert, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -11,29 +25,68 @@ export default function AccountPage() {
   const [overview, setOverview] = useState<any>(null);
   const [ledger, setLedger] = useState<any[]>([]);
   const [purchases, setPurchases] = useState<any[]>([]);
+  const [entitlements, setEntitlements] = useState<PreparationPackEntitlement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  const reloadAccount = async () => {
+    if (!user) return;
+    setLoadError("");
+
+    // Isolate failures: purchase/ledger errors must never zero the credit balance.
+    const [overviewResult, ledgerResult, purchaseResult, entitlementResult] = await Promise.allSettled([
+      getAccountOverview(),
+      listCreditLedger(),
+      listPurchaseHistory(),
+      getEntitlements(),
+    ]);
+
+    if (overviewResult.status === "fulfilled") {
+      setOverview(overviewResult.value);
+    } else {
+      console.error("Failed to load account overview", overviewResult.reason);
+      setLoadError("Account credit balance could not be loaded. Retry or contact support.");
+    }
+
+    if (ledgerResult.status === "fulfilled") {
+      setLedger(ledgerResult.value || []);
+    } else {
+      console.error("Failed to load credit ledger", ledgerResult.reason);
+      setLedger([]);
+    }
+
+    if (purchaseResult.status === "fulfilled") {
+      setPurchases(purchaseResult.value || []);
+    } else {
+      console.error("Failed to load purchase history", purchaseResult.reason);
+      setPurchases([]);
+    }
+
+    if (entitlementResult.status === "fulfilled") {
+      setEntitlements(entitlementResult.value || []);
+    } else {
+      console.error("Failed to load entitlements", entitlementResult.reason);
+      setEntitlements([]);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
-    
-    Promise.all([
-      getAccountOverview(),
-      listCreditLedger(),
-      listPurchaseHistory()
-    ]).then(([overviewData, ledgerData, purchaseData]) => {
-      setOverview(overviewData);
-      setLedger(ledgerData || []);
-      setPurchases(purchaseData || []);
-    }).catch(err => {
-      console.error("Failed to load account data", err);
-    }).finally(() => {
-      setLoading(false);
-    });
+    setLoading(true);
+    void reloadAccount().finally(() => setLoading(false));
   }, [user]);
 
   if (loading) {
     return <div className="p-8 text-kil-text font-mono text-sm">Loading enterprise account...</div>;
   }
+
+  const availableCredits = Number(overview?.credits?.availableCredits || 0);
+  const activeReleasesRemaining = entitlements.reduce(
+    (sum, entitlement) => sum + Number(entitlement.releasesRemaining || 0),
+    0
+  );
+  const hasActivePack = activeReleasesRemaining > 0;
+  const unlockablePacks = packsUnlockableFromCredits(availableCredits);
 
   return (
     <div className="max-w-4xl mx-auto p-8 space-y-8">
@@ -47,6 +100,22 @@ export default function AccountPage() {
           <p className="text-kil-text/60 font-mono text-sm">Manage profile, credits, and commercial statements.</p>
         </div>
       </div>
+
+      {loadError ? (
+        <div className="rounded-sm border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-700">
+          {loadError}
+          <button
+            type="button"
+            className="ml-3 underline"
+            onClick={() => {
+              setLoading(true);
+              void reloadAccount().finally(() => setLoading(false));
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="bg-kil-surface border border-kil-text/15 rounded-sm p-6 shadow-sm">
@@ -72,13 +141,30 @@ export default function AccountPage() {
             <h2 className="font-serif text-xl">Available Credits</h2>
           </div>
           <div className="text-4xl font-mono font-bold text-kil-accent">
-            {overview?.credits?.availableCredits || 0}
+            {availableCredits}
           </div>
           <p className="text-xs text-kil-text/60 mt-2">
-            1 credit equals 1 generated CBAM sealed report. Credits never expire.
+            {CREDITS_PER_PREPARATION_PACK} credits unlock 1 Preparation Pack with{" "}
+            {RELEASES_PER_PREPARATION_PACK} sealed releases. Credits never expire.
+          </p>
+          <p className="mt-3 font-mono text-xs text-kil-text/70">
+            Active pack releases remaining: {activeReleasesRemaining}
+            {unlockablePacks > 0
+              ? ` · Unlockable now: ${unlockablePacks} pack(s) / ${potentialReleasesFromCredits(availableCredits)} releases`
+              : ""}
           </p>
         </div>
       </div>
+
+      <UnlockPreparationPackPanel
+        availableCredits={availableCredits}
+        hasActivePack={hasActivePack}
+        onUnlocked={async () => {
+          setLoading(true);
+          await reloadAccount();
+          setLoading(false);
+        }}
+      />
 
       <div className="bg-kil-surface border border-kil-text/15 rounded-sm shadow-sm overflow-hidden">
         <div className="p-6 border-b border-kil-text/15 bg-kil-base">
@@ -103,10 +189,10 @@ export default function AccountPage() {
               <tbody className="divide-y divide-kil-text/10">
                 {ledger.map(entry => (
                   <tr key={entry.id}>
-                    <td className="py-3">{new Date(entry.createdAt).toLocaleDateString()}</td>
+                    <td className="py-3">{entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : "—"}</td>
                     <td className="py-3">{entry.type}</td>
                     <td className="py-3 font-bold text-kil-accent">{entry.amount > 0 ? `+${entry.amount}` : entry.amount}</td>
-                    <td className="py-3 text-right">{entry.balanceAfter}</td>
+                    <td className="py-3 text-right">{entry.balanceAfter ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>

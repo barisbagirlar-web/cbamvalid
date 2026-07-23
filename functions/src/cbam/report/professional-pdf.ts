@@ -8,11 +8,31 @@ export interface PdfTable {
   widths?: number[];
 }
 
+export interface PdfChartItem {
+  label: string;
+  value: string | number;
+  color?: [number, number, number];
+}
+
+export interface PdfBarChart {
+  unit: string;
+  items: PdfChartItem[];
+}
+
+export interface PdfWaterfallChart {
+  unit: string;
+  components: PdfChartItem[];
+  total: string | number;
+}
+
 export interface PdfSection {
   heading: string;
   paragraphs?: string[];
   table?: PdfTable;
   callout?: { label: string; value: string };
+  barChart?: PdfBarChart;
+  waterfallChart?: PdfWaterfallChart;
+  pageBreakBefore?: boolean;
 }
 
 export interface ProfessionalPdfInput {
@@ -35,6 +55,15 @@ function digest(value: string): string {
 function asText(value: unknown): string {
   const result = String(value ?? "—").trim();
   return result || "—";
+}
+
+function chartNumber(value: unknown): number {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
+}
+
+function compactIdentifier(value: string): string {
+  return value.length > 44 ? `${value.slice(0, 27)}...${value.slice(-12)}` : value;
 }
 
 function normalizedWidths(count: number, requested?: number[]): number[] {
@@ -75,7 +104,7 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
     document.setFont("helvetica", "normal");
     document.setFontSize(8.5);
     document.text(input.subtitle, MARGIN, 19);
-    document.text(`Report ${input.model.reportId} · Release ${input.model.releaseVersion}`, MARGIN, 25);
+    document.text(`Report ${compactIdentifier(input.model.reportId)} | Release ${input.model.releaseVersion}`, MARGIN, 25);
 
     const ready = input.model.automatedReadiness === "READY_FOR_INDEPENDENT_VERIFICATION";
     document.setFillColor(ready ? 222 : 254, ready ? 247 : 226, ready ? 232 : 226);
@@ -116,20 +145,42 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
   };
 
   const drawCallout = (label: string, value: string) => {
-    const lines = document.splitTextToSize(asText(value), CONTENT_WIDTH - 42) as string[];
-    const height = Math.max(13, lines.length * 4.2 + 7);
-    ensure(height + 3);
+    const labelText = label.toUpperCase().trim();
+    const valueText = asText(value);
+
+    document.setFont("helvetica", "bold");
+    document.setFontSize(7.5);
+    const labelLines = document.splitTextToSize(labelText, CONTENT_WIDTH - 10) as string[];
+
+    document.setFont("helvetica", "normal");
+    document.setFontSize(8.0);
+    const valueLines = document.splitTextToSize(valueText, CONTENT_WIDTH - 10) as string[];
+
+    const labelHeight = labelLines.length * 3.8;
+    const valueHeight = valueLines.length * 4.0;
+    const paddingY = 3.5;
+    const totalHeight = paddingY + labelHeight + 1.5 + valueHeight + paddingY;
+
+    ensure(totalHeight + 3);
+
     document.setFillColor(244, 247, 250);
     document.setDrawColor(190, 199, 210);
-    document.roundedRect(MARGIN, y, CONTENT_WIDTH, height, 1.5, 1.5, "FD");
+    document.roundedRect(MARGIN, y, CONTENT_WIDTH, totalHeight, 1.5, 1.5, "FD");
+
+    document.setFillColor(201, 154, 73);
+    document.rect(MARGIN, y, 2.5, totalHeight, "F");
+
     document.setFont("helvetica", "bold");
     document.setFontSize(7.5);
     document.setTextColor(20, 42, 74);
-    document.text(label.toUpperCase(), MARGIN + 4, y + 6);
+    document.text(labelLines, MARGIN + 5, y + paddingY + 3);
+
     document.setFont("helvetica", "normal");
+    document.setFontSize(8.0);
     document.setTextColor(43, 51, 64);
-    document.text(lines, MARGIN + 39, y + 6);
-    y += height + 3;
+    document.text(valueLines, MARGIN + 5, y + paddingY + labelHeight + 3);
+
+    y += totalHeight + 3;
   };
 
   const drawTable = (table: PdfTable) => {
@@ -137,10 +188,10 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
     const widths = normalizedWidths(table.headers.length, table.widths);
     
     const headerLines = table.headers.map((header, index) =>
-      document.splitTextToSize(header, widths[index] - 3) as string[]
+      document.splitTextToSize(header, widths[index] - 4) as string[]
     );
     const maxHeaderLines = Math.max(1, ...headerLines.map(lines => lines.length));
-    const headerHeight = maxHeaderLines * 3.6 + 3.5;
+    const headerHeight = maxHeaderLines * 3.6 + 4.0;
 
     const drawHeader = () => {
       ensure(headerHeight + 10);
@@ -152,7 +203,7 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
       table.headers.forEach((header, index) => {
         document.rect(x, y, widths[index], headerHeight, "F");
         const lines = headerLines[index];
-        document.text(lines, x + 1.5, y + 4);
+        document.text(lines, x + 2, y + 4.5);
         x += widths[index];
       });
       y += headerHeight;
@@ -161,7 +212,7 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
     drawHeader();
     table.rows.forEach((row, rowIndex) => {
       let cellLines = table.headers.map((_, columnIndex) =>
-        document.splitTextToSize(asText(row[columnIndex]), widths[columnIndex] - 3) as string[]
+        document.splitTextToSize(asText(row[columnIndex]), widths[columnIndex] - 4) as string[]
       );
 
       while (cellLines.some(lines => lines.length > 0)) {
@@ -176,7 +227,7 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
 
         const maxLinesInCells = Math.max(...cellLines.map(lines => lines.length));
         const chunkLineCount = Math.min(linesThatFit, maxLinesInCells);
-        const chunkHeight = Math.max(7, chunkLineCount * 3.6 + 2.5);
+        const chunkHeight = Math.max(6.5, chunkLineCount * 3.6 + 2.5);
 
         document.setDrawColor(215, 221, 229);
         document.setTextColor(43, 51, 64);
@@ -189,7 +240,7 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
           document.rect(x, y, widths[columnIndex], chunkHeight, "FD");
 
           const chunkText = lines.slice(0, chunkLineCount);
-          document.text(chunkText, x + 1.5, y + 4);
+          document.text(chunkText, x + 2, y + 4.2);
 
           x += widths[columnIndex];
         });
@@ -206,6 +257,97 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
     y += 3;
   };
 
+  const drawBarChart = (chart: PdfBarChart) => {
+    if (chart.items.length === 0) return;
+    const height = 10 + chart.items.length * 11;
+    ensure(height + 4);
+    const values = chart.items.map((item) => Math.max(0, chartNumber(item.value)));
+    const maximum = Math.max(...values, 1);
+    const labelWidth = 47;
+    const valueWidth = 34;
+    const barWidth = CONTENT_WIDTH - labelWidth - valueWidth - 8;
+
+    document.setFont("helvetica", "normal");
+    document.setFontSize(7);
+    document.setTextColor(90, 99, 112);
+    document.text(chart.unit, PAGE_WIDTH - MARGIN, y + 3, { align: "right" });
+    y += 7;
+
+    chart.items.forEach((item, index) => {
+      const value = values[index];
+      const fill = item.color || [198, 88, 48];
+      document.setFont("helvetica", "bold");
+      document.setFontSize(7.3);
+      document.setTextColor(43, 51, 64);
+      document.text(asText(item.label), MARGIN, y + 5.2);
+      document.setFillColor(238, 241, 245);
+      document.roundedRect(MARGIN + labelWidth, y, barWidth, 6.5, 1, 1, "F");
+      document.setFillColor(fill[0], fill[1], fill[2]);
+      document.roundedRect(MARGIN + labelWidth, y, Math.max(0.8, (value / maximum) * barWidth), 6.5, 1, 1, "F");
+      document.setFont("helvetica", "normal");
+      document.setTextColor(43, 51, 64);
+      document.text(`${asText(item.value)} ${chart.unit}`, PAGE_WIDTH - MARGIN, y + 5.2, { align: "right" });
+      y += 11;
+    });
+    y += 2;
+  };
+
+  const drawWaterfallChart = (chart: PdfWaterfallChart) => {
+    if (chart.components.length === 0) return;
+    ensure(61);
+    const components = chart.components.map((item) => ({ ...item, numeric: Math.max(0, chartNumber(item.value)) }));
+    const total = Math.max(0, chartNumber(chart.total));
+    const maximum = Math.max(total, components.reduce((sum, item) => sum + item.numeric, 0), 1);
+    const plotTop = y + 7;
+    const plotHeight = 36;
+    const baseline = plotTop + plotHeight;
+    const columns = components.length + 1;
+    const slot = CONTENT_WIDTH / columns;
+    const columnWidth = Math.min(24, slot * 0.56);
+    let cumulative = 0;
+
+    document.setFont("helvetica", "normal");
+    document.setFontSize(7);
+    document.setTextColor(90, 99, 112);
+    document.text(chart.unit, PAGE_WIDTH - MARGIN, y + 3, { align: "right" });
+    document.setDrawColor(190, 199, 210);
+    document.line(MARGIN, baseline, PAGE_WIDTH - MARGIN, baseline);
+
+    components.forEach((item, index) => {
+      const start = cumulative;
+      cumulative += item.numeric;
+      const x = MARGIN + slot * index + (slot - columnWidth) / 2;
+      const top = baseline - (cumulative / maximum) * plotHeight;
+      const bottom = baseline - (start / maximum) * plotHeight;
+      const fill = item.color || [198, 88, 48];
+      document.setFillColor(fill[0], fill[1], fill[2]);
+      document.rect(x, top, columnWidth, Math.max(0.8, bottom - top), "F");
+      if (index < components.length - 1) {
+        document.setDrawColor(160, 169, 180);
+        document.line(x + columnWidth, top, MARGIN + slot * (index + 1) + (slot - columnWidth) / 2, top);
+      }
+      document.setFont("helvetica", "bold");
+      document.setFontSize(6.8);
+      document.setTextColor(43, 51, 64);
+      document.text(asText(item.value), x + columnWidth / 2, Math.max(plotTop + 3, top - 1.5), { align: "center" });
+      document.setFont("helvetica", "normal");
+      const labelLines = document.splitTextToSize(item.label, slot - 3) as string[];
+      document.text(labelLines.slice(0, 2), MARGIN + slot * index + slot / 2, baseline + 4.2, { align: "center" });
+    });
+
+    const totalX = MARGIN + slot * components.length + (slot - columnWidth) / 2;
+    const totalTop = baseline - (total / maximum) * plotHeight;
+    document.setFillColor(20, 42, 74);
+    document.rect(totalX, totalTop, columnWidth, Math.max(0.8, baseline - totalTop), "F");
+    document.setFont("helvetica", "bold");
+    document.setTextColor(20, 42, 74);
+    document.text(asText(chart.total), totalX + columnWidth / 2, Math.max(plotTop + 3, totalTop - 1.5), { align: "center" });
+    document.setFont("helvetica", "normal");
+    document.setTextColor(43, 51, 64);
+    document.text("Total embedded", MARGIN + slot * components.length + slot / 2, baseline + 4.2, { align: "center" });
+    y = baseline + 13;
+  };
+
   drawPageFrame();
 
   drawCallout("Document boundary", input.model.disclaimer);
@@ -220,6 +362,7 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
   });
 
   for (const section of input.sections) {
+    if (section.pageBreakBefore && y > BODY_TOP) addPage();
     ensure(12);
     document.setFillColor(231, 237, 244);
     document.rect(MARGIN, y, CONTENT_WIDTH, 8, "F");
@@ -231,6 +374,8 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
 
     for (const paragraph of section.paragraphs || []) drawParagraph(paragraph);
     if (section.callout) drawCallout(section.callout.label, section.callout.value);
+    if (section.waterfallChart) drawWaterfallChart(section.waterfallChart);
+    if (section.barChart) drawBarChart(section.barChart);
     if (section.table) drawTable(section.table);
     y += 1;
   }
@@ -243,7 +388,9 @@ export function buildProfessionalPdf(input: ProfessionalPdfInput): Buffer {
     document.setFont("helvetica", "normal");
     document.setFontSize(7);
     document.setTextColor(90, 99, 112);
-    document.text(`CBAMValid · ${input.model.reportId}`, MARGIN, 288);
+    const companyName = String(input.model.identity?.exporterOperator || "CBAMExporter").trim();
+    const companyShort = companyName.length > 30 ? companyName.slice(0, 27) + "..." : companyName;
+    document.text(`${companyShort} | ${compactIdentifier(input.model.reportId)}`, MARGIN, 288);
     document.text(`Page ${pageNumber} of ${pageCount}`, PAGE_WIDTH - MARGIN, 288, { align: "right" });
   }
 

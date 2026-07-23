@@ -3,7 +3,7 @@ import { setGlobalOptions } from "firebase-functions/v2";
 // Set maximum timeout and memory for all functions
 setGlobalOptions({
   region: "europe-west1",
-  maxInstances: 10,
+  maxInstances: 2,
 });
 
 export * from "./handlers/cases";
