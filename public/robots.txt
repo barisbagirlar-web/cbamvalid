@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /cases/
+Disallow: /account/
+Disallow: /api/
+
+Sitemap: https://cbamvalid.com/sitemap.xml
