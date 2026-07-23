@@ -1,117 +1,220 @@
-import React from "react";
-import Link from "next/link";
-import { Check } from "lucide-react";
-import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
+"use client";
 
-export const metadata = {
-  title: "Pricing | CBAMValid",
-  description: "Prepare your CBAM case before you pay. Releases are consumed only after a dossier is successfully sealed.",
-};
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+
+interface FaqItemProps {
+  question: string;
+  answer: string;
+}
+
+function FaqItem({ question, answer }: FaqItemProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className={`faq-item ${isOpen ? "open" : ""}`}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="faq-q"
+        aria-expanded={isOpen}
+      >
+        {question}
+        <span className="chev">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" aria-hidden="true">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </span>
+      </button>
+      <div className="faq-a" style={{ maxHeight: isOpen ? "200px" : "0px" }}>
+        <p>{answer}</p>
+      </div>
+    </div>
+  );
+}
 
 export default function PricingPage() {
+  const [currency, setCurrency] = useState<"usd" | "eur">("usd");
+
+  useEffect(() => {
+    const revealEls = document.querySelectorAll('.reveal');
+    if ('IntersectionObserver' in window && revealEls.length) {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add('in');
+            io.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.12 });
+      revealEls.forEach((el) => io.observe(el));
+    } else {
+      revealEls.forEach((el) => el.classList.add('in'));
+    }
+  }, []);
+
   return (
-    <div className="flex-1 bg-surface text-foreground">
-      <section className="pt-24 pb-16 px-6 md:px-12 lg:px-24 max-w-5xl mx-auto text-center">
-        <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-          Prepare your CBAM case before you pay
-        </h1>
-        <p className="text-lg md:text-xl text-muted max-w-3xl mx-auto leading-relaxed mb-8">
-          Create, complete and review your case without charge. Releases are consumed only after a dossier is successfully sealed.
-        </p>
-        <div className="flex justify-center">
-          <Link 
-            href="/sample-dossier" 
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-strong bg-transparent px-5 py-3 font-medium text-foreground transition-colors hover:bg-neutral-soft"
-          >
-            View Sample Dossier Before Buying
-          </Link>
-        </div>
-      </section>
-
-      {/* Pricing Cards Section */}
-      <section className="px-6 md:px-12 lg:px-24 max-w-5xl mx-auto pb-24">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 justify-center items-stretch max-w-3xl mx-auto">
-          {/* Main Premium Dossier Card */}
-          <div className="relative flex flex-col rounded-2xl border border-border shadow-sm bg-surface p-8">
-            <div className="mb-6">
-              <h3 className="text-xl font-bold mb-2 text-foreground">{CANONICAL_PRICING.packName}</h3>
-              <p className="text-muted text-sm">{CANONICAL_PRICING.description}</p>
+    <main id="main">
+      <section className="hero" style={{ paddingBottom: "32px" }}>
+        <div className="wrap" style={{ textAlign: "center" }}>
+          <span className="eyebrow">Simple, One-Time Pricing</span>
+          <h1>Prepare your CBAM case<br /><span className="serif-i">before you pay</span></h1>
+          <p className="lede" style={{ margin: "0 auto 22px" }}>
+            Create, complete and review your case without charge. Releases are consumed only after a dossier is successfully sealed.
+          </p>
+          <Link className="btn btn-ghost" href="/sample-dossier">View Sample Dossier Before Buying</Link>
+          <div>
+            <div className="currency-toggle" role="group" aria-label="Currency">
+              <button
+                type="button"
+                className={currency === "usd" ? "on" : ""}
+                onClick={() => setCurrency("usd")}
+              >
+                USD $
+              </button>
+              <button
+                type="button"
+                className={currency === "eur" ? "on" : ""}
+                onClick={() => setCurrency("eur")}
+              >
+                EUR €
+              </button>
             </div>
-            
-            <div className="mb-6">
-              <span className="text-4xl font-bold font-serif">{CANONICAL_PRICING.priceFormatted}</span>
-            </div>
-            
-            <ul className="mb-8 space-y-4 flex-1">
-              <li className="flex items-start gap-3">
-                <Check className="w-5 h-5 text-accent shrink-0 mt-0.5" />
-                <span className="text-sm text-foreground">{CANONICAL_PRICING.includedInstallations} Installation included</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Check className="w-5 h-5 text-accent shrink-0 mt-0.5" />
-                <span className="text-sm text-foreground">{CANONICAL_PRICING.includedReportingYears} Reporting year included</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Check className="w-5 h-5 text-accent shrink-0 mt-0.5" />
-                <span className="text-sm text-foreground">{CANONICAL_PRICING.includedSealedReleases} Sealed releases included</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Check className="w-5 h-5 text-accent shrink-0 mt-0.5" />
-                <span className="text-sm text-foreground">Emissions calculations and validation</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Check className="w-5 h-5 text-accent shrink-0 mt-0.5" />
-                <span className="text-sm text-foreground">{CANONICAL_PRICING.draftPolicy}</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Check className="w-5 h-5 text-accent shrink-0 mt-0.5" />
-                <span className="text-sm text-foreground">O3CI field-mapped structured data export</span>
-              </li>
-            </ul>
-            
-            <Link 
-              href="/credits/buy" 
-              className="w-full h-[44px] flex items-center justify-center rounded-md font-medium transition-colors bg-accent text-surface hover:bg-accent-hover"
-            >
-              Get Preparation Pack
-            </Link>
-          </div>
-
-          {/* Pay As You Go Card / Free Tier Card */}
-          <div className="relative flex flex-col rounded-2xl border border-border shadow-sm bg-surface p-8">
-            <div className="mb-6">
-              <h3 className="text-xl font-bold mb-2 text-foreground">Free Drafts</h3>
-              <p className="text-muted text-sm">Prepare and review without cost</p>
-            </div>
-            
-            <div className="mb-6">
-              <span className="text-4xl font-bold font-serif">$0</span>
-            </div>
-            
-            <ul className="mb-8 space-y-4 flex-1">
-              <li className="flex items-start gap-3">
-                <Check className="w-5 h-5 text-muted shrink-0 mt-0.5" />
-                <span className="text-sm text-foreground">Create unlimited cases</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Check className="w-5 h-5 text-muted shrink-0 mt-0.5" />
-                <span className="text-sm text-foreground">Real-time QC engine</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Check className="w-5 h-5 text-muted shrink-0 mt-0.5" />
-                <span className="text-sm text-foreground">Data gap analysis</span>
-              </li>
-            </ul>
-            
-            <Link 
-              href="/register?next=/cases/new" 
-              className="w-full h-[44px] flex items-center justify-center rounded-md font-medium transition-colors bg-surface border border-border text-foreground hover:bg-border/30"
-            >
-              Start for Free
-            </Link>
           </div>
         </div>
       </section>
-    </div>
+
+      <section className="section tight" style={{ paddingTop: "24px" }}>
+        <div className="wrap">
+          <div className="pricing-grid">
+            <div className="price-card featured reveal">
+              <span className="badge-pop">One-time payment</span>
+              <h3>Exporter Verification Preparation Pack</h3>
+              <p className="sub">Prepared for independent accredited-verification</p>
+              <p className="price-fig">
+                <span>{currency === "usd" ? "$149" : "≈ €139"}</span>{" "}
+                <small>
+                  {currency === "usd"
+                    ? "per pack · no subscription"
+                    : "Approximate EUR figure; billing settles in USD at checkout."}
+                </small>
+              </p>
+              <ul className="feat-list">
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
+                    <path d="m4 12.5 5 5L20 6.5" />
+                  </svg>
+                  1 installation included
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
+                    <path d="m4 12.5 5 5L20 6.5" />
+                  </svg>
+                  1 reporting year included
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
+                    <path d="m4 12.5 5 5L20 6.5" />
+                  </svg>
+                  5 sealed releases included
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
+                    <path d="m4 12.5 5 5L20 6.5" />
+                  </svg>
+                  Emissions calculations and validation
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
+                    <path d="m4 12.5 5 5L20 6.5" />
+                  </svg>
+                  Unlimited drafts
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
+                    <path d="m4 12.5 5 5L20 6.5" />
+                  </svg>
+                  O3CI field-mapped structured data export
+                </li>
+              </ul>
+              <Link className="btn btn-primary" href="/credits/buy">Get the Preparation Pack <span className="arr">→</span></Link>
+            </div>
+            <div className="price-card free reveal">
+              <h3>Free Drafts</h3>
+              <p className="sub">Prepare and review without cost</p>
+              <p className="price-fig">$0 <small>forever</small></p>
+              <ul className="feat-list">
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
+                    <path d="m4 12.5 5 5L20 6.5" />
+                  </svg>
+                  Create unlimited cases
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
+                    <path d="m4 12.5 5 5L20 6.5" />
+                  </svg>
+                  Real-time QC engine
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
+                    <path d="m4 12.5 5 5L20 6.5" />
+                  </svg>
+                  Data gap analysis
+                </li>
+              </ul>
+              <Link className="btn btn-ghost" href="/register?next=/cases/new">Start for Free</Link>
+            </div>
+          </div>
+
+          <ul className="guarantee-row">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true">
+                <path d="M12 2 20 5.5v6c0 5-3.5 8.5-8 10.5-4.5-2-8-5.5-8-10.5v-6L12 2Z" />
+              </svg>
+              Secure card payment
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true">
+                <path d="M12 2 20 5.5v6c0 5-3.5 8.5-8 10.5-4.5-2-8-5.5-8-10.5v-6L12 2Z" />
+              </svg>
+              Refund policy published
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true">
+                <path d="M12 2 20 5.5v6c0 5-3.5 8.5-8 10.5-4.5-2-8-5.5-8-10.5v-6L12 2Z" />
+              </svg>
+              GDPR compliant · EU hosted
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section className="section" style={{ background: "var(--paper-2)" }}>
+        <div className="wrap">
+          <div className="section-head center reveal">
+            <span className="eyebrow">Pricing FAQ</span>
+            <h2>No surprises at checkout</h2>
+          </div>
+          <div className="faq-list">
+            <FaqItem
+              question="When exactly is my card charged?"
+              answer="Only when you seal a dossier. Drafting, editing and reviewing your case is always free — releases are consumed only after a successful seal."
+            />
+            <FaqItem
+              question="What does “5 sealed releases” mean?"
+              answer="Each pack lets you seal the dossier up to five times — so you can correct data and re-issue the final package without buying again, within the same installation and reporting year."
+            />
+            <FaqItem
+              question="Do you offer refunds?"
+              answer="Yes — our refund policy is published in the footer of every page and applies before a dossier is sealed."
+            />
+            <FaqItem
+              question="Can I pay in EUR?"
+              answer="Displayed EUR figures are approximate. Billing settles in USD at checkout; your card issuer handles conversion at its own rate."
+            />
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }

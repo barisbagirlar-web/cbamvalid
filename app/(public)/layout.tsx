@@ -1,5 +1,6 @@
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import AppFooter from "@/components/layout/AppFooter";
+import "./style.css";
 
 export default function PublicLayout({
   children,
@@ -7,10 +8,10 @@ export default function PublicLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    <div className="cbam-public">
       <PublicHeader />
-      <main className="flex-1">{children}</main>
+      {children}
       <AppFooter />
-    </>
+    </div>
   );
 }
