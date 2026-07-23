@@ -1,11 +1,16 @@
 import { createCallable } from "../wrapper";
 import { z } from "zod";
 import { adminDb } from "../firebase-admin";
+import {
+  CREDIT_LEDGER_COLLECTION,
+  LEGACY_CREDIT_LEDGER_COLLECTION,
+  mergeCreditLedgerEntries,
+  normalizeCreditLedgerEntry,
+} from "../commerce/credit-ledger";
 
 export const getAccountOverview = createCallable({}, async (_, { auth }) => {
   const uid = auth.uid;
 
-  // 1. Fetch user profile and auth data securely
   const [profileSnap, creditSnap] = await Promise.all([
     adminDb.collection("users").doc(uid).get(),
     adminDb.collection("users").doc(uid).collection("creditSummary").doc("current").get()
@@ -40,7 +45,7 @@ export const updateOwnProfile = createCallable({
   })
 }, async (data, { auth }) => {
   const uid = auth.uid;
-  const updateData: any = { updatedAt: new Date().toISOString() };
+  const updateData: Record<string, unknown> = { updatedAt: new Date().toISOString() };
   if (data.displayName !== undefined) updateData.displayName = data.displayName;
   if (data.company !== undefined) updateData.company = data.company;
   if (data.country !== undefined) updateData.country = data.country;
@@ -55,13 +60,31 @@ export const listCreditLedger = createCallable({
   }).optional()
 }, async (data, { auth }) => {
   const limitCount = data?.limit || 50;
-  const snapshot = await adminDb.collection("users").doc(auth.uid)
-    .collection("creditLedger")
-    .orderBy("createdAt", "desc")
-    .limit(limitCount)
-    .get();
+  const userRef = adminDb.collection("users").doc(auth.uid);
 
-  return { ledger: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) };
+  const [primarySnap, legacySnap] = await Promise.all([
+    userRef.collection(CREDIT_LEDGER_COLLECTION).orderBy("createdAt", "desc").limit(limitCount).get(),
+    userRef.collection(LEGACY_CREDIT_LEDGER_COLLECTION).orderBy("createdAt", "desc").limit(limitCount).get(),
+  ]);
+
+  const primary = primarySnap.docs.map((document) =>
+    normalizeCreditLedgerEntry(
+      document.id,
+      document.data() as Record<string, unknown>,
+      CREDIT_LEDGER_COLLECTION
+    )
+  );
+  const legacy = legacySnap.docs.map((document) =>
+    normalizeCreditLedgerEntry(
+      document.id,
+      document.data() as Record<string, unknown>,
+      LEGACY_CREDIT_LEDGER_COLLECTION
+    )
+  );
+
+  return {
+    ledger: mergeCreditLedgerEntries(primary, legacy).slice(0, limitCount),
+  };
 });
 
 export const listPurchaseHistory = createCallable({
@@ -70,18 +93,23 @@ export const listPurchaseHistory = createCallable({
   }).optional()
 }, async (data, { auth }) => {
   const limitCount = data?.limit || 50;
-  const snapshot = await adminDb.collection("paddle_events")
-    .where("uid", "==", auth.uid)
-    .orderBy("occurredAt", "desc")
-    .limit(limitCount)
-    .get();
+  try {
+    const snapshot = await adminDb.collection("paddle_events")
+      .where("uid", "==", auth.uid)
+      .orderBy("occurredAt", "desc")
+      .limit(limitCount)
+      .get();
 
-  return { history: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) };
+    return { history: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) };
+  } catch (error) {
+    // Missing composite index or empty collection must not zero the account overview.
+    console.error("listPurchaseHistory failed", error);
+    return { history: [] };
+  }
 });
 
 export const requestAccountClosure = createCallable({}, async (_, { auth }) => {
   const uid = auth.uid;
-  // Create an explicit closure request record that an admin can review
   await adminDb.collection("account_closures").doc(uid).set({
     uid,
     email: auth.token.email,

@@ -39,7 +39,7 @@ export default function TermsPage() {
         <div>
           <h2 className="text-xl font-bold mb-2">3. Credits and Delivery</h2>
           <p className="text-sm text-muted">
-            Generation of sealed CBAM reports requires the purchase of digital credits (entitlements). One credit allows the generation of one sealed report. Delivery of the digital report is instantaneous upon expenditure of the credit.
+            Generation of sealed CBAM reports requires unlocking an Exporter Verification Preparation Pack. One hundred account credits unlock one Preparation Pack with exactly five successful sealed releases. Delivery of the digital report package is completed after a successful seal.
           </p>
         </div>
 

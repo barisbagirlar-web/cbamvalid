@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { DecimalInput } from "@/components/cbam/DecimalInput";
 import { FieldHelp } from "@/components/cbam/FieldHelp";
+import { UnlockPreparationPackPanel } from "@/components/billing/UnlockPreparationPackPanel";
+import { packsUnlockableFromCredits } from "@/lib/billing/credit-contract";
 import { assessCaseReadiness } from "@/lib/cbam/validation/readiness-assessor";
 import { performDossierCalculations } from "@/lib/cbam/calculator";
 import { fieldHelpData, type FieldHelpKey } from "@/lib/cbam/field-help";
@@ -42,6 +44,8 @@ import {
 } from "@/lib/cbam/schema";
 import { uploadEvidenceFile } from "@/lib/cbam/evidence-upload";
 import {
+  getAccountOverview,
+  getEntitlements,
   reviewEvidence,
   saveCase,
   sealReport,
@@ -165,6 +169,9 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const sealRequestId = useRef<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [caseData, setCaseData] = useState<AuditReadyCase>(() => AuditReadyCaseSchema.parse(initialCase));
+  const [entitlementOverride, setEntitlementOverride] = useState<PreparationPackEntitlement[] | null>(null);
+  const entitlements = entitlementOverride ?? availableEntitlements;
+  const [availableCredits, setAvailableCredits] = useState(0);
   const [saving, setSaving] = useState(false);
   const [clearingScenario, setClearingScenario] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
@@ -181,6 +188,22 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [correctionReason, setCorrectionReason] = useState("");
 
+  useEffect(() => {
+    let cancelled = false;
+    void getAccountOverview()
+      .then((overview) => {
+        if (cancelled) return;
+        const credits = overview.credits as { availableCredits?: number } | undefined;
+        setAvailableCredits(Number(credits?.availableCredits || 0));
+      })
+      .catch((error) => {
+        console.error("Failed to load case credit balance", error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const readiness = useMemo(() => assessCaseReadiness(caseData), [caseData]);
   const scenarioActive = useMemo(() => isIllustrativeScenarioActive(caseData), [caseData]);
   const calculation = useMemo(() => {
@@ -192,18 +215,28 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   }, [caseData]);
 
   const currentReleasesCount = useMemo(() => {
-    const entitlement = availableEntitlements.find(
+    const entitlement = entitlements.find(
       (e) => e.scopeCaseId === caseData.caseId || e.caseId === caseData.caseId
     );
     return entitlement?.releasesCount || 0;
-  }, [availableEntitlements, caseData.caseId]);
+  }, [entitlements, caseData.caseId]);
 
-  const usableEntitlements = useMemo(() => availableEntitlements.filter((entitlement) => {
+  const usableEntitlements = useMemo(() => entitlements.filter((entitlement) => {
     const status = String(entitlement.status || "").toUpperCase();
     const caseId = entitlement.scopeCaseId || entitlement.caseId;
     const caseMatches = !caseId || caseId === caseData.caseId;
     return caseMatches && ["AVAILABLE", "ACTIVE", "PURCHASED"].includes(status);
-  }), [availableEntitlements, caseData.caseId]);
+  }), [entitlements, caseData.caseId]);
+
+  const refreshPackState = async () => {
+    const [overview, nextEntitlements] = await Promise.all([
+      getAccountOverview(),
+      getEntitlements(),
+    ]);
+    const credits = overview.credits as { availableCredits?: number } | undefined;
+    setAvailableCredits(Number(credits?.availableCredits || 0));
+    setEntitlementOverride(nextEntitlements);
+  };
 
   const updateDatum = (path: string, patch: Partial<InputDatum>) => {
     setCaseData((previous) => setAtPath(previous, path, (current) => ({
@@ -802,11 +835,30 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
             </div>
           )}
 
+          {usableEntitlements.length === 0 && packsUnlockableFromCredits(availableCredits) > 0 ? (
+            <div className="mt-5">
+              <UnlockPreparationPackPanel
+                availableCredits={availableCredits}
+                hasActivePack={false}
+                compact
+                onUnlocked={async () => {
+                  await refreshPackState();
+                  setSealStatus("");
+                }}
+              />
+            </div>
+          ) : null}
+
           {readiness.isEligibleForSealing ? (
             <button type="button" aria-label="Generate sealed dossier" onClick={handleSeal} disabled={sealing || usableEntitlements.length === 0} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-40">{sealing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Generate sealed dossier</button>
           ) : (
             <button type="button" onClick={() => setCurrentStep(scenarioActive ? 1 : 7)} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface"><FileUp className="h-4 w-4" /> {scenarioActive ? "Replace demo with case data" : "Resolve evidence blockers"}</button>
           )}
+          {usableEntitlements.length === 0 && packsUnlockableFromCredits(availableCredits) === 0 ? (
+            <p className="mt-3 text-xs text-muted">
+              No active Preparation Pack remains. Purchase a pack or unlock one from account credits on the Account page.
+            </p>
+          ) : null}
           <StatusBanner status={sealStatus} tone="error" />
           <p className="mt-3 text-xs text-muted">A release is consumed only after server validation, immutable artifact commit and KMS signature completion. Failed or blocked attempts consume no release.</p>
         </section>

@@ -63,29 +63,38 @@ export async function grantCredits(uid: string, amount: number, reason: string) 
   if (amount <= 0) throw new Error("Amount must be greater than zero");
   if (!reason || reason.length < 5) throw new Error("A valid reason is required");
 
-  // Create a synthetic ledger entry for the manual grant
+  // Canonical customer-visible ledger is creditLedger (not legacy users/{uid}/ledger).
   const transactionId = `admin_grant_${Date.now()}`;
   
   await adminDb.runTransaction(async (transaction) => {
-    // 1. Add ledger entry
-    const ledgerRef = adminDb.collection("users").doc(uid).collection("ledger").doc(transactionId);
+    const summaryRef = adminDb.doc(`users/${uid}/creditSummary/current`);
+    const summarySnap = await transaction.get(summaryRef);
+    const currentCredits = summarySnap.exists
+      ? Number(summarySnap.data()?.availableCredits || 0)
+      : 0;
+    const nextCredits = currentCredits + amount;
+
+    const ledgerRef = adminDb.collection("users").doc(uid).collection("creditLedger").doc(transactionId);
     transaction.set(ledgerRef, {
+      uid,
       type: "ADMIN_GRANT",
       amount,
       reason,
       grantedBy: adminClaims.uid,
       createdAt: FieldValue.serverTimestamp(),
+      balanceAfter: nextCredits,
     });
 
-    // 2. Update credit summary
-    const summaryRef = adminDb.doc(`users/${uid}/creditSummary/current`);
-    const summarySnap = await transaction.get(summaryRef);
-    
     if (!summarySnap.exists) {
-      transaction.set(summaryRef, { availableCredits: amount, updatedAt: FieldValue.serverTimestamp() });
+      transaction.set(summaryRef, {
+        availableCredits: amount,
+        lifetimeAdjusted: amount,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
     } else {
       transaction.update(summaryRef, { 
         availableCredits: FieldValue.increment(amount),
+        lifetimeAdjusted: FieldValue.increment(amount),
         updatedAt: FieldValue.serverTimestamp()
       });
     }
@@ -104,28 +113,39 @@ export async function reverseCreditGrant(uid: string, amount: number, originalTr
   const reversalId = `admin_reversal_${Date.now()}`;
 
   await adminDb.runTransaction(async (transaction) => {
-    // 1. Verify original transaction exists
-    const origRef = adminDb.doc(`users/${uid}/ledger/${originalTransactionId}`);
-    const origSnap = await transaction.get(origRef);
-    if (!origSnap.exists) throw new Error("Original transaction not found in ledger");
+    // Accept both canonical creditLedger and legacy ledger for historical grants.
+    const canonicalOrigRef = adminDb.doc(`users/${uid}/creditLedger/${originalTransactionId}`);
+    const legacyOrigRef = adminDb.doc(`users/${uid}/ledger/${originalTransactionId}`);
+    const canonicalOrigSnap = await transaction.get(canonicalOrigRef);
+    const legacyOrigSnap = await transaction.get(legacyOrigRef);
+    if (!canonicalOrigSnap.exists && !legacyOrigSnap.exists) {
+      throw new Error("Original transaction not found in credit ledger");
+    }
 
-    // 2. Write reversal ledger entry
-    const revRef = adminDb.collection("users").doc(uid).collection("ledger").doc(reversalId);
+    const summaryRef = adminDb.doc(`users/${uid}/creditSummary/current`);
+    const summarySnap = await transaction.get(summaryRef);
+    const currentCredits = summarySnap.exists
+      ? Number(summarySnap.data()?.availableCredits || 0)
+      : 0;
+    const nextCredits = currentCredits - amount;
+
+    const revRef = adminDb.collection("users").doc(uid).collection("creditLedger").doc(reversalId);
     transaction.set(revRef, {
+      uid,
       type: "ADMIN_REVERSAL",
       amount: -amount,
       originalTransactionId,
       reason,
       reversedBy: adminClaims.uid,
       createdAt: FieldValue.serverTimestamp(),
+      balanceAfter: nextCredits,
     });
 
-    // 3. Deduct from credit summary
-    const summaryRef = adminDb.doc(`users/${uid}/creditSummary/current`);
-    transaction.update(summaryRef, { 
-      availableCredits: FieldValue.increment(-amount),
-      updatedAt: FieldValue.serverTimestamp()
-    });
+    transaction.set(summaryRef, {
+      availableCredits: nextCredits,
+      lifetimeAdjusted: FieldValue.increment(-amount),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
   });
 
   await logAdminAction(adminClaims, "REVERSE_CREDITS", "user", uid, { amount, reason, originalTransactionId, reversalId });

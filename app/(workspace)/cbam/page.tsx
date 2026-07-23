@@ -25,11 +25,14 @@ import {
   getPrimaryCnCode,
 } from "@/lib/cbam/case-summary";
 import {
+  getAccountOverview,
   getCases,
   getEntitlements,
   getReports,
   type CbamCaseRecord,
 } from "@/lib/functions/client";
+import { UnlockPreparationPackPanel } from "@/components/billing/UnlockPreparationPackPanel";
+import { packsUnlockableFromCredits } from "@/lib/billing/credit-contract";
 
 type ReportRecord = Record<string, unknown>;
 
@@ -149,6 +152,7 @@ export default function CbamLandingPage() {
   const [cases, setCases] = useState<CbamCaseRecord[]>([]);
   const [reports, setReports] = useState<ReportRecord[]>([]);
   const [availableEntitlementsCount, setAvailableEntitlementsCount] = useState(0);
+  const [availableCredits, setAvailableCredits] = useState(0);
   const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
@@ -201,6 +205,9 @@ export default function CbamLandingPage() {
           if (typeof parsed.entitlementsCount === "number") {
             setAvailableEntitlementsCount(parsed.entitlementsCount);
           }
+          if (typeof parsed.availableCredits === "number") {
+            setAvailableCredits(parsed.availableCredits);
+          }
           setDataLoading(false);
         }, 0);
       }
@@ -214,8 +221,8 @@ export default function CbamLandingPage() {
 
     let cancelled = false;
 
-    void Promise.allSettled([getCases(), getReports(), getEntitlements()])
-      .then(([casesResult, reportsResult, entitlementsResult]) => {
+    void Promise.allSettled([getCases(), getReports(), getEntitlements(), getAccountOverview()])
+      .then(([casesResult, reportsResult, entitlementsResult, overviewResult]) => {
         if (cancelled) return;
 
         if (casesResult.status === "rejected") {
@@ -245,7 +252,10 @@ export default function CbamLandingPage() {
 
         let entitlementsCount = 0;
         if (entitlementsResult.status === "fulfilled") {
-          entitlementsCount = entitlementsResult.value.length;
+          entitlementsCount = entitlementsResult.value.reduce(
+            (sum, entitlement) => sum + Number(entitlement.releasesRemaining || 0),
+            0
+          );
           setAvailableEntitlementsCount(entitlementsCount);
         } else {
           console.error("Dashboard entitlement loading failed", entitlementsResult.reason);
@@ -253,17 +263,33 @@ export default function CbamLandingPage() {
           warnings.push("Preparation Pack status could not be verified; sealing remains unavailable.");
         }
 
+        if (overviewResult.status === "fulfilled") {
+          const credits = overviewResult.value.credits as { availableCredits?: number } | undefined;
+          setAvailableCredits(Number(credits?.availableCredits || 0));
+        } else {
+          console.error("Dashboard credit overview loading failed", overviewResult.reason);
+          setAvailableCredits(0);
+        }
+
         setWarning(warnings.join(" "));
         setDataLoading(false);
 
         // Save to cache
         try {
+          const credits =
+            overviewResult.status === "fulfilled"
+              ? Number(
+                  (overviewResult.value.credits as { availableCredits?: number } | undefined)
+                    ?.availableCredits || 0
+                )
+              : 0;
           localStorage.setItem(
             `cbam_dashboard_cache_${user.uid}`,
             JSON.stringify({
               cases: casesResult.value,
               reports: reportsValue,
               entitlementsCount,
+              availableCredits: credits,
             })
           );
         } catch (e) {
@@ -359,12 +385,21 @@ export default function CbamLandingPage() {
                 <span className="text-xs bg-muted/40 text-muted border border-border px-3 py-1.5 rounded-full font-medium">
                   No Active Preparation Pack
                 </span>
-                <Link
-                  href="/credits/buy"
-                  className="bg-accent hover:bg-accent-hover text-surface px-4 py-2 rounded-md font-semibold text-xs transition-colors flex items-center gap-1.5"
-                >
-                  <ShoppingBag className="w-3.5 h-3.5" /> Buy Pack — $149
-                </Link>
+                {packsUnlockableFromCredits(availableCredits) > 0 ? (
+                  <Link
+                    href="/account"
+                    className="bg-accent hover:bg-accent-hover text-surface px-4 py-2 rounded-md font-semibold text-xs transition-colors flex items-center gap-1.5"
+                  >
+                    Unlock Pack from Credits
+                  </Link>
+                ) : (
+                  <Link
+                    href="/credits/buy"
+                    className="bg-accent hover:bg-accent-hover text-surface px-4 py-2 rounded-md font-semibold text-xs transition-colors flex items-center gap-1.5"
+                  >
+                    <ShoppingBag className="w-3.5 h-3.5" /> Buy Pack — $149
+                  </Link>
+                )}
               </div>
             )}
 
@@ -577,11 +612,23 @@ export default function CbamLandingPage() {
                   <div className="space-y-4">
                     <div className="p-3 bg-muted/20 border border-border rounded-lg text-xs text-muted leading-relaxed">
                       <span className="font-bold text-foreground block mb-1">No Active Pack</span>
-                      Unlock final export verification, package sealing, and ZIP generation.
+                      Account credits: <strong>{availableCredits}</strong>. Sealing requires an unlocked Preparation Pack entitlement.
                     </div>
-                    <Link href="/credits/buy" className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center justify-center gap-1.5 w-full shadow-sm">
-                      Buy Pack — $149
-                    </Link>
+                    {packsUnlockableFromCredits(availableCredits) > 0 ? (
+                      <UnlockPreparationPackPanel
+                        availableCredits={availableCredits}
+                        hasActivePack={false}
+                        compact
+                        onUnlocked={() => {
+                          setDataLoading(true);
+                          setAttempt((current) => current + 1);
+                        }}
+                      />
+                    ) : (
+                      <Link href="/credits/buy" className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center justify-center gap-1.5 w-full shadow-sm">
+                        Buy Pack — $149
+                      </Link>
+                    )}
                   </div>
                 )}
                 <div className="mt-6 border-t border-border pt-4 text-xs text-muted space-y-2">
