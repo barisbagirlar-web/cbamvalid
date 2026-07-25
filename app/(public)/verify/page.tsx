@@ -125,7 +125,7 @@ export default function VerifyPage() {
           <div className="verify-result show success" style={{ padding: "24px", background: "var(--ok-soft)", color: "var(--ok)", borderRadius: "12px", border: "1.5px solid var(--ok)", marginTop: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--ok)", paddingBottom: "12px", flexWrap: "wrap", gap: "12px" }}>
               <div>
-                <span className="eyebrow" style={{ display: "inline-block", background: "var(--ok)", color: "#fff", borderColor: "transparent", fontSize: "0.65rem", padding: "0.2em 0.8em", marginBottom: "8px" }}>
+                <span className="eyebrow" style={{ display: "inline-block", background: "var(--ok)", color: "var(--card)", borderColor: "transparent", fontSize: "0.65rem", padding: "0.2em 0.8em", marginBottom: "8px" }}>
                   {state === "VALID" ? "AUTHENTIC SEAL" : state === "SUPERSEDED" ? "SUPERSEDED" : "REVOKED"}
                 </span>
                 <h3 style={{ margin: 0, fontFamily: "var(--sans)", fontWeight: "bold" }}>Cryptographic Seal Verified</h3>

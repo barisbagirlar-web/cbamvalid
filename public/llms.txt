@@ -2,18 +2,30 @@
 
 > CBAMValid (https://cbamvalid.com) is a production-grade, verifier-preparation platform for non-EU producers, exporters, operators, importers, and CBAM reporting teams. It produces a serious operator-prepared dossier that reduces the work required for independent accredited verification under Regulation (EU) 2023/956, EU ETS AVR 2018/2067, and Implementing Regulations (EU) 2023/1776, 2023/1778, and 2025/2546.
 
+## Visual System (Institutional Precision, 2026)
+- Palette family: Oatmeal & Ink hybridized for CBAM regulatory trust.
+- Surfaces: warm paper `#FAFAF8`, oatmeal `#F0EDE8`, elevated white `#FFFFFF`.
+- Ink hierarchy: `#1A1A1A` / `#4A4A45` / `#8A8A82`.
+- Accent: deep forest `#1B4332` (CTA), hover `#2D6A4F`, EU seal gold `#D4A017` for pricing highlight.
+- Semantic QC: blocked `#9B2226`, warning `#BB6B00`, pass `#2D6A4F`.
+- Dark sections: warm stone `#1C1917` with `#E7E5E4` text.
+- Typography: Source Sans 3 (UI), Source Serif 4 (headings), IBM Plex Mono (CN codes, hashes, emissions values).
+- Constraints: light-mode first, no purple/indigo gradients, no Inter/Roboto defaults, WCAG AA contrast targets.
+
 ## Product Overview & Navigation
 - [Homepage](https://cbamvalid.com/) — Executive summary, platform positioning, live ROI calculator.
-- [Product & Deliverables](https://cbamvalid.com/product) — 25-component dossier package breakdown and verifier readiness gates.
-- [How It Works](https://cbamvalid.com/how-it-works) — 4-step workflow from case setup to immutable release package.
+- [Product & Deliverables](https://cbamvalid.com/product) — Dossier package breakdown and verifier readiness gates.
+- [How It Works](https://cbamvalid.com/how-it-works) — Workflow from case setup to immutable release package.
 - [Pricing & Entitlements](https://cbamvalid.com/pricing) — $149 per Exporter Verification Preparation Pack (no subscription, drafts are free, 5 sealed releases included).
 - [Sample Dossier Preview](https://cbamvalid.com/sample-dossier) — Interactive verifier dossier preview with visual geometry validation.
 - [Public Signature Verification](https://cbamvalid.com/verify) — KMS RSA-4096 signature and document SHA-256 integrity verification engine.
 - [Methodology & Calculation Rules](https://cbamvalid.com/methodology) — Server-side deterministic engine, ROUND_HALF_UP rounding, allocation reconciliation.
 - [Combined Nomenclature (CN) Hub](https://cbamvalid.com/cn-code) — CN classification search and sectoral eligibility directory (Iron & Steel, Aluminum, Cement, Fertilizers, Hydrogen, Electricity).
+- [About](https://cbamvalid.com/about) — Operator independence and product boundary.
+- [Contact](https://cbamvalid.com/contact) — Support via info@cbamvalid.com.
 
 ## Canonical Deliverable Contract (25 Components)
-1. **CBAMValid Verification Readiness & Evidence Assurance Dossier**: 14-page, 6-chapter structured PDF document (Executive Summary, Readiness Score, Installation & Process Boundaries, Evidence Lineage, Embedded Emission Calculations, Handover & Annexes).
+1. **CBAMValid Verification Readiness & Evidence Assurance Dossier**: Structured PDF document (Executive Summary, Readiness Score, Installation & Process Boundaries, Evidence Lineage, Embedded Emission Calculations, Handover & Annexes).
 2. **Complete Dossier Compilation**: Consolidated PDF of all technical annexes and operational registers.
 3. **Product Scope Assessment**: System boundary and sectoral scope evaluation.
 4. **CN Code Reasoning**: Detailed Combined Nomenclature classification logic.
@@ -45,4 +57,4 @@
 - **Evidence Review & Scan Workflow**: Uploaded evidence files undergo byte and SHA-256 verification and status checks before operator approval for V5 readiness gating.
 - **Data Confidentiality & Privacy**: User cases, raw evidence files, and generated dossiers are encrypted and isolated per tenant. All private case data is excluded from public search engines and AI indexing.
 
-Last updated: 2026-07-23
+Last updated: 2026-07-26

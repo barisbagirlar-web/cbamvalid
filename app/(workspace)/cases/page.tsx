@@ -178,9 +178,9 @@ export default function CasesPage() {
   if (error) {
     return (
       <main className="min-h-screen bg-background px-6 py-16 text-foreground">
-        <section className="mx-auto max-w-xl rounded-2xl border border-red-300 bg-surface p-8 shadow-sm">
+        <section className="mx-auto max-w-xl rounded-2xl border border-status-blocked/40 bg-surface p-8 shadow-sm">
           <div className="flex items-start gap-4">
-            <AlertCircle className="mt-0.5 h-6 w-6 shrink-0 text-red-700" aria-hidden="true" />
+            <AlertCircle className="mt-0.5 h-6 w-6 shrink-0 text-status-blocked" aria-hidden="true" />
             <div>
               <h1 className="font-serif text-2xl font-bold">Cases could not be loaded</h1>
               <p className="mt-3 text-sm leading-relaxed text-muted">{error}</p>

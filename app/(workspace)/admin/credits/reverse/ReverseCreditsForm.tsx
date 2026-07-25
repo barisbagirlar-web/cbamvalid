@@ -36,7 +36,7 @@ export default function ReverseCreditsForm({ initialUid }: { initialUid: string 
   return (
     <form onSubmit={handleReverse} className="space-y-4">
       {error && (
-        <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm rounded flex items-center gap-2">
+        <div className="p-3 bg-status-blocked/10 border border-status-blocked/20 text-status-blocked dark:text-status-blocked text-sm rounded flex items-center gap-2">
           <AlertTriangle className="w-4 h-4" /> {error}
         </div>
       )}
@@ -92,7 +92,7 @@ export default function ReverseCreditsForm({ initialUid }: { initialUid: string 
         <button 
           type="submit" 
           disabled={loading || amount <= 0 || reason.length < 5 || !originalTransactionId}
-          className="w-full bg-red-600 text-white font-medium py-2 rounded hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-status-blocked text-surface-elevated font-medium py-2 rounded hover:bg-status-blocked transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Processing..." : "Reverse Credits"}
         </button>

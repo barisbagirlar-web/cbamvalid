@@ -29,7 +29,7 @@ export default function SampleViewerClient() {
   if (error || !manifest) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+        <AlertCircle className="w-12 h-12 text-status-blocked mb-4" />
         <h2 className="text-xl font-bold mb-2">Sample Dossier Unavailable</h2>
         <p className="text-muted">{error || "The sample dossier has not been generated yet."}</p>
       </div>
@@ -67,14 +67,14 @@ export default function SampleViewerClient() {
       </div>
 
       {/* Main Viewer */}
-      <div className="flex-1 flex flex-col bg-slate-100 relative overflow-hidden">
+      <div className="flex-1 flex flex-col bg-surface-secondary relative overflow-hidden">
         {/* Viewer Toolbar */}
         <div className="h-12 bg-surface border-b border-border flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="p-1.5 hover:bg-slate-100 rounded disabled:opacity-50"
+              className="p-1.5 hover:bg-surface-secondary rounded disabled:opacity-50"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -82,17 +82,17 @@ export default function SampleViewerClient() {
             <button 
               onClick={() => setCurrentPage(p => Math.min(manifest.pageCount, p + 1))}
               disabled={currentPage === manifest.pageCount}
-              className="p-1.5 hover:bg-slate-100 rounded disabled:opacity-50"
+              className="p-1.5 hover:bg-surface-secondary rounded disabled:opacity-50"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setScale(s => Math.max(0.5, s - 0.25))} className="p-1.5 hover:bg-slate-100 rounded">
+            <button onClick={() => setScale(s => Math.max(0.5, s - 0.25))} className="p-1.5 hover:bg-surface-secondary rounded">
               <ZoomOut className="w-4 h-4" />
             </button>
             <span className="text-xs w-12 text-center">{Math.round(scale * 100)}%</span>
-            <button onClick={() => setScale(s => Math.min(3, s + 0.25))} className="p-1.5 hover:bg-slate-100 rounded">
+            <button onClick={() => setScale(s => Math.min(3, s + 0.25))} className="p-1.5 hover:bg-surface-secondary rounded">
               <ZoomIn className="w-4 h-4" />
             </button>
           </div>
@@ -136,7 +136,7 @@ export default function SampleViewerClient() {
         </div>
         
         <div className="space-y-6">
-          <div className="p-4 bg-slate-50 border border-border rounded-lg">
+          <div className="p-4 bg-surface-secondary border border-border rounded-lg">
             <h3 className="font-semibold text-sm mb-2">Privacy & Security</h3>
             <ul className="text-xs text-muted space-y-2 list-disc pl-4">
               <li>No underlying text layer exists in this viewer.</li>

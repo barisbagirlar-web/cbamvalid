@@ -151,9 +151,9 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
   if (error || !report) {
     return (
       <main className="min-h-screen bg-background px-6 py-16 text-foreground">
-        <section className="mx-auto max-w-xl rounded-2xl border border-red-300 bg-surface p-8 shadow-sm">
+        <section className="mx-auto max-w-xl rounded-2xl border border-status-blocked/40 bg-surface p-8 shadow-sm">
           <div className="flex items-start gap-4">
-            <AlertCircle className="mt-0.5 h-6 w-6 shrink-0 text-red-700" aria-hidden="true" />
+            <AlertCircle className="mt-0.5 h-6 w-6 shrink-0 text-status-blocked" aria-hidden="true" />
             <div>
               <h1 className="font-serif text-2xl font-bold">Sealed package could not be loaded</h1>
               <p className="mt-3 text-sm leading-relaxed text-muted">{error || "The report response was empty."}</p>
@@ -173,8 +173,8 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
   if (report.uid !== user.uid) {
     return (
       <main className="min-h-screen bg-background px-6 py-16 text-foreground">
-        <section className="mx-auto max-w-xl rounded-2xl border border-red-300 bg-surface p-8 text-center shadow-sm">
-          <AlertCircle className="mx-auto h-7 w-7 text-red-700" aria-hidden="true" />
+        <section className="mx-auto max-w-xl rounded-2xl border border-status-blocked/40 bg-surface p-8 text-center shadow-sm">
+          <AlertCircle className="mx-auto h-7 w-7 text-status-blocked" aria-hidden="true" />
           <h1 className="mt-4 font-serif text-2xl font-bold">Access denied</h1>
           <p className="mt-2 text-sm text-muted">This sealed package does not belong to the authenticated account.</p>
           <Link href="/reports" className="mt-6 inline-flex h-11 items-center justify-center rounded-md border border-border px-5 text-sm font-semibold hover:bg-neutral-soft">Back to Reports</Link>
@@ -288,7 +288,7 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
           </div>
 
           {downloadError && (
-            <div role="alert" className="flex items-start gap-3 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-900">
+            <div role="alert" className="flex items-start gap-3 rounded-lg border border-status-blocked/40 bg-[color:var(--status-blocked-soft)] p-4 text-sm text-status-blocked">
               <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" /> {downloadError}
             </div>
           )}
@@ -298,7 +298,7 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
         <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm md:p-8 space-y-6">
           <div className="flex items-center justify-between border-b border-border/60 pb-4">
             <h2 className="font-serif text-xl font-bold">Report Summary</h2>
-            <div className={`rounded-full px-3 py-1 text-xs font-bold flex items-center gap-1.5 ${ready ? "bg-accent-soft text-accent border border-accent/20" : "bg-red-50 text-red-800 border border-red-200"}`}>
+            <div className={`rounded-full px-3 py-1 text-xs font-bold flex items-center gap-1.5 ${ready ? "bg-accent-soft text-accent border border-accent/20" : "bg-[color:var(--status-blocked-soft)] text-status-blocked border border-status-blocked/30"}`}>
               <CheckCircle2 className="h-3.5 w-3.5" />
               {isV5 ? "Automated preparation checks passed" : "Automated preparation checks passed"}
             </div>
@@ -359,10 +359,10 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
               <span className="text-xs text-muted">tCO2e</span>
             </div>
             <div className="mt-6 flex h-12 overflow-hidden rounded-lg bg-neutral-soft" aria-label="Direct and indirect emissions composition">
-              <div className="flex min-w-0 items-center justify-center bg-orange-700 px-2 text-xs font-bold text-white font-mono" style={{ width: `${percentage(calculation.totalDirectEmissions, calculation.totalEmbeddedEmissions)}%` }}>
+              <div className="flex min-w-0 items-center justify-center bg-forest px-2 text-xs font-bold text-surface-elevated font-mono" style={{ width: `${percentage(calculation.totalDirectEmissions, calculation.totalEmbeddedEmissions)}%` }}>
                 {calculation.totalDirectEmissions}
               </div>
-              <div className="flex min-w-0 items-center justify-center bg-blue-700 px-2 text-xs font-bold text-white font-mono" style={{ width: `${percentage(calculation.totalIndirectEmissions, calculation.totalEmbeddedEmissions)}%` }}>
+              <div className="flex min-w-0 items-center justify-center bg-forest-light px-2 text-xs font-bold text-surface-elevated font-mono" style={{ width: `${percentage(calculation.totalIndirectEmissions, calculation.totalEmbeddedEmissions)}%` }}>
                 {calculation.totalIndirectEmissions}
               </div>
             </div>

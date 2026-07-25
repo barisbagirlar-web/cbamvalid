@@ -102,7 +102,7 @@ export default function AccountPage() {
       </div>
 
       {loadError ? (
-        <div className="rounded-sm border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-700">
+        <div className="rounded-sm border border-status-blocked/30 bg-status-blocked/5 p-4 text-sm text-status-blocked">
           {loadError}
           <button
             type="button"
@@ -233,10 +233,10 @@ export default function AccountPage() {
         </div>
       </div>
 
-      <div className="border border-red-500/20 bg-red-500/5 rounded-sm p-6 flex items-start gap-4">
-        <ShieldAlert className="w-6 h-6 text-red-500 shrink-0" />
+      <div className="border border-status-blocked/20 bg-status-blocked/5 rounded-sm p-6 flex items-start gap-4">
+        <ShieldAlert className="w-6 h-6 text-status-blocked shrink-0" />
         <div>
-          <h3 className="font-serif text-lg text-red-500 mb-1">Danger Zone</h3>
+          <h3 className="font-serif text-lg text-status-blocked mb-1">Danger Zone</h3>
           <p className="text-xs text-kil-text/60 mb-4 max-w-lg">
             Requesting account closure will permanently delete your user profile and all associated data in accordance with GDPR. Commercial transaction records will be anonymized and retained for legal accounting purposes.
           </p>
@@ -246,7 +246,7 @@ export default function AccountPage() {
                 requestAccountClosure().then(() => alert("Closure requested.")).catch(console.error);
               }
             }}
-            className="px-4 py-2 border border-red-500 text-red-500 text-xs font-semibold hover:bg-red-500/10 transition-colors"
+            className="px-4 py-2 border border-status-blocked text-status-blocked text-xs font-semibold hover:bg-status-blocked/10 transition-colors"
           >
             Request Account Closure
           </button>

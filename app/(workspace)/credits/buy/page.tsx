@@ -143,7 +143,7 @@ export default function BuyCreditsPage() {
 
       {/* Error state */}
       {error && (
-        <div className="w-full max-w-md mb-8 p-4 bg-red-50 text-red-700 border border-red-200 rounded-md font-medium text-sm whitespace-pre-line text-center">
+        <div className="w-full max-w-md mb-8 p-4 bg-[color:var(--status-blocked-soft)] text-status-blocked border border-status-blocked/30 rounded-md font-medium text-sm whitespace-pre-line text-center">
           {error}
         </div>
       )}

@@ -100,7 +100,7 @@ export default function SampleViewer({ manifest }: { manifest: Manifest }) {
               className="object-contain"
               sizes="150px"
             />
-            <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[10px] px-1.5 rounded font-mono">
+            <div className="absolute bottom-1 right-1 bg-black/60 text-surface-elevated text-[10px] px-1.5 rounded font-mono">
               {p.page}
             </div>
           </button>
@@ -108,7 +108,7 @@ export default function SampleViewer({ manifest }: { manifest: Manifest }) {
       </div>
 
       {/* Center: Viewer */}
-      <div className="flex-1 flex flex-col bg-slate-900/5 dark:bg-black/50 relative overflow-hidden">
+      <div className="flex-1 flex flex-col bg-ink/5 bg-dark/50 relative overflow-hidden">
         {/* Controls Bar */}
         <div className="h-14 border-b border-border bg-surface flex items-center justify-between px-4">
           <div className="flex items-center gap-2">

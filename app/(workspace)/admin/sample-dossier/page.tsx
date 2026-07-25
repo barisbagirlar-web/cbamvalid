@@ -43,7 +43,7 @@ export default function AdminSampleDossierPage() {
         </button>
 
         {result && (
-          <div className={`mt-6 p-4 rounded-md border ${result.success ? "border-accent/20 bg-accent/5 text-accent" : "border-red-500/20 bg-red-500/5 text-red-700"}`}>
+          <div className={`mt-6 p-4 rounded-md border ${result.success ? "border-accent/20 bg-accent/5 text-accent" : "border-status-blocked/20 bg-status-blocked/5 text-status-blocked"}`}>
             {result.success ? (
               <div className="flex items-center gap-2 font-medium">
                 <CheckCircle className="w-5 h-5 text-accent" />
@@ -51,7 +51,7 @@ export default function AdminSampleDossierPage() {
               </div>
             ) : (
               <div className="flex items-center gap-2 font-medium">
-                <AlertTriangle className="w-5 h-5 text-red-500" />
+                <AlertTriangle className="w-5 h-5 text-status-blocked" />
                 Error: {result.error}
               </div>
             )}

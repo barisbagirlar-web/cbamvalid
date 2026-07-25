@@ -21,7 +21,7 @@ export default async function AdminReverseCreditsPage({ searchParams }: { search
         </div>
       </div>
 
-      <div className="p-6 bg-surface border border-red-500/20 rounded-lg shadow-sm">
+      <div className="p-6 bg-surface border border-status-blocked/20 rounded-lg shadow-sm">
         <ReverseCreditsForm initialUid={uid || ""} />
       </div>
     </div>

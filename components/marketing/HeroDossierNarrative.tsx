@@ -9,6 +9,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import styles from "./HeroDossierNarrative.module.css";
+import { BrandMark } from "@/components/brand/BrandMark";
 
 type Scene = "weak" | "strong";
 
@@ -110,26 +111,9 @@ function typedValue(raw: string, visibility: number, typeProgress: number, fill:
   return raw.slice(0, Math.max(0, Math.min(raw.length, chars)));
 }
 
-function BrandMark({ tone }: { tone: "neutral" | "err" | "ok" }) {
-  const stroke = tone === "ok" ? "#1E7A4C" : tone === "err" ? "#B3382E" : "#C0562F";
-  const fill = tone === "ok" ? "#E2F1E8" : tone === "err" ? "#F9E6E3" : "#F5E4D8";
-  return (
-    <svg className={styles.brandMark} viewBox="0 0 40 40" fill="none" aria-hidden="true">
-      <path
-        d="M20 3 35 9.5v9.7c0 8.9-6.2 15-15 17.8C11.2 34.2 5 28.1 5 19.2V9.5L20 3Z"
-        stroke={stroke}
-        strokeWidth="2.6"
-        fill={fill}
-      />
-      <path
-        d="m13.5 20.2 4.3 4.3 8.7-9"
-        stroke={stroke}
-        strokeWidth="2.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+function BrandMarkLocal({ tone }: { tone: "neutral" | "err" | "ok" }) {
+  const mapped = tone === "ok" ? "pass" : tone === "err" ? "blocked" : "default";
+  return <BrandMark className={styles.brandMark} tone={mapped} />;
 }
 
 type CardHandle = {
@@ -264,7 +248,7 @@ function DossierCardShell({
       <div ref={scanRef} className={styles.scanline} aria-hidden="true" />
 
       <header className={styles.head}>
-        <BrandMark tone="neutral" />
+        <BrandMarkLocal tone="neutral" />
         <div className={styles.headCopy}>
           <b>Evidence Dossier</b>
           <span ref={statusRef} className={styles.status} data-tone="neutral">
