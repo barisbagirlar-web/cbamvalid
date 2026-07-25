@@ -4,6 +4,17 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
+<!-- BEGIN:codebase-memory -->
+# Codebase Memory (advisory index only)
+
+Navigation and blast-radius queries must follow `.cursor/rules/codebase-memory.mdc` (alwaysApply): architecture → symbols → impact → targeted reads → change → detect_changes → gates.
+
+- Project id: `cbam-paddle-app`
+- Bootstrap: `bash scripts/setup-codebase-memory.sh`
+- Graph ≠ proof. Source + typecheck/tests/build remain the court of truth.
+- Never add Codebase Memory as a runtime/production dependency; never commit `~/.cache/codebase-memory-mcp/*.db` or `.codebase-memory/` artifacts unless the team explicitly shares a snapshot.
+<!-- END:codebase-memory -->
+
 # Global Working Protocol (GLOBAL ÜST SEVİYE ÇALIŞMA PROTOKOLÜ)
 
 This protocol is the default working standard for all software development, web application, SaaS, automation, calculation engine, and technical pro-active tasks.

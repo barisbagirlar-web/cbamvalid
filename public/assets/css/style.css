@@ -155,7 +155,7 @@ h3{font-size:1.35rem}
 .hero-micro svg{color:var(--ok);flex:none}
 
 /* Hero dossier mock */
-.hero-visual{position:relative}
+.hero-visual{position:relative;min-height:520px}
 .dossier-mock{
   background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);
   box-shadow:var(--shadow-lg);padding:34px 34px 30px;position:relative;
@@ -465,6 +465,7 @@ h3{font-size:1.35rem}
   .mobile-nav a:last-child{border:none}
   .section{padding:64px 0}
   .hero{padding:56px 0 72px}
+  .hero-visual{min-height:0}
   .include-card{position:static;transform:none;width:auto;margin-top:20px}
   .hero-chip{top:-16px;right:6px}
   .academic-card{flex-direction:column;padding:32px}

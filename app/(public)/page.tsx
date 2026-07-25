@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from 'react';
-import Link from 'next/link';
+import { HeroDossierNarrative } from '@/components/marketing/HeroDossierNarrative';
 
 export default function Page() {
   // Simple scroll reveal logic in React
@@ -75,33 +75,7 @@ export default function Page() {
       </div>
 
       <div className="hero-visual">
-        <div className="hero-chip">USD 149<small>One-time · No subscription</small></div>
-        <div className="dossier-mock" role="img" aria-label="Preview of a sealed CBAM evidence dossier cover page">
-          <div className="dm-head">
-            <svg className="brand-mark" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 3 35 9.5v9.7c0 8.9-6.2 15-15 17.8C11.2 34.2 5 28.1 5 19.2V9.5L20 3Z" stroke="#C0562F" strokeWidth="2.6" fill="#F5E4D8"/><path d="m13.5 20.2 4.3 4.3 8.7-9" stroke="#C0562F" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            <b>Evidence Dossier</b>
-            <span className="tag">Sealed · v1.0</span>
-          </div>
-          <p className="dm-title">CBAM Definitive-Period<br />Audit-Preparation Dossier</p>
-          <div className="dm-rows">
-            <div className="dm-row"><b>Goods scope</b><span>CN 7208 39 00</span></div>
-            <div className="dm-row"><b>Embedded emissions</b><span>412.6 tCO₂e</span></div>
-            <div className="dm-row"><b>Evidence coverage</b><span>14 / 16 nodes</span></div>
-            <div className="dm-row"><b>QC blockers</b><span>0 open</span></div>
-          </div>
-          <div className="dm-foot">
-            <span className="dm-hash">SHA-256 · 9f2a…c41d</span>
-            <div className="dm-seal"><span>CBAMValid</span><span>Sealed</span></div>
-          </div>
-        </div>
-        <div className="include-card">
-          <h4>Included in the pack</h4>
-          <ul>
-            <li>PDF Evidence Manifest <span className="inc">Included</span></li>
-            <li>Canonical JSON Format <span className="inc">Included</span></li>
-            <li>O3CI Field-Mapped Excel <span className="inc">Included</span></li>
-          </ul>
-        </div>
+        <HeroDossierNarrative />
       </div>
     </div>
   </section>

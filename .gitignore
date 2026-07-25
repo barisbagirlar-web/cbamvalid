@@ -33,6 +33,10 @@ firebase-admin-key.json
 firebase-adminsdk*.json
 service-account*.json
 
+# Codebase Memory — local/derived graph only (not a runtime dependency)
+.codebase-memory/
+*.db.zst
+
 # Local test artifacts
 test-out.pdf
 test-page-*.png
