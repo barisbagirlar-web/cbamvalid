@@ -11,6 +11,7 @@
 - Dark sections: warm stone `#1C1917` with `#E7E5E4` text.
 - Typography: Source Sans 3 (UI), Source Serif 4 (headings), IBM Plex Mono (CN codes, hashes, emissions values).
 - Constraints: light-mode first, no purple/indigo gradients, no Inter/Roboto defaults, WCAG AA contrast targets.
+- Marketing hero: 5-second fail→seal narrative using forest/seal semantic tokens only (`hero-story.css`).
 
 ## Product Overview & Navigation
 - [Homepage](https://cbamvalid.com/) — Executive summary, platform positioning, live ROI calculator.

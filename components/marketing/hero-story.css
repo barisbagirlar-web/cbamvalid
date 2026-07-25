@@ -2,12 +2,12 @@
 
 .hs {
   --hs-cycle: 5s;
-  --hs-ink: var(--ink, #152238);
-  --hs-muted: var(--muted, #5b667a);
-  --hs-err: var(--err, #b3382e);
-  --hs-ok: var(--ok, #1e7a4c);
-  --hs-card: var(--card, #fffdf8);
-  --hs-line: var(--line, rgba(21, 34, 56, 0.12));
+  --hs-ink: var(--ink);
+  --hs-muted: var(--muted);
+  --hs-err: var(--err);
+  --hs-ok: var(--ok);
+  --hs-card: var(--card);
+  --hs-line: var(--line);
   position: relative;
   width: 100%;
   min-height: 540px;
@@ -24,12 +24,12 @@
   border-radius: 24px;
   overflow: hidden;
   background:
-    radial-gradient(120% 80% at 20% 0%, rgba(179, 56, 46, 0.16), transparent 55%),
-    radial-gradient(100% 70% at 90% 100%, rgba(30, 122, 76, 0.14), transparent 50%),
-    linear-gradient(160deg, #f7f3ea 0%, #efe8da 100%);
+    radial-gradient(120% 80% at 20% 0%, rgba(155, 34, 38, 0.16), transparent 55%),
+    radial-gradient(100% 70% at 90% 100%, rgba(45, 106, 79, 0.14), transparent 50%),
+    var(--paper-2);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.7) inset,
-    0 24px 60px rgba(21, 34, 56, 0.12);
+    0 24px 60px rgba(28, 25, 23, 0.12);
   transform-style: preserve-3d;
   animation: hs-stage-breathe var(--hs-cycle) ease-in-out infinite;
 }
@@ -69,19 +69,19 @@
   border: 1px solid var(--hs-line);
   border-radius: 18px;
   padding: 22px 22px 18px;
-  box-shadow: 0 18px 40px rgba(21, 34, 56, 0.1);
+  box-shadow: 0 18px 40px rgba(28, 25, 23, 0.1);
 }
 
 .hs-panel.is-fail {
-  border-color: rgba(179, 56, 46, 0.28);
+  border-color: rgba(155, 34, 38, 0.28);
 }
 
 .hs-panel.is-pass {
-  border-color: rgba(30, 122, 76, 0.28);
+  border-color: rgba(45, 106, 79, 0.28);
 }
 
 .hs-panel.is-stamped {
-  box-shadow: 0 18px 44px rgba(21, 34, 56, 0.12);
+  box-shadow: 0 18px 44px rgba(28, 25, 23, 0.12);
 }
 
 .hs-panel-head {
@@ -110,12 +110,12 @@
 
 .is-fail .hs-panel-head em {
   color: var(--hs-err);
-  background: rgba(179, 56, 46, 0.1);
+  background: rgba(155, 34, 38, 0.1);
 }
 
 .is-pass .hs-panel-head em {
   color: var(--hs-ok);
-  background: rgba(30, 122, 76, 0.1);
+  background: rgba(45, 106, 79, 0.1);
 }
 
 .hs-panel h3 {
@@ -152,8 +152,8 @@
 }
 
 .hs-rows li.bad {
-  background: rgba(179, 56, 46, 0.08);
-  border-color: rgba(179, 56, 46, 0.18);
+  background: rgba(155, 34, 38, 0.08);
+  border-color: rgba(155, 34, 38, 0.18);
 }
 
 .hs-rows li.bad b {
@@ -162,8 +162,8 @@
 }
 
 .hs-rows li.ok {
-  background: rgba(30, 122, 76, 0.08);
-  border-color: rgba(30, 122, 76, 0.16);
+  background: rgba(45, 106, 79, 0.08);
+  border-color: rgba(45, 106, 79, 0.16);
 }
 
 .hs-rows li.ok b {
@@ -223,14 +223,14 @@
 .hs-slam-fail {
   color: var(--hs-err);
   background: rgba(249, 230, 227, 0.95);
-  box-shadow: 0 0 0 1px rgba(179, 56, 46, 0.2), 0 16px 40px rgba(179, 56, 46, 0.28);
+  box-shadow: 0 0 0 1px rgba(155, 34, 38, 0.2), 0 16px 40px rgba(155, 34, 38, 0.28);
   animation: hs-slam-fail var(--hs-cycle) cubic-bezier(0.16, 1, 0.3, 1) infinite;
 }
 
 .hs-slam-pass {
   color: var(--hs-ok);
   background: rgba(226, 241, 232, 0.96);
-  box-shadow: 0 0 0 1px rgba(30, 122, 76, 0.2), 0 16px 40px rgba(30, 122, 76, 0.28);
+  box-shadow: 0 0 0 1px rgba(45, 106, 79, 0.2), 0 16px 40px rgba(45, 106, 79, 0.28);
   animation: hs-slam-pass var(--hs-cycle) cubic-bezier(0.16, 1, 0.3, 1) infinite;
 }
 
@@ -263,7 +263,7 @@
 .hs-progress {
   height: 3px;
   border-radius: 999px;
-  background: rgba(21, 34, 56, 0.08);
+  background: rgba(28, 25, 23, 0.08);
   overflow: hidden;
 }
 
@@ -318,16 +318,16 @@
   0%,
   40% {
     background:
-      radial-gradient(120% 80% at 20% 0%, rgba(179, 56, 46, 0.22), transparent 55%),
-      radial-gradient(100% 70% at 90% 100%, rgba(30, 122, 76, 0.06), transparent 50%),
-      linear-gradient(160deg, #f7f3ea 0%, #efe8da 100%);
+      radial-gradient(120% 80% at 20% 0%, rgba(155, 34, 38, 0.22), transparent 55%),
+      radial-gradient(100% 70% at 90% 100%, rgba(45, 106, 79, 0.06), transparent 50%),
+      var(--paper-2);
   }
   55%,
   100% {
     background:
-      radial-gradient(120% 80% at 20% 0%, rgba(179, 56, 46, 0.05), transparent 55%),
-      radial-gradient(100% 70% at 90% 100%, rgba(30, 122, 76, 0.22), transparent 50%),
-      linear-gradient(160deg, #f7f3ea 0%, #efe8da 100%);
+      radial-gradient(120% 80% at 20% 0%, rgba(155, 34, 38, 0.05), transparent 55%),
+      radial-gradient(100% 70% at 90% 100%, rgba(45, 106, 79, 0.22), transparent 50%),
+      var(--paper-2);
   }
 }
 

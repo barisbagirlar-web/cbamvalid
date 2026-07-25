@@ -228,7 +228,7 @@ export default function Page() {
       </div>
       <div className="pricing-grid">
         <div className="price-card featured reveal">
-          <span className="badge-pop">One-time payment</span>
+          <span className="badge-pop">EU Seal · One-time</span>
           <h3>Exporter Verification Preparation Pack</h3>
           <p className="sub">Prepared for independent accredited-verification</p>
           <p className="price-fig"><span data-usd="$149" data-eur="≈ €139">$149</span> <small data-cur-note="per pack · no subscription">per pack · no subscription</small></p>
