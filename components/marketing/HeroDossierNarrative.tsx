@@ -1,216 +1,119 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import styles from "./HeroDossierNarrative.module.css";
-import { BrandMark } from "@/components/brand/BrandMark";
+import { useEffect, useState } from "react";
+import "./hero-story.css";
 
-type Scene = "weak" | "strong";
+/**
+ * 5-second attention story:
+ * Unmanaged dossier → QC Blocked
+ * CBAMValid path → Sealed (ready for independent verification)
+ *
+ * CSS keyframes live in a non-module stylesheet so animation names
+ * cannot be broken by hashing / silent paint failures.
+ */
+export function HeroDossierNarrative() {
+  const [reduce, setReduce] = useState(false);
 
-const FIELDS_WEAK = [
-  { label: "Goods scope", value: "Steel? / TBD", tone: "warn" as const },
-  { label: "Embedded emissions", value: "~400 tCO₂e?", tone: "warn" as const },
-  { label: "Evidence coverage", value: "4 / 16 linked", tone: "err" as const },
-  { label: "QC blockers", value: "7 open", tone: "err" as const },
-];
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduce(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
-const FIELDS_STRONG = [
-  { label: "Goods scope", value: "CN 7208 39 00", tone: "ok" as const },
-  { label: "Embedded emissions", value: "412.60 tCO₂e", tone: "ok" as const },
-  { label: "Evidence coverage", value: "16 / 16 supported", tone: "ok" as const },
-  { label: "QC blockers", value: "0 open", tone: "ok" as const },
-];
-
-/** Full narrative length — must match CSS --cycle. */
-const CYCLE_MS = 14_000;
-
-function DossierCard({ scene }: { scene: Scene }) {
-  const isStrong = scene === "strong";
-  const fields = isStrong ? FIELDS_STRONG : FIELDS_WEAK;
+  if (reduce) {
+    return (
+      <div
+        className="hs"
+        data-hero-motion="HERO_STORY_5S"
+        data-mode="static"
+        role="img"
+        aria-label="Comparison: unmanaged CBAM dossier is QC blocked; CBAMValid-prepared dossier is sealed and ready for independent verification."
+      >
+        <div className="hs-static">
+          <Panel tone="fail" stamped />
+          <Panel tone="pass" stamped />
+        </div>
+        <p className="hs-tagline">
+          Same evidence problem. Two outcomes. Only one is verification-ready.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div
-      className={[
-        styles.dossier,
-        isStrong ? styles.dossierStrong : styles.dossierWeak,
-        isStrong ? styles.cardStrong : styles.cardWeak,
-      ].join(" ")}
+      className="hs hs-motion"
+      data-hero-motion="HERO_STORY_5S"
+      data-mode="motion"
+      role="img"
+      aria-label="Animated comparison: unmanaged CBAM dossier fails quality control, then a CBAMValid-prepared dossier is sealed for independent verification."
     >
-      <div className={styles.paperGrain} aria-hidden="true" />
-      <div className={styles.frame} aria-hidden="true" />
-      <div className={styles.scanline} aria-hidden="true" />
-
-      <header className={styles.head}>
-        <BrandMark className={styles.brandMark} tone="default" />
-        <div className={styles.headCopy}>
-          <b>Evidence Dossier</b>
-          <span className={styles.status} data-tone={isStrong ? "ok" : "err"}>
-            {isStrong ? "Sealed · v5" : "Blocked"}
-          </span>
+      <div className="hs-stage">
+        <div className="hs-beam" aria-hidden="true" />
+        <div className="hs-card hs-card-fail" aria-hidden="true">
+          <Panel tone="fail" stamped />
         </div>
-      </header>
-
-      <h3 className={styles.title}>
-        CBAM Definitive-Period
-        <br />
-        <em>{isStrong ? "Verification Preparation Pack" : "Audit-Preparation Draft"}</em>
-      </h3>
-
-      <div className={styles.rows}>
-        {fields.map((field, index) => (
-          <div
-            key={field.label}
-            className={styles.row}
-            data-tone={field.tone}
-            style={{ ["--i" as string]: index }}
-          >
-            <b>{field.label}</b>
-            <span className={styles.value}>{field.value}</span>
+        <div className="hs-card hs-card-pass" aria-hidden="true">
+          <Panel tone="pass" stamped />
+        </div>
+        <div className="hs-stamp-layer" aria-hidden="true">
+          <div className="hs-slam hs-slam-fail">
+            <strong>QC Blocked</strong>
+            <span>Not verification-ready</span>
           </div>
-        ))}
-      </div>
-
-      <footer className={styles.foot}>
-        <span className={styles.hash}>
-          {isStrong ? "SHA-256 · 9f2a…c41d · immutable" : "SHA-256 · — missing integrity chain"}
-        </span>
-        <div className={styles.miniMeter} aria-hidden="true">
-          <span />
+          <div className="hs-slam hs-slam-pass">
+            <strong>Sealed</strong>
+            <span>Ready for independent verification</span>
+          </div>
         </div>
-      </footer>
-
-      <div className={[styles.stamp, isStrong ? styles.stampOk : styles.stampErr].join(" ")}>
-        <strong>{isStrong ? "Sealed" : "QC Blocked"}</strong>
-        <span>{isStrong ? "Ready for independent verification" : "Not verification-ready"}</span>
-        <div className={styles.stampRipple} />
       </div>
 
-      {!isStrong ? <div className={styles.failVeil} aria-hidden="true" /> : null}
-      {isStrong ? <div className={styles.successGlow} aria-hidden="true" /> : null}
+      <div className="hs-caption" aria-hidden="true">
+        <span className="hs-cap hs-cap-fail">Ad-hoc prep fails closed QC</span>
+        <span className="hs-cap hs-cap-pass">CBAMValid seals a verifier-ready pack</span>
+      </div>
+
+      <div className="hs-progress" aria-hidden="true">
+        <i />
+      </div>
     </div>
   );
 }
 
-/**
- * CSS-first hero narrative. Keyframes drive float, scan, fill, stamp, and crossfade.
- * Marker: HERO_CSS_MOTION_V2 — if JS caption swap fails, motion still runs.
- */
-export function HeroDossierNarrative() {
-  const [captionScene, setCaptionScene] = useState<Scene>("weak");
-  const [reducedMotion, setReducedMotion] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const stage3dRef = useRef<HTMLDivElement>(null);
-  const tiltRef = useRef({ x: 0, y: 0 });
-
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const apply = () => setReducedMotion(media.matches);
-    apply();
-    media.addEventListener("change", apply);
-
-    if (media.matches) {
-      setCaptionScene("strong");
-      return () => media.removeEventListener("change", apply);
-    }
-
-    const started = performance.now();
-    const id = window.setInterval(() => {
-      const cycle01 = ((performance.now() - started) % CYCLE_MS) / CYCLE_MS;
-      setCaptionScene(cycle01 < 0.48 ? "weak" : "strong");
-    }, 200);
-
-    return () => {
-      media.removeEventListener("change", apply);
-      window.clearInterval(id);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (reducedMotion) return;
-    let raf = 0;
-    const tick = () => {
-      const el = stage3dRef.current;
-      if (el) {
-        const { x, y } = tiltRef.current;
-        el.style.setProperty("--tilt-x", `${6 + x}deg`);
-        el.style.setProperty("--tilt-y", `${-8 + y}deg`);
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [reducedMotion]);
-
-  const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (reducedMotion || !rootRef.current) return;
-    const rect = rootRef.current.getBoundingClientRect();
-    const px = (event.clientX - rect.left) / rect.width - 0.5;
-    const py = (event.clientY - rect.top) / rect.height - 0.5;
-    tiltRef.current = { x: py * -6, y: px * 8 };
-  };
-
-  const onPointerLeave = () => {
-    tiltRef.current = { x: 0, y: 0 };
-  };
-
-  const caption =
-    captionScene === "strong"
-      ? {
-          eyebrow: "Prepared with CBAMValid",
-          title: "Evidence-linked. Deterministic. Sealed.",
-          detail: "Operator-prepared package, ready for independent accredited verification.",
-        }
-      : {
-          eyebrow: "Ad-hoc preparation",
-          title: "Incomplete inputs. Unlinked evidence.",
-          detail: "A dossier assembled outside a controlled workflow fails closed quality controls.",
-        };
-
+function Panel({ tone, stamped }: { tone: "fail" | "pass"; stamped?: boolean }) {
+  const fail = tone === "fail";
   return (
-    <div
-      ref={rootRef}
-      className={[styles.stage, reducedMotion ? styles.reduced : styles.motionOn].join(" ")}
-      data-hero-motion="HERO_CSS_MOTION_V2"
-      onPointerMove={onPointerMove}
-      onPointerLeave={onPointerLeave}
-      role="img"
-      aria-label="Animated comparison: an unmanaged CBAM dossier fails quality control, then a CBAMValid-prepared dossier is sealed and ready for independent verification."
-    >
-      <div className={styles.ambient} data-scene={captionScene} aria-hidden="true" />
-      <div className={styles.orbit} aria-hidden="true" />
-
-      <div className={styles.caption}>
-        <span className={styles.captionEyebrow} data-scene={captionScene}>
-          {caption.eyebrow}
-        </span>
-        <p className={styles.captionTitle}>{caption.title}</p>
-        <p className={styles.captionDetail}>{caption.detail}</p>
-      </div>
-
-      <div className={styles.timeline} aria-hidden="true">
-        <span className={styles.timelineFill} />
-        <div className={styles.timelineLabels}>
-          <span className={captionScene === "weak" ? styles.tlActive : undefined}>Fail path</span>
-          <span className={captionScene === "strong" ? styles.tlActive : undefined}>Seal path</span>
-        </div>
-      </div>
-
-      <div ref={stage3dRef} className={styles.stage3d}>
-        <div className={styles.floatLayer}>
-          <div className={styles.cardStack}>
-            <DossierCard scene="weak" />
-            <DossierCard scene="strong" />
-          </div>
-        </div>
-      </div>
-
-      <div className={styles.legend} aria-hidden="true">
-        <span>
-          <i className={styles.legendWeak} /> Unmanaged prep
-        </span>
-        <span>
-          <i className={styles.legendStrong} /> CBAMValid seal path
-        </span>
-      </div>
-    </div>
+    <article className={`hs-panel ${fail ? "is-fail" : "is-pass"} ${stamped ? "is-stamped" : ""}`}>
+      <header className="hs-panel-head">
+        <b>Evidence Dossier</b>
+        <em>{fail ? "Unmanaged" : "CBAMValid"}</em>
+      </header>
+      <h3>
+        {fail ? "Audit-preparation draft" : "Verification Preparation Pack"}
+      </h3>
+      <ul className="hs-rows">
+        <li className={fail ? "bad" : "ok"}>
+          <span>Goods scope</span>
+          <b>{fail ? "Steel? / TBD" : "CN 7208 39 00"}</b>
+        </li>
+        <li className={fail ? "bad" : "ok"}>
+          <span>Embedded emissions</span>
+          <b>{fail ? "~400 tCO₂e?" : "412.60 tCO₂e"}</b>
+        </li>
+        <li className={fail ? "bad" : "ok"}>
+          <span>Evidence coverage</span>
+          <b>{fail ? "4 / 16 linked" : "16 / 16 supported"}</b>
+        </li>
+        <li className={fail ? "bad" : "ok"}>
+          <span>QC blockers</span>
+          <b>{fail ? "7 open" : "0 open"}</b>
+        </li>
+      </ul>
+      <footer>
+        {fail ? "SHA-256 · missing integrity chain" : "SHA-256 · 9f2a…c41d · immutable"}
+      </footer>
+    </article>
   );
 }
