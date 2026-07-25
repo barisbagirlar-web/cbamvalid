@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import styles from "./HeroDossierNarrative.module.css";
-
-/**
- * Single-clock cinematic hero (rAF). No fragile setTimeout chains.
- * Continuous micro-motion + staged narrative beats.
- */
 
 type Scene = "weak" | "strong";
 
@@ -23,75 +25,105 @@ const FIELDS: FieldSpec[] = [
   { label: "QC blockers", weak: "7 open", strong: "0 open" },
 ];
 
-const LOOP_MS = 18_000;
-const WEAK_END = 8_200;
-const CROSSFADE_MS = 700;
+const CYCLE_MS = 18_000;
 
-function clamp01(n: number) {
+type Beat = {
+  fill: number;
+  typeProgress: number;
+  stamp: number;
+  hash: number;
+  scan: number;
+  crossfade: number;
+  captionPulse: number;
+};
+
+function clamp01(n: number): number {
   return Math.max(0, Math.min(1, n));
 }
 
-function easeOutCubic(t: number) {
+function easeOutCubic(t: number): number {
   return 1 - Math.pow(1 - t, 3);
 }
 
-function easeOutBack(t: number) {
+function easeOutBack(t: number): number {
   const c1 = 1.70158;
   const c3 = c1 + 1;
   return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 }
 
-function typeProgress(elapsedInScene: number, index: number, scene: Scene) {
-  const start = 380 + index * (scene === "weak" ? 480 : 420);
-  const duration = scene === "weak" ? 520 : 460;
-  return clamp01((elapsedInScene - start) / duration);
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = clamp01((x - edge0) / (edge1 - edge0));
+  return t * t * (3 - 2 * t);
 }
 
-function scrambleReveal(target: string, progress: number, seed: number) {
-  if (progress <= 0) return "";
-  if (progress >= 1) return target;
-  const glyphs = "0123456789ABCDEF·/?~";
-  const count = Math.floor(target.length * easeOutCubic(progress));
-  let out = "";
-  for (let i = 0; i < count; i += 1) {
-    if (progress > 0.72 || i < count - 1) {
-      out += target[i];
-    } else {
-      out += glyphs[(i * 7 + seed * 3) % glyphs.length];
-    }
+function sampleBeat(cycle01: number): Beat {
+  const t = cycle01 * CYCLE_MS;
+
+  if (t < 7800) {
+    const local = t;
+    return {
+      fill: smoothstep(500, 4200, local),
+      typeProgress: clamp01(((local - 500) % 900) / 900),
+      stamp: local > 6500 ? 1 : smoothstep(5200, 5900, local),
+      hash: 0.15,
+      scan: smoothstep(400, 4800, local),
+      crossfade: 0,
+      captionPulse: smoothstep(0, 400, local),
+    };
   }
-  return out;
+
+  if (t < 8800) {
+    const cross = smoothstep(7800, 8600, t);
+    return {
+      fill: 1,
+      typeProgress: 1,
+      stamp: 1 - cross,
+      hash: cross,
+      scan: 0,
+      crossfade: cross,
+      captionPulse: 1 - Math.abs(cross - 0.5) * 2,
+    };
+  }
+
+  const local = t - 8800;
+  return {
+    fill: smoothstep(300, 4500, local),
+    typeProgress: clamp01(((local - 300) % 800) / 800),
+    stamp: smoothstep(5600, 6400, local),
+    hash: smoothstep(4200, 5200, local),
+    scan: smoothstep(200, 5000, local),
+    crossfade: 1,
+    captionPulse: smoothstep(0, 350, local),
+  };
 }
 
-function usePrefersReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const sync = () => setReduced(media.matches);
-    sync();
-    media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
-  }, []);
-  return reduced;
+function fieldVisibility(fill: number, index: number, total: number): number {
+  const start = index / total;
+  const end = (index + 0.85) / total;
+  return smoothstep(start, end, fill);
 }
 
-function BrandMark({ pulse }: { pulse: boolean }) {
+function typedValue(raw: string, visibility: number, typeProgress: number, fill: number, index: number): string {
+  if (visibility <= 0.02) return "";
+  const wave = fieldVisibility(fill, index, FIELDS.length);
+  const chars = Math.floor(raw.length * easeOutCubic(clamp01(wave * 1.15 + typeProgress * 0.08)));
+  return raw.slice(0, Math.max(0, Math.min(raw.length, chars)));
+}
+
+function BrandMark({ tone }: { tone: "neutral" | "err" | "ok" }) {
+  const stroke = tone === "ok" ? "#1E7A4C" : tone === "err" ? "#B3382E" : "#C0562F";
+  const fill = tone === "ok" ? "#E2F1E8" : tone === "err" ? "#F9E6E3" : "#F5E4D8";
   return (
-    <svg
-      className={[styles.brandMark, pulse ? styles.brandPulse : ""].join(" ")}
-      viewBox="0 0 40 40"
-      fill="none"
-      aria-hidden="true"
-    >
+    <svg className={styles.brandMark} viewBox="0 0 40 40" fill="none" aria-hidden="true">
       <path
         d="M20 3 35 9.5v9.7c0 8.9-6.2 15-15 17.8C11.2 34.2 5 28.1 5 19.2V9.5L20 3Z"
-        stroke="#C0562F"
+        stroke={stroke}
         strokeWidth="2.6"
-        fill="#F5E4D8"
+        fill={fill}
       />
       <path
         d="m13.5 20.2 4.3 4.3 8.7-9"
-        stroke="#C0562F"
+        stroke={stroke}
         strokeWidth="2.8"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -100,258 +132,367 @@ function BrandMark({ pulse }: { pulse: boolean }) {
   );
 }
 
-function deriveFrame(clock: number) {
-  const inCrossToStrong = clock >= WEAK_END && clock < WEAK_END + CROSSFADE_MS;
-  const inCrossToWeak = clock >= LOOP_MS - CROSSFADE_MS;
-  const scene: Scene = clock < WEAK_END + CROSSFADE_MS / 2 ? "weak" : "strong";
-  const sceneElapsed = scene === "weak" ? clock : Math.max(0, clock - (WEAK_END + CROSSFADE_MS));
-  const crossfade = inCrossToStrong || inCrossToWeak
-    ? clamp01(
-        inCrossToStrong
-          ? (clock - WEAK_END) / CROSSFADE_MS
-          : (clock - (LOOP_MS - CROSSFADE_MS)) / CROSSFADE_MS
-      )
-    : 0;
+type CardHandle = {
+  root: HTMLDivElement | null;
+  status: HTMLSpanElement | null;
+  scan: HTMLDivElement | null;
+  hash: HTMLSpanElement | null;
+  meter: HTMLSpanElement | null;
+  stamp: HTMLDivElement | null;
+  values: Array<HTMLSpanElement | null>;
+  rows: Array<HTMLDivElement | null>;
+};
 
-  const stampAt = scene === "weak" ? 5600 : 5200;
-  const stampProgress = clamp01((sceneElapsed - stampAt) / 520);
-  const stampActive = stampProgress > 0.08;
-  const stampImpact = easeOutBack(clamp01(stampProgress * 1.15));
+function paintCard(handle: CardHandle, scene: Scene, beat: Beat, active: boolean, opacity: number) {
+  const root = handle.root;
+  if (!root) return;
 
-  const reviewAt = scene === "weak" ? 4800 : 4400;
-  const scanning = sceneElapsed > reviewAt - 400 && sceneElapsed < stampAt + 200;
+  root.style.opacity = String(opacity);
+  root.style.pointerEvents = opacity < 0.2 ? "none" : "auto";
 
-  const hashProgress =
-    scene === "strong" ? clamp01((sceneElapsed - 3600) / 900) : clamp01((sceneElapsed - 4200) / 600);
+  const isStrong = scene === "strong";
+  const stampStrength = active ? beat.stamp : opacity > 0.85 && isStrong ? 1 : 0;
+  const fill = active ? beat.fill : isStrong && opacity > 0.5 ? 1 : opacity < 0.5 ? 0 : beat.fill;
 
-  const rows = FIELDS.map((field, index) => {
-    const progress = typeProgress(sceneElapsed, index, scene);
-    const value = scene === "weak" ? field.weak : field.strong;
-    const shown = scrambleReveal(value, progress, index + (scene === "strong" ? 11 : 3));
-    const tone =
-      scene === "weak"
-        ? index < 2
-          ? "warn"
-          : "err"
-        : "ok";
-    return {
-      label: field.label,
-      shown,
-      complete: progress >= 1,
-      visible: progress > 0.02,
-      progress,
-      tone,
-      caret: progress > 0.02 && progress < 1,
-    };
+  if (handle.scan) {
+    handle.scan.style.setProperty("--scan", String(active ? beat.scan : 0));
+  }
+
+  const stamped = stampStrength > 0.55;
+  root.classList.toggle(styles.dossierStamped, stamped);
+
+  if (handle.status) {
+    const status =
+      stamped
+        ? isStrong
+          ? "Sealed · v5"
+          : "Blocked"
+        : isStrong
+          ? fill > 0.5
+            ? "Integrity check"
+            : "Guided preparation"
+          : fill > 0.5
+            ? "Review failed"
+            : "Draft · unmanaged";
+    handle.status.textContent = status;
+    handle.status.dataset.tone = stamped ? (isStrong ? "ok" : "err") : "neutral";
+  }
+
+  FIELDS.forEach((field, index) => {
+    const raw = isStrong ? field.strong : field.weak;
+    const vis = fieldVisibility(fill, index, FIELDS.length);
+    const value = typedValue(raw, vis, active ? beat.typeProgress : 1, fill, index);
+    const row = handle.rows[index];
+    const valueEl = handle.values[index];
+    if (row) {
+      row.style.opacity = String(0.22 + vis * 0.78);
+      row.style.transform = `translate3d(0, ${(1 - vis) * 12}px, 0)`;
+      const incomplete = !isStrong && vis > 0.4;
+      const complete = isStrong && vis > 0.55;
+      row.dataset.tone = complete ? "ok" : incomplete ? (index > 1 ? "err" : "warn") : "muted";
+    }
+    if (valueEl) {
+      if (value.length < raw.length && vis > 0.05) {
+        valueEl.innerHTML = `${escapeHtml(value)}<i class="${styles.caret}"></i>`;
+      } else if (!value) {
+        valueEl.innerHTML = `<span class="${styles.placeholder}">awaiting input</span>`;
+      } else {
+        valueEl.textContent = value;
+      }
+    }
   });
 
-  const caption =
-    scene === "weak"
-      ? {
-          eyebrow: "Ad-hoc preparation",
-          title: "Incomplete inputs. Unlinked evidence.",
-          detail: "A dossier assembled outside a controlled workflow fails closed quality controls.",
-        }
-      : {
-          eyebrow: "Prepared with CBAMValid",
-          title: "Evidence-linked. Deterministic. Sealed.",
-          detail: "Operator-prepared package, ready for independent accredited verification.",
-        };
-
-  const stamp =
-    scene === "weak"
-      ? { line1: "QC Blocked", line2: "Not verification-ready" }
-      : { line1: "Sealed", line2: "Ready for independent verification" };
-
-  const status =
-    stampActive
-      ? scene === "weak"
-        ? "Blocked"
-        : "Sealed · v5"
-      : scanning
-        ? scene === "weak"
-          ? "Review failed"
-          : "Integrity check"
-        : scene === "weak"
-          ? "Draft · unmanaged"
-          : "Guided preparation";
-
-  const fillRatio = rows.reduce((sum, row) => sum + row.progress, 0) / rows.length;
-
-  return {
-    scene,
-    crossfade,
-    stampActive,
-    stampImpact,
-    scanning,
-    hashProgress,
-    rows,
-    caption,
-    stamp,
-    status,
-    fillRatio,
-    sceneElapsed,
-  };
+  if (handle.hash) {
+    handle.hash.style.opacity = String(0.35 + (active ? beat.hash : isStrong ? 1 : 0.2) * 0.65);
+  }
+  if (handle.meter) {
+    handle.meter.style.width = `${Math.round(fill * 100)}%`;
+  }
+  if (handle.stamp) {
+    handle.stamp.style.opacity = String(stampStrength);
+    handle.stamp.style.transform = `scale(${0.55 + easeOutBack(stampStrength) * 0.45}) rotate(${-22 + stampStrength * 10}deg)`;
+    handle.stamp.style.filter = `blur(${(1 - stampStrength) * 3.5}px)`;
+  }
 }
 
-export function HeroDossierNarrative() {
-  const reducedMotion = usePrefersReducedMotion();
-  const [clock, setClock] = useState(1200);
-  const [ready, setReady] = useState(false);
+function escapeHtml(input: string): string {
+  return input
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function DossierCardShell({
+  scene,
+  handleRef,
+}: {
+  scene: Scene;
+  handleRef: (handle: CardHandle) => void;
+}) {
+  const isStrong = scene === "strong";
+  const rootRef = useRef<HTMLDivElement>(null);
+  const statusRef = useRef<HTMLSpanElement>(null);
+  const scanRef = useRef<HTMLDivElement>(null);
+  const hashRef = useRef<HTMLSpanElement>(null);
+  const meterRef = useRef<HTMLSpanElement>(null);
+  const stampRef = useRef<HTMLDivElement>(null);
+  const valueRefs = useRef<Array<HTMLSpanElement | null>>([]);
+  const rowRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   useEffect(() => {
-    const id = window.setTimeout(() => setReady(true), 0);
-    return () => window.clearTimeout(id);
-  }, []);
-
-  useEffect(() => {
-    if (reducedMotion || !ready) return;
-    let raf = 0;
-    const start = performance.now() - 1200;
-    const tick = (now: number) => {
-      setClock((now - start) % LOOP_MS);
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [reducedMotion, ready]);
-
-  const frame = useMemo(
-    () => (reducedMotion ? deriveFrame(WEAK_END + CROSSFADE_MS + 7000) : deriveFrame(clock)),
-    [clock, reducedMotion]
-  );
-
-  const hashText =
-    frame.scene === "strong"
-      ? "SHA-256 · 9f2a…c41d · immutable"
-      : "SHA-256 · — missing integrity chain";
+    handleRef({
+      root: rootRef.current,
+      status: statusRef.current,
+      scan: scanRef.current,
+      hash: hashRef.current,
+      meter: meterRef.current,
+      stamp: stampRef.current,
+      values: valueRefs.current,
+      rows: rowRefs.current,
+    });
+  }, [handleRef]);
 
   return (
     <div
-      className={[
-        styles.stage,
-        styles[`scene_${frame.scene}`],
-        frame.crossfade > 0.05 ? styles.crossfading : "",
-        frame.stampActive ? styles.stamped : "",
-        frame.scanning ? styles.scanning : "",
-        reducedMotion ? styles.reduced : "",
-        ready ? styles.live : "",
-      ].join(" ")}
-      style={
-        {
-          "--fill": String(frame.fillRatio),
-          "--stamp": String(frame.stampImpact),
-          "--cross": String(frame.crossfade),
-          "--hash": String(frame.hashProgress),
-        } as CSSProperties
+      ref={rootRef}
+      className={[styles.dossier, isStrong ? styles.dossierStrong : styles.dossierWeak].join(" ")}
+      style={{ opacity: isStrong ? 0 : 1 }}
+    >
+      <div className={styles.paperGrain} aria-hidden="true" />
+      <div className={styles.frame} aria-hidden="true" />
+      <div ref={scanRef} className={styles.scanline} aria-hidden="true" />
+
+      <header className={styles.head}>
+        <BrandMark tone="neutral" />
+        <div className={styles.headCopy}>
+          <b>Evidence Dossier</b>
+          <span ref={statusRef} className={styles.status} data-tone="neutral">
+            Draft · unmanaged
+          </span>
+        </div>
+      </header>
+
+      <h3 className={styles.title}>
+        CBAM Definitive-Period
+        <br />
+        <em>{isStrong ? "Verification Preparation Pack" : "Audit-Preparation Draft"}</em>
+      </h3>
+
+      <div className={styles.rows}>
+        {FIELDS.map((field, index) => (
+          <div
+            key={field.label}
+            ref={(el) => {
+              rowRefs.current[index] = el;
+            }}
+            className={styles.row}
+            data-tone="muted"
+          >
+            <b>{field.label}</b>
+            <span
+              ref={(el) => {
+                valueRefs.current[index] = el;
+              }}
+              className={styles.value}
+            >
+              <span className={styles.placeholder}>awaiting input</span>
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <footer className={styles.foot}>
+        <span ref={hashRef} className={styles.hash}>
+          {isStrong ? "SHA-256 · 9f2a…c41d · immutable" : "SHA-256 · — missing integrity chain"}
+        </span>
+        <div className={styles.miniMeter} aria-hidden="true">
+          <span ref={meterRef} />
+        </div>
+      </footer>
+
+      <div
+        ref={stampRef}
+        className={[styles.stamp, isStrong ? styles.stampOk : styles.stampErr].join(" ")}
+        style={{ opacity: 0 }}
+      >
+        <strong>{isStrong ? "Sealed" : "QC Blocked"}</strong>
+        <span>{isStrong ? "Ready for independent verification" : "Not verification-ready"}</span>
+        <div className={styles.stampRipple} />
+      </div>
+
+      {!isStrong ? <div className={styles.failVeil} aria-hidden="true" /> : null}
+      {isStrong ? <div className={styles.successGlow} aria-hidden="true" /> : null}
+    </div>
+  );
+}
+
+/**
+ * Premium hero narrative: one rAF clock paints the DOM directly (60fps, no React render thrash).
+ * Continuous float + scan + dual-card morph. Nested timeouts intentionally avoided.
+ */
+export function HeroDossierNarrative() {
+  const [captionScene, setCaptionScene] = useState<Scene>("weak");
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const stage3dRef = useRef<HTMLDivElement>(null);
+  const ambientRef = useRef<HTMLDivElement>(null);
+  const captionRef = useRef<HTMLDivElement>(null);
+  const timelineFillRef = useRef<HTMLSpanElement>(null);
+  const weakHandle = useRef<CardHandle | null>(null);
+  const strongHandle = useRef<CardHandle | null>(null);
+  const tiltRef = useRef({ x: 0, y: 0 });
+  const rafRef = useRef(0);
+  const startRef = useRef(0);
+  const lastCaption = useRef<Scene>("weak");
+
+  const setWeakHandle = useCallback((h: CardHandle) => {
+    weakHandle.current = h;
+  }, []);
+  const setStrongHandle = useCallback((h: CardHandle) => {
+    strongHandle.current = h;
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const reduced = media.matches;
+    // Defer React state write out of the synchronous effect body.
+    const motionId = window.setTimeout(() => setReducedMotion(reduced), 0);
+
+    const paintStaticStrong = () => {
+      const beat = sampleBeat(0.72);
+      paintCard(weakHandle.current || { root: null, status: null, scan: null, hash: null, meter: null, stamp: null, values: [], rows: [] }, "weak", beat, false, 0);
+      paintCard(strongHandle.current || { root: null, status: null, scan: null, hash: null, meter: null, stamp: null, values: [], rows: [] }, "strong", beat, true, 1);
+      if (timelineFillRef.current) timelineFillRef.current.style.width = "72%";
+      if (ambientRef.current) ambientRef.current.dataset.scene = "strong";
+      setCaptionScene("strong");
+    };
+
+    if (reduced) {
+      const id = window.setTimeout(paintStaticStrong, 0);
+      return () => {
+        window.clearTimeout(motionId);
+        window.clearTimeout(id);
+      };
+    }
+
+    startRef.current = performance.now();
+    const tick = (now: number) => {
+      const cycle01 = ((now - startRef.current) % CYCLE_MS) / CYCLE_MS;
+      const beat = sampleBeat(cycle01);
+      const scene: Scene = beat.crossfade > 0.5 ? "strong" : "weak";
+
+      if (weakHandle.current) {
+        paintCard(weakHandle.current, "weak", beat, scene === "weak", 1 - beat.crossfade);
       }
+      if (strongHandle.current) {
+        paintCard(strongHandle.current, "strong", beat, scene === "strong", beat.crossfade);
+      }
+
+      if (timelineFillRef.current) {
+        timelineFillRef.current.style.width = `${cycle01 * 100}%`;
+      }
+      if (ambientRef.current) {
+        ambientRef.current.dataset.scene = scene;
+      }
+      if (captionRef.current) {
+        captionRef.current.style.opacity = String(0.55 + beat.captionPulse * 0.45);
+      }
+
+      const floatY = Math.sin(cycle01 * Math.PI * 2) * 5;
+      const floatRot = Math.sin(cycle01 * Math.PI * 2 + 1.2) * 0.35;
+      const { x, y } = tiltRef.current;
+      if (stage3dRef.current) {
+        stage3dRef.current.style.transform = `translate3d(0, ${floatY}px, 0) rotateX(${6 + x}deg) rotateY(${-8 + y}deg) rotateZ(${floatRot}deg)`;
+      }
+
+      if (scene !== lastCaption.current) {
+        lastCaption.current = scene;
+        setCaptionScene(scene);
+      }
+
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    // Start after first paint so card refs are populated.
+    const bootId = window.setTimeout(() => {
+      rafRef.current = requestAnimationFrame(tick);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(motionId);
+      window.clearTimeout(bootId);
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (reducedMotion || !rootRef.current) return;
+    const rect = rootRef.current.getBoundingClientRect();
+    const px = (event.clientX - rect.left) / rect.width - 0.5;
+    const py = (event.clientY - rect.top) / rect.height - 0.5;
+    tiltRef.current = { x: py * -6, y: px * 8 };
+  };
+
+  const onPointerLeave = () => {
+    tiltRef.current = { x: 0, y: 0 };
+  };
+
+  const caption =
+    captionScene === "strong"
+      ? {
+          eyebrow: "Prepared with CBAMValid",
+          title: "Evidence-linked. Deterministic. Sealed.",
+          detail: "Operator-prepared package, ready for independent accredited verification.",
+        }
+      : {
+          eyebrow: "Ad-hoc preparation",
+          title: "Incomplete inputs. Unlinked evidence.",
+          detail: "A dossier assembled outside a controlled workflow fails closed quality controls.",
+        };
+
+  return (
+    <div
+      ref={rootRef}
+      className={[styles.stage, reducedMotion ? styles.reduced : ""].join(" ")}
+      onPointerMove={onPointerMove}
+      onPointerLeave={onPointerLeave}
       role="img"
       aria-label="Animated comparison: an unmanaged CBAM dossier fails quality control, then a CBAMValid-prepared dossier is sealed and ready for independent verification."
     >
+      <div ref={ambientRef} className={styles.ambient} data-scene="weak" aria-hidden="true" />
       <div className={styles.orbit} aria-hidden="true" />
-      <div className={styles.orbitSecondary} aria-hidden="true" />
-      <div className={styles.grain} aria-hidden="true" />
 
-      <div className={styles.caption}>
-        <span className={styles.captionEyebrow}>{frame.caption.eyebrow}</span>
-        <p className={styles.captionTitle}>{frame.caption.title}</p>
-        <p className={styles.captionDetail}>{frame.caption.detail}</p>
-      </div>
-
-      <div className={styles.dossierFloat}>
-      <div className={styles.dossier}>
-        <div className={styles.sheen} aria-hidden="true" />
-        <div className={styles.scanBeam} aria-hidden="true" />
-        <div className={styles.frame} aria-hidden="true" />
-
-        <header className={styles.head}>
-          <BrandMark pulse={frame.scene === "strong" && frame.stampActive} />
-          <div className={styles.headCopy}>
-            <b>Evidence Dossier</b>
-            <span
-              className={styles.status}
-              data-tone={
-                frame.stampActive
-                  ? frame.scene === "strong"
-                    ? "ok"
-                    : "err"
-                  : "neutral"
-              }
-            >
-              <i className={styles.statusDot} />
-              {frame.status}
-            </span>
-          </div>
-        </header>
-
-        <h3 className={styles.title}>
-          CBAM Definitive-Period
-          <br />
-          <em>
-            {frame.scene === "strong"
-              ? "Verification Preparation Pack"
-              : "Audit-Preparation Draft"}
-          </em>
-        </h3>
-
-        <div className={styles.meter} aria-hidden="true">
-          <span className={styles.meterFill} />
-        </div>
-
-        <div className={styles.rows}>
-          {frame.rows.map((row) => (
-            <div
-              key={row.label}
-              className={[styles.row, row.visible ? styles.rowIn : ""].join(" ")}
-              data-tone={row.tone}
-              style={{ ["--row" as string]: String(row.progress) }}
-            >
-              <b>{row.label}</b>
-              <span className={styles.value}>
-                {row.shown}
-                {row.caret ? <i className={styles.caret} /> : null}
-              </span>
-              <span className={styles.rowGlow} aria-hidden="true" />
-            </div>
-          ))}
-        </div>
-
-        <footer className={styles.foot}>
-          <span className={styles.hash}>{hashText}</span>
-          <div className={styles.progress} aria-hidden="true">
-            <span className={frame.scene === "weak" ? styles.dotActive : styles.dot} />
-            <span className={frame.scene === "strong" ? styles.dotActive : styles.dot} />
-          </div>
-        </footer>
-
-        <div
-          className={[
-            styles.stamp,
-            frame.stampActive ? styles.stampIn : "",
-            frame.scene === "strong" ? styles.stampOk : styles.stampErr,
-          ].join(" ")}
-          aria-hidden={!frame.stampActive}
-        >
-          <span className={styles.stampRing} aria-hidden="true" />
-          <span className={styles.stampRingDelay} aria-hidden="true" />
-          <strong>{frame.stamp.line1}</strong>
-          <span>{frame.stamp.line2}</span>
-        </div>
-      </div>
+      <div ref={captionRef} className={styles.caption}>
+        <span className={styles.captionEyebrow} data-scene={captionScene}>
+          {caption.eyebrow}
+        </span>
+        <p className={styles.captionTitle}>{caption.title}</p>
+        <p className={styles.captionDetail}>{caption.detail}</p>
       </div>
 
       <div className={styles.timeline} aria-hidden="true">
-        <span className={styles.timelineTrack}>
-          <i className={styles.timelinePlayhead} style={{ left: `${(clock / LOOP_MS) * 100}%` }} />
-        </span>
-        <div className={styles.legend}>
-          <span>
-            <i className={styles.legendWeak} /> Unmanaged prep
-          </span>
-          <span>
-            <i className={styles.legendStrong} /> CBAMValid seal path
-          </span>
+        <span ref={timelineFillRef} className={styles.timelineFill} style={{ width: "0%" } as CSSProperties} />
+        <div className={styles.timelineLabels}>
+          <span className={captionScene === "weak" ? styles.tlActive : undefined}>Fail path</span>
+          <span className={captionScene === "strong" ? styles.tlActive : undefined}>Seal path</span>
         </div>
+      </div>
+
+      <div ref={stage3dRef} className={styles.stage3d}>
+        <div className={styles.cardStack}>
+          <DossierCardShell scene="weak" handleRef={setWeakHandle} />
+          <DossierCardShell scene="strong" handleRef={setStrongHandle} />
+        </div>
+      </div>
+
+      <div className={styles.legend} aria-hidden="true">
+        <span>
+          <i className={styles.legendWeak} /> Unmanaged prep
+        </span>
+        <span>
+          <i className={styles.legendStrong} /> CBAMValid seal path
+        </span>
       </div>
     </div>
   );
