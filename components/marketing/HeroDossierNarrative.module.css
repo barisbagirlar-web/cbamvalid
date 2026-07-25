@@ -1,7 +1,10 @@
-/* Premium cinematic stage — continuous GPU motion, dual-card morph, material depth. */
+/* HERO_CSS_MOTION_V2 — CSS-first cinematic stage; motion survives JS failure. */
 
 .stage {
+  --cycle: 14s;
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --tilt-x: 6deg;
+  --tilt-y: -8deg;
   position: relative;
   isolation: isolate;
   min-height: 620px;
@@ -21,13 +24,12 @@
   pointer-events: none;
   z-index: 0;
   filter: blur(18px);
-  transition: background 0.9s ease, opacity 0.9s ease;
-  background: radial-gradient(circle, rgba(179, 56, 46, 0.18), transparent 68%);
+  background: radial-gradient(circle, rgba(179, 56, 46, 0.2), transparent 68%);
   animation: ambientPulse 4.8s ease-in-out infinite;
 }
 
 .ambient[data-scene="strong"] {
-  background: radial-gradient(circle, rgba(30, 122, 76, 0.2), transparent 68%);
+  background: radial-gradient(circle, rgba(30, 122, 76, 0.22), transparent 68%);
 }
 
 @keyframes ambientPulse {
@@ -37,7 +39,7 @@
     opacity: 0.85;
   }
   50% {
-    transform: scale(1.08);
+    transform: scale(1.1);
     opacity: 1;
   }
 }
@@ -46,24 +48,24 @@
   position: absolute;
   inset: 120px 8% auto;
   height: 320px;
-  border: 1px solid rgba(21, 34, 56, 0.06);
+  border: 1px solid rgba(21, 34, 56, 0.08);
   border-radius: 50%;
   pointer-events: none;
   z-index: 0;
-  animation: orbitSpin 22s linear infinite;
+  animation: orbitSpin 18s linear infinite;
 }
 
 .orbit::before {
   content: "";
   position: absolute;
-  top: -4px;
+  top: -5px;
   left: 50%;
-  width: 8px;
-  height: 8px;
-  margin-left: -4px;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
   border-radius: 50%;
-  background: var(--terra);
-  box-shadow: 0 0 18px rgba(192, 86, 47, 0.55);
+  background: var(--terra, #c0562f);
+  box-shadow: 0 0 20px rgba(192, 86, 47, 0.65);
 }
 
 @keyframes orbitSpin {
@@ -77,7 +79,6 @@
   z-index: 3;
   max-width: 34rem;
   min-height: 5.4rem;
-  transition: opacity 0.35s ease;
 }
 
 .captionEyebrow {
@@ -126,10 +127,33 @@
 .timelineFill {
   display: block;
   height: 100%;
+  width: 0%;
   border-radius: inherit;
-  background: var(--err);
+  background: linear-gradient(90deg, var(--err), var(--ok));
   box-shadow: 0 0 12px rgba(192, 86, 47, 0.35);
-  transition: width 0.05s linear;
+}
+
+.motionOn .timelineFill {
+  animation: timelineRun var(--cycle) linear infinite;
+}
+
+@keyframes timelineRun {
+  0% {
+    width: 0%;
+    background: var(--err);
+  }
+  45% {
+    width: 48%;
+    background: var(--err);
+  }
+  52% {
+    width: 55%;
+    background: var(--ok);
+  }
+  100% {
+    width: 100%;
+    background: var(--ok);
+  }
 }
 
 .timelineLabels {
@@ -152,13 +176,43 @@
   position: relative;
   z-index: 2;
   transform-style: preserve-3d;
-  transition: transform 0.18s ease-out;
   will-change: transform;
+  transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+}
+
+.floatLayer {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.motionOn .floatLayer {
+  animation: stageFloat 6s ease-in-out infinite;
+}
+
+@keyframes stageFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotateZ(0deg);
+  }
+  50% {
+    transform: translate3d(0, -12px, 0) rotateZ(0.4deg);
+  }
 }
 
 .cardStack {
   position: relative;
   min-height: 430px;
+}
+
+.cardWeak {
+  opacity: 1;
+  z-index: 2;
+}
+
+.cardStrong {
+  opacity: 0;
+  z-index: 1;
+  pointer-events: none;
 }
 
 .dossier {
@@ -174,24 +228,7 @@
     0 40px 80px rgba(21, 34, 56, 0.1);
   padding: 28px 28px 24px;
   overflow: hidden;
-  transition: border-color 0.5s ease, box-shadow 0.5s ease;
   will-change: opacity, transform;
-}
-
-.dossierWeak.dossierStamped {
-  border-color: rgba(179, 56, 46, 0.35);
-  box-shadow:
-    0 1px 2px rgba(179, 56, 46, 0.06),
-    0 18px 44px rgba(179, 56, 46, 0.14),
-    0 36px 72px rgba(21, 34, 56, 0.08);
-}
-
-.dossierStrong.dossierStamped {
-  border-color: rgba(30, 122, 76, 0.35);
-  box-shadow:
-    0 1px 2px rgba(30, 122, 76, 0.06),
-    0 18px 48px rgba(30, 122, 76, 0.16),
-    0 40px 80px rgba(21, 34, 56, 0.08);
 }
 
 .paperGrain {
@@ -215,18 +252,18 @@
   position: absolute;
   left: 12px;
   right: 12px;
-  top: calc(12% + var(--scan, 0) * 72%);
+  top: 12%;
   height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(192, 86, 47, 0.55), transparent);
-  box-shadow: 0 0 18px rgba(192, 86, 47, 0.35);
-  opacity: calc(var(--scan, 0) * 0.85);
+  background: linear-gradient(90deg, transparent, rgba(192, 86, 47, 0.7), transparent);
+  box-shadow: 0 0 18px rgba(192, 86, 47, 0.45);
+  opacity: 0;
   pointer-events: none;
   z-index: 4;
 }
 
 .dossierStrong .scanline {
-  background: linear-gradient(90deg, transparent, rgba(30, 122, 76, 0.55), transparent);
-  box-shadow: 0 0 18px rgba(30, 122, 76, 0.35);
+  background: linear-gradient(90deg, transparent, rgba(30, 122, 76, 0.7), transparent);
+  box-shadow: 0 0 18px rgba(30, 122, 76, 0.45);
 }
 
 .head {
@@ -244,7 +281,6 @@
   width: 28px;
   height: 28px;
   flex: none;
-  transition: filter 0.4s ease;
 }
 
 .headCopy {
@@ -330,7 +366,8 @@
   background: rgba(246, 243, 236, 0.92);
   border-radius: 8px;
   border: 1px solid transparent;
-  will-change: opacity, transform;
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
 }
 
 .row b {
@@ -342,17 +379,6 @@
 .value {
   color: var(--muted);
   text-align: right;
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 2px;
-  min-height: 1.1em;
-}
-
-.placeholder {
-  color: var(--faint);
-  font-style: italic;
-  opacity: 0.7;
 }
 
 .row[data-tone="warn"] {
@@ -383,26 +409,6 @@
   font-weight: 500;
 }
 
-.caret {
-  display: inline-block;
-  width: 1.5px;
-  height: 0.95em;
-  background: currentColor;
-  animation: caretBlink 0.75s steps(1) infinite;
-  margin-left: 1px;
-}
-
-@keyframes caretBlink {
-  0%,
-  45% {
-    opacity: 1;
-  }
-  46%,
-  100% {
-    opacity: 0;
-  }
-}
-
 .foot {
   display: flex;
   align-items: center;
@@ -416,6 +422,7 @@
   font-family: var(--mono, "IBM Plex Mono", ui-monospace, monospace);
   font-size: 0.62rem;
   color: var(--faint);
+  opacity: 0.35;
 }
 
 .miniMeter {
@@ -429,10 +436,10 @@
 .miniMeter span {
   display: block;
   height: 100%;
+  width: 0%;
   border-radius: inherit;
   background: currentColor;
   color: var(--terra);
-  transition: width 0.08s linear;
 }
 
 .dossierStrong .miniMeter span {
@@ -459,7 +466,9 @@
   letter-spacing: 0.06em;
   pointer-events: none;
   z-index: 5;
-  will-change: transform, opacity, filter;
+  opacity: 0;
+  transform: scale(0.55) rotate(-28deg);
+  filter: blur(4px);
 }
 
 .stamp strong {
@@ -493,70 +502,368 @@
   inset: -10px;
   border-radius: 50%;
   border: 2px solid currentColor;
-  animation: rippleOut 1.1s ease-out infinite;
+  opacity: 0;
   pointer-events: none;
-}
-
-@keyframes rippleOut {
-  0% {
-    transform: scale(0.92);
-    opacity: 0.55;
-  }
-  100% {
-    transform: scale(1.28);
-    opacity: 0;
-  }
 }
 
 .failVeil {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 70% 75%, rgba(179, 56, 46, 0.12), transparent 55%);
+  background: radial-gradient(circle at 70% 75%, rgba(179, 56, 46, 0.14), transparent 55%);
   pointer-events: none;
   z-index: 2;
   opacity: 0;
-  transition: opacity 0.35s ease;
-}
-
-.dossierStamped .failVeil {
-  opacity: 1;
-  animation: veilPulse 1.6s ease-in-out infinite;
 }
 
 .successGlow {
   position: absolute;
   inset: -20%;
-  background: radial-gradient(circle at 70% 70%, rgba(30, 122, 76, 0.18), transparent 50%);
+  background: radial-gradient(circle at 70% 70%, rgba(30, 122, 76, 0.2), transparent 50%);
   pointer-events: none;
   z-index: 2;
   opacity: 0;
-  transition: opacity 0.35s ease;
 }
 
-.dossierStamped .successGlow {
-  opacity: 1;
-  animation: glowBreath 2.2s ease-in-out infinite;
+.motionOn .cardWeak {
+  animation: weakCard var(--cycle) ease-in-out infinite;
 }
 
-@keyframes veilPulse {
+.motionOn .cardWeak .row {
+  animation: rowIn var(--cycle) ease-out infinite;
+  animation-delay: calc(var(--i) * 0.35s);
+}
+
+.motionOn .cardWeak .miniMeter span {
+  animation: meterFillWeak var(--cycle) ease-out infinite;
+}
+
+.motionOn .cardWeak .hash {
+  animation: hashInWeak var(--cycle) ease-out infinite;
+}
+
+.motionOn .cardWeak .stamp {
+  animation: stampSlamWeak var(--cycle) var(--ease-out-expo) infinite;
+}
+
+.motionOn .cardWeak .stampRipple {
+  animation: ripplePulse var(--cycle) ease-out infinite;
+}
+
+.motionOn .cardWeak .failVeil {
+  animation: veilWeak var(--cycle) ease-in-out infinite;
+}
+
+.motionOn .cardWeak .scanline {
+  animation: scanSweepWeak var(--cycle) linear infinite;
+}
+
+@keyframes weakCard {
   0%,
-  100% {
-    opacity: 0.55;
+  42% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    pointer-events: auto;
+    border-color: var(--line);
   }
+  36%,
+  42% {
+    border-color: rgba(179, 56, 46, 0.4);
+    box-shadow:
+      0 1px 2px rgba(179, 56, 46, 0.06),
+      0 18px 44px rgba(179, 56, 46, 0.16),
+      0 36px 72px rgba(21, 34, 56, 0.08);
+  }
+  48%,
+  100% {
+    opacity: 0;
+    transform: translate3d(-18px, 8px, 0) scale(0.97);
+    pointer-events: none;
+  }
+}
+
+@keyframes rowIn {
+  0%,
+  4% {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  12%,
+  44% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  50%,
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+}
+
+@keyframes meterFillWeak {
+  0% {
+    width: 0%;
+  }
+  28%,
+  44% {
+    width: 100%;
+  }
+  50%,
+  100% {
+    width: 0%;
+  }
+}
+
+@keyframes hashInWeak {
+  0%,
+  20% {
+    opacity: 0.35;
+  }
+  28%,
+  44% {
+    opacity: 0.85;
+  }
+  50%,
+  100% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes stampSlamWeak {
+  0%,
+  28% {
+    opacity: 0;
+    transform: scale(0.55) rotate(-28deg);
+    filter: blur(4px);
+  }
+  34% {
+    opacity: 1;
+    transform: scale(1.08) rotate(-8deg);
+    filter: blur(0);
+  }
+  38%,
+  44% {
+    opacity: 1;
+    transform: scale(1) rotate(-12deg);
+    filter: blur(0);
+  }
+  50%,
+  100% {
+    opacity: 0;
+    transform: scale(0.9) rotate(-18deg);
+    filter: blur(2px);
+  }
+}
+
+@keyframes ripplePulse {
+  0%,
+  33% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  36% {
+    opacity: 0.55;
+    transform: scale(0.95);
+  }
+  44% {
+    opacity: 0;
+    transform: scale(1.28);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.28);
+  }
+}
+
+@keyframes veilWeak {
+  0%,
+  32% {
+    opacity: 0;
+  }
+  36%,
+  44% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes scanSweepWeak {
+  0%,
+  6% {
+    top: 12%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  30% {
+    top: 78%;
+    opacity: 0.7;
+  }
+  34%,
+  100% {
+    top: 82%;
+    opacity: 0;
+  }
+}
+
+.motionOn .cardStrong {
+  animation: strongCard var(--cycle) ease-in-out infinite;
+}
+
+.motionOn .cardStrong .row {
+  animation: rowInStrong var(--cycle) ease-out infinite;
+  animation-delay: calc(var(--i) * 0.32s);
+}
+
+.motionOn .cardStrong .miniMeter span {
+  animation: meterFillStrong var(--cycle) ease-out infinite;
+}
+
+.motionOn .cardStrong .hash {
+  animation: hashInStrong var(--cycle) ease-out infinite;
+}
+
+.motionOn .cardStrong .stamp {
+  animation: stampSlamStrong var(--cycle) var(--ease-out-expo) infinite;
+}
+
+.motionOn .cardStrong .stampRipple {
+  animation: ripplePulseStrong var(--cycle) ease-out infinite;
+}
+
+.motionOn .cardStrong .successGlow {
+  animation: glowStrong var(--cycle) ease-in-out infinite;
+}
+
+.motionOn .cardStrong .scanline {
+  animation: scanSweepStrong var(--cycle) linear infinite;
+}
+
+@keyframes strongCard {
+  0%,
+  46% {
+    opacity: 0;
+    transform: translate3d(22px, -6px, 0) scale(0.97);
+    pointer-events: none;
+  }
+  52%,
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    pointer-events: auto;
+    border-color: rgba(30, 122, 76, 0.4);
+    box-shadow:
+      0 1px 2px rgba(30, 122, 76, 0.06),
+      0 18px 48px rgba(30, 122, 76, 0.18),
+      0 40px 80px rgba(21, 34, 56, 0.08);
+  }
+}
+
+@keyframes rowInStrong {
+  0%,
   50% {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  58%,
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes meterFillStrong {
+  0%,
+  52% {
+    width: 0%;
+  }
+  78%,
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes hashInStrong {
+  0%,
+  70% {
+    opacity: 0.35;
+  }
+  82%,
+  100% {
     opacity: 1;
   }
 }
 
-@keyframes glowBreath {
+@keyframes stampSlamStrong {
   0%,
+  78% {
+    opacity: 0;
+    transform: scale(0.55) rotate(-28deg);
+    filter: blur(4px);
+  }
+  84% {
+    opacity: 1;
+    transform: scale(1.08) rotate(-8deg);
+    filter: blur(0);
+  }
+  88%,
   100% {
-    opacity: 0.45;
+    opacity: 1;
+    transform: scale(1) rotate(-12deg);
+    filter: blur(0);
+  }
+}
+
+@keyframes ripplePulseStrong {
+  0%,
+  83% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  86% {
+    opacity: 0.55;
+    transform: scale(0.95);
+  }
+  94%,
+  100% {
+    opacity: 0;
+    transform: scale(1.28);
+  }
+}
+
+@keyframes glowStrong {
+  0%,
+  82% {
+    opacity: 0;
     transform: scale(1);
   }
-  50% {
+  88%,
+  100% {
+    opacity: 0.85;
+    transform: scale(1.03);
+  }
+}
+
+@keyframes scanSweepStrong {
+  0%,
+  52% {
+    top: 12%;
+    opacity: 0;
+  }
+  56% {
     opacity: 0.9;
-    transform: scale(1.04);
+  }
+  74% {
+    top: 78%;
+    opacity: 0.7;
+  }
+  78%,
+  100% {
+    top: 82%;
+    opacity: 0;
   }
 }
 
@@ -598,17 +905,41 @@
 }
 
 .reduced .ambient,
-.reduced .orbit,
-.reduced .caret,
-.reduced .stampRipple,
-.reduced .failVeil,
-.reduced .successGlow {
+.reduced .orbit {
   animation: none !important;
 }
 
-.reduced .stage3d {
+.reduced .stage3d,
+.reduced .floatLayer {
   transform: none !important;
-  transition: none !important;
+  animation: none !important;
+}
+
+.reduced .cardWeak {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.reduced .cardStrong,
+.reduced .cardStrong .row,
+.reduced .cardStrong .stamp,
+.reduced .cardStrong .successGlow,
+.reduced .cardStrong .hash,
+.reduced .cardStrong .miniMeter span {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+.reduced .cardStrong .miniMeter span {
+  width: 100% !important;
+}
+
+.reduced .timelineFill {
+  animation: none !important;
+  width: 72% !important;
+  background: var(--ok) !important;
 }
 
 @media (max-width: 1024px) {
@@ -620,8 +951,10 @@
     min-height: 410px;
   }
 
-  .stage3d {
+  .stage3d,
+  .floatLayer {
     transform: none !important;
+    animation: none !important;
   }
 }
 
@@ -649,10 +982,45 @@
 @media (prefers-reduced-motion: reduce) {
   .ambient,
   .orbit,
-  .caret,
+  .stage3d,
+  .floatLayer,
+  .cardWeak,
+  .cardStrong,
+  .row,
+  .stamp,
   .stampRipple,
   .failVeil,
-  .successGlow {
+  .successGlow,
+  .scanline,
+  .timelineFill,
+  .miniMeter span,
+  .hash {
     animation: none !important;
+  }
+
+  .cardWeak {
+    opacity: 0 !important;
+  }
+
+  .cardStrong {
+    opacity: 1 !important;
+  }
+
+  .cardStrong .row,
+  .cardStrong .stamp,
+  .cardStrong .successGlow,
+  .cardStrong .hash {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  .cardStrong .miniMeter span {
+    width: 100% !important;
+  }
+
+  .timelineFill {
+    width: 72% !important;
+    background: var(--ok) !important;
   }
 }
