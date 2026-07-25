@@ -4,46 +4,60 @@
 - **Canonical Product Name:** CBAMValid Exporter Verification Preparation Pack V5
 - **Canonical Positioning:** Prepared for Independent Accredited Verification
 - **Legal & Regulatory Foundation:** EU Regulation 2023/956, EU ETS AVR 2018/2067, Implementing Regulations (EU) 2023/1776, 2023/1778, and 2025/2546.
-- **Commercial Contract:** $149 per Exporter Verification Preparation Pack (no subscription, drafts are free, 5 sealed releases included).
+- **Commercial Contract:** USD 149 per Exporter Verification Preparation Pack (no subscription, drafts are free, 5 sealed releases included).
+- **Support:** info@cbamvalid.com
+- **Claim boundary:** Never claims accredited verification opinion, EU approval, customs approval, or registry acceptance.
+
+## Visual System (Institutional Precision, 2026)
+- Surfaces: `#FAFAF8` / `#F0EDE8` / `#FFFFFF`
+- Ink: `#1A1A1A` / `#4A4A45` / `#8A8A82`
+- Forest CTA: `#1B4332` · hover `#2D6A4F` · seal gold `#D4A017`
+- QC semantics: blocked `#9B2226` · warning `#BB6B00` · pass `#2D6A4F`
+- Type: Source Sans 3 · Source Serif 4 · IBM Plex Mono
+- Homepage hero marker: `HERO_STORY_5S` (`components/marketing/hero-story.css`) — 5-second unmanaged→QC Blocked then CBAMValid→Sealed narrative
 
 ## Core Public Web Endpoints
-- **Homepage:** https://cbamvalid.com/ — Executive introduction, verifier-grade positioning, live ROI & penalty risk calculator.
-- **Product:** https://cbamvalid.com/product — Complete 25-component dossier package breakdown and verifier readiness score engine.
-- **How It Works:** https://cbamvalid.com/how-it-works) — Step-by-step workflow (Setup Scope → Link Evidence → Server Calculation → Generate Sealed Deliverables).
-- **Pricing:** https://cbamvalid.com/pricing — Commercial contract ($149 per pack), Paddle payment integration, multi-release license rules.
-- **Sample Dossier:** https://cbamvalid.com/sample-dossier — Interactive browser preview of a sealed V5 verifier dossier (14-page PDF, XLSX workspace, JSON traces).
-- **Verification:** https://cbamvalid.com/verify — Public KMS signature and document hash verification engine for accredited verifiers and customs declariants.
-- **Methodology:** https://cbamvalid.com/methodology — Deterministic calculation engine rules, rounding policy (`ROUND_HALF_UP`), precursor inclusion rules, and allocation algebra.
-- **CN-Code Hub:** https://cbamvalid.com/cn-code — Combined Nomenclature classification search and sector eligibility directory (Iron & Steel, Aluminum, Cement, Fertilizers, Hydrogen, Electricity).
+- **Homepage:** https://cbamvalid.com/ — Brand-led hero (5-second fail→seal story), positioning, CTAs to register / how-it-works / sample dossier.
+- **Product:** https://cbamvalid.com/product — Complete 25-component dossier package breakdown and verifier readiness gates.
+- **How It Works:** https://cbamvalid.com/how-it-works — Step-by-step workflow (Setup Scope → Link Evidence → Server Calculation → Generate Sealed Deliverables).
+- **Pricing:** https://cbamvalid.com/pricing — Commercial contract (USD 149 per pack), Paddle checkout, multi-release entitlement rules.
+- **Sample Dossier:** https://cbamvalid.com/sample-dossier — Interactive browser preview of a sealed V5 verifier dossier.
+- **Verification:** https://cbamvalid.com/verify — Public KMS signature and document hash verification for accredited verifiers and customs declarants.
+- **Methodology:** https://cbamvalid.com/methodology — Deterministic calculation engine rules, rounding policy (`ROUND_HALF_UP`), precursor inclusion, allocation algebra.
+- **CN-Code Hub:** https://cbamvalid.com/cn-code — Combined Nomenclature classification search and sector eligibility (Iron & Steel, Aluminum, Cement, Fertilizers, Hydrogen, Electricity).
+- **About:** https://cbamvalid.com/about
+- **Contact:** https://cbamvalid.com/contact
+- **Legal:** https://cbamvalid.com/privacy · https://cbamvalid.com/terms · https://cbamvalid.com/cookie-policy · https://cbamvalid.com/refund-policy · https://cbamvalid.com/legal-notice
+- **Indexes:** https://cbamvalid.com/sitemap.xml · https://cbamvalid.com/robots.txt · https://cbamvalid.com/llm.txt · https://cbamvalid.com/llms.txt
 
 ## Deliverable Architecture (25 Controlled Components)
-1. `CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf` (14 Pages, 6 Chapters, 30 Audit Sections)
-2. `Complete Dossier Compilation.pdf` (Consolidated Technical Annexes & Operational Registers)
-3. `Product Scope Assessment.pdf` (System Boundary & Sectoral Scope Register)
-4. `CN Code Reasoning.pdf` (Combined Nomenclature Classification Logic)
-5. `Required Data Checklist.pdf` (Input Data Completeness Ledger)
-6. `Installation Monitoring Plan.pdf` (Metering, Calibration & Source Stream Monitoring Plan)
-7. `Production Process Map.pdf` (Functional Process Units & Energy/Material Balance Diagram)
-8. `System Boundary Register.pdf` (Direct & Indirect Boundary Register)
-9. `Source Stream Register.csv` (Combustion Fuels, Raw Materials & Precursors Balance)
-10. `Emission Source Register.csv` (Process Vents, Stacks & Burner Points)
-11. `Measurement and Meter Register.csv` (Metering Instruments, Calibration & Uncertainty Log)
-12. `Activity Data Ledger.csv` (Monthly/Daily Activity Records)
-13. `Evidence Register.csv` (Physical Evidence Index with SHA-256 Hashes)
-14. `Field-to-Evidence Matrix.csv` (Input Path to File Hash Audit Crosswalk)
-15. `Methodology Decision Log.pdf` (Operator Justification Log & Regulatory References)
-16. `Embedded Emissions Calculation Annex.pdf` (Step-by-Step Formula Trace)
-17. `Operator Emissions Report.pdf` (Official Operator Declaration)
-18. `Misstatement and Non-Conformity Register.csv` (Quality Controls & Readiness Findings)
-19. `Corrective Action Log.csv` (Remediation Action Tracking)
-20. `O3CI Field Mapping.csv` (Registry Export Crosswalk)
-21. `Calculation Trace.json` (Machine-Readable Node Hash Tree)
-22. `Verifier Workspace.xlsx` (Multi-Sheet Interactive Navigation Workbook)
-23. `Data Integrity Manifest.json` (Cryptographic JSON manifest metadata)
-24. `Manifest Signature.sig` (KMS RSA-4096 signature verification record)
-25. `Supporting_Evidence/` (Folder containing all linked evidence files)
+1. `CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf` (structured PDF chapters)
+2. `Complete Dossier Compilation.pdf` (consolidated technical annexes & operational registers)
+3. `Product Scope Assessment.pdf`
+4. `CN Code Reasoning.pdf`
+5. `Required Data Checklist.pdf`
+6. `Installation Monitoring Plan.pdf`
+7. `Production Process Map.pdf`
+8. `System Boundary Register.pdf`
+9. `Source Stream Register.csv`
+10. `Emission Source Register.csv`
+11. `Measurement and Meter Register.csv`
+12. `Activity Data Ledger.csv`
+13. `Evidence Register.csv`
+14. `Field-to-Evidence Matrix.csv`
+15. `Methodology Decision Log.pdf`
+16. `Embedded Emissions Calculation Annex.pdf`
+17. `Operator Emissions Report.pdf`
+18. `Misstatement and Non-Conformity Register.csv`
+19. `Corrective Action Log.csv`
+20. `O3CI Field Mapping.csv` (registry-compatible structured data export — not official Registry XML)
+21. `Calculation Trace.json`
+22. `Verifier Workspace.xlsx`
+23. `Data Integrity Manifest.json`
+24. `Manifest Signature.sig`
+25. `Supporting_Evidence/`
 
 ## Structural Quality Controls & Fail-Closed Gates
-- **Fail-Closed Sealing:** Requires 100% evidence coverage, zero missing material inputs, APPROVED evidence review status, and reconciled allocation shares.
-- **Data Privacy & Tenant Isolation:** User cases, raw evidence files, and sealed reports are encrypted and strictly excluded from public AI indexing.
-- **Last Updated:** 2026-07-22
+- **Fail-Closed Sealing:** Requires 100% evidence coverage, zero missing material inputs, APPROVED evidence review status, SUPPORTED evidence support status, and reconciled allocation shares.
+- **Data Privacy & Tenant Isolation:** User cases, raw evidence files, and sealed reports are encrypted and strictly excluded from public AI indexing (`robots.txt` disallows `/cases/`, `/account/`, `/dashboard/`, `/admin/`, `/cbam/`, `/credits/`, `/reports/`, `/api/`, `/login`, `/register`).
+- **Last Updated:** 2026-07-26

@@ -11,19 +11,20 @@
 - Dark sections: warm stone `#1C1917` with `#E7E5E4` text.
 - Typography: Source Sans 3 (UI), Source Serif 4 (headings), IBM Plex Mono (CN codes, hashes, emissions values).
 - Constraints: light-mode first, no purple/indigo gradients, no Inter/Roboto defaults, WCAG AA contrast targets.
-- Marketing hero: 5-second fail→seal narrative using forest/seal semantic tokens only (`hero-story.css`).
+- Marketing hero (`HERO_STORY_5S` in `hero-story.css`): 5-second fail→seal loop — unmanaged dossier receives **QC Blocked**, then CBAMValid path receives **Sealed · Ready for independent verification**. Reduced-motion users see a static side-by-side comparison.
 
 ## Product Overview & Navigation
-- [Homepage](https://cbamvalid.com/) — Executive summary, platform positioning, live ROI calculator.
+- [Homepage](https://cbamvalid.com/) — Brand-led hero with the 5-second fail→seal narrative, product positioning, and primary CTAs.
 - [Product & Deliverables](https://cbamvalid.com/product) — Dossier package breakdown and verifier readiness gates.
 - [How It Works](https://cbamvalid.com/how-it-works) — Workflow from case setup to immutable release package.
-- [Pricing & Entitlements](https://cbamvalid.com/pricing) — $149 per Exporter Verification Preparation Pack (no subscription, drafts are free, 5 sealed releases included).
-- [Sample Dossier Preview](https://cbamvalid.com/sample-dossier) — Interactive verifier dossier preview with visual geometry validation.
-- [Public Signature Verification](https://cbamvalid.com/verify) — KMS RSA-4096 signature and document SHA-256 integrity verification engine.
+- [Pricing & Entitlements](https://cbamvalid.com/pricing) — USD 149 per Exporter Verification Preparation Pack (no subscription, drafts are free, 5 sealed releases included).
+- [Sample Dossier Preview](https://cbamvalid.com/sample-dossier) — Interactive verifier dossier preview.
+- [Public Signature Verification](https://cbamvalid.com/verify) — KMS RSA-4096 signature and document SHA-256 integrity verification.
 - [Methodology & Calculation Rules](https://cbamvalid.com/methodology) — Server-side deterministic engine, ROUND_HALF_UP rounding, allocation reconciliation.
 - [Combined Nomenclature (CN) Hub](https://cbamvalid.com/cn-code) — CN classification search and sectoral eligibility directory (Iron & Steel, Aluminum, Cement, Fertilizers, Hydrogen, Electricity).
 - [About](https://cbamvalid.com/about) — Operator independence and product boundary.
 - [Contact](https://cbamvalid.com/contact) — Support via info@cbamvalid.com.
+- Machine indexes: [sitemap.xml](https://cbamvalid.com/sitemap.xml) · [robots.txt](https://cbamvalid.com/robots.txt) · [llm.txt](https://cbamvalid.com/llm.txt) · [llms-full.txt](https://cbamvalid.com/llms-full.txt)
 
 ## Canonical Deliverable Contract (25 Components)
 1. **CBAMValid Verification Readiness & Evidence Assurance Dossier**: Structured PDF document (Executive Summary, Readiness Score, Installation & Process Boundaries, Evidence Lineage, Embedded Emission Calculations, Handover & Annexes).
@@ -57,5 +58,6 @@
 - **Fail-Closed Sealing Gates**: Sealing is strictly blocked if any material data is missing, evidence coverage is under 100%, allocation shares do not sum to 1, or unapproved evidence exists.
 - **Evidence Review & Scan Workflow**: Uploaded evidence files undergo byte and SHA-256 verification and status checks before operator approval for V5 readiness gating.
 - **Data Confidentiality & Privacy**: User cases, raw evidence files, and generated dossiers are encrypted and isolated per tenant. All private case data is excluded from public search engines and AI indexing.
+- **Claim boundary**: Operator-prepared package ready for independent accredited verification — never an accredited verification opinion, EU approval, or customs acceptance.
 
 Last updated: 2026-07-26
