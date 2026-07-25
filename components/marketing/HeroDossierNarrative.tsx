@@ -1,73 +1,67 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import styles from "./HeroDossierNarrative.module.css";
 
+/**
+ * Single-clock cinematic hero (rAF). No fragile setTimeout chains.
+ * Continuous micro-motion + staged narrative beats.
+ */
+
 type Scene = "weak" | "strong";
-type Phase =
-  | "boot"
-  | "fill"
-  | "review"
-  | "stamp"
-  | "hold"
-  | "crossfade";
 
 type FieldSpec = {
   label: string;
   weak: string;
   strong: string;
-  weakTone?: "warn" | "err" | "muted";
-  strongTone?: "ok" | "muted";
 };
 
 const FIELDS: FieldSpec[] = [
-  {
-    label: "Goods scope",
-    weak: "Steel? / TBD",
-    strong: "CN 7208 39 00",
-    weakTone: "warn",
-    strongTone: "ok",
-  },
-  {
-    label: "Embedded emissions",
-    weak: "~400 tCO₂e?",
-    strong: "412.60 tCO₂e",
-    weakTone: "warn",
-    strongTone: "ok",
-  },
-  {
-    label: "Evidence coverage",
-    weak: "4 / 16 linked",
-    strong: "16 / 16 supported",
-    weakTone: "err",
-    strongTone: "ok",
-  },
-  {
-    label: "QC blockers",
-    weak: "7 open",
-    strong: "0 open",
-    weakTone: "err",
-    strongTone: "ok",
-  },
+  { label: "Goods scope", weak: "Steel? / TBD", strong: "CN 7208 39 00" },
+  { label: "Embedded emissions", weak: "~400 tCO₂e?", strong: "412.60 tCO₂e" },
+  { label: "Evidence coverage", weak: "4 / 16 linked", strong: "16 / 16 supported" },
+  { label: "QC blockers", weak: "7 open", strong: "0 open" },
 ];
 
-const CAPTIONS: Record<Scene, { eyebrow: string; title: string; detail: string }> = {
-  weak: {
-    eyebrow: "Ad-hoc preparation",
-    title: "Incomplete inputs. Unlinked evidence.",
-    detail: "A dossier assembled outside a controlled workflow fails closed quality controls.",
-  },
-  strong: {
-    eyebrow: "Prepared with CBAMValid",
-    title: "Evidence-linked. Deterministic. Sealed.",
-    detail: "Operator-prepared package, ready for independent accredited verification.",
-  },
-};
+const LOOP_MS = 18_000;
+const WEAK_END = 8_200;
+const CROSSFADE_MS = 700;
 
-const STAMPS: Record<Scene, { line1: string; line2: string }> = {
-  weak: { line1: "QC Blocked", line2: "Not verification-ready" },
-  strong: { line1: "Sealed", line2: "Ready for independent verification" },
-};
+function clamp01(n: number) {
+  return Math.max(0, Math.min(1, n));
+}
+
+function easeOutCubic(t: number) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function easeOutBack(t: number) {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
+
+function typeProgress(elapsedInScene: number, index: number, scene: Scene) {
+  const start = 380 + index * (scene === "weak" ? 480 : 420);
+  const duration = scene === "weak" ? 520 : 460;
+  return clamp01((elapsedInScene - start) / duration);
+}
+
+function scrambleReveal(target: string, progress: number, seed: number) {
+  if (progress <= 0) return "";
+  if (progress >= 1) return target;
+  const glyphs = "0123456789ABCDEF·/?~";
+  const count = Math.floor(target.length * easeOutCubic(progress));
+  let out = "";
+  for (let i = 0; i < count; i += 1) {
+    if (progress > 0.72 || i < count - 1) {
+      out += target[i];
+    } else {
+      out += glyphs[(i * 7 + seed * 3) % glyphs.length];
+    }
+  }
+  return out;
+}
 
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
@@ -81,9 +75,14 @@ function usePrefersReducedMotion(): boolean {
   return reduced;
 }
 
-function BrandMark() {
+function BrandMark({ pulse }: { pulse: boolean }) {
   return (
-    <svg className={styles.brandMark} viewBox="0 0 40 40" fill="none" aria-hidden="true">
+    <svg
+      className={[styles.brandMark, pulse ? styles.brandPulse : ""].join(" ")}
+      viewBox="0 0 40 40"
+      fill="none"
+      aria-hidden="true"
+    >
       <path
         d="M20 3 35 9.5v9.7c0 8.9-6.2 15-15 17.8C11.2 34.2 5 28.1 5 19.2V9.5L20 3Z"
         stroke="#C0562F"
@@ -101,78 +100,186 @@ function BrandMark() {
   );
 }
 
-type NarrativeViewProps = {
-  scene: Scene;
-  phase: Phase;
-  visibleRows: number;
-  typedChars: number[];
-  stampActive: boolean;
-  hashReveal: number;
-  reducedMotion?: boolean;
-};
+function deriveFrame(clock: number) {
+  const inCrossToStrong = clock >= WEAK_END && clock < WEAK_END + CROSSFADE_MS;
+  const inCrossToWeak = clock >= LOOP_MS - CROSSFADE_MS;
+  const scene: Scene = clock < WEAK_END + CROSSFADE_MS / 2 ? "weak" : "strong";
+  const sceneElapsed = scene === "weak" ? clock : Math.max(0, clock - (WEAK_END + CROSSFADE_MS));
+  const crossfade = inCrossToStrong || inCrossToWeak
+    ? clamp01(
+        inCrossToStrong
+          ? (clock - WEAK_END) / CROSSFADE_MS
+          : (clock - (LOOP_MS - CROSSFADE_MS)) / CROSSFADE_MS
+      )
+    : 0;
 
-function NarrativeView({
-  scene,
-  phase,
-  visibleRows,
-  typedChars,
-  stampActive,
-  hashReveal,
-  reducedMotion = false,
-}: NarrativeViewProps) {
-  const caption = CAPTIONS[scene];
-  const stamp = STAMPS[scene];
-  const hashFull =
-    scene === "strong"
+  const stampAt = scene === "weak" ? 5600 : 5200;
+  const stampProgress = clamp01((sceneElapsed - stampAt) / 520);
+  const stampActive = stampProgress > 0.08;
+  const stampImpact = easeOutBack(clamp01(stampProgress * 1.15));
+
+  const reviewAt = scene === "weak" ? 4800 : 4400;
+  const scanning = sceneElapsed > reviewAt - 400 && sceneElapsed < stampAt + 200;
+
+  const hashProgress =
+    scene === "strong" ? clamp01((sceneElapsed - 3600) / 900) : clamp01((sceneElapsed - 4200) / 600);
+
+  const rows = FIELDS.map((field, index) => {
+    const progress = typeProgress(sceneElapsed, index, scene);
+    const value = scene === "weak" ? field.weak : field.strong;
+    const shown = scrambleReveal(value, progress, index + (scene === "strong" ? 11 : 3));
+    const tone =
+      scene === "weak"
+        ? index < 2
+          ? "warn"
+          : "err"
+        : "ok";
+    return {
+      label: field.label,
+      shown,
+      complete: progress >= 1,
+      visible: progress > 0.02,
+      progress,
+      tone,
+      caret: progress > 0.02 && progress < 1,
+    };
+  });
+
+  const caption =
+    scene === "weak"
+      ? {
+          eyebrow: "Ad-hoc preparation",
+          title: "Incomplete inputs. Unlinked evidence.",
+          detail: "A dossier assembled outside a controlled workflow fails closed quality controls.",
+        }
+      : {
+          eyebrow: "Prepared with CBAMValid",
+          title: "Evidence-linked. Deterministic. Sealed.",
+          detail: "Operator-prepared package, ready for independent accredited verification.",
+        };
+
+  const stamp =
+    scene === "weak"
+      ? { line1: "QC Blocked", line2: "Not verification-ready" }
+      : { line1: "Sealed", line2: "Ready for independent verification" };
+
+  const status =
+    stampActive
+      ? scene === "weak"
+        ? "Blocked"
+        : "Sealed · v5"
+      : scanning
+        ? scene === "weak"
+          ? "Review failed"
+          : "Integrity check"
+        : scene === "weak"
+          ? "Draft · unmanaged"
+          : "Guided preparation";
+
+  const fillRatio = rows.reduce((sum, row) => sum + row.progress, 0) / rows.length;
+
+  return {
+    scene,
+    crossfade,
+    stampActive,
+    stampImpact,
+    scanning,
+    hashProgress,
+    rows,
+    caption,
+    stamp,
+    status,
+    fillRatio,
+    sceneElapsed,
+  };
+}
+
+export function HeroDossierNarrative() {
+  const reducedMotion = usePrefersReducedMotion();
+  const [clock, setClock] = useState(1200);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setReady(true), 0);
+    return () => window.clearTimeout(id);
+  }, []);
+
+  useEffect(() => {
+    if (reducedMotion || !ready) return;
+    let raf = 0;
+    const start = performance.now() - 1200;
+    const tick = (now: number) => {
+      setClock((now - start) % LOOP_MS);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [reducedMotion, ready]);
+
+  const frame = useMemo(
+    () => (reducedMotion ? deriveFrame(WEAK_END + CROSSFADE_MS + 7000) : deriveFrame(clock)),
+    [clock, reducedMotion]
+  );
+
+  const hashText =
+    frame.scene === "strong"
       ? "SHA-256 · 9f2a…c41d · immutable"
       : "SHA-256 · — missing integrity chain";
-
-  const statusLabel = useMemo(() => {
-    if (scene === "weak") {
-      if (phase === "stamp" || phase === "hold") return "Blocked";
-      if (phase === "review") return "Review failed";
-      return "Draft · unmanaged";
-    }
-    if (phase === "stamp" || phase === "hold") return "Sealed · v5";
-    if (phase === "review") return "Integrity check";
-    return "Guided preparation";
-  }, [phase, scene]);
 
   return (
     <div
       className={[
         styles.stage,
-        styles[`scene_${scene}`],
-        styles[`phase_${phase}`],
+        styles[`scene_${frame.scene}`],
+        frame.crossfade > 0.05 ? styles.crossfading : "",
+        frame.stampActive ? styles.stamped : "",
+        frame.scanning ? styles.scanning : "",
         reducedMotion ? styles.reduced : "",
+        ready ? styles.live : "",
       ].join(" ")}
+      style={
+        {
+          "--fill": String(frame.fillRatio),
+          "--stamp": String(frame.stampImpact),
+          "--cross": String(frame.crossfade),
+          "--hash": String(frame.hashProgress),
+        } as CSSProperties
+      }
       role="img"
       aria-label="Animated comparison: an unmanaged CBAM dossier fails quality control, then a CBAMValid-prepared dossier is sealed and ready for independent verification."
     >
-      <div className={styles.ambient} aria-hidden="true" />
+      <div className={styles.orbit} aria-hidden="true" />
+      <div className={styles.orbitSecondary} aria-hidden="true" />
+      <div className={styles.grain} aria-hidden="true" />
+
       <div className={styles.caption}>
-        <span className={styles.captionEyebrow}>{caption.eyebrow}</span>
-        <p className={styles.captionTitle}>{caption.title}</p>
-        <p className={styles.captionDetail}>{caption.detail}</p>
+        <span className={styles.captionEyebrow}>{frame.caption.eyebrow}</span>
+        <p className={styles.captionTitle}>{frame.caption.title}</p>
+        <p className={styles.captionDetail}>{frame.caption.detail}</p>
       </div>
 
+      <div className={styles.dossierFloat}>
       <div className={styles.dossier}>
+        <div className={styles.sheen} aria-hidden="true" />
+        <div className={styles.scanBeam} aria-hidden="true" />
         <div className={styles.frame} aria-hidden="true" />
+
         <header className={styles.head}>
-          <BrandMark />
+          <BrandMark pulse={frame.scene === "strong" && frame.stampActive} />
           <div className={styles.headCopy}>
             <b>Evidence Dossier</b>
             <span
               className={styles.status}
               data-tone={
-                scene === "strong" && stampActive
-                  ? "ok"
-                  : scene === "weak" && stampActive
-                    ? "err"
-                    : "neutral"
+                frame.stampActive
+                  ? frame.scene === "strong"
+                    ? "ok"
+                    : "err"
+                  : "neutral"
               }
             >
-              {statusLabel}
+              <i className={styles.statusDot} />
+              {frame.status}
             </span>
           </div>
         </header>
@@ -180,232 +287,72 @@ function NarrativeView({
         <h3 className={styles.title}>
           CBAM Definitive-Period
           <br />
-          <em>{scene === "strong" ? "Verification Preparation Pack" : "Audit-Preparation Draft"}</em>
+          <em>
+            {frame.scene === "strong"
+              ? "Verification Preparation Pack"
+              : "Audit-Preparation Draft"}
+          </em>
         </h3>
 
+        <div className={styles.meter} aria-hidden="true">
+          <span className={styles.meterFill} />
+        </div>
+
         <div className={styles.rows}>
-          {FIELDS.map((field, index) => {
-            const value = scene === "weak" ? field.weak : field.strong;
-            const shown = value.slice(0, typedChars[index] || 0);
-            const visible = index < visibleRows;
-            const tone = scene === "weak" ? field.weakTone : field.strongTone;
-            return (
-              <div
-                key={field.label}
-                className={[styles.row, visible ? styles.rowIn : ""].join(" ")}
-                data-tone={tone}
-                style={{ transitionDelay: `${index * 40}ms` }}
-              >
-                <b>{field.label}</b>
-                <span className={styles.value}>
-                  {shown}
-                  {visible && shown.length < value.length ? <i className={styles.caret} /> : null}
-                </span>
-              </div>
-            );
-          })}
+          {frame.rows.map((row) => (
+            <div
+              key={row.label}
+              className={[styles.row, row.visible ? styles.rowIn : ""].join(" ")}
+              data-tone={row.tone}
+              style={{ ["--row" as string]: String(row.progress) }}
+            >
+              <b>{row.label}</b>
+              <span className={styles.value}>
+                {row.shown}
+                {row.caret ? <i className={styles.caret} /> : null}
+              </span>
+              <span className={styles.rowGlow} aria-hidden="true" />
+            </div>
+          ))}
         </div>
 
         <footer className={styles.foot}>
-          <span
-            className={styles.hash}
-            style={{ opacity: scene === "strong" ? 0.35 + hashReveal * 0.65 : 0.55 }}
-          >
-            {hashFull}
-          </span>
+          <span className={styles.hash}>{hashText}</span>
           <div className={styles.progress} aria-hidden="true">
-            <span className={scene === "weak" ? styles.dotActive : styles.dot} />
-            <span className={scene === "strong" ? styles.dotActive : styles.dot} />
+            <span className={frame.scene === "weak" ? styles.dotActive : styles.dot} />
+            <span className={frame.scene === "strong" ? styles.dotActive : styles.dot} />
           </div>
         </footer>
 
         <div
           className={[
             styles.stamp,
-            stampActive ? styles.stampIn : "",
-            scene === "strong" ? styles.stampOk : styles.stampErr,
+            frame.stampActive ? styles.stampIn : "",
+            frame.scene === "strong" ? styles.stampOk : styles.stampErr,
           ].join(" ")}
-          aria-hidden={!stampActive}
+          aria-hidden={!frame.stampActive}
         >
-          <strong>{stamp.line1}</strong>
-          <span>{stamp.line2}</span>
+          <span className={styles.stampRing} aria-hidden="true" />
+          <span className={styles.stampRingDelay} aria-hidden="true" />
+          <strong>{frame.stamp.line1}</strong>
+          <span>{frame.stamp.line2}</span>
         </div>
       </div>
+      </div>
 
-      <div className={styles.legend} aria-hidden="true">
-        <span>
-          <i className={styles.legendWeak} /> Unmanaged prep
+      <div className={styles.timeline} aria-hidden="true">
+        <span className={styles.timelineTrack}>
+          <i className={styles.timelinePlayhead} style={{ left: `${(clock / LOOP_MS) * 100}%` }} />
         </span>
-        <span>
-          <i className={styles.legendStrong} /> CBAMValid seal path
-        </span>
+        <div className={styles.legend}>
+          <span>
+            <i className={styles.legendWeak} /> Unmanaged prep
+          </span>
+          <span>
+            <i className={styles.legendStrong} /> CBAMValid seal path
+          </span>
+        </div>
       </div>
     </div>
-  );
-}
-
-/**
- * Cinematic hero narrative: ad-hoc dossier fails QC, then CBAMValid seals
- * a verification-ready package. Apple-style pacing — one focus, deliberate motion.
- */
-export function HeroDossierNarrative() {
-  const reducedMotion = usePrefersReducedMotion();
-  const [scene, setScene] = useState<Scene>("weak");
-  const [phase, setPhase] = useState<Phase>("boot");
-  const [visibleRows, setVisibleRows] = useState(0);
-  const [typedChars, setTypedChars] = useState<number[]>(() => FIELDS.map(() => 0));
-  const [stampActive, setStampActive] = useState(false);
-  const [hashReveal, setHashReveal] = useState(0);
-  const timers = useRef<number[]>([]);
-
-  useEffect(() => {
-    if (reducedMotion) return;
-
-    const clearTimers = () => {
-      timers.current.forEach((id) => window.clearTimeout(id));
-      timers.current = [];
-    };
-
-    const later = (ms: number, fn: () => void) => {
-      const id = window.setTimeout(fn, ms);
-      timers.current.push(id);
-    };
-
-    const resetScene = (next: Scene) => {
-      setScene(next);
-      setPhase("boot");
-      setVisibleRows(0);
-      setTypedChars(FIELDS.map(() => 0));
-      setStampActive(false);
-      setHashReveal(0);
-    };
-
-    let cancelled = false;
-
-    const runWeak = () => {
-      if (cancelled) return;
-      resetScene("weak");
-      later(420, () => {
-        if (cancelled) return;
-        setPhase("fill");
-        FIELDS.forEach((field, index) => {
-          later(380 + index * 520, () => {
-            if (cancelled) return;
-            setVisibleRows(index + 1);
-            const target = field.weak.length;
-            let cursor = 0;
-            const tick = () => {
-              if (cancelled) return;
-              cursor += 1;
-              setTypedChars((prev) => {
-                const next = [...prev];
-                next[index] = Math.min(cursor, target);
-                return next;
-              });
-              if (cursor < target) later(22 + (index % 2) * 8, tick);
-            };
-            tick();
-          });
-        });
-        later(380 + FIELDS.length * 520 + 700, () => {
-          if (cancelled) return;
-          setPhase("review");
-          later(900, () => {
-            if (cancelled) return;
-            setPhase("stamp");
-            setStampActive(true);
-            later(1600, () => {
-              if (cancelled) return;
-              setPhase("hold");
-              later(1800, () => {
-                if (cancelled) return;
-                setPhase("crossfade");
-                later(700, runStrong);
-              });
-            });
-          });
-        });
-      });
-    };
-
-    const runStrong = () => {
-      if (cancelled) return;
-      resetScene("strong");
-      later(480, () => {
-        if (cancelled) return;
-        setPhase("fill");
-        FIELDS.forEach((field, index) => {
-          later(320 + index * 480, () => {
-            if (cancelled) return;
-            setVisibleRows(index + 1);
-            const target = field.strong.length;
-            let cursor = 0;
-            const tick = () => {
-              if (cancelled) return;
-              cursor += 1;
-              setTypedChars((prev) => {
-                const next = [...prev];
-                next[index] = Math.min(cursor, target);
-                return next;
-              });
-              if (cursor < target) later(18, tick);
-            };
-            tick();
-          });
-        });
-        later(320 + FIELDS.length * 480 + 400, () => {
-          if (cancelled) return;
-          setHashReveal(1);
-          setPhase("review");
-          later(1000, () => {
-            if (cancelled) return;
-            setPhase("stamp");
-            setStampActive(true);
-            later(1800, () => {
-              if (cancelled) return;
-              setPhase("hold");
-              later(3200, () => {
-                if (cancelled) return;
-                setPhase("crossfade");
-                later(800, runWeak);
-              });
-            });
-          });
-        });
-      });
-    };
-
-    // Defer first beat so the effect only schedules external timers (no sync setState).
-    later(0, runWeak);
-
-    return () => {
-      cancelled = true;
-      clearTimers();
-    };
-  }, [reducedMotion]);
-
-  if (reducedMotion) {
-    return (
-      <NarrativeView
-        scene="strong"
-        phase="hold"
-        visibleRows={FIELDS.length}
-        typedChars={FIELDS.map((field) => field.strong.length)}
-        stampActive
-        hashReveal={1}
-        reducedMotion
-      />
-    );
-  }
-
-  return (
-    <NarrativeView
-      scene={scene}
-      phase={phase}
-      visibleRows={visibleRows}
-      typedChars={typedChars}
-      stampActive={stampActive}
-      hashReveal={hashReveal}
-    />
   );
 }
