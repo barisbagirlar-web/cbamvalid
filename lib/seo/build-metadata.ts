@@ -1,35 +1,39 @@
-import { Metadata } from "next";
-import { seoRegistry } from "./registry";
-import { siteConfig } from "../site-config";
+import type { Metadata } from "next";
+import { siteConfig } from "@/lib/site-config";
+import { buildCanonicalUrl } from "./canonical";
+import { getSeoRoute } from "./registry";
 
 export function generateSeoMetadata(path: string): Metadata {
-  const meta = seoRegistry[path];
-  
+  const meta = getSeoRoute(path);
+
   if (!meta) {
-    // Fallback for unregistered paths (should ideally fail in CI)
+    // Unknown public routes fail closed to noindex — never silent index defaults.
     return {
       title: siteConfig.defaultTitle,
       description: siteConfig.defaultDescription,
-      robots: { index: false, follow: false },
+      robots: { index: false, follow: false, noarchive: true, nosnippet: true },
     };
   }
+
+  const canonical = buildCanonicalUrl(meta.canonicalPath);
+  const indexable = meta.indexability === "index";
 
   return {
     title: meta.title,
     description: meta.description,
     alternates: {
-      canonical: `${siteConfig.canonicalOrigin}${meta.canonicalPath}`,
+      canonical,
     },
     robots: {
-      index: meta.indexable,
-      follow: meta.indexable,
-      noarchive: !meta.indexable,
-      nosnippet: !meta.indexable,
+      index: indexable,
+      follow: indexable,
+      noarchive: !indexable,
+      nosnippet: !indexable,
     },
     openGraph: {
       title: meta.title,
       description: meta.description,
-      url: `${siteConfig.canonicalOrigin}${meta.canonicalPath}`,
+      url: canonical,
       siteName: siteConfig.siteName,
       images: [
         {

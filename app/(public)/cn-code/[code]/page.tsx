@@ -1,102 +1,161 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { siteConfig } from "@/lib/site-config";
-import { generateBreadcrumbSchema } from "@/lib/seo/schema";
-
-// Valid CBAM Chapters (Security Gate)
-const VALID_CHAPTERS = ["72", "73", "76", "25", "27", "28", "31"];
+import { JsonLdForRoute } from "@/components/seo/JsonLdForRoute";
+import { generateSeoMetadata } from "@/lib/seo/build-metadata";
+import { evaluateCnIndexability } from "@/lib/seo/indexability";
+import { listIndexablePublicCnEntries } from "@/lib/seo/cn-public-registry";
+import { SEO_LEGAL_SOURCE_INDEX } from "@/lib/seo/regulatory-sources";
 
 interface PageProps {
   params: Promise<{ code: string }>;
 }
 
-// 1. DYNAMIC METADATA & SEMANTIC SEO
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { code } = await params;
-  const chapter = code.substring(0, 2);
-  
-  if (code.length !== 8 || !VALID_CHAPTERS.includes(chapter)) {
-    return { 
-      title: "Invalid CN Code | CBAMValid",
-      robots: { index: false, follow: false }
-    };
-  }
+/**
+ * Only Stage-1 verified allowlist codes are routable entities.
+ * Unknown / unsupported CN detail URLs must hard-404 (not soft-404 + noindex).
+ */
+export const dynamicParams = false;
 
-  return {
-    title: `CBAM Declaration for CN Code ${code} | EU Compliance`,
-    description: `Prepare CBAMValid Exporter verifier-preparation dossier for CN Code ${code}. Calculate direct and precursor embedded emissions accurately.`,
-    alternates: {
-      canonical: `${siteConfig.canonicalOrigin}/cn-code/${code}`,
-    },
-    // Quality Gate: Only index if it's a known valid chapter with sufficient content
-    robots: { index: true, follow: true }
-  };
+export async function generateStaticParams() {
+  return listIndexablePublicCnEntries().map((entry) => ({ code: entry.cnCode }));
 }
 
-// 2. SERVER COMPONENT PAGE GENERATION
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { code } = await params;
+  const result = evaluateCnIndexability(code);
+  if (!result.indexable || !result.entry) {
+    // Should not normally run when dynamicParams=false; keep fail-closed.
+    notFound();
+  }
+  const entry = result.entry;
+  return generateSeoMetadata(`/cn-code/${entry.cnCode}`);
+}
+
 export default async function CNCodeLandingPage({ params }: PageProps) {
   const { code } = await params;
-  const chapter = code.substring(0, 2);
-
-  // If the code is out of scope, return 404 to prevent thin/garbage indexing
-  if (code.length !== 8 || !VALID_CHAPTERS.includes(chapter)) {
+  const result = evaluateCnIndexability(code);
+  if (!result.indexable || !result.entry) {
     notFound();
   }
 
-  // JSON-LD Structured Data for AI bots
-  const jsonLd = [
-    generateBreadcrumbSchema([
-      { name: "Home", item: "/" },
-      { name: "CN-Code Hub", item: "/cn-code" },
-      { name: `CN Code ${code}`, item: `/cn-code/${code}` }
-    ]),
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": `CBAM Calculator for ${code}`,
-      "applicationCategory": "BusinessApplication",
-      "operatingSystem": "Web",
-      "offers": {
-        "@type": "Offer",
-        "price": "149.00",
-        "priceCurrency": "USD"
-      },
-      "description": `Automated CBAM compliance tool for goods under CN code ${code}.`,
-    }
-  ];
+  const entry = result.entry;
+  const legal = SEO_LEGAL_SOURCE_INDEX.REG_2023_956;
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
-      {/* JSON-LD INJECTION */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      
-      {/* MINIMALIST SEO SHOWCASE */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-24 text-center">
-        <div className="max-w-3xl mx-auto">
-          <div className="mb-6 inline-flex items-center space-x-2 border border-border bg-surface px-4 py-1.5 rounded-full text-xs font-mono tracking-widest uppercase text-accent font-semibold">
-            <span>Chapter {chapter} Compliant</span>
-          </div>
-          
-          <h1 className="font-serif text-4xl md:text-6xl font-normal tracking-tight text-foreground leading-tight mb-6">
-            EU CBAM Declaration for <br />
-            <span className="font-mono text-accent">{code}</span>
-          </h1>
-          
-          <p className="text-lg text-muted mb-12 leading-relaxed">
-            Exporting products under CN Code {code} to the European Union? Calculate your embedded direct, indirect, and precursor emissions. Prepare your CBAMValid Exporter verifier-preparation dossier package in minutes.
+      <JsonLdForRoute path={`/cn-code/${entry.cnCode}`} />
+
+      <main className="flex-1 max-w-3xl mx-auto px-6 py-16">
+        <nav aria-label="Breadcrumb" className="text-sm text-muted mb-6">
+          <ol className="flex flex-wrap gap-2">
+            <li>
+              <Link href="/" className="hover:text-accent">
+                Home
+              </Link>
+            </li>
+            <li aria-hidden="true">/</li>
+            <li>
+              <Link href="/cn-code" className="hover:text-accent">
+                CN Codes
+              </Link>
+            </li>
+            <li aria-hidden="true">/</li>
+            <li className="text-foreground font-mono">{entry.cnCode}</li>
+          </ol>
+        </nav>
+
+        <p className="text-xs font-mono uppercase tracking-widest text-accent mb-3">
+          {entry.sector.replace("_", " ")} · CBAM Annex I scope
+        </p>
+        <h1 className="font-serif text-4xl tracking-tight text-foreground mb-4">
+          CN {entry.cnCode} — CBAM Scope
+        </h1>
+        <p className="text-lg text-muted leading-relaxed mb-10">{entry.description}</p>
+
+        <section className="mb-10 space-y-3">
+          <h2 className="text-2xl font-serif">Direct answer</h2>
+          <p className="text-sm text-muted leading-relaxed">
+            CN code {entry.cnCode} is treated as in-scope for CBAM goods classification under the
+            official scope dataset used by CBAMValid ({legal.id}). This page helps producers and
+            importers understand the sector context, production-route considerations, and evidence
+            needed before independent accredited verification.
           </p>
-          
-          <Link 
-            href={`/dashboard/wizard?cn=${code}`} 
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent px-8 py-4 text-base font-medium text-surface transition-colors hover:bg-accent-hover active:bg-accent-active shadow-sm"
+        </section>
+
+        <section className="mb-10 space-y-3">
+          <h2 className="text-2xl font-serif">Key facts</h2>
+          <ul className="list-disc pl-5 space-y-2 text-sm text-muted">
+            <li>Sector: {entry.sector}</li>
+            <li>Effective from: {entry.effectiveFrom}</li>
+            <li>Legal source: {legal.title}</li>
+            <li>
+              Default emission factors are multi-dimensional (year, country, route, direct/indirect)
+              and are not collapsed into a single CN-level number on this page.
+            </li>
+          </ul>
+        </section>
+
+        <section className="mb-10 space-y-3">
+          <h2 className="text-2xl font-serif">Production-route considerations</h2>
+          <ul className="list-disc pl-5 space-y-2 text-sm text-muted">
+            {entry.productionRoutes.map((route) => (
+              <li key={route}>{route}</li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="mb-10 space-y-3">
+          <h2 className="text-2xl font-serif">Required producer data</h2>
+          <ul className="list-disc pl-5 space-y-2 text-sm text-muted">
+            {entry.requiredProducerData.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="mb-10 space-y-3">
+          <h2 className="text-2xl font-serif">Evidence considerations</h2>
+          <ul className="list-disc pl-5 space-y-2 text-sm text-muted">
+            {entry.evidenceConsiderations.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="mb-10 space-y-3">
+          <h2 className="text-2xl font-serif">What CBAMValid prepares</h2>
+          <p className="text-sm text-muted leading-relaxed">
+            CBAMValid structures installation, goods, calculation and evidence records into an
+            Exporter Verification Preparation Pack for independent accredited verification. It does
+            not issue an accredited verification opinion or EU/customs approval.
+          </p>
+        </section>
+
+        <div className="rounded-md border border-border bg-surface p-6 mb-10">
+          <Link
+            href={`/register?next=${encodeURIComponent(`/cases/new?cn=${entry.cnCode}`)}`}
+            className="inline-flex min-h-11 items-center justify-center rounded-md bg-accent px-6 py-3 text-sm font-medium text-surface"
           >
-            Start Wizard for {code}
+            Start a Dossier for CN {entry.cnCode}
           </Link>
         </div>
+
+        <section className="border-t border-border pt-6 text-xs text-muted space-y-2">
+          <h2 className="text-sm font-semibold text-foreground">Regulatory source / review</h2>
+          <p>Primary source: {legal.title}</p>
+          <p>
+            Source URL:{" "}
+            <a className="text-accent underline" href={legal.eliUri} rel="noreferrer" target="_blank">
+              {legal.eliUri}
+            </a>
+          </p>
+          <p>Last content review: {entry.factualLastModified}</p>
+          <p>
+            Interpretation boundary: CBAMValid provides preparation software guidance only — not
+            legal advice or accredited verification.
+          </p>
+        </section>
       </main>
     </div>
   );

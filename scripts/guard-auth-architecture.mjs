@@ -132,13 +132,22 @@ walk(rootDir, isSourceFile, (filePath) => {
     logError(relPath, "Contains hardcoded admin email \"barisbagirlar@gmail.com\". Use Custom Claims instead.");
   }
 
-  // 8.1. Token split/dot check & strengthened E2E mock bypass rules
+  // 8.1. Token split/dot check — only on auth-sensitive paths.
+  // Non-auth modules may use dotted field paths (e.g. evidence sufficiency).
+  const isAuthSensitivePath =
+    relPath.includes("(auth)") ||
+    relPath.includes("/auth/") ||
+    relPath.includes("session") ||
+    relPath === "middleware.ts" ||
+    relPath === "context/AuthProvider.tsx" ||
+    relPath === "lib/firebase/client.ts";
   if (
-    content.includes('.split(".")') ||
-    content.includes(".split('.')") ||
-    content.includes('.split(/\\./)') ||
-    content.includes("split(/\\./)") ||
-    content.includes("token.split")
+    content.includes("token.split") ||
+    (isAuthSensitivePath &&
+      (content.includes('.split(".")') ||
+        content.includes(".split('.')") ||
+        content.includes('.split(/\\./)') ||
+        content.includes("split(/\\./)")))
   ) {
     logError(relPath, "Contains banned token split operation (.split(\".\") / split(/\\./)).");
   }

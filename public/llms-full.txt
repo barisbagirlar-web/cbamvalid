@@ -1,47 +1,64 @@
-# CBAMValid Full Content Catalog & Architecture Guide for LLMs
+# CBAMValid — Exporter Verification Preparation Pack
 
-## Platform Positioning & Governance
-- **Canonical Product Name:** CBAMValid Exporter Verification Preparation Pack V5
-- **Canonical Positioning:** Prepared for Independent Accredited Verification
-- **Legal & Regulatory Foundation:** EU Regulation 2023/956, EU ETS AVR 2018/2067, Implementing Regulations (EU) 2023/1776, 2023/1778, and 2025/2546.
-- **Commercial Contract:** $149 per legal operator/installation reporting year (100 account credits = 1 Exporter Verification Preparation Pack, unlocking 5 successful sealed release versions).
+> CBAMValid (https://cbamvalid.com) is a verifier-preparation platform for non-EU producers, exporters, operators, importers, and CBAM reporting teams. It produces an operator-prepared dossier that reduces the work required for independent accredited verification.
 
-## Core Public Web Endpoints
-- **Homepage:** https://cbamvalid.com/ — Executive introduction, verifier-grade positioning, live ROI & penalty risk calculator.
-- **Product:** https://cbamvalid.com/product — Complete 23-component dossier package breakdown and verifier readiness score engine.
-- **How It Works:** https://cbamvalid.com/how-it-works — Step-by-step workflow (Setup Scope → Link Evidence → Server Calculation → Generate Sealed Deliverables).
-- **Pricing:** https://cbamvalid.com/pricing — Commercial unit contract ($149 / 100 credits), Paddle payment integration, multi-release license rules.
-- **Sample Dossier:** https://cbamvalid.com/sample-dossier — Interactive browser preview of a sealed V5 verifier dossier (14-page PDF, XLSX workspace, JSON traces).
-- **Verification:** https://cbamvalid.com/verify — Public KMS signature and document hash verification engine for accredited verifiers and customs declariants.
-- **Methodology:** https://cbamvalid.com/methodology — Deterministic calculation engine rules, rounding policy (`ROUND_HALF_UP`), precursor inclusion rules, and allocation algebra.
-- **CN-Code Hub:** https://cbamvalid.com/cn-code — Combined Nomenclature classification search and sector eligibility directory (Iron & Steel, Aluminum, Cement, Fertilizers, Hydrogen, Electricity).
+## Product positioning
 
-## Deliverable Architecture (23 Controlled Components)
-1. `CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf` (14 Pages, 6 Chapters, 30 Audit Sections)
-2. `Complete Dossier Compilation.pdf` (Consolidated Technical Annexes & Operational Registers)
-3. `Product Scope Assessment.pdf` (System Boundary & Sectoral Scope Register)
-4. `CN Code Reasoning.pdf` (Combined Nomenclature Classification Logic)
-5. `Required Data Checklist.pdf` (Input Data Completeness Ledger)
-6. `Installation Monitoring Plan.pdf` (Metering, Calibration & Source Stream Monitoring Plan)
-7. `Production Process Map.pdf` (Functional Process Units & Energy/Material Balance Diagram)
-8. `System Boundary Register.pdf` (Direct & Indirect Boundary Register)
-9. `Source Stream Register.csv` (Combustion Fuels, Raw Materials & Precursors Balance)
-10. `Emission Source Register.csv` (Process Vents, Stacks & Burner Points)
-11. `Measurement and Meter Register.csv` (Metering Instruments, Calibration & Uncertainty Log)
-12. `Activity Data Ledger.csv` (Monthly/Daily Activity Records)
-13. `Evidence Register.csv` (Physical Evidence Index with SHA-256 Hashes)
-14. `Field-to-Evidence Matrix.csv` (Input Path to File Hash Audit Crosswalk)
-15. `Methodology Decision Log.pdf` (Operator Justification Log & Regulatory References)
-16. `Embedded Emissions Calculation Annex.pdf` (Step-by-Step Formula Trace)
-17. `Operator Emissions Report.pdf` (Official Operator Declaration)
-18. `Misstatement and Non-Conformity Register.csv` (Quality Controls & Readiness Findings)
-19. `Corrective Action Log.csv` (Remediation Action Tracking)
-20. `O3CI Field Mapping.csv` (Registry Export Crosswalk)
-21. `Calculation Trace.json` (Machine-Readable Node Hash Tree)
-22. `Verifier Workspace.xlsx` (Multi-Sheet Interactive Navigation Workbook)
-23. `Data Integrity Manifest.json` (Cryptographic Manifest & KMS RSA-4096 Signature `.sig`)
+- CBAMValid Exporter Verification Preparation Pack — Prepared for Independent Accredited Verification
+- Pricing: $149 per Exporter Verification Preparation Pack (one-time; no subscription; drafts free; 1 installation; 1 reporting year; 5 sealed releases).
 
-## Structural Quality Controls & Fail-Closed Gates
-- **Fail-Closed Sealing:** Requires 100% evidence coverage, zero missing material inputs, APPROVED evidence review status, and reconciled allocation shares.
-- **Data Privacy & Tenant Isolation:** User cases, raw evidence files, and sealed reports are encrypted and strictly excluded from public AI indexing.
-- **Last Updated:** 2026-07-21
+## Independence boundary
+
+CBAMValid is an independent software service for exporter-to-importer evidence packaging. It is not an EU institution, customs authority, or accredited CBAM verifier. Actual emissions data must be independently verified where verification is legally required.
+
+## Core public resources
+
+- [CBAM Exporter Final Evidence Report](https://cbamvalid.com): CBAM verification preparation software
+- [Exporter Verification Preparation Pack](https://cbamvalid.com/product): CBAM verification preparation product
+- [Prepare your CBAM case before you pay](https://cbamvalid.com/pricing): CBAMValid pricing
+- [How CBAMValid Works](https://cbamvalid.com/how-it-works): CBAMValid workflow
+- [Sample Verification Preparation Dossier](https://cbamvalid.com/sample-dossier): CBAM sample dossier
+- [Understand CBAM Calculation Methodology](https://cbamvalid.com/methodology): CBAM calculation methodology
+- [Verify CBAM CN-Code Scope](https://cbamvalid.com/cn-code): CBAM CN code scope
+- [Verify a Dossier](https://cbamvalid.com/verify): CBAMValid dossier verification
+- [About CBAMValid](https://cbamvalid.com/about): About CBAMValid
+- [Contact CBAMValid](https://cbamvalid.com/contact): Contact CBAMValid
+- [CBAM 2026 Definitive Period](https://cbamvalid.com/cbam-2026-definitive-period): CBAM definitive period 2026
+- [Calculate CBAM Embedded Emissions](https://cbamvalid.com/cbam-embedded-emissions-calculation): how to calculate embedded emissions
+- [Actual Values vs Default Values](https://cbamvalid.com/cbam-actual-vs-default-values): CBAM actual vs default values
+- [CBAM Default Values](https://cbamvalid.com/cbam-default-values): CBAM default values
+- [CBAM Certificate Price](https://cbamvalid.com/cbam-certificate-price): CBAM certificate price
+- [CBAM Verification Preparation](https://cbamvalid.com/cbam-verification-preparation): CBAM verifier preparation
+- [Exporter Evidence Requirements](https://cbamvalid.com/cbam-exporter-evidence-requirements): CBAM exporter evidence requirements
+- [CBAM Guide for Non-EU Producers](https://cbamvalid.com/cbam-non-eu-producer-guide): CBAM non-EU producer guide
+- [CBAM CN Code Scope](https://cbamvalid.com/cbam-cn-code-scope): CBAM CN code list / scope
+- [CBAM Methodology Overview](https://cbamvalid.com/cbam-methodology): CBAM methodology
+
+## Key regulatory facts
+
+- The CBAM definitive period applies from 1 January 2026.
+- For 2026 imports, the first CBAM declaration and corresponding certificate surrender deadline is 30 September 2027.
+- In 2026, CBAM certificate prices are calculated on a quarterly cadence. Certificate purchase obligations follow the definitive-period rules and must not be confused with transitional quarterly emissions reporting.
+- CBAMValid prepares operator evidence packages for independent accredited verification. It does not issue an accredited verification opinion, EU approval, customs approval, or registry acceptance.
+
+## Authoritative source families
+
+- REG_2023_956: [Regulation (EU) 2023/956 of the European Parliament and of the Council of 10 May 2023 establishing a carbon border adjustment mechanism](https://eur-lex.europa.eu/eli/reg/2023/956/oj/eng)
+- REG_2025_2083: [Regulation (EU) 2025/2083 of the European Parliament and of the Council of 8 October 2025 amending Regulation (EU) 2023/956 as regards simplifying and strengthening the carbon border adjustment mechanism](https://eur-lex.europa.eu/eli/reg/2025/2083/oj/eng)
+- IMPL_2025_2546: [Commission Implementing Regulation (EU) 2025/2546 of 10 December 2025 on the application of the principles for verification of declared embedded emissions pursuant to Regulation (EU) 2023/956](https://eur-lex.europa.eu/eli/reg_impl/2025/2546/oj/eng)
+- IMPL_2025_2547: [Commission Implementing Regulation (EU) 2025/2547 of 10 December 2025 laying down rules for the application of Regulation (EU) 2023/956 as regards the methods for the calculation of emissions embedded in goods](https://eur-lex.europa.eu/eli/reg_impl/2025/2547/oj/eng)
+- IMPL_2025_2548: [Commission Implementing Regulation (EU) 2025/2548 of 10 December 2025 laying down rules for the application of Regulation (EU) 2023/956 as regards the calculation and publication of the price of CBAM certificates](https://eur-lex.europa.eu/eli/reg_impl/2025/2548/oj/eng)
+
+## Contact
+
+- Website: https://cbamvalid.com
+- Support: info@cbamvalid.com
+
+Last updated: 2026-07-26
+
+## Explicit non-claims
+
+- Not an accredited verification opinion
+- Not an official European Commission or CBAM Registry service
+- Not customs approval or registry acceptance
+- No synthetic customer counts, ratings, or testimonials

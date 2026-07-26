@@ -23,8 +23,11 @@ export function proxy(request: NextRequest) {
   const session = request.cookies.get('__session');
   const isAuthenticated = !!session;
 
-  // 1. Workspace Protection: Unauthenticated user accessing workspace routes
-  const isWorkspaceRoute = workspacePrefixes.some(prefix => pathname.startsWith(prefix));
+  // Workspace Protection: Unauthenticated user accessing workspace routes.
+  // Use exact segment boundaries so public SEO hubs like /cbam-2026-* are not matched.
+  const isWorkspaceRoute = workspacePrefixes.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
   if (isWorkspaceRoute && !isAuthenticated) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('next', pathname);
