@@ -25,9 +25,9 @@ export function RegulatoryGuidePage({
   const independence = getRegulatoryFact("INDEPENDENCE_BOUNDARY");
 
   return (
-    <main className="max-w-3xl mx-auto px-6 py-16 font-sans text-foreground">
+    <main className="max-w-3xl mx-auto px-6 py-10 md:py-14 font-sans text-foreground">
       <JsonLdForRoute path={path} />
-      <nav aria-label="Breadcrumb" className="text-sm text-muted mb-6">
+      <nav aria-label="Breadcrumb" className="text-sm text-muted mb-4">
         <ol className="flex gap-2">
           <li>
             <Link href="/" className="hover:text-accent">
@@ -39,13 +39,14 @@ export function RegulatoryGuidePage({
         </ol>
       </nav>
 
-      <h1 className="font-serif text-4xl tracking-tight mb-4">{route.h1}</h1>
-      <p className="text-lg text-muted leading-relaxed mb-10">{route.description}</p>
+      {/* H1 uses sans (Inter, preloaded) — serif Lora is deferred and delayed LCP on guide pages. */}
+      <h1 className="font-sans text-3xl md:text-4xl font-bold tracking-tight mb-3">{route.h1}</h1>
+      <p className="text-base md:text-lg text-muted leading-relaxed mb-8">{route.description}</p>
 
       {sections.map((section) => (
-        <section key={section.id} id={section.id} className="mb-10 space-y-3">
-          <h2 className="text-2xl font-serif">{section.title}</h2>
-          {section.paragraphs.map((paragraph) => (
+        <section key={section.id} id={section.id} className="mb-8 space-y-3">
+          <h2 className="text-xl md:text-2xl font-sans font-semibold">{section.title}</h2>
+          {section.paragraphs?.map((paragraph) => (
             <p key={paragraph.slice(0, 24)} className="text-sm text-muted leading-relaxed">
               {paragraph}
             </p>
@@ -64,6 +65,7 @@ export function RegulatoryGuidePage({
         <h2 className="text-xl font-serif mb-3">Next step</h2>
         <Link
           href={ctaHref}
+          prefetch={ctaHref.startsWith("/login") || ctaHref.startsWith("/register") ? false : undefined}
           className="inline-flex min-h-11 items-center justify-center rounded-md bg-accent px-6 py-3 text-sm font-medium text-surface"
         >
           {ctaLabel}

@@ -548,6 +548,37 @@ function validateRegulatoryAndLlm(): GateResult[] {
     );
   }
 
+  if (!existsSync(resolve("docs/seo/thin-hub-decisions.md"))) {
+    results.push(fail("G33", "Missing docs/seo/thin-hub-decisions.md"));
+  } else {
+    const board = readFileSync(resolve("docs/seo/thin-hub-decisions.md"), "utf8");
+    const required = [
+      "/cbam-default-values",
+      "/cbam-non-eu-producer-guide",
+      "/cbam-verification-preparation",
+      "/cbam-actual-vs-default-values",
+      "/cbam-certificate-price",
+    ];
+    const missing = required.filter((path) => !board.includes(path));
+    if (
+      missing.length > 0 ||
+      !/THIN_HUB_DECISIONS=PASS/.test(board) ||
+      !/NO_UNREVIEWED_INDEXABLE_HUBS=PASS/.test(board)
+    ) {
+      results.push(fail("G33", `Thin hub decision board incomplete (${missing.join(",") || "markers"})`));
+    } else if (
+      !/DEFAULT_VALUES_SECTIONS/.test(readFileSync(resolve("lib/seo/hub-content.ts"), "utf8")) ||
+      !/NON_EU_PRODUCER_SECTIONS/.test(readFileSync(resolve("lib/seo/hub-content.ts"), "utf8")) ||
+      !/VERIFICATION_PREPARATION_SECTIONS/.test(readFileSync(resolve("lib/seo/hub-content.ts"), "utf8")) ||
+      !/ACTUAL_VS_DEFAULT_SECTIONS/.test(readFileSync(resolve("lib/seo/hub-content.ts"), "utf8")) ||
+      !/CERTIFICATE_PRICE_SECTIONS/.test(readFileSync(resolve("lib/seo/hub-content.ts"), "utf8"))
+    ) {
+      results.push(fail("G33", "ENRICH section stacks missing in hub-content.ts"));
+    } else {
+      results.push(pass("G33", "THIN_HUB_DECISIONS=PASS; NO_UNREVIEWED_INDEXABLE_HUBS=PASS"));
+    }
+  }
+
   return results;
 }
 
