@@ -237,23 +237,34 @@ describe("Production Security & Foundation Audits", () => {
 
   it("11. End-to-end sandbox payment webhook lifecycle with idempotency", async () => {
     const { processWebhookEvent } = await import("../../functions/src/commerce/webhook-processor");
-    
+    const analyticsDocs = new Map<string, Record<string, unknown>>();
+    let commerceGetCalls = 0;
+
     // We mock firestore runTransaction and get/set calls
     const mockDbTransaction: any = {
-      get: vi.fn()
-        // 1. First writeLedgerEntry call checks existing idempotency key -> empty snapshot
-        .mockResolvedValueOnce({ empty: true })
-        // 2. First writeLedgerEntry fetch latest ledger entry -> empty snapshot
-        .mockResolvedValueOnce({ empty: true })
-        // 3. transitionOrderStatus fetches order (PAID transition) -> active order document
-        .mockResolvedValueOnce({ exists: true, data: () => ({ status: "PENDING" }) })
-        // 4. createEntitlement writeLedgerEntry checks existing key -> empty snapshot
-        .mockResolvedValueOnce({ empty: true })
-        // 5. createEntitlement writeLedgerEntry fetch latest entry -> empty snapshot
-        .mockResolvedValueOnce({ empty: true })
-        // 6. transitionOrderStatus fetches order (ENTITLED transition) -> active order document
-        .mockResolvedValueOnce({ exists: true, data: () => ({ status: "PAID" }) }),
-      set: vi.fn(),
+      get: vi.fn(async (reference: { path?: string; empty?: boolean; exists?: boolean }) => {
+        if (typeof reference?.path === "string" && reference.path.includes("seo_analytics_idempotency/")) {
+          const data = analyticsDocs.get(reference.path);
+          return { exists: Boolean(data), data: () => data };
+        }
+        commerceGetCalls += 1;
+        // Commerce fulfillment sequence (6 gets inside the fulfillment txn)
+        if (commerceGetCalls === 1 || commerceGetCalls === 2 || commerceGetCalls === 4 || commerceGetCalls === 5) {
+          return { empty: true };
+        }
+        if (commerceGetCalls === 3) {
+          return { exists: true, data: () => ({ status: "PENDING" }) };
+        }
+        if (commerceGetCalls === 6) {
+          return { exists: true, data: () => ({ status: "PAID" }) };
+        }
+        return { empty: true };
+      }),
+      set: vi.fn((reference: { path?: string }, data: Record<string, unknown>) => {
+        if (typeof reference?.path === "string" && reference.path.includes("seo_analytics_idempotency/")) {
+          analyticsDocs.set(reference.path, data);
+        }
+      }),
       update: vi.fn(),
     };
 
@@ -279,7 +290,7 @@ describe("Production Security & Foundation Audits", () => {
       get: mockOrderGet,
     });
 
-    adminDb.collection = vi.fn().mockImplementation((colName) => {
+    adminDb.collection = vi.fn().mockImplementation((colName: string) => {
       const mockQuery = {
         orderBy: vi.fn().mockReturnThis(),
         limit: vi.fn().mockReturnThis(),
@@ -294,6 +305,20 @@ describe("Production Security & Foundation Audits", () => {
       };
       if (colName === "commerce_orders") {
         return colObj;
+      }
+      if (colName === "seo_analytics_idempotency") {
+        return {
+          ...colObj,
+          doc: (documentId: string) => ({
+            id: documentId,
+            path: `seo_analytics_idempotency/${documentId}`,
+            get: async () => {
+              const path = `seo_analytics_idempotency/${documentId}`;
+              const data = analyticsDocs.get(path);
+              return { exists: Boolean(data), data: () => data };
+            },
+          }),
+        };
       }
       return {
         ...colObj,
@@ -330,7 +355,10 @@ describe("Production Security & Foundation Audits", () => {
     await processWebhookEvent(event);
 
     // Assert that the ledger entries and entitlements are set and updated
-    expect(mockDbTransaction.set).toHaveBeenCalledTimes(3); // 2 ledger entries + 1 entitlement document
+    // 2 ledger + 1 entitlement + 1 analytics idempotency doc
+    expect(mockDbTransaction.set).toHaveBeenCalledTimes(4);
     expect(mockDbTransaction.update).toHaveBeenCalledTimes(2); // Order transition to PAID + transition to ENTITLED
+    expect(analyticsDocs.size).toBe(1);
+    expect(analyticsDocs.has("seo_analytics_idempotency/analytics_purchase:txn_sandbox_payment_123")).toBe(true);
   });
 });

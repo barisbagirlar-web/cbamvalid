@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthProvider";
 import { CREDIT_PACKAGES } from "@/lib/billing/catalog";
 import { initializePaddle, Paddle } from "@paddle/paddle-js";
 import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
+import { trackSeoEvent } from "@/lib/seo/analytics-events";
 
 export default function BuyCreditsPage() {
   const { user, loading } = useAuth();
@@ -57,16 +58,40 @@ export default function BuyCreditsPage() {
 
   useEffect(() => {
     // Initialize Paddle Billing Sandbox/Production
-    initializePaddle({ 
-      environment: process.env.NEXT_PUBLIC_PADDLE_ENV === 'production' ? 'production' : 'sandbox',
-      token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || 'test_82d61d560c5a1a1f0a2e...', 
-    }).then((paddleInstance) => {
-      if (paddleInstance) {
-        setPaddle(paddleInstance);
-      }
-    }).catch((err) => {
-      console.error("Failed to initialize Paddle", err);
-    });
+    initializePaddle({
+      environment: process.env.NEXT_PUBLIC_PADDLE_ENV === "production" ? "production" : "sandbox",
+      token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || "test_82d61d560c5a1a1f0a2e...",
+      eventCallback: (event) => {
+        if (event.name === "checkout.completed") {
+          const data = event.data as
+            | { transaction_id?: string; id?: string; totals?: { total?: string | number } }
+            | undefined;
+          const transactionId = data?.transaction_id || data?.id;
+          if (!transactionId) return;
+          trackSeoEvent("purchase", {
+            transaction_id: String(transactionId),
+            value: Number(data?.totals?.total ?? CANONICAL_PRICING.displayPrice),
+            currency: "USD",
+            items: [
+              {
+                item_id: "exporter_pack",
+                item_name: CANONICAL_PRICING.packName,
+                price: Number(CANONICAL_PRICING.displayPrice),
+                quantity: 1,
+              },
+            ],
+          });
+        }
+      },
+    })
+      .then((paddleInstance) => {
+        if (paddleInstance) {
+          setPaddle(paddleInstance);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to initialize Paddle", err);
+      });
   }, []);
 
   const handleCheckout = async (slug: string) => {
@@ -103,6 +128,19 @@ export default function BuyCreditsPage() {
       }
 
       // Open checkout via transaction ID
+      trackSeoEvent("begin_checkout", {
+        value: Number(CANONICAL_PRICING.displayPrice),
+        currency: "USD",
+        transaction_id: String(data.data.transactionId),
+        items: [
+          {
+            item_id: slug,
+            item_name: CANONICAL_PRICING.packName,
+            price: Number(CANONICAL_PRICING.displayPrice),
+            quantity: 1,
+          },
+        ],
+      });
       paddle.Checkout.open({
         transactionId: data.data.transactionId,
         settings: {

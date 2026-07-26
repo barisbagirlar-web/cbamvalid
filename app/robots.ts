@@ -1,30 +1,75 @@
-import { MetadataRoute } from 'next';
+import type { MetadataRoute } from "next";
+import { siteConfig } from "@/lib/site-config";
 
+/**
+ * Central robots contract. Do not block /_next/static or other render assets.
+ * OAI-SearchBot is explicit for ChatGPT Search; GPTBot is a separate training crawler.
+ */
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
-        userAgent: '*',
-        allow: '/',
-        disallow: ['/dashboard/', '/api/', '/admin/'],
+        userAgent: "*",
+        allow: "/",
+        disallow: [
+          "/dashboard/",
+          "/admin/",
+          "/api/",
+          "/cases/",
+          "/reports/",
+          "/account/",
+          "/credits/",
+          "/cbam/",
+          "/login",
+          "/register",
+        ],
       },
       {
-        userAgent: 'GPTBot',
-        allow: '/',
+        userAgent: "OAI-SearchBot",
+        allow: "/",
+        disallow: [
+          "/dashboard/",
+          "/admin/",
+          "/api/",
+          "/cases/",
+          "/reports/",
+          "/account/",
+          "/credits/",
+          "/cbam/",
+          "/login",
+          "/register",
+        ],
       },
       {
-        userAgent: 'Claude-Web',
-        allow: '/',
+        userAgent: "Googlebot",
+        allow: "/",
+        disallow: [
+          "/dashboard/",
+          "/admin/",
+          "/api/",
+          "/cases/",
+          "/reports/",
+          "/account/",
+          "/credits/",
+          "/cbam/",
+          "/login",
+          "/register",
+        ],
       },
       {
-        userAgent: 'ClaudeBot',
-        allow: '/',
+        userAgent: "GPTBot",
+        allow: "/",
       },
       {
-        userAgent: 'Google-Extended',
-        allow: '/',
-      }
+        userAgent: "ClaudeBot",
+        allow: "/",
+      },
+      {
+        userAgent: "Google-Extended",
+        allow: "/",
+      },
     ],
-    sitemap: 'https://cbamvalid.com/sitemap.xml',
+    sitemap: `${siteConfig.canonicalOrigin}/sitemap.xml`,
+    host: siteConfig.canonicalOrigin,
   };
 }

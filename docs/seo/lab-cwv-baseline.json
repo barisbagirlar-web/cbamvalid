@@ -1,0 +1,8 @@
+{
+  "/": { "lcp": 4100, "cls": 0.01, "tbt": 40, "ttfb": 50 },
+  "/product": { "lcp": 4500, "cls": 0.01, "tbt": 40, "ttfb": 50 },
+  "/pricing": { "lcp": 4200, "cls": 0.01, "tbt": 40, "ttfb": 50 },
+  "/methodology": { "lcp": 4300, "cls": 0.01, "tbt": 40, "ttfb": 50 },
+  "/cbam-2026-definitive-period": { "lcp": 4600, "cls": 0.01, "tbt": 40, "ttfb": 50 },
+  "/cn-code/72011011": { "lcp": 4100, "cls": 0.01, "tbt": 40, "ttfb": 50 }
+}

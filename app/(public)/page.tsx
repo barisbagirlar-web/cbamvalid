@@ -1,33 +1,30 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Shield, ArrowRight, CheckCircle2, Globe2 } from "lucide-react";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
-import { generateOrganizationSchema, generateWebSiteSchema, generateWebApplicationSchema, generateFAQSchema, generateEeatProductSchema } from "@/lib/seo/schema";
+import { generateFAQSchema } from "@/lib/seo/schema";
+import { JsonLdForRoute } from "@/components/seo/JsonLdForRoute";
 
-export const metadata = generateSeoMetadata("/");
+export const metadata: Metadata = generateSeoMetadata("/");
+
+const HOME_FAQS = [
+  {
+    question: "What is a CBAM evidence dossier?",
+    answer: "A CBAM evidence dossier is a compiled report containing the direct and indirect embedded emissions data of imported goods, structured to align with EU regulations.",
+  },
+  {
+    question: "Is CBAMValid an official European Commission service?",
+    answer: "No. CBAMValid is an independent software service that assists exporters and importers with calculations and reporting preparation.",
+  },
+] as const;
 
 export default function HomePage() {
-  const jsonLd = [
-    generateOrganizationSchema(),
-    generateWebSiteSchema(),
-    generateWebApplicationSchema("Prepare structured exporter evidence, identify documentation gaps, calculate embedded emissions, and generate auditable CBAM preparation dossiers."),
-    generateEeatProductSchema(),
-    generateFAQSchema([
-      {
-        question: "What is a CBAM evidence dossier?",
-        answer: "A CBAM evidence dossier is a compiled report containing the direct and indirect embedded emissions data of imported goods, structured to align with EU regulations."
-      },
-      {
-        question: "Is CBAMValid an official European Commission service?",
-        answer: "No. CBAMValid is an independent software service that assists exporters and importers with calculations and reporting preparation."
-      }
-    ])
-  ];
-
   return (
     <div className="min-h-screen bg-background text-foreground font-sans flex flex-col">
+      <JsonLdForRoute path="/" />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(generateFAQSchema([...HOME_FAQS])) }}
       />
 
 
@@ -122,6 +119,10 @@ export default function HomePage() {
                   src="/media/cbamvalid-product-walkthrough-poster.webp" 
                   alt="Video Walkthrough Poster" 
                   className="w-full h-full object-cover opacity-80"
+                  loading="lazy"
+                  decoding="async"
+                  width={1920}
+                  height={1080}
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-16 h-16 bg-accent/90 rounded-full flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">

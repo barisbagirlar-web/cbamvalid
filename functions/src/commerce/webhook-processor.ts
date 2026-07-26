@@ -134,6 +134,26 @@ async function handleTransactionCompleted(eventId: string, transaction: any): Pr
     await transitionOrderStatus(dbTransaction, orderId, "ENTITLED");
   });
 
+  // 5. Exactly-once purchase analytics (persistent Firestore idempotency; outside
+  // commerce txn so analytics failure cannot roll back entitlement).
+  try {
+    const { emitVerifiedPurchaseAnalytics } = await import("./seo-purchase-analytics");
+    const analytics = await emitVerifiedPurchaseAnalytics({
+      transactionId,
+      eventId,
+      valueMinor: order.amountMinor,
+      currency,
+    });
+    console.log(
+      `[PADDLE-PROCESSOR] Purchase analytics ${analytics.status} delta=${analytics.emissionDelta} for ${transactionId}`,
+    );
+  } catch (analyticsError) {
+    console.error(
+      `[PADDLE-PROCESSOR] Purchase analytics failed (non-fatal) for ${transactionId}:`,
+      analyticsError,
+    );
+  }
+
   console.log(`[PADDLE-PROCESSOR] Completed fulfillment for order ${orderId}, entitlement issued.`);
 }
 
