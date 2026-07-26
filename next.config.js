@@ -91,6 +91,12 @@ const nextConfig = {
         permanent: true,
       },
       {
+        // Canonical consolidation: thin /cbam-methodology → authority /methodology
+        source: '/cbam-methodology',
+        destination: '/methodology',
+        permanent: true,
+      },
+      {
         source: '/:path*',
         has: [
           {

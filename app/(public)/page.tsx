@@ -119,6 +119,10 @@ export default function HomePage() {
                   src="/media/cbamvalid-product-walkthrough-poster.webp" 
                   alt="Video Walkthrough Poster" 
                   className="w-full h-full object-cover opacity-80"
+                  loading="lazy"
+                  decoding="async"
+                  width={1920}
+                  height={1080}
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-16 h-16 bg-accent/90 rounded-full flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">

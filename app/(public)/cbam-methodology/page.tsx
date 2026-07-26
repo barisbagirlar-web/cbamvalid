@@ -1,25 +1,10 @@
-import type { Metadata } from "next";
-import { generateSeoMetadata } from "@/lib/seo/build-metadata";
-import { RegulatoryGuidePage } from "@/components/seo/RegulatoryGuidePage";
+import { permanentRedirect } from "next/navigation";
 
-export const metadata: Metadata = generateSeoMetadata("/cbam-methodology");
-
-export default function Page() {
-  return (
-    <RegulatoryGuidePage
-      path="/cbam-methodology"
-      ctaHref="/methodology"
-      ctaLabel="Open full methodology"
-      sections={[
-    {
-      id: "answer",
-      title: "Direct answer",
-      paragraphs: [
-          "Methodology choices must be versioned: system boundary, route, allocation, actual/default path and electricity treatment. Sealed releases freeze the ruleset and engine versions used.",
-      ],
-      
-    }
-      ]}
-    />
-  );
+/**
+ * Consolidated into /methodology (canonical authority page).
+ * Kept as an App Router redirect so any residual internal/external hit lands correctly
+ * even if CDN/config redirect order differs.
+ */
+export default function LegacyCbamMethodologyPage() {
+  permanentRedirect("/methodology");
 }

@@ -54,7 +54,7 @@ export const REGULATORY_SOURCES = {
       "/cbam-non-eu-producer-guide",
       "/cbam-verification-preparation",
       "/methodology",
-      "/cbam-methodology",
+      "/cbam-verification-preparation",
     ],
     notes:
       "European Commission definitive-period communication: 2026 imports → first declaration and corresponding certificate surrender by 30 September 2027.",
@@ -94,7 +94,7 @@ export const REGULATORY_SOURCES = {
       "/cbam-actual-vs-default-values",
       "/cbam-default-values",
       "/cbam-exporter-evidence-requirements",
-      "/cbam-methodology",
+      "/methodology",
     ],
   },
   REG_2025_2083: {
@@ -139,7 +139,6 @@ export const REGULATORY_SOURCES = {
       "/cbam-embedded-emissions-calculation",
       "/cbam-actual-vs-default-values",
       "/cbam-default-values",
-      "/cbam-methodology",
     ],
   },
   IMPL_2025_2548: {

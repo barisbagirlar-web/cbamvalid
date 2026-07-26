@@ -5,13 +5,9 @@ import {
   getRegulatoryFact,
   SEO_LEGAL_SOURCE_INDEX,
 } from "@/lib/seo/regulatory-sources";
+import type { GuideSection } from "@/lib/seo/hub-content";
 
-export interface GuideSection {
-  readonly id: string;
-  readonly title: string;
-  readonly paragraphs: readonly string[];
-  readonly bullets?: readonly string[];
-}
+export type { GuideSection };
 
 export function RegulatoryGuidePage({
   path,

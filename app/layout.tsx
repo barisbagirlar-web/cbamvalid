@@ -2,23 +2,27 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Inter, Lora, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/context/AuthProvider";
 import { AnalyticsBeacon } from "@/components/seo/AnalyticsProvider";
 import { siteConfig } from "@/lib/site-config";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
 });
 
 const lora = Lora({
   subsets: ["latin"],
   variable: "--font-lora",
+  display: "swap",
+  preload: false,
 });
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains-mono",
+  display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -47,12 +51,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${lora.variable} ${jetbrainsMono.variable}`}>
       <body className={`${inter.className} bg-kil-base text-kil-text antialiased min-h-screen`}>
-        <AuthProvider>
-          <Suspense fallback={null}>
-            <AnalyticsBeacon />
-          </Suspense>
-          {children}
-        </AuthProvider>
+        {/* AuthProvider intentionally NOT on public marketing routes — Firebase client
+            was the primary LCP/main-thread tax on anonymous homepage visits. Mounted
+            only under (auth) and (workspace) layouts. */}
+        <Suspense fallback={null}>
+          <AnalyticsBeacon />
+        </Suspense>
+        {children}
       </body>
     </html>
   );

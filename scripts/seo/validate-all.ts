@@ -499,7 +499,8 @@ function validateRegulatoryAndLlm(): GateResult[] {
     if (
       !/SERP_INTENT_REVIEW=PASS/.test(review) ||
       !/REGULATORY_EDITORIAL_REVIEW=PASS/.test(review) ||
-      !/SEARCH_VOLUME_DATA=NOT_FABRICATED/.test(review)
+      !/SEARCH_VOLUME_DATA=NOT_FABRICATED/.test(review) ||
+      !/METHODOLOGY_CONSOLIDATION=PASS/.test(review)
     ) {
       results.push(fail("G30", "Hub SERP/editorial review missing required sign-off markers"));
     } else {
@@ -519,6 +520,31 @@ function validateRegulatoryAndLlm(): GateResult[] {
   } else {
     results.push(
       pass("G31", "PURCHASE_DEDUP_PERSISTENT via Firestore analytics_purchase:${transactionId}"),
+    );
+  }
+
+  const registrySrc = readFileSync(resolve("lib/seo/registry.ts"), "utf8");
+  const nextCfg = readFileSync(resolve("next.config.js"), "utf8");
+  const cnHub = readFileSync(resolve("lib/seo/hub-content.ts"), "utf8");
+  if (/path:\s*"\/cbam-methodology"/.test(registrySrc) && /sitemapEligible:\s*true/.test(registrySrc)) {
+    // Narrow: if route still exists as indexable entry — fail. Removed route is OK.
+    const hasIndexableMethodologyHub =
+      /path:\s*"\/cbam-methodology"[\s\S]{0,400}?indexability:\s*"index"/.test(registrySrc);
+    if (hasIndexableMethodologyHub) {
+      results.push(fail("G32", "/cbam-methodology still indexable — must consolidate to /methodology"));
+    }
+  }
+  if (!/source:\s*'\/cbam-methodology'/.test(nextCfg) || !/destination:\s*'\/methodology'/.test(nextCfg)) {
+    results.push(fail("G32", "Missing permanent redirect /cbam-methodology → /methodology"));
+  } else if (
+    !/id:\s*"decision-tree"/.test(cnHub) ||
+    !/CN_CODE_SCOPE_SECTIONS/.test(cnHub) ||
+    !/EXPORTER_EVIDENCE_SECTIONS/.test(cnHub)
+  ) {
+    results.push(fail("G32", "Thin hub depth content missing for CN scope / evidence requirements"));
+  } else {
+    results.push(
+      pass("G32", "METHODOLOGY_CONSOLIDATION + thin-hub depth (CN scope / evidence) present"),
     );
   }
 

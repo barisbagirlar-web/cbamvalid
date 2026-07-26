@@ -81,6 +81,45 @@ export function MethodologyContent({ showTitle = true }: MethodologyContentProps
           </p>
         </div>
 
+        <div>
+          <h2 className="text-2xl font-bold mb-3">10. Official regulatory sources (primary)</h2>
+          <p className="text-sm text-muted leading-relaxed mb-4">
+            Methodology decisions on CBAMValid are pinned to versioned rulesets derived from primary EU instruments. Prefer EUR-Lex and Commission pages over secondary summaries. Material content changes bump the SEO regulatory content version and factual last-modified dates used by sitemap and CI gates.
+          </p>
+          <ul className="list-disc pl-5 space-y-2 text-sm text-muted">
+            <li>
+              Regulation (EU) 2023/956 — CBAM framework and Annex I goods scope (
+              <a
+                className="text-accent underline"
+                href="https://eur-lex.europa.eu/eli/reg/2023/956/oj"
+                rel="noreferrer"
+                target="_blank"
+              >
+                EUR-Lex
+              </a>
+              )
+            </li>
+            <li>
+              Related implementing and amending acts cited in CBAMValid ruleset metadata (including Commission Implementing Regulations used for reporting and calculation detail)
+            </li>
+            <li>
+              Commission CBAM portal communications for definitive-period timetable context (
+              <a
+                className="text-accent underline"
+                href="https://taxation-customs.ec.europa.eu/carbon-border-adjustment-mechanism_en"
+                rel="noreferrer"
+                target="_blank"
+              >
+                taxation-customs.ec.europa.eu
+              </a>
+              )
+            </li>
+          </ul>
+          <p className="text-sm text-muted leading-relaxed mt-4">
+            Legacy URL <code className="text-xs">/cbam-methodology</code> permanently redirects here to avoid thin-page cannibalization.
+          </p>
+        </div>
+
         <div className="border-t border-border pt-8 mt-8">
           <div className="bg-accent-soft/20 border border-accent/20 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row gap-6 items-start">
             <div className="w-12 h-12 rounded-full bg-accent/10 text-accent flex items-center justify-center font-bold text-lg shrink-0">

@@ -32,7 +32,6 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - [Exporter Evidence Requirements](https://cbamvalid.com/cbam-exporter-evidence-requirements): CBAM exporter evidence requirements
 - [CBAM Guide for Non-EU Producers](https://cbamvalid.com/cbam-non-eu-producer-guide): CBAM non-EU producer guide
 - [CBAM CN Code Scope](https://cbamvalid.com/cbam-cn-code-scope): CBAM CN code list / scope
-- [CBAM Methodology Overview](https://cbamvalid.com/cbam-methodology): CBAM methodology
 
 ## Key regulatory facts
 
