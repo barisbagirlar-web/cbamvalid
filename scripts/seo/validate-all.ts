@@ -142,8 +142,48 @@ function validateSitemapDerivation(): GateResult[] {
   if (existsSync(resolve("public/sitemap.xml"))) {
     results.push(fail("G04", "public/sitemap.xml must not compete with app/sitemap.ts"));
   }
-  if (existsSync(resolve("public/robots.txt"))) {
-    results.push(fail("G16", "public/robots.txt must not compete with app/robots.ts"));
+  // Firebase Frameworks Hosting can miss Next MetadataRoute /robots.txt (live 404).
+  // Require a static public/robots.txt fallback that stays aligned with app/robots.ts.
+  const staticRobotsPath = resolve("public/robots.txt");
+  if (!existsSync(staticRobotsPath)) {
+    results.push(
+      fail("G16", "public/robots.txt required as Firebase Hosting crawler fallback (app/robots.ts alone can 404)"),
+    );
+  } else {
+    const staticRobots = readFileSync(staticRobotsPath, "utf8");
+    const robotsSrc = readFileSync(resolve("app/robots.ts"), "utf8");
+    const requiredStaticMarkers = [
+      "User-agent: *",
+      "User-agent: OAI-SearchBot",
+      "User-agent: Googlebot",
+      "User-agent: GPTBot",
+      "User-agent: ClaudeBot",
+      "User-agent: Google-Extended",
+      "Disallow: /dashboard/",
+      "Disallow: /admin/",
+      "Disallow: /api/",
+      "Disallow: /cases/",
+      "Disallow: /reports/",
+      "Disallow: /account/",
+      "Disallow: /credits/",
+      "Disallow: /cbam/",
+      "Disallow: /login",
+      "Disallow: /register",
+      "Sitemap: https://cbamvalid.com/sitemap.xml",
+    ];
+    const missingStatic = requiredStaticMarkers.filter((m) => !staticRobots.includes(m));
+    const missingAppAgents = ["OAI-SearchBot", "Googlebot", "GPTBot", "ClaudeBot", "Google-Extended"].filter(
+      (agent) => !robotsSrc.includes(agent),
+    );
+    if (missingStatic.length > 0) {
+      results.push(fail("G16", `public/robots.txt missing required markers: ${missingStatic.join(", ")}`));
+    } else if (missingAppAgents.length > 0) {
+      results.push(fail("G16", `app/robots.ts missing agents mirrored in static fallback: ${missingAppAgents.join(", ")}`));
+    } else if (/Disallow:\s*\/_next\/static/i.test(staticRobots)) {
+      results.push(fail("G16", "public/robots.txt blocks /_next/static"));
+    } else {
+      results.push(pass("G16", "STATIC_ROBOTS_FIREBASE_FALLBACK parity with app/robots.ts"));
+    }
   }
 
   return results;
@@ -318,7 +358,7 @@ function validateRobotsAndLanguage(): GateResult[] {
   }
   if (!/OAI-SearchBot/.test(robotsSrc)) {
     results.push(fail("G16", "OAI-SearchBot allow rule missing"));
-  } else if (!results.some((r) => r.id === "G16" && !r.ok)) {
+  } else if (!results.some((r) => r.id === "G16")) {
     results.push(pass("G16", "Robots crawlability rules OK; OAI-SearchBot present"));
   }
 
