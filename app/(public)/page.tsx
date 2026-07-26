@@ -55,7 +55,8 @@ export default function HomePage() {
               
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                 <Link 
-                  href="/register?next=/cases/new" 
+                  href="/register?next=/cases/new"
+                  prefetch={false}
                   className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent px-5 py-3 font-medium text-surface transition-colors hover:bg-accent-hover active:bg-accent-active cursor-pointer"
                 >
                   Start a Dossier <ArrowRight size={18} strokeWidth={1.75} />

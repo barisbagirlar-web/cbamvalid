@@ -47,13 +47,15 @@ export function PublicHeader() {
         {/* RIGHT: Actions */}
         <div className="flex-shrink-0 flex items-center gap-4 lg:gap-5">
           <Link 
-            href="/login" 
+            href="/login"
+            prefetch={false}
             className="hidden sm:block text-[15px] font-medium text-foreground hover:text-accent transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-2 py-1"
           >
             Sign In
           </Link>
           <Link 
-            href="/register?next=/cases/new" 
+            href="/register?next=/cases/new"
+            prefetch={false}
             className="inline-flex h-[42px] md:h-[44px] items-center justify-center gap-2 rounded-md bg-accent px-5 font-medium text-surface transition-colors hover:bg-accent-hover active:bg-accent-active outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent shadow-sm"
           >
             Start a Dossier
@@ -91,7 +93,8 @@ export function PublicHeader() {
             })}
             <div className="my-2 border-t border-border"></div>
             <Link 
-              href="/login" 
+              href="/login"
+              prefetch={false}
               className="flex w-full items-center px-6 py-3 text-[15px] font-medium text-foreground hover:text-accent transition-colors outline-none focus-visible:bg-border/30 rounded-sm"
             >
               Sign In

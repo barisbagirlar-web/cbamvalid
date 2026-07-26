@@ -41,10 +41,10 @@ export default function ProductPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Link 
-                href="/register?next=/cases/new" 
+                href="/register?next=/cases/new"
+                prefetch={false}
                 className="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-accent px-8 font-medium text-surface transition-all hover:bg-accent-hover shadow-sm"
-              >
-                Start a Dossier
+              >                Start a Dossier
                 <ArrowRight className="w-5 h-5" />
               </Link>
               <Link 
@@ -331,10 +331,10 @@ console.log(intensity.toFixed(6));
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
             <Link 
-              href="/register?next=/cases/new" 
+              href="/register?next=/cases/new"
+              prefetch={false}
               className="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-accent px-8 font-medium text-surface hover:bg-accent-hover transition-all shadow-sm"
-            >
-              Start a Dossier
+            >              Start a Dossier
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Link 

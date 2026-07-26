@@ -104,10 +104,10 @@ export default function PricingPage() {
             </ul>
             
             <Link 
-              href="/register?next=/cases/new" 
+              href="/register?next=/cases/new"
+              prefetch={false}
               className="w-full h-[44px] flex items-center justify-center rounded-md font-medium transition-colors bg-surface border border-border text-foreground hover:bg-border/30"
-            >
-              Start for Free
+            >              Start for Free
             </Link>
           </div>
         </div>
