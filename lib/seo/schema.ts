@@ -10,11 +10,19 @@ import {
 import { buildCanonicalUrl } from "./canonical";
 import { getAuthorityChain } from "./aeo/authority-chains";
 import { getTopicalNode } from "./aeo/topical-map";
+import { listGlossaryTerms } from "./aeo/glossary";
+import { listSchemaFaqsForRoute } from "./aeo/answer-bank";
 import { SEO_LEGAL_SOURCE_INDEX } from "./regulatory-sources";
 
 type JsonLdNode = Record<string, unknown>;
 
 function organizationNode(): JsonLdNode {
+  const glossaryKnowsAbout = listGlossaryTerms().map((term) => ({
+    "@type": "Thing",
+    "@id": `${siteConfig.canonicalOrigin}/glossary#${term.slug}`,
+    name: term.name,
+  }));
+
   return {
     "@type": "Organization",
     "@id": `${siteConfig.canonicalOrigin}/#organization`,
@@ -23,7 +31,17 @@ function organizationNode(): JsonLdNode {
     url: siteConfig.canonicalOrigin,
     logo: {
       "@type": "ImageObject",
-      url: `${siteConfig.canonicalOrigin}/favicon.svg`,
+      url: `${siteConfig.canonicalOrigin}/brand/cbamvalid-mark.svg`,
+      width: 512,
+      height: 512,
+    },
+    image: siteConfig.ogImage,
+    email: legalConfig.supportEmail,
+    // Country only — street address in siteConfig is placeholder and must not enter schema.
+    address: {
+      "@type": "PostalAddress",
+      addressCountry: "IE",
+      addressLocality: "Republic of Ireland",
     },
     contactPoint: {
       "@type": "ContactPoint",
@@ -32,7 +50,9 @@ function organizationNode(): JsonLdNode {
         "supportEmail",
       ),
       contactType: "customer support",
+      availableLanguage: ["English"],
     },
+    knowsAbout: glossaryKnowsAbout,
     // Empty until independently verified public profiles exist.
     sameAs: siteConfig.socialProfiles,
   };
@@ -102,9 +122,45 @@ function websiteNode(): JsonLdNode {
     // Discovery surfaces for LLM / answer-engine crawlers
     hasPart: [
       { "@type": "WebPage", url: `${siteConfig.canonicalOrigin}/llms.txt`, name: "LLM index" },
+      { "@type": "WebPage", url: `${siteConfig.canonicalOrigin}/answers`, name: "Answer bank HTML hub" },
+      { "@type": "WebPage", url: `${siteConfig.canonicalOrigin}/glossary`, name: "Entity glossary" },
       { "@type": "Dataset", url: `${siteConfig.canonicalOrigin}/answers.json`, name: "Answer authority feed" },
       { "@type": "DataFeed", url: `${siteConfig.canonicalOrigin}/answers.rss`, name: "Answer RSS feed" },
+      { "@type": "DataFeed", url: `${siteConfig.canonicalOrigin}/answers.feed.json`, name: "Answer JSON Feed" },
     ],
+  };
+}
+
+function dataCatalogNode(): JsonLdNode {
+  return {
+    "@type": "DataCatalog",
+    "@id": `${siteConfig.canonicalOrigin}/#data-catalog`,
+    name: "CBAMValid machine-readable answer & entity catalog",
+    url: buildCanonicalUrl("/answers"),
+    publisher: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
+    inLanguage: "en",
+    dataset: [
+      { "@id": `${siteConfig.canonicalOrigin}/answers.json` },
+      { "@id": `${siteConfig.canonicalOrigin}/#site-glossary` },
+    ],
+  };
+}
+
+function siteGlossaryNode(): JsonLdNode {
+  const terms = listGlossaryTerms();
+  return {
+    "@type": "DefinedTermSet",
+    "@id": `${siteConfig.canonicalOrigin}/#site-glossary`,
+    name: "CBAMValid CBAM entity glossary",
+    url: buildCanonicalUrl("/glossary"),
+    hasDefinedTerm: terms.map((term) => ({
+      "@type": "DefinedTerm",
+      "@id": `${siteConfig.canonicalOrigin}/glossary#${term.slug}`,
+      name: term.name,
+      description: term.definition,
+      url: `${siteConfig.canonicalOrigin}/glossary#${term.slug}`,
+      inDefinedTermSet: `${siteConfig.canonicalOrigin}/#site-glossary`,
+    })),
   };
 }
 
@@ -364,10 +420,22 @@ export function generateUniversalEntityGraph(params: {
   const isGuideOrMethod =
     params.pageType === "guide" ||
     params.pageType === "methodology" ||
-    params.path.startsWith("/cbam-");
+    params.path.startsWith("/cbam-") ||
+    params.path === "/glossary" ||
+    params.path === "/answers";
+
+  const webPageType = isGuideOrMethod
+    ? (["WebPage", "TechArticle"] as const)
+    : params.pageType === "about"
+      ? (["WebPage", "AboutPage"] as const)
+      : params.pageType === "contact"
+        ? (["WebPage", "ContactPage"] as const)
+        : params.path === "/glossary" || params.path === "/answers" || params.path === "/cn-code"
+          ? (["WebPage", "CollectionPage"] as const)
+          : "WebPage";
 
   const webPageNode: JsonLdNode = {
-    "@type": isGuideOrMethod ? ["WebPage", "Article"] : "WebPage",
+    "@type": webPageType,
     "@id": pageId,
     url: buildCanonicalUrl(params.path),
     name: params.name,
@@ -387,9 +455,13 @@ export function generateUniversalEntityGraph(params: {
     },
     speakable: {
       "@type": "SpeakableSpecification",
-      cssSelector: [".speakable-answer", ".authority-direct", ".aeo-lead", ".aeo-direct"],
+      cssSelector: [".speakable-answer", ".authority-direct", ".aeo-lead", ".aeo-direct", ".glossary-definition"],
     },
-    significantLink: (chain?.relatedProblems ?? []).map((item) => buildCanonicalUrl(item.href)),
+    significantLink: [
+      ...(chain?.relatedProblems ?? []).map((item) => buildCanonicalUrl(item.href)),
+      buildCanonicalUrl("/glossary"),
+      buildCanonicalUrl("/answers"),
+    ],
     primaryImageOfPage: {
       "@type": "ImageObject",
       url: siteConfig.ogImage,
@@ -412,6 +484,8 @@ export function generateUniversalEntityGraph(params: {
     authorOrganizationNode(),
     expertReviewerNode(),
     websiteNode(),
+    dataCatalogNode(),
+    siteGlossaryNode(),
     serviceNode(price),
     {
       "@type": ["Product", "SoftwareApplication"],
@@ -439,23 +513,41 @@ export function generateUniversalEntityGraph(params: {
     ...citations,
   ];
 
+  // Single merged FAQPage — primary authority question + schema-eligible answer bank.
+  const faqEntities: JsonLdNode[] = [];
   if (chain) {
+    faqEntities.push({
+      "@type": "Question",
+      "@id": `${buildCanonicalUrl(params.path)}#q-authority`,
+      name: chain.primaryQuestion,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: `${chain.directAnswer} ${chain.empathyLead}`,
+        author: { "@id": `${siteConfig.canonicalOrigin}/#author` },
+      },
+    });
+  }
+  for (const [index, faq] of listSchemaFaqsForRoute(params.path).entries()) {
+    faqEntities.push({
+      "@type": "Question",
+      "@id": `${buildCanonicalUrl(params.path)}#q-bank-${index + 1}`,
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer,
+        author: { "@id": `${siteConfig.canonicalOrigin}/#author` },
+      },
+    });
+  }
+  if (faqEntities.length > 0) {
     nodes.push({
       "@type": "FAQPage",
-      "@id": `${buildCanonicalUrl(params.path)}#authority-faq`,
-      mainEntity: [
-        {
-          "@type": "Question",
-          name: chain.primaryQuestion,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: `${chain.directAnswer} ${chain.empathyLead}`,
-            author: { "@id": `${siteConfig.canonicalOrigin}/#author` },
-          },
-        },
-      ],
+      "@id": `${buildCanonicalUrl(params.path)}#faq`,
+      mainEntity: faqEntities,
     });
+  }
 
+  if (chain) {
     const termSet = generateDefinedTermSetSchema({
       path: params.path,
       entities: chain.entities,

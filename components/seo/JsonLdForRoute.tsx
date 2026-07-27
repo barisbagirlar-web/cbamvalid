@@ -9,7 +9,6 @@ import {
   generateWebPageSchema,
   generateWebSiteSchema,
 } from "@/lib/seo/schema";
-import { buildCanonicalUrl } from "@/lib/seo/canonical";
 import { requireSeoRoute } from "@/lib/seo/registry";
 import { listSchemaFaqsForRoute } from "@/lib/seo/aeo/answer-bank";
 import { getAuthorityChain } from "@/lib/seo/aeo/authority-chains";
@@ -18,9 +17,11 @@ export function JsonLdForRoute({ path }: { path: string }) {
   const route = requireSeoRoute(path);
   const nodes: Record<string, unknown>[] = [];
   const hasAuthorityChain = Boolean(getAuthorityChain(path));
+  const useUniversalGraph =
+    hasAuthorityChain || path === "/answers" || path === "/glossary" || path === "/";
 
   // Universal nested entity graph for critical AEO URLs (additive; does not replace FAQ/Product).
-  if (hasAuthorityChain) {
+  if (useUniversalGraph) {
     const universal = generateUniversalEntityGraph({
       path: route.canonicalPath,
       name: route.title,
@@ -46,11 +47,11 @@ export function JsonLdForRoute({ path }: { path: string }) {
     }
   }
 
-  if (route.schemaTypes.includes("WebApplication")) {
+  if (route.schemaTypes.includes("WebApplication") && !useUniversalGraph) {
     nodes.push(generateWebApplicationSchema(route.description));
   }
   if (
-    !hasAuthorityChain &&
+    !useUniversalGraph &&
     (route.schemaTypes.includes("Product") || route.schemaTypes.includes("Offer"))
   ) {
     const productDoc = generateProductOfferSchema();
@@ -64,7 +65,7 @@ export function JsonLdForRoute({ path }: { path: string }) {
     }
   }
   if (
-    !hasAuthorityChain &&
+    !useUniversalGraph &&
     (route.schemaTypes.includes("WebPage") ||
       route.schemaTypes.includes("CollectionPage") ||
       route.schemaTypes.includes("AboutPage") ||
@@ -97,16 +98,13 @@ export function JsonLdForRoute({ path }: { path: string }) {
   }
 
   const faqs = listSchemaFaqsForRoute(path);
-  if (faqs.length > 0 && (route.schemaTypes.includes("FAQPage") || path === "/" || path === "/pricing")) {
-    // Avoid duplicate FAQPage @id when authority graph already emitted one.
-    if (!hasAuthorityChain) {
-      nodes.push(generateFAQSchema(faqs));
-    } else {
-      nodes.push({
-        ...generateFAQSchema(faqs),
-        "@id": `${buildCanonicalUrl(route.canonicalPath)}#faq-bank`,
-      });
-    }
+  // Universal graph already emits a merged FAQPage at #faq — skip duplicate bank FAQ.
+  if (
+    faqs.length > 0 &&
+    !useUniversalGraph &&
+    (route.schemaTypes.includes("FAQPage") || path === "/" || path === "/pricing")
+  ) {
+    nodes.push(generateFAQSchema(faqs));
   }
 
   const seen = new Set<string>();

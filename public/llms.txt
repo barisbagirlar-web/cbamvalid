@@ -404,6 +404,14 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
   Covers: CBAMValid support email; billing and GDPR contacts
   Entities: info@cbamvalid.com; technical support; billing support
   Fan-out: CBAMValid support email; CBAMValid billing contact; CBAMValid GDPR contact
+- /answers — Answer bank hub for CBAMValid
+  Covers: CBAMValid FAQ; direct answers with evidence; answer engine citation hub
+  Entities: Answer bank; Exporter Verification Preparation Pack; independence boundary
+  Fan-out: CBAMValid FAQ; what does CBAMValid cost; is CBAMValid an accredited verifier
+- /glossary — CBAM entity glossary
+  Covers: what are embedded emissions; CN code meaning for CBAM; actual vs default values definition
+  Entities: embedded emissions; CN code; accredited verifier; precursor
+  Fan-out: CBAM glossary; what is embedded emissions; what is an accredited CBAM verifier
 
 ## Core public resources
 
@@ -417,6 +425,8 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - [Verify a Dossier](https://cbamvalid.com/verify): CBAMValid dossier verification
 - [Independent CBAM preparation — with clear limits](https://cbamvalid.com/about): About CBAMValid
 - [Need help before a buyer deadline?](https://cbamvalid.com/contact): Contact CBAMValid
+- [CBAMValid answer bank](https://cbamvalid.com/answers): CBAMValid FAQ and answer engine hub
+- [CBAM terms used across CBAMValid](https://cbamvalid.com/glossary): CBAM entity glossary for exporters
 - [CBAM 2026 Definitive Period](https://cbamvalid.com/cbam-2026-definitive-period): CBAM definitive period 2026
 - [Calculate CBAM Embedded Emissions](https://cbamvalid.com/cbam-embedded-emissions-calculation): how to calculate embedded emissions
 - [Actual Values vs Default Values](https://cbamvalid.com/cbam-actual-vs-default-values): CBAM actual vs default values
