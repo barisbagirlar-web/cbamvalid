@@ -455,6 +455,12 @@ h3{font-size:1.35rem}
 /* ---------- Reveal animation ---------- */
 .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
 .reveal.in{opacity:1;transform:none}
+/* Fail-open: never leave commercial/marketing copy invisible if JS/observer stalls */
+@keyframes reveal-failopen{to{opacity:1;transform:none}}
+.reveal:not(.in){animation:reveal-failopen .01s linear 1.6s forwards}
+@media (prefers-reduced-motion:reduce){
+  .reveal{opacity:1;transform:none;animation:none}
+}
 
 /* ---------- Responsive ---------- */
 @media(max-width:1024px){

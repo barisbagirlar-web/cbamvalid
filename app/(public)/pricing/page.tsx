@@ -40,6 +40,16 @@ export default function PricingPage() {
           <p className="lede" style={{ margin: "0 auto 22px", fontSize: "1rem", opacity: 0.9 }}>
             {CANONICAL_PRICING.paymentFlowSummary}
           </p>
+          <p className="price-line" style={{ display: "inline-block", textAlign: "left", margin: "0 auto 18px" }}>
+            <span style={{ fontFamily: "var(--serif)", fontSize: "2.4rem", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.02em" }}>
+              {priceLabel}
+            </span>
+            <span>
+              {currency === "usd"
+                ? " one-time · Exporter Verification Preparation Pack"
+                : " approximate · billing settles in USD at checkout"}
+            </span>
+          </p>
           <Link className="btn btn-ghost" href="/sample-dossier">
             View Sample Dossier Before Buying
           </Link>
@@ -109,7 +119,7 @@ export default function PricingPage() {
       <section className="section tight" style={{ paddingTop: "24px" }}>
         <div className="wrap">
           <div className="pricing-grid">
-            <div className="price-card featured reveal">
+            <div className="price-card featured">
               <span className="badge-pop">Scoped pack · One-time</span>
               <h3>{CANONICAL_PRICING.packName}</h3>
               <p className="sub">{CANONICAL_PRICING.description}</p>
@@ -152,7 +162,7 @@ export default function PricingPage() {
                 Get the Preparation Pack <span className="arr">→</span>
               </Link>
             </div>
-            <div className="price-card free reveal">
+            <div className="price-card free">
               <h3>Free drafts</h3>
               <p className="sub">Prepare before you buy</p>
               <p className="price-fig">
