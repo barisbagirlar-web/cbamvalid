@@ -24,6 +24,8 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
       "/pricing",
       "/how-it-works",
       "/methodology",
+      "/answers",
+      "/glossary",
       "/sample-dossier",
       "/cn-code",
       "/cbam-2026-definitive-period",
@@ -265,6 +267,42 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
     ],
     ...chainExtras("/contact"),
   },
+  {
+    path: "/answers",
+    topic: "Answer bank hub for CBAMValid",
+    role: "hub",
+    parentPath: "/",
+    childPaths: ["/glossary", "/pricing", "/product", "/methodology", "/how-it-works"],
+    covers: [
+      "CBAMValid FAQ",
+      "direct answers with evidence",
+      "answer engine citation hub",
+    ],
+    entities: ["Answer bank", "Exporter Verification Preparation Pack", "independence boundary"],
+    fanOutQueries: [
+      "CBAMValid FAQ",
+      "what does CBAMValid cost",
+      "is CBAMValid an accredited verifier",
+    ],
+  },
+  {
+    path: "/glossary",
+    topic: "CBAM entity glossary",
+    role: "methodology",
+    parentPath: "/",
+    childPaths: ["/answers", "/methodology", "/cn-code", "/cbam-embedded-emissions-calculation"],
+    covers: [
+      "what are embedded emissions",
+      "CN code meaning for CBAM",
+      "actual vs default values definition",
+    ],
+    entities: ["embedded emissions", "CN code", "accredited verifier", "precursor"],
+    fanOutQueries: [
+      "CBAM glossary",
+      "what is embedded emissions",
+      "what is an accredited CBAM verifier",
+    ],
+  },
 ] satisfies readonly TopicalNode[];
 
 const LABEL_BY_PATH: Record<string, string> = {
@@ -289,6 +327,8 @@ const LABEL_BY_PATH: Record<string, string> = {
   "/credits/buy": "Buy Preparation Pack",
   "/about": "About",
   "/contact": "Contact",
+  "/answers": "Answer bank",
+  "/glossary": "Glossary",
   "/legal-notice": "Legal notice",
   "/refund-policy": "Refund policy",
   "/privacy": "Privacy",
