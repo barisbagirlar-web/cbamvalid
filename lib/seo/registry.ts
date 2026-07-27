@@ -72,9 +72,9 @@ const STATIC_ROUTES: readonly SeoRouteContract[] = [
     path: "/how-it-works",
     pageType: "product",
     indexability: "index",
-    title: "How CBAMValid Works | From Case Setup to Sealed Dossier",
+    title: "How CBAMValid Works | Working File to Locked Package",
     description:
-      "Walk through CBAMValid: define one installation and year, link evidence, clear QC blockers, buy the USD 249 pack at checkout, then seal up to five immutable releases.",
+      "One factory + one year = one working file. Link evidence, clear blockers, buy the USD 249 pack at checkout, then lock up to five immutable packages.",
     h1: "How CBAMValid Works",
     canonicalPath: "/how-it-works",
     primaryIntent: "CBAMValid workflow",

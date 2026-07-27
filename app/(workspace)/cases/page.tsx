@@ -203,8 +203,10 @@ export default function CasesPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between pb-6 border-b border-border mb-8">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight font-serif text-foreground">My CBAM Cases</h1>
-            <p className="text-sm text-muted mt-1">Manage, update and review your active draft dossiers.</p>
+            <h1 className="text-3xl font-extrabold tracking-tight font-serif text-foreground">Working files</h1>
+            <p className="text-muted text-sm mt-1">
+              Cases = editable working files for one installation and one reporting year. Locking creates a separate locked package.
+            </p>
           </div>
           <Link
             href="/cases/new"
@@ -225,13 +227,13 @@ export default function CasesPage() {
               href="/cases/new"
               className="inline-flex bg-accent hover:bg-accent-hover text-surface text-sm font-semibold px-6 py-2.5 rounded-md transition-colors items-center gap-1.5 shadow-sm"
             >
-              Create Your First Dossier <ArrowRight className="w-4 h-4" />
+              Start New Working File <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         ) : (
           <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold font-serif">Draft Cases</h3>
+              <h3 className="text-lg font-bold font-serif">Working files (Cases)</h3>
               <span className="text-xs text-muted font-mono">{cases.length} Total</span>
             </div>
             <div className="space-y-4">

@@ -173,9 +173,9 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       "from draft to sealed release",
     ],
     directAnswer:
-      "You define one installation and one reporting year, enter goods and production data, link evidence, clear quality blockers, buy the Preparation Pack at checkout, then seal up to five immutable releases and download PDF, JSON, and O3CI field-mapped exports.",
+      "You create one working file for one installation and one reporting year, enter goods and production data, link evidence, clear quality blockers, buy the Preparation Pack at checkout, then lock up to five immutable packages and download PDF, JSON, and O3CI field-mapped exports.",
     empathyContext:
-      "Most teams lose time in email threads and version chaos. A guided case with fail-closed checks is designed so you see gaps before you ask a buyer or verifier to review.",
+      "Most teams lose time in email threads and version chaos. One working file with fail-closed checks is designed so you see gaps before you ask a buyer or verifier to review.",
     evidence: [
       {
         label: "Workflow",

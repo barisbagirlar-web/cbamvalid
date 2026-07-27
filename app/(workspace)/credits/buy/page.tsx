@@ -137,7 +137,7 @@ export default function BuyCreditsPage() {
         await confirmFulfillment(idToken, orderId, transactionId);
         sessionStorage.removeItem("cbam_pending_order_id");
         if (!cancelled) {
-          router.replace("/dashboard?purchase=success");
+          router.replace("/cbam?purchase=success");
         }
       } catch (confirmErr: unknown) {
         if (!cancelled) {
@@ -206,7 +206,7 @@ export default function BuyCreditsPage() {
           try {
             await confirmFulfillment(idToken, checkout.orderId, transactionId);
             sessionStorage.removeItem("cbam_pending_order_id");
-            router.push("/dashboard?purchase=success");
+            router.push("/cbam?purchase=success");
           } catch (confirmErr: unknown) {
             const message = confirmErr instanceof Error ? confirmErr.message : "Confirmation failed.";
             setError(message);

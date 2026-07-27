@@ -6,7 +6,7 @@
 
 - CBAMValid Exporter Verification Preparation Pack — Prepared for Independent Accredited Verification
 - Pricing: $249 per Exporter Verification Preparation Pack (one-time; no subscription; drafts free; 1 operator; 1 installation; 1 reporting year; 5 sealed releases).
-- Payment flow: Draft free. Buy the pack once at checkout. Each successful seal uses one of five releases. Failed seals use none. Re-download is free. Packs are scope-locked.
+- Payment flow: Draft free in a working file. Buy the pack once at checkout. Each successful lock uses one of five releases. Failed locks use none. Re-download is free. Packs are scope-locked.
 
 ## Independence boundary
 
@@ -30,7 +30,7 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
   A: No. Sealing locks an operator-prepared dossier with integrity hashes for handover. Where verification is legally required, actual emissions must still be independently verified by an accredited verifier. CBAMValid prepares the package; it does not issue a verification opinion. Overclaiming “verified” creates commercial and legal risk for exporters. Clear boundaries protect you when a buyer or verifier reviews the file.
   Pages: /, /how-it-works, /methodology, /sample-dossier
 - Q: How does the CBAMValid workflow work?
-  A: You define one installation and one reporting year, enter goods and production data, link evidence, clear quality blockers, buy the Preparation Pack at checkout, then seal up to five immutable releases and download PDF, JSON, and O3CI field-mapped exports. Most teams lose time in email threads and version chaos. A guided case with fail-closed checks is designed so you see gaps before you ask a buyer or verifier to review.
+  A: You create one working file for one installation and one reporting year, enter goods and production data, link evidence, clear quality blockers, buy the Preparation Pack at checkout, then lock up to five immutable packages and download PDF, JSON, and O3CI field-mapped exports. Most teams lose time in email threads and version chaos. One working file with fail-closed checks is designed so you see gaps before you ask a buyer or verifier to review.
   Pages: /, /how-it-works, /product
 - Q: Which ruleset does CBAMValid use for calculations?
   A: Authoritative calculations pin to a named, versioned ruleset recorded in the sealed dossier. Historical sealed releases keep the ruleset they were built against; methods are not silently rewritten after sealing. When a verifier asks which rules you followed, vague “latest guidance” answers fail. You need a dated method reference inside the package itself.

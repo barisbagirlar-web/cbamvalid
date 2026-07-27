@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  Clock,
   FileText,
   HelpCircle,
   Info,
@@ -33,19 +32,14 @@ import {
 } from "@/lib/functions/client";
 import { UnlockPreparationPackPanel } from "@/components/billing/UnlockPreparationPackPanel";
 import { packsUnlockableFromCredits } from "@/lib/billing/credit-contract";
+import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
+import {
+  CUSTOMER_LANGUAGE,
+  WORKFLOW_STEPS_PLAIN,
+} from "@/lib/product/customer-language";
+import { resolveJourneyState } from "@/lib/product/journey-state";
 
 type ReportRecord = Record<string, unknown>;
-
-const WORKFLOW_STEPS = [
-  { num: 1, title: "Case & Reporting Scope", desc: "Define boundaries and CN codes." },
-  { num: 2, title: "Goods & Customs Data", desc: "Import CN code customs declarations." },
-  { num: 3, title: "Installation & Production Route", desc: "Establish operator bounds." },
-  { num: 4, title: "Embedded Emissions", desc: "Direct and indirect carbon footprints." },
-  { num: 5, title: "Precursors & Adjustments", desc: "Complex supply-chain factors." },
-  { num: 6, title: "Evidence Register", desc: "Link primary verification documents." },
-  { num: 7, title: "Quality Review", desc: "Run automated integrity checks." },
-  { num: 8, title: "Seal & Deliverables", desc: "Verify and download the dossier ZIP." },
-] as const;
 
 const REQUIRED_DATA = [
   "Installation and operator details",
@@ -61,7 +55,7 @@ const REQUIRED_DATA = [
 
 function describeError(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
-  return "Dashboard data could not be loaded.";
+  return "Home could not be loaded.";
 }
 
 function readString(record: ReportRecord, key: string): string {
@@ -71,11 +65,11 @@ function readString(record: ReportRecord, key: string): string {
 
 function reportInstallationName(report: ReportRecord): string {
   const calculation = report.calculation;
-  if (!calculation || typeof calculation !== "object") return "Sealed dossier";
+  if (!calculation || typeof calculation !== "object") return CUSTOMER_LANGUAGE.lockedPackage;
   const inputs = (calculation as ReportRecord).inputs;
-  if (!inputs || typeof inputs !== "object") return "Sealed dossier";
+  if (!inputs || typeof inputs !== "object") return CUSTOMER_LANGUAGE.lockedPackage;
   const value = (inputs as ReportRecord).installationName;
-  return typeof value === "string" && value.trim() ? value.trim() : "Sealed dossier";
+  return typeof value === "string" && value.trim() ? value.trim() : CUSTOMER_LANGUAGE.lockedPackage;
 }
 
 function PaginationControls({
@@ -97,7 +91,6 @@ function PaginationControls({
 
   const startItem = (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalItems);
-
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   return (
@@ -106,7 +99,6 @@ function PaginationControls({
         Showing <span className="font-semibold text-foreground">{startItem}–{endItem}</span> of{" "}
         <span className="font-semibold text-foreground">{totalItems}</span> {itemLabel}
       </div>
-
       <div className="flex items-center gap-1.5">
         <button
           type="button"
@@ -117,7 +109,6 @@ function PaginationControls({
         >
           <ChevronLeft className="w-3.5 h-3.5" /> Previous
         </button>
-
         {pages.map((p) => (
           <button
             key={p}
@@ -132,7 +123,6 @@ function PaginationControls({
             {p}
           </button>
         ))}
-
         <button
           type="button"
           onClick={() => onPageChange(currentPage + 1)}
@@ -149,20 +139,27 @@ function PaginationControls({
 
 export default function CbamLandingPage() {
   const { user, loading } = useAuth();
+  const [postPurchase, setPostPurchase] = useState(false);
+
   const [cases, setCases] = useState<CbamCaseRecord[]>([]);
   const [reports, setReports] = useState<ReportRecord[]>([]);
-  const [availableEntitlementsCount, setAvailableEntitlementsCount] = useState(0);
+  const [releasesRemaining, setReleasesRemaining] = useState(0);
   const [availableCredits, setAvailableCredits] = useState(0);
   const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [showChecklist, setShowChecklist] = useState(false);
-  const [draftsPage, setDraftsPage] = useState(1);
-  const [reportsPage, setReportsPage] = useState(1);
+  const [filesPage, setFilesPage] = useState(1);
+  const [packagesPage, setPackagesPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
-  // Sort cases by latest updated/created date descending
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    setPostPurchase(params.get("purchase") === "success");
+  }, []);
+
   const sortedCases = useMemo(() => {
     return [...cases].sort((a, b) => {
       const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
@@ -171,7 +168,6 @@ export default function CbamLandingPage() {
     });
   }, [cases]);
 
-  // Sort reports by latest created date descending
   const sortedReports = useMemo(() => {
     return [...reports].sort((a, b) => {
       const timeA = new Date(readString(a, "createdAt") || 0).getTime();
@@ -180,19 +176,33 @@ export default function CbamLandingPage() {
     });
   }, [reports]);
 
-  const totalDraftPages = Math.ceil(sortedCases.length / ITEMS_PER_PAGE) || 1;
+  const primaryWorkingFileId = sortedCases[0]?.caseId ?? null;
+
+  const journey = useMemo(
+    () =>
+      resolveJourneyState({
+        workingFileCount: cases.length,
+        lockedPackageCount: reports.length,
+        releasesRemaining,
+        availableCredits,
+        primaryWorkingFileId,
+        postPurchase,
+      }),
+    [availableCredits, cases.length, primaryWorkingFileId, postPurchase, releasesRemaining, reports.length]
+  );
+
+  const totalFilePages = Math.ceil(sortedCases.length / ITEMS_PER_PAGE) || 1;
   const paginatedCases = useMemo(() => {
-    const start = (draftsPage - 1) * ITEMS_PER_PAGE;
+    const start = (filesPage - 1) * ITEMS_PER_PAGE;
     return sortedCases.slice(start, start + ITEMS_PER_PAGE);
-  }, [sortedCases, draftsPage]);
+  }, [sortedCases, filesPage]);
 
-  const totalReportPages = Math.ceil(sortedReports.length / ITEMS_PER_PAGE) || 1;
+  const totalPackagePages = Math.ceil(sortedReports.length / ITEMS_PER_PAGE) || 1;
   const paginatedReports = useMemo(() => {
-    const start = (reportsPage - 1) * ITEMS_PER_PAGE;
+    const start = (packagesPage - 1) * ITEMS_PER_PAGE;
     return sortedReports.slice(start, start + ITEMS_PER_PAGE);
-  }, [sortedReports, reportsPage]);
+  }, [sortedReports, packagesPage]);
 
-  // Load from cache on mount
   useEffect(() => {
     if (!user) return;
     try {
@@ -203,7 +213,7 @@ export default function CbamLandingPage() {
           if (parsed.cases) setCases(parsed.cases);
           if (parsed.reports) setReports(parsed.reports);
           if (typeof parsed.entitlementsCount === "number") {
-            setAvailableEntitlementsCount(parsed.entitlementsCount);
+            setReleasesRemaining(parsed.entitlementsCount);
           }
           if (typeof parsed.availableCredits === "number") {
             setAvailableCredits(parsed.availableCredits);
@@ -229,7 +239,7 @@ export default function CbamLandingPage() {
           console.error("Dashboard case loading failed", casesResult.reason);
           setCases([]);
           setReports([]);
-          setAvailableEntitlementsCount(0);
+          setReleasesRemaining(0);
           setError(describeError(casesResult.reason));
           setWarning("");
           setDataLoading(false);
@@ -247,7 +257,7 @@ export default function CbamLandingPage() {
         } else {
           console.error("Dashboard report loading failed", reportsResult.reason);
           setReports([]);
-          warnings.push("Report history is temporarily unavailable.");
+          warnings.push("Locked package history is temporarily unavailable.");
         }
 
         let entitlementsCount = 0;
@@ -256,11 +266,11 @@ export default function CbamLandingPage() {
             (sum, entitlement) => sum + Number(entitlement.releasesRemaining || 0),
             0
           );
-          setAvailableEntitlementsCount(entitlementsCount);
+          setReleasesRemaining(entitlementsCount);
         } else {
           console.error("Dashboard entitlement loading failed", entitlementsResult.reason);
-          setAvailableEntitlementsCount(0);
-          warnings.push("Preparation Pack status could not be verified; sealing remains unavailable.");
+          setReleasesRemaining(0);
+          warnings.push("Preparation Pack status could not be verified; locking remains unavailable.");
         }
 
         if (overviewResult.status === "fulfilled") {
@@ -274,7 +284,6 @@ export default function CbamLandingPage() {
         setWarning(warnings.join(" "));
         setDataLoading(false);
 
-        // Save to cache
         try {
           const credits =
             overviewResult.status === "fulfilled"
@@ -301,7 +310,7 @@ export default function CbamLandingPage() {
         console.error("Unexpected dashboard loading failure", unexpectedError);
         setCases([]);
         setReports([]);
-        setAvailableEntitlementsCount(0);
+        setReleasesRemaining(0);
         setError(describeError(unexpectedError));
         setWarning("");
         setDataLoading(false);
@@ -326,7 +335,7 @@ export default function CbamLandingPage() {
       <div className="min-h-screen flex items-center justify-center bg-kil-base px-6">
         <div className="flex flex-col items-center">
           <div className="w-8 h-8 border-2 border-kil-text/20 border-t-kil-accent rounded-full animate-spin mb-6"></div>
-          <p className="font-mono text-sm text-kil-text/60 tracking-widest uppercase">Loading Dashboard...</p>
+          <p className="font-mono text-sm text-kil-text/60 tracking-widest uppercase">Loading your files...</p>
         </div>
       </div>
     );
@@ -339,7 +348,7 @@ export default function CbamLandingPage() {
           <div className="flex items-start gap-4">
             <AlertCircle className="mt-0.5 h-6 w-6 shrink-0 text-status-blocked" aria-hidden="true" />
             <div>
-              <h1 className="font-serif text-2xl font-bold">Dashboard could not be loaded</h1>
+              <h1 className="font-serif text-2xl font-bold">Home could not be loaded</h1>
               <p className="mt-3 text-sm leading-relaxed text-muted">{error}</p>
             </div>
           </div>
@@ -357,66 +366,59 @@ export default function CbamLandingPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground px-4 py-8 md:px-8">
-      <div className="max-w-6xl mx-auto">
-        {warning && (
-          <div role="status" className="mb-6 rounded-lg border border-accent/20 bg-accent/5 px-4 py-3 text-sm text-accent">
+      <div className="max-w-6xl mx-auto space-y-8">
+        {warning ? (
+          <div role="status" className="rounded-lg border border-accent/20 bg-accent/5 px-4 py-3 text-sm text-accent">
             {warning}
           </div>
-        )}
+        ) : null}
 
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 pb-6 border-b border-border mb-8">
+        <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pb-2">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight font-serif">CBAM Definitive Dossiers</h1>
-            <p className="text-muted text-sm mt-1">
-              Create calculation cases, link evidence, and generate a sealed verifier-preparation package.
-            </p>
+            <h1 className="text-3xl font-extrabold tracking-tight font-serif">{CUSTOMER_LANGUAGE.home}</h1>
+            <p className="text-muted text-sm mt-1 max-w-2xl">{CUSTOMER_LANGUAGE.oneLineStory}</p>
           </div>
+          {cases.length > 0 ? (
+            <Link
+              href="/cases/new"
+              className="bg-foreground hover:bg-foreground/90 text-background px-4 py-2 rounded-md font-semibold text-xs transition-colors inline-flex items-center gap-1 self-start"
+            >
+              <Plus className="w-3.5 h-3.5" /> New working file
+            </Link>
+          ) : null}
+        </header>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {availableEntitlementsCount > 0 ? (
-              <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 px-4 py-2 rounded-full">
-                <span className="w-2.5 h-2.5 bg-accent rounded-full animate-pulse" />
-                <span className="text-xs font-semibold text-accent">
-                  1 Active Preparation Pack ({availableEntitlementsCount} Versions Remaining)
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <span className="text-xs bg-muted/40 text-muted border border-border px-3 py-1.5 rounded-full font-medium">
-                  No Active Preparation Pack
-                </span>
-                {packsUnlockableFromCredits(availableCredits) > 0 ? (
-                  <Link
-                    href="/account"
-                    className="bg-accent hover:bg-accent-hover text-surface px-4 py-2 rounded-md font-semibold text-xs transition-colors flex items-center gap-1.5"
-                  >
-                    Unlock Pack
-                  </Link>
-                ) : (
-                  <Link
-                    href="/credits/buy"
-                    className="bg-accent hover:bg-accent-hover text-surface px-4 py-2 rounded-md font-semibold text-xs transition-colors flex items-center gap-1.5"
-                  >
-                    <ShoppingBag className="w-3.5 h-3.5" /> Buy Pack — $249
-                  </Link>
-                )}
-              </div>
-            )}
-
-            {cases.length > 0 && (
+        <section
+          aria-labelledby="where-you-are"
+          className="rounded-2xl border border-accent/25 bg-accent/5 p-6 md:p-8 shadow-sm"
+        >
+          <p className="text-xs font-semibold uppercase tracking-wider text-accent mb-2">Where you are</p>
+          <h2 id="where-you-are" className="font-serif text-2xl md:text-3xl font-bold text-foreground mb-3">
+            {journey.headline}
+          </h2>
+          <p className="text-sm text-muted leading-relaxed max-w-3xl mb-2">{journey.explanation}</p>
+          <p className="font-mono text-xs text-foreground/70 mb-6">{journey.packSummary}</p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link
+              href={journey.primaryCta.href}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-accent px-6 py-3 text-sm font-semibold text-surface hover:bg-accent-hover shadow-sm"
+            >
+              {journey.primaryCta.label} <ArrowRight className="w-4 h-4" />
+            </Link>
+            {journey.secondaryCta ? (
               <Link
-                href="/cases/new"
-                className="bg-foreground hover:bg-foreground/90 text-background px-4 py-2 rounded-md font-semibold text-xs transition-colors flex items-center gap-1"
+                href={journey.secondaryCta.href}
+                className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface px-6 py-3 text-sm font-semibold text-foreground hover:bg-muted/10"
               >
-                <Plus className="w-3.5 h-3.5" /> Create New Case
+                {journey.secondaryCta.label}
               </Link>
-            )}
+            ) : null}
           </div>
-        </div>
+        </section>
 
         {cases.length === 0 ? (
           <div className="space-y-8">
-            <div className="bg-surface border border-border rounded-2xl p-6 md:p-10 shadow-sm relative overflow-hidden">
+            <div className="bg-surface border border-border rounded-2xl p-6 md:p-10 shadow-sm">
               <div className="max-w-3xl">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-accent/10 text-accent mb-4">
                   <Info className="w-3.5 h-3.5" /> Exporter Verification Preparation Pack
@@ -425,65 +427,101 @@ export default function CbamLandingPage() {
                   Prepare Your CBAM Verification Package
                 </h2>
                 <p className="text-muted text-base leading-relaxed mb-6">
-                  Build a structured dossier for one installation and one reporting year. Enter production and emissions data, link supporting evidence, resolve quality findings, and generate a sealed verifier-preparation package.
+                  Build one working file for one installation and one reporting year. Enter data, link evidence,
+                  clear blockers, buy the pack at checkout if you have not already, then lock and download.
                 </p>
 
                 <div className="mb-8">
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground/80 mb-3">Start here:</h3>
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground/80 mb-3">
+                    Simple path:
+                  </h3>
                   <ol className="space-y-2.5 text-sm text-muted">
-                    <li className="flex items-start gap-2"><span className="font-mono text-accent font-bold">1.</span><span>Review the required data and evidence guidelines below.</span></li>
-                    <li className="flex items-start gap-2"><span className="font-mono text-accent font-bold">2.</span><span>Create your first dossier using the draft workspace; no upfront payment is needed.</span></li>
-                    <li className="flex items-start gap-2"><span className="font-mono text-accent font-bold">3.</span><span>Complete the eight data-preparation sections with automatic compliance checks.</span></li>
-                    <li className="flex items-start gap-2"><span className="font-mono text-accent font-bold">4.</span><span>Purchase the $249 Preparation Pack before sealing and downloading final deliverables.</span></li>
+                    <li className="flex items-start gap-2">
+                      <span className="font-mono text-accent font-bold">1.</span>
+                      <span>Create a working file (free).</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="font-mono text-accent font-bold">2.</span>
+                      <span>Fill the eight plain steps and fix blockers.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="font-mono text-accent font-bold">3.</span>
+                      <span>
+                        Buy the {CANONICAL_PRICING.priceFormatted} Preparation Pack at checkout (card charged
+                        then — not when you lock).
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="font-mono text-accent font-bold">4.</span>
+                      <span>Lock &amp; download. You get up to five locked packages for corrections.</span>
+                    </li>
                   </ol>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                  <Link href="/cases/new" className="bg-accent hover:bg-accent-hover text-surface px-8 py-3 rounded-md font-semibold transition-colors flex items-center justify-center gap-2 text-sm shadow-sm">
-                    Create Your First Dossier <ArrowRight className="w-4 h-4" />
+                  <Link
+                    href="/cases/new"
+                    className="bg-accent hover:bg-accent-hover text-surface px-8 py-3 rounded-md font-semibold transition-colors flex items-center justify-center gap-2 text-sm shadow-sm"
+                  >
+                    {CUSTOMER_LANGUAGE.createFile} <ArrowRight className="w-4 h-4" />
                   </Link>
-                  <Link href="/sample-dossier" className="bg-surface hover:bg-muted/10 border border-border text-foreground px-6 py-3 rounded-md font-semibold transition-colors text-sm flex items-center justify-center gap-1.5">
-                    <FileText className="w-4 h-4" /> View Sample Dossier
+                  <Link
+                    href="/sample-dossier"
+                    className="bg-surface hover:bg-muted/10 border border-border text-foreground px-6 py-3 rounded-md font-semibold transition-colors text-sm flex items-center justify-center gap-1.5"
+                  >
+                    <FileText className="w-4 h-4" /> View sample locked package
                   </Link>
-                  <button type="button" onClick={() => setShowChecklist((current) => !current)} className="bg-surface hover:bg-muted/10 border border-border text-foreground px-6 py-3 rounded-md font-semibold transition-colors text-sm flex items-center justify-center gap-1.5">
-                    <HelpCircle className="w-4 h-4" /> Review Required Data
+                  <button
+                    type="button"
+                    onClick={() => setShowChecklist((current) => !current)}
+                    className="bg-surface hover:bg-muted/10 border border-border text-foreground px-6 py-3 rounded-md font-semibold transition-colors text-sm flex items-center justify-center gap-1.5"
+                  >
+                    <HelpCircle className="w-4 h-4" /> Review required data
                   </button>
-                  <Link href="/how-it-works" className="bg-surface hover:bg-muted/10 border border-border text-foreground px-6 py-3 rounded-md font-semibold transition-colors text-sm flex items-center justify-center gap-1.5">
-                    <PlayCircle className="w-4 h-4" /> Watch Walkthrough
+                  <Link
+                    href="/how-it-works"
+                    className="bg-surface hover:bg-muted/10 border border-border text-foreground px-6 py-3 rounded-md font-semibold transition-colors text-sm flex items-center justify-center gap-1.5"
+                  >
+                    <PlayCircle className="w-4 h-4" /> How it works
                   </Link>
                 </div>
 
                 <div className="p-4 bg-muted/20 border border-border rounded-lg text-xs text-muted leading-relaxed">
-                  <p className="font-semibold text-foreground mb-1">Important Verification Note & Legal Boundaries</p>
-                  No payment is required to create your initial draft and verify data applicability. The Preparation Pack is required to seal and download final deliverables. CBAMValid prepares the case dossier for independent verification and does not issue an accredited opinion, independent verification statement, customs approval, EU approval or acceptance guarantee.
+                  <p className="font-semibold text-foreground mb-1">Important boundary</p>
+                  Drafting is free. The Preparation Pack is required to lock and download. CBAMValid prepares an
+                  operator dossier for independent verification and does not issue an accredited opinion or EU
+                  approval.
                 </div>
               </div>
             </div>
 
-            {showChecklist && (
-              <div className="bg-surface border border-border rounded-xl p-6 animate-in slide-in-from-top-4">
+            {showChecklist ? (
+              <div className="bg-surface border border-border rounded-xl p-6">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-accent" /> Required Data & Evidence Checklist
+                  <CheckCircle2 className="w-5 h-5 text-accent" /> Required data checklist
                 </h3>
-                <p className="text-sm text-muted mb-4">Make sure you have access to the following information before completing your CBAM declaration:</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                   {REQUIRED_DATA.map((item) => (
-                    <div key={item} className="flex items-center gap-2 p-2 bg-background border border-border/40 rounded-lg">
-                      <span className="w-1.5 h-1.5 bg-accent rounded-full" />
+                    <div key={item} className="flex items-start gap-2 text-muted">
+                      <CheckCircle2 className="w-4 h-4 text-accent shrink-0 mt-0.5" />
                       <span>{item}</span>
                     </div>
                   ))}
                 </div>
               </div>
-            )}
+            ) : null}
 
             <div>
-              <h3 className="text-lg font-bold mb-6 font-serif">The 8-Step Verification Workflow</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {WORKFLOW_STEPS.map((step) => (
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted mb-4">
+                Eight plain steps inside a working file
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {WORKFLOW_STEPS_PLAIN.map((step) => (
                   <div key={step.num} className="bg-surface border border-border rounded-xl p-5 shadow-sm">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="w-7 h-7 bg-accent/10 text-accent font-bold text-xs rounded-full flex items-center justify-center">{step.num}</span>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="w-7 h-7 bg-accent/10 text-accent font-bold text-xs rounded-full flex items-center justify-center">
+                        {step.num}
+                      </span>
                       <h4 className="font-bold text-sm text-foreground">{step.title}</h4>
                     </div>
                     <p className="text-xs text-muted">{step.desc}</p>
@@ -494,14 +532,18 @@ export default function CbamLandingPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
               <div className="bg-surface/50 border border-border/80 border-dashed rounded-xl p-6 text-center">
-                <Clock className="w-6 h-6 text-muted/60 mx-auto mb-2" />
-                <h4 className="text-sm font-semibold text-foreground/80 mb-1">Draft Cases</h4>
-                <p className="text-xs text-muted">Your active drafts appear here after you create a dossier.</p>
+                <FileText className="w-6 h-6 text-muted/60 mx-auto mb-2" />
+                <h4 className="text-sm font-semibold text-foreground/80 mb-1">{CUSTOMER_LANGUAGE.workingFiles}</h4>
+                <p className="text-xs text-muted">
+                  Editable files for one factory and one year. Appear here after you create one.
+                </p>
               </div>
               <div className="bg-surface/50 border border-border/80 border-dashed rounded-xl p-6 text-center">
                 <Lock className="w-6 h-6 text-muted/60 mx-auto mb-2" />
-                <h4 className="text-sm font-semibold text-foreground/80 mb-1">Sealed Reports History</h4>
-                <p className="text-xs text-muted">Final sealed verifier-preparation downloads appear here after sealing.</p>
+                <h4 className="text-sm font-semibold text-foreground/80 mb-1">{CUSTOMER_LANGUAGE.lockedPackages}</h4>
+                <p className="text-xs text-muted">
+                  Finished, downloadable packages after you lock. They never change.
+                </p>
               </div>
             </div>
           </div>
@@ -509,56 +551,74 @@ export default function CbamLandingPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
               <section className="bg-surface border border-border rounded-xl p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold font-serif">Draft Cases</h3>
-                  <span className="text-xs text-muted font-mono">{cases.length} Total</span>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-bold font-serif">{CUSTOMER_LANGUAGE.workingFiles}</h3>
+                  <span className="text-xs text-muted font-mono">{cases.length} total</span>
                 </div>
-                {cases.length === 0 ? (
-                  <div className="p-8 text-center bg-background border border-dashed border-border/80 rounded-lg">
-                    <Clock className="w-8 h-8 text-muted/65 mx-auto mb-3" />
-                    <p className="text-sm text-subtle">No active drafts found.</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="space-y-4">
-                      {paginatedCases.map((cbamCase) => (
-                        <div key={cbamCase.caseId} className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors">
-                          <div>
-                            <p className="font-semibold text-sm">{getCaseDisplayName(cbamCase.data)}</p>
-                            <p className="text-xs text-muted mt-1 font-mono">
-                              Case ID: {cbamCase.caseId} | CN Code: {getPrimaryCnCode(cbamCase.data)} | Updated: {formatCaseUpdatedDate(cbamCase.updatedAt)}
-                            </p>
-                            <div className="mt-2 flex items-center gap-2">
-                              <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-neutral-soft text-foreground border border-border">Draft mode</span>
-                            </div>
-                          </div>
-                          <Link href={`/cases/${cbamCase.caseId}`} className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center gap-1 self-end sm:self-auto">
-                            Resume Draft <ArrowRight className="w-3 h-3" />
-                          </Link>
+                <p className="text-xs text-muted mb-4">
+                  Editable work for one installation and one reporting year. Locking creates a separate locked
+                  package.
+                </p>
+                <div className="space-y-4">
+                  {paginatedCases.map((cbamCase) => (
+                    <div
+                      key={cbamCase.caseId}
+                      className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors"
+                    >
+                      <div>
+                        <p className="font-semibold text-sm">{getCaseDisplayName(cbamCase.data)}</p>
+                        <p className="text-xs text-muted mt-1 font-mono">
+                          File ID: {cbamCase.caseId} · CN: {getPrimaryCnCode(cbamCase.data)} · Updated:{" "}
+                          {formatCaseUpdatedDate(cbamCase.updatedAt)}
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-neutral-soft text-foreground border border-border">
+                            Working file
+                          </span>
+                          {cbamCase.latestReleaseVersion ? (
+                            <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-accent/10 text-accent border border-accent/20">
+                              Locked versions: {cbamCase.latestReleaseVersion}
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-muted/40 text-muted border border-border">
+                              Not locked yet
+                            </span>
+                          )}
                         </div>
-                      ))}
+                      </div>
+                      <Link
+                        href={`/cases/${cbamCase.caseId}`}
+                        className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center gap-1 self-end sm:self-auto"
+                      >
+                        Continue <ArrowRight className="w-3 h-3" />
+                      </Link>
                     </div>
-                    <PaginationControls
-                      currentPage={draftsPage}
-                      totalPages={totalDraftPages}
-                      onPageChange={setDraftsPage}
-                      totalItems={cases.length}
-                      pageSize={ITEMS_PER_PAGE}
-                      itemLabel="draft cases"
-                    />
-                  </>
-                )}
+                  ))}
+                </div>
+                <PaginationControls
+                  currentPage={filesPage}
+                  totalPages={totalFilePages}
+                  onPageChange={setFilesPage}
+                  totalItems={cases.length}
+                  pageSize={ITEMS_PER_PAGE}
+                  itemLabel="working files"
+                />
               </section>
 
               <section className="bg-surface border border-border rounded-xl p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold font-serif">Sealed Reports History</h3>
-                  <span className="text-xs text-muted font-mono">{reports.length} Total</span>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-bold font-serif">{CUSTOMER_LANGUAGE.lockedPackages}</h3>
+                  <span className="text-xs text-muted font-mono">{reports.length} total</span>
                 </div>
+                <p className="text-xs text-muted mb-4">
+                  Immutable downloads from locking a working file. Re-download is free and does not use a release.
+                </p>
                 {reports.length === 0 ? (
                   <div className="p-8 text-center bg-background border border-dashed border-border/80 rounded-lg">
                     <Lock className="w-8 h-8 text-muted/65 mx-auto mb-3" />
-                    <p className="text-sm text-subtle">No sealed reports found. Complete the draft checklist to generate verifier-preparation deliverables.</p>
+                    <p className="text-sm text-subtle">
+                      No locked packages yet. Finish your working file, then use Lock &amp; download.
+                    </p>
                   </div>
                 ) : (
                   <>
@@ -568,51 +628,61 @@ export default function CbamLandingPage() {
                         const createdAt = readString(report, "createdAt");
                         const documentHash = readString(report, "documentHash");
                         return (
-                          <div key={reportId || `report-${index}`} className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors">
+                          <div
+                            key={reportId || `report-${index}`}
+                            className="p-4 bg-background border border-border/60 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-border transition-colors"
+                          >
                             <div>
                               <p className="font-semibold text-sm">{reportInstallationName(report)}</p>
                               <p className="text-xs text-muted mt-1 font-mono">
-                                Release ID: {reportId ? `${reportId.slice(0, 8)}...` : "Unavailable"} | Sealed: {createdAt ? formatCaseUpdatedDate(createdAt) : "Unknown"}
+                                Package ID: {reportId ? `${reportId.slice(0, 8)}…` : "Unavailable"} · Locked:{" "}
+                                {createdAt ? formatCaseUpdatedDate(createdAt) : "Unknown"}
                               </p>
-                              <p className="text-[11px] text-muted truncate mt-1">Hash: {documentHash || "Unavailable"}</p>
+                              <p className="text-[11px] text-muted truncate mt-1">
+                                Hash: {documentHash || "Unavailable"}
+                              </p>
                             </div>
                             {reportId ? (
-                              <Link href={`/cbam/reports/${reportId}`} className="bg-foreground hover:bg-foreground/90 text-background text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center justify-center">
-                                View Dossier
+                              <Link
+                                href={`/cbam/reports/${reportId}`}
+                                className="bg-foreground hover:bg-foreground/90 text-background text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center justify-center"
+                              >
+                                Open package
                               </Link>
                             ) : (
-                              <span className="text-xs text-muted">Report link unavailable</span>
+                              <span className="text-xs text-muted">Package link unavailable</span>
                             )}
                           </div>
                         );
                       })}
                     </div>
                     <PaginationControls
-                      currentPage={reportsPage}
-                      totalPages={totalReportPages}
-                      onPageChange={setReportsPage}
+                      currentPage={packagesPage}
+                      totalPages={totalPackagePages}
+                      onPageChange={setPackagesPage}
                       totalItems={reports.length}
                       pageSize={ITEMS_PER_PAGE}
-                      itemLabel="sealed reports"
+                      itemLabel="locked packages"
                     />
                   </>
                 )}
               </section>
             </div>
 
-            <div className="space-y-8">
+            <aside className="space-y-8">
               <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
-                <h4 className="font-bold text-sm uppercase tracking-wider text-muted mb-4">Pack Status</h4>
-                {availableEntitlementsCount > 0 ? (
+                <h4 className="font-bold text-sm uppercase tracking-wider text-muted mb-4">Pack status</h4>
+                {releasesRemaining > 0 ? (
                   <div className="p-3 bg-accent/5 border border-accent/10 rounded-lg text-xs">
                     <span className="font-bold text-accent block">Active Preparation Pack</span>
-                    You have <strong>{availableEntitlementsCount}</strong> remaining sealed release versions available.
+                    You have <strong>{releasesRemaining}</strong> sealed release
+                    {releasesRemaining === 1 ? "" : "s"} left to lock packages.
                   </div>
                 ) : (
                   <div className="space-y-4">
                     <div className="p-3 bg-muted/20 border border-border rounded-lg text-xs text-muted leading-relaxed">
-                      <span className="font-bold text-foreground block mb-1">No Active Pack</span>
-                      Sealing requires an active Preparation Pack entitlement. Buy a pack at checkout, or activate unused pack balance on Account.
+                      <span className="font-bold text-foreground block mb-1">No active pack</span>
+                      Locking needs an active Preparation Pack. Buy at checkout, or activate unused pack balance.
                     </div>
                     {packsUnlockableFromCredits(availableCredits) > 0 ? (
                       <UnlockPreparationPackPanel
@@ -625,19 +695,24 @@ export default function CbamLandingPage() {
                         }}
                       />
                     ) : (
-                      <Link href="/credits/buy" className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center justify-center gap-1.5 w-full shadow-sm">
-                        Buy Pack — $249
+                      <Link
+                        href="/credits/buy"
+                        className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center justify-center gap-1.5 w-full shadow-sm"
+                      >
+                        <ShoppingBag className="w-3.5 h-3.5" /> Buy Pack — {CANONICAL_PRICING.priceFormatted}
                       </Link>
                     )}
                   </div>
                 )}
                 <div className="mt-6 border-t border-border pt-4 text-xs text-muted space-y-2">
-                  <p><strong>1 pack includes:</strong></p>
+                  <p>
+                    <strong>1 pack includes:</strong>
+                  </p>
                   <ul className="list-disc list-inside space-y-1 pl-1">
-                    <li>1 Installation Dossier</li>
-                    <li>1 Reporting Year Scope</li>
-                    <li>8-Step workflow checklist</li>
-                    <li>5 Successful Release Seals</li>
+                    <li>1 working file scope (operator · installation · year)</li>
+                    <li>Unlimited drafts</li>
+                    <li>5 successful locks</li>
+                    <li>Free re-download of locked packages</li>
                   </ul>
                 </div>
               </div>
@@ -645,12 +720,18 @@ export default function CbamLandingPage() {
               <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
                 <h4 className="font-bold text-sm uppercase tracking-wider text-muted mb-3">Resources</h4>
                 <div className="space-y-2.5 text-xs text-accent">
-                  <Link href="/how-it-works" className="flex items-center gap-2 hover:underline"><PlayCircle className="w-4 h-4 text-muted" /> Walkthrough Video</Link>
-                  <Link href="/sample-dossier" className="flex items-center gap-2 hover:underline"><FileText className="w-4 h-4 text-muted" /> Sample Sealed Dossier</Link>
-                  <Link href="/methodology" className="flex items-center gap-2 hover:underline"><Info className="w-4 h-4 text-muted" /> Methodology & Sources</Link>
+                  <Link href="/how-it-works" className="flex items-center gap-2 hover:underline">
+                    <PlayCircle className="w-4 h-4 text-muted" /> How it works
+                  </Link>
+                  <Link href="/sample-dossier" className="flex items-center gap-2 hover:underline">
+                    <FileText className="w-4 h-4 text-muted" /> Sample locked package
+                  </Link>
+                  <Link href="/methodology" className="flex items-center gap-2 hover:underline">
+                    <Info className="w-4 h-4 text-muted" /> Methodology &amp; sources
+                  </Link>
                 </div>
               </div>
-            </div>
+            </aside>
           </div>
         )}
       </div>

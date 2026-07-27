@@ -8,8 +8,8 @@ export const PUBLIC_NAV = [
 ] as const;
 
 export const APP_NAV = [
-  { label: "Dashboard", href: "/cbam" },
-  { label: "Cases", href: "/cases" },
-  { label: "Reports", href: "/reports" },
+  { label: "Home", href: "/cbam" },
+  { label: "Working files", href: "/cases" },
+  { label: "Locked packages", href: "/reports" },
   { label: "Methodology & Sources", href: "/cbam/methodology" }
 ] as const;
