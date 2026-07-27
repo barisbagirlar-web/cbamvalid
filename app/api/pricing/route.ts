@@ -18,12 +18,16 @@ export async function GET() {
 
   return NextResponse.json({
     displayPrice: CANONICAL_PRICING.displayPrice,
+    priceFormatted: CANONICAL_PRICING.priceFormatted,
     currency: CANONICAL_PRICING.currency,
     packName: CANONICAL_PRICING.packName,
+    includedOperators: CANONICAL_PRICING.includedOperators,
     includedInstallations: CANONICAL_PRICING.includedInstallations,
     includedReportingYears: CANONICAL_PRICING.includedReportingYears,
     includedSealedReleases: CANONICAL_PRICING.includedSealedReleases,
     draftPolicy: CANONICAL_PRICING.draftPolicy,
+    valueSummary: CANONICAL_PRICING.valueSummary,
+    paymentFlowSummary: CANONICAL_PRICING.paymentFlowSummary,
     publicPaidLaunchEnabled,
   });
 }
