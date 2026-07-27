@@ -16,9 +16,8 @@ import { getAuthorityChain } from "@/lib/seo/aeo/authority-chains";
 export function JsonLdForRoute({ path }: { path: string }) {
   const route = requireSeoRoute(path);
   const nodes: Record<string, unknown>[] = [];
-  const hasAuthorityChain = Boolean(getAuthorityChain(path));
   const useUniversalGraph =
-    hasAuthorityChain || path === "/answers" || path === "/glossary" || path === "/";
+    Boolean(getAuthorityChain(path)) || path === "/answers" || path === "/glossary" || path === "/";
 
   // Universal nested entity graph for critical AEO URLs (additive; does not replace FAQ/Product).
   if (useUniversalGraph) {

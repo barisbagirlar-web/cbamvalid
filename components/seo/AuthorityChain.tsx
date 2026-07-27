@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getAuthorityChain } from "@/lib/seo/aeo/authority-chains";
 import type { AuthorityChainRecord } from "@/lib/seo/aeo/types";
+import { EntityGlossaryLinks } from "@/components/seo/EntityGlossaryLinks";
 
 const CHAIN_STEPS: {
   key: keyof Pick<
@@ -91,12 +92,7 @@ export function AuthorityChainSection({ path }: { path: string }) {
           </div>
         ) : null}
 
-        {chain.entities.length > 0 ? (
-          <p className="authority-entities" aria-label="Topic entities">
-            <span className="authority-step-label">Entities</span>{" "}
-            {chain.entities.join(" · ")}
-          </p>
-        ) : null}
+        <EntityGlossaryLinks entities={chain.entities} />
       </div>
     </section>
   );

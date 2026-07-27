@@ -675,3 +675,47 @@ h3{font-size:1.35rem}
 }
 .aeo-fanout-section{background:var(--paper)}
 .speakable-answer{color:inherit}
+
+/* Enterprise AEO: breadcrumbs, citations, glossary, entity chips */
+.seo-breadcrumbs{padding:18px 0 0}
+.seo-breadcrumb-list{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;list-style:none;margin:0;padding:0;font-size:.82rem;color:var(--muted)}
+.seo-breadcrumb-item{display:inline-flex;align-items:center;gap:8px}
+.seo-breadcrumb-item a{color:var(--terra);text-decoration:none}
+.seo-breadcrumb-item a:hover{text-decoration:underline}
+.seo-breadcrumb-sep{opacity:.45}
+.citation-rail{background:var(--paper-2);border-top:1px solid var(--line)}
+.citation-list{display:grid;gap:12px;margin:0;padding:0;list-style:none}
+.citation-item{margin:0}
+.citation-link{
+  display:grid;gap:4px;padding:14px 16px;border:1px solid var(--line);border-radius:var(--r-sm);
+  background:var(--card);text-decoration:none;color:inherit;transition:border-color .15s ease
+}
+.citation-link:hover{border-color:var(--terra-line)}
+.citation-id{font-size:.75rem;letter-spacing:.04em;text-transform:uppercase;color:var(--terra);font-weight:600}
+.citation-title{font-size:.95rem;color:var(--ink);line-height:1.35}
+.citation-eli{font-size:.78rem;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.citation-boundary{margin-top:18px;font-size:.88rem;color:var(--ink-2);line-height:1.5}
+.last-reviewed{padding:8px 0 28px;font-size:.82rem;color:var(--muted)}
+.last-reviewed-label{font-weight:600;color:var(--ink-2)}
+.entity-glossary-links{margin-top:28px}
+.entity-chip-list{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:10px 0 0;padding:0}
+.entity-chip,.entity-chip-plain{
+  display:inline-flex;align-items:center;padding:7px 12px;border-radius:var(--r-sm);
+  border:1px solid var(--line);background:var(--card);font-size:.82rem;color:var(--ink-2);text-decoration:none
+}
+a.entity-chip:hover{border-color:var(--terra-line);color:var(--terra)}
+.glossary-toc{margin:28px 0;padding:18px 20px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--card)}
+.glossary-toc ol{margin:0;padding-left:1.2rem;columns:2;gap:28px}
+.glossary-toc a{color:var(--terra);text-decoration:none;font-size:.9rem}
+.glossary-toc a:hover{text-decoration:underline}
+.glossary-list{display:grid;gap:22px}
+.glossary-term{padding:22px 0;border-top:1px solid var(--line)}
+.glossary-term h2{margin:0 0 8px;font-size:1.35rem}
+.glossary-aliases,.glossary-related,.glossary-sources{font-size:.86rem;color:var(--muted);margin:0 0 8px}
+.glossary-definition{font-size:1rem;line-height:1.6;color:var(--ink);margin:0 0 12px}
+.answers-hub-grid{margin-top:28px}
+.answers-hub-routes,.answers-hub-feeds{margin-top:18px;font-size:.88rem;color:var(--ink-2)}
+.answers-hub-feeds a,.answers-hub-routes a{color:var(--terra)}
+@media (max-width:720px){
+  .glossary-toc ol{columns:1}
+}

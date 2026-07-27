@@ -55,6 +55,12 @@ export default function AppFooter() {
             <h4>CBAM Guides</h4>
             <ul>
               <li>
+                <Link href="/answers">Answer Bank</Link>
+              </li>
+              <li>
+                <Link href="/glossary">CBAM Glossary</Link>
+              </li>
+              <li>
                 <Link href="/cbam-2026-definitive-period">2026 Definitive Period</Link>
               </li>
               <li>
@@ -65,9 +71,6 @@ export default function AppFooter() {
               </li>
               <li>
                 <Link href="/cbam-embedded-emissions-calculation">Embedded Emissions</Link>
-              </li>
-              <li>
-                <Link href="/cbam-actual-vs-default-values">Actual vs Default Values</Link>
               </li>
               <li>
                 <Link href="/cn-code">CN Code Scope Hub</Link>

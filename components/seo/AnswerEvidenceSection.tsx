@@ -4,6 +4,8 @@ import { listAnswersForRoute } from "@/lib/seo/aeo/answer-bank";
 import { getTopicalNode, listRelatedTopics } from "@/lib/seo/aeo/topical-map";
 import { getAuthorityChain } from "@/lib/seo/aeo/authority-chains";
 import { AuthorityChainSection } from "@/components/seo/AuthorityChain";
+import { SeoBreadcrumbs } from "@/components/seo/SeoBreadcrumbs";
+import { CitationRail, LastReviewed } from "@/components/seo/CitationRail";
 
 function AnswerCard({ answer }: { answer: AeoAnswerRecord }) {
   return (
@@ -13,7 +15,7 @@ function AnswerCard({ answer }: { answer: AeoAnswerRecord }) {
         {answer.question}
       </h3>
       <div itemScope itemType="https://schema.org/Answer" itemProp="acceptedAnswer">
-        <p className="aeo-direct" itemProp="text">
+        <p className="aeo-direct speakable-answer" itemProp="text">
           {answer.directAnswer}
         </p>
       </div>
@@ -64,6 +66,10 @@ export function AnswerEvidenceSection({
           <h2 id={`aeo-heading-${path.replace(/\W/g, "")}`}>{heading}</h2>
           <p>
             Each answer is written so a person — or an answer engine — can cite a single clear statement with supporting evidence and legal/product boundaries.
+            {" "}
+            <Link href="/answers">Browse the full answer bank</Link>
+            {" · "}
+            <Link href="/glossary">Entity glossary</Link>
           </p>
         </div>
         <div className="aeo-grid">
@@ -133,24 +139,34 @@ export function FanOutQueriesSection({ path }: { path: string }) {
   );
 }
 
-/** Shared AEO chrome for marketing pages: authority chain + answers + topical map. */
+/**
+ * Enterprise AEO chrome: breadcrumbs → authority → answers → fan-out →
+ * topical map → citations → last reviewed.
+ */
 export function AeoPageChrome({
   path,
   answerHeading,
   answerLimit = 2,
   showAuthorityChain = true,
+  showBreadcrumbs = true,
+  showCitations = true,
 }: {
   path: string;
   answerHeading?: string;
   answerLimit?: number;
   showAuthorityChain?: boolean;
+  showBreadcrumbs?: boolean;
+  showCitations?: boolean;
 }) {
   return (
     <>
+      {showBreadcrumbs ? <SeoBreadcrumbs path={path} /> : null}
       {showAuthorityChain ? <AuthorityChainSection path={path} /> : null}
       <AnswerEvidenceSection path={path} heading={answerHeading} limit={answerLimit} />
       <FanOutQueriesSection path={path} />
       <TopicalMapSection path={path} />
+      {showCitations ? <CitationRail path={path} /> : null}
+      <LastReviewed path={path} />
     </>
   );
 }

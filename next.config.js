@@ -111,10 +111,10 @@ const nextConfig = {
         ],
       },
       {
-        source: '/answers.rss',
+        source: '/answers.feed.json',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' },
-          { key: 'Content-Type', value: 'application/rss+xml; charset=utf-8' },
+          { key: 'Content-Type', value: 'application/feed+json; charset=utf-8' },
         ],
       },
     ];

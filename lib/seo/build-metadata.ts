@@ -36,6 +36,9 @@ export function generateSeoMetadata(path: string): Metadata {
         "application/rss+xml": [
           { url: `${siteConfig.canonicalOrigin}/answers.rss`, title: "CBAMValid answers feed" },
         ],
+        "application/feed+json": [
+          { url: `${siteConfig.canonicalOrigin}/answers.feed.json`, title: "CBAMValid JSON Feed" },
+        ],
       },
     },
     robots: {

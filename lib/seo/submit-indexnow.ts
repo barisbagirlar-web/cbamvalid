@@ -23,8 +23,11 @@ export async function submitIndexNow(urls?: readonly string[]): Promise<{
   // Always include discovery surfaces with content updates.
   const extras = [
     `${siteConfig.canonicalOrigin}/llms.txt`,
+    `${siteConfig.canonicalOrigin}/answers`,
+    `${siteConfig.canonicalOrigin}/glossary`,
     `${siteConfig.canonicalOrigin}/answers.json`,
     `${siteConfig.canonicalOrigin}/answers.rss`,
+    `${siteConfig.canonicalOrigin}/answers.feed.json`,
     `${siteConfig.canonicalOrigin}/.well-known/ai.txt`,
   ];
   const unique = Array.from(new Set([...urlList, ...extras]));

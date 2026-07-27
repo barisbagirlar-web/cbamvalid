@@ -8,6 +8,7 @@ import {
 import { AEO_ANSWER_BANK } from "./aeo/answer-bank";
 import { AUTHORITY_CHAINS } from "./aeo/authority-chains";
 import { TOPICAL_MAP } from "./aeo/topical-map";
+import { listGlossaryTerms } from "./aeo/glossary";
 import { listVerifiedRegulatoryStatements, SEO_LEGAL_SOURCE_INDEX } from "./regulatory-sources";
 import { listSitemapRoutes } from "./registry";
 import { siteConfig } from "@/lib/site-config";
@@ -183,6 +184,9 @@ export function renderLlmsTxt(model: LlmDocModel): string {
     "",
     `- Answers JSON-LD feed: ${siteConfig.canonicalOrigin}/answers.json`,
     `- Answers RSS feed: ${siteConfig.canonicalOrigin}/answers.rss`,
+    `- Answers JSON Feed: ${siteConfig.canonicalOrigin}/answers.feed.json`,
+    `- Answer hub (HTML): ${siteConfig.canonicalOrigin}/answers`,
+    `- Entity glossary (HTML): ${siteConfig.canonicalOrigin}/glossary`,
     `- LLM index: ${siteConfig.canonicalOrigin}/llms.txt`,
     `- LLM full index: ${siteConfig.canonicalOrigin}/llms-full.txt`,
     `- AI crawler policy: ${siteConfig.canonicalOrigin}/.well-known/ai.txt`,
@@ -200,9 +204,19 @@ export function renderLlmsTxt(model: LlmDocModel): string {
 }
 
 export function renderLlmsFullTxt(model: LlmDocModel): string {
+  const glossaryLines = listGlossaryTerms().flatMap((term) => [
+    `### ${term.name}`,
+    term.definition,
+    `Related: ${term.relatedPaths.join(", ")}`,
+    "",
+  ]);
+
   return [
     renderLlmsTxt(model).trimEnd(),
     "",
+    "## Entity glossary (DefinedTerm SSOT)",
+    "",
+    ...glossaryLines,
     "## Explicit non-claims",
     "",
     "- Not an accredited verification opinion",

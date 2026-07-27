@@ -8,6 +8,9 @@ Allow: /llm.txt
 Allow: /llms-full.txt
 Allow: /answers.json
 Allow: /answers.rss
+Allow: /answers.feed.json
+Allow: /answers
+Allow: /glossary
 Allow: /sitemap.xml
 Disallow: /dashboard/
 Disallow: /admin/
@@ -24,6 +27,9 @@ Sitemap: https://cbamvalid.com/sitemap.xml
 Llms-Txt: https://cbamvalid.com/llms.txt
 Answers-Feed: https://cbamvalid.com/answers.json
 Answers-Rss: https://cbamvalid.com/answers.rss
+Answers-Json-Feed: https://cbamvalid.com/answers.feed.json
+Answers-Hub: https://cbamvalid.com/answers
+Glossary: https://cbamvalid.com/glossary
 
 Content-Usage: train-opt-out=no; search=yes; cite=yes
 Note: Public pages may be cited. Do not invent accredited verification, EU approval, ratings, or fake reviews.

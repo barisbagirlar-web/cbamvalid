@@ -186,6 +186,26 @@ const rss = [
 ].join("\n");
 writeFileSync(resolve(root, "public/answers.rss"), rss, "utf8");
 
+// JSON Feed 1.1 — preferred by many AI/news aggregators over RSS alone
+const jsonFeed = {
+  version: "https://jsonfeed.org/version/1.1",
+  title: "CBAMValid Answer Feed",
+  home_page_url: siteConfig.canonicalOrigin,
+  feed_url: `${siteConfig.canonicalOrigin}/answers.feed.json`,
+  description:
+    "Direct answers for CBAM exporter verification preparation — machine-readable syndication for answer engines.",
+  language: "en",
+  authors: [{ name: siteConfig.siteName, url: siteConfig.canonicalOrigin }],
+  items: AEO_ANSWER_BANK.map((answer) => ({
+    id: answer.id,
+    url: `${siteConfig.canonicalOrigin}/answers#${answer.id}`,
+    title: answer.question,
+    content_text: `${answer.directAnswer}\n\n${answer.empathyContext}`,
+    tags: [...answer.routes],
+  })),
+};
+writeFileSync(resolve(root, "public/answers.feed.json"), `${JSON.stringify(jsonFeed, null, 2)}\n`, "utf8");
+
 console.log(
-  "Generated public/llms.txt, public/llm.txt, public/llms-full.txt, public/robots.txt, public/.well-known/ai.txt, public/ai-policy.txt, public/answers.json, public/answers.rss, IndexNow key from SEO SSOT",
+  "Generated public/llms.txt, public/llm.txt, public/llms-full.txt, public/robots.txt, public/.well-known/ai.txt, public/ai-policy.txt, public/answers.json, public/answers.rss, public/answers.feed.json, IndexNow key from SEO SSOT",
 );

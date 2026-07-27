@@ -26,6 +26,12 @@ export default function PublicLayout({
         href={`${siteConfig.canonicalOrigin}/answers.rss`}
         title="CBAMValid answers feed"
       />
+      <link
+        rel="alternate"
+        type="application/feed+json"
+        href={`${siteConfig.canonicalOrigin}/answers.feed.json`}
+        title="CBAMValid JSON Feed"
+      />
       <link rel="author" href={`${siteConfig.canonicalOrigin}/about`} />
       <PublicHeader />
       {children}

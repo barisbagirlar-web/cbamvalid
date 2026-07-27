@@ -345,10 +345,12 @@ function validateRegulatoryAndLlm(): GateResult[] {
 function validateAeoDiscoverySurfaces(): GateResult[] {
   const results: GateResult[] = [];
 
-  for (const file of ["public/answers.json", "public/answers.rss"] as const) {
+  for (const file of ["public/answers.json", "public/answers.rss", "public/answers.feed.json"] as const) {
     if (!existsSync(resolve(file))) {
       results.push(fail("G26", `${file} missing — run seo:generate-llm-docs`));
-    } else if (file.endsWith(".json")) {
+      continue;
+    }
+    if (file === "public/answers.json") {
       try {
         const parsed = JSON.parse(readFileSync(resolve(file), "utf8")) as { authorityChains?: unknown[] };
         if (!Array.isArray(parsed.authorityChains) || parsed.authorityChains.length < 1) {
@@ -357,11 +359,26 @@ function validateAeoDiscoverySurfaces(): GateResult[] {
       } catch {
         results.push(fail("G26", "answers.json is not valid JSON"));
       }
+    } else if (file === "public/answers.feed.json") {
+      try {
+        const parsed = JSON.parse(readFileSync(resolve(file), "utf8")) as { items?: unknown[]; version?: string };
+        if (!parsed.version?.includes("jsonfeed") || !Array.isArray(parsed.items) || parsed.items.length < 1) {
+          results.push(fail("G26", "answers.feed.json missing JSON Feed items"));
+        }
+      } catch {
+        results.push(fail("G26", "answers.feed.json is not valid JSON"));
+      }
     } else {
       const rss = readFileSync(resolve(file), "utf8");
       if (!rss.includes("<rss") || !rss.includes("<item>")) {
         results.push(fail("G26", "answers.rss missing channel items"));
       }
+    }
+  }
+
+  for (const page of ["app/(public)/answers/page.tsx", "app/(public)/glossary/page.tsx", "lib/seo/aeo/glossary.ts"] as const) {
+    if (!existsSync(resolve(page))) {
+      results.push(fail("G26", `${page} missing — enterprise AEO HTML hubs required`));
     }
   }
 
@@ -375,8 +392,17 @@ function validateAeoDiscoverySurfaces(): GateResult[] {
     }
   }
 
+  const glossarySrc = readFileSync(resolve("lib/seo/aeo/glossary.ts"), "utf8");
+  if ((glossarySrc.match(/slug:/g) ?? []).length < 12) {
+    results.push(fail("G26", "Glossary SSOT too thin for enterprise entity coverage"));
+  }
+
+  if (!/generateSitemaps/.test(readFileSync(resolve("app/sitemap.ts"), "utf8"))) {
+    results.push(fail("G26", "app/sitemap.ts must emit multi-sitemap index via generateSitemaps"));
+  }
+
   if (!results.some((r) => r.id === "G26" && !r.ok)) {
-    results.push(pass("G26", "AEO discovery: answers.json + answers.rss + IndexNow key"));
+    results.push(pass("G26", "Enterprise AEO: feeds + IndexNow + glossary/answers hubs + sitemap index"));
   }
   return results;
 }

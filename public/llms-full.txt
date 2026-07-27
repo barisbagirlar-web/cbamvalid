@@ -457,6 +457,9 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 
 - Answers JSON-LD feed: https://cbamvalid.com/answers.json
 - Answers RSS feed: https://cbamvalid.com/answers.rss
+- Answers JSON Feed: https://cbamvalid.com/answers.feed.json
+- Answer hub (HTML): https://cbamvalid.com/answers
+- Entity glossary (HTML): https://cbamvalid.com/glossary
 - LLM index: https://cbamvalid.com/llms.txt
 - LLM full index: https://cbamvalid.com/llms-full.txt
 - AI crawler policy: https://cbamvalid.com/.well-known/ai.txt
@@ -467,6 +470,88 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Support: info@cbamvalid.com
 
 Last updated: 2026-07-27
+
+## Entity glossary (DefinedTerm SSOT)
+
+### Carbon Border Adjustment Mechanism (CBAM)
+EU framework that prices selected embedded greenhouse-gas emissions in goods imported into the customs territory of the Union. CBAMValid helps exporters prepare evidence for that regime; it does not replace an accredited verifier or the CBAM Registry.
+Related: /cbam-2026-definitive-period, /methodology, /product
+
+### Embedded emissions
+Greenhouse-gas emissions attributed to goods under CBAM rules, typically expressed per tonne of product and separated into direct and indirect components where required. CBAMValid calculates and traces these values server-side from operator inputs and evidence links.
+Related: /cbam-embedded-emissions-calculation, /methodology, /how-it-works
+
+### Direct emissions
+Emissions from sources owned or controlled within the installation boundary used for the goods in scope — for example combustion and process emissions — as distinct from electricity-related indirect emissions.
+Related: /cbam-embedded-emissions-calculation, /methodology
+
+### Indirect emissions
+Emissions associated with electricity consumed in production of the goods, treated under CBAM methods separately from direct emissions when the ruleset requires that split.
+Related: /cbam-embedded-emissions-calculation, /cbam-actual-vs-default-values
+
+### CN code
+Combined Nomenclature classification that determines whether goods fall into CBAM Annex I scope. Wrong CN classification is a material preparation failure; CBAMValid pages document scope reasoning, not customs binding rulings.
+Related: /cn-code, /cbam-cn-code-scope, /product
+
+### Actual values
+Embedded-emissions figures derived from installation monitoring, activity data, and approved methods — preferred when evidence quality supports them — as opposed to Commission default values.
+Related: /cbam-actual-vs-default-values, /cbam-default-values, /methodology
+
+### Default values
+Commission-published fallback emission values used when actual values are not available or not permitted for the declaration path. Using defaults can raise commercial cost; CBAMValid surfaces the choice with methodology decision records.
+Related: /cbam-default-values, /cbam-actual-vs-default-values
+
+### Accredited verifier
+An independent body that may issue an accredited verification opinion under EU accreditation rules. CBAMValid prepares the operator dossier; it never issues that opinion or claims EU approval.
+Related: /cbam-verification-preparation, /about, /methodology
+
+### CBAM definitive period
+The period starting 1 January 2026 when CBAM financial obligations apply under definitive-period rules, distinct from the earlier transitional reporting phase.
+Related: /cbam-2026-definitive-period, /cbam-certificate-price
+
+### CBAM certificate
+Certificate instrument used in the definitive period so authorised CBAM declarants can surrender certificates corresponding to embedded emissions of imported goods. Pricing cadence and purchase rules are set by implementing acts — not by CBAMValid.
+Related: /cbam-certificate-price, /cbam-2026-definitive-period
+
+### Precursor
+Input material or intermediate good whose embedded emissions must be included when calculating emissions for complex goods under CBAM precursor rules. Missing precursor decisions block a fail-closed seal in CBAMValid.
+Related: /cbam-embedded-emissions-calculation, /methodology, /product
+
+### System boundary
+Documented limit of processes, fuels, materials, and electricity included in the installation emissions inventory for a reporting year. CBAMValid requires an explicit boundary before sealing.
+Related: /methodology, /how-it-works, /product
+
+### Evidence register
+Structured register of source documents with hash, size, review status, and field links. Sealing in CBAMValid requires approved, supported evidence whose bytes match registered integrity values.
+Related: /sample-dossier, /product, /cbam-exporter-evidence-requirements
+
+### Calculation trace
+Versioned, hash-linked record of formulas, inputs, units, intermediate steps, and outputs so the same case snapshot can be replayed. Authoritative traces in CBAMValid are generated server-side.
+Related: /methodology, /how-it-works, /sample-dossier
+
+### Exporter Verification Preparation Pack
+CBAMValid commercial unit: one legal operator, one installation, one reporting year, unlock for one working file with drafts free and five successful sealed releases after pay-at-lock — prepared for independent accredited verification, not an accredited opinion.
+Related: /pricing, /product, /how-it-works
+
+### O3CI field-mapped structured data export
+Structured data export mapped to O3CI-oriented fields to help importers and declarants. It is not an official CBAM Registry XML submission and must not be described as one.
+Related: /sample-dossier, /product, /methodology
+
+### Authorised CBAM declarant
+The EU-side party responsible for CBAM declarations and certificate surrender for imported goods. Non-EU producers typically supply evidence to declarants; CBAMValid packages that operator-side evidence.
+Related: /cbam-non-eu-producer-guide, /cbam-exporter-evidence-requirements
+
+### Installation
+A stationary technical unit where production processes for CBAM goods occur. Each CBAMValid working file locks to one installation for one reporting year.
+Related: /product, /how-it-works, /pricing
+
+### Fail-closed quality control
+Rule that blocks sealing when material identity, evidence, allocation, calculation, or finding conditions are incomplete or unsupported. Blocked seals consume zero release entitlement in CBAMValid.
+Related: /how-it-works, /product, /cbam-verification-preparation
+
+### Ruleset version
+Pinned regulatory/ruleset and calculation-engine versions recorded in a sealed release so historical packages do not silently change when methods are updated later.
+Related: /methodology, /sample-dossier
 
 ## Explicit non-claims
 
