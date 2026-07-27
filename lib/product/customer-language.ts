@@ -11,12 +11,12 @@ export const CUSTOMER_LANGUAGE = {
   lockedPackages: "Locked packages",
   home: "Home",
   sealAction: "Lock & download",
-  buyPack: "Buy Preparation Pack",
-  activatePack: "Activate pack",
+  buyPack: "Pay to lock this file",
+  activatePack: "Activate unused balance",
   continueFile: "Continue working file",
   createFile: "Create your first working file",
   oneLineStory:
-    "One factory + one year = one working file. Fill it in, then lock and download. You can lock up to five times for corrections.",
+    "Work free on one factory + one year file. Pay once to lock it. Correct and re-lock the same file as needed. A new file needs a new payment.",
 } as const;
 
 export const WORKFLOW_STEPS_PLAIN = [

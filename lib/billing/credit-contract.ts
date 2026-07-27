@@ -1,6 +1,8 @@
 /**
  * Internal ledger unit (do not present as the customer commercial product):
- * 100 account credits → 1 Preparation Pack → 5 sealed releases.
+ * Legacy account-credit mapping note (historical):
+ * 100 account credits → 1 Preparation Pack unlock (case-scoped pay-at-lock is the customer SSOT).
+ * Practical reseal ceiling is CASE_COMMERCIAL.maxReleasesPerPaidCase — not a marketed “5 pack” meter.
  * Customer-facing UI must speak in packs and sealed releases.
  */
 export const CREDITS_PER_PREPARATION_PACK = 100;

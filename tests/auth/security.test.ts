@@ -4,10 +4,25 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 vi.mock("server-only", () => ({}));
 
 const { verifySessionCookie, createSessionCookie, verifyIdToken, mockCookiesSet, mockCookiesGet, mockCollection } = vi.hoisted(() => {
-  const mockGet = vi.fn().mockResolvedValue({
-    exists: true,
-    data: () => ({ publicPaidLaunchEnabled: true })
+  const mockGet = vi.fn().mockImplementation(async () => {
+    // Default: system config + case docs exist. Omit uid so ownership check is not
+    // falsely mismatched across different authenticated test UIDs.
+    return {
+      exists: true,
+      data: () => ({
+        publicPaidLaunchEnabled: true,
+        commercial: { status: "UNPAID" },
+      }),
+    };
   });
+
+  const mockEmptyQueryGet = vi.fn().mockResolvedValue({ empty: true, docs: [] });
+  const mockQuery = {
+    where: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    get: mockEmptyQueryGet,
+  };
 
   const mockDoc = vi.fn().mockReturnValue({
     get: mockGet,
@@ -17,6 +32,7 @@ const { verifySessionCookie, createSessionCookie, verifyIdToken, mockCookiesSet,
 
   const mockCollectionFn = vi.fn().mockReturnValue({
     doc: mockDoc,
+    where: vi.fn().mockReturnValue(mockQuery),
   });
 
   return {
@@ -177,7 +193,7 @@ describe("Production Security & Foundation Audits", () => {
 
     const req = new Request("http://localhost/api/checkout/cbam", {
       method: "POST",
-      body: JSON.stringify({ slug: "cbam-5-reports" }),
+      body: JSON.stringify({ slug: "cbam-5-reports", caseId: "case_test_checkout_001" }),
     });
 
     const res = await checkoutPost(req);
@@ -217,7 +233,7 @@ describe("Production Security & Foundation Audits", () => {
 
     const req = new Request("http://localhost/api/checkout/cbam", {
       method: "POST",
-      body: JSON.stringify({ slug: "pack_premium_dossier_v5" }),
+      body: JSON.stringify({ slug: "pack_premium_dossier_v5", caseId: "case_test_checkout_002" }),
     });
 
     const res = await checkoutPost(req);
@@ -251,7 +267,7 @@ describe("Production Security & Foundation Audits", () => {
     const req = new Request("http://localhost/api/checkout/cbam", {
       method: "POST",
       headers: { Authorization: "Bearer firebase-id-token" },
-      body: JSON.stringify({ slug: "pack_premium_dossier_v5" }),
+      body: JSON.stringify({ slug: "pack_premium_dossier_v5", caseId: "case_test_checkout_003" }),
     });
 
     const res = await checkoutPost(req);
@@ -277,7 +293,7 @@ describe("Production Security & Foundation Audits", () => {
   it("9. duplicate Paddle webhook creates zero duplicate credit", async () => {
     // Verify our logic in webhook processor rejects duplicate idempotencyKey
     const { writeLedgerEntry } = await import("../../functions/src/commerce/ledger-service");
-    const mockTransaction: any = {
+    const mockTransaction = {
       get: vi.fn().mockResolvedValueOnce({
         empty: false,
         docs: [{ data: () => ({ entryHash: "existing-hash" }) }],
@@ -313,7 +329,7 @@ describe("Production Security & Foundation Audits", () => {
     const { processWebhookEvent } = await import("../../functions/src/commerce/webhook-processor");
     
     // We mock firestore runTransaction and get/set calls
-    const mockDbTransaction: any = {
+    const mockDbTransaction = {
       get: vi.fn()
         // 1. First writeLedgerEntry call checks existing idempotency key -> empty snapshot
         .mockResolvedValueOnce({ empty: true })
@@ -342,6 +358,7 @@ describe("Production Security & Foundation Audits", () => {
       data: () => ({
         uid: "test-user-uid",
         orderId: "ord_test_123",
+        caseId: "case_test_fulfill_001",
         canonicalProductCode: "pack_premium_dossier_v5",
         paddlePriceId: "pri_testprice",
         currency: "USD",
@@ -403,8 +420,8 @@ describe("Production Security & Foundation Audits", () => {
 
     await processWebhookEvent(event);
 
-    // Assert that the ledger entries and entitlements are set and updated
-    expect(mockDbTransaction.set).toHaveBeenCalledTimes(3); // 2 ledger entries + 1 entitlement document
+    // Assert ledger, entitlement, and case commercial PAID merge writes.
+    expect(mockDbTransaction.set).toHaveBeenCalledTimes(4); // 2 ledger + entitlement + case commercial
     expect(mockDbTransaction.update).toHaveBeenCalledTimes(2); // Order transition to PAID + transition to ENTITLED
   });
 });

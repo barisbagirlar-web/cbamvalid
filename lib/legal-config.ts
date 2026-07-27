@@ -11,7 +11,7 @@ export const legalConfig = {
   privacyEmail: siteConfig.privacyEmail,
   legalEmail: siteConfig.legalEmail,
   websiteUrl: siteConfig.organizationUrl,
-  lastUpdatedDate: "2026-07-01",
+  lastUpdatedDate: "2026-07-27",
   governingLaw: "the laws of the relevant jurisdiction",
   legalContactEmail: siteConfig.legalEmail,
   privacyContactEmail: siteConfig.privacyEmail,

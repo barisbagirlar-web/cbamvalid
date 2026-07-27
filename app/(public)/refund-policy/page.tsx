@@ -1,7 +1,8 @@
+import Link from "next/link";
 import { legalConfig } from "@/lib/legal-config";
-
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 import { generateBreadcrumbSchema } from "@/lib/seo/schema";
+import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 
 export const metadata = generateSeoMetadata("/refund-policy");
 
@@ -9,8 +10,8 @@ export default function RefundPolicyPage() {
   const jsonLd = [
     generateBreadcrumbSchema([
       { name: "Home", item: "/" },
-      { name: "Refund Policy", item: "/refund-policy" }
-    ])
+      { name: "Refund Policy", item: "/refund-policy" },
+    ]),
   ];
 
   return (
@@ -24,37 +25,64 @@ export default function RefundPolicyPage() {
 
       <section className="space-y-6">
         <div>
-          <h2 className="text-xl font-bold mb-2">1. Digital Goods Exemption</h2>
+          <h2 className="text-xl font-bold mb-2">1. What you purchase</h2>
           <p className="text-sm text-muted">
-            By purchasing a CBAMValid entitlement (digital credit), you agree to the immediate delivery of the digital service. Under applicable consumer protection laws, the right of withdrawal is excluded for digital content once the service has been fully performed (i.e. the report has been generated). 
+            CBAMValid charges {CANONICAL_PRICING.priceFormatted} to unlock lock-and-download for one
+            Working File (one operator, one installation, one reporting year). Drafting is free.
+            Corrections and re-locks on the same paid Working File do not require a new payment. See{" "}
+            <Link href="/terms#commercial-terms" className="underline">
+              Terms §3
+            </Link>{" "}
+            and{" "}
+            <Link href="/pricing#how-payment-works" className="underline">
+              Pricing
+            </Link>
+            .
           </p>
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-2">2. Unused Credits</h2>
+          <h2 className="text-xl font-bold mb-2">2. Digital goods after successful seal</h2>
           <p className="text-sm text-muted">
-            If you have purchased an entitlement but have not yet generated a sealed report (the credit is unused), you may request a refund within 14 days of purchase. Please contact us at {legalConfig.supportEmail} with your order reference.
+            By paying to unlock a Working File, you request immediate access to digital sealing. Under
+            applicable consumer protection rules for digital content, withdrawal may be excluded once
+            a successful sealed package has been delivered for that Working File.
           </p>
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-2">3. Failed Deliveries and Duplicates</h2>
+          <h2 className="text-xl font-bold mb-2">3. Unused paid unlock (no successful seal yet)</h2>
           <p className="text-sm text-muted">
-            If a technical error prevents the generation or delivery of your report, or if you were charged twice for the same transaction, you are eligible for a full refund. 
+            If you paid for a Working File and have not yet completed a successful sealed lock for that
+            file, you may request a refund within 14 days of purchase. Contact{" "}
+            {legalConfig.supportEmail} with your order reference and Working File ID.
           </p>
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-2">4. Payment Processing (Merchant of Record)</h2>
+          <h2 className="text-xl font-bold mb-2">4. Failed deliveries and duplicate charges</h2>
           <p className="text-sm text-muted">
-            Our order process is conducted by our online reseller Paddle.com. Paddle.com is the Merchant of Record for all our orders. Refunds are processed through Paddle and typically take 3-5 business days to appear on your statement.
+            If a confirmed technical error prevents delivery of a sealed package after payment, or if
+            you were charged twice for the same Working File unlock, you are eligible for a full
+            refund of the duplicate or failed charge. A blocked or failed seal attempt that did not
+            complete delivery is not treated as a completed purchase of a sealed package.
           </p>
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-2">5. Statutory Rights</h2>
+          <h2 className="text-xl font-bold mb-2">5. Payment processing (Merchant of Record)</h2>
           <p className="text-sm text-muted">
-            This policy does not restrict your statutory consumer rights under the laws of {legalConfig.governingLaw} or your local jurisdiction.
+            Our order process is conducted by our online reseller Paddle.com. Paddle.com is the
+            Merchant of Record for all our orders. Refunds are processed through Paddle and typically
+            take 3–5 business days to appear on your statement.
+          </p>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-bold mb-2">6. Statutory rights</h2>
+          <p className="text-sm text-muted">
+            This policy does not restrict your statutory consumer rights under the laws of{" "}
+            {legalConfig.governingLaw} or your local jurisdiction.
           </p>
         </div>
       </section>

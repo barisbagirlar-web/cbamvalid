@@ -3,9 +3,9 @@ import "server-only";
 import crypto from "crypto";
 import { adminDb } from "@/lib/firebase/admin";
 import { getPaddleConfig } from "@/lib/billing/paddle-config.server";
-import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
+import { CASE_COMMERCIAL } from "@/lib/billing/case-commercial-contract";
 
-const MAX_RELEASES_PER_PACK = CANONICAL_PRICING.includedSealedReleases;
+const MAX_RELEASES_PER_PAID_CASE = CASE_COMMERCIAL.maxReleasesPerPaidCase;
 const CANONICAL_PRODUCT = "pack_premium_dossier_v5";
 
 type PaddleTransaction = {
@@ -156,6 +156,11 @@ export async function fulfillCheckoutOrder(params: {
       ? order.canonicalProductCode
       : CANONICAL_PRODUCT;
 
+  const scopeCaseId = typeof order.caseId === "string" ? order.caseId.trim() : "";
+  if (!scopeCaseId) {
+    throw new Error("CASE_ID_REQUIRED_FOR_FULFILLMENT");
+  }
+
   const entitlementId = await adminDb.runTransaction(async (dbTx) => {
     const freshOrder = await dbTx.get(orderRef);
     const fresh = freshOrder.data() || {};
@@ -202,8 +207,10 @@ export async function fulfillCheckoutOrder(params: {
       orderId,
       productCode,
       status: "AVAILABLE",
-      quantity: MAX_RELEASES_PER_PACK,
-      maxReleases: MAX_RELEASES_PER_PACK,
+      quantity: 1,
+      maxReleases: MAX_RELEASES_PER_PAID_CASE,
+      scopeCaseId,
+      billingModel: CASE_COMMERCIAL.billingModel,
       createdAt: now,
       updatedAt: now,
       releasesCount: 0,
@@ -219,7 +226,7 @@ export async function fulfillCheckoutOrder(params: {
       transactionId,
       eventId,
       type: "ENTITLEMENT_ISSUED",
-      quantity: MAX_RELEASES_PER_PACK,
+      quantity: MAX_RELEASES_PER_PAID_CASE,
       createdAt: now,
       idempotencyKey: `entitlement:${transactionId}:${productCode}`,
       previousEntryHash: ledgerPayload.entryHash,
@@ -232,8 +239,25 @@ export async function fulfillCheckoutOrder(params: {
     dbTx.update(orderRef, {
       status: "ENTITLED",
       paddleTransactionId: transactionId,
+      caseId: scopeCaseId,
       updatedAt: now,
     });
+
+    const caseRef = adminDb.collection("cbam_cases").doc(scopeCaseId);
+    dbTx.set(
+      caseRef,
+      {
+        commercial: {
+          status: "PAID",
+          billingModel: CASE_COMMERCIAL.billingModel,
+          orderId,
+          paddleTransactionId: transactionId,
+          paidAt: now,
+        },
+        updatedAt: now,
+      },
+      { merge: true }
+    );
 
     return entitlementRef.id;
   });

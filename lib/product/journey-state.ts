@@ -1,8 +1,8 @@
 import {
   packsUnlockableFromCredits,
-  RELEASES_PER_PREPARATION_PACK,
 } from "@/lib/billing/credit-contract";
 import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
+import { CASE_COMMERCIAL } from "@/lib/billing/case-commercial-contract";
 import { CUSTOMER_LANGUAGE } from "@/lib/product/customer-language";
 
 /**
@@ -10,7 +10,7 @@ import { CUSTOMER_LANGUAGE } from "@/lib/product/customer-language";
  * 1. Every login lands on one “Where you are” truth.
  * 2. Exactly one primary CTA is shown for the current state.
  * 3. Working file ≠ locked package is obvious in plain language.
- * 4. Pack purchase and seal timing stay: draft free → pay at checkout → seal uses a release.
+ * 4. Pack purchase and seal timing: draft free → pay at lock for this file → same-file corrections included.
  * 5. SEO/public registry and Paddle amount SSOT are unchanged by this layer.
  *
  * Scenario matrix (must stay green in unit tests):
@@ -67,17 +67,17 @@ export function resolveJourneyState(input: JourneyInput): JourneyView {
     : "/cases/new";
 
   const packSummary = hasReleases
-    ? `${input.releasesRemaining} sealed release${input.releasesRemaining === 1 ? "" : "s"} left on your Preparation Pack.`
+    ? `This account can lock paid working files (${input.releasesRemaining} release slot${input.releasesRemaining === 1 ? "" : "s"} currently available).`
     : unlockable > 0
-      ? `${unlockable} Preparation Pack${unlockable === 1 ? "" : "s"} ready to activate.`
-      : `No active Preparation Pack. ${CANONICAL_PRICING.priceFormatted} unlocks ${RELEASES_PER_PREPARATION_PACK} sealed releases.`;
+      ? `${unlockable} Preparation Pack${unlockable === 1 ? "" : "s"} ready to activate (legacy balance).`
+      : `Draft free. Pay ${CANONICAL_PRICING.priceFormatted} once when you lock a working file. Same file: unlimited corrections. New file = new payment.`;
 
   if (input.postPurchase && hasReleases && hasFile) {
     return {
       state: "READY_TO_SEAL",
-      headline: "Pack purchased — finish your working file, then lock it",
+      headline: "Payment confirmed — finish your working file, then lock it",
       explanation:
-        "Payment is done. Complete quality checks on your working file, then lock and download. Each successful lock uses one sealed release.",
+        "Payment is done for this working file. Complete quality checks, then lock and download. Same-file corrections and re-locks stay included.",
       primaryCta: { label: CUSTOMER_LANGUAGE.continueFile, href: fileHref },
       secondaryCta: { label: "View sample package", href: "/sample-dossier" },
       packSummary,
@@ -87,7 +87,7 @@ export function resolveJourneyState(input: JourneyInput): JourneyView {
   if (input.postPurchase && hasReleases && !hasFile) {
     return {
       state: "NO_FILE",
-      headline: "Pack purchased — create your working file",
+      headline: "Payment confirmed — create your working file",
       explanation: CUSTOMER_LANGUAGE.oneLineStory,
       primaryCta: { label: CUSTOMER_LANGUAGE.createFile, href: "/cases/new" },
       secondaryCta: { label: "View sample package", href: "/sample-dossier" },
@@ -114,7 +114,7 @@ export function resolveJourneyState(input: JourneyInput): JourneyView {
       explanation: CUSTOMER_LANGUAGE.oneLineStory,
       primaryCta: { label: CUSTOMER_LANGUAGE.createFile, href: "/cases/new" },
       secondaryCta: {
-        label: `${CUSTOMER_LANGUAGE.buyPack} — ${CANONICAL_PRICING.priceFormatted}`,
+        label: `${CASE_COMMERCIAL.paymentCtaLabel}`,
         href: "/credits/buy",
       },
       packSummary,
@@ -127,7 +127,7 @@ export function resolveJourneyState(input: JourneyInput): JourneyView {
       state: "BLOCKERS_OPEN",
       headline: `Fix ${blockers} blocker${blockers === 1 ? "" : "s"} before you can lock`,
       explanation:
-        "Your Preparation Pack is ready. Open the working file, clear quality blockers, then lock and download. A failed lock uses zero releases.",
+        "This working file is paid. Open it, clear quality blockers, then lock and download. A failed lock charges nothing.",
       primaryCta: { label: CUSTOMER_LANGUAGE.continueFile, href: fileHref },
       secondaryCta: { label: "Open quality step", href: `${fileHref}` },
       packSummary,
@@ -139,11 +139,13 @@ export function resolveJourneyState(input: JourneyInput): JourneyView {
       state: "FILE_IN_PROGRESS",
       headline: `Continue your working file (${blockers} blocker${blockers === 1 ? "" : "s"} open)`,
       explanation:
-        "Keep editing for free. Buy or activate a Preparation Pack when you are ready to lock. Blockers must be cleared before a successful lock.",
+        "Keep editing for free. Pay once when you are ready to lock this file. Blockers must be cleared before a successful lock.",
       primaryCta: { label: CUSTOMER_LANGUAGE.continueFile, href: fileHref },
       secondaryCta: {
-        label: unlockable > 0 ? CUSTOMER_LANGUAGE.activatePack : `${CUSTOMER_LANGUAGE.buyPack} — ${CANONICAL_PRICING.priceFormatted}`,
-        href: unlockable > 0 ? "/account" : "/credits/buy",
+        label: unlockable > 0 ? CUSTOMER_LANGUAGE.activatePack : CASE_COMMERCIAL.paymentCtaLabel,
+        href: unlockable > 0 ? "/account" : input.primaryWorkingFileId
+          ? `/credits/buy?caseId=${encodeURIComponent(input.primaryWorkingFileId)}`
+          : "/credits/buy",
       },
       packSummary,
     };
@@ -165,16 +167,25 @@ export function resolveJourneyState(input: JourneyInput): JourneyView {
     return {
       state: hasLocked ? "SEALED_NO_RELEASES" : "READY_NO_PACK",
       headline: hasLocked
-        ? "All sealed releases used — buy another pack for more locks"
-        : "Buy a Preparation Pack when you are ready to lock",
+        ? "This locked work stays available — a new file needs a new payment"
+        : "Work free — pay once when you lock this file",
       explanation: hasLocked
-        ? "Your locked packages stay downloadable. Another factory, year, or more locks needs another Preparation Pack."
-        : "Keep editing your working file for free. Your card is charged only when you buy the pack at checkout — not when you click lock.",
-      primaryCta: {
-        label: `${CUSTOMER_LANGUAGE.buyPack} — ${CANONICAL_PRICING.priceFormatted}`,
-        href: "/credits/buy",
-      },
-      secondaryCta: { label: CUSTOMER_LANGUAGE.continueFile, href: fileHref },
+        ? "Downloads of prior locked packages stay free. Start a new working file for another factory or year, then pay when you lock that file."
+        : CASE_COMMERCIAL.customerOneLiner,
+      primaryCta: hasFile
+        ? {
+            label: CASE_COMMERCIAL.paymentCtaLabel,
+            href: input.primaryWorkingFileId
+              ? `/credits/buy?caseId=${encodeURIComponent(input.primaryWorkingFileId)}`
+              : "/credits/buy",
+          }
+        : {
+            label: CUSTOMER_LANGUAGE.createFile,
+            href: "/cases/new",
+          },
+      secondaryCta: hasFile
+        ? { label: CUSTOMER_LANGUAGE.continueFile, href: fileHref }
+        : undefined,
       packSummary,
     };
   }
@@ -184,7 +195,7 @@ export function resolveJourneyState(input: JourneyInput): JourneyView {
       state: "SEALED_WITH_RELEASES",
       headline: "Download again, or lock a correction version",
       explanation:
-        "Locked packages never change. To fix something, edit the working file and lock again — that uses one more sealed release.",
+        "Locked packages never change. To fix something, edit the same paid working file and lock again — same-file corrections stay included.",
       primaryCta: { label: CUSTOMER_LANGUAGE.continueFile, href: fileHref },
       secondaryCta: { label: `Open ${CUSTOMER_LANGUAGE.lockedPackages.toLowerCase()}`, href: "/reports" },
       packSummary,
@@ -195,7 +206,7 @@ export function resolveJourneyState(input: JourneyInput): JourneyView {
     state: "READY_TO_SEAL",
     headline: "Finish checks, then lock & download",
     explanation:
-      "You have an active Preparation Pack. Complete the working file steps, clear blockers, then lock. A failed lock uses zero releases.",
+      "This working file is paid. Complete the steps, clear blockers, then lock. A failed lock charges nothing. Same-file corrections stay included.",
     primaryCta: { label: CUSTOMER_LANGUAGE.continueFile, href: fileHref },
     secondaryCta: { label: CUSTOMER_LANGUAGE.sealAction, href: fileHref },
     packSummary,

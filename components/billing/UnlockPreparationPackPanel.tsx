@@ -26,7 +26,9 @@ export function UnlockPreparationPackPanel({
   const unlockablePacks = packsUnlockableFromCredits(availableCredits);
   const canUnlock = unlockablePacks > 0;
 
-  if (!canUnlock && hasActivePack) return null;
+  // Already sealing-capable: do not push a second activation path (main confusion source).
+  if (hasActivePack) return null;
+  if (!canUnlock) return null;
 
   const handleUnlock = async () => {
     if (!canUnlock || unlocking) return;
@@ -61,32 +63,24 @@ export function UnlockPreparationPackPanel({
       <div className="flex items-start gap-3">
         <PackageCheck className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
         <div className="min-w-0 flex-1 space-y-2">
-          <h3 className="font-serif text-lg text-foreground">
-            {hasActivePack ? "Activate another Preparation Pack" : "Activate Preparation Pack"}
-          </h3>
+          <h3 className="font-serif text-lg text-foreground">Activate Preparation Pack</h3>
           <p className="text-sm leading-relaxed text-muted">
-            You have unused Preparation Pack balance from a purchase or grant. Activating a pack unlocks
-            exactly {RELEASES_PER_PREPARATION_PACK} successful sealed releases for one operator, one
-            installation, and one reporting year.
+            You have unused Preparation Pack balance. Activate it to unlock exactly{" "}
+            {RELEASES_PER_PREPARATION_PACK} successful sealed releases for one operator, one
+            installation, and one reporting year. This is not a new card payment.
           </p>
           <p className="font-mono text-xs text-muted">
             Packs ready to activate: {unlockablePacks}
           </p>
-          {canUnlock ? (
-            <button
-              type="button"
-              onClick={() => void handleUnlock()}
-              disabled={unlocking}
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-surface transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {unlocking ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
-              Activate pack (+{RELEASES_PER_PREPARATION_PACK} sealed releases)
-            </button>
-          ) : (
-            <p className="text-sm text-muted">
-              Buy a Preparation Pack at checkout to unlock five sealed releases.
-            </p>
-          )}
+          <button
+            type="button"
+            onClick={() => void handleUnlock()}
+            disabled={unlocking}
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-surface transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {unlocking ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+            Activate pack (+{RELEASES_PER_PREPARATION_PACK} sealed releases)
+          </button>
           {status ? <p className="text-xs text-muted">{status}</p> : null}
         </div>
       </div>

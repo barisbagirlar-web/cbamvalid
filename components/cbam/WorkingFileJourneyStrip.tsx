@@ -12,6 +12,7 @@ export type WorkingFileJourneyStripProps = {
   releasesRemaining: number;
   unlockablePacks: number;
   canLock: boolean;
+  caseId: string;
   onGoToStep: (step: number) => void;
   onLock?: () => void;
 };
@@ -21,8 +22,8 @@ export function WorkingFileJourneyStrip({
   completenessPercentage,
   blockerCount,
   releasesRemaining,
-  unlockablePacks,
   canLock,
+  caseId,
   onGoToStep,
   onLock,
 }: WorkingFileJourneyStripProps) {
@@ -37,13 +38,9 @@ export function WorkingFileJourneyStrip({
     if (blockerCount > 0) {
       nextLabel = `Fix ${blockerCount} blocker${blockerCount === 1 ? "" : "s"} before lock`;
       nextAction = null;
-    } else if (releasesRemaining <= 0 && unlockablePacks > 0) {
-      nextLabel = "Activate Preparation Pack";
-      nextHref = "/account";
-      nextAction = null;
     } else if (releasesRemaining <= 0) {
-      nextLabel = `Buy Preparation Pack — ${CANONICAL_PRICING.priceFormatted}`;
-      nextHref = "/credits/buy";
+      nextLabel = `Pay ${CANONICAL_PRICING.priceFormatted} to lock this file`;
+      nextHref = `/credits/buy?caseId=${encodeURIComponent(caseId)}`;
       nextAction = null;
     } else if (canLock && onLock) {
       nextLabel = "Lock & download package";
@@ -71,8 +68,8 @@ export function WorkingFileJourneyStrip({
               ? ` · ${blockerCount} blocker${blockerCount === 1 ? "" : "s"} still open`
               : " · no open blockers on last assessment"}
             {releasesRemaining > 0
-              ? ` · ${releasesRemaining} sealed release${releasesRemaining === 1 ? "" : "s"} left`
-              : " · no active sealed releases"}
+              ? " · this file is paid — lock allowed"
+              : " · this file is unpaid — pay once to lock"}
           </p>
         </div>
         {nextHref ? (

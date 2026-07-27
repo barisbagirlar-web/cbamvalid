@@ -17,10 +17,10 @@ export const CANONICAL_PRICING = {
   includedSealedReleases: 5,
   draftPolicy: "Unlimited drafts",
   description: "Prepared for Independent Accredited Verification",
-  /** Short customer/SEO line. */
+  /** Short customer/SEO line — case-scoped pay-at-lock. */
   valueSummary:
-    "One locked working file for one operator, one installation, and one reporting year — unlimited drafts, five successful sealed releases.",
-  /** Correct payment flow (not “pay at seal”). */
+    "One working file for one operator, one installation, and one reporting year — draft free, pay once to lock, correct and re-lock the same file as needed.",
+  /** Case-scoped pay-at-lock flow (customer SSOT). */
   paymentFlowSummary:
-    "Draft free. Buy the pack once at checkout. Each successful seal uses one of five releases. Failed seals use none. Re-download is free.",
+    "Draft free. Pay once when you lock this working file. Same file: correct and re-lock as needed at no extra charge. A new file needs a new payment. Failed locks charge nothing. Re-download is free.",
 };

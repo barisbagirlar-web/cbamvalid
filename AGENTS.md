@@ -188,24 +188,34 @@ defined production processes
 linked goods/CN groups
 ```
 
-Canonical entitlement contract:
+Canonical entitlement contract (case-scoped pay-at-lock):
+
+```text
+$249 one-time
+→ unlock lock & download for 1 working file (caseId)
+→ same file: unlimited correction reseals (storage ceiling enforced server-side)
+→ new working file = new payment
+```
+
+Legacy internal ledger (admin / grandfather only; not the customer path):
 
 ```text
 100 account credits
-→ unlock 1 Exporter Verification Preparation Pack
-→ exactly 5 successful sealed release versions
+→ unlock 1 Preparation Pack entitlement
+→ historically metered at 5 sealed releases
 ```
 
 Rules:
 
-- One successful seal consumes one release entitlement.
-- A blocked or failed seal consumes zero.
+- Checkout requires `caseId`. Payment binds entitlement to that case only.
+- A blocked or failed seal consumes zero charge and does not unlock payment.
 - Re-download consumes zero.
-- The same idempotency key must never consume twice.
-- A correction creates a new release.
+- The same idempotency key must never fulfill twice.
+- A correction on the same paid case creates a new sealed release without a new charge.
 - Prior releases remain immutable and traceable.
-- Do not change pricing, credits, entitlements, or Paddle behavior unless explicitly instructed.
-- Payment work is out of scope unless the task explicitly requests payment or checkout changes.
+- Case clone / save-as-new does not inherit payment.
+- Do not change pricing amount without explicit owner instruction.
+- Customer UI must not require a separate “activate pack from credits” step for the normal path.
 
 ---
 

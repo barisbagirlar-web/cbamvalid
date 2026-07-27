@@ -25,9 +25,9 @@ export default function HomePageClient() {
         <p className="aeo-lead">
           <strong>Direct answer:</strong>{" "}
           <span className="speakable-answer">
-            USD 249 buys one scoped Exporter Verification Preparation Pack — unlimited drafts and five
-            successful sealed releases for that operator, installation, and year. Card charged at
-            checkout. Not an accredited verification opinion.
+            USD 249 unlocks lock-and-download for one working file — unlimited drafts and same-file
+            correction re-locks for that operator, installation, and year. Card charged when you pay
+            to lock that file. A new file needs a new payment. Not an accredited verification opinion.
           </span>
         </p>
         <p className="authority-lead-empathy" style={{ maxWidth: "62ch", marginTop: "10px", color: "var(--ink-2)" }}>
@@ -35,7 +35,7 @@ export default function HomePageClient() {
           is ready. You need a defendable dossier for one plant and one year — without pretending the
           software issued an accredited verification opinion.
         </p>
-        <p className="price-line">USD 249 per Exporter Verification Preparation Pack. <span>No subscription. Drafts are free. Five sealed releases.</span></p>
+        <p className="price-line">USD 249 per working file at lock. <span>No subscription. Drafts free. Same-file corrections included.</span></p>
         <div className="hero-ctas">
           <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">Start a Dossier <span className="arr">→</span></a>
           <a className="btn btn-ghost btn-lg" href="/how-it-works">Watch the Workflow</a>
@@ -172,7 +172,7 @@ export default function HomePageClient() {
               <li>Create and complete an eight-step CBAM case</li>
               <li>Understand the logic behind each material input</li>
               <li>Link evidence, resolve blockers and review calculations</li>
-              <li>Buy the Preparation Pack at checkout and seal the final dossier</li>
+              <li>Pay once to lock this working file and download the sealed dossier</li>
             </ul>
           </div>
           <div className="ui-panel">
@@ -181,7 +181,7 @@ export default function HomePageClient() {
               <div className="qc-box"><div className="v terra">86%</div><div className="k">Completion</div></div>
               <div className="qc-box"><div className="v ok">0</div><div className="k">Blockers</div></div>
               <div className="qc-box"><div className="v warn">2</div><div className="k">Warnings</div></div>
-              <div className="qc-box"><div className="v navy">5</div><div className="k">Sealed releases</div></div>
+              <div className="qc-box"><div className="v navy">Paid</div><div className="k">File unlock</div></div>
             </div>
           </div>
         </div>
@@ -197,24 +197,24 @@ export default function HomePageClient() {
     <div className="wrap">
       <div className="section-head center reveal">
         <span className="eyebrow">Simple Pricing</span>
-        <h2>Pay once when ready to seal — <span className="serif-i">not while you are still drafting.</span></h2>
-        <p>Draft free. Buy once at checkout. Each successful seal uses one of five releases. Failed seals use none.</p>
+        <h2>Pay once when you lock this file — <span className="serif-i">not while you are still drafting.</span></h2>
+        <p>Draft free. Pay at lock. Same-file corrections included. A new working file needs a new payment. Failed locks charge nothing.</p>
       </div>
       <div className="pricing-grid">
         <div className="price-card featured">
-          <span className="badge-pop">Scoped pack · One-time</span>
+          <span className="badge-pop">Pay at lock · One-time</span>
           <h3>Exporter Verification Preparation Pack</h3>
           <p className="sub">Prepared for independent accredited verification</p>
-          <p className="price-fig"><span data-usd="$249" data-eur="≈ €229">$249</span> <small data-cur-note="per pack · no subscription">per pack · no subscription</small></p>
+          <p className="price-fig"><span data-usd="$249" data-eur="≈ €229">$249</span> <small data-cur-note="per file at lock · no subscription">per file at lock · no subscription</small></p>
           <ul className="feat-list">
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>1 operator · 1 installation · 1 reporting year</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Unlimited drafts on that working file</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>5 successful sealed releases</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Same-file corrections and re-locks included</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Evidence-linked calculations and QC</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Immutable sealed versions · free re-download</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>O3CI field-mapped structured data export</li>
           </ul>
-          <a className="btn btn-primary" href="/pricing">Get the Preparation Pack <span className="arr">→</span></a>
+          <a className="btn btn-primary" href="/pricing">See pay-at-lock pricing <span className="arr">→</span></a>
         </div>
         <div className="price-card free">
           <h3>Free Drafts</h3>
@@ -256,6 +256,10 @@ export default function HomePageClient() {
           answer="No. CBAMValid is an independent software service that assists exporters and importers with calculations and reporting preparation."
         />
         <FaqItem
+          question="When is the card charged?"
+          answer="Drafting is free. You pay USD 249 once when you lock that working file. Same-file corrections and re-locks stay included. A new working file needs a new payment. Failed locks and re-downloads charge nothing."
+        />
+        <FaqItem
           question="What formats do I receive after sealing?"
           answer="A sealed PDF evidence package, the canonical JSON dataset, and an O3CI field-mapped Excel workbook — with an integrity manifest."
         />
@@ -289,7 +293,7 @@ export default function HomePageClient() {
     <div className="wrap">
       <span className="eyebrow navy">Definitive Period · 2026</span>
       <h2>Your buyer will ask for evidence.<br /><span className="serif-i">Be ready before they do.</span></h2>
-      <p>Drafts are free. Buy the USD 249 pack once — one installation, one year, five sealed releases.</p>
+      <p>Drafts are free. Pay USD 249 once to lock this working file — same-file corrections included. A new file needs a new payment.</p>
       <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">Start a Dossier <span className="arr">→</span></a>
     </div>
   </section>

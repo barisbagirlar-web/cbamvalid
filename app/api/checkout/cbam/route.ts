@@ -71,7 +71,49 @@ export async function POST(request: Request) {
     }
 
     const slug = payload.slug || "pack_premium_dossier_v5";
-    const caseId = payload.caseId || "";
+    const caseId = String(payload.caseId || "").trim();
+    if (!/^case_[A-Za-z0-9_-]{1,123}$/.test(caseId)) {
+      return apiFailure(
+        "CASE_ID_REQUIRED",
+        "Open a working file and pay when you lock that file. Checkout requires a valid caseId.",
+        400
+      );
+    }
+
+    const caseSnap = await adminDb.collection("cbam_cases").doc(caseId).get();
+    if (!caseSnap.exists) {
+      return apiFailure("CASE_NOT_FOUND", "Working file not found for checkout.", 404);
+    }
+    const caseDoc = caseSnap.data() as Record<string, unknown>;
+    const caseUid = String(caseDoc.uid || caseDoc.ownerId || "");
+    if (caseUid && caseUid !== decoded.uid) {
+      return apiFailure("CASE_OWNERSHIP_MISMATCH", "You do not own this working file.", 403);
+    }
+    const commercial = (caseDoc.commercial || {}) as Record<string, unknown>;
+    if (String(commercial.status || "").toUpperCase() === "PAID") {
+      return apiFailure(
+        "CASE_ALREADY_PAID",
+        "This working file is already paid. Return to the file and lock it — do not pay again.",
+        409
+      );
+    }
+
+    // Prefer an existing case-scoped entitlement (already paid via confirm/webhook).
+    const existingEnt = await adminDb
+      .collection("entitlements")
+      .where("uid", "==", decoded.uid)
+      .where("scopeCaseId", "==", caseId)
+      .where("status", "==", "AVAILABLE")
+      .limit(1)
+      .get();
+    if (!existingEnt.empty) {
+      return apiFailure(
+        "CASE_ALREADY_PAID",
+        "This working file is already paid. Return to the file and lock it — do not pay again.",
+        409
+      );
+    }
+
     const packageDef = getCreditPackageBySlug(slug);
     if (!packageDef || !packageDef.active) {
       return apiFailure("INVALID_PACKAGE", "Selected credit package is invalid or inactive.", 400);
@@ -106,6 +148,7 @@ export async function POST(request: Request) {
       catalogVersion: "v5",
       correlationId,
       checkoutMode: "items",
+      billingModel: "CASE_PAY_AT_LOCK",
     });
 
     // Prefer server-created Paddle transaction when API key has transaction.write.
@@ -124,7 +167,7 @@ export async function POST(request: Request) {
         },
         body: JSON.stringify({
           items: [{ price_id: priceId, quantity: 1 }],
-          custom_data: { orderId, correlationId },
+          custom_data: { orderId, correlationId, caseId },
           ...(decoded.email ? { customer: { email: decoded.email } } : {}),
         }),
       });

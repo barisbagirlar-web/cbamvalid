@@ -3,7 +3,6 @@ import type { AuthorityChainRecord } from "./types";
 
 const PRICE = CANONICAL_PRICING.priceFormatted;
 const PACK = CANONICAL_PRICING.packName;
-const SEALS = CANONICAL_PRICING.includedSealedReleases;
 
 const EXPERT_BLOCK =
   "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.";
@@ -18,11 +17,11 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     primaryQuestion: "What should a non-EU exporter prepare when an EU buyer asks for actual CBAM emissions evidence?",
     empathyLead:
       "Buyer pressure arrives before your evidence package is ready. You need a defendable dossier for one plant and one year — without pretending the software issued an accredited verification opinion.",
-    directAnswer: `${PRICE} buys one ${PACK}: one legal operator, one installation, one reporting year, unlimited drafts, and exactly ${SEALS} successful sealed releases. CBAMValid prepares an evidence-linked operator dossier for independent accredited verification — it does not verify emissions itself.`,
+    directAnswer: `${PRICE} unlocks lock-and-download for one working file: one legal operator, one installation, one reporting year — unlimited drafts and same-file correction re-locks. CBAMValid prepares an evidence-linked operator dossier for independent accredited verification — it does not verify emissions itself.`,
     calculation:
       "Authoritative embedded-emissions results run server-side against a named, versioned ruleset. Missing material inputs block sealing; they are never silently converted to zero. Client previews stay advisory until a successful seal.",
     explanation:
-      "Define scope, enter goods and production data, link evidence, clear fail-closed quality blockers, buy the pack at checkout, then seal immutable PDF/JSON/O3CI field-mapped exports. Re-download of a sealed release is free; another plant or year needs another pack.",
+      "Define scope, enter goods and production data, link evidence, clear fail-closed quality blockers, pay once to lock that working file, then download immutable PDF/JSON/O3CI field-mapped exports. Same-file corrections stay included; another plant or year needs another payment.",
     methodology:
       "Methods pin to Regulation (EU) 2023/956 and related implementing rules recorded in the sealed package. Historical seals keep the ruleset they were built against.",
     evidence:
@@ -54,11 +53,11 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     empathyLead:
       "Spreadsheets break under verifier questions. You need deterministic calculations, an evidence register, and fail-closed QC before you hand anything over.",
     directAnswer:
-      "The pack provides a scoped working file with deterministic embedded-emissions calculations, evidence register, quality controls, methodology decisions, findings closure, and up to five immutable sealed releases for one operator, one installation, and one reporting year.",
+      "The pack provides a scoped working file with deterministic embedded-emissions calculations, evidence register, quality controls, methodology decisions, findings closure, and sealed releases for one operator, one installation, and one reporting year. Pay once to lock that file; same-file corrections are included.",
     calculation:
       "Server-side engine computes direct and indirect emissions with unit-safe conversions, precursor treatment where applicable, and allocation reconciliation. Every authoritative node carries formula identity, inputs, units, and a SHA-256 node hash.",
     explanation:
-      "You compile installation and goods data, link supporting documents, resolve blockers, purchase once, then seal releases for buyer or verifier handover without rewriting prior seals.",
+      "You compile installation and goods data, link supporting documents, resolve blockers, pay once to lock, then seal releases for buyer or verifier handover without rewriting prior seals.",
     methodology:
       "Versioned rulesets and legal source citations travel with each sealed release so method history stays auditable.",
     evidence:
@@ -87,10 +86,10 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     primaryQuestion: `What does ${PRICE} buy, and when is the card charged?`,
     empathyLead:
       "Nobody wants a surprise charge mid-review or a vague “credits” story. You should finish data quality first, then buy when you are ready to seal.",
-    directAnswer: `${PRICE} is a one-time ${PACK}: unlimited drafts and ${SEALS} successful sealed releases for one operator, one installation, and one reporting year. Drafting is free. The card is charged at checkout when you buy the pack — not when you edit drafts.`,
-    calculation: `Commercial math: 1 pack → ${SEALS} successful seals inside the locked scope. Failed or blocked seals consume zero releases. Re-download consumes zero. Another installation or reporting year requires another pack.`,
+    directAnswer: `${PRICE} unlocks lock-and-download for one working file (${PACK}): unlimited drafts and same-file correction re-locks for one operator, one installation, and one reporting year. Drafting is free. The card is charged when you pay to lock that file — not while you edit drafts. A new file needs a new payment.`,
+    calculation: `Commercial math: 1 payment → 1 working file unlock. Same-file correction reseals included. Failed or blocked locks charge nothing. Re-download consumes zero. Another installation, reporting year, or working file requires another payment.`,
     explanation:
-      "Buy once at checkout after your case is ready. Each successful seal uses one included release. Prior sealed versions remain immutable and re-downloadable.",
+      "Pay at lock after your working file is ready. Correct and re-lock the same paid file as needed. Prior sealed versions remain immutable and re-downloadable.",
     methodology:
       "Pricing is a commercial entitlement contract, not a regulatory calculation. Emissions methodology is separate and versioned inside the dossier.",
     evidence:
@@ -100,9 +99,10 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     relatedProblems: [
       { question: "What is included in the product?", href: "/product", why: "Capability detail" },
       { question: "When do I seal?", href: "/how-it-works", why: "Payment vs seal timing" },
-      { question: "Can one pack cover another plant?", href: "/pricing", why: "Scope lock clarification" },
+      { question: "Can one payment cover another plant?", href: "/pricing", why: "Scope lock clarification" },
+      { question: "Refund rules", href: "/refund-policy", why: "Unused unlock / duplicates" },
     ],
-    entities: ["USD 249", "one-time pack", "five sealed releases", "scope lock", "draft free"],
+    entities: ["USD 249", "pay at lock", "same-file corrections", "scope lock", "draft free"],
     fanOutQueries: [
       "CBAMValid price",
       "CBAM preparation pack cost",
@@ -116,11 +116,11 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     empathyLead:
       "Most teams lose weeks in email threads and version chaos. You need a guided path that shows gaps before a buyer or verifier sees the file.",
     directAnswer:
-      "Define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, buy the Preparation Pack at checkout, then seal up to five immutable releases and download PDF, JSON, and O3CI field-mapped exports.",
+      "Define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, pay once to lock that working file, then download PDF, JSON, and O3CI field-mapped exports. Same file: correct and re-lock as needed. A new file needs a new payment.",
     calculation:
       "After material inputs are complete, the server engine computes embedded emissions and writes a calculation trace. Incomplete material data blocks sealing.",
     explanation:
-      "Eight guided stages move from scope setup through evidence linking, QC, purchase, seal, and download. Drafts stay free until you buy the pack.",
+      "Eight guided stages move from scope setup through evidence linking, QC, pay-at-lock, seal, and download. Drafts stay free until you pay to lock that file.",
     methodology:
       "Each sealed release records the ruleset and engine version used so replay stays deterministic.",
     evidence:

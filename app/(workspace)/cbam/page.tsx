@@ -140,7 +140,11 @@ function PaginationControls({
 
 export default function CbamLandingPage() {
   const { user, loading } = useAuth();
-  const [postPurchase, setPostPurchase] = useState(false);
+  // Checkout success redirect uses a full page load; read once without effect setState.
+  const postPurchase = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return new URLSearchParams(window.location.search).get("purchase") === "success";
+  }, []);
 
   const [cases, setCases] = useState<CbamCaseRecord[]>([]);
   const [reports, setReports] = useState<ReportRecord[]>([]);
@@ -155,11 +159,19 @@ export default function CbamLandingPage() {
   const [packagesPage, setPackagesPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
+  const [postPurchasePolls, setPostPurchasePolls] = useState(0);
+
+  // After checkout redirect, poll a few times if entitlement state has not landed yet.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    setPostPurchase(params.get("purchase") === "success");
-  }, []);
+    if (!postPurchase || !user || dataLoading) return;
+    if (releasesRemaining > 0) return;
+    if (postPurchasePolls >= 3) return;
+    const timer = window.setTimeout(() => {
+      setPostPurchasePolls((n) => n + 1);
+      setAttempt((current) => current + 1);
+    }, 2500);
+    return () => window.clearTimeout(timer);
+  }, [postPurchase, user, dataLoading, releasesRemaining, postPurchasePolls]);
 
   const sortedCases = useMemo(() => {
     return [...cases].sort((a, b) => {
@@ -413,6 +425,50 @@ export default function CbamLandingPage() {
             </Link>
           ) : null}
         </header>
+
+        {postPurchase ? (
+          <div
+            role="status"
+            className="rounded-2xl border border-success/35 bg-success/10 p-5 md:p-6 shadow-sm"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wider text-success mb-1">
+              Payment result
+            </p>
+            {releasesRemaining > 0 ? (
+              <>
+                <p className="font-serif text-xl md:text-2xl font-bold text-foreground">
+                  Payment confirmed — {releasesRemaining} sealed release
+                  {releasesRemaining === 1 ? "" : "s"} ready
+                </p>
+                <p className="mt-2 text-sm text-muted leading-relaxed max-w-3xl">
+                  Your card charge succeeded and the Preparation Pack is active. You do not need to
+                  pay again. Continue your working file, then lock and download. Full receipt:{" "}
+                  <Link href="/account" className="font-semibold text-accent underline">
+                    Account → Purchase history
+                  </Link>
+                  .
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="font-serif text-xl md:text-2xl font-bold text-foreground">
+                  Payment received — activating pack…
+                </p>
+                <p className="mt-2 text-sm text-muted leading-relaxed max-w-3xl">
+                  Do not pay again. Refresh in a minute. If Purchase history does not show “Paid —
+                  pack active”, email info@cbamvalid.com.
+                </p>
+                <button
+                  type="button"
+                  onClick={retryLoading}
+                  className="mt-4 inline-flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold"
+                >
+                  <RefreshCw className="h-4 w-4" aria-hidden="true" /> Refresh pack status
+                </button>
+              </>
+            )}
+          </div>
+        ) : null}
 
         <section
           aria-labelledby="where-you-are"

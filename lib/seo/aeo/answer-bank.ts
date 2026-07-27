@@ -2,7 +2,6 @@ import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 import type { AeoAnswerRecord } from "./types";
 
 const PRICE = CANONICAL_PRICING.priceFormatted;
-const PACK = CANONICAL_PRICING.packName;
 
 /**
  * Canonical Answer + Evidence bank for AEO / FAQPage / visible page blocks.
@@ -18,20 +17,20 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       "is CBAMValid a subscription",
       "what is included in the preparation pack",
     ],
-    directAnswer: `${PRICE} buys one ${PACK}: one locked working file for one legal operator, one production installation, and one reporting year — with unlimited drafts and exactly ${CANONICAL_PRICING.includedSealedReleases} successful sealed releases. It is a one-time pack, not a subscription, and not a soft Excel-only export.`,
+    directAnswer: `${PRICE} unlocks lock-and-download for one working file: one legal operator, one production installation, and one reporting year — with unlimited drafts and correction re-locks on that same paid file. It is a one-time pay-at-lock purchase, not a subscription, and not a soft Excel-only export.`,
     empathyContext:
-      "EU buyers increasingly ask for actual embedded-emissions evidence. Paying once should cover real correction cycles without trapping you in a vague “credits” story or an open-ended SaaS bill.",
+      "EU buyers increasingly ask for actual embedded-emissions evidence. You should finish data quality work without a card, then pay once when the locked package matters — without another checkout every time a buyer asks for a correction on the same file.",
     evidence: [
       {
         label: "Commercial unit",
-        detail: `1 operator + 1 installation + 1 reporting year · ${CANONICAL_PRICING.includedSealedReleases} sealed releases · unlimited drafts`,
+        detail: "1 operator + 1 installation + 1 reporting year · pay once per working file · same-file corrections included",
         href: "/pricing",
         evidenceStatus: "verified",
       },
       {
         label: "Payment timing",
-        detail: "Card is charged at checkout when you buy the pack. Sealing uses a release from that pack; it does not charge again.",
-        href: "/pricing",
+        detail: "Card is charged when you pay to lock that working file. Drafting is free. Same-file re-locks do not charge again.",
+        href: "/pricing#how-payment-works",
         evidenceStatus: "verified",
       },
       {
@@ -53,9 +52,9 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       "is drafting free",
       "CBAMValid payment flow",
     ],
-    directAnswer: `Drafting and editing are free. Your card is charged when you buy the ${PACK} (${PRICE}) at checkout. Each successful seal then uses one of the ${CANONICAL_PRICING.includedSealedReleases} included releases. Failed seals use none. Re-download of a sealed package is free.`,
+    directAnswer: `Drafting and editing are free. Your card is charged ${PRICE} when you pay to lock a specific working file. After that, correct and re-lock the same file as needed at no extra charge. A new working file needs a new payment. Failed locks charge nothing. Re-download is free.`,
     empathyContext:
-      "Nobody wants a surprise charge mid-review. You should be able to finish data quality work first, then buy a pack when you are ready to seal deliverables for your buyer or verifier.",
+      "Nobody wants a surprise charge mid-review. Finish data quality work first, then pay when you lock — and keep correction room on that same file without another checkout.",
     evidence: [
       {
         label: "Draft policy",
@@ -64,9 +63,15 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
         evidenceStatus: "verified",
       },
       {
-        label: "Release consumption",
-        detail: "Only a successful seal consumes one release. Blocked or failed seals consume zero.",
-        href: "/how-it-works",
+        label: "Pay-at-lock rules",
+        detail: CANONICAL_PRICING.paymentFlowSummary,
+        href: "/pricing#how-payment-works",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Contract mirror",
+        detail: "Same commercial rules appear in Terms of Service §3.",
+        href: "/terms#commercial-terms",
         evidenceStatus: "verified",
       },
     ],
@@ -113,20 +118,20 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       "CBAMValid multi plant pricing",
     ],
     directAnswer:
-      "No. One Preparation Pack is scoped to one legal operator, one installation, and one reporting year. Another factory or another reporting year requires another pack. Within that locked scope you may draft freely and seal up to five times.",
+      "No. Payment unlocks one working file for one legal operator, one installation, and one reporting year. Another factory, another reporting year, or a new working file requires a new payment. On the same paid file you may draft freely and correct/re-lock as needed.",
     empathyContext:
       "This protects honest customers who need correction versions, and blocks paying once then quietly renaming a case into a different plant or year.",
     evidence: [
       {
         label: "Scope rule",
-        detail: "1 operator · 1 installation · 1 reporting year per pack",
-        href: "/pricing",
+        detail: "1 operator · 1 installation · 1 reporting year per paid working file",
+        href: "/pricing#how-payment-works",
         evidenceStatus: "verified",
       },
       {
-        label: "Correction releases",
-        detail: `${CANONICAL_PRICING.includedSealedReleases} successful sealed releases for corrections inside the same scope`,
-        href: "/pricing",
+        label: "Same-file corrections",
+        detail: "Correction re-locks on the paid working file do not require a new payment",
+        href: "/terms#commercial-terms",
         evidenceStatus: "verified",
       },
     ],
@@ -173,7 +178,7 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       "from draft to sealed release",
     ],
     directAnswer:
-      "You create one working file for one installation and one reporting year, enter goods and production data, link evidence, clear quality blockers, buy the Preparation Pack at checkout, then lock up to five immutable packages and download PDF, JSON, and O3CI field-mapped exports.",
+      "You create one working file for one installation and one reporting year, enter goods and production data, link evidence, clear quality blockers, pay once to lock that file, then download PDF, JSON, and O3CI field-mapped exports. Same file: correct and re-lock as needed. A new file needs a new payment.",
     empathyContext:
       "Most teams lose time in email threads and version chaos. One working file with fail-closed checks is designed so you see gaps before you ask a buyer or verifier to review.",
     evidence: [
@@ -376,25 +381,26 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
   },
   {
     id: "one-pack-scope-lock",
-    question: "Can one USD 249 pack cover a second plant or another reporting year?",
+    question: "Can one USD 249 payment cover a second plant or another reporting year?",
     aliases: [
       "CBAMValid multi plant pricing",
       "one pack two installations",
       "CBAMValid scope lock",
+      "one payment many CBAM files",
     ],
-    directAnswer: `No. ${PRICE} covers one locked working file: one legal operator, one production installation, and one reporting year, with ${CANONICAL_PRICING.includedSealedReleases} successful sealed releases inside that scope. Another plant or year requires another pack.`,
+    directAnswer: `No. ${PRICE} unlocks one working file: one legal operator, one production installation, and one reporting year, with same-file correction re-locks included. Another plant, year, or working file requires another payment.`,
     empathyContext:
       "Procurement teams often hope one purchase covers the group. Scope lock prevents silent widening that would break evidence and entitlement integrity.",
     evidence: [
       {
         label: "Commercial unit",
-        detail: "1 operator + 1 installation + 1 reporting year",
+        detail: "1 operator + 1 installation + 1 reporting year per paid working file",
         href: "/pricing",
         evidenceStatus: "verified",
       },
       {
-        label: "Release math",
-        detail: "Failed seals consume zero; re-download is free; corrections create new sealed versions inside the same pack",
+        label: "Correction & re-lock math",
+        detail: "Failed locks charge nothing; re-download is free; corrections create new sealed versions on the same paid file",
         href: "/pricing",
         evidenceStatus: "verified",
       },
@@ -412,7 +418,7 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       "start CBAM dossier today",
     ],
     directAnswer:
-      "Start a free draft for one installation and one reporting year, confirm CN scope, enter production and emissions inputs you already have, link available evidence, and clear visible blockers. Buy the pack only when you are ready to seal a handover package — drafting does not charge your card.",
+      "Start a free draft for one installation and one reporting year, confirm CN scope, enter production and emissions inputs you already have, link available evidence, and clear visible blockers. Pay once to lock that working file when you are ready to seal a handover package — drafting does not charge your card. Same-file corrections stay included; a new file needs a new payment.",
     empathyContext:
       "Urgent buyer emails create panic buys. The durable move is to make gaps visible first, then seal a defendable package — without claiming an accredited verification opinion.",
     evidence: [

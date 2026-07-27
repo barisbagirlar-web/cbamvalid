@@ -16,12 +16,21 @@ export const getEntitlements = createCallable({}, async (_, { auth }) => {
   for (const document of snapshot.docs) {
     const data: Record<string, unknown> = { entitlementId: document.id, ...document.data() };
     const releasesCount = Number(data.releasesCount || 0);
-    const releasesRemaining = Math.max(0, MAX_RELEASES_PER_PACK - releasesCount);
+    const maxReleases = Number(data.maxReleases || MAX_RELEASES_PER_PACK);
+    const releasesRemaining = Math.max(0, maxReleases - releasesCount);
     if (releasesRemaining === 0) continue;
     const orderId = typeof data.orderId === "string" ? data.orderId : document.id;
     const productCode = typeof data.productCode === "string" ? data.productCode : "UNKNOWN";
-    const groupKey = `${orderId}:${productCode}`;
-    const candidate: Record<string, unknown> = { ...data, releasesCount, releasesRemaining };
+    const scopeCaseId = typeof data.scopeCaseId === "string" ? data.scopeCaseId : "";
+    const groupKey = scopeCaseId
+      ? `case:${scopeCaseId}:${productCode}`
+      : `${orderId}:${productCode}`;
+    const candidate: Record<string, unknown> = {
+      ...data,
+      releasesCount,
+      releasesRemaining,
+      maxReleases,
+    };
     const existing = grouped.get(groupKey);
     const candidateId = typeof candidate.entitlementId === "string" ? candidate.entitlementId : "";
     const existingId = typeof existing?.entitlementId === "string" ? existing.entitlementId : "";

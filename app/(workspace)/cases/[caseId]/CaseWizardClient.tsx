@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -23,8 +24,8 @@ import {
 import { DecimalInput } from "@/components/cbam/DecimalInput";
 import { FieldHelp } from "@/components/cbam/FieldHelp";
 import { WorkingFileJourneyStrip } from "@/components/cbam/WorkingFileJourneyStrip";
-import { UnlockPreparationPackPanel } from "@/components/billing/UnlockPreparationPackPanel";
 import { packsUnlockableFromCredits } from "@/lib/billing/credit-contract";
+import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 import { assessCaseReadiness } from "@/lib/cbam/validation/readiness-assessor";
 import { performDossierCalculations } from "@/lib/cbam/calculator";
 import { fieldHelpData, type FieldHelpKey } from "@/lib/cbam/field-help";
@@ -46,7 +47,6 @@ import {
 import { uploadEvidenceFile } from "@/lib/cbam/evidence-upload";
 import {
   getAccountOverview,
-  getEntitlements,
   reviewEvidence,
   saveCase,
   sealReport,
@@ -170,8 +170,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const sealRequestId = useRef<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [caseData, setCaseData] = useState<AuditReadyCase>(() => AuditReadyCaseSchema.parse(initialCase));
-  const [entitlementOverride, setEntitlementOverride] = useState<PreparationPackEntitlement[] | null>(null);
-  const entitlements = entitlementOverride ?? availableEntitlements;
+  const entitlements = availableEntitlements;
   const [availableCredits, setAvailableCredits] = useState(0);
   const [saving, setSaving] = useState(false);
   const [clearingScenario, setClearingScenario] = useState(false);
@@ -222,12 +221,20 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     return entitlement?.releasesCount || 0;
   }, [entitlements, caseData.caseId]);
 
-  const usableEntitlements = useMemo(() => entitlements.filter((entitlement) => {
-    const status = String(entitlement.status || "").toUpperCase();
-    const caseId = entitlement.scopeCaseId || entitlement.caseId;
-    const caseMatches = !caseId || caseId === caseData.caseId;
-    return caseMatches && ["AVAILABLE", "ACTIVE", "PURCHASED"].includes(status);
-  }), [entitlements, caseData.caseId]);
+  const usableEntitlements = useMemo(() => {
+    const matched = entitlements.filter((entitlement) => {
+      const status = String(entitlement.status || "").toUpperCase();
+      const scoped = entitlement.scopeCaseId || entitlement.caseId;
+      const caseMatches = !scoped || scoped === caseData.caseId;
+      return caseMatches && ["AVAILABLE", "ACTIVE", "PURCHASED"].includes(status);
+    });
+    // Prefer entitlements already bound to this case (pay-at-lock), then unbound legacy.
+    return [...matched].sort((a, b) => {
+      const aScoped = a.scopeCaseId === caseData.caseId || a.caseId === caseData.caseId ? 0 : 1;
+      const bScoped = b.scopeCaseId === caseData.caseId || b.caseId === caseData.caseId ? 0 : 1;
+      return aScoped - bScoped;
+    });
+  }, [entitlements, caseData.caseId]);
 
   const releasesRemaining = useMemo(
     () =>
@@ -239,16 +246,6 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   );
 
   const unlockablePacks = packsUnlockableFromCredits(availableCredits);
-
-  const refreshPackState = async () => {
-    const [overview, nextEntitlements] = await Promise.all([
-      getAccountOverview(),
-      getEntitlements(),
-    ]);
-    const credits = overview.credits as { availableCredits?: number } | undefined;
-    setAvailableCredits(Number(credits?.availableCredits || 0));
-    setEntitlementOverride(nextEntitlements);
-  };
 
   const updateDatum = (path: string, patch: Partial<InputDatum>) => {
     setCaseData((previous) => setAtPath(previous, path, (current) => ({
@@ -337,22 +334,6 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     } finally {
       setClearingScenario(false);
     }
-  };
-
-  const addGood = () => {
-    setCaseData((previous) => ({
-      ...previous,
-      goods: [
-        ...previous.goods,
-        {
-          cnCode: createEmptyInput(),
-          sector: "IRON_AND_STEEL",
-          productionVolume: createEmptyInput("t"),
-          shipmentRecords: createEmptyInput(),
-          allocationShare: createEmptyInput("fraction"),
-        },
-      ],
-    }));
   };
 
   const removeGood = (index: number) => {
@@ -549,7 +530,9 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     }
     const entitlementId = usableEntitlements[0]?.entitlementId;
     if (!entitlementId) {
-      setSealStatus("No case-compatible Preparation Pack release is available.");
+      setSealStatus(
+        `This file is unpaid. Pay ${CANONICAL_PRICING.priceFormatted} to lock this working file first.`
+      );
       return;
     }
     if (!sealRequestId.current) sealRequestId.current = crypto.randomUUID();
@@ -847,32 +830,31 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
             </div>
           )}
 
-          {usableEntitlements.length === 0 && packsUnlockableFromCredits(availableCredits) > 0 ? (
-            <div className="mt-5">
-              <UnlockPreparationPackPanel
-                availableCredits={availableCredits}
-                hasActivePack={false}
-                compact
-                onUnlocked={async () => {
-                  await refreshPackState();
-                  setSealStatus("");
-                }}
-              />
+          {usableEntitlements.length === 0 ? (
+            <div className="mt-5 space-y-3">
+              <p className="text-sm text-muted">
+                Draft is free. Pay once to lock this file. Same file: correct and re-lock as needed.
+                A new file needs a new payment.
+              </p>
+              <Link
+                href={`/credits/buy?caseId=${encodeURIComponent(caseData.caseId || "")}`}
+                className="inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface"
+              >
+                Pay {CANONICAL_PRICING.priceFormatted} to lock this file
+              </Link>
             </div>
           ) : null}
 
-          {readiness.isEligibleForSealing ? (
-            <button type="button" aria-label="Lock and download package" onClick={handleSeal} disabled={sealing || usableEntitlements.length === 0} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-40">{sealing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Lock &amp; download package</button>
-          ) : (
+          {readiness.isEligibleForSealing && usableEntitlements.length > 0 ? (
+            <button type="button" aria-label="Lock and download package" onClick={handleSeal} disabled={sealing} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-40">{sealing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Lock &amp; download package</button>
+          ) : null}
+          {readiness.isEligibleForSealing ? null : (
             <button type="button" onClick={() => setCurrentStep(scenarioActive ? 1 : 7)} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface"><FileUp className="h-4 w-4" /> {scenarioActive ? "Replace demo with case data" : "Resolve evidence blockers"}</button>
           )}
-          {usableEntitlements.length === 0 && packsUnlockableFromCredits(availableCredits) === 0 ? (
-            <p className="mt-3 text-xs text-muted">
-              No active Preparation Pack remains. Purchase a pack or unlock one from account credits on the Account page.
-            </p>
-          ) : null}
           <StatusBanner status={sealStatus} tone="error" />
-          <p className="mt-3 text-xs text-muted">A release is consumed only after server validation, immutable artifact commit and KMS signature completion. Failed or blocked attempts consume no release.</p>
+          <p className="mt-3 text-xs text-muted">
+            Payment is for this working file only. Failed or blocked locks charge nothing. Re-download is free.
+          </p>
         </section>
 
         <section className="rounded-xl border border-border bg-surface p-6">
@@ -916,6 +898,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           blockerCount={readiness.criticalBlockers.length}
           releasesRemaining={releasesRemaining}
           unlockablePacks={unlockablePacks}
+          caseId={caseData.caseId || ""}
           canLock={readiness.isEligibleForSealing && usableEntitlements.length > 0}
           onGoToStep={setCurrentStep}
           onLock={() => void handleSeal()}

@@ -20,7 +20,7 @@ export default function Page() {
         <p className="aeo-lead">
           <strong>Direct answer:</strong>{" "}
           <span className="speakable-answer">
-            Start a free draft, close the blockers you can see, then buy one USD 249 scoped pack when you are ready to seal. You are preparing for independent review — not buying a fake “verified” stamp.
+            Start a free draft, close the blockers you can see, then pay USD 249 once to lock that working file. Same-file corrections stay included. A new file needs a new payment. You are preparing for independent review — not buying a fake “verified” stamp.
           </span>
         </p>
         <div className="hero-ctas" style={{"marginTop":"30px"}}>
@@ -87,7 +87,7 @@ export default function Page() {
               <li>Completion across all eight workflow stages</li>
               <li>Blockers that must be resolved before sealing</li>
               <li>Warnings with plain-language guidance</li>
-              <li>Remaining sealed releases in your pack</li>
+              <li>Whether this working file is paid and unlocked for lock-and-download</li>
             </ul>
           </div>
           <div className="ui-panel">
@@ -96,7 +96,7 @@ export default function Page() {
               <div className="qc-box"><div className="v terra">86%</div><div className="k">Completion</div></div>
               <div className="qc-box"><div className="v ok">0</div><div className="k">Blockers</div></div>
               <div className="qc-box"><div className="v warn">2</div><div className="k">Warnings</div></div>
-              <div className="qc-box"><div className="v navy">5</div><div className="k">Sealed releases</div></div>
+              <div className="qc-box"><div className="v navy">Paid</div><div className="k">File unlock</div></div>
             </div>
           </div>
         </div>
@@ -109,7 +109,7 @@ export default function Page() {
   <section className="cta-band">
     <div className="wrap">
       <h2>Build your first case <span className="serif-i">free of charge</span></h2>
-      <p>Draft free. Buy the USD 249 pack once for one installation and one reporting year — five sealed releases, no subscription.</p>
+      <p>Draft free. Pay USD 249 once to lock this working file — same-file corrections included, no subscription. A new file needs a new payment.</p>
       <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">Start a Dossier <span className="arr">→</span></a>
     </div>
   </section>

@@ -93,16 +93,40 @@ export const listPurchaseHistory = createCallable({
   }).optional()
 }, async (data, { auth }) => {
   const limitCount = data?.limit || 50;
+  const { toCustomerPurchaseRecord } = await import("../commerce/purchase-history");
   try {
-    const snapshot = await adminDb.collection("paddle_events")
-      .where("uid", "==", auth.uid)
-      .orderBy("occurredAt", "desc")
-      .limit(limitCount)
-      .get();
+    // commerce_orders is the fulfillment SSOT (confirm path + webhook).
+    // paddle_events has no uid field and is often empty when confirm fulfilled first.
+    let history: ReturnType<typeof toCustomerPurchaseRecord>[] = [];
+    try {
+      const snapshot = await adminDb
+        .collection("commerce_orders")
+        .where("uid", "==", auth.uid)
+        .orderBy("createdAt", "desc")
+        .limit(limitCount)
+        .get();
+      history = snapshot.docs.map((doc) =>
+        toCustomerPurchaseRecord(doc.id, doc.data() as Record<string, unknown>)
+      );
+    } catch (indexError) {
+      console.warn("listPurchaseHistory orderBy fallback", indexError);
+      const snapshot = await adminDb
+        .collection("commerce_orders")
+        .where("uid", "==", auth.uid)
+        .limit(Math.min(limitCount * 3, 150))
+        .get();
+      history = [...snapshot.docs]
+        .sort((a, b) => {
+          const aTime = Date.parse(String(a.data().createdAt || a.data().updatedAt || 0)) || 0;
+          const bTime = Date.parse(String(b.data().createdAt || b.data().updatedAt || 0)) || 0;
+          return bTime - aTime;
+        })
+        .slice(0, limitCount)
+        .map((doc) => toCustomerPurchaseRecord(doc.id, doc.data() as Record<string, unknown>));
+    }
 
-    return { history: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) };
+    return { history };
   } catch (error) {
-    // Missing composite index or empty collection must not zero the account overview.
     console.error("listPurchaseHistory failed", error);
     return { history: [] };
   }

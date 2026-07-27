@@ -58,9 +58,10 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
     parentPath: "/",
     childPaths: ["/how-it-works", "/sample-dossier", "/product"],
     covers: [
-      "USD 249 pack inclusions",
+      "USD 249 pay-at-lock inclusions",
       "when card is charged",
-      "five sealed releases",
+      "same-file corrections included",
+      "new file requires new payment",
       "scope lock per installation and year",
     ],
     ...chainExtras("/pricing"),

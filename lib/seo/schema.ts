@@ -233,7 +233,7 @@ export function generateProductOfferSchema(): JsonLdNode {
         "@id": `${siteConfig.canonicalOrigin}/#product`,
         name: price.packName,
         description:
-          "One-time Exporter Verification Preparation Pack: one operator, one installation, one reporting year, unlimited drafts, five successful sealed releases. Prepared for independent accredited verification — not an accredited opinion.",
+          "One-time pay-at-lock Exporter Verification Preparation Pack: one operator, one installation, one reporting year, unlimited drafts, and same-file correction re-locks. Prepared for independent accredited verification — not an accredited opinion.",
         brand: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
         author: { "@id": `${siteConfig.canonicalOrigin}/#author` },
         creator: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
@@ -261,7 +261,7 @@ export function generateSpeakableSchema(path: string): JsonLdNode {
   };
 }
 
-/** HowTo for the draft → buy → seal workflow (how-it-works). */
+/** HowTo for the draft → pay-at-lock → seal workflow (how-it-works). */
 export function generateHowToSealSchema(): JsonLdNode {
   const price = assertVerifiedClaim(PRICE_CLAIM, "PRICE_CLAIM");
   return {
@@ -269,7 +269,7 @@ export function generateHowToSealSchema(): JsonLdNode {
     "@id": `${siteConfig.canonicalOrigin}/how-it-works#howto`,
     name: "How to prepare and seal a CBAMValid Exporter Verification Preparation Pack",
     description:
-      "Define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, buy the pack at checkout, then seal immutable releases.",
+      "Define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, pay once to lock that working file, then download immutable sealed packages. Same file: correct and re-lock as needed.",
     totalTime: "P14D",
     estimatedCost: {
       "@type": "MonetaryAmount",
@@ -303,15 +303,15 @@ export function generateHowToSealSchema(): JsonLdNode {
       {
         "@type": "HowToStep",
         position: 4,
-        name: "Buy the Preparation Pack",
-        text: `Purchase the ${price.formatted} one-time pack at checkout when you are ready to seal.`,
-        url: `${siteConfig.canonicalOrigin}/pricing`,
+        name: "Pay once to lock this file",
+        text: `Pay ${price.formatted} to unlock lock-and-download for this working file. Drafting stays free until then.`,
+        url: `${siteConfig.canonicalOrigin}/pricing#how-payment-works`,
       },
       {
         "@type": "HowToStep",
         position: 5,
-        name: "Seal and download",
-        text: "Seal an immutable release and download PDF, JSON, and O3CI field-mapped exports with an integrity manifest.",
+        name: "Seal, correct, and re-lock",
+        text: "Seal an immutable release and download PDF, JSON, and O3CI field-mapped exports. Correct and re-lock the same paid file as needed. A new file needs a new payment.",
         url: `${siteConfig.canonicalOrigin}/sample-dossier`,
       },
     ],
@@ -420,7 +420,7 @@ export function generateUniversalEntityGraph(params: {
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       description:
-        "One-time Exporter Verification Preparation Pack: one operator, one installation, one reporting year, unlimited drafts, five successful sealed releases.",
+        "One-time pay-at-lock Exporter Verification Preparation Pack: one operator, one installation, one reporting year, unlimited drafts, and same-file correction re-locks.",
       brand: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
       author: { "@id": `${siteConfig.canonicalOrigin}/#author` },
       creator: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
@@ -432,7 +432,7 @@ export function generateUniversalEntityGraph(params: {
         "Fail-closed quality controls before sealing",
         "Versioned EU rulesets recorded in sealed packages",
         "O3CI field-mapped structured data export",
-        "Five successful sealed releases per scoped pack",
+        "Pay once to lock a working file; same-file corrections included",
       ],
     },
     webPageNode,
