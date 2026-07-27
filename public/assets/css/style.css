@@ -150,7 +150,8 @@ h3{font-size:1.35rem}
 
 /* ---------- Hero ---------- */
 .hero{padding:84px 0 96px;position:relative;overflow:hidden;background:var(--paper)}
-.hero::before{
+/* Atmosphere wash only on tall homepage heroes with a visual grid — not short text heroes */
+.hero:has(.hero-grid)::before{
   content:"";position:absolute;inset:auto 0 0 0;height:48%;
   background:var(--paper-2);pointer-events:none;z-index:0;
 }

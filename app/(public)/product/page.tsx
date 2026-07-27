@@ -93,7 +93,7 @@ export default function Page() {
               <div className="qc-box"><div className="v terra">86%</div><div className="k">Completion</div></div>
               <div className="qc-box"><div className="v ok">0</div><div className="k">Blockers</div></div>
               <div className="qc-box"><div className="v warn">2</div><div className="k">Warnings</div></div>
-              <div className="qc-box"><div className="v navy">5</div><div className="k">Report uses</div></div>
+              <div className="qc-box"><div className="v navy">5</div><div className="k">Sealed releases</div></div>
             </div>
           </div>
         </div>

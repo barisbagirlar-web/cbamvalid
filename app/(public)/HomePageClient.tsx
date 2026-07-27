@@ -162,7 +162,7 @@ export default function HomePageClient() {
               <li>Create and complete an eight-step CBAM case</li>
               <li>Understand the logic behind each material input</li>
               <li>Link evidence, resolve blockers and review calculations</li>
-              <li>Purchase credits securely and seal the final dossier</li>
+              <li>Buy the Preparation Pack at checkout and seal the final dossier</li>
             </ul>
           </div>
           <div className="ui-panel">
@@ -171,7 +171,7 @@ export default function HomePageClient() {
               <div className="qc-box"><div className="v terra">86%</div><div className="k">Completion</div></div>
               <div className="qc-box"><div className="v ok">0</div><div className="k">Blockers</div></div>
               <div className="qc-box"><div className="v warn">2</div><div className="k">Warnings</div></div>
-              <div className="qc-box"><div className="v navy">5</div><div className="k">Report uses</div></div>
+              <div className="qc-box"><div className="v navy">5</div><div className="k">Sealed releases</div></div>
             </div>
           </div>
         </div>
@@ -191,7 +191,7 @@ export default function HomePageClient() {
         <p>Draft free. Buy once at checkout. Each successful seal uses one of five releases. Failed seals use none.</p>
       </div>
       <div className="pricing-grid">
-        <div className="price-card featured reveal">
+        <div className="price-card featured">
           <span className="badge-pop">Scoped pack · One-time</span>
           <h3>Exporter Verification Preparation Pack</h3>
           <p className="sub">Prepared for independent accredited verification</p>
@@ -206,7 +206,7 @@ export default function HomePageClient() {
           </ul>
           <a className="btn btn-primary" href="/pricing">Get the Preparation Pack <span className="arr">→</span></a>
         </div>
-        <div className="price-card free reveal">
+        <div className="price-card free">
           <h3>Free Drafts</h3>
           <p className="sub">Prepare and review without cost</p>
           <p className="price-fig">$0 <small>forever</small></p>
