@@ -141,7 +141,8 @@ export function FanOutQueriesSection({ path }: { path: string }) {
 
 /**
  * Enterprise AEO chrome: breadcrumbs → authority → answers → fan-out →
- * topical map → citations → last reviewed.
+ * topical map → citations → last reviewed. Callers should place the
+ * commercial CTA band AFTER this chrome so the page closes symmetrically.
  */
 export function AeoPageChrome({
   path,

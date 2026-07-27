@@ -81,17 +81,7 @@ export function AuthorityChainSection({ path }: { path: string }) {
           </ul>
         </div>
 
-        {chain.fanOutQueries.length > 0 ? (
-          <div className="authority-fanout reveal" aria-label="Related search intents">
-            <p className="authority-step-label">Also asked / query fan-out</p>
-            <ul className="authority-fanout-list">
-              {chain.fanOutQueries.map((query) => (
-                <li key={query}>{query}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
+        {/* Fan-out queries render once in FanOutQueriesSection — avoid duplicate chip bands. */}
         <EntityGlossaryLinks entities={chain.entities} />
       </div>
     </section>

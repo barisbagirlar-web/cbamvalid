@@ -19,7 +19,7 @@ export function CitationRail({ path }: { path: string }) {
   return (
     <aside className="section tight citation-rail" aria-labelledby={`citation-h-${path.replace(/\W/g, "")}`}>
       <div className="wrap">
-        <div className="section-head reveal">
+        <div className="section-head center reveal">
           <span className="eyebrow">Primary sources</span>
           <h2 id={`citation-h-${path.replace(/\W/g, "")}`}>Regulatory citations for this page</h2>
           <p>
@@ -48,11 +48,13 @@ export function LastReviewed({ path }: { path: string }) {
   const route = requireSeoRoute(path);
   if (!route.factualLastModified) return null;
   return (
-    <p className="last-reviewed wrap">
-      <span className="last-reviewed-label">Last content review</span>{" "}
-      <time dateTime={route.factualLastModified}>{route.factualLastModified}</time>
-      {" · "}
-      <span>Ruleset claims use pinned EU instruments — not inventing deadlines.</span>
-    </p>
+    <div className="last-reviewed">
+      <p className="wrap">
+        <span className="last-reviewed-label">Last content review</span>{" "}
+        <time dateTime={route.factualLastModified}>{route.factualLastModified}</time>
+        {" · "}
+        <span>Ruleset claims use pinned EU instruments — not inventing deadlines.</span>
+      </p>
+    </div>
   );
 }

@@ -182,7 +182,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     calculation:
       "Sample calculations illustrate trace shape and unit reporting. Live cases recompute from your installation data under the active ruleset.",
     explanation:
-      "Use the public interactive viewer (page thumbs, document stage, contents panel) to inspect cover-to-integrity structure and verifier navigation expectations before sealing your own case.",
+      "Use the public interactive viewer (page thumbs, document stage, contents panel), then the authority and answer sections below, to inspect cover-to-integrity structure before sealing your own case.",
     methodology:
       "Sample content follows the same independence boundary and package-contract discipline as production seals, citing Regulation (EU) 2023/956 and definitive-period implementing rules.",
     evidence:

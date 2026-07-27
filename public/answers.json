@@ -241,7 +241,7 @@
       "empathyLead": "Buyers and verifiers ask what they will receive. You should inspect structure and integrity expectations before you purchase.",
       "directAnswer": "A sealed package is an immutable operator-prepared dossier with reports, structured data, evidence folder references, and a data integrity manifest with file sizes and SHA-256 hashes — prepared for independent review, not as an accredited verification opinion.",
       "calculation": "Sample calculations illustrate trace shape and unit reporting. Live cases recompute from your installation data under the active ruleset.",
-      "explanation": "Use the public interactive viewer (page thumbs, document stage, contents panel) to inspect cover-to-integrity structure and verifier navigation expectations before sealing your own case.",
+      "explanation": "Use the public interactive viewer (page thumbs, document stage, contents panel), then the authority and answer sections below, to inspect cover-to-integrity structure before sealing your own case.",
       "methodology": "Sample content follows the same independence boundary and package-contract discipline as production seals, citing Regulation (EU) 2023/956 and definitive-period implementing rules.",
       "evidence": "Manifest-listed files must exist with matching size and hash. Public sample demonstrates the integrity pattern without exposing tenant data.",
       "expert": "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.",

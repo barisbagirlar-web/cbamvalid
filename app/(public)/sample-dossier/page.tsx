@@ -261,6 +261,12 @@ export default function SampleDossierPage() {
         </div>
       </section>
 
+      <AeoPageChrome
+        path="/sample-dossier"
+        answerHeading="Sample dossier answers with evidence"
+        answerLimit={2}
+      />
+
       <section className="cta-band">
         <div className="wrap">
           <h2>
@@ -275,12 +281,6 @@ export default function SampleDossierPage() {
           </Link>
         </div>
       </section>
-
-      <AeoPageChrome
-        path="/sample-dossier"
-        answerHeading="Sample dossier answers with evidence"
-        answerLimit={2}
-      />
     </main>
   );
 }
