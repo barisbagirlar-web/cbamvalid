@@ -6,7 +6,7 @@
 
 - CBAMValid Exporter Verification Preparation Pack — Prepared for Independent Accredited Verification
 - Pricing: $249 per working file at lock (Exporter Verification Preparation Pack; one-time; no subscription; drafts free; 1 operator; 1 installation; 1 reporting year; same-file corrections included; new file = new payment).
-- Payment flow: Draft free in a working file (eight plain steps). Clear blockers. Pay once to lock that file. Correct and re-lock the same paid file as needed. Failed locks charge nothing. Re-download is free. A new working file needs a new payment.
+- Payment flow: Draft free in a working file (eight plain steps in one Where-you-are strip). Clear blockers. Pay once to lock that file. Correct and re-lock the same paid file as needed. Failed locks charge nothing. Re-download is free. A new working file needs a new payment.
 
 ## Independence boundary
 
@@ -106,7 +106,7 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Empathy: Most teams lose weeks in email threads and version chaos. You need a guided path that shows gaps before a buyer or verifier sees the file.
 - Direct answer: Define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, pay once to lock that working file, then download PDF, JSON, and O3CI field-mapped exports. Same file: correct and re-lock as needed. A new file needs a new payment.
 - Calculation: After material inputs are complete, the server engine computes embedded emissions and writes a calculation trace. Incomplete material data blocks sealing.
-- Explanation: Eight guided stages move from scope setup through evidence linking, QC, pay-at-lock, seal, and download. Drafts stay free until you pay to lock that file.
+- Explanation: One Where-you-are strip guides eight plain stages from scope setup through evidence linking, QC, pay-at-lock, seal, and download — without a second duplicate step bar. Drafts stay free until you pay to lock that file.
 - Methodology: Each sealed release records the ruleset and engine version used so replay stays deterministic.
 - Evidence: Every material field should point to approved, fully supported evidence before seal.
 - Expert: Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.

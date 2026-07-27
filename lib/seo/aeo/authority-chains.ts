@@ -120,7 +120,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     calculation:
       "After material inputs are complete, the server engine computes embedded emissions and writes a calculation trace. Incomplete material data blocks sealing.",
     explanation:
-      "Eight guided stages move from scope setup through evidence linking, QC, pay-at-lock, seal, and download. Drafts stay free until you pay to lock that file.",
+      "One Where-you-are strip guides eight plain stages from scope setup through evidence linking, QC, pay-at-lock, seal, and download — without a second duplicate step bar. Drafts stay free until you pay to lock that file.",
     methodology:
       "Each sealed release records the ruleset and engine version used so replay stays deterministic.",
     evidence:

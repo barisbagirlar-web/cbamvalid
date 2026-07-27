@@ -160,7 +160,7 @@
       "empathyLead": "Most teams lose weeks in email threads and version chaos. You need a guided path that shows gaps before a buyer or verifier sees the file.",
       "directAnswer": "Define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, pay once to lock that working file, then download PDF, JSON, and O3CI field-mapped exports. Same file: correct and re-lock as needed. A new file needs a new payment.",
       "calculation": "After material inputs are complete, the server engine computes embedded emissions and writes a calculation trace. Incomplete material data blocks sealing.",
-      "explanation": "Eight guided stages move from scope setup through evidence linking, QC, pay-at-lock, seal, and download. Drafts stay free until you pay to lock that file.",
+      "explanation": "One Where-you-are strip guides eight plain stages from scope setup through evidence linking, QC, pay-at-lock, seal, and download — without a second duplicate step bar. Drafts stay free until you pay to lock that file.",
       "methodology": "Each sealed release records the ruleset and engine version used so replay stays deterministic.",
       "evidence": "Every material field should point to approved, fully supported evidence before seal.",
       "expert": "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.",

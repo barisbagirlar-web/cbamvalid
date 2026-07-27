@@ -67,9 +67,15 @@ requireText(journeyState, "BLOCKERS_OPEN", "Journey BLOCKERS_OPEN state");
 const wizardClient = read("app/(workspace)/cases/[caseId]/CaseWizardClient.tsx");
 requireText(wizardClient, "WorkingFileJourneyStrip", "Wizard journey strip");
 requireText(wizardClient, "Working file", "Wizard working-file title");
+rejectText(
+  wizardClient,
+  'aria-label="Working file steps"',
+  "Duplicate step navigator must not render beside WorkingFileJourneyStrip",
+);
 const journeyStrip = read("components/cbam/WorkingFileJourneyStrip.tsx");
 requireText(journeyStrip, "Where you are", "Wizard where-you-are strip");
 requireText(journeyStrip, "Step {currentStep} of 8", "Wizard step counter");
+requireText(journeyStrip, 'aria-label="Eight plain steps"', "Single SSOT step grid in journey strip");
 requireText(workspaceMethodology, "MethodologyContent", "Workspace methodology content");
 requireText(publicMethodology, "MethodologyContent", "Public methodology content");
 

@@ -68,7 +68,7 @@ export function buildLlmDocModel(): LlmDocModel {
     independence: assertVerifiedClaim(INDEPENDENCE_CLAIM, "INDEPENDENCE_CLAIM"),
     pricingLine: `${price.formatted} per working file at lock (${price.packName}; one-time; no subscription; drafts free; 1 operator; 1 installation; 1 reporting year; same-file corrections included; new file = new payment).`,
     paymentFlow:
-      "Draft free in a working file (eight plain steps). Clear blockers. Pay once to lock that file. Correct and re-lock the same paid file as needed. Failed locks charge nothing. Re-download is free. A new working file needs a new payment.",
+      "Draft free in a working file (eight plain steps in one Where-you-are strip). Clear blockers. Pay once to lock that file. Correct and re-lock the same paid file as needed. Failed locks charge nothing. Re-download is free. A new working file needs a new payment.",
     supportEmail: assertVerifiedClaim(SUPPORT_EMAIL_CLAIM, "SUPPORT_EMAIL_CLAIM"),
     resources,
     topicalMap: TOPICAL_MAP.map((node) => ({

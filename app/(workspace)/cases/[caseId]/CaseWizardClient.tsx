@@ -933,23 +933,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
 
         <StatusBanner status={saveStatus} tone={saveTone} />
 
-        <nav aria-label="Working file steps" className="flex gap-3 overflow-x-auto pb-3">
-          {STEPS.map((step) => (
-            <button
-              type="button"
-              key={step.id}
-              onClick={() => setCurrentStep(step.id)}
-              className={`min-w-28 rounded-lg border px-3 py-2 text-xs font-bold ${
-                currentStep === step.id ? "border-accent bg-accent text-surface" : "border-border bg-surface text-muted"
-              }`}
-            >
-              <span className="block text-sm">{step.id}</span>
-              {step.label}
-            </button>
-          ))}
-        </nav>
-
-        <section className="py-4">{stepContent()}</section>
+        <section className="py-2 md:py-4">{stepContent()}</section>
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface p-4 shadow-[0_-4px_8px_rgba(0,0,0,0.08)]">
