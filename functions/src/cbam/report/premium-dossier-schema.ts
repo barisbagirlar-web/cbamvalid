@@ -266,6 +266,7 @@ export const ReportingPeriodAssessmentSchema = z.object({
   coveredDays: z.number().int(),
   expectedDays: z.number().int(),
   completenessPercent: z.string(),
+  completenessStatus: z.enum(["PASSED", "BLOCKED"]),
   definitiveAnnualEligible: z.boolean(),
   hardBlockerFindingIds: z.array(z.string()),
 });
