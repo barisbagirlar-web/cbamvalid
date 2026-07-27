@@ -3,7 +3,7 @@
  * Legacy account-credit mapping note (historical):
  * 100 account credits → 1 Preparation Pack unlock (case-scoped pay-at-lock is the customer SSOT).
  * Practical reseal ceiling is CASE_COMMERCIAL.maxReleasesPerPaidCase — not a marketed “5 pack” meter.
- * Customer-facing UI must speak in packs and sealed releases.
+ * Customer-facing UI must speak pay-at-lock / same-file corrections — not “exactly 5 seals”.
  */
 export const CREDITS_PER_PREPARATION_PACK = 100;
 export const RELEASES_PER_PREPARATION_PACK = 5;

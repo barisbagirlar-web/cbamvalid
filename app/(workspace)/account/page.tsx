@@ -11,12 +11,12 @@ import {
   type PreparationPackEntitlement,
 } from "@/lib/functions/client";
 import {
-  RELEASES_PER_PREPARATION_PACK,
   describeLedgerAsPackActivity,
   packsFromCredits,
   packsUnlockableFromCredits,
 } from "@/lib/billing/credit-contract";
 import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
+import { CASE_COMMERCIAL } from "@/lib/billing/case-commercial-contract";
 import { UnlockPreparationPackPanel } from "@/components/billing/UnlockPreparationPackPanel";
 import { User, Package, History, ShieldAlert, ArrowLeft, ShoppingBag } from "lucide-react";
 import Link from "next/link";
@@ -300,19 +300,19 @@ export default function AccountPage() {
         <div className="bg-kil-accent/5 border border-kil-accent/20 rounded-sm p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4 text-kil-accent">
             <Package className="w-5 h-5" />
-            <h2 className="font-serif text-xl">Sealed releases left</h2>
+            <h2 className="font-serif text-xl">Paid unlock status</h2>
           </div>
-          <div className="text-4xl font-mono font-bold text-kil-accent">
-            {activeReleasesRemaining}
+          <div className="text-2xl font-serif font-bold text-kil-accent">
+            {activePackCount > 0 ? "Ready to lock" : "No paid unlock"}
           </div>
-          <p className="text-xs text-kil-text/60 mt-2">
-            {activePackCount} active pack{activePackCount === 1 ? "" : "s"} · each pack includes{" "}
-            {RELEASES_PER_PREPARATION_PACK} successful seals for one operator, one installation, and
-            one reporting year.
+          <p className="text-xs text-kil-text/60 mt-2 leading-relaxed">
+            {CASE_COMMERCIAL.customerOneLiner} Active paid files: {activePackCount}. Internal reseal
+            capacity remaining across entitlements: {activeReleasesRemaining} (ceiling, not a marketed
+            meter).
           </p>
           {unlockablePacks > 0 && !hasActivePack ? (
             <p className="mt-3 font-mono text-xs text-kil-text/70">
-              Unused pack balance ready to activate: {unusedPackBalance}
+              Unused legacy pack balance ready to activate: {unusedPackBalance}
             </p>
           ) : null}
         </div>
@@ -331,40 +331,48 @@ export default function AccountPage() {
       {activePackCount > 0 ? (
         <div className="bg-kil-surface border border-kil-text/15 rounded-sm shadow-sm overflow-hidden">
           <div className="p-6 border-b border-kil-text/15 bg-kil-base">
-            <h2 className="font-serif text-xl text-kil-text">Active packs</h2>
+            <h2 className="font-serif text-xl text-kil-text">Active paid unlocks</h2>
           </div>
           <div className="p-6">
             <table className="w-full text-left text-sm font-mono">
               <thead>
                 <tr className="text-kil-text/60 border-b border-kil-text/15">
-                  <th className="pb-3">Pack</th>
-                  <th className="pb-3">Releases used</th>
-                  <th className="pb-3 text-right">Releases left</th>
+                  <th className="pb-3">Unlock</th>
+                  <th className="pb-3">Scope</th>
+                  <th className="pb-3 text-right">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-kil-text/10">
-                {entitlements.map((entitlement, index) => (
-                  <tr key={entitlement.entitlementId || `${entitlement.orderId}-${index}`}>
-                    <td className="py-3">
-                      Pack {index + 1}
-                      {typeof entitlement.scopeCaseId === "string" && entitlement.scopeCaseId ? (
-                        <span className="block text-xs text-kil-text/50">
-                          Scope case: {entitlement.scopeCaseId}
+                {entitlements.map((entitlement, index) => {
+                  const scopeId =
+                    (typeof entitlement.scopeCaseId === "string" && entitlement.scopeCaseId) ||
+                    (typeof entitlement.caseId === "string" && entitlement.caseId) ||
+                    "";
+                  const max = Number(
+                    entitlement.maxReleases || CASE_COMMERCIAL.maxReleasesPerPaidCase
+                  );
+                  const used = Number(entitlement.releasesCount || 0);
+                  return (
+                    <tr key={entitlement.entitlementId || `${entitlement.orderId}-${index}`}>
+                      <td className="py-3">Unlock {index + 1}</td>
+                      <td className="py-3">
+                        {scopeId ? (
+                          <span className="block text-xs text-kil-text/70">Working file: {scopeId}</span>
+                        ) : (
+                          <span className="block text-xs text-kil-text/50">Legacy unbound pack</span>
+                        )}
+                        <span className="block text-[10px] text-kil-text/40">
+                          Seals used {used}/{max} (internal ceiling)
                         </span>
-                      ) : typeof entitlement.caseId === "string" && entitlement.caseId ? (
-                        <span className="block text-xs text-kil-text/50">
-                          Scope case: {entitlement.caseId}
-                        </span>
-                      ) : null}
-                    </td>
-                    <td className="py-3">
-                      {Number(entitlement.releasesCount || 0)} / {RELEASES_PER_PREPARATION_PACK}
-                    </td>
-                    <td className="py-3 text-right font-bold text-kil-accent">
-                      {Number(entitlement.releasesRemaining || 0)}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="py-3 text-right font-bold text-kil-accent">
+                        {Number(entitlement.releasesRemaining || 0) > 0
+                          ? "Corrections included"
+                          : "Exhausted"}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

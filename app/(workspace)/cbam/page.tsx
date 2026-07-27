@@ -437,12 +437,11 @@ export default function CbamLandingPage() {
             {releasesRemaining > 0 ? (
               <>
                 <p className="font-serif text-xl md:text-2xl font-bold text-foreground">
-                  Payment confirmed — {releasesRemaining} sealed release
-                  {releasesRemaining === 1 ? "" : "s"} ready
+                  Payment confirmed — this working file can be locked
                 </p>
                 <p className="mt-2 text-sm text-muted leading-relaxed max-w-3xl">
-                  Your card charge succeeded and the Preparation Pack is active. You do not need to
-                  pay again. Continue your working file, then lock and download. Full receipt:{" "}
+                  Your card charge succeeded. Same-file corrections and re-locks stay included. You do
+                  not need to pay again for this file. Continue, then lock and download. Full receipt:{" "}
                   <Link href="/account" className="font-semibold text-accent underline">
                     Account → Purchase history
                   </Link>
@@ -756,15 +755,14 @@ export default function CbamLandingPage() {
                 <h4 className="font-bold text-sm uppercase tracking-wider text-muted mb-4">Pack status</h4>
                 {releasesRemaining > 0 ? (
                   <div className="p-3 bg-accent/5 border border-accent/10 rounded-lg text-xs">
-                    <span className="font-bold text-accent block">Active Preparation Pack</span>
-                    You have <strong>{releasesRemaining}</strong> sealed release
-                    {releasesRemaining === 1 ? "" : "s"} left to lock packages.
+                    <span className="font-bold text-accent block">Paid unlock active</span>
+                    Lock-and-download is available. Same-file correction re-locks stay included.
                   </div>
                 ) : (
                   <div className="space-y-4">
                     <div className="p-3 bg-muted/20 border border-border rounded-lg text-xs text-muted leading-relaxed">
-                      <span className="font-bold text-foreground block mb-1">No active pack</span>
-                      Locking needs an active Preparation Pack. Buy at checkout, or activate unused pack balance.
+                      <span className="font-bold text-foreground block mb-1">No paid unlock yet</span>
+                      Draft free. Pay once when you lock a working file, or activate leftover legacy pack balance if you have it.
                     </div>
                     {packsUnlockableFromCredits(availableCredits) > 0 ? (
                       <UnlockPreparationPackPanel

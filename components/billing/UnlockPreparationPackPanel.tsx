@@ -41,7 +41,7 @@ export function UnlockPreparationPackPanel({
       setStatus(
         typeof result.message === "string"
           ? result.message
-          : `Activated one Preparation Pack with ${RELEASES_PER_PREPARATION_PACK} sealed releases.`
+          : "Activated one legacy Preparation Pack balance (grandfather path — not a new card charge)."
       );
       await onUnlocked?.(entitlementId);
     } catch (error) {
@@ -63,14 +63,15 @@ export function UnlockPreparationPackPanel({
       <div className="flex items-start gap-3">
         <PackageCheck className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
         <div className="min-w-0 flex-1 space-y-2">
-          <h3 className="font-serif text-lg text-foreground">Activate Preparation Pack</h3>
+          <h3 className="font-serif text-lg text-foreground">Activate legacy pack balance</h3>
           <p className="text-sm leading-relaxed text-muted">
-            You have unused Preparation Pack balance. Activate it to unlock exactly{" "}
-            {RELEASES_PER_PREPARATION_PACK} successful sealed releases for one operator, one
-            installation, and one reporting year. This is not a new card payment.
+            You have unused grandfather Preparation Pack balance from the older credit path. Activate
+            it to unlock sealing capacity without a new card charge. The normal customer path is
+            pay-at-lock on a working file — this panel is only for leftover balance.
           </p>
           <p className="font-mono text-xs text-muted">
-            Packs ready to activate: {unlockablePacks}
+            Legacy packs ready to activate: {unlockablePacks}
+            {RELEASES_PER_PREPARATION_PACK ? ` · internal meter ${RELEASES_PER_PREPARATION_PACK}/pack` : ""}
           </p>
           <button
             type="button"
@@ -79,7 +80,7 @@ export function UnlockPreparationPackPanel({
             className="inline-flex items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-surface transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {unlocking ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
-            Activate pack (+{RELEASES_PER_PREPARATION_PACK} sealed releases)
+            Activate legacy pack balance
           </button>
           {status ? <p className="text-xs text-muted">{status}</p> : null}
         </div>

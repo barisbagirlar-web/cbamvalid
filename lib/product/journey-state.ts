@@ -67,9 +67,9 @@ export function resolveJourneyState(input: JourneyInput): JourneyView {
     : "/cases/new";
 
   const packSummary = hasReleases
-    ? `This account can lock paid working files (${input.releasesRemaining} release slot${input.releasesRemaining === 1 ? "" : "s"} currently available).`
+    ? "Paid unlock is active for at least one working file — same-file correction re-locks stay included."
     : unlockable > 0
-      ? `${unlockable} Preparation Pack${unlockable === 1 ? "" : "s"} ready to activate (legacy balance).`
+      ? `${unlockable} legacy Preparation Pack${unlockable === 1 ? "" : "s"} ready to activate (grandfather balance — not a new card charge).`
       : `Draft free. Pay ${CANONICAL_PRICING.priceFormatted} once when you lock a working file. Same file: unlimited corrections. New file = new payment.`;
 
   if (input.postPurchase && hasReleases && hasFile) {

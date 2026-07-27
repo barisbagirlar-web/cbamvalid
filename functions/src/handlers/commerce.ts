@@ -80,7 +80,7 @@ export const unlockCbamUses = createCallable(
           const prior = idempotencyDoc.data() || {};
           return {
             status: "success",
-            message: "The five-release pack was already activated.",
+            message: "The legacy pack balance was already activated.",
             entitlementId: typeof prior.entitlementId === "string" ? prior.entitlementId : undefined,
             releasesGranted: Number(prior.releasesGranted || MAX_RELEASES_PER_PACK),
           };
@@ -92,7 +92,7 @@ export const unlockCbamUses = createCallable(
         if (!Number.isFinite(availableCredits) || availableCredits < 100) {
           throw new HttpsError(
             "failed-precondition",
-            "A purchased Preparation Pack balance is required to activate one five-release CBAM pack."
+            "A purchased Preparation Pack balance is required to activate leftover legacy sealing capacity."
           );
         }
 
@@ -140,7 +140,7 @@ export const unlockCbamUses = createCallable(
 
         return {
           status: "success",
-          message: "One CBAM pack with five successful releases was activated.",
+          message: "Legacy Preparation Pack balance activated (grandfather path — not a new card charge).",
           entitlementId,
           releasesGranted: MAX_RELEASES_PER_PACK,
         };

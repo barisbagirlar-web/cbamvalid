@@ -14,8 +14,14 @@ export const CANONICAL_PRICING = {
   includedOperators: 1,
   includedInstallations: 1,
   includedReportingYears: 1,
-  includedSealedReleases: 5,
+  /**
+   * Practical same-file reseal ceiling (abuse/storage). Customer copy must say
+   * “same-file corrections included”, never “exactly N seals”.
+   * Legacy unbound credit unlocks still use RELEASES_PER_PREPARATION_PACK=5 internally.
+   */
+  includedSealedReleases: 100,
   draftPolicy: "Unlimited drafts",
+  correctionPolicy: "Same-file correction re-locks included",
   description: "Prepared for Independent Accredited Verification",
   /** Short customer/SEO line — case-scoped pay-at-lock. */
   valueSummary:

@@ -94,7 +94,7 @@ export default function HomePageClient() {
       <div className="section-head center reveal">
         <span className="eyebrow">Guided Process</span>
         <h2>When the buyer asks this week, start here</h2>
-        <p>From raw production data to a sealed verifier-preparation package — draft free, then buy the pack before sealing.</p>
+        <p>From raw production data to a sealed verifier-preparation package — draft free, then pay once when you lock this file.</p>
       </div>
       <div className="timeline">
         <div className="tl-step reveal">
@@ -111,7 +111,7 @@ export default function HomePageClient() {
         </div>
         <div className="tl-step reveal">
           <div className="tl-node"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg></div>
-          <p className="step-no">Step 4</p><h3>Buy the USD 249 pack</h3><p>One operator, one installation, one year — five seals</p>
+          <p className="step-no">Step 4</p><h3>Pay once to lock this file</h3><p>USD 249 for one operator, one installation, one year — same-file corrections included</p>
         </div>
         <div className="tl-step reveal">
           <div className="tl-node"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 15a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/><path d="M12 3v2m0 14v2M3 12h2m14 0h2M6 6l1.4 1.4M16.6 16.6 18 18M18 6l-1.4 1.4M7.4 16.6 6 18"/></svg></div>
