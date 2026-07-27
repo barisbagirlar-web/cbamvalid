@@ -39,6 +39,14 @@ type PurchaseRow = {
   };
 };
 
+type LedgerEntry = {
+  id?: string;
+  amount: number;
+  type?: string;
+  reason?: string;
+  createdAt?: string;
+};
+
 function purchaseStatusClass(status: string | undefined): string {
   switch (status) {
     case "PAID":
@@ -58,7 +66,7 @@ function purchaseStatusClass(status: string | undefined): string {
 export default function AccountPage() {
   const { user } = useAuth();
   const [overview, setOverview] = useState<Record<string, unknown> | null>(null);
-  const [ledger, setLedger] = useState<Array<Record<string, unknown>>>([]);
+  const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
   const [entitlements, setEntitlements] = useState<PreparationPackEntitlement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,7 +95,7 @@ export default function AccountPage() {
       }
 
       if (ledgerResult.status === "fulfilled") {
-        setLedger((ledgerResult.value || []) as Array<Record<string, unknown>>);
+        setLedger((ledgerResult.value || []) as LedgerEntry[]);
       } else {
         console.error("Failed to load commercial ledger", ledgerResult.reason);
         setLedger([]);
@@ -134,7 +142,7 @@ export default function AccountPage() {
     }
 
     if (ledgerResult.status === "fulfilled") {
-      setLedger((ledgerResult.value || []) as Array<Record<string, unknown>>);
+      setLedger((ledgerResult.value || []) as LedgerEntry[]);
     } else {
       console.error("Failed to load commercial ledger", ledgerResult.reason);
       setLedger([]);
