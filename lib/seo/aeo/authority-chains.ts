@@ -182,9 +182,9 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     calculation:
       "Sample calculations illustrate trace shape and unit reporting. Live cases recompute from your installation data under the active ruleset.",
     explanation:
-      "Browse the public sample structure to understand PDF/JSON/workbook layout and verifier navigation expectations before sealing your own case.",
+      "Use the public interactive viewer (page thumbs, document stage, contents panel) to inspect cover-to-integrity structure and verifier navigation expectations before sealing your own case.",
     methodology:
-      "Sample content follows the same independence boundary and package-contract discipline as production seals.",
+      "Sample content follows the same independence boundary and package-contract discipline as production seals, citing Regulation (EU) 2023/956 and definitive-period implementing rules.",
     evidence:
       "Manifest-listed files must exist with matching size and hash. Public sample demonstrates the integrity pattern without exposing tenant data.",
     expert: EXPERT_BLOCK,
@@ -193,11 +193,18 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
       { question: "Buy the preparation pack", href: "/pricing", why: "Commercial next step" },
       { question: "Product capabilities", href: "/product", why: "What you get" },
     ],
-    entities: ["sample sealed dossier", "integrity manifest", "SHA-256", "verifier navigation package"],
+    entities: [
+      "sample sealed dossier",
+      "integrity manifest",
+      "SHA-256",
+      "verifier navigation package",
+      "interactive dossier viewer",
+    ],
     fanOutQueries: [
       "CBAM sample dossier",
       "CBAM verification preparation package contents",
       "CBAM integrity manifest",
+      "CBAMValid sample dossier preview",
     ],
   },
   {

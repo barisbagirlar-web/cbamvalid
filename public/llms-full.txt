@@ -132,13 +132,13 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Empathy: Buyers and verifiers ask what they will receive. You should inspect structure and integrity expectations before you purchase.
 - Direct answer: A sealed package is an immutable operator-prepared dossier with reports, structured data, evidence folder references, and a data integrity manifest with file sizes and SHA-256 hashes — prepared for independent review, not as an accredited verification opinion.
 - Calculation: Sample calculations illustrate trace shape and unit reporting. Live cases recompute from your installation data under the active ruleset.
-- Explanation: Browse the public sample structure to understand PDF/JSON/workbook layout and verifier navigation expectations before sealing your own case.
-- Methodology: Sample content follows the same independence boundary and package-contract discipline as production seals.
+- Explanation: Use the public interactive viewer (page thumbs, document stage, contents panel) to inspect cover-to-integrity structure and verifier navigation expectations before sealing your own case.
+- Methodology: Sample content follows the same independence boundary and package-contract discipline as production seals, citing Regulation (EU) 2023/956 and definitive-period implementing rules.
 - Evidence: Manifest-listed files must exist with matching size and hash. Public sample demonstrates the integrity pattern without exposing tenant data.
 - Expert: Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.
 - Related: /verify, /pricing, /product
-- Entities: sample sealed dossier; integrity manifest; SHA-256; verifier navigation package
-- Fan-out queries: CBAM sample dossier; CBAM verification preparation package contents; CBAM integrity manifest
+- Entities: sample sealed dossier; integrity manifest; SHA-256; verifier navigation package; interactive dossier viewer
+- Fan-out queries: CBAM sample dossier; CBAM verification preparation package contents; CBAM integrity manifest; CBAMValid sample dossier preview
 
 ### /verify
 - Primary question: How can someone check that a sealed CBAMValid dossier was not altered?
@@ -345,9 +345,9 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
   Entities: versioned ruleset; Regulation (EU) 2023/956; Implementing Regulation (EU) 2025/2547; calculation trace; deterministic replay
   Fan-out: CBAM calculation methodology; CBAM ruleset versioning; deterministic embedded emissions calculation
 - /sample-dossier — Sample sealed dossier structure
-  Covers: what a sealed package contains; integrity manifest preview
-  Entities: sample sealed dossier; integrity manifest; SHA-256; verifier navigation package
-  Fan-out: CBAM sample dossier; CBAM verification preparation package contents; CBAM integrity manifest
+  Covers: what a sealed package contains; interactive 16-page dossier viewer; integrity manifest preview
+  Entities: sample sealed dossier; integrity manifest; SHA-256; verifier navigation package; interactive dossier viewer
+  Fan-out: CBAM sample dossier; CBAM verification preparation package contents; CBAM integrity manifest; CBAMValid sample dossier preview
 - /cn-code — CBAM CN code scope
   Covers: is my CN code in CBAM scope
   Entities: CN code; Annex I; CBAM goods scope; customs classification
@@ -419,7 +419,7 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - [When spreadsheets fail under verifier questions](https://cbamvalid.com/product): CBAM verification preparation product
 - [Exporter Verification Preparation Pack](https://cbamvalid.com/pricing): CBAMValid pricing
 - [From raw plant data to a sealed package — without email chaos](https://cbamvalid.com/how-it-works): CBAMValid workflow
-- [Sample Verification Preparation Dossier](https://cbamvalid.com/sample-dossier): CBAM sample dossier
+- [See the dossier before you purchase](https://cbamvalid.com/sample-dossier): CBAM sample dossier
 - [When a verifier asks “which rules?”, you need a dated answer](https://cbamvalid.com/methodology): CBAM calculation methodology
 - [Verify CBAM CN-Code Scope](https://cbamvalid.com/cn-code): CBAM CN code scope
 - [Verify a Dossier](https://cbamvalid.com/verify): CBAMValid dossier verification

@@ -93,15 +93,15 @@ const STATIC_ROUTES: readonly SeoRouteContract[] = [
     indexability: "index",
     title: "Sample CBAM Verification Preparation Dossier | CBAMValid",
     description:
-      "Inspect a sample sealed CBAMValid dossier structure before you buy: PDF, structured data, integrity manifest and verifier workspace.",
-    h1: "Sample Verification Preparation Dossier",
+      "Browse a 16-page interactive sample CBAMValid preparation dossier: page thumbs, document stage, and contents panel with integrity-manifest expectations before you buy.",
+    h1: "See the dossier before you purchase",
     canonicalPath: "/sample-dossier",
     primaryIntent: "CBAM sample dossier",
     audience: ["exporters", "importers", "verifiers (read-only preview)"],
     sitemapEligible: true,
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/product", "/pricing", "/verify"],
-    regulatorySourceIds: ["REG_2023_956", "IMPL_2025_2546"],
+    regulatorySourceIds: ["REG_2023_956", "IMPL_2025_2546", "IMPL_2025_2547", "DEL_2025_2551"],
     factualLastModified: LASTMOD_IA,
   },
   {
