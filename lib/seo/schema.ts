@@ -31,11 +31,11 @@ function organizationNode(): JsonLdNode {
     url: siteConfig.canonicalOrigin,
     logo: {
       "@type": "ImageObject",
-      url: `${siteConfig.canonicalOrigin}/brand/cbamvalid-mark.svg`,
+      url: `${siteConfig.canonicalOrigin}/icon-512.png`,
       width: 512,
       height: 512,
     },
-    image: siteConfig.ogImage,
+    image: `${siteConfig.canonicalOrigin}/icon-512.png`,
     email: legalConfig.supportEmail,
     // Country only — street address in siteConfig is placeholder and must not enter schema.
     address: {
