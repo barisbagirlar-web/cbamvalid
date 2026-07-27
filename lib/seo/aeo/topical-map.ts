@@ -66,7 +66,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
   },
   {
     path: "/how-it-works",
-    topic: "Draft-to-seal workflow",
+    topic: "Working-file to locked-package workflow",
     role: "spoke",
     parentPath: "/",
     childPaths: ["/pricing", "/sample-dossier", "/methodology"],

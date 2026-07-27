@@ -63,6 +63,13 @@ requireText(customerLanguage, 'lockedPackages: "Locked packages"', "Locked packa
 const journeyState = read("lib/product/journey-state.ts");
 requireText(journeyState, "NO_FILE", "Journey NO_FILE state");
 requireText(journeyState, "READY_TO_SEAL", "Journey READY_TO_SEAL state");
+requireText(journeyState, "BLOCKERS_OPEN", "Journey BLOCKERS_OPEN state");
+const wizardClient = read("app/(workspace)/cases/[caseId]/CaseWizardClient.tsx");
+requireText(wizardClient, "WorkingFileJourneyStrip", "Wizard journey strip");
+requireText(wizardClient, "Working file", "Wizard working-file title");
+const journeyStrip = read("components/cbam/WorkingFileJourneyStrip.tsx");
+requireText(journeyStrip, "Where you are", "Wizard where-you-are strip");
+requireText(journeyStrip, "Step {currentStep} of 8", "Wizard step counter");
 requireText(workspaceMethodology, "MethodologyContent", "Workspace methodology content");
 requireText(publicMethodology, "MethodologyContent", "Public methodology content");
 

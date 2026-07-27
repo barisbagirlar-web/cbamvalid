@@ -23,10 +23,12 @@ import { CUSTOMER_LANGUAGE } from "@/lib/product/customer-language";
  * | E | ≥1 | ≥1 | ≥1 | * | SEALED_WITH_RELEASES |
  * | F | ≥1 | ≥1 | 0 | 0 | SEALED_NO_RELEASES |
  * | G | ≥1 | ≥1 | 0 | ≥1 | PACK_READY_TO_ACTIVATE |
+ * | H | ≥1 | * | ≥1 | * | blockers>0 | BLOCKERS_OPEN |
  */
 export type JourneyStateId =
   | "NO_FILE"
   | "FILE_IN_PROGRESS"
+  | "BLOCKERS_OPEN"
   | "READY_NO_PACK"
   | "PACK_READY_TO_ACTIVATE"
   | "READY_TO_SEAL"
@@ -41,6 +43,9 @@ export type JourneyInput = {
   /** Prefer continuing this file when present. */
   primaryWorkingFileId?: string | null;
   postPurchase?: boolean;
+  /** Open QC blockers on the primary working file (0 = none / unknown). */
+  blockersOpen?: number;
+  completenessPercentage?: number;
 };
 
 export type JourneyView = {
@@ -111,6 +116,34 @@ export function resolveJourneyState(input: JourneyInput): JourneyView {
       secondaryCta: {
         label: `${CUSTOMER_LANGUAGE.buyPack} — ${CANONICAL_PRICING.priceFormatted}`,
         href: "/credits/buy",
+      },
+      packSummary,
+    };
+  }
+
+  const blockers = Math.max(0, Number(input.blockersOpen || 0));
+  if (blockers > 0 && hasReleases) {
+    return {
+      state: "BLOCKERS_OPEN",
+      headline: `Fix ${blockers} blocker${blockers === 1 ? "" : "s"} before you can lock`,
+      explanation:
+        "Your Preparation Pack is ready. Open the working file, clear quality blockers, then lock and download. A failed lock uses zero releases.",
+      primaryCta: { label: CUSTOMER_LANGUAGE.continueFile, href: fileHref },
+      secondaryCta: { label: "Open quality step", href: `${fileHref}` },
+      packSummary,
+    };
+  }
+
+  if (blockers > 0 && !hasReleases) {
+    return {
+      state: "FILE_IN_PROGRESS",
+      headline: `Continue your working file (${blockers} blocker${blockers === 1 ? "" : "s"} open)`,
+      explanation:
+        "Keep editing for free. Buy or activate a Preparation Pack when you are ready to lock. Blockers must be cleared before a successful lock.",
+      primaryCta: { label: CUSTOMER_LANGUAGE.continueFile, href: fileHref },
+      secondaryCta: {
+        label: unlockable > 0 ? CUSTOMER_LANGUAGE.activatePack : `${CUSTOMER_LANGUAGE.buyPack} — ${CANONICAL_PRICING.priceFormatted}`,
+        href: unlockable > 0 ? "/account" : "/credits/buy",
       },
       packSummary,
     };

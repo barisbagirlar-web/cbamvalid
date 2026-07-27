@@ -96,4 +96,17 @@ describe("customer journey state machine", () => {
     expect(view.headline.toLowerCase()).toContain("purchased");
     expect(view.primaryCta.href).toBe("/cases/case_1");
   });
+
+  it("H: file + releases + blockers → BLOCKERS_OPEN", () => {
+    const view = resolveJourneyState({
+      workingFileCount: 1,
+      lockedPackageCount: 0,
+      releasesRemaining: 5,
+      availableCredits: 0,
+      primaryWorkingFileId: "case_1",
+      blockersOpen: 3,
+    });
+    expect(view.state).toBe("BLOCKERS_OPEN");
+    expect(view.primaryCta.href).toBe("/cases/case_1");
+  });
 });

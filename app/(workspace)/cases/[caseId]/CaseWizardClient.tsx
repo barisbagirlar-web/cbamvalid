@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { DecimalInput } from "@/components/cbam/DecimalInput";
 import { FieldHelp } from "@/components/cbam/FieldHelp";
+import { WorkingFileJourneyStrip } from "@/components/cbam/WorkingFileJourneyStrip";
 import { UnlockPreparationPackPanel } from "@/components/billing/UnlockPreparationPackPanel";
 import { packsUnlockableFromCredits } from "@/lib/billing/credit-contract";
 import { assessCaseReadiness } from "@/lib/cbam/validation/readiness-assessor";
@@ -59,14 +60,14 @@ interface CaseWizardClientProps {
 }
 
 const STEPS = [
-  { id: 1, label: "Case setup" },
-  { id: 2, label: "Goods" },
-  { id: 3, label: "Installation" },
-  { id: 4, label: "Direct emissions" },
-  { id: 5, label: "Indirect emissions" },
-  { id: 6, label: "Precursors & methods" },
-  { id: 7, label: "Carbon price & evidence" },
-  { id: 8, label: "Verify & generate" },
+  { id: 1, label: "Who and where" },
+  { id: 2, label: "What you sell" },
+  { id: 3, label: "How you make it" },
+  { id: 4, label: "Emissions numbers" },
+  { id: 5, label: "Bought inputs" },
+  { id: 6, label: "Proof documents" },
+  { id: 7, label: "Fix blockers" },
+  { id: 8, label: "Lock & download" },
 ] as const;
 
 const SECTORS = [
@@ -227,6 +228,17 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     const caseMatches = !caseId || caseId === caseData.caseId;
     return caseMatches && ["AVAILABLE", "ACTIVE", "PURCHASED"].includes(status);
   }), [entitlements, caseData.caseId]);
+
+  const releasesRemaining = useMemo(
+    () =>
+      usableEntitlements.reduce(
+        (sum, entitlement) => sum + Number(entitlement.releasesRemaining || 0),
+        0
+      ),
+    [usableEntitlements]
+  );
+
+  const unlockablePacks = packsUnlockableFromCredits(availableCredits);
 
   const refreshPackState = async () => {
     const [overview, nextEntitlements] = await Promise.all([
@@ -739,7 +751,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const renderStep8 = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold">8. Verification readiness and dossier generation</h2>
+        <h2 className="text-xl font-bold">8. Lock &amp; download your package</h2>
         <p className="mt-1 text-sm text-muted">Review the automated quality controls, inspect the mathematical audit trace, and generate the final sealed verifier package.</p>
       </div>
       {scenarioActive && calculation.result && (
@@ -850,7 +862,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           ) : null}
 
           {readiness.isEligibleForSealing ? (
-            <button type="button" aria-label="Generate sealed dossier" onClick={handleSeal} disabled={sealing || usableEntitlements.length === 0} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-40">{sealing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Generate sealed dossier</button>
+            <button type="button" aria-label="Lock and download package" onClick={handleSeal} disabled={sealing || usableEntitlements.length === 0} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-40">{sealing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Lock &amp; download package</button>
           ) : (
             <button type="button" onClick={() => setCurrentStep(scenarioActive ? 1 : 7)} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface"><FileUp className="h-4 w-4" /> {scenarioActive ? "Replace demo with case data" : "Resolve evidence blockers"}</button>
           )}
@@ -877,5 +889,109 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
 
   const stepContent = [renderStep1, renderStep2, renderStep3, renderStep4, renderStep5, renderStep6, renderStep7, renderStep8][currentStep - 1];
 
-  return <main className="min-h-screen bg-background px-4 py-8 pb-32 text-foreground md:px-8"><div className="mx-auto max-w-6xl space-y-6"><header className="flex flex-col justify-between gap-4 border-b border-border pb-4 md:flex-row md:items-center"><div><h1 className="text-2xl font-bold">Case workflow</h1><p className="text-sm text-muted">ID: {caseData.caseId || "UNASSIGNED"} · User: {sessionUser.email || sessionUser.uid}</p></div><button type="button" onClick={handleSave} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded border border-border bg-neutral-soft px-4 py-2 text-sm font-medium disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {saving ? "Saving…" : "Save draft"}</button></header>{scenarioActive && <aside className="flex flex-col justify-between gap-4 rounded-xl border-2 border-forest-light bg-forest-pale p-5 text-forest md:flex-row md:items-center"><div><p className="text-xs font-bold uppercase tracking-[0.16em]">Illustrative scenario active</p><p className="mt-1 max-w-3xl text-sm leading-relaxed">Every step is prefilled with a coherent steel-export example. Review the inputs, open the field guidance, and inspect the calculated scenario report in step 8. These values are not evidence and cannot be sealed.</p></div><button type="button" onClick={handleStartBlankCase} disabled={clearingScenario} className="inline-flex shrink-0 items-center justify-center gap-2 rounded border border-forest bg-surface-elevated px-4 py-2 text-sm font-semibold disabled:opacity-50">{clearingScenario ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eraser className="h-4 w-4" />} {clearingScenario ? "Removing…" : "Start with blank case"}</button></aside>}<div className="rounded-lg border border-status-warning/30 bg-[color:var(--status-warning-soft)] p-4 text-xs text-status-warning leading-relaxed print:hidden flex gap-3 items-start"><Shield className="w-4 h-4 text-status-warning shrink-0 mt-0.5" /><div className="space-y-1"><strong>Regulatory Disclaimer:</strong> This platform generates an exporter-prepared verification dossier to streamline independent audit preparation. It is <strong>NOT</strong> an official European Commission verification opinion and does not substitute for independent verification by an EU accredited body.</div></div><StatusBanner status={saveStatus} tone={saveTone} /><nav aria-label="Dossier steps" className="flex gap-3 overflow-x-auto pb-3">{STEPS.map((step) => <button type="button" key={step.id} onClick={() => setCurrentStep(step.id)} className={`min-w-28 rounded-lg border px-3 py-2 text-xs font-bold ${currentStep === step.id ? "border-accent bg-accent text-surface" : "border-border bg-surface text-muted"}`}><span className="block text-sm">{step.id}</span>{step.label}</button>)}</nav><section className="py-4">{stepContent()}</section></div><div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface p-4 shadow-[0_-4px_8px_rgba(0,0,0,0.08)]"><div className="mx-auto flex max-w-6xl items-center justify-between"><button type="button" onClick={() => setCurrentStep((step) => Math.max(1, step - 1))} disabled={currentStep === 1} className="inline-flex items-center gap-2 rounded border border-border px-4 py-2 disabled:opacity-40"><ArrowLeft className="h-4 w-4" /> Previous</button><span className="text-sm font-bold text-muted">Step {currentStep} of 8</span><button type="button" onClick={() => setCurrentStep((step) => Math.min(8, step + 1))} disabled={currentStep === 8} className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-surface disabled:opacity-40">Next <ArrowRight className="h-4 w-4" /></button></div></div></main>;
+  return (
+    <main className="min-h-screen bg-background px-4 py-8 pb-32 text-foreground md:px-8">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <header className="flex flex-col justify-between gap-4 border-b border-border pb-4 md:flex-row md:items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Working file</h1>
+            <p className="text-sm text-muted">
+              ID: {caseData.caseId || "UNASSIGNED"} · User: {sessionUser.email || sessionUser.uid} · One factory · one year
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="inline-flex items-center justify-center gap-2 rounded border border-border bg-neutral-soft px-4 py-2 text-sm font-medium disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{" "}
+            {saving ? "Saving…" : "Save draft"}
+          </button>
+        </header>
+
+        <WorkingFileJourneyStrip
+          currentStep={currentStep}
+          completenessPercentage={readiness.completenessPercentage}
+          blockerCount={readiness.criticalBlockers.length}
+          releasesRemaining={releasesRemaining}
+          unlockablePacks={unlockablePacks}
+          canLock={readiness.isEligibleForSealing && usableEntitlements.length > 0}
+          onGoToStep={setCurrentStep}
+          onLock={() => void handleSeal()}
+        />
+
+        {scenarioActive && (
+          <aside className="flex flex-col justify-between gap-4 rounded-xl border-2 border-forest-light bg-forest-pale p-5 text-forest md:flex-row md:items-center">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em]">Illustrative scenario active</p>
+              <p className="mt-1 max-w-3xl text-sm leading-relaxed">
+                Every step is prefilled with a coherent steel-export example. Review the inputs, open the field guidance, and inspect the calculated scenario report in step 8. These values are not evidence and cannot be locked.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleStartBlankCase}
+              disabled={clearingScenario}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded border border-forest bg-surface-elevated px-4 py-2 text-sm font-semibold disabled:opacity-50"
+            >
+              {clearingScenario ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eraser className="h-4 w-4" />}{" "}
+              {clearingScenario ? "Removing…" : "Start with blank working file"}
+            </button>
+          </aside>
+        )}
+
+        <div className="rounded-lg border border-status-warning/30 bg-[color:var(--status-warning-soft)] p-4 text-xs text-status-warning leading-relaxed print:hidden flex gap-3 items-start">
+          <Shield className="w-4 h-4 text-status-warning shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <strong>Regulatory Disclaimer:</strong> This platform generates an exporter-prepared verification dossier to streamline independent audit preparation. It is <strong>NOT</strong> an official European Commission verification opinion and does not substitute for independent verification by an EU accredited body.
+          </div>
+        </div>
+
+        <StatusBanner status={saveStatus} tone={saveTone} />
+
+        <nav aria-label="Working file steps" className="flex gap-3 overflow-x-auto pb-3">
+          {STEPS.map((step) => (
+            <button
+              type="button"
+              key={step.id}
+              onClick={() => setCurrentStep(step.id)}
+              className={`min-w-28 rounded-lg border px-3 py-2 text-xs font-bold ${
+                currentStep === step.id ? "border-accent bg-accent text-surface" : "border-border bg-surface text-muted"
+              }`}
+            >
+              <span className="block text-sm">{step.id}</span>
+              {step.label}
+            </button>
+          ))}
+        </nav>
+
+        <section className="py-4">{stepContent()}</section>
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface p-4 shadow-[0_-4px_8px_rgba(0,0,0,0.08)]">
+        <div className="mx-auto flex max-w-6xl items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setCurrentStep((step) => Math.max(1, step - 1))}
+            disabled={currentStep === 1}
+            className="inline-flex items-center gap-2 rounded border border-border px-4 py-2 disabled:opacity-40"
+          >
+            <ArrowLeft className="h-4 w-4" /> Previous
+          </button>
+          <span className="text-sm font-bold text-muted">
+            Step {currentStep} of 8 · {STEPS[currentStep - 1]?.label}
+          </span>
+          <button
+            type="button"
+            onClick={() => setCurrentStep((step) => Math.min(8, step + 1))}
+            disabled={currentStep === 8}
+            className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-surface disabled:opacity-40"
+          >
+            Next <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </main>
+  );
 }

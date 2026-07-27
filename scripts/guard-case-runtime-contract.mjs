@@ -95,7 +95,8 @@ requireText(saveContract, "CASE_CREATION_REQUEST_ID_REQUIRED", "Mandatory create
 requireText(newCasePage, "creationRequestId.current", "Stable creation request ID");
 requireText(newCasePage, "requestInFlight.current", "Single-flight creation");
 requireText(newCasePage, "saveCase(draft, undefined, creationRequestId.current", "Idempotent new-case call");
-requireText(newCasePage, "Retry New Case", "Observable creation failure");
+requireText(newCasePage, "Retry new working file", "Observable creation failure");
+requireText(newCasePage, "Creating your working file", "Observable creation progress");
 rejectText(newCasePage, 'router.push("/dashboard")', "Silent new-case dashboard fallback");
 rejectText(newCasePage, 'router.replace("/dashboard")', "Silent new-case dashboard fallback");
 

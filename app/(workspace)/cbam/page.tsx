@@ -38,6 +38,7 @@ import {
   WORKFLOW_STEPS_PLAIN,
 } from "@/lib/product/customer-language";
 import { resolveJourneyState } from "@/lib/product/journey-state";
+import { assessCaseReadiness } from "@/lib/cbam/validation/readiness-assessor";
 
 type ReportRecord = Record<string, unknown>;
 
@@ -177,6 +178,20 @@ export default function CbamLandingPage() {
   }, [reports]);
 
   const primaryWorkingFileId = sortedCases[0]?.caseId ?? null;
+  const primaryReadiness = useMemo(() => {
+    const primary = sortedCases[0];
+    if (!primary?.data) return { blockersOpen: 0, completenessPercentage: 0 };
+    try {
+      const assessment = assessCaseReadiness(primary.data);
+      return {
+        blockersOpen: assessment.criticalBlockers.length,
+        completenessPercentage: assessment.completenessPercentage,
+      };
+    } catch (error) {
+      console.warn("Primary working-file readiness assessment failed", error);
+      return { blockersOpen: 0, completenessPercentage: 0 };
+    }
+  }, [sortedCases]);
 
   const journey = useMemo(
     () =>
@@ -187,8 +202,19 @@ export default function CbamLandingPage() {
         availableCredits,
         primaryWorkingFileId,
         postPurchase,
+        blockersOpen: primaryReadiness.blockersOpen,
+        completenessPercentage: primaryReadiness.completenessPercentage,
       }),
-    [availableCredits, cases.length, primaryWorkingFileId, postPurchase, releasesRemaining, reports.length]
+    [
+      availableCredits,
+      cases.length,
+      postPurchase,
+      primaryReadiness.blockersOpen,
+      primaryReadiness.completenessPercentage,
+      primaryWorkingFileId,
+      releasesRemaining,
+      reports.length,
+    ]
   );
 
   const totalFilePages = Math.ceil(sortedCases.length / ITEMS_PER_PAGE) || 1;

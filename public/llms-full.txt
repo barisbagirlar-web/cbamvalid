@@ -6,7 +6,7 @@
 
 - CBAMValid Exporter Verification Preparation Pack — Prepared for Independent Accredited Verification
 - Pricing: $249 per Exporter Verification Preparation Pack (one-time; no subscription; drafts free; 1 operator; 1 installation; 1 reporting year; 5 sealed releases).
-- Payment flow: Draft free in a working file. Buy the pack once at checkout. Each successful lock uses one of five releases. Failed locks use none. Re-download is free. Packs are scope-locked.
+- Payment flow: Draft free in a working file (eight plain steps). Buy the pack once at checkout. Clear blockers, then lock. Each successful lock uses one of five releases. Failed locks use none. Re-download is free. Packs are scope-locked.
 
 ## Independence boundary
 
@@ -298,7 +298,7 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
   Covers: USD 249 pack inclusions; when card is charged; five sealed releases; scope lock per installation and year
   Entities: USD 249; one-time pack; five sealed releases; scope lock; draft free
   Fan-out: CBAMValid price; CBAM preparation pack cost; is CBAMValid a subscription; when is CBAMValid card charged
-- /how-it-works — Draft-to-seal workflow
+- /how-it-works — Working-file to locked-package workflow
   Covers: case scope setup; evidence linking; seal and download deliverables
   Entities: draft-to-seal workflow; quality blockers; sealed release; O3CI export
   Fan-out: how to prepare CBAM dossier; CBAMValid workflow steps; seal CBAM evidence package

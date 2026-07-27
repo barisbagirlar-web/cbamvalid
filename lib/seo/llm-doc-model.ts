@@ -67,7 +67,7 @@ export function buildLlmDocModel(): LlmDocModel {
     independence: assertVerifiedClaim(INDEPENDENCE_CLAIM, "INDEPENDENCE_CLAIM"),
     pricingLine: `${price.formatted} per ${price.packName} (one-time; no subscription; drafts free; 1 operator; 1 installation; 1 reporting year; 5 sealed releases).`,
     paymentFlow:
-      "Draft free in a working file. Buy the pack once at checkout. Each successful lock uses one of five releases. Failed locks use none. Re-download is free. Packs are scope-locked.",
+      "Draft free in a working file (eight plain steps). Buy the pack once at checkout. Clear blockers, then lock. Each successful lock uses one of five releases. Failed locks use none. Re-download is free. Packs are scope-locked.",
     supportEmail: assertVerifiedClaim(SUPPORT_EMAIL_CLAIM, "SUPPORT_EMAIL_CLAIM"),
     resources,
     topicalMap: TOPICAL_MAP.map((node) => ({
