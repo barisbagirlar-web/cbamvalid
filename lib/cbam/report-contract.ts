@@ -87,7 +87,10 @@ export const SealedReportViewSchema = z.object({
     "READY_FOR_INDEPENDENT_VERIFICATION",
     "BLOCKED_BEFORE_INDEPENDENT_VERIFICATION",
     "READY_FOR_VERIFIER_REVIEW",
+    "OPERATOR_PREPARATION_COMPLETE",
+    "INCOMPLETE_ASSESSMENT",
     "NOT_READY",
+    "CONDITIONAL",
   ]),
   independentVerifierStatus: z.union([
     z.literal("NOT_REVIEWED"),
@@ -136,7 +139,7 @@ export function parseSealedReportView(value: unknown): SealedReportView {
     ...raw,
     ...(packageMetadata ? { packageMetadata } : {}),
     packageTopLevelComponentCount: manifestCount !== undefined ? manifestCount : defaultCount,
-    automatedReadiness: isV5 ? "READY_FOR_VERIFIER_REVIEW" : "READY_FOR_INDEPENDENT_VERIFICATION",
+    automatedReadiness: isV5 ? "OPERATOR_PREPARATION_COMPLETE" : "READY_FOR_INDEPENDENT_VERIFICATION",
     independentVerifierStatus: (raw.independentVerifierStatus as string) || "NOT_REVIEWED",
   });
 }

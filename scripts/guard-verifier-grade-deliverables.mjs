@@ -51,6 +51,20 @@ for (const [source, label] of [[rootLegal, "Legal registry"], [rootRulesets, "Ru
   rejectText(source, "a1b2c3", label);
 }
 
+const premiumPdf = read("functions/src/cbam/report/premium-dossier-pdf.ts");
+const packageComponents = read("functions/src/cbam/report/package-components.ts");
+const readinessScore = read("functions/src/cbam/validation/readiness-score.ts");
+rejectText(premiumPdf, "2023/1776", "Premium dossier PDF must not cite non-CBAM EU 2023/1776");
+rejectText(premiumPdf, "23 controlled components", "Premium dossier annex must not hardcode component count");
+requireText(premiumPdf, "REQUIRED_TOP_LEVEL_COMPONENTS_V5", "Premium dossier annex uses package-component SSOT");
+requireText(premiumPdf, "IMPL_2025_2547", "Premium dossier cites definitive calculation regulation");
+requireText(packageComponents, "REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5", "Package component count SSOT export");
+requireText(readinessScore, "INCOMPLETE_DIMENSION_ASSESSMENT", "Score engine blocks incomplete coverage");
+requireText(readinessScore, "totalWeightedScoreSum.toDecimalPlaces", "Absolute score without assessed-only renormalization");
+requireText(readinessScore, "OPERATOR_PREPARATION_COMPLETE", "Operator preparation complete status");
+requireText(readinessScore, "READY_FOR_ACCREDITED_VERIFIER_ENGAGEMENT", "Accredited verifier engagement decision");
+requireText(readinessScore, "FND-PERIOD-FUTURE-END-DATE", "Future reporting-period end gate");
+
 for (const sourceId of [
   "REG_2023_956",
   "REG_2025_2083",
@@ -108,18 +122,27 @@ for (const text of [
   "NO_OPINION",
 ]) requireText(xlsx, text, "Verifier XLSX contract");
 
-const componentMatches = [...packageBuilder.matchAll(/^\s{2}"([^"]+)",$/gm)].map((match) => match[1]);
+const componentSource = read("functions/src/cbam/report/package-components.ts");
+const componentMatches = [...componentSource.matchAll(/^\s{2}"([^"]+)",$/gm)].map((match) => match[1]);
 const requiredStart = componentMatches.indexOf("Product and Scope Definition.pdf");
 const requiredEnd = componentMatches.indexOf("Supporting_Evidence/");
 const requiredComponents = requiredStart >= 0 && requiredEnd >= requiredStart
   ? componentMatches.slice(requiredStart, requiredEnd + 1)
   : [];
 if (requiredComponents.length !== 27) failures.push(`Verifier package must define exactly 27 top-level components; found ${requiredComponents.length}`);
+const v5Start = componentMatches.indexOf("CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
+const v5End = componentMatches.lastIndexOf("Supporting_Evidence/");
+const v5Components = v5Start >= 0 && v5End >= v5Start
+  ? componentMatches.slice(v5Start, v5End + 1)
+  : [];
+if (v5Components.length !== 25) failures.push(`V5 package must define exactly 25 top-level components; found ${v5Components.length}`);
 requireText(packageBuilder, 'schemaVersion: "CBAMVALID-DOSSIER-4.0"', "Manifest schema v4");
 requireText(packageBuilder, "legalSourceRegistryHash", "Manifest regulatory fingerprint");
 requireText(packageBuilder, "PACKAGE_REOPEN_HASH_MISMATCH", "ZIP read-back hash validation");
 requireText(packageBuilder, "PACKAGE_REOPEN_SIGNATURE_INVALID", "ZIP signature read-back validation");
 requireText(packageBuilder, "PACKAGE_PRIMARY_ARTIFACT_MISSING_OR_TRIVIAL", "Non-trivial primary artifacts");
+requireText(packageBuilder, "REQUIRED_TOP_LEVEL_COMPONENTS_V5", "V5 component contract re-export");
+requireText(packageBuilder, "./package-components", "Package component SSOT import");
 
 requireText(reportContract, "PersistedSealedReportSchema", "Server report schema");
 requireText(browserContract, "SealedReportViewSchema", "Browser report schema");

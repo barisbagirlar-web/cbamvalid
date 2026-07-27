@@ -4,6 +4,39 @@ import type { PremiumDossierViewModelV2 } from "./premium-dossier-schema";
 import { getReportingPeriodAssessment } from "../validation/readiness-score";
 import type { AuditReadyCase } from "../schema";
 import { assertSectorSealable, type CbamSector } from "../sectors/sector-adapter";
+import { OFFICIAL_SOURCES } from "../registry/legal-sources";
+import { REQUIRED_TOP_LEVEL_COMPONENTS_V5, REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5 } from "./package-components";
+
+const CALCULATION_LEGAL_CITATION = `${OFFICIAL_SOURCES.IMPL_2025_2547.title} (CELEX ${OFFICIAL_SOURCES.IMPL_2025_2547.celexId})`;
+const COMPONENT_COUNT_V5 = REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5;
+
+const COMPONENT_ANNEX_DESCRIPTIONS: Record<string, [string, string]> = {
+  "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf": ["PDF", "Primary executive & verifier readiness dossier"],
+  "Complete Dossier Compilation.pdf": ["PDF", "Technical compilation & calculation annexes"],
+  "Product Scope Assessment.pdf": ["PDF", "System boundary & sectoral scope register"],
+  "CN Code Reasoning.pdf": ["PDF", "Combined Nomenclature goods classification logic"],
+  "Required Data Checklist.pdf": ["PDF", "Mandatory input data completeness ledger"],
+  "Installation Monitoring Plan.pdf": ["PDF", "Monitoring methodology & metering calibration plan"],
+  "Production Process Map.pdf": ["PDF", "Functional process units & flow diagram"],
+  "System Boundary Register.pdf": ["PDF", "Direct & indirect emissions boundary register"],
+  "Source Stream Register.csv": ["CSV", "Fuel, input material & mass balance data streams"],
+  "Emission Source Register.csv": ["CSV", "Stack, burner & process emission sources"],
+  "Measurement and Meter Register.csv": ["CSV", "Metering instruments & uncertainty log"],
+  "Activity Data Ledger.csv": ["CSV", "Daily/monthly raw activity data records"],
+  "Evidence Register.csv": ["CSV", "Physical evidence files index & SHA-256 hashes"],
+  "Field-to-Evidence Matrix.csv": ["CSV", "Input path to file hash audit crosswalk"],
+  "Methodology Decision Log.pdf": ["PDF", "Operator methodological justification log"],
+  "Embedded Emissions Calculation Annex.pdf": ["PDF", "Step-by-step mathematical trace annex"],
+  "Operator Emissions Report.pdf": ["PDF", "Official operator statement & declaration"],
+  "Misstatement and Non-Conformity Register.csv": ["CSV", "Quality controls & findings register"],
+  "Corrective Action Log.csv": ["CSV", "Remediation action tracking ledger"],
+  "O3CI Field Mapping.csv": ["CSV", "Registry export data field crosswalk"],
+  "Calculation Trace.json": ["JSON", "Machine-readable cryptographic node hash tree"],
+  "Verifier Workspace.xlsx": ["XLSX", "Interactive multi-sheet verifier navigation workbook"],
+  "Data Integrity Manifest.json": ["JSON", "Cryptographic package manifest & hash index"],
+  "Manifest Signature.sig": ["SIG", "KMS detached signature over the integrity manifest"],
+  "Supporting_Evidence/": ["DIR", "Tenant-bound source evidence binaries"],
+};
 
 const PAGE_WIDTH = 210;
 const MARGIN = 15;
@@ -105,7 +138,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     y += totalHeight + 3;
   };
 
-  const drawTable = (headers: string[], rows: any[][], widths?: number[]) => {
+  const drawTable = (headers: string[], rows: unknown[][], widths?: number[]) => {
     if (headers.length === 0) return;
     const colWidths = widths && widths.length === headers.length
       ? widths.map(w => (w / widths.reduce((s, x) => s + x, 0)) * CONTENT_WIDTH)
@@ -143,7 +176,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
 
       while (cellLines.some(lines => lines.length > 0)) {
         const availableHeight = BODY_BOTTOM - y;
-        let linesThatFit = Math.floor((availableHeight - 4) / 3.6);
+        const linesThatFit = Math.floor((availableHeight - 4) / 3.6);
         
         if (linesThatFit < 1) {
           doc.addPage();
@@ -197,7 +230,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   };
 
 
-  const tablePreview = (headers: string[], rows: any[][], widths?: number[]): SectionPreview => {
+  const tablePreview = (headers: string[], rows: unknown[][], widths?: number[]): SectionPreview => {
     const colWidths = widths && widths.length === headers.length
       ? widths.map(w => (w / widths.reduce((s, x) => s + x, 0)) * CONTENT_WIDTH)
       : Array.from({ length: headers.length }, () => CONTENT_WIDTH / headers.length);
@@ -209,9 +242,9 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     
     let rowsHeight = 0;
     const firstTwo = rows.slice(0, 2);
-    firstTwo.forEach((row, rowIndex) => {
+    firstTwo.forEach((row) => {
       const cellLines = headers.map((_, colIndex) =>
-        doc.splitTextToSize(asText(row[colIndex]), colWidths[colIndex] - 2) as string[]
+        doc.splitTextToSize(asText((row as unknown[])[colIndex]), colWidths[colIndex] - 2) as string[]
       );
       const maxLines = Math.max(...cellLines.map(lines => lines.length));
       rowsHeight += Math.max(6, maxLines * 3.5 + 2);
@@ -243,7 +276,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
 
     const headingHeight = 9;
     ensure(headingHeight + requiredHeight);
-    sectionPages[num] = num === 4 ? 3 : (doc.internal as any).getCurrentPageInfo().pageNumber;
+    sectionPages[num] = num === 4 ? 3 : (doc.internal as unknown as { getCurrentPageInfo: () => { pageNumber: number } }).getCurrentPageInfo().pageNumber;
     doc.setFillColor(231, 237, 244);
     doc.rect(MARGIN, y, CONTENT_WIDTH, 7, "F");
     doc.setTextColor(20, 42, 74);
@@ -305,9 +338,14 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   doc.setTextColor(190, 200, 215);
   doc.text("Prepared for Independent Accredited Verifier Review", MARGIN, 58);
 
-  // Status Box on Cover
-  const periodAssessment = getReportingPeriodAssessment(caseData);
-  const isReady = model.readiness.operatorStatus === "READY_FOR_VERIFIER_REVIEW" && periodAssessment.definitiveAnnualEligible;
+  // Status Box on Cover — always use sealed generatedAt, never wall-clock Date.now()
+  const periodAssessment = model.reportingPeriodAssessment ?? getReportingPeriodAssessment(caseData, model.generatedAt);
+  const isReady =
+    model.readiness.operatorStatus === "OPERATOR_PREPARATION_COMPLETE" &&
+    model.readiness.recommendedDecision === "READY_FOR_ACCREDITED_VERIFIER_ENGAGEMENT" &&
+    periodAssessment.definitiveAnnualEligible &&
+    periodAssessment.completenessStatus === "PASSED" &&
+    Number(model.readiness.assessedCoveragePercent) >= 100;
   
   // Emerald Green for pass, Muted Red for failure/remediation
   doc.setFillColor(isReady ? 20 : 180, isReady ? 83 : 40, isReady ? 45 : 40);
@@ -318,7 +356,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   doc.setFontSize(7.5);
   doc.text("OPERATOR READINESS STATUS", MARGIN + 5, 83);
   doc.setFontSize(10.5);
-  doc.text(isReady ? "READY_FOR_VERIFIER_REVIEW" : "REMEDIATION REQUIRED", MARGIN + 5, 92);
+  doc.text(isReady ? "OPERATOR_PREPARATION_COMPLETE" : "REMEDIATION REQUIRED", MARGIN + 5, 92);
 
   // Score Box on Cover (Sophisticated dark slate)
   doc.setFillColor(34, 50, 75);
@@ -376,7 +414,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   doc.text(`Sealed Package Hash: ${model.manifestSummary?.packageHash || "NOT_AVAILABLE"}`, MARGIN + 6, 211);
   doc.text(`KMS Key Version: ${model.manifestSummary?.kmsKeyVersion || "NOT_AVAILABLE"}`, MARGIN + 6, 216);
   doc.text(`KMS Signature Prefix: ${model.manifestSummary?.signatureBase64 ? model.manifestSummary.signatureBase64.substring(0, 32) + "..." : "NOT_AVAILABLE"}`, MARGIN + 6, 221);
-  const componentCount = model.manifestSummary?.requiredTopLevelComponentCount || 25;
+  const componentCount = model.manifestSummary?.requiredTopLevelComponentCount || COMPONENT_COUNT_V5;
   doc.text(`Sealed Package Integrity: All ${componentCount} controlled package components frozen & digitally signed.`, MARGIN + 6, 226);
 
   // Cover Legal Boundary statement
@@ -468,10 +506,11 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     [22, 22, 22, 20, 22, 22, 50]
   );
  
-  const decisionExplanation = model.readiness.recommendedDecision === "READY_TO_HAND_OVER"
-    ? "All hard gates passed. No critical blockers or unapproved evidence records. The case is ready to hand over to an independent accredited verifier."
-    : "Gaps or blockers detected. Remediation is required before submitting to an independent accredited verifier. Please check the corrective action plan.";
+  const decisionExplanation = model.readiness.recommendedDecision === "READY_FOR_ACCREDITED_VERIFIER_ENGAGEMENT"
+    ? "All hard gates passed with 100% weighted dimension coverage. Operator preparation is complete and ready for accredited verifier engagement."
+    : "Gaps, incomplete assessment coverage, or blockers detected. Remediation is required before accredited verifier engagement.";
   drawCallout("Recommended Action Context", decisionExplanation);
+  drawParagraph(`Assessed coverage: ${model.readiness.assessedCoveragePercent}% of weighted dimensions. Passed within assessed: ${model.readiness.passedWithinAssessedPercent}%.`);
  
   // ==========================================
   // PAGE 5: READINESS SCORE AND HARD GATES
@@ -493,7 +532,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     title: "Readiness Score and Hard Gates",
     preview: () => tablePreview(dimHeaders, dimRows, [50, 18, 18, 20, 30])
   });
-  drawParagraph("The 100-point diagnostic score is computed based on 8 weighted dimensions. Hard blockers will override this score and force NOT_READY status.");
+  drawParagraph("The diagnostic score is the absolute sum of weighted dimension scores out of 100. NOT_ASSESSED dimensions contribute zero and prevent OPERATOR_PREPARATION_COMPLETE. Hard blockers override the score and force NOT_READY.");
   drawTable(dimHeaders, dimRows, [50, 18, 18, 20, 30]);
  
   // ==========================================
@@ -537,17 +576,24 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     ["Covered Days count", `${periodAssessment.coveredDays} days`],
     ["Expected Days count", `${periodAssessment.expectedDays} days`],
     ["Completeness Percentage", `${periodAssessment.completenessPercent}%`],
-    ["Definitive Annual Eligible", periodAssessment.definitiveAnnualEligible ? "YES (PASSED)" : "NO (BLOCKED - Quarterly or partial-year period detected)"],
+    ["Completeness Status", periodAssessment.completenessStatus],
+    ["Assessment Timestamp", model.generatedAt],
+    ["Definitive Annual Eligible", periodAssessment.definitiveAnnualEligible ? "YES (PASSED)" : "NO (BLOCKED)"],
   ];
   beginSection({
     number: 8,
     title: "Reporting Period Assessment",
     preview: () => tablePreview(["Reporting Attribute", "Value"], periodRows, [60, 120])
   });
-  drawParagraph(`Calendar-aware analysis of the reporting period for definitive annual verification eligibility.`);
+  drawParagraph(`Calendar-aware analysis of the reporting period for definitive annual verification eligibility. Period end must not exceed the assessment timestamp.`);
   drawTable(["Reporting Attribute", "Value"], periodRows, [60, 120]);
-  if (!periodAssessment.definitiveAnnualEligible) {
-    drawCallout("Reporting Period Hard Blocker", "The reporting period is not a definitive annual period. A quarterly or partial-year period cannot pass definitive annual verifier readiness.");
+  if (!periodAssessment.definitiveAnnualEligible || periodAssessment.completenessStatus === "BLOCKED") {
+    drawCallout(
+      "Reporting Period Hard Blocker",
+      periodAssessment.hardBlockerFindingIds.includes("FND-PERIOD-FUTURE-END-DATE")
+        ? "Reporting period end date is after the assessment timestamp. Future-period annual completeness cannot PASS and READY_FOR_ACCREDITED_VERIFIER_ENGAGEMENT is prohibited."
+        : "The reporting period is not a definitive annual period eligible for operator preparation completion."
+    );
   }
 
   // Section 9: Goods and CN Classification
@@ -700,7 +746,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
 
   // Section 21: Data Quality, Uncertainty, and Missing Data
   beginSection(21, "Data Quality, Uncertainty, and Missing Data", 35);
-  drawParagraph("The operator-supplied activity data and monitoring instruments are evaluated against standard EU ETS / CBAM uncertainty tiers (Implementing Regulation (EU) 2023/1776 Annex III). No data gaps were auto-filled using unverified figures.");
+  drawParagraph(`The operator-supplied activity data and monitoring instruments are evaluated against definitive-period embedded-emissions methodology under ${CALCULATION_LEGAL_CITATION}. No data gaps were auto-filled using unverified figures.`);
   drawTable(
     ["Declared Data Stream", "Measurement Method", "Evidence Document ID", "Compliance Status"],
     [
@@ -859,36 +905,15 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     [50, 50, 50, 30]
   );
 
-  // Section 30: Technical Annex Index
+  // Section 30: Technical Annex Index — component list is SSOT from REQUIRED_TOP_LEVEL_COMPONENTS_V5
   beginSection(30, "Technical Annex Index", 35);
-  drawParagraph("The sealed ZIP package contains the following 23 controlled components required for independent verifier review:");
+  drawParagraph(`The sealed ZIP package contains the following ${COMPONENT_COUNT_V5} controlled components required for independent verifier review:`);
   drawTable(
     ["Filename in Sealed Package ZIP", "Type", "Verification Target & Content Description"],
-    [
-      ["CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf", "PDF", "Primary 30-Section Executive & Verifier Dossier"],
-      ["Complete Dossier Compilation.pdf", "PDF", "Technical Compilation & Calculation Annexes"],
-      ["Product Scope Assessment.pdf", "PDF", "System Boundary & Sectoral Scope Register"],
-      ["CN Code Reasoning.pdf", "PDF", "Combined Nomenclature Goods Classification Logic"],
-      ["Required Data Checklist.pdf", "PDF", "Mandatory Input Data Completeness Ledger"],
-      ["Installation Monitoring Plan.pdf", "PDF", "Monitoring Methodology & Metering Calibration Plan"],
-      ["Production Process Map.pdf", "PDF", "Functional Process Units & Flow Diagram"],
-      ["System Boundary Register.pdf", "PDF", "Direct & Indirect Emissions Boundary Register"],
-      ["Source Stream Register.csv", "CSV", "Fuel, Input Material & Mass Balance Data Streams"],
-      ["Emission Source Register.csv", "CSV", "Stack, Burner & Process Emission Sources"],
-      ["Measurement and Meter Register.csv", "CSV", "Metering Instruments & Uncertainty Log"],
-      ["Activity Data Ledger.csv", "CSV", "Daily/Monthly Raw Activity Data Records"],
-      ["Evidence Register.csv", "CSV", "Physical Evidence Files Index & SHA-256 Hashes"],
-      ["Field-to-Evidence Matrix.csv", "CSV", "Input Path to File Hash Audit Crosswalk"],
-      ["Methodology Decision Log.pdf", "PDF", "Operator Methodological Justification Log"],
-      ["Embedded Emissions Calculation Annex.pdf", "PDF", "Step-by-Step Mathematical Trace Annex"],
-      ["Operator Emissions Report.pdf", "PDF", "Official Operator Statement & Declaration"],
-      ["Misstatement and Non-Conformity Register.csv", "CSV", "Quality Controls & Findings Register"],
-      ["Corrective Action Log.csv", "CSV", "Remediation Action Tracking Ledger"],
-      ["O3CI Field Mapping.csv", "CSV", "Registry Export Data Field Crosswalk"],
-      ["Calculation Trace.json", "JSON", "Machine-Readable Cryptographic Node Hash Tree"],
-      ["Verifier Workspace.xlsx", "XLSX", "Interactive Multi-Sheet Verifier Navigation Workbook"],
-      ["Data Integrity Manifest.json", "JSON", "Cryptographic Package Manifest & Hash Index"],
-    ],
+    REQUIRED_TOP_LEVEL_COMPONENTS_V5.map((name) => {
+      const meta = COMPONENT_ANNEX_DESCRIPTIONS[name] || ["FILE", "Controlled package component"];
+      return [name, meta[0], meta[1]];
+    }),
     [70, 20, 90]
   );
 

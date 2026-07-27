@@ -81,7 +81,7 @@ const SECTIONS = [
   {
     n: 14,
     t: 'Ruleset & Sources',
-    html: '<span class="doc-eyebrow">Section 14</span><h3>Ruleset &amp; Sources</h3><table><tr><td>Regulation (EU) 2023/956</td><td>Applied</td></tr><tr><td>Impl. Reg. (EU) 2023/1773</td><td>Applied</td></tr><tr><td>Ruleset version</td><td>2026.1-DEMO</td></tr></table><div class="watermark">Fictional demonstration data.</div>'
+    html: '<span class="doc-eyebrow">Section 14</span><h3>Ruleset &amp; Sources</h3><table><tr><td>Regulation (EU) 2023/956</td><td>Applied</td></tr><tr><td>Impl. Reg. (EU) 2025/2546</td><td>Verification</td></tr><tr><td>Impl. Reg. (EU) 2025/2547</td><td>Calculation</td></tr><tr><td>Del. Reg. (EU) 2025/2551</td><td>Accreditation</td></tr><tr><td>Ruleset version</td><td>EU-CBAM-DEFINITIVE-2026</td></tr></table><div class="watermark">Fictional demonstration data.</div>'
   },
   {
     n: 15,

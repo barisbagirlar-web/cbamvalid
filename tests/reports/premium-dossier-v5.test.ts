@@ -14,19 +14,15 @@ import {
   finalizeVerifierPackage,
   type DataIntegrityManifest,
 } from "../../functions/src/cbam/report/verifier-package-builder";
-import { buildVerifierPackageModel } from "../../functions/src/cbam/report/verifier-model";
-import { DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT } from "../../functions/src/cbam/registry/legal-sources";
 import type { KmsSignatureResult } from "../../functions/src/cbam/report/kms-signature";
 import {
   FIXTURE_GENERATED_AT,
   FIXTURE_REPORT_ID,
-  FIXTURE_EVIDENCE_ID,
   createVerifierEvidenceFiles,
   createVerifierGradeCase,
 } from "../fixtures/verifier-grade-case";
 import { assessReadiness, getReportingPeriodAssessment } from "../../functions/src/cbam/validation/readiness-score";
 import { generateFindingsAndActions } from "../../functions/src/cbam/validation/findings-engine";
-import { runEvidenceSufficiency } from "../../functions/src/cbam/validation/evidence-sufficiency";
 
 async function verifyPdfGeometry(pdfBytes: Buffer) {
   const document = await pdfjsLib.getDocument({
@@ -45,7 +41,7 @@ async function verifyPdfGeometry(pdfBytes: Buffer) {
     const width = viewport.width;
     const height = viewport.height;
 
-    content.items.forEach((item: any) => {
+    content.items.forEach((item) => {
       if (!("str" in item) || !item.str.trim()) return;
       
       const tx = item.transform; // [scaleX, skewX, skewY, scaleY, x, y]
@@ -141,9 +137,12 @@ describe("premium-dossier-v5 deliverables", () => {
     // Test base readiness
     const readiness = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: "2027-01-15" });
     console.log("DEBUG_READINESS:", JSON.stringify(readiness, null, 2));
-    expect(readiness.operatorStatus).toBe("READY_FOR_VERIFIER_REVIEW");
+    expect(readiness.operatorStatus).toBe("OPERATOR_PREPARATION_COMPLETE");
     expect(parseFloat(readiness.score)).toBeGreaterThanOrEqual(90);
+    expect(parseFloat(readiness.assessedCoveragePercent)).toBe(100);
+    expect(readiness.recommendedDecision).toBe("READY_FOR_ACCREDITED_VERIFIER_ENGAGEMENT");
     expect(readiness.criticalBlockerCount).toBe(0);
+    expect(readiness.dimensions.every((d) => d.assessmentState === "ASSESSED")).toBe(true);
 
     // Test PARTIALLY_SUPPORTED evidence blocking sealing/readiness
     const dirtyCase = JSON.parse(JSON.stringify(caseData));
@@ -422,6 +421,7 @@ describe("premium-dossier-v5 deliverables", () => {
     const fyAss = getReportingPeriodAssessment(fyCase, "2027-01-15");
     expect(fyAss.type).toBe("DEFINITIVE_ANNUAL");
     expect(fyAss.definitiveAnnualEligible).toBe(true);
+    expect(fyAss.completenessStatus).toBe("PASSED");
 
     // 6. leap-year full year
     const leapCase = makePeriodCase("2024", "ANNUAL", "2024-01-01", "2024-12-31");
@@ -449,12 +449,65 @@ describe("premium-dossier-v5 deliverables", () => {
     const futureCase = makePeriodCase("2099", "ANNUAL", "2099-01-01", "2099-12-31");
     const futAss = getReportingPeriodAssessment(futureCase, "2027-01-15");
     expect(futAss.hardBlockerFindingIds).toContain("FND-PERIOD-FUTURE-END-DATE");
+    expect(futAss.completenessStatus).toBe("BLOCKED");
+    expect(futAss.completenessPercent).toBe("0");
+    expect(futAss.definitiveAnnualEligible).toBe(false);
+
+    // 10b. mid-year assessment cannot PASS full-year 2026 completeness
+    const midYearCase = makePeriodCase("2026", "ANNUAL", "2026-01-01", "2026-12-31");
+    const midAss = getReportingPeriodAssessment(midYearCase, "2026-07-27T12:00:00.000Z");
+    expect(midAss.hardBlockerFindingIds).toContain("FND-PERIOD-FUTURE-END-DATE");
+    expect(midAss.completenessStatus).toBe("BLOCKED");
+    expect(midAss.definitiveAnnualEligible).toBe(false);
 
     // 11. custom internal period
     const customCase = makePeriodCase("2026", "CUSTOM_PERIOD", "2026-03-01", "2026-08-15");
     const custAss = getReportingPeriodAssessment(customCase, "2027-01-15");
     expect(custAss.type).toBe("CUSTOM_INTERNAL");
     expect(custAss.definitiveAnnualEligible).toBe(false);
+  });
+
+  it("blocks READY decision when any readiness dimension is NOT_ASSESSED and never renormalizes to 100", () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    // Minimal identity-only case without material evidence/methods — forces sparse assessment.
+    caseData.evidenceRegister = [];
+    caseData.methodologyDecisions = [];
+    caseData.goods = [];
+    caseData.directEmissions.evidenceId = undefined;
+    caseData.electricityConsumed.evidenceId = undefined;
+    caseData.gridEmissionFactor.evidenceId = undefined;
+
+    const readiness = assessReadiness({
+      caseData,
+      isDraft: false,
+      assessmentTimestamp: FIXTURE_GENERATED_AT,
+    });
+
+    const unassessedWeight = readiness.dimensions
+      .filter((d) => d.assessmentState === "NOT_ASSESSED")
+      .reduce((sum, d) => sum + Number(d.weight), 0);
+
+    if (unassessedWeight > 0) {
+      expect(Number(readiness.score)).toBeLessThan(100);
+      expect(readiness.recommendedDecision).not.toBe("READY_FOR_ACCREDITED_VERIFIER_ENGAGEMENT");
+      expect(readiness.operatorStatus === "INCOMPLETE_ASSESSMENT" || readiness.operatorStatus === "NOT_READY").toBe(true);
+    }
+
+    // Absolute scoring invariant: score cannot exceed assessedCoverage.
+    expect(Number(readiness.score)).toBeLessThanOrEqual(Number(readiness.assessedCoveragePercent) + 0.01);
+  });
+
+  it("rejects goods lineage / methodology contamination (one-good vs two-goods)", () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    // Collapse to one good but leave stale goods.1 lineage + two-goods methodology text.
+    caseData.goods = [caseData.goods[1]!];
+    caseData.goods[0]!.allocationShare = {
+      ...caseData.goods[0]!.allocationShare!,
+      value: "1",
+    };
+    const controls = runQualityControls(caseData);
+    const goodsConsistency = controls.find((c) => c.ruleId === "QC_12");
+    expect(goodsConsistency?.status).toBe("BLOCKER");
   });
 
   it("verifies PDF visual geometry and ensures all 30 sections, IDs and labels are present without silent truncation", async () => {
@@ -477,6 +530,12 @@ describe("premium-dossier-v5 deliverables", () => {
     expect(text).toContain("Prepared for Independent");
     expect(text).toContain("Verified Steel Operator GmbH");
     expect(text).toContain("NOT_PROVIDED");
+    expect(text).not.toContain("2023/1776");
+    expect(text).toContain("2025/2547");
+    expect(text).toContain(`${REQUIRED_TOP_LEVEL_COMPONENTS_V5.length} controlled`);
+    expect(text).toContain("OPERATOR_PREPARATION_COMPLETE");
+    expect(text).toContain("72011011");
+    expect(text).toContain("72011019");
 
     console.log(`Verified PDF Geometry successfully. Total pages: ${pages}`);
   });

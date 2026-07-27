@@ -10,6 +10,7 @@ import { assertKmsSigningConfigured, signManifestWithKms } from "./kms-signature
 import {
   type EvidenceBinary,
 } from "./verifier-package-builder";
+import { REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5 } from "./package-components";
 import type { SealAssessmentContext } from "./premium-dossier-schema";
 import { CommercialReportPipelineV2 } from "./commercial-report-pipeline-v2";
 
@@ -303,7 +304,7 @@ export async function sealReport(params: {
   requestId: string;
   inputData: unknown;
   correctionReason?: string;
-  auth?: any;
+  auth?: unknown;
 }): Promise<SealingResult> {
   assertKmsSigningConfigured();
   const configDoc = await adminDb.collection("system").doc("config").get();
@@ -379,14 +380,16 @@ export async function sealReport(params: {
         const { generateFindingsAndActions } = await import("../validation/findings-engine");
         const sufficiency = runEvidenceSufficiency(caseData, assessmentContext.assessmentTimestamp);
         const { findings } = generateFindingsAndActions(caseData, assessmentContext.assessmentTimestamp);
-        const err = new Error("SEALING_BLOCKED_BY_V5_READINESS_GATES");
-        (err as any).details = {
+        const err = new Error("SEALING_BLOCKED_BY_V5_READINESS_GATES") as Error & {
+          details?: Record<string, unknown>;
+        };
+        err.details = {
           operatorStatus: readinessV5.operatorStatus,
           criticalBlockerCount: readinessV5.criticalBlockerCount,
           missingMaterialEvidenceCount: readinessV5.missingMaterialEvidenceCount,
           decisionReasonCodes: readinessV5.decisionReasonCodes,
-          findings: findings.filter((f: any) => f.status === "OPEN"),
-          sufficiency: sufficiency.filter((r: any) => r.state !== "SUPPORTED")
+          findings: findings.filter((f) => f.status === "OPEN"),
+          sufficiency: sufficiency.filter((r) => r.state !== "SUPPORTED")
         };
         throw err;
       }
@@ -453,7 +456,7 @@ export async function sealReport(params: {
 
     const documentHash = signature.manifestHash; // redefined as manifestHash compatible with old schema
     const caseDocumentId = await resolveCaseDocumentId(params.caseId);
-    const reportRecord: any = {
+    const reportRecord: Record<string, unknown> = {
       reportId: identity.reportId,
       uid: params.uid,
       caseId: params.caseId,
@@ -489,10 +492,10 @@ export async function sealReport(params: {
       const publicVerificationTokenHash = crypto.createHash("sha256").update(publicVerificationToken).digest("hex");
 
       const manifestObj = manifest.manifest;
-      const evidenceFiles = manifestObj.files.filter((f: any) => f.path.startsWith("Supporting_Evidence/"));
+      const evidenceFiles = manifestObj.files.filter((f: { path: string }) => f.path.startsWith("Supporting_Evidence/"));
       
-      const components = new Set();
-      manifestObj.files.forEach((f: any) => {
+      const components = new Set<string>();
+      manifestObj.files.forEach((f: { path: string }) => {
         const slash = f.path.indexOf("/");
         components.add(slash >= 0 ? `${f.path.slice(0, slash)}/` : f.path);
       });
@@ -500,7 +503,7 @@ export async function sealReport(params: {
 
       const packageMetadata = {
         schemaVersion: manifestObj.schemaVersion,
-        requiredTopLevelComponentCount: 25,
+        requiredTopLevelComponentCount: REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5,
         actualTopLevelComponentCount,
         manifestFileCount: manifestObj.files.length,
         evidenceFileCount: evidenceFiles.length,

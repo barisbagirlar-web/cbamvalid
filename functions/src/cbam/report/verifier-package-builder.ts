@@ -22,64 +22,17 @@ import { generateFindingsAndActions } from "../validation/findings-engine";
 import { assessReadiness, getReportingPeriodAssessment } from "../validation/readiness-score";
 import { buildPremiumDossierPdf } from "./premium-dossier-pdf";
 import type { PremiumDossierViewModel, PremiumDossierViewModelV2, SealAssessmentContext } from "./premium-dossier-schema";
+import {
+  REQUIRED_TOP_LEVEL_COMPONENTS,
+  REQUIRED_TOP_LEVEL_COMPONENTS_V5,
+  REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5,
+} from "./package-components";
 
-export const REQUIRED_TOP_LEVEL_COMPONENTS = [
-  "Product and Scope Definition.pdf",
-  "CN Code Classification.pdf",
-  "Data Request Checklist.pdf",
-  "Monitoring Plan Summary.pdf",
-  "Process Map.pdf",
-  "System Boundary.pdf",
-  "Source Stream Register.csv",
-  "Emission Source Register.csv",
-  "Meter Register.csv",
-  "Activity Data Ledger.csv",
-  "Evidence Register.csv",
-  "Field Evidence Matrix.csv",
-  "Methodology Decision Log.pdf",
-  "Calculation Annex.pdf",
-  "Operator Emissions Report.pdf",
-  "Operator Summary Statement.pdf",
-  "Verification Readiness Assessment.pdf",
-  "Misstatement Register.csv",
-  "Corrective Action Log.csv",
-  "O3CI Field Mapping.csv",
-  "Calculation Trace.json",
-  "Data Integrity Manifest.json",
-  "Manifest Signature.sig",
-  "Units and Conversions Register.csv",
-  "Carbon Price Register.csv",
-  "Verifier Workspace.xlsx",
-  "Supporting_Evidence/",
-] as const;
-
-export const REQUIRED_TOP_LEVEL_COMPONENTS_V5 = [
-  "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf",
-  "Complete Dossier Compilation.pdf",
-  "Product Scope Assessment.pdf",
-  "CN Code Reasoning.pdf",
-  "Required Data Checklist.pdf",
-  "Installation Monitoring Plan.pdf",
-  "Production Process Map.pdf",
-  "System Boundary Register.pdf",
-  "Source Stream Register.csv",
-  "Emission Source Register.csv",
-  "Measurement and Meter Register.csv",
-  "Activity Data Ledger.csv",
-  "Evidence Register.csv",
-  "Field-to-Evidence Matrix.csv",
-  "Methodology Decision Log.pdf",
-  "Embedded Emissions Calculation Annex.pdf",
-  "Operator Emissions Report.pdf",
-  "Misstatement and Non-Conformity Register.csv",
-  "Corrective Action Log.csv",
-  "O3CI Field Mapping.csv",
-  "Calculation Trace.json",
-  "Verifier Workspace.xlsx",
-  "Data Integrity Manifest.json",
-  "Manifest Signature.sig",
-  "Supporting_Evidence/",
-] as const;
+export {
+  REQUIRED_TOP_LEVEL_COMPONENTS,
+  REQUIRED_TOP_LEVEL_COMPONENTS_V5,
+  REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5,
+} from "./package-components";
 
 export type EvidenceBinary = { evidenceId: string; fileName: string; bytes: Buffer };
 export type PackageArtifact = { path: string; bytes: Buffer; mediaType: string };
@@ -335,12 +288,12 @@ function buildPdfArtifacts(params: {
       requirementCrosswalk: crosswalk,
       calculationTrace: params.calculation.trace,
       manifestSummary: {
-        totalFiles: 25,
+        totalFiles: REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5,
         manifestHash: "",
         packageHash: "",
-        requiredTopLevelComponentCount: 25,
-        actualTopLevelComponentCount: 25,
-        manifestFileCount: 25,
+        requiredTopLevelComponentCount: REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5,
+        actualTopLevelComponentCount: REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5,
+        manifestFileCount: REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5,
         evidenceFileCount: model.evidenceSummary.totalEvidenceFiles,
         kmsKeyVersion: "",
         kmsAlgorithm: "",

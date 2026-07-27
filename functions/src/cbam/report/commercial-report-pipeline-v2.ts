@@ -17,7 +17,9 @@ import { assessReadiness, getReportingPeriodAssessment } from "../validation/rea
 import { generateFindingsAndActions } from "../validation/findings-engine";
 import { runEvidenceSufficiency } from "../validation/evidence-sufficiency";
 import { buildVerificationCrosswalk } from "../registry/verification-template-2025-2546";
+import type { PremiumDossierViewModelV2 } from "./premium-dossier-schema";
 import type { KmsSignatureResult } from "./kms-signature";
+import { REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5 } from "./package-components";
 
 function canonical(value: unknown): string {
   if (value === null || value === undefined) return "";
@@ -111,9 +113,7 @@ export class CommercialReportPipelineV2 {
     const sufficiency = runEvidenceSufficiency(params.caseData);
     const crosswalk = buildVerificationCrosswalk(params.caseData);
 
-    const activeComponents = unsignedArtifacts.length;
-
-    const updatedDossierModel: any = {
+    const updatedDossierModel: PremiumDossierViewModelV2 = {
       schemaVersion: "CBAMVALID-DOSSIER-5.0",
       productCode: "pack_premium_dossier_v5",
       releaseContractVersion: 5,
@@ -128,6 +128,11 @@ export class CommercialReportPipelineV2 {
       caseDataHash: crypto.createHash("sha256").update(canonical(params.caseData)).digest("hex"),
       calculationRootHash: params.calculation.calculationRootHash,
       identity: verifierModel.identity,
+      scope: {
+        sector: params.caseData.goods[0]?.sector || "UNKNOWN",
+        processes: params.caseData.goods.map((g) => g.sector),
+        cnCodes: params.caseData.goods.map((g) => String(g.cnCode.value || "")),
+      },
       totals: verifierModel.totals,
       goods: verifierModel.goods,
       precursors: params.caseData.precursors.map(p => ({
@@ -137,28 +142,18 @@ export class CommercialReportPipelineV2 {
         indirectEmissions: String(p.indirectEmissions.value || ""),
         countryOfOrigin: String(p.countryOfOrigin.value || ""),
       })),
-      readiness: {
-        score: readiness.score,
-        operatorStatus: readiness.operatorStatus,
-        criticalBlockerCount: readiness.criticalBlockerCount,
-        materialFindingCount: readiness.materialFindingCount,
-        openFindingCount: readiness.openFindingCount,
-        missingMaterialEvidenceCount: readiness.missingMaterialEvidenceCount,
-        unresolvedCalculationExceptionCount: readiness.unresolvedCalculationExceptionCount,
-        recommendedDecision: readiness.recommendedDecision,
-        dimensions: readiness.dimensions,
-      },
+      readiness,
       findings,
       correctiveActions,
       evidenceSufficiency: sufficiency,
       requirementCrosswalk: crosswalk,
       calculationTrace: params.calculation.trace,
       manifestSummary: {
-        totalFiles: activeComponents + 2, // including Manifest and Signature files
+        totalFiles: REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5,
         manifestHash: signature.manifestHash,
         packageHash: packageHash,
-        requiredTopLevelComponentCount: 25,
-        actualTopLevelComponentCount: 25,
+        requiredTopLevelComponentCount: REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5,
+        actualTopLevelComponentCount: REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5,
         manifestFileCount: manifestResult.manifest.files.length,
         evidenceFileCount: params.evidenceFiles.length,
         kmsKeyVersion: signature.keyVersion,

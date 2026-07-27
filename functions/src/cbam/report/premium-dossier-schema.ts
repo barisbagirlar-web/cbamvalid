@@ -179,6 +179,7 @@ export const ReadinessDimensionSchema = z.object({
   weight: z.string(),
   rawScore: z.string(),
   weightedScore: z.string(),
+  assessmentState: z.enum(["ASSESSED", "NOT_ASSESSED"]),
   passedRequirementCount: z.number().int().nonnegative(),
   applicableRequirementCount: z.number().int().nonnegative(),
   blockerFindingIds: z.array(z.string()),
@@ -190,7 +191,8 @@ export const OperatorReadinessStatusSchema = z.enum([
   "DRAFT",
   "NOT_READY",
   "CONDITIONAL",
-  "READY_FOR_VERIFIER_REVIEW",
+  "INCOMPLETE_ASSESSMENT",
+  "OPERATOR_PREPARATION_COMPLETE",
 ]);
 export type OperatorReadinessStatus = z.infer<typeof OperatorReadinessStatusSchema>;
 
@@ -207,6 +209,8 @@ export const ReadinessAssessmentSchema = z.object({
   independentVerifierStatus: IndependentVerifierStatusSchema,
   score: z.string(),
   scoreScale: z.literal("0-100"),
+  assessedCoveragePercent: z.string(),
+  passedWithinAssessedPercent: z.string(),
   dimensions: z.array(ReadinessDimensionSchema).length(8),
   criticalBlockerCount: z.number().int().nonnegative(),
   materialFindingCount: z.number().int().nonnegative(),
@@ -214,7 +218,7 @@ export const ReadinessAssessmentSchema = z.object({
   missingMaterialEvidenceCount: z.number().int().nonnegative(),
   unresolvedCalculationExceptionCount: z.number().int().nonnegative(),
   recommendedDecision: z.enum([
-    "DO_NOT_SUBMIT", "REMEDIATE_BEFORE_REVIEW", "READY_TO_HAND_OVER",
+    "DO_NOT_SUBMIT", "REMEDIATE_BEFORE_REVIEW", "READY_FOR_ACCREDITED_VERIFIER_ENGAGEMENT",
   ]),
   canSeal: z.boolean(),
   decisionReasonCodes: z.array(z.string().min(1)),

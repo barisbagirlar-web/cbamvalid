@@ -1,14 +1,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { 
   ShieldCheck, 
   ShieldAlert, 
   Download, 
-  Clock, 
   Globe, 
-  CheckCircle, 
   AlertTriangle,
   Loader2, 
   Building,
@@ -97,18 +96,20 @@ export default function TokenVerificationPage() {
           <ShieldAlert className="w-16 h-16 text-accent mx-auto mb-6 opacity-80" />
           <h1 className="text-2xl font-bold text-foreground mb-3">Verification Failed</h1>
           <p className="text-muted mb-8 text-sm leading-relaxed">{error || "Invalid verification record."}</p>
-          <a 
+          <Link 
             href="/verify" 
             className="inline-flex items-center justify-center px-6 py-3 border border-border hover:border-border-strong text-foreground font-medium rounded-xl transition-all"
           >
             Go back to Manual Search
-          </a>
+          </Link>
         </div>
       </main>
     );
   }
 
-  const isReady = data.operatorReadinessStatus === "READY_FOR_VERIFIER_REVIEW";
+  const isReady =
+    data.operatorReadinessStatus === "OPERATOR_PREPARATION_COMPLETE" ||
+    data.operatorReadinessStatus === "READY_FOR_VERIFIER_REVIEW";
   const readinessScoreVal = parseFloat(data.readinessScore || "0");
 
   return (

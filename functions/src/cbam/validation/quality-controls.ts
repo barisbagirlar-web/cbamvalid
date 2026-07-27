@@ -128,5 +128,48 @@ export function runQualityControls(caseData: AuditReadyCase): QualityControlResu
     if (!record.proofOfPaymentEvidenceId || !caseData.evidenceRegister.some((evidence) => evidence.evidenceId === record.proofOfPaymentEvidenceId && evidence.reviewStatus === "APPROVED" && evidence.malwareScanStatus === "CLEAN")) add(`QC_11_${record.id}`, "Carbon price proof", "BLOCKER", "Carbon-price reduction requires approved payment evidence.", "REM_LINK_CARBON_PRICE_EVIDENCE");
   }
   if (caseData.carbonPriceRecords.length === 0) add("QC_11", "Carbon price records", "NOT_APPLICABLE");
+
+  // Cross-artifact goods consistency — block stale methodology / lineage leakage
+  const goodsCount = caseData.goods.length;
+  let lineageOutOfBounds = false;
+  for (const evidence of caseData.evidenceRegister) {
+    for (const path of evidence.linkedInputs) {
+      const match = /^goods\.(\d+)(?:\.|$)/.exec(path);
+      if (!match) continue;
+      const index = Number(match[1]);
+      if (!Number.isInteger(index) || index < 0 || index >= goodsCount) {
+        lineageOutOfBounds = true;
+      }
+    }
+  }
+  const allocationDecision = caseData.methodologyDecisions.find(
+    (d) => d.topic === "GOODS_EMISSIONS_ALLOCATION" && d.reviewStatus === "ACCEPTED"
+  );
+  let methodologyGoodsMismatch = false;
+  if (allocationDecision) {
+    const text = `${allocationDecision.selectedMethod} ${allocationDecision.reason}`.toLowerCase();
+    const claimsTwo = /\btwo goods\b|\b0\.6\b.*\b0\.4\b|\b0\.4\b.*\b0\.6\b/.test(text);
+    const claimsSingle = /\bsingle good\b|\b100%\b|\bshare of 1\b/.test(text);
+    if (claimsTwo && goodsCount !== 2) methodologyGoodsMismatch = true;
+    if (claimsSingle && goodsCount !== 1) methodologyGoodsMismatch = true;
+    if (goodsCount === 1 && claimsTwo) methodologyGoodsMismatch = true;
+    if (goodsCount > 1 && !acceptedMethod(caseData, "GOODS_EMISSIONS_ALLOCATION")) {
+      // already covered by QC_05A; keep consistency explicit
+    }
+  }
+  if (lineageOutOfBounds || methodologyGoodsMismatch) {
+    add(
+      "QC_12",
+      "Goods cross-artifact consistency",
+      "BLOCKER",
+      lineageOutOfBounds
+        ? `Evidence lineage references goods index outside goods.length=${goodsCount}.`
+        : `Methodology decision describes a goods population inconsistent with goods.length=${goodsCount}.`,
+      "REM_ALIGN_GOODS_STATE"
+    );
+  } else {
+    add("QC_12", "Goods cross-artifact consistency", "PASS");
+  }
+
   return results;
 }

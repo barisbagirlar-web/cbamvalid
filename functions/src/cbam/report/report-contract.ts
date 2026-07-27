@@ -83,7 +83,10 @@ export const SealedReportViewSchema = PersistedSealedReportSchema.extend({
     "READY_FOR_INDEPENDENT_VERIFICATION",
     "BLOCKED_BEFORE_INDEPENDENT_VERIFICATION",
     "READY_FOR_VERIFIER_REVIEW",
+    "OPERATOR_PREPARATION_COMPLETE",
+    "INCOMPLETE_ASSESSMENT",
     "NOT_READY",
+    "CONDITIONAL",
   ]),
   independentVerifierStatus: z.union([
     z.literal("NOT_REVIEWED"),
@@ -116,11 +119,23 @@ export function toSealedReportView(value: unknown): SealedReportView {
 
   const manifestCount = report.packageMetadata?.actualTopLevelComponentCount;
   const defaultCount = isV5 ? 25 : 27;
+  const storedStatus = typeof raw.operatorReadinessStatus === "string" ? raw.operatorReadinessStatus : undefined;
+  const automatedReadiness = storedStatus === "OPERATOR_PREPARATION_COMPLETE" ||
+    storedStatus === "INCOMPLETE_ASSESSMENT" ||
+    storedStatus === "NOT_READY" ||
+    storedStatus === "CONDITIONAL" ||
+    storedStatus === "READY_FOR_VERIFIER_REVIEW"
+    ? storedStatus === "READY_FOR_VERIFIER_REVIEW"
+      ? "OPERATOR_PREPARATION_COMPLETE"
+      : storedStatus
+    : isV5
+      ? "OPERATOR_PREPARATION_COMPLETE"
+      : "READY_FOR_INDEPENDENT_VERIFICATION";
 
   return SealedReportViewSchema.parse({
     ...report,
     packageTopLevelComponentCount: manifestCount !== undefined ? manifestCount : defaultCount,
-    automatedReadiness: isV5 ? "READY_FOR_VERIFIER_REVIEW" : "READY_FOR_INDEPENDENT_VERIFICATION",
+    automatedReadiness,
     independentVerifierStatus: "NOT_REVIEWED",
     verificationMaterialityRate: VERIFICATION_MATERIALITY_RATE,
   });

@@ -186,9 +186,12 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
   const calculation = report.calculation;
   const storageByFile = report.storage || {};
   
-  // Successful automated readiness state is READY_FOR_VERIFIER_REVIEW in V5
+  // Successful automated readiness state is OPERATOR_PREPARATION_COMPLETE in V5
   const isV5 = report.dossierSchemaVersion === "CBAMVALID-DOSSIER-5.0";
-  const ready = report.automatedReadiness === "READY_FOR_INDEPENDENT_VERIFICATION" || report.automatedReadiness === "READY_FOR_VERIFIER_REVIEW";
+  const ready =
+    report.automatedReadiness === "READY_FOR_INDEPENDENT_VERIFICATION" ||
+    report.automatedReadiness === "OPERATOR_PREPARATION_COMPLETE" ||
+    report.automatedReadiness === "READY_FOR_VERIFIER_REVIEW";
   
   const componentCount = report.packageTopLevelComponentCount;
   const zipFileIndex = storageByFile["dossier.zip"] || storageByFile["Complete signed dossier package.zip"];
