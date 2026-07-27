@@ -404,8 +404,8 @@ function validateAeoDiscoverySurfaces(): GateResult[] {
     results.push(fail("G26", "Glossary SSOT too thin for enterprise entity coverage"));
   }
 
-  if (!/generateSitemaps/.test(readFileSync(resolve("app/sitemap.ts"), "utf8"))) {
-    results.push(fail("G26", "app/sitemap.ts must emit multi-sitemap index via generateSitemaps"));
+  if (!/listSitemapRoutes/.test(readFileSync(resolve("app/sitemap.ts"), "utf8"))) {
+    results.push(fail("G26", "app/sitemap.ts must emit registry-backed URLs via listSitemapRoutes"));
   }
 
   if (!results.some((r) => r.id === "G26" && !r.ok)) {
