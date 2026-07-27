@@ -649,3 +649,29 @@ h3{font-size:1.35rem}
 }
 .authority-lead{margin:0 0 24px;max-width:none}
 .authority-lead-empathy{margin:10px 0 0;color:var(--ink-2);font-size:.9rem}
+.authority-answer-first{
+  max-width:800px;
+  margin:0 auto 20px;
+  border-color:var(--terra-line);
+  background:rgba(216,243,220,.35);
+}
+.authority-fanout{max-width:800px;margin:24px auto 0}
+.authority-fanout-list,.aeo-fanout-chips{
+  list-style:none;
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  padding:0;
+  margin:12px 0 0;
+  justify-content:center;
+}
+.authority-fanout-list li,.aeo-fanout-chips li{
+  font-size:.84rem;
+  color:var(--ink-2);
+  border:1px solid var(--line);
+  background:var(--card);
+  border-radius:var(--r-sm);
+  padding:8px 12px;
+}
+.aeo-fanout-section{background:var(--paper)}
+.speakable-answer{color:inherit}

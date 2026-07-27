@@ -47,6 +47,18 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Q: How do exporters prepare for independent CBAM verification?
   A: Assemble complete, evidence-linked emissions data, methodology decisions, and closed material findings so an independent accredited verifier can perform assurance work. CBAMValid prepares the package; it does not issue the verification opinion. Verifiers need consistent, evidence-linked data — not a reconstructed email history.
   Pages: /cbam-verification-preparation, /cbam-exporter-evidence-requirements, /sample-dossier
+- Q: Why not just send a spreadsheet when an EU buyer asks for CBAM evidence?
+  A: A spreadsheet usually cannot prove evidence lineage, ruleset version, fail-closed quality controls, or an integrity hash. CBAMValid seals an operator-prepared dossier with calculation traces, evidence register, and immutable release hashes so a buyer or verifier can inspect what was locked. Buyer pressure often arrives before your files are audit-ready. The risk is not formatting — it is defending numbers without evidence, method pins, or a sealed integrity trail.
+  Pages: /, /product, /how-it-works, /sample-dossier
+- Q: Can one USD 249 pack cover a second plant or another reporting year?
+  A: No. $249 covers one locked working file: one legal operator, one production installation, and one reporting year, with 5 successful sealed releases inside that scope. Another plant or year requires another pack. Procurement teams often hope one purchase covers the group. Scope lock prevents silent widening that would break evidence and entitlement integrity.
+  Pages: /, /pricing, /product
+- Q: What should I do first if my EU buyer asks for actual CBAM emissions evidence this week?
+  A: Start a free draft for one installation and one reporting year, confirm CN scope, enter production and emissions inputs you already have, link available evidence, and clear visible blockers. Buy the pack only when you are ready to seal a handover package — drafting does not charge your card. Urgent buyer emails create panic buys. The durable move is to make gaps visible first, then seal a defendable package — without claiming an accredited verification opinion.
+  Pages: /, /how-it-works, /cbam-non-eu-producer-guide, /cbam-2026-definitive-period
+- Q: Is CBAMValid an official European Commission service?
+  A: No. CBAMValid is an independent software service for exporter-to-importer evidence packaging. It is not an EU institution, customs authority, or accredited CBAM verifier. Procurement and legal teams need a clear independence boundary before they trust a vendor with emissions data.
+  Pages: /about, /contact, /
 
 ## Authority chains (Direct Answer → Calculation → Explanation → Methodology → Evidence → Expert → Related)
 
@@ -284,6 +296,32 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Entities: CBAM methodology; ruleset versioning; reproducible traces
 - Fan-out queries: CBAM methodology overview; CBAM ruleset version; CBAM calculation reproducibility
 
+### /about
+- Primary question: Who is CBAMValid and what independence boundary applies?
+- Empathy: Buyers and compliance teams need to know whether a vendor is an official EU service — or an independent preparation tool with clear limits.
+- Direct answer: CBAMValid is an independent software service that helps exporters and importers prepare evidence-linked CBAM dossiers. It is not an EU institution, customs authority, accredited CBAM verifier, or CBAM Registry submission service.
+- Calculation: Mathematical engines and allocation logic are reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (IIT Bombay). That review supports calculation integrity — it is not an accredited verification opinion.
+- Explanation: Use CBAMValid to compile scope, evidence, calculations, and sealed packages for handover to buyers or independent verifiers.
+- Methodology: Public methodology pages cite versioned rulesets and Regulation (EU) 2023/956-family sources; sealed packages pin the ruleset used at seal time.
+- Evidence: Independence and support identity claims are product-policy facts published on About, Legal Notice, and contact surfaces.
+- Expert: Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.
+- Related: /contact, /methodology, /product
+- Entities: CBAMValid; independent software service; IIT Bombay mathematical review
+- Fan-out queries: is CBAMValid an official EU service; who reviews CBAMValid calculations; CBAMValid independence notice
+
+### /contact
+- Primary question: How do I contact CBAMValid for technical, billing, or legal questions?
+- Empathy: When a seal is blocked or a buyer is waiting, you need a real inbox — not a ticket black hole.
+- Direct answer: Email info@cbamvalid.com for technical, dossier, and billing help. Legal and privacy requests use the published legal and privacy addresses on the contact page. Typical response window is 24–48 business hours.
+- Calculation: Support does not recalculate sealed releases client-side. Authoritative numbers remain those sealed by the server engine for a specific case snapshot.
+- Explanation: Include your case ID, reporting year, and the blocker text when asking for technical help so diagnosis stays fast.
+- Methodology: Support answers product and workflow questions; accredited verification opinions remain outside CBAMValid’s scope.
+- Evidence: Canonical support identity is info@cbamvalid.com as published in site legal configuration.
+- Expert: Support staff explain product boundaries. Academic mathematical review of engines is separate from day-to-day support tickets.
+- Related: /pricing, /about, /refund-policy
+- Entities: info@cbamvalid.com; technical support; billing support
+- Fan-out queries: CBAMValid support email; CBAMValid billing contact; CBAMValid GDPR contact
+
 ## Topical map (topic → entities → fan-out → links)
 
 - / — CBAM exporter verification preparation
@@ -358,19 +396,27 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
   Covers: ruleset versioning; reproducible calculation traces
   Entities: CBAM methodology; ruleset versioning; reproducible traces
   Fan-out: CBAM methodology overview; CBAM ruleset version; CBAM calculation reproducibility
+- /about — Independence and expert review boundary
+  Covers: is CBAMValid an official EU service; academic mathematical review boundary
+  Entities: CBAMValid; independent software service; IIT Bombay mathematical review
+  Fan-out: is CBAMValid an official EU service; who reviews CBAMValid calculations; CBAMValid independence notice
+- /contact — Support, billing, and legal contact
+  Covers: CBAMValid support email; billing and GDPR contacts
+  Entities: info@cbamvalid.com; technical support; billing support
+  Fan-out: CBAMValid support email; CBAMValid billing contact; CBAMValid GDPR contact
 
 ## Core public resources
 
 - [CBAM Exporter Final Evidence Report](https://cbamvalid.com): CBAM verification preparation software
-- [Exporter Verification Preparation Pack](https://cbamvalid.com/product): CBAM verification preparation product
+- [When spreadsheets fail under verifier questions](https://cbamvalid.com/product): CBAM verification preparation product
 - [Exporter Verification Preparation Pack](https://cbamvalid.com/pricing): CBAMValid pricing
-- [How CBAMValid Works](https://cbamvalid.com/how-it-works): CBAMValid workflow
+- [From raw plant data to a sealed package — without email chaos](https://cbamvalid.com/how-it-works): CBAMValid workflow
 - [Sample Verification Preparation Dossier](https://cbamvalid.com/sample-dossier): CBAM sample dossier
-- [Understand CBAM Calculation Methodology](https://cbamvalid.com/methodology): CBAM calculation methodology
+- [When a verifier asks “which rules?”, you need a dated answer](https://cbamvalid.com/methodology): CBAM calculation methodology
 - [Verify CBAM CN-Code Scope](https://cbamvalid.com/cn-code): CBAM CN code scope
 - [Verify a Dossier](https://cbamvalid.com/verify): CBAMValid dossier verification
-- [About CBAMValid](https://cbamvalid.com/about): About CBAMValid
-- [Contact CBAMValid](https://cbamvalid.com/contact): Contact CBAMValid
+- [Independent CBAM preparation — with clear limits](https://cbamvalid.com/about): About CBAMValid
+- [Need help before a buyer deadline?](https://cbamvalid.com/contact): Contact CBAMValid
 - [CBAM 2026 Definitive Period](https://cbamvalid.com/cbam-2026-definitive-period): CBAM definitive period 2026
 - [Calculate CBAM Embedded Emissions](https://cbamvalid.com/cbam-embedded-emissions-calculation): how to calculate embedded emissions
 - [Actual Values vs Default Values](https://cbamvalid.com/cbam-actual-vs-default-values): CBAM actual vs default values
@@ -396,6 +442,13 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - IMPL_2025_2546: [Commission Implementing Regulation (EU) 2025/2546 of 10 December 2025 on the application of the principles for verification of declared embedded emissions pursuant to Regulation (EU) 2023/956](https://eur-lex.europa.eu/eli/reg_impl/2025/2546/oj/eng)
 - IMPL_2025_2547: [Commission Implementing Regulation (EU) 2025/2547 of 10 December 2025 laying down rules for the application of Regulation (EU) 2023/956 as regards the methods for the calculation of emissions embedded in goods](https://eur-lex.europa.eu/eli/reg_impl/2025/2547/oj/eng)
 - IMPL_2025_2548: [Commission Implementing Regulation (EU) 2025/2548 of 10 December 2025 laying down rules for the application of Regulation (EU) 2023/956 as regards the calculation and publication of the price of CBAM certificates](https://eur-lex.europa.eu/eli/reg_impl/2025/2548/oj/eng)
+
+## Machine-readable feeds
+
+- Answers JSON-LD feed: https://cbamvalid.com/answers.json
+- LLM index: https://cbamvalid.com/llms.txt
+- LLM full index: https://cbamvalid.com/llms-full.txt
+- AI crawler policy: https://cbamvalid.com/.well-known/ai.txt
 
 ## Contact
 

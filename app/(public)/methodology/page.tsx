@@ -16,10 +16,16 @@ export default function Page() {
     <div className="wrap">
       <div style={{"maxWidth":"760px"}}>
         <span className="eyebrow">Methodology &amp; Sources</span>
-        <h1>Every calculation pins to a <span className="serif-i">named, versioned ruleset</span></h1>
-        <p className="lede">When a verifier asks “which rules did you follow?”, your dossier answers precisely. CBAMValid never silently changes methods — each ruleset is named, dated and recorded inside the sealed report.</p>
+        <h1>When a verifier asks “which rules?”, you need a dated answer</h1>
+        <p className="lede">CBAMValid never silently changes methods — each ruleset is named, dated and recorded inside the sealed report.</p>
         <p className="aeo-lead">
-          <strong>Why this matters under review:</strong> vague “we followed latest guidance” answers fail. You need a dated method reference inside the package — and honesty that sealing is preparation, not accreditation.
+          <strong>Direct answer:</strong>{" "}
+          <span className="speakable-answer">
+            Authoritative calculations pin to a named, versioned ruleset recorded in the sealed dossier. Historical seals keep the ruleset they were built against.
+          </span>
+        </p>
+        <p className="authority-lead-empathy" style={{ marginTop: "10px", color: "var(--ink-2)" }}>
+          <strong>The pressure you are under:</strong> vague “we followed latest guidance” answers fail. You need a dated method reference — and honesty that sealing is preparation, not accreditation.
         </p>
       </div>
     </div>

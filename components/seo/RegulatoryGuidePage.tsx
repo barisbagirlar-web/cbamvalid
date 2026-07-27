@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { JsonLdForRoute } from "@/components/seo/JsonLdForRoute";
 import { AuthorityChainSection, AuthorityLead } from "@/components/seo/AuthorityChain";
-import { AnswerEvidenceSection, TopicalMapSection } from "@/components/seo/AnswerEvidenceSection";
+import { AnswerEvidenceSection, FanOutQueriesSection, TopicalMapSection } from "@/components/seo/AnswerEvidenceSection";
 import { requireSeoRoute } from "@/lib/seo/registry";
 import { getAuthorityChain } from "@/lib/seo/aeo/authority-chains";
 import {
@@ -80,6 +80,7 @@ export function RegulatoryGuidePage({
       ))}
 
       <AnswerEvidenceSection path={path} heading="Cited answers for this topic" limit={2} />
+      <FanOutQueriesSection path={path} />
       <TopicalMapSection path={path} />
 
       <section className="mb-10 rounded-md border border-border bg-surface p-6">

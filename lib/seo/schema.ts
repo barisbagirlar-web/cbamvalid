@@ -193,6 +193,98 @@ export function generateProductOfferSchema(): JsonLdNode {
 }
 
 /**
+ * Google Assistant / voice / answer-engine speakable selectors.
+ * Points at visible Direct Answer surfaces already rendered on critical URLs.
+ */
+export function generateSpeakableSchema(path: string): JsonLdNode {
+  return {
+    "@type": "WebPage",
+    "@id": `${buildCanonicalUrl(path)}#speakable`,
+    url: buildCanonicalUrl(path),
+    speakable: {
+      "@type": "SpeakableSpecification",
+      cssSelector: [".speakable-answer", ".authority-direct", ".aeo-lead", ".aeo-direct"],
+    },
+  };
+}
+
+/** HowTo for the draft → buy → seal workflow (how-it-works). */
+export function generateHowToSealSchema(): JsonLdNode {
+  const price = assertVerifiedClaim(PRICE_CLAIM, "PRICE_CLAIM");
+  return {
+    "@type": "HowTo",
+    "@id": `${siteConfig.canonicalOrigin}/how-it-works#howto`,
+    name: "How to prepare and seal a CBAMValid Exporter Verification Preparation Pack",
+    description:
+      "Define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, buy the pack at checkout, then seal immutable releases.",
+    totalTime: "P14D",
+    estimatedCost: {
+      "@type": "MonetaryAmount",
+      currency: price.currency,
+      value: price.amount,
+    },
+    tool: {
+      "@type": "HowToTool",
+      name: price.packName,
+    },
+    step: [
+      {
+        "@type": "HowToStep",
+        position: 1,
+        name: "Create a scoped working file",
+        text: "Define one legal operator, one production installation, and one reporting year.",
+        url: `${siteConfig.canonicalOrigin}/how-it-works#direct-answer`,
+      },
+      {
+        "@type": "HowToStep",
+        position: 2,
+        name: "Enter goods and production data",
+        text: "Add CN codes, production quantities, routes, precursors, and emission inputs with units.",
+      },
+      {
+        "@type": "HowToStep",
+        position: 3,
+        name: "Link evidence and clear blockers",
+        text: "Attach supporting documents, resolve fail-closed quality controls, and close material findings.",
+      },
+      {
+        "@type": "HowToStep",
+        position: 4,
+        name: "Buy the Preparation Pack",
+        text: `Purchase the ${price.formatted} one-time pack at checkout when you are ready to seal.`,
+        url: `${siteConfig.canonicalOrigin}/pricing`,
+      },
+      {
+        "@type": "HowToStep",
+        position: 5,
+        name: "Seal and download",
+        text: "Seal an immutable release and download PDF, JSON, and O3CI field-mapped exports with an integrity manifest.",
+        url: `${siteConfig.canonicalOrigin}/sample-dossier`,
+      },
+    ],
+  };
+}
+
+/** Nested DefinedTermSet from page entities — helps LLM entity grounding. */
+export function generateDefinedTermSetSchema(params: {
+  path: string;
+  entities: readonly string[];
+}): JsonLdNode | null {
+  if (params.entities.length === 0) return null;
+  return {
+    "@type": "DefinedTermSet",
+    "@id": `${buildCanonicalUrl(params.path)}#terms`,
+    name: `CBAMValid entities for ${params.path}`,
+    hasDefinedTerm: params.entities.map((entity, index) => ({
+      "@type": "DefinedTerm",
+      "@id": `${buildCanonicalUrl(params.path)}#term-${index + 1}`,
+      name: entity,
+      inDefinedTermSet: `${buildCanonicalUrl(params.path)}#terms`,
+    })),
+  };
+}
+
+/**
  * Universal nested entity graph for LLM / answer-engine retrieval.
  * Product + Offer (price/stock) + Author + Expert Person + Organization in one @graph.
  * Review/AggregateRating intentionally omitted — unverified social proof is forbidden.
@@ -242,6 +334,11 @@ export function generateUniversalEntityGraph(params: {
       mentions: aboutEntities,
       mainEntity: { "@id": `${siteConfig.canonicalOrigin}/#product` },
       inLanguage: "en",
+      speakable: {
+        "@type": "SpeakableSpecification",
+        cssSelector: [".speakable-answer", ".authority-direct", ".aeo-lead", ".aeo-direct"],
+      },
+      significantLink: (chain?.relatedProblems ?? []).map((item) => buildCanonicalUrl(item.href)),
     },
   ];
 
@@ -261,6 +358,16 @@ export function generateUniversalEntityGraph(params: {
         },
       ],
     });
+
+    const termSet = generateDefinedTermSetSchema({
+      path: params.path,
+      entities: chain.entities,
+    });
+    if (termSet) nodes.push(termSet);
+  }
+
+  if (params.path === "/how-it-works") {
+    nodes.push(generateHowToSealSchema());
   }
 
   return buildPageGraph(nodes);

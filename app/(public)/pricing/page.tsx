@@ -35,7 +35,17 @@ export default function PricingPage() {
             {CANONICAL_PRICING.valueSummary}
           </p>
           <p className="aeo-lead" style={{ margin: "0 auto 18px" }}>
-            <strong>Why this price exists:</strong> EU buyers ask for defendable actuals. You need correction room (five seals), not a disposable export — and not an open-ended subscription while you finish evidence work.
+            <strong>Direct answer:</strong>{" "}
+            <span className="speakable-answer">
+              USD 249 is a one-time Exporter Verification Preparation Pack: unlimited drafts and five
+              successful sealed releases for one operator, one installation, and one reporting year.
+              Drafting is free. The card is charged at checkout — not while you edit drafts.
+            </span>
+          </p>
+          <p className="authority-lead-empathy" style={{ margin: "0 auto 18px", maxWidth: "62ch", color: "var(--ink-2)" }}>
+            <strong>The pressure you are under:</strong> EU buyers ask for defendable actuals. You need
+            correction room (five seals), not a disposable export — and not an open-ended subscription
+            while you finish evidence work.
           </p>
           <p className="lede" style={{ margin: "0 auto 22px", fontSize: "1rem", opacity: 0.9 }}>
             {CANONICAL_PRICING.paymentFlowSummary}

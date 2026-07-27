@@ -29,6 +29,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
       "/cbam-2026-definitive-period",
       "/cbam-verification-preparation",
       "/cbam-non-eu-producer-guide",
+      "/about",
     ],
     covers: [
       "what is CBAMValid",
@@ -239,6 +240,30 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
     ],
     ...chainExtras("/cbam-methodology"),
   },
+  {
+    path: "/about",
+    topic: "Independence and expert review boundary",
+    role: "spoke",
+    parentPath: "/",
+    childPaths: ["/contact", "/methodology", "/product", "/legal-notice"],
+    covers: [
+      "is CBAMValid an official EU service",
+      "academic mathematical review boundary",
+    ],
+    ...chainExtras("/about"),
+  },
+  {
+    path: "/contact",
+    topic: "Support, billing, and legal contact",
+    role: "commercial",
+    parentPath: "/about",
+    childPaths: ["/about", "/pricing", "/refund-policy", "/privacy"],
+    covers: [
+      "CBAMValid support email",
+      "billing and GDPR contacts",
+    ],
+    ...chainExtras("/contact"),
+  },
 ] satisfies readonly TopicalNode[];
 
 const LABEL_BY_PATH: Record<string, string> = {
@@ -262,6 +287,10 @@ const LABEL_BY_PATH: Record<string, string> = {
   "/cbam-cn-code-scope": "CN code scope guide",
   "/credits/buy": "Buy Preparation Pack",
   "/about": "About",
+  "/contact": "Contact",
+  "/legal-notice": "Legal notice",
+  "/refund-policy": "Refund policy",
+  "/privacy": "Privacy",
 };
 
 export function getTopicalNode(path: string): TopicalNode | undefined {

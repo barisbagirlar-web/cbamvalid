@@ -23,7 +23,17 @@ export default function HomePageClient() {
         <h1>CBAM Exporter<br /><span className="serif-i">Final Evidence Report</span></h1>
         <p className="lede">When an EU buyer asks for actual embedded-emissions evidence, you need a package you can defend — not a fragile spreadsheet. Build one installation, one reporting year, link evidence, clear blockers, then seal a verifier-preparation dossier.</p>
         <p className="aeo-lead">
-          <strong>Direct answer:</strong> USD 249 buys one scoped Exporter Verification Preparation Pack — unlimited drafts and five successful sealed releases for that operator, installation, and year. Card charged at checkout. Not an accredited verification opinion.
+          <strong>Direct answer:</strong>{" "}
+          <span className="speakable-answer">
+            USD 249 buys one scoped Exporter Verification Preparation Pack — unlimited drafts and five
+            successful sealed releases for that operator, installation, and year. Card charged at
+            checkout. Not an accredited verification opinion.
+          </span>
+        </p>
+        <p className="authority-lead-empathy" style={{ maxWidth: "62ch", marginTop: "10px", color: "var(--ink-2)" }}>
+          <strong>The pressure you are under:</strong> Buyer requests arrive before your evidence package
+          is ready. You need a defendable dossier for one plant and one year — without pretending the
+          software issued an accredited verification opinion.
         </p>
         <p className="price-line">USD 249 per Exporter Verification Preparation Pack. <span>No subscription. Drafts are free. Five sealed releases.</span></p>
         <div className="hero-ctas">
@@ -62,7 +72,7 @@ export default function HomePageClient() {
     <div className="wrap">
       <div className="section-head center reveal">
         <span className="eyebrow">Academic Oversight &amp; Expert Review</span>
-        <h2>Rigorous Mathematical Integrity</h2>
+        <h2>You need math you can defend — not a black-box number</h2>
       </div>
       <div className="academic-card reveal">
         <div className="academic-badge" aria-hidden="true">IIT</div>
@@ -83,7 +93,7 @@ export default function HomePageClient() {
     <div className="wrap">
       <div className="section-head center reveal">
         <span className="eyebrow">Guided Process</span>
-        <h2>Five-Step Evidence Compilation Workflow</h2>
+        <h2>When the buyer asks this week, start here</h2>
         <p>From raw production data to a sealed verifier-preparation package — draft free, then buy the pack before sealing.</p>
       </div>
       <div className="timeline">
@@ -119,7 +129,7 @@ export default function HomePageClient() {
     <div className="wrap">
       <div className="section-head reveal">
         <span className="eyebrow">What You Receive</span>
-        <h2>Three deliverables, <span className="serif-i">one sealed package</span></h2>
+        <h2>Stop sending fragile files. <span className="serif-i">Seal one package.</span></h2>
         <p>Every dossier is locked with an integrity manifest — hashes, ruleset version and seal timestamp — so your buyer or verifier can confirm it was never altered.</p>
       </div>
       <div className="deliv-grid">
@@ -187,7 +197,7 @@ export default function HomePageClient() {
     <div className="wrap">
       <div className="section-head center reveal">
         <span className="eyebrow">Simple Pricing</span>
-        <h2>One scoped pack. <span className="serif-i">Five sealed releases.</span></h2>
+        <h2>Pay once when ready to seal — <span className="serif-i">not while you are still drafting.</span></h2>
         <p>Draft free. Buy once at checkout. Each successful seal uses one of five releases. Failed seals use none.</p>
       </div>
       <div className="pricing-grid">
@@ -238,7 +248,7 @@ export default function HomePageClient() {
     <div className="wrap">
       <div className="section-head center reveal">
         <span className="eyebrow">Short FAQ</span>
-        <h2>Boundaries before you commit</h2>
+        <h2>Boundaries before you spend money or promise a buyer</h2>
       </div>
       <div className="faq-list">
         <FaqItem

@@ -1,6 +1,7 @@
-import { writeFileSync } from "node:fs";
+import { writeFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { buildLlmDocModel, renderLlmsFullTxt, renderLlmsTxt } from "../../lib/seo/llm-doc-model";
+import { renderAiTxt } from "../../lib/seo/ai-txt";
 import { siteConfig } from "../../lib/site-config";
 
 const DISALLOW_PRIVATE = [
@@ -60,6 +61,11 @@ writeFileSync(resolve(root, "public/llm.txt"), llms, "utf8");
 writeFileSync(resolve(root, "public/llms-full.txt"), full, "utf8");
 writeFileSync(resolve(root, "public/robots.txt"), robots, "utf8");
 
+const wellKnownDir = resolve(root, "public/.well-known");
+mkdirSync(wellKnownDir, { recursive: true });
+writeFileSync(resolve(wellKnownDir, "ai.txt"), renderAiTxt(), "utf8");
+writeFileSync(resolve(root, "public/ai-policy.txt"), renderAiTxt(), "utf8");
+
 console.log(
-  "Generated public/llms.txt, public/llm.txt, public/llms-full.txt, public/robots.txt from SEO SSOT",
+  "Generated public/llms.txt, public/llm.txt, public/llms-full.txt, public/robots.txt, public/.well-known/ai.txt, public/ai-policy.txt from SEO SSOT",
 );

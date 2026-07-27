@@ -19,37 +19,49 @@ const CHAIN_STEPS: {
 ];
 
 /**
- * Visible authority chain: Direct Answer → Calculation → Explanation →
- * Methodology → Evidence → Expert → Related Problems.
+ * Visible authority chain: Direct Answer first (retrieval + user), then empathy,
+ * then Calculation → Explanation → Methodology → Evidence → Expert → Related.
  * Additive marketing/SEO surface only.
  */
 export function AuthorityChainSection({ path }: { path: string }) {
   const chain = getAuthorityChain(path);
   if (!chain) return null;
 
+  const followOnSteps = CHAIN_STEPS.filter((step) => step.key !== "directAnswer");
+
   return (
-    <section className="section authority-chain" aria-labelledby={`authority-h-${path.replace(/\W/g, "")}`}>
+    <section
+      className="section authority-chain"
+      aria-labelledby={`authority-h-${path.replace(/\W/g, "")}`}
+      data-speakable="authority-chain"
+    >
       <div className="wrap">
         <div className="section-head center reveal">
           <span className="eyebrow">Answer engine authority chain</span>
           <h2 id={`authority-h-${path.replace(/\W/g, "")}`}>{chain.primaryQuestion}</h2>
         </div>
 
+        <div className="authority-step authority-answer-first reveal" id="direct-answer">
+          <div className="authority-step-meta">
+            <span className="authority-step-num">01</span>
+            <span className="authority-step-label">Direct answer</span>
+          </div>
+          <p className="authority-direct speakable-answer">{chain.directAnswer}</p>
+        </div>
+
         <div className="authority-empathy reveal" role="note">
-          <p className="authority-empathy-label">The real problem</p>
+          <p className="authority-empathy-label">The pressure you are under</p>
           <p>{chain.empathyLead}</p>
         </div>
 
-        <ol className="authority-steps">
-          {CHAIN_STEPS.map((step, index) => (
+        <ol className="authority-steps" start={2}>
+          {followOnSteps.map((step, index) => (
             <li key={step.id} id={step.id} className="authority-step reveal">
               <div className="authority-step-meta">
-                <span className="authority-step-num">{String(index + 1).padStart(2, "0")}</span>
+                <span className="authority-step-num">{String(index + 2).padStart(2, "0")}</span>
                 <span className="authority-step-label">{step.label}</span>
               </div>
-              <p className={step.key === "directAnswer" ? "authority-direct" : undefined}>
-                {chain[step.key]}
-              </p>
+              <p>{chain[step.key]}</p>
             </li>
           ))}
         </ol>
@@ -67,6 +79,17 @@ export function AuthorityChainSection({ path }: { path: string }) {
             ))}
           </ul>
         </div>
+
+        {chain.fanOutQueries.length > 0 ? (
+          <div className="authority-fanout reveal" aria-label="Related search intents">
+            <p className="authority-step-label">Also asked / query fan-out</p>
+            <ul className="authority-fanout-list">
+              {chain.fanOutQueries.map((query) => (
+                <li key={query}>{query}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         {chain.entities.length > 0 ? (
           <p className="authority-entities" aria-label="Topic entities">
@@ -86,9 +109,12 @@ export function AuthorityLead({ path }: { path: string }) {
   return (
     <div className="aeo-lead authority-lead">
       <p>
-        <strong>Direct answer:</strong> {chain.directAnswer}
+        <strong>Direct answer:</strong>{" "}
+        <span className="speakable-answer">{chain.directAnswer}</span>
       </p>
-      <p className="authority-lead-empathy">{chain.empathyLead}</p>
+      <p className="authority-lead-empathy">
+        <strong>The pressure you are under:</strong> {chain.empathyLead}
+      </p>
     </div>
   );
 }

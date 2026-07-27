@@ -569,6 +569,63 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
       "CBAM calculation reproducibility",
     ],
   },
+  {
+    path: "/about",
+    primaryQuestion: "Who is CBAMValid and what independence boundary applies?",
+    empathyLead:
+      "Buyers and compliance teams need to know whether a vendor is an official EU service — or an independent preparation tool with clear limits.",
+    directAnswer:
+      "CBAMValid is an independent software service that helps exporters and importers prepare evidence-linked CBAM dossiers. It is not an EU institution, customs authority, accredited CBAM verifier, or CBAM Registry submission service.",
+    calculation:
+      "Mathematical engines and allocation logic are reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (IIT Bombay). That review supports calculation integrity — it is not an accredited verification opinion.",
+    explanation:
+      "Use CBAMValid to compile scope, evidence, calculations, and sealed packages for handover to buyers or independent verifiers.",
+    methodology:
+      "Public methodology pages cite versioned rulesets and Regulation (EU) 2023/956-family sources; sealed packages pin the ruleset used at seal time.",
+    evidence:
+      "Independence and support identity claims are product-policy facts published on About, Legal Notice, and contact surfaces.",
+    expert: EXPERT_BLOCK,
+    relatedProblems: [
+      { question: "Contact support", href: "/contact", why: "Human help" },
+      { question: "Methodology sources", href: "/methodology", why: "Ruleset basis" },
+      { question: "Product capabilities", href: "/product", why: "What you get" },
+    ],
+    entities: ["CBAMValid", "independent software service", "IIT Bombay mathematical review"],
+    fanOutQueries: [
+      "is CBAMValid an official EU service",
+      "who reviews CBAMValid calculations",
+      "CBAMValid independence notice",
+    ],
+  },
+  {
+    path: "/contact",
+    primaryQuestion: "How do I contact CBAMValid for technical, billing, or legal questions?",
+    empathyLead:
+      "When a seal is blocked or a buyer is waiting, you need a real inbox — not a ticket black hole.",
+    directAnswer:
+      "Email info@cbamvalid.com for technical, dossier, and billing help. Legal and privacy requests use the published legal and privacy addresses on the contact page. Typical response window is 24–48 business hours.",
+    calculation:
+      "Support does not recalculate sealed releases client-side. Authoritative numbers remain those sealed by the server engine for a specific case snapshot.",
+    explanation:
+      "Include your case ID, reporting year, and the blocker text when asking for technical help so diagnosis stays fast.",
+    methodology:
+      "Support answers product and workflow questions; accredited verification opinions remain outside CBAMValid’s scope.",
+    evidence:
+      "Canonical support identity is info@cbamvalid.com as published in site legal configuration.",
+    expert:
+      "Support staff explain product boundaries. Academic mathematical review of engines is separate from day-to-day support tickets.",
+    relatedProblems: [
+      { question: "Pricing and pack scope", href: "/pricing", why: "Billing clarity" },
+      { question: "About independence", href: "/about", why: "Who we are" },
+      { question: "Refund policy", href: "/refund-policy", why: "Commercial terms" },
+    ],
+    entities: ["info@cbamvalid.com", "technical support", "billing support"],
+    fanOutQueries: [
+      "CBAMValid support email",
+      "CBAMValid billing contact",
+      "CBAMValid GDPR contact",
+    ],
+  },
 ] as const;
 
 export function getAuthorityChain(path: string): AuthorityChainRecord | undefined {

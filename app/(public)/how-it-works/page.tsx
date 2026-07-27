@@ -14,10 +14,11 @@ export default function Page() {
   <section className="hero" style={{"paddingBottom":"48px"}}>
     <div className="wrap" style={{"textAlign":"center"}}>
       <span className="eyebrow">The Complete Workflow</span>
-      <h1 style={{"maxWidth":"820px","marginLeft":"auto","marginRight":"auto"}}>How <span className="serif-i">CBAMValid</span> works</h1>
+      <h1 style={{"maxWidth":"820px","marginLeft":"auto","marginRight":"auto"}}>From raw plant data to a sealed package — without email chaos</h1>
       <p className="lede" style={{"margin":"0 auto"}}>One factory + one year = one working file. Enter production and emissions data, link evidence, clear blockers, buy the Preparation Pack at checkout, then lock and download a sealed verifier-preparation package.</p>
       <p className="aeo-lead" style={{"margin":"18px auto 0"}}>
-        <strong>Direct answer:</strong> Draft free → buy USD 249 once → lock up to five immutable packages inside that scope. Locking is not accredited verification.
+        <strong>Direct answer:</strong>{" "}
+        <span className="speakable-answer">Draft free → buy USD 249 once → lock up to five immutable packages inside that scope. Locking is not accredited verification.</span>
       </p>
     </div>
   </section>

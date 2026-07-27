@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { AeoAnswerRecord } from "@/lib/seo/aeo/types";
 import { listAnswersForRoute } from "@/lib/seo/aeo/answer-bank";
-import { listRelatedTopics } from "@/lib/seo/aeo/topical-map";
+import { getTopicalNode, listRelatedTopics } from "@/lib/seo/aeo/topical-map";
+import { getAuthorityChain } from "@/lib/seo/aeo/authority-chains";
 import { AuthorityChainSection } from "@/components/seo/AuthorityChain";
 
 function AnswerCard({ answer }: { answer: AeoAnswerRecord }) {
@@ -102,6 +103,36 @@ export function TopicalMapSection({ path }: { path: string }) {
   );
 }
 
+/** Visible query fan-out cluster for Google/LLM retrieval expansion. */
+export function FanOutQueriesSection({ path }: { path: string }) {
+  const chain = getAuthorityChain(path);
+  const node = getTopicalNode(path);
+  const queries = Array.from(
+    new Set([...(chain?.fanOutQueries ?? []), ...(node?.fanOutQueries ?? [])]),
+  ).slice(0, 8);
+  if (queries.length === 0) return null;
+
+  return (
+    <section className="section tight aeo-fanout-section" aria-label="Related questions people ask">
+      <div className="wrap">
+        <div className="section-head center reveal">
+          <span className="eyebrow">Query fan-out</span>
+          <h2>Questions this page is built to absorb</h2>
+          <p>
+            These follow-ups map topic → entity → internal link so answer engines can cite one clear page
+            instead of stitching fragmented claims.
+          </p>
+        </div>
+        <ul className="aeo-fanout-chips">
+          {queries.map((query) => (
+            <li key={query}>{query}</li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 /** Shared AEO chrome for marketing pages: authority chain + answers + topical map. */
 export function AeoPageChrome({
   path,
@@ -118,6 +149,7 @@ export function AeoPageChrome({
     <>
       {showAuthorityChain ? <AuthorityChainSection path={path} /> : null}
       <AnswerEvidenceSection path={path} heading={answerHeading} limit={answerLimit} />
+      <FanOutQueriesSection path={path} />
       <TopicalMapSection path={path} />
     </>
   );

@@ -344,6 +344,127 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
     relatedPaths: ["/sample-dossier", "/pricing", "/methodology"],
     schemaEligible: true,
   },
+  {
+    id: "spreadsheet-vs-preparation-pack",
+    question: "Why not just send a spreadsheet when an EU buyer asks for CBAM evidence?",
+    aliases: [
+      "CBAM spreadsheet vs dossier",
+      "Excel CBAM evidence package",
+      "buyer rejected spreadsheet emissions",
+    ],
+    directAnswer:
+      "A spreadsheet usually cannot prove evidence lineage, ruleset version, fail-closed quality controls, or an integrity hash. CBAMValid seals an operator-prepared dossier with calculation traces, evidence register, and immutable release hashes so a buyer or verifier can inspect what was locked.",
+    empathyContext:
+      "Buyer pressure often arrives before your files are audit-ready. The risk is not formatting — it is defending numbers without evidence, method pins, or a sealed integrity trail.",
+    evidence: [
+      {
+        label: "Integrity manifest",
+        detail: "Sealed packages include SHA-256 hashes, ruleset version, and seal timestamp",
+        href: "/sample-dossier",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Fail-closed QC",
+        detail: "Material blockers must clear before sealing; missing inputs are not silently zeroed",
+        href: "/product",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/", "/product", "/how-it-works", "/sample-dossier"],
+    relatedPaths: ["/sample-dossier", "/pricing", "/cbam-exporter-evidence-requirements"],
+    schemaEligible: true,
+  },
+  {
+    id: "one-pack-scope-lock",
+    question: "Can one USD 249 pack cover a second plant or another reporting year?",
+    aliases: [
+      "CBAMValid multi plant pricing",
+      "one pack two installations",
+      "CBAMValid scope lock",
+    ],
+    directAnswer: `No. ${PRICE} covers one locked working file: one legal operator, one production installation, and one reporting year, with ${CANONICAL_PRICING.includedSealedReleases} successful sealed releases inside that scope. Another plant or year requires another pack.`,
+    empathyContext:
+      "Procurement teams often hope one purchase covers the group. Scope lock prevents silent widening that would break evidence and entitlement integrity.",
+    evidence: [
+      {
+        label: "Commercial unit",
+        detail: "1 operator + 1 installation + 1 reporting year",
+        href: "/pricing",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Release math",
+        detail: "Failed seals consume zero; re-download is free; corrections create new sealed versions inside the same pack",
+        href: "/pricing",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/", "/pricing", "/product"],
+    relatedPaths: ["/pricing", "/how-it-works"],
+    schemaEligible: true,
+  },
+  {
+    id: "buyer-asks-tomorrow",
+    question: "What should I do first if my EU buyer asks for actual CBAM emissions evidence this week?",
+    aliases: [
+      "EU buyer asked for CBAM evidence urgently",
+      "CBAM evidence request deadline",
+      "start CBAM dossier today",
+    ],
+    directAnswer:
+      "Start a free draft for one installation and one reporting year, confirm CN scope, enter production and emissions inputs you already have, link available evidence, and clear visible blockers. Buy the pack only when you are ready to seal a handover package — drafting does not charge your card.",
+    empathyContext:
+      "Urgent buyer emails create panic buys. The durable move is to make gaps visible first, then seal a defendable package — without claiming an accredited verification opinion.",
+    evidence: [
+      {
+        label: "Draft policy",
+        detail: CANONICAL_PRICING.draftPolicy,
+        href: "/how-it-works",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "CN scope hub",
+        detail: "Confirm Annex I coverage before full evidence collection",
+        href: "/cn-code",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "2026 definitive period context",
+        detail: "Definitive-period obligations raise the cost of delayed evidence readiness",
+        href: "/cbam-2026-definitive-period",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/", "/how-it-works", "/cbam-non-eu-producer-guide", "/cbam-2026-definitive-period"],
+    relatedPaths: ["/pricing", "/cn-code"],
+    schemaEligible: true,
+  },
+  {
+    id: "about-independence",
+    question: "Is CBAMValid an official European Commission service?",
+    aliases: ["CBAMValid official EU", "is CBAMValid accredited verifier"],
+    directAnswer:
+      "No. CBAMValid is an independent software service for exporter-to-importer evidence packaging. It is not an EU institution, customs authority, or accredited CBAM verifier.",
+    empathyContext:
+      "Procurement and legal teams need a clear independence boundary before they trust a vendor with emissions data.",
+    evidence: [
+      {
+        label: "Independence notice",
+        detail: "Published on About and product surfaces",
+        href: "/about",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Support identity",
+        detail: "Canonical support address info@cbamvalid.com",
+        href: "/contact",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/about", "/contact", "/"],
+    relatedPaths: ["/about", "/methodology", "/legal-notice"],
+    schemaEligible: true,
+  },
 ] as const;
 
 export function listAnswersForRoute(path: string): AeoAnswerRecord[] {

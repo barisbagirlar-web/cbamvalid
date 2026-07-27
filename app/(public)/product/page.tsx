@@ -15,10 +15,13 @@ export default function Page() {
     <div className="wrap">
       <div style={{"maxWidth":"720px"}}>
         <span className="eyebrow">Product</span>
-        <h1>The dossier workspace built for <span className="serif-i">CBAM exporters</span></h1>
-        <p className="lede">One guided environment to enter production data, link evidence, resolve quality findings and seal a verifier-preparation package — without spreadsheets, email threads or version chaos.</p>
+        <h1>When spreadsheets fail under verifier questions</h1>
+        <p className="lede">One guided environment to enter production data, link evidence, resolve quality findings and seal a verifier-preparation package — without email-thread version chaos.</p>
         <p className="aeo-lead">
-          <strong>If you are under buyer pressure:</strong> start a free draft, close the blockers you can see, then buy one USD 249 scoped pack when you are ready to seal. You are preparing for independent review — not buying a fake “verified” stamp.
+          <strong>Direct answer:</strong>{" "}
+          <span className="speakable-answer">
+            Start a free draft, close the blockers you can see, then buy one USD 249 scoped pack when you are ready to seal. You are preparing for independent review — not buying a fake “verified” stamp.
+          </span>
         </p>
         <div className="hero-ctas" style={{"marginTop":"30px"}}>
           <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">Start a Dossier <span className="arr">→</span></a>
@@ -31,8 +34,8 @@ export default function Page() {
   <section className="section" style={{"background":"var(--paper-2)"}}>
     <div className="wrap">
       <div className="section-head reveal">
-        <span className="eyebrow">Core Capabilities</span>
-        <h2>Engineered for verification readiness</h2>
+          <span className="eyebrow">Core Capabilities</span>
+          <h2>What you need when a buyer challenges your numbers</h2>
       </div>
       <div className="method-grid">
         <div className="method-card reveal">

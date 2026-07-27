@@ -179,6 +179,13 @@ export function renderLlmsTxt(model: LlmDocModel): string {
 
   lines.push(
     "",
+    "## Machine-readable feeds",
+    "",
+    `- Answers JSON-LD feed: ${siteConfig.canonicalOrigin}/answers.json`,
+    `- LLM index: ${siteConfig.canonicalOrigin}/llms.txt`,
+    `- LLM full index: ${siteConfig.canonicalOrigin}/llms-full.txt`,
+    `- AI crawler policy: ${siteConfig.canonicalOrigin}/.well-known/ai.txt`,
+    "",
     "## Contact",
     "",
     `- Website: ${siteConfig.canonicalOrigin}`,

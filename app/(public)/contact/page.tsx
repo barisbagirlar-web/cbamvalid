@@ -1,57 +1,93 @@
 import { legalConfig } from "@/lib/legal-config";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
-import { generateBreadcrumbSchema } from "@/lib/seo/schema";
+import { JsonLdForRoute } from "@/components/seo/JsonLdForRoute";
+import { AuthorityChainSection, AuthorityLead } from "@/components/seo/AuthorityChain";
+import { AeoPageChrome } from "@/components/seo/AnswerEvidenceSection";
 
 export const metadata = generateSeoMetadata("/contact");
 
 export default function ContactPage() {
-  const jsonLd = [
-    generateBreadcrumbSchema([
-      { name: "Home", item: "/" },
-      { name: "Contact Us", item: "/contact" }
-    ])
-  ];
-
   return (
-    <div className="max-w-3xl mx-auto px-6 py-12 font-sans text-foreground">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <h1 className="text-3xl font-serif font-black mb-6">Contact Us</h1>
-      
-      <section className="space-y-6">
-        <p className="text-sm text-muted">
-          Our team is available to assist you with technical, billing, and general inquiries. We aim to respond to all support requests within 24-48 business hours.
-        </p>
+    <main id="main">
+      <JsonLdForRoute path="/contact" />
 
-        <div className="bg-surface border border-border p-6 rounded-md shadow-sm">
-          <h2 className="text-xl font-bold mb-4">Support & Billing</h2>
-          <p className="text-sm text-muted mb-2">For technical assistance, report generation issues, or Paddle payment inquiries:</p>
-          <a href={`mailto:${legalConfig.supportEmail}`} className="text-accent hover:underline font-mono">{legalConfig.supportEmail}</a>
-        </div>
-
-        <div className="bg-surface border border-border p-6 rounded-md shadow-sm">
-          <h2 className="text-xl font-bold mb-4">Legal & Privacy</h2>
-          <p className="text-sm text-muted mb-2">For data subject requests, GDPR inquiries, or legal concerns:</p>
-          <ul className="space-y-2 text-sm">
-            <li><strong>Legal:</strong> <a href={`mailto:${legalConfig.legalEmail}`} className="text-accent hover:underline">{legalConfig.legalEmail}</a></li>
-            <li><strong>Privacy:</strong> <a href={`mailto:${legalConfig.privacyEmail}`} className="text-accent hover:underline">{legalConfig.privacyEmail}</a></li>
-          </ul>
-        </div>
-
-        <div className="mt-8 pt-8 border-t border-border">
-          <h2 className="text-lg font-bold mb-2">Company Information</h2>
-          <p className="text-sm text-muted font-mono leading-relaxed">
-            {legalConfig.legalEntityName} <br />
-            {legalConfig.tradingName && `Trading as ${legalConfig.tradingName}`} <br />
-            {legalConfig.registeredAddress} <br />
-            {legalConfig.country} <br />
-            {legalConfig.registrationNumber && `Registration: ${legalConfig.registrationNumber}`} <br />
-            {legalConfig.taxId && `VAT/Tax ID: ${legalConfig.taxId}`}
-          </p>
+      <section className="hero" style={{ paddingBottom: "48px" }}>
+        <div className="wrap">
+          <div style={{ maxWidth: "720px" }}>
+            <span className="eyebrow">Contact</span>
+            <h1>
+              Need help before a buyer deadline?{" "}
+              <span className="serif-i">Write the real inbox.</span>
+            </h1>
+            <p className="lede">
+              Technical, billing, and dossier questions go to the published support address. Legal and
+              privacy requests use the dedicated legal contacts below.
+            </p>
+            <AuthorityLead path="/contact" />
+          </div>
         </div>
       </section>
-    </div>
+
+      <AuthorityChainSection path="/contact" />
+
+      <section className="section" style={{ background: "var(--paper-2)" }}>
+        <div className="wrap" style={{ maxWidth: "760px" }}>
+          <div className="method-grid">
+            <div className="method-card reveal">
+              <h3>Support &amp; billing</h3>
+              <p>
+                For technical assistance, report generation issues, or Paddle payment inquiries — include
+                your case ID and blocker text when possible.
+              </p>
+              <p>
+                <a className="text-accent" href={`mailto:${legalConfig.supportEmail}`}>
+                  {legalConfig.supportEmail}
+                </a>
+              </p>
+              <span className="ref">TYPICAL RESPONSE · 24–48 BUSINESS HOURS</span>
+            </div>
+            <div className="method-card reveal">
+              <h3>Legal &amp; privacy</h3>
+              <p>For data subject requests, GDPR inquiries, or legal concerns:</p>
+              <ul className="feat-list" style={{ marginTop: "12px" }}>
+                <li>
+                  <strong>Legal:</strong>{" "}
+                  <a href={`mailto:${legalConfig.legalEmail}`}>{legalConfig.legalEmail}</a>
+                </li>
+                <li>
+                  <strong>Privacy:</strong>{" "}
+                  <a href={`mailto:${legalConfig.privacyEmail}`}>{legalConfig.privacyEmail}</a>
+                </li>
+              </ul>
+            </div>
+            <div className="method-card reveal">
+              <h3>Company information</h3>
+              <p className="font-mono" style={{ fontSize: "0.9rem", lineHeight: 1.55 }}>
+                {legalConfig.legalEntityName}
+                <br />
+                {legalConfig.tradingName ? `Trading as ${legalConfig.tradingName}` : null}
+                <br />
+                {legalConfig.registeredAddress}
+                <br />
+                {legalConfig.country}
+                <br />
+                {legalConfig.registrationNumber
+                  ? `Registration: ${legalConfig.registrationNumber}`
+                  : null}
+                <br />
+                {legalConfig.taxId ? `VAT/Tax ID: ${legalConfig.taxId}` : null}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <AeoPageChrome
+        path="/contact"
+        showAuthorityChain={false}
+        answerHeading="Contact answers with evidence"
+        answerLimit={1}
+      />
+    </main>
   );
 }
