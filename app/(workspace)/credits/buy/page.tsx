@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, Loader2, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/context/AuthProvider";
 import { CREDIT_PACKAGES } from "@/lib/billing/catalog";
+import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 import { initializePaddle, Paddle } from "@paddle/paddle-js";
 
 type CheckoutApiData = {
@@ -24,6 +25,9 @@ export default function BuyCreditsPage() {
   const [publicPaidLaunchEnabled, setPublicPaidLaunchEnabled] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [fetchingConfig, setFetchingConfig] = useState(true);
+  const [displayPriceFormatted, setDisplayPriceFormatted] = useState<string>(
+    CANONICAL_PRICING.priceFormatted
+  );
 
   const packages = CREDIT_PACKAGES.filter((p) => p.active).sort((a, b) => a.displayOrder - b.displayOrder);
   const pkg = packages[0];
@@ -57,10 +61,18 @@ export default function BuyCreditsPage() {
       .then((res) => res.json())
       .then((data) => {
         setPublicPaidLaunchEnabled(data.publicPaidLaunchEnabled === true);
+        if (typeof data.priceFormatted === "string" && data.priceFormatted.trim()) {
+          setDisplayPriceFormatted(data.priceFormatted);
+        } else if (typeof data.displayPrice === "string" && data.displayPrice.trim()) {
+          setDisplayPriceFormatted(`$${data.displayPrice}`);
+        } else {
+          setDisplayPriceFormatted(CANONICAL_PRICING.priceFormatted);
+        }
       })
       .catch((err) => {
         console.error("Failed to fetch pricing config:", err);
         setPublicPaidLaunchEnabled(false);
+        setDisplayPriceFormatted(CANONICAL_PRICING.priceFormatted);
       })
       .finally(() => {
         setFetchingConfig(false);
@@ -270,7 +282,9 @@ export default function BuyCreditsPage() {
         </div>
 
         <div className="mb-6">
-          <span className="text-5xl font-bold font-serif text-foreground">{pkg.priceFormatted}</span>
+          <span className="text-5xl font-bold font-serif text-foreground">
+            {displayPriceFormatted || CANONICAL_PRICING.priceFormatted}
+          </span>
         </div>
 
         <ul className="mb-8 space-y-4 w-full">
