@@ -126,7 +126,18 @@ function validateSitemapDerivation(): GateResult[] {
     results.push(fail("G04", "public/sitemap.xml must not compete with app/sitemap.ts"));
   }
   if (existsSync(resolve("public/robots.txt"))) {
-    results.push(fail("G16", "public/robots.txt must not compete with app/robots.ts"));
+    const publicRobots = readFileSync(resolve("public/robots.txt"), "utf8");
+    if (!/OAI-SearchBot/.test(publicRobots)) {
+      results.push(fail("G16", "public/robots.txt missing OAI-SearchBot allow rule"));
+    }
+    if (/Disallow:\s*\/_next\/static/i.test(publicRobots)) {
+      results.push(fail("G16", "public/robots.txt blocks /_next/static"));
+    }
+    if (!/Sitemap:\s*https:\/\/cbamvalid\.com\/sitemap\.xml/.test(publicRobots)) {
+      results.push(fail("G16", "public/robots.txt missing canonical sitemap line"));
+    }
+  } else {
+    results.push(fail("G16", "public/robots.txt missing — required for Firebase Hosting robots reliability"));
   }
 
   return results;
