@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>CBAMValid Answer Feed</title>
+    <link>https://cbamvalid.com</link>
+    <description>Direct answers for CBAM exporter verification preparation — machine-readable syndication for answer engines.</description>
+    <language>en</language>
+    <lastBuildDate>Mon, 27 Jul 2026 00:00:00 GMT</lastBuildDate>
+    <atom:link href="https://cbamvalid.com/answers.rss" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>What does $249 buy on CBAMValid?</title>
+      <link>https://cbamvalid.com</link>
+      <guid isPermaLink="false">what-does-usd-249-buy</guid>
+      <description>$249 buys one Exporter Verification Preparation Pack: one locked working file for one legal operator, one production installation, and one reporting year — with unlimited drafts and exactly 5 successful sealed releases. It is a one-time pack, not a subscription, and not a soft Excel-only export. EU buyers increasingly ask for actual embedded-emissions evidence. Paying once should cover real correction cycles without trapping you in a vague “credits” story or an open-ended SaaS bill.</description>
+      <category>/, /pricing, /product</category>
+    </item>
+    <item>
+      <title>When is my card charged?</title>
+      <link>https://cbamvalid.com</link>
+      <guid isPermaLink="false">when-is-card-charged</guid>
+      <description>Drafting and editing are free. Your card is charged when you buy the Exporter Verification Preparation Pack ($249) at checkout. Each successful seal then uses one of the 5 included releases. Failed seals use none. Re-download of a sealed package is free. Nobody wants a surprise charge mid-review. You should be able to finish data quality work first, then buy a pack when you are ready to seal deliverables for your buyer or verifier.</description>
+      <category>/, /pricing, /how-it-works</category>
+    </item>
+    <item>
+      <title>What is CBAMValid?</title>
+      <link>https://cbamvalid.com</link>
+      <guid isPermaLink="false">what-is-cbamvalid</guid>
+      <description>CBAMValid is an independent verifier-preparation platform for non-EU producers, exporters, operators, importers, and CBAM reporting teams. It helps you build an evidence-linked, sealed operator dossier that reduces the work required for independent accredited verification. If your EU customer asks for actual values, you need a serious package — not a spreadsheet you cannot defend. You also need clear language about what is preparation versus what only an accredited verifier can issue.</description>
+      <category>/, /product, /about</category>
+    </item>
+    <item>
+      <title>Can one pack be reused for another factory or reporting year?</title>
+      <link>https://cbamvalid.com/pricing</link>
+      <guid isPermaLink="false">can-one-pack-cover-another-plant</guid>
+      <description>No. One Preparation Pack is scoped to one legal operator, one installation, and one reporting year. Another factory or another reporting year requires another pack. Within that locked scope you may draft freely and seal up to five times. This protects honest customers who need correction versions, and blocks paying once then quietly renaming a case into a different plant or year.</description>
+      <category>/pricing, /product</category>
+    </item>
+    <item>
+      <title>Does sealing mean my emissions are officially verified?</title>
+      <link>https://cbamvalid.com</link>
+      <guid isPermaLink="false">sealed-vs-verified</guid>
+      <description>No. Sealing locks an operator-prepared dossier with integrity hashes for handover. Where verification is legally required, actual emissions must still be independently verified by an accredited verifier. CBAMValid prepares the package; it does not issue a verification opinion. Overclaiming “verified” creates commercial and legal risk for exporters. Clear boundaries protect you when a buyer or verifier reviews the file.</description>
+      <category>/, /how-it-works, /methodology, /sample-dossier</category>
+    </item>
+    <item>
+      <title>How does the CBAMValid workflow work?</title>
+      <link>https://cbamvalid.com</link>
+      <guid isPermaLink="false">how-workflow-works</guid>
+      <description>You create one working file for one installation and one reporting year, enter goods and production data, link evidence, clear quality blockers, buy the Preparation Pack at checkout, then lock up to five immutable packages and download PDF, JSON, and O3CI field-mapped exports. Most teams lose time in email threads and version chaos. One working file with fail-closed checks is designed so you see gaps before you ask a buyer or verifier to review.</description>
+      <category>/, /how-it-works, /product</category>
+    </item>
+    <item>
+      <title>Which ruleset does CBAMValid use for calculations?</title>
+      <link>https://cbamvalid.com/methodology</link>
+      <guid isPermaLink="false">why-methodology-matters</guid>
+      <description>Authoritative calculations pin to a named, versioned ruleset recorded in the sealed dossier. Historical sealed releases keep the ruleset they were built against; methods are not silently rewritten after sealing. When a verifier asks which rules you followed, vague “latest guidance” answers fail. You need a dated method reference inside the package itself.</description>
+      <category>/methodology, /product</category>
+    </item>
+    <item>
+      <title>When does the CBAM definitive period start, and what is the first declaration deadline for 2026 imports?</title>
+      <link>https://cbamvalid.com</link>
+      <guid isPermaLink="false">definitive-period-2026</guid>
+      <description>The CBAM definitive period applies from 1 January 2026. For 2026 imports, the first CBAM declaration and corresponding certificate surrender deadline is 30 September 2027. Mixing transitional quarterly reporting habits with definitive-period annual duties creates false deadlines and wasted work.</description>
+      <category>/, /cbam-2026-definitive-period, /cbam-non-eu-producer-guide</category>
+    </item>
+    <item>
+      <title>How are CBAM embedded emissions calculated?</title>
+      <link>https://cbamvalid.com/cbam-embedded-emissions-calculation</link>
+      <guid isPermaLink="false">embedded-emissions-calc</guid>
+      <description>Embedded emissions combine direct process/combustion emissions and, where required, electricity-related indirect emissions, plus applicable precursor emissions. Missing material inputs must block authoritative results rather than becoming silent zeros. A wrong total under buyer pressure is worse than a blocked draft. Fail-closed calculation protects you in verification.</description>
+      <category>/cbam-embedded-emissions-calculation, /methodology, /cbam-methodology</category>
+    </item>
+    <item>
+      <title>Should exporters use actual values or CBAM default values?</title>
+      <link>https://cbamvalid.com/cbam-actual-vs-default-values</link>
+      <guid isPermaLink="false">actual-vs-default</guid>
+      <description>Actual values reflect installation-specific monitored or calculated emissions and generally require independent verification where legally required. Default values are multi-dimensional official fallbacks — not a single universal CN number. Defaults can look easier until a buyer or verifier rejects them. Document the basis choice with evidence.</description>
+      <category>/cbam-actual-vs-default-values, /cbam-default-values</category>
+    </item>
+    <item>
+      <title>How do exporters prepare for independent CBAM verification?</title>
+      <link>https://cbamvalid.com/cbam-verification-preparation</link>
+      <guid isPermaLink="false">verification-preparation</guid>
+      <description>Assemble complete, evidence-linked emissions data, methodology decisions, and closed material findings so an independent accredited verifier can perform assurance work. CBAMValid prepares the package; it does not issue the verification opinion. Verifiers need consistent, evidence-linked data — not a reconstructed email history.</description>
+      <category>/cbam-verification-preparation, /cbam-exporter-evidence-requirements, /sample-dossier</category>
+    </item>
+    <item>
+      <title>Why not just send a spreadsheet when an EU buyer asks for CBAM evidence?</title>
+      <link>https://cbamvalid.com</link>
+      <guid isPermaLink="false">spreadsheet-vs-preparation-pack</guid>
+      <description>A spreadsheet usually cannot prove evidence lineage, ruleset version, fail-closed quality controls, or an integrity hash. CBAMValid seals an operator-prepared dossier with calculation traces, evidence register, and immutable release hashes so a buyer or verifier can inspect what was locked. Buyer pressure often arrives before your files are audit-ready. The risk is not formatting — it is defending numbers without evidence, method pins, or a sealed integrity trail.</description>
+      <category>/, /product, /how-it-works, /sample-dossier</category>
+    </item>
+    <item>
+      <title>Can one USD 249 pack cover a second plant or another reporting year?</title>
+      <link>https://cbamvalid.com</link>
+      <guid isPermaLink="false">one-pack-scope-lock</guid>
+      <description>No. $249 covers one locked working file: one legal operator, one production installation, and one reporting year, with 5 successful sealed releases inside that scope. Another plant or year requires another pack. Procurement teams often hope one purchase covers the group. Scope lock prevents silent widening that would break evidence and entitlement integrity.</description>
+      <category>/, /pricing, /product</category>
+    </item>
+    <item>
+      <title>What should I do first if my EU buyer asks for actual CBAM emissions evidence this week?</title>
+      <link>https://cbamvalid.com</link>
+      <guid isPermaLink="false">buyer-asks-tomorrow</guid>
+      <description>Start a free draft for one installation and one reporting year, confirm CN scope, enter production and emissions inputs you already have, link available evidence, and clear visible blockers. Buy the pack only when you are ready to seal a handover package — drafting does not charge your card. Urgent buyer emails create panic buys. The durable move is to make gaps visible first, then seal a defendable package — without claiming an accredited verification opinion.</description>
+      <category>/, /how-it-works, /cbam-non-eu-producer-guide, /cbam-2026-definitive-period</category>
+    </item>
+    <item>
+      <title>Is CBAMValid an official European Commission service?</title>
+      <link>https://cbamvalid.com/about</link>
+      <guid isPermaLink="false">about-independence</guid>
+      <description>No. CBAMValid is an independent software service for exporter-to-importer evidence packaging. It is not an EU institution, customs authority, or accredited CBAM verifier. Procurement and legal teams need a clear independence boundary before they trust a vendor with emissions data.</description>
+      <category>/about, /contact, /</category>
+    </item>
+  </channel>
+</rss>

@@ -52,6 +52,29 @@ export default function AppFooter() {
             </ul>
           </div>
           <div>
+            <h4>CBAM Guides</h4>
+            <ul>
+              <li>
+                <Link href="/cbam-2026-definitive-period">2026 Definitive Period</Link>
+              </li>
+              <li>
+                <Link href="/cbam-verification-preparation">Verification Preparation</Link>
+              </li>
+              <li>
+                <Link href="/cbam-non-eu-producer-guide">Non-EU Producer Guide</Link>
+              </li>
+              <li>
+                <Link href="/cbam-embedded-emissions-calculation">Embedded Emissions</Link>
+              </li>
+              <li>
+                <Link href="/cbam-actual-vs-default-values">Actual vs Default Values</Link>
+              </li>
+              <li>
+                <Link href="/cn-code">CN Code Scope Hub</Link>
+              </li>
+            </ul>
+          </div>
+          <div>
             <h4>Legal</h4>
             <ul>
               <li>
@@ -74,6 +97,12 @@ export default function AppFooter() {
           <div>
             <h4>Contact &amp; Support</h4>
             <ul>
+              <li>
+                <Link href="/about">About CBAMValid</Link>
+              </li>
+              <li>
+                <Link href="/contact">Contact</Link>
+              </li>
               <li>
                 <span className="f-lbl">Email Support</span>
                 <a className="mono font-semibold" href="mailto:info@cbamvalid.com">

@@ -17,18 +17,44 @@ export function generateSeoMetadata(path: string): Metadata {
 
   const canonical = buildCanonicalUrl(meta.canonicalPath);
   const indexable = meta.indexability === "index";
+  const isArticleSurface =
+    meta.pageType === "methodology" || meta.pageType === "guide" || meta.path.startsWith("/cbam-");
 
   return {
     title: meta.title,
     description: meta.description,
     alternates: {
       canonical,
+      types: {
+        "text/plain": [
+          { url: `${siteConfig.canonicalOrigin}/llms.txt`, title: "LLM index" },
+          { url: `${siteConfig.canonicalOrigin}/.well-known/ai.txt`, title: "AI crawler policy" },
+        ],
+        "application/ld+json": [
+          { url: `${siteConfig.canonicalOrigin}/answers.json`, title: "Answer authority feed" },
+        ],
+        "application/rss+xml": [
+          { url: `${siteConfig.canonicalOrigin}/answers.rss`, title: "CBAMValid answers feed" },
+        ],
+      },
     },
     robots: {
       index: indexable,
       follow: indexable,
       noarchive: !indexable,
       nosnippet: !indexable,
+      googleBot: indexable
+        ? {
+            index: true,
+            follow: true,
+            "max-image-preview": "large",
+            "max-snippet": -1,
+            "max-video-preview": -1,
+          }
+        : {
+            index: false,
+            follow: false,
+          },
     },
     openGraph: {
       title: meta.title,
@@ -44,13 +70,25 @@ export function generateSeoMetadata(path: string): Metadata {
         },
       ],
       locale: siteConfig.locale,
-      type: meta.pageType === "methodology" || meta.pageType === "guide" ? "article" : "website",
+      type: isArticleSurface ? "article" : "website",
+      ...(isArticleSurface && meta.factualLastModified
+        ? {
+            publishedTime: meta.factualLastModified,
+            modifiedTime: meta.factualLastModified,
+            authors: [siteConfig.supportEmail],
+          }
+        : {}),
     },
     twitter: {
       card: "summary_large_image",
       title: meta.title,
       description: meta.description,
       images: [siteConfig.ogImage],
+    },
+    other: {
+      // Machine-readable discovery hints beyond standard alternates.
+      "llms-txt": `${siteConfig.canonicalOrigin}/llms.txt`,
+      "answer-feed": `${siteConfig.canonicalOrigin}/answers.json`,
     },
   };
 }

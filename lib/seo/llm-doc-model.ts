@@ -182,6 +182,7 @@ export function renderLlmsTxt(model: LlmDocModel): string {
     "## Machine-readable feeds",
     "",
     `- Answers JSON-LD feed: ${siteConfig.canonicalOrigin}/answers.json`,
+    `- Answers RSS feed: ${siteConfig.canonicalOrigin}/answers.rss`,
     `- LLM index: ${siteConfig.canonicalOrigin}/llms.txt`,
     `- LLM full index: ${siteConfig.canonicalOrigin}/llms-full.txt`,
     `- AI crawler policy: ${siteConfig.canonicalOrigin}/.well-known/ai.txt`,

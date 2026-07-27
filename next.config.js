@@ -79,7 +79,44 @@ const nextConfig = {
             value: 'private, no-store',
           },
         ],
-      }
+      },
+      // SEO / AEO discovery feeds — Hosting-safe cache for crawler surfaces
+      {
+        source: '/llms.txt',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' }],
+      },
+      {
+        source: '/llm.txt',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' }],
+      },
+      {
+        source: '/llms-full.txt',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' }],
+      },
+      {
+        source: '/ai-policy.txt',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' }],
+      },
+      {
+        source: '/.well-known/ai.txt',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' },
+        ],
+      },
+      {
+        source: '/answers.json',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' },
+          { key: 'Content-Type', value: 'application/ld+json; charset=utf-8' },
+        ],
+      },
+      {
+        source: '/answers.rss',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' },
+          { key: 'Content-Type', value: 'application/rss+xml; charset=utf-8' },
+        ],
+      },
     ];
   },
   async redirects() {

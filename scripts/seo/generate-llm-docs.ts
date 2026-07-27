@@ -14,6 +14,7 @@ import {
   assertVerifiedClaim,
 } from "../../lib/seo/claims";
 import { siteConfig } from "../../lib/site-config";
+import { INDEXNOW_KEY, INDEXNOW_KEY_PATH } from "../../lib/seo/indexnow";
 
 const DISALLOW_PRIVATE = [
   "/dashboard/",
@@ -142,6 +143,49 @@ const answersFeed = {
 };
 writeFileSync(resolve(root, "public/answers.json"), `${JSON.stringify(answersFeed, null, 2)}\n`, "utf8");
 
+// IndexNow key file (must match keyLocation published to Bing / IndexNow).
+writeFileSync(resolve(root, `public${INDEXNOW_KEY_PATH}`), `${INDEXNOW_KEY}\n`, "utf8");
+
+// RSS feed — syndication + AI crawler friendly answer stream
+function xmlEscape(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+const rssItems = AEO_ANSWER_BANK.map((answer) => {
+  const link = buildCanonicalUrl(answer.routes[0] ?? "/");
+  return [
+    "    <item>",
+    `      <title>${xmlEscape(answer.question)}</title>`,
+    `      <link>${link}</link>`,
+    `      <guid isPermaLink="false">${xmlEscape(answer.id)}</guid>`,
+    `      <description>${xmlEscape(`${answer.directAnswer} ${answer.empathyContext}`)}</description>`,
+    `      <category>${xmlEscape(answer.routes.join(", "))}</category>`,
+    "    </item>",
+  ].join("\n");
+}).join("\n");
+
+const rss = [
+  `<?xml version="1.0" encoding="UTF-8"?>`,
+  `<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">`,
+  `  <channel>`,
+  `    <title>CBAMValid Answer Feed</title>`,
+  `    <link>${siteConfig.canonicalOrigin}</link>`,
+  `    <description>Direct answers for CBAM exporter verification preparation — machine-readable syndication for answer engines.</description>`,
+  `    <language>en</language>`,
+  `    <lastBuildDate>${new Date(model.lastUpdated).toUTCString()}</lastBuildDate>`,
+  `    <atom:link href="${siteConfig.canonicalOrigin}/answers.rss" rel="self" type="application/rss+xml"/>`,
+  rssItems,
+  `  </channel>`,
+  `</rss>`,
+  "",
+].join("\n");
+writeFileSync(resolve(root, "public/answers.rss"), rss, "utf8");
+
 console.log(
-  "Generated public/llms.txt, public/llm.txt, public/llms-full.txt, public/robots.txt, public/.well-known/ai.txt, public/ai-policy.txt, public/answers.json from SEO SSOT",
+  "Generated public/llms.txt, public/llm.txt, public/llms-full.txt, public/robots.txt, public/.well-known/ai.txt, public/ai-policy.txt, public/answers.json, public/answers.rss, IndexNow key from SEO SSOT",
 );

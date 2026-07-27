@@ -9,6 +9,8 @@ import {
 } from "./claims";
 import { buildCanonicalUrl } from "./canonical";
 import { getAuthorityChain } from "./aeo/authority-chains";
+import { getTopicalNode } from "./aeo/topical-map";
+import { SEO_LEGAL_SOURCE_INDEX } from "./regulatory-sources";
 
 type JsonLdNode = Record<string, unknown>;
 
@@ -97,7 +99,58 @@ function websiteNode(): JsonLdNode {
     url: siteConfig.canonicalOrigin,
     inLanguage: "en",
     publisher: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
+    // Discovery surfaces for LLM / answer-engine crawlers
+    hasPart: [
+      { "@type": "WebPage", url: `${siteConfig.canonicalOrigin}/llms.txt`, name: "LLM index" },
+      { "@type": "Dataset", url: `${siteConfig.canonicalOrigin}/answers.json`, name: "Answer authority feed" },
+      { "@type": "DataFeed", url: `${siteConfig.canonicalOrigin}/answers.rss`, name: "Answer RSS feed" },
+    ],
   };
+}
+
+function serviceNode(price: {
+  amount: string;
+  currency: "USD";
+  formatted: string;
+  packName: string;
+}): JsonLdNode {
+  return {
+    "@type": "Service",
+    "@id": `${siteConfig.canonicalOrigin}/#service`,
+    name: price.packName,
+    serviceType: "CBAM exporter verification preparation",
+    description:
+      "Operator-prepared, evidence-linked CBAM dossier packaging for independent accredited verification. Not an accredited verification opinion.",
+    provider: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
+    brand: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
+    areaServed: {
+      "@type": "AdministrativeArea",
+      name: "Non-EU exporters shipping goods into the European Union",
+    },
+    audience: {
+      "@type": "BusinessAudience",
+      audienceType: "Non-EU producers, exporters, operators, importers, and CBAM reporting teams",
+    },
+    termsOfService: buildCanonicalUrl("/terms"),
+    offers: nestedOfferNode(price),
+  };
+}
+
+function citationNodes(sourceIds: readonly string[]): JsonLdNode[] {
+  const nodes: JsonLdNode[] = [];
+  for (const id of sourceIds) {
+    const source = SEO_LEGAL_SOURCE_INDEX[id as keyof typeof SEO_LEGAL_SOURCE_INDEX];
+    if (!source) continue;
+    nodes.push({
+      "@type": "Legislation",
+      "@id": `${siteConfig.canonicalOrigin}/#legal-${id}`,
+      name: source.title,
+      legislationIdentifier: source.celexId ?? id,
+      url: source.eliUri,
+      inLanguage: "en",
+    });
+  }
+  return nodes;
 }
 
 export function generateOrganizationSchema(): JsonLdNode {
@@ -286,13 +339,17 @@ export function generateDefinedTermSetSchema(params: {
 
 /**
  * Universal nested entity graph for LLM / answer-engine retrieval.
- * Product + Offer (price/stock) + Author + Expert Person + Organization in one @graph.
+ * Product + Offer (price/stock) + Service + Author + Expert Person + Organization
+ * + EU ELI citations in one @graph.
  * Review/AggregateRating intentionally omitted — unverified social proof is forbidden.
  */
 export function generateUniversalEntityGraph(params: {
   path: string;
   name: string;
   description: string;
+  dateModified?: string;
+  regulatorySourceIds?: readonly string[];
+  pageType?: string;
 }): JsonLdNode {
   const price = assertVerifiedClaim(PRICE_CLAIM, "PRICE_CLAIM");
   const chain = getAuthorityChain(params.path);
@@ -302,16 +359,66 @@ export function generateUniversalEntityGraph(params: {
     "@id": `${buildCanonicalUrl(params.path)}#entity-${index + 1}`,
     name: entity,
   }));
+  const citations = citationNodes(params.regulatorySourceIds ?? []);
+  const citationRefs = citations.map((node) => ({ "@id": node["@id"] as string }));
+  const isGuideOrMethod =
+    params.pageType === "guide" ||
+    params.pageType === "methodology" ||
+    params.path.startsWith("/cbam-");
+
+  const webPageNode: JsonLdNode = {
+    "@type": isGuideOrMethod ? ["WebPage", "Article"] : "WebPage",
+    "@id": pageId,
+    url: buildCanonicalUrl(params.path),
+    name: params.name,
+    description: params.description,
+    isPartOf: { "@id": `${siteConfig.canonicalOrigin}/#website` },
+    author: { "@id": `${siteConfig.canonicalOrigin}/#author` },
+    publisher: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
+    reviewedBy: { "@id": `${siteConfig.canonicalOrigin}/#expert-reviewer` },
+    about: aboutEntities.length > 0 ? aboutEntities : { "@id": `${siteConfig.canonicalOrigin}/#product` },
+    mentions: aboutEntities,
+    mainEntity: { "@id": `${siteConfig.canonicalOrigin}/#product` },
+    inLanguage: "en",
+    isAccessibleForFree: true,
+    audience: {
+      "@type": "BusinessAudience",
+      audienceType: "Non-EU producers, exporters, operators, importers, and CBAM reporting teams",
+    },
+    speakable: {
+      "@type": "SpeakableSpecification",
+      cssSelector: [".speakable-answer", ".authority-direct", ".aeo-lead", ".aeo-direct"],
+    },
+    significantLink: (chain?.relatedProblems ?? []).map((item) => buildCanonicalUrl(item.href)),
+    primaryImageOfPage: {
+      "@type": "ImageObject",
+      url: siteConfig.ogImage,
+    },
+  };
+
+  if (params.dateModified) {
+    webPageNode.dateModified = params.dateModified;
+    if (isGuideOrMethod) {
+      webPageNode.datePublished = params.dateModified;
+    }
+  }
+  if (citationRefs.length > 0) {
+    webPageNode.citation = citationRefs;
+    webPageNode.isBasedOn = citationRefs;
+  }
 
   const nodes: JsonLdNode[] = [
     organizationNode(),
     authorOrganizationNode(),
     expertReviewerNode(),
     websiteNode(),
+    serviceNode(price),
     {
-      "@type": "Product",
+      "@type": ["Product", "SoftwareApplication"],
       "@id": `${siteConfig.canonicalOrigin}/#product`,
       name: price.packName,
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
       description:
         "One-time Exporter Verification Preparation Pack: one operator, one installation, one reporting year, unlimited drafts, five successful sealed releases.",
       brand: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
@@ -319,27 +426,17 @@ export function generateUniversalEntityGraph(params: {
       creator: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
       reviewedBy: { "@id": `${siteConfig.canonicalOrigin}/#expert-reviewer` },
       offers: nestedOfferNode(price),
+      featureList: [
+        "Deterministic server-side embedded-emissions calculations",
+        "Evidence register with SHA-256 integrity",
+        "Fail-closed quality controls before sealing",
+        "Versioned EU rulesets recorded in sealed packages",
+        "O3CI field-mapped structured data export",
+        "Five successful sealed releases per scoped pack",
+      ],
     },
-    {
-      "@type": "WebPage",
-      "@id": pageId,
-      url: buildCanonicalUrl(params.path),
-      name: params.name,
-      description: params.description,
-      isPartOf: { "@id": `${siteConfig.canonicalOrigin}/#website` },
-      author: { "@id": `${siteConfig.canonicalOrigin}/#author` },
-      publisher: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
-      reviewedBy: { "@id": `${siteConfig.canonicalOrigin}/#expert-reviewer` },
-      about: aboutEntities.length > 0 ? aboutEntities : { "@id": `${siteConfig.canonicalOrigin}/#product` },
-      mentions: aboutEntities,
-      mainEntity: { "@id": `${siteConfig.canonicalOrigin}/#product` },
-      inLanguage: "en",
-      speakable: {
-        "@type": "SpeakableSpecification",
-        cssSelector: [".speakable-answer", ".authority-direct", ".aeo-lead", ".aeo-direct"],
-      },
-      significantLink: (chain?.relatedProblems ?? []).map((item) => buildCanonicalUrl(item.href)),
-    },
+    webPageNode,
+    ...citations,
   ];
 
   if (chain) {
@@ -368,6 +465,24 @@ export function generateUniversalEntityGraph(params: {
 
   if (params.path === "/how-it-works") {
     nodes.push(generateHowToSealSchema());
+  }
+
+  // Topical ItemList — helps answer engines fan out hub → spoke URLs without guessing.
+  const topical = getTopicalNode(params.path);
+  if (topical && topical.childPaths.length > 0) {
+    nodes.push({
+      "@type": "ItemList",
+      "@id": `${buildCanonicalUrl(params.path)}#topical-list`,
+      name: `${topical.topic} — related pages`,
+      itemListOrder: "https://schema.org/ItemListOrderAscending",
+      numberOfItems: topical.childPaths.length,
+      itemListElement: topical.childPaths.map((childPath, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        url: buildCanonicalUrl(childPath),
+        name: getTopicalNode(childPath)?.topic ?? childPath,
+      })),
+    });
   }
 
   return buildPageGraph(nodes);

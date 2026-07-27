@@ -6,6 +6,7 @@ import { FORBIDDEN_SOCIAL_PROOF, PRICE_CLAIM, collectVerifiedCommercialScalars }
 import { generateProductOfferSchema, generateWebApplicationSchema } from "../../lib/seo/schema";
 import { SEO_REGULATORY_FACTS } from "../../lib/seo/regulatory-sources";
 import { buildLlmDocModel, renderLlmsFullTxt, renderLlmsTxt } from "../../lib/seo/llm-doc-model";
+import { INDEXNOW_KEY, INDEXNOW_KEY_PATH } from "../../lib/seo/indexnow";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -341,6 +342,45 @@ function validateRegulatoryAndLlm(): GateResult[] {
   return results;
 }
 
+function validateAeoDiscoverySurfaces(): GateResult[] {
+  const results: GateResult[] = [];
+
+  for (const file of ["public/answers.json", "public/answers.rss"] as const) {
+    if (!existsSync(resolve(file))) {
+      results.push(fail("G26", `${file} missing — run seo:generate-llm-docs`));
+    } else if (file.endsWith(".json")) {
+      try {
+        const parsed = JSON.parse(readFileSync(resolve(file), "utf8")) as { authorityChains?: unknown[] };
+        if (!Array.isArray(parsed.authorityChains) || parsed.authorityChains.length < 1) {
+          results.push(fail("G26", "answers.json missing authorityChains"));
+        }
+      } catch {
+        results.push(fail("G26", "answers.json is not valid JSON"));
+      }
+    } else {
+      const rss = readFileSync(resolve(file), "utf8");
+      if (!rss.includes("<rss") || !rss.includes("<item>")) {
+        results.push(fail("G26", "answers.rss missing channel items"));
+      }
+    }
+  }
+
+  const keyFile = resolve(`public${INDEXNOW_KEY_PATH}`);
+  if (!existsSync(keyFile)) {
+    results.push(fail("G26", `IndexNow key file missing at public${INDEXNOW_KEY_PATH}`));
+  } else {
+    const body = readFileSync(keyFile, "utf8").trim();
+    if (body !== INDEXNOW_KEY) {
+      results.push(fail("G26", "IndexNow key file body does not match INDEXNOW_KEY"));
+    }
+  }
+
+  if (!results.some((r) => r.id === "G26" && !r.ok)) {
+    results.push(pass("G26", "AEO discovery: answers.json + answers.rss + IndexNow key"));
+  }
+  return results;
+}
+
 export function runAllSeoGates(): GateResult[] {
   return [
     ...validateRegistry(),
@@ -351,6 +391,7 @@ export function runAllSeoGates(): GateResult[] {
     ...validateLinks(),
     ...validateRobotsAndLanguage(),
     ...validateRegulatoryAndLlm(),
+    ...validateAeoDiscoverySurfaces(),
   ];
 }
 

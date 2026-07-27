@@ -7,6 +7,7 @@ Allow: /llms.txt
 Allow: /llm.txt
 Allow: /llms-full.txt
 Allow: /answers.json
+Allow: /answers.rss
 Allow: /sitemap.xml
 Disallow: /dashboard/
 Disallow: /admin/
@@ -22,6 +23,7 @@ Disallow: /register
 Sitemap: https://cbamvalid.com/sitemap.xml
 Llms-Txt: https://cbamvalid.com/llms.txt
 Answers-Feed: https://cbamvalid.com/answers.json
+Answers-Rss: https://cbamvalid.com/answers.rss
 
 Content-Usage: train-opt-out=no; search=yes; cite=yes
 Note: Public pages may be cited. Do not invent accredited verification, EU approval, ratings, or fake reviews.

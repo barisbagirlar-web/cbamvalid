@@ -25,6 +25,9 @@ export function JsonLdForRoute({ path }: { path: string }) {
       path: route.canonicalPath,
       name: route.title,
       description: route.description,
+      dateModified: route.factualLastModified,
+      regulatorySourceIds: route.regulatorySourceIds,
+      pageType: route.pageType,
     });
     const graph = universal["@graph"];
     if (Array.isArray(graph)) {

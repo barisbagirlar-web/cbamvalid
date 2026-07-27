@@ -446,6 +446,7 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 ## Machine-readable feeds
 
 - Answers JSON-LD feed: https://cbamvalid.com/answers.json
+- Answers RSS feed: https://cbamvalid.com/answers.rss
 - LLM index: https://cbamvalid.com/llms.txt
 - LLM full index: https://cbamvalid.com/llms-full.txt
 - AI crawler policy: https://cbamvalid.com/.well-known/ai.txt
