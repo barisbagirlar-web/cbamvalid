@@ -1,63 +1,129 @@
-# CBAMValid Full Content Catalog & Architecture Guide for LLMs
+# CBAMValid — Exporter Verification Preparation Pack
 
-## Platform Positioning & Governance
-- **Canonical Product Name:** CBAMValid Exporter Verification Preparation Pack V5
-- **Canonical Positioning:** Prepared for Independent Accredited Verification
-- **Legal & Regulatory Foundation:** EU Regulation 2023/956, EU ETS AVR 2018/2067, Implementing Regulations (EU) 2023/1776, 2023/1778, and 2025/2546.
-- **Commercial Contract:** USD 149 per Exporter Verification Preparation Pack (no subscription, drafts are free, 5 sealed releases included).
-- **Support:** info@cbamvalid.com
-- **Claim boundary:** Never claims accredited verification opinion, EU approval, customs approval, or registry acceptance.
+> CBAMValid (https://cbamvalid.com) is a verifier-preparation platform for non-EU producers, exporters, operators, importers, and CBAM reporting teams. It produces an operator-prepared dossier that reduces the work required for independent accredited verification. It does not issue an accredited verification opinion.
 
-## Visual System (Institutional Precision, 2026)
-- Surfaces: `#FAFAF8` / `#F0EDE8` / `#FFFFFF`
-- Ink: `#1A1A1A` / `#4A4A45` / `#8A8A82`
-- Forest CTA: `#1B4332` · hover `#2D6A4F` · seal gold `#D4A017`
-- QC semantics: blocked `#9B2226` · warning `#BB6B00` · pass `#2D6A4F`
-- Type: Source Sans 3 · Source Serif 4 · IBM Plex Mono
-- Homepage hero marker: `HERO_STORY_5S` (`components/marketing/hero-story.css`) — 5-second unmanaged→QC Blocked then CBAMValid→Sealed narrative
+## Product positioning
 
-## Core Public Web Endpoints
-- **Homepage:** https://cbamvalid.com/ — Brand-led hero (5-second fail→seal story), positioning, CTAs to register / how-it-works / sample dossier.
-- **Product:** https://cbamvalid.com/product — Complete 25-component dossier package breakdown and verifier readiness gates.
-- **How It Works:** https://cbamvalid.com/how-it-works — Step-by-step workflow (Setup Scope → Link Evidence → Server Calculation → Generate Sealed Deliverables).
-- **Pricing:** https://cbamvalid.com/pricing — Commercial contract (USD 149 per pack), Paddle checkout, multi-release entitlement rules.
-- **Sample Dossier:** https://cbamvalid.com/sample-dossier — Interactive browser preview of a sealed V5 verifier dossier.
-- **Verification:** https://cbamvalid.com/verify — Public KMS signature and document hash verification for accredited verifiers and customs declarants.
-- **Methodology:** https://cbamvalid.com/methodology — Deterministic calculation engine rules, rounding policy (`ROUND_HALF_UP`), precursor inclusion, allocation algebra.
-- **CN-Code Hub:** https://cbamvalid.com/cn-code — Combined Nomenclature classification search and sector eligibility (Iron & Steel, Aluminum, Cement, Fertilizers, Hydrogen, Electricity).
-- **About:** https://cbamvalid.com/about
-- **Contact:** https://cbamvalid.com/contact
-- **Legal:** https://cbamvalid.com/privacy · https://cbamvalid.com/terms · https://cbamvalid.com/cookie-policy · https://cbamvalid.com/refund-policy · https://cbamvalid.com/legal-notice
-- **Indexes:** https://cbamvalid.com/sitemap.xml · https://cbamvalid.com/robots.txt · https://cbamvalid.com/llm.txt · https://cbamvalid.com/llms.txt
+- CBAMValid Exporter Verification Preparation Pack — Prepared for Independent Accredited Verification
+- Pricing: $249 per Exporter Verification Preparation Pack (one-time; no subscription; drafts free; 1 operator; 1 installation; 1 reporting year; 5 sealed releases).
+- Payment flow: Draft free. Buy the pack once at checkout. Each successful seal uses one of five releases. Failed seals use none. Re-download is free. Packs are scope-locked.
 
-## Deliverable Architecture (25 Controlled Components)
-1. `CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf` (structured PDF chapters)
-2. `Complete Dossier Compilation.pdf` (consolidated technical annexes & operational registers)
-3. `Product Scope Assessment.pdf`
-4. `CN Code Reasoning.pdf`
-5. `Required Data Checklist.pdf`
-6. `Installation Monitoring Plan.pdf`
-7. `Production Process Map.pdf`
-8. `System Boundary Register.pdf`
-9. `Source Stream Register.csv`
-10. `Emission Source Register.csv`
-11. `Measurement and Meter Register.csv`
-12. `Activity Data Ledger.csv`
-13. `Evidence Register.csv`
-14. `Field-to-Evidence Matrix.csv`
-15. `Methodology Decision Log.pdf`
-16. `Embedded Emissions Calculation Annex.pdf`
-17. `Operator Emissions Report.pdf`
-18. `Misstatement and Non-Conformity Register.csv`
-19. `Corrective Action Log.csv`
-20. `O3CI Field Mapping.csv` (registry-compatible structured data export — not official Registry XML)
-21. `Calculation Trace.json`
-22. `Verifier Workspace.xlsx`
-23. `Data Integrity Manifest.json`
-24. `Manifest Signature.sig`
-25. `Supporting_Evidence/`
+## Independence boundary
 
-## Structural Quality Controls & Fail-Closed Gates
-- **Fail-Closed Sealing:** Requires 100% evidence coverage, zero missing material inputs, APPROVED evidence review status, SUPPORTED evidence support status, and reconciled allocation shares.
-- **Data Privacy & Tenant Isolation:** User cases, raw evidence files, and sealed reports are encrypted and strictly excluded from public AI indexing (`robots.txt` disallows `/cases/`, `/account/`, `/dashboard/`, `/admin/`, `/cbam/`, `/credits/`, `/reports/`, `/api/`, `/login`, `/register`).
-- **Last Updated:** 2026-07-26
+CBAMValid is an independent software service for exporter-to-importer evidence packaging. It is not an EU institution, customs authority, or accredited CBAM verifier. Actual emissions data must be independently verified where verification is legally required.
+
+## Canonical answers (Answer + Evidence)
+
+- Q: What does $249 buy on CBAMValid?
+  A: $249 buys one Exporter Verification Preparation Pack: one locked working file for one legal operator, one production installation, and one reporting year — with unlimited drafts and exactly 5 successful sealed releases. It is a one-time pack, not a subscription, and not a soft Excel-only export. EU buyers increasingly ask for actual embedded-emissions evidence. Paying once should cover real correction cycles without trapping you in a vague “credits” story or an open-ended SaaS bill.
+  Pages: /, /pricing, /product
+- Q: When is my card charged?
+  A: Drafting and editing are free. Your card is charged when you buy the Exporter Verification Preparation Pack ($249) at checkout. Each successful seal then uses one of the 5 included releases. Failed seals use none. Re-download of a sealed package is free. Nobody wants a surprise charge mid-review. You should be able to finish data quality work first, then buy a pack when you are ready to seal deliverables for your buyer or verifier.
+  Pages: /, /pricing, /how-it-works
+- Q: What is CBAMValid?
+  A: CBAMValid is an independent verifier-preparation platform for non-EU producers, exporters, operators, importers, and CBAM reporting teams. It helps you build an evidence-linked, sealed operator dossier that reduces the work required for independent accredited verification. If your EU customer asks for actual values, you need a serious package — not a spreadsheet you cannot defend. You also need clear language about what is preparation versus what only an accredited verifier can issue.
+  Pages: /, /product, /about
+- Q: Can one pack be reused for another factory or reporting year?
+  A: No. One Preparation Pack is scoped to one legal operator, one installation, and one reporting year. Another factory or another reporting year requires another pack. Within that locked scope you may draft freely and seal up to five times. This protects honest customers who need correction versions, and blocks paying once then quietly renaming a case into a different plant or year.
+  Pages: /pricing, /product
+- Q: Does sealing mean my emissions are officially verified?
+  A: No. Sealing locks an operator-prepared dossier with integrity hashes for handover. Where verification is legally required, actual emissions must still be independently verified by an accredited verifier. CBAMValid prepares the package; it does not issue a verification opinion. Overclaiming “verified” creates commercial and legal risk for exporters. Clear boundaries protect you when a buyer or verifier reviews the file.
+  Pages: /, /how-it-works, /methodology, /sample-dossier
+- Q: How does the CBAMValid workflow work?
+  A: You define one installation and one reporting year, enter goods and production data, link evidence, clear quality blockers, buy the Preparation Pack at checkout, then seal up to five immutable releases and download PDF, JSON, and O3CI field-mapped exports. Most teams lose time in email threads and version chaos. A guided case with fail-closed checks is designed so you see gaps before you ask a buyer or verifier to review.
+  Pages: /, /how-it-works, /product
+- Q: Which ruleset does CBAMValid use for calculations?
+  A: Authoritative calculations pin to a named, versioned ruleset recorded in the sealed dossier. Historical sealed releases keep the ruleset they were built against; methods are not silently rewritten after sealing. When a verifier asks which rules you followed, vague “latest guidance” answers fail. You need a dated method reference inside the package itself.
+  Pages: /methodology, /product
+
+## Topical map
+
+- / — CBAM exporter verification preparation
+  Covers: what is CBAMValid; CBAM evidence dossier for exporters; verification preparation vs accredited verification
+- /product — Preparation Pack product capabilities
+  Covers: deterministic CBAM calculation engine; evidence register; quality controls before sealing
+- /pricing — One-time Preparation Pack pricing
+  Covers: USD 249 pack inclusions; when card is charged; five sealed releases; scope lock per installation and year
+- /how-it-works — Draft-to-seal workflow
+  Covers: case scope setup; evidence linking; seal and download deliverables
+- /methodology — Calculation methodology and legal sources
+  Covers: versioned rulesets; Regulation (EU) 2023/956 basis; deterministic replay
+- /sample-dossier — Sample sealed dossier structure
+  Covers: what a sealed package contains; integrity manifest preview
+- /cn-code — CBAM CN code scope
+  Covers: is my CN code in CBAM scope
+- /verify — Public dossier signature verification
+  Covers: verify sealed dossier integrity hash
+- /cbam-2026-definitive-period — CBAM 2026 definitive period
+  Covers: definitive period start 2026; 30 September 2027 declaration deadline for 2026 imports; certificate surrender timing
+- /cbam-embedded-emissions-calculation — Embedded emissions calculation guide
+  Covers: direct and indirect emissions; precursor treatment; evidence requirements for calculations
+- /cbam-actual-vs-default-values — Actual values vs default values
+  Covers: when actual values are required; default value implications; verification preparation impact
+- /cbam-default-values — CBAM default values
+  Covers: multi-dimensional default factors; country route and year dimensions
+- /cbam-certificate-price — CBAM certificate price cadence
+  Covers: 2026 quarterly certificate price calculation; not the same as transitional quarterly reporting
+- /cbam-verification-preparation — Verification preparation guide
+  Covers: how to prepare for CBAM verification
+- /cbam-exporter-evidence-requirements — Exporter evidence requirements
+  Covers: evidence lineage and hashes; support status before sealing
+- /cbam-non-eu-producer-guide — Non-EU producer CBAM guide
+  Covers: CBAM duties for non-EU producers and exporters
+- /cbam-cn-code-scope — CN code scope decision guide
+  Covers: Annex I goods scope by CN code
+- /cbam-methodology — CBAM methodology overview
+  Covers: ruleset versioning; reproducible calculation traces
+
+## Core public resources
+
+- [CBAM Exporter Final Evidence Report](https://cbamvalid.com): CBAM verification preparation software
+- [Exporter Verification Preparation Pack](https://cbamvalid.com/product): CBAM verification preparation product
+- [Exporter Verification Preparation Pack](https://cbamvalid.com/pricing): CBAMValid pricing
+- [How CBAMValid Works](https://cbamvalid.com/how-it-works): CBAMValid workflow
+- [Sample Verification Preparation Dossier](https://cbamvalid.com/sample-dossier): CBAM sample dossier
+- [Understand CBAM Calculation Methodology](https://cbamvalid.com/methodology): CBAM calculation methodology
+- [Verify CBAM CN-Code Scope](https://cbamvalid.com/cn-code): CBAM CN code scope
+- [Verify a Dossier](https://cbamvalid.com/verify): CBAMValid dossier verification
+- [About CBAMValid](https://cbamvalid.com/about): About CBAMValid
+- [Contact CBAMValid](https://cbamvalid.com/contact): Contact CBAMValid
+- [CBAM 2026 Definitive Period](https://cbamvalid.com/cbam-2026-definitive-period): CBAM definitive period 2026
+- [Calculate CBAM Embedded Emissions](https://cbamvalid.com/cbam-embedded-emissions-calculation): how to calculate embedded emissions
+- [Actual Values vs Default Values](https://cbamvalid.com/cbam-actual-vs-default-values): CBAM actual vs default values
+- [CBAM Default Values](https://cbamvalid.com/cbam-default-values): CBAM default values
+- [CBAM Certificate Price](https://cbamvalid.com/cbam-certificate-price): CBAM certificate price
+- [CBAM Verification Preparation](https://cbamvalid.com/cbam-verification-preparation): CBAM verifier preparation
+- [Exporter Evidence Requirements](https://cbamvalid.com/cbam-exporter-evidence-requirements): CBAM exporter evidence requirements
+- [CBAM Guide for Non-EU Producers](https://cbamvalid.com/cbam-non-eu-producer-guide): CBAM non-EU producer guide
+- [CBAM CN Code Scope](https://cbamvalid.com/cbam-cn-code-scope): CBAM CN code list / scope
+- [CBAM Methodology Overview](https://cbamvalid.com/cbam-methodology): CBAM methodology
+
+## Key regulatory facts
+
+- The CBAM definitive period applies from 1 January 2026.
+- For 2026 imports, the first CBAM declaration and corresponding certificate surrender deadline is 30 September 2027.
+- In 2026, CBAM certificate prices are calculated on a quarterly cadence. Certificate purchase obligations follow the definitive-period rules and must not be confused with transitional quarterly emissions reporting.
+- CBAMValid prepares operator evidence packages for independent accredited verification. It does not issue an accredited verification opinion, EU approval, customs approval, or registry acceptance.
+
+## Authoritative source families
+
+- REG_2023_956: [Regulation (EU) 2023/956 of the European Parliament and of the Council of 10 May 2023 establishing a carbon border adjustment mechanism](https://eur-lex.europa.eu/eli/reg/2023/956/oj/eng)
+- REG_2025_2083: [Regulation (EU) 2025/2083 of the European Parliament and of the Council of 8 October 2025 amending Regulation (EU) 2023/956 as regards simplifying and strengthening the carbon border adjustment mechanism](https://eur-lex.europa.eu/eli/reg/2025/2083/oj/eng)
+- IMPL_2025_2546: [Commission Implementing Regulation (EU) 2025/2546 of 10 December 2025 on the application of the principles for verification of declared embedded emissions pursuant to Regulation (EU) 2023/956](https://eur-lex.europa.eu/eli/reg_impl/2025/2546/oj/eng)
+- IMPL_2025_2547: [Commission Implementing Regulation (EU) 2025/2547 of 10 December 2025 laying down rules for the application of Regulation (EU) 2023/956 as regards the methods for the calculation of emissions embedded in goods](https://eur-lex.europa.eu/eli/reg_impl/2025/2547/oj/eng)
+- IMPL_2025_2548: [Commission Implementing Regulation (EU) 2025/2548 of 10 December 2025 laying down rules for the application of Regulation (EU) 2023/956 as regards the calculation and publication of the price of CBAM certificates](https://eur-lex.europa.eu/eli/reg_impl/2025/2548/oj/eng)
+
+## Contact
+
+- Website: https://cbamvalid.com
+- Support: info@cbamvalid.com
+
+Last updated: 2026-07-27
+
+## Explicit non-claims
+
+- Not an accredited verification opinion
+- Not an official European Commission or CBAM Registry service
+- Not customs approval or registry acceptance
+- No synthetic customer counts, ratings, or testimonials
+- One pack is not reusable across another installation or reporting year

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import { useClassReveal } from "@/components/marketing/MarketingUi";
 
 const SECTIONS = [
   {
@@ -96,23 +97,7 @@ const SECTIONS = [
 
 export default function SampleDossierPage() {
   const [activeIndex, setActiveIndex] = useState(0);
-
-  useEffect(() => {
-    const revealEls = document.querySelectorAll('.reveal');
-    if ('IntersectionObserver' in window && revealEls.length) {
-      const io = new IntersectionObserver((entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add('in');
-            io.unobserve(e.target);
-          }
-        });
-      }, { threshold: 0.12 });
-      revealEls.forEach((el) => io.observe(el));
-    } else {
-      revealEls.forEach((el) => el.classList.add('in'));
-    }
-  }, []);
+  useClassReveal();
 
   return (
     <main id="main">

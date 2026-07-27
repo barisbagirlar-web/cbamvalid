@@ -1,52 +1,12 @@
 "use client";
 
 // MethodologyContent
-import React, { useEffect } from 'react';
-import Link from 'next/link';
+import React from 'react';
+import { useClassReveal } from '@/components/marketing/MarketingUi';
+import { AeoPageChrome } from '@/components/seo/AnswerEvidenceSection';
 
 export default function Page() {
-  // Simple scroll reveal logic in React
-  useEffect(() => {
-    const revealEls = document.querySelectorAll('.reveal');
-    if ('IntersectionObserver' in window && revealEls.length) {
-      const io = new IntersectionObserver((entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add('in');
-            io.unobserve(e.target);
-          }
-        });
-      }, { threshold: 0.12 });
-      revealEls.forEach((el) => io.observe(el));
-    } else {
-      revealEls.forEach((el) => el.classList.add('in'));
-    }
-
-    // Counter animation
-    const counters = document.querySelectorAll('[data-count]');
-    if ('IntersectionObserver' in window && counters.length) {
-      const cio = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          const el = entry.target;
-          cio.unobserve(el);
-          const target = parseInt(el.getAttribute('data-count') || '0', 10);
-          const suffix = el.getAttribute('data-suffix') || '';
-          const dur = 1300;
-          let start: number | null = null;
-          function step(ts: number) {
-            if (!start) start = ts;
-            const p = Math.min((ts - start) / dur, 1);
-            const eased = 1 - Math.pow(1 - p, 3);
-            el.textContent = String(Math.round(target * eased)) + suffix;
-            if (p < 1) requestAnimationFrame(step);
-          }
-          requestAnimationFrame(step);
-        });
-      }, { threshold: 0.4 });
-      counters.forEach((el) => cio.observe(el));
-    }
-  }, []);
+  useClassReveal();
 
   return (
     <main id="main">
@@ -58,6 +18,9 @@ export default function Page() {
         <span className="eyebrow">Methodology &amp; Sources</span>
         <h1>Every calculation pins to a <span className="serif-i">named, versioned ruleset</span></h1>
         <p className="lede">When a verifier asks “which rules did you follow?”, your dossier answers precisely. CBAMValid never silently changes methods — each ruleset is named, dated and recorded inside the sealed report.</p>
+        <p className="aeo-lead">
+          <strong>Why this matters under review:</strong> vague “we followed latest guidance” answers fail. You need a dated method reference inside the package — and honesty that sealing is preparation, not accreditation.
+        </p>
       </div>
     </div>
   </section>
@@ -144,6 +107,8 @@ export default function Page() {
       </div>
     </div>
   </section>
+
+  <AeoPageChrome path="/methodology" answerHeading="Methodology answers with evidence" answerLimit={2} />
 
   <section className="cta-band">
     <div className="wrap">

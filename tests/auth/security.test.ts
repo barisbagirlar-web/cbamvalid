@@ -163,7 +163,7 @@ describe("Production Security & Foundation Audits", () => {
   it("7. Checkout accepts an authenticated request", async () => {
     process.env.NEXT_PUBLIC_PADDLE_SANDBOX = "true";
     process.env.PADDLE_API_KEY = "pdl_sdbx_testkey";
-    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN = "pdl_sdbx_testclient";
+    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN = "test_client_token";
     process.env.NEXT_PUBLIC_PADDLE_PRICE_ID = "pri_testprice";
 
     const mockClaims = { uid: "user-123", email: "user@cbamvalid.com" };
@@ -184,9 +184,83 @@ describe("Production Security & Foundation Audits", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.ok).toBe(true);
+    expect(data.data.mode).toBe("transaction");
     expect(data.data.transactionId).toBe("txn_123");
+    expect(data.data.orderId).toMatch(/^ord_/);
+    expect(data.data.priceId).toBe("pri_testprice");
 
     // Cleanup
+    delete process.env.NEXT_PUBLIC_PADDLE_SANDBOX;
+    delete process.env.PADDLE_API_KEY;
+    delete process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
+    delete process.env.NEXT_PUBLIC_PADDLE_PRICE_ID;
+  });
+
+  it("7b. Checkout falls back to items mode when Paddle transaction.write is forbidden", async () => {
+    process.env.NEXT_PUBLIC_PADDLE_SANDBOX = "true";
+    process.env.PADDLE_API_KEY = "pdl_sdbx_readonly";
+    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN = "test_client_token";
+    process.env.NEXT_PUBLIC_PADDLE_PRICE_ID = "pri_testprice";
+
+    const mockClaims = { uid: "user-123", email: "user@cbamvalid.com" };
+    mockCookiesGet.mockReturnValue({ value: "valid-session" });
+    verifySessionCookie.mockResolvedValueOnce(mockClaims);
+
+    global.fetch = vi.fn().mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          error: { code: "forbidden", detail: "not authorized to create|read transaction" },
+        }),
+        { status: 403 }
+      )
+    );
+
+    const req = new Request("http://localhost/api/checkout/cbam", {
+      method: "POST",
+      body: JSON.stringify({ slug: "pack_premium_dossier_v5" }),
+    });
+
+    const res = await checkoutPost(req);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.ok).toBe(true);
+    expect(data.data.mode).toBe("items");
+    expect(data.data.transactionId).toBeUndefined();
+    expect(data.data.orderId).toMatch(/^ord_/);
+    expect(data.data.priceId).toBe("pri_testprice");
+    expect(data.data.correlationId).toBeTruthy();
+
+    delete process.env.NEXT_PUBLIC_PADDLE_SANDBOX;
+    delete process.env.PADDLE_API_KEY;
+    delete process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
+    delete process.env.NEXT_PUBLIC_PADDLE_PRICE_ID;
+  });
+
+  it("7c. Checkout accepts Bearer ID token when session cookie is missing", async () => {
+    process.env.NEXT_PUBLIC_PADDLE_SANDBOX = "true";
+    process.env.PADDLE_API_KEY = "pdl_sdbx_testkey";
+    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN = "test_client_token";
+    process.env.NEXT_PUBLIC_PADDLE_PRICE_ID = "pri_testprice";
+
+    mockCookiesGet.mockReturnValue(null);
+    verifyIdToken.mockResolvedValueOnce({ uid: "user-bearer", email: "bearer@cbamvalid.com" });
+    global.fetch = vi.fn().mockResolvedValueOnce(
+      new Response(JSON.stringify({ data: { id: "txn_bearer" } }), { status: 200 })
+    );
+
+    const req = new Request("http://localhost/api/checkout/cbam", {
+      method: "POST",
+      headers: { Authorization: "Bearer firebase-id-token" },
+      body: JSON.stringify({ slug: "pack_premium_dossier_v5" }),
+    });
+
+    const res = await checkoutPost(req);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.ok).toBe(true);
+    expect(data.data.transactionId).toBe("txn_bearer");
+    expect(verifyIdToken).toHaveBeenCalled();
+
     delete process.env.NEXT_PUBLIC_PADDLE_SANDBOX;
     delete process.env.PADDLE_API_KEY;
     delete process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
@@ -271,7 +345,7 @@ describe("Production Security & Foundation Audits", () => {
         canonicalProductCode: "pack_premium_dossier_v5",
         paddlePriceId: "pri_testprice",
         currency: "USD",
-        amountMinor: 14900,
+        amountMinor: 24900,
       })
     });
 
@@ -321,7 +395,7 @@ describe("Production Security & Foundation Audits", () => {
         ],
         details: {
           totals: {
-            grandTotal: 14900,
+            grandTotal: 24900,
           }
         }
       }

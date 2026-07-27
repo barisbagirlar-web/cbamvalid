@@ -33,6 +33,7 @@ export const getEntitlements = createCallable({}, async (_, { auth }) => {
 
 export const createCheckoutSession = createCallable(
   {
+    secrets: ["PADDLE_API_KEY"],
     schema: z.object({
       productCode: z.string(),
       caseId: z.string(),
@@ -49,8 +50,8 @@ export const createCheckoutSession = createCallable(
 
     const { createCheckout } = await import("../commerce/paddle/checkout-service");
     try {
-      const transactionId = await createCheckout(auth.uid, auth.token.email || "", productCode, { caseId });
-      return { transactionId, status: "success" };
+      const checkout = await createCheckout(auth.uid, auth.token.email || "", productCode, { caseId });
+      return { ...checkout, status: "success" };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "CHECKOUT_CREATION_FAILED";
       throw new HttpsError("internal", message);

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import { useClassReveal } from "@/components/marketing/MarketingUi";
 
 type VerificationState = 
   | "IDLE" 
@@ -30,23 +31,7 @@ export default function VerifyPage() {
   const [result, setResult] = useState<SealMetadata | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [requestId, setRequestId] = useState("");
-
-  useEffect(() => {
-    const revealEls = document.querySelectorAll('.reveal');
-    if ('IntersectionObserver' in window && revealEls.length) {
-      const io = new IntersectionObserver((entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add('in');
-            io.unobserve(e.target);
-          }
-        });
-      }, { threshold: 0.12 });
-      revealEls.forEach((el) => io.observe(el));
-    } else {
-      revealEls.forEach((el) => el.classList.add('in'));
-    }
-  }, []);
+  useClassReveal();
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();

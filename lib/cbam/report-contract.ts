@@ -106,19 +106,21 @@ export type SealedReportView = z.infer<typeof SealedReportViewSchema>;
 export function parseSealedReportView(value: unknown): SealedReportView {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const raw = { ...value as Record<string, any> };
+  let packageMetadata: z.infer<typeof PackageMetadataSchema> | undefined;
   if (raw.packageMetadata && typeof raw.packageMetadata === "object") {
     const metaParse = PackageMetadataSchema.safeParse(raw.packageMetadata);
-    if (!metaParse.success) {
-      delete raw.packageMetadata;
-    } else {
-      raw.packageMetadata = metaParse.data;
+    if (metaParse.success) {
+      packageMetadata = metaParse.data;
     }
   }
+  // Always strip raw/partial metadata — incomplete objects must not reach Zod.parse.
+  delete raw.packageMetadata;
 
-  const parsed = SealedReportViewSchema.safeParse(raw);
+  const withMeta = packageMetadata ? { ...raw, packageMetadata } : { ...raw };
+  const parsed = SealedReportViewSchema.safeParse(withMeta);
   if (parsed.success) return parsed.data;
-  
-  // If parsing failed only due to count or status, dynamically fix it for compatibility
+
+  // Compatibility path for legacy sealed reports missing newer readiness fields.
   const isV5 = Boolean(
     raw &&
       (raw.productCode === "pack_premium_dossier_v5" ||
@@ -127,11 +129,12 @@ export function parseSealedReportView(value: unknown): SealedReportView {
         raw.packageTopLevelComponentCount === 23)
   );
 
-  const manifestCount = raw.packageMetadata?.actualTopLevelComponentCount;
+  const manifestCount = packageMetadata?.actualTopLevelComponentCount;
   const defaultCount = isV5 ? 25 : 27;
 
   return SealedReportViewSchema.parse({
     ...raw,
+    ...(packageMetadata ? { packageMetadata } : {}),
     packageTopLevelComponentCount: manifestCount !== undefined ? manifestCount : defaultCount,
     automatedReadiness: isV5 ? "READY_FOR_VERIFIER_REVIEW" : "READY_FOR_INDEPENDENT_VERIFICATION",
     independentVerifierStatus: (raw.independentVerifierStatus as string) || "NOT_REVIEWED",

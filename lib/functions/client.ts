@@ -117,7 +117,18 @@ export const getReportDownloadUrlCallable = httpsCallable<{
 }, ReportDownloadDescriptor>(firebaseFunctions, "getReportDownloadUrl");
 
 export const getEntitlementsCallable = httpsCallable<void, { entitlements: PreparationPackEntitlement[] }>(firebaseFunctions, "getEntitlements");
-export const createCheckoutSessionCallable = httpsCallable<{ productCode: string; caseId: string }, { transactionId: string; error?: string }>(firebaseFunctions, "createCheckoutSession");
+export const createCheckoutSessionCallable = httpsCallable<
+  { productCode: string; caseId: string },
+  {
+    mode?: "transaction" | "items";
+    orderId?: string;
+    correlationId?: string;
+    priceId?: string;
+    transactionId?: string;
+    status?: string;
+    error?: string;
+  }
+>(firebaseFunctions, "createCheckoutSession");
 export const unlockCbamUsesCallable = httpsCallable<{ requestId: string }, UnknownRecord>(firebaseFunctions, "unlockCbamUses");
 
 export const adminSetUserTokensCallable = httpsCallable<{ targetUserId: string; tokensToSet: number }, { success: boolean }>(firebaseFunctions, "adminSetUserTokens");

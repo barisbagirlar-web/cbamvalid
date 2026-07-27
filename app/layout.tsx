@@ -49,7 +49,8 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${sourceSans.variable} ${sourceSerif.variable} ${ibmPlexMono.variable}`}
+      translate="no"
+      className={`notranslate ${sourceSans.variable} ${sourceSerif.variable} ${ibmPlexMono.variable}`}
     >
       <body className={`${sourceSans.className} bg-kil-base text-kil-text antialiased min-h-screen`}>
         <AuthProvider>{children}</AuthProvider>

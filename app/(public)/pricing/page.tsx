@@ -1,67 +1,48 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
+import { FaqItem, useClassReveal } from "@/components/marketing/MarketingUi";
+import { AeoPageChrome } from "@/components/seo/AnswerEvidenceSection";
 
-interface FaqItemProps {
-  question: string;
-  answer: string;
-}
-
-function FaqItem({ question, answer }: FaqItemProps) {
-  const [isOpen, setIsOpen] = useState(false);
-
+function CheckIcon() {
   return (
-    <div className={`faq-item ${isOpen ? "open" : ""}`}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="faq-q"
-        aria-expanded={isOpen}
-      >
-        {question}
-        <span className="chev">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" aria-hidden="true">
-            <path d="m6 9 6 6 6-6" />
-          </svg>
-        </span>
-      </button>
-      <div className="faq-a" style={{ maxHeight: isOpen ? "200px" : "0px" }}>
-        <p>{answer}</p>
-      </div>
-    </div>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
+      <path d="m4 12.5 5 5L20 6.5" />
+    </svg>
   );
 }
 
 export default function PricingPage() {
   const [currency, setCurrency] = useState<"usd" | "eur">("usd");
+  useClassReveal();
 
-  useEffect(() => {
-    const revealEls = document.querySelectorAll('.reveal');
-    if ('IntersectionObserver' in window && revealEls.length) {
-      const io = new IntersectionObserver((entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add('in');
-            io.unobserve(e.target);
-          }
-        });
-      }, { threshold: 0.12 });
-      revealEls.forEach((el) => io.observe(el));
-    } else {
-      revealEls.forEach((el) => el.classList.add('in'));
-    }
-  }, []);
+  const priceLabel =
+    currency === "usd" ? CANONICAL_PRICING.priceFormatted : CANONICAL_PRICING.eurApproxFormatted;
 
   return (
     <main id="main">
       <section className="hero" style={{ paddingBottom: "32px" }}>
         <div className="wrap" style={{ textAlign: "center" }}>
-          <span className="eyebrow">Simple, One-Time Pricing</span>
-          <h1>Prepare your CBAM case<br /><span className="serif-i">before you pay</span></h1>
-          <p className="lede" style={{ margin: "0 auto 22px" }}>
-            Create, complete and review your case without charge. Releases are consumed only after a dossier is successfully sealed.
+          <span className="eyebrow">One-time pack · No subscription</span>
+          <h1>
+            Exporter Verification
+            <br />
+            <span className="serif-i">Preparation Pack</span>
+          </h1>
+          <p className="lede" style={{ margin: "0 auto 14px" }}>
+            {CANONICAL_PRICING.valueSummary}
           </p>
-          <Link className="btn btn-ghost" href="/sample-dossier">View Sample Dossier Before Buying</Link>
+          <p className="aeo-lead" style={{ margin: "0 auto 18px" }}>
+            <strong>Why this price exists:</strong> EU buyers ask for defendable actuals. You need correction room (five seals), not a disposable export — and not an open-ended subscription while you finish evidence work.
+          </p>
+          <p className="lede" style={{ margin: "0 auto 22px", fontSize: "1rem", opacity: 0.9 }}>
+            {CANONICAL_PRICING.paymentFlowSummary}
+          </p>
+          <Link className="btn btn-ghost" href="/sample-dossier">
+            View Sample Dossier Before Buying
+          </Link>
           <div>
             <div className="currency-toggle" role="group" aria-label="Currency">
               <button
@@ -83,15 +64,57 @@ export default function PricingPage() {
         </div>
       </section>
 
+      <section className="section tight" style={{ paddingTop: "8px" }}>
+        <div className="wrap">
+          <div className="section-head center reveal" style={{ marginBottom: "28px" }}>
+            <span className="eyebrow">How payment works</span>
+            <h2>Clear flow from draft to sealed release</h2>
+          </div>
+          <div className="timeline" style={{ marginBottom: "40px" }}>
+            <div className="tl-step reveal">
+              <p className="step-no">1</p>
+              <h3>Draft free</h3>
+              <p>Build and edit your case with unlimited drafts. No card required.</p>
+            </div>
+            <div className="tl-step reveal">
+              <p className="step-no">2</p>
+              <h3>Buy the pack</h3>
+              <p>
+                Pay {CANONICAL_PRICING.priceFormatted} once at checkout. Your card is charged when you buy the pack — not when you click seal.
+              </p>
+            </div>
+            <div className="tl-step reveal">
+              <p className="step-no">3</p>
+              <h3>Lock the scope</h3>
+              <p>
+                The pack covers one operator, one installation, and one reporting year. That working file stays scoped to that unit.
+              </p>
+            </div>
+            <div className="tl-step reveal">
+              <p className="step-no">4</p>
+              <h3>Seal up to five times</h3>
+              <p>
+                Each successful sealed release uses one of five included releases. Failed seals use none. Prior sealed versions stay immutable.
+              </p>
+            </div>
+            <div className="tl-step reveal">
+              <p className="step-no">5</p>
+              <h3>Re-download free</h3>
+              <p>Download the same sealed package again at any time. Re-download does not use a release.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="section tight" style={{ paddingTop: "24px" }}>
         <div className="wrap">
           <div className="pricing-grid">
             <div className="price-card featured reveal">
-              <span className="badge-pop">EU Seal · One-time</span>
-              <h3>Exporter Verification Preparation Pack</h3>
-              <p className="sub">Prepared for independent accredited-verification</p>
+              <span className="badge-pop">Scoped pack · One-time</span>
+              <h3>{CANONICAL_PRICING.packName}</h3>
+              <p className="sub">{CANONICAL_PRICING.description}</p>
               <p className="price-fig">
-                <span>{currency === "usd" ? "$149" : "≈ €139"}</span>{" "}
+                <span>{priceLabel}</span>{" "}
                 <small>
                   {currency === "usd"
                     ? "per pack · no subscription"
@@ -100,69 +123,58 @@ export default function PricingPage() {
               </p>
               <ul className="feat-list">
                 <li>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-                    <path d="m4 12.5 5 5L20 6.5" />
-                  </svg>
-                  1 installation included
+                  <CheckIcon />1 legal operator / exporter
                 </li>
                 <li>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-                    <path d="m4 12.5 5 5L20 6.5" />
-                  </svg>
-                  1 reporting year included
+                  <CheckIcon />1 production installation
                 </li>
                 <li>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-                    <path d="m4 12.5 5 5L20 6.5" />
-                  </svg>
-                  5 sealed releases included
+                  <CheckIcon />1 reporting year
                 </li>
                 <li>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-                    <path d="m4 12.5 5 5L20 6.5" />
-                  </svg>
-                  Emissions calculations and validation
+                  <CheckIcon />Unlimited drafts on that working file
                 </li>
                 <li>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-                    <path d="m4 12.5 5 5L20 6.5" />
-                  </svg>
-                  Unlimited drafts
+                  <CheckIcon />
+                  {CANONICAL_PRICING.includedSealedReleases} successful sealed releases
                 </li>
                 <li>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-                    <path d="m4 12.5 5 5L20 6.5" />
-                  </svg>
-                  O3CI field-mapped structured data export
+                  <CheckIcon />Evidence-linked calculations and QC checks
+                </li>
+                <li>
+                  <CheckIcon />Sealed PDF, JSON, and O3CI field-mapped export
+                </li>
+                <li>
+                  <CheckIcon />Immutable sealed versions + free re-download
                 </li>
               </ul>
-              <Link className="btn btn-primary" href="/credits/buy">Get the Preparation Pack <span className="arr">→</span></Link>
+              <Link className="btn btn-primary" href="/credits/buy">
+                Get the Preparation Pack <span className="arr">→</span>
+              </Link>
             </div>
             <div className="price-card free reveal">
-              <h3>Free Drafts</h3>
-              <p className="sub">Prepare and review without cost</p>
-              <p className="price-fig">$0 <small>forever</small></p>
+              <h3>Free drafts</h3>
+              <p className="sub">Prepare before you buy</p>
+              <p className="price-fig">
+                $0 <small>no card required</small>
+              </p>
               <ul className="feat-list">
                 <li>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-                    <path d="m4 12.5 5 5L20 6.5" />
-                  </svg>
-                  Create unlimited cases
+                  <CheckIcon />Create and edit draft cases
                 </li>
                 <li>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-                    <path d="m4 12.5 5 5L20 6.5" />
-                  </svg>
-                  Real-time QC engine
+                  <CheckIcon />Real-time quality controls
                 </li>
                 <li>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-                    <path d="m4 12.5 5 5L20 6.5" />
-                  </svg>
-                  Data gap analysis
+                  <CheckIcon />Evidence and data gap review
+                </li>
+                <li>
+                  <CheckIcon />Sealing and final download require a pack
                 </li>
               </ul>
-              <Link className="btn btn-ghost" href="/register?next=/cases/new">Start for Free</Link>
+              <Link className="btn btn-ghost" href="/register?next=/cases/new">
+                Start for Free
+              </Link>
             </div>
           </div>
 
@@ -193,20 +205,32 @@ export default function PricingPage() {
         <div className="wrap">
           <div className="section-head center reveal">
             <span className="eyebrow">Pricing FAQ</span>
-            <h2>No surprises at checkout</h2>
+            <h2>What you buy — and what you do not</h2>
           </div>
           <div className="faq-list">
             <FaqItem
-              question="When exactly is my card charged?"
-              answer="Only when you seal a dossier. Drafting, editing and reviewing your case is always free — releases are consumed only after a successful seal."
+              question="When is my card charged?"
+              answer={`Your card is charged when you buy the ${CANONICAL_PRICING.packName} at checkout (${CANONICAL_PRICING.priceFormatted}). Drafting and editing are free. Sealing uses a release from the pack you already bought; it does not charge your card again.`}
+            />
+            <FaqItem
+              question="What exactly does USD 249 include?"
+              answer="One locked working file for one legal operator, one installation, and one reporting year; unlimited drafts on that file; and five successful sealed releases. It is a verifier-preparation dossier pack — not an Excel-only export and not a subscription."
             />
             <FaqItem
               question="What does “5 sealed releases” mean?"
-              answer="Each pack lets you seal the dossier up to five times — so you can correct data and re-issue the final package without buying again, within the same installation and reporting year."
+              answer="You can seal and issue the final package up to five times for the same scoped case — for corrections after review — without buying another pack. Each successful seal uses one release. A blocked or failed seal uses none. Older sealed versions stay immutable."
+            />
+            <FaqItem
+              question="Can I use one pack for another factory or another year?"
+              answer="No. One pack is scoped to one operator, one installation, and one reporting year. Another installation or reporting year needs another pack."
+            />
+            <FaqItem
+              question="Is this an official EU verification or customs approval?"
+              answer="No. CBAMValid prepares an operator dossier for independent accredited verification. It does not issue an accredited verification opinion, customs approval, registry acceptance, or EU approval."
             />
             <FaqItem
               question="Do you offer refunds?"
-              answer="Yes — our refund policy is published in the footer of every page and applies before a dossier is sealed."
+              answer="Yes — our refund policy is published in the site footer and applies before a dossier is sealed."
             />
             <FaqItem
               question="Can I pay in EUR?"
@@ -215,6 +239,12 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
+
+      <AeoPageChrome
+        path="/pricing"
+        answerHeading="Pricing answers with evidence — not marketing fluff"
+        answerLimit={3}
+      />
     </main>
   );
 }

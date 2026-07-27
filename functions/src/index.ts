@@ -3,7 +3,8 @@ import { setGlobalOptions } from "firebase-functions/v2";
 // Set maximum timeout and memory for all functions
 setGlobalOptions({
   region: "europe-west1",
-  maxInstances: 2,
+  // Keep cold-start headroom under europe-west1 Cloud Run CPU quota during rolling deploys.
+  maxInstances: 1,
 });
 
 export * from "./handlers/cases";

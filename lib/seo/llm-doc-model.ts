@@ -1,0 +1,147 @@
+import {
+  INDEPENDENCE_CLAIM,
+  PRICE_CLAIM,
+  PRODUCT_POSITIONING_CLAIM,
+  SUPPORT_EMAIL_CLAIM,
+  assertVerifiedClaim,
+} from "./claims";
+import { AEO_ANSWER_BANK } from "./aeo/answer-bank";
+import { TOPICAL_MAP } from "./aeo/topical-map";
+import { listVerifiedRegulatoryStatements, SEO_LEGAL_SOURCE_INDEX } from "./regulatory-sources";
+import { listSitemapRoutes } from "./registry";
+import { siteConfig } from "@/lib/site-config";
+
+export interface LlmDocModel {
+  readonly title: string;
+  readonly summary: string;
+  readonly productPositioning: string;
+  readonly independence: string;
+  readonly pricingLine: string;
+  readonly paymentFlow: string;
+  readonly supportEmail: string;
+  readonly resources: readonly { readonly title: string; readonly url: string; readonly note: string }[];
+  readonly topicalMap: readonly { readonly path: string; readonly topic: string; readonly covers: readonly string[] }[];
+  readonly answers: readonly { readonly question: string; readonly answer: string; readonly routes: readonly string[] }[];
+  readonly regulatoryStatements: readonly string[];
+  readonly legalSources: readonly { readonly id: string; readonly title: string; readonly url: string }[];
+  readonly lastUpdated: string;
+}
+
+export function buildLlmDocModel(): LlmDocModel {
+  const price = assertVerifiedClaim(PRICE_CLAIM, "PRICE_CLAIM");
+  const resources = listSitemapRoutes()
+    .filter((route) => route.pageType !== "legal" && route.pageType !== "cn-detail")
+    .slice(0, 24)
+    .map((route) => ({
+      title: route.h1,
+      url: `${siteConfig.canonicalOrigin}${route.canonicalPath === "/" ? "" : route.canonicalPath}`,
+      note: route.primaryIntent,
+    }));
+
+  return {
+    title: "CBAMValid — Exporter Verification Preparation Pack",
+    summary:
+      "CBAMValid (https://cbamvalid.com) is a verifier-preparation platform for non-EU producers, exporters, operators, importers, and CBAM reporting teams. It produces an operator-prepared dossier that reduces the work required for independent accredited verification. It does not issue an accredited verification opinion.",
+    productPositioning: assertVerifiedClaim(PRODUCT_POSITIONING_CLAIM, "PRODUCT_POSITIONING_CLAIM"),
+    independence: assertVerifiedClaim(INDEPENDENCE_CLAIM, "INDEPENDENCE_CLAIM"),
+    pricingLine: `${price.formatted} per ${price.packName} (one-time; no subscription; drafts free; 1 operator; 1 installation; 1 reporting year; 5 sealed releases).`,
+    paymentFlow:
+      "Draft free. Buy the pack once at checkout. Each successful seal uses one of five releases. Failed seals use none. Re-download is free. Packs are scope-locked.",
+    supportEmail: assertVerifiedClaim(SUPPORT_EMAIL_CLAIM, "SUPPORT_EMAIL_CLAIM"),
+    resources,
+    topicalMap: TOPICAL_MAP.map((node) => ({
+      path: node.path,
+      topic: node.topic,
+      covers: node.covers,
+    })),
+    answers: AEO_ANSWER_BANK.map((answer) => ({
+      question: answer.question,
+      answer: `${answer.directAnswer} ${answer.empathyContext}`,
+      routes: answer.routes,
+    })),
+    regulatoryStatements: listVerifiedRegulatoryStatements(),
+    legalSources: Object.values(SEO_LEGAL_SOURCE_INDEX).map((source) => ({
+      id: source.id,
+      title: source.title,
+      url: source.eliUri,
+    })),
+    lastUpdated: "2026-07-27",
+  };
+}
+
+export function renderLlmsTxt(model: LlmDocModel): string {
+  const lines: string[] = [
+    `# ${model.title}`,
+    "",
+    `> ${model.summary}`,
+    "",
+    "## Product positioning",
+    "",
+    `- ${model.productPositioning}`,
+    `- Pricing: ${model.pricingLine}`,
+    `- Payment flow: ${model.paymentFlow}`,
+    "",
+    "## Independence boundary",
+    "",
+    model.independence,
+    "",
+    "## Canonical answers (Answer + Evidence)",
+    "",
+  ];
+
+  for (const answer of model.answers) {
+    lines.push(`- Q: ${answer.question}`);
+    lines.push(`  A: ${answer.answer}`);
+    lines.push(`  Pages: ${answer.routes.join(", ")}`);
+  }
+
+  lines.push("", "## Topical map", "");
+  for (const node of model.topicalMap) {
+    lines.push(`- ${node.path} — ${node.topic}`);
+    lines.push(`  Covers: ${node.covers.join("; ")}`);
+  }
+
+  lines.push("", "## Core public resources", "");
+
+  for (const resource of model.resources) {
+    lines.push(`- [${resource.title}](${resource.url}): ${resource.note}`);
+  }
+
+  lines.push("", "## Key regulatory facts", "");
+  for (const statement of model.regulatoryStatements) {
+    lines.push(`- ${statement}`);
+  }
+
+  lines.push("", "## Authoritative source families", "");
+  for (const source of model.legalSources) {
+    lines.push(`- ${source.id}: [${source.title}](${source.url})`);
+  }
+
+  lines.push(
+    "",
+    "## Contact",
+    "",
+    `- Website: ${siteConfig.canonicalOrigin}`,
+    `- Support: ${model.supportEmail}`,
+    "",
+    `Last updated: ${model.lastUpdated}`,
+    "",
+  );
+
+  return lines.join("\n");
+}
+
+export function renderLlmsFullTxt(model: LlmDocModel): string {
+  return [
+    renderLlmsTxt(model).trimEnd(),
+    "",
+    "## Explicit non-claims",
+    "",
+    "- Not an accredited verification opinion",
+    "- Not an official European Commission or CBAM Registry service",
+    "- Not customs approval or registry acceptance",
+    "- No synthetic customer counts, ratings, or testimonials",
+    "- One pack is not reusable across another installation or reporting year",
+    "",
+  ].join("\n");
+}

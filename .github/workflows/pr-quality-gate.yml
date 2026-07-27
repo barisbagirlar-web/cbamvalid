@@ -99,6 +99,12 @@ jobs:
           set -o pipefail
           npm run lint 2>&1 | tee artifacts/ci/lint.log
 
+      - name: SEO validate
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run seo:validate 2>&1 | tee artifacts/ci/seo-validate.log
+
       - name: Authentication tests
         shell: bash
         run: |

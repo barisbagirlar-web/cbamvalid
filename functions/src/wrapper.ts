@@ -17,8 +17,12 @@ export function createCallable<T, Res>(
   return onCall<T>(
     {
       region: "europe-west1",
+      // Browser clients authenticate inside the callable via Firebase Auth.
+      // Cloud Run IAM must allow unauthenticated invoke or OPTIONS preflight
+      // fails with a Google Frontend 403 and no CORS headers.
+      invoker: "public",
       enforceAppCheck: shouldEnforceAppCheck(),
-      consumeAppCheckToken: true,
+      consumeAppCheckToken: shouldEnforceAppCheck(),
       cors: true,
       ...options,
     },

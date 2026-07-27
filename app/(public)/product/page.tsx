@@ -1,51 +1,11 @@
 "use client";
 
-import React, { useEffect } from 'react';
-import Link from 'next/link';
+import React from 'react';
+import { useClassReveal } from '@/components/marketing/MarketingUi';
+import { AeoPageChrome } from '@/components/seo/AnswerEvidenceSection';
 
 export default function Page() {
-  // Simple scroll reveal logic in React
-  useEffect(() => {
-    const revealEls = document.querySelectorAll('.reveal');
-    if ('IntersectionObserver' in window && revealEls.length) {
-      const io = new IntersectionObserver((entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add('in');
-            io.unobserve(e.target);
-          }
-        });
-      }, { threshold: 0.12 });
-      revealEls.forEach((el) => io.observe(el));
-    } else {
-      revealEls.forEach((el) => el.classList.add('in'));
-    }
-
-    // Counter animation
-    const counters = document.querySelectorAll('[data-count]');
-    if ('IntersectionObserver' in window && counters.length) {
-      const cio = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          const el = entry.target;
-          cio.unobserve(el);
-          const target = parseInt(el.getAttribute('data-count') || '0', 10);
-          const suffix = el.getAttribute('data-suffix') || '';
-          const dur = 1300;
-          let start: number | null = null;
-          function step(ts: number) {
-            if (!start) start = ts;
-            const p = Math.min((ts - start) / dur, 1);
-            const eased = 1 - Math.pow(1 - p, 3);
-            el.textContent = String(Math.round(target * eased)) + suffix;
-            if (p < 1) requestAnimationFrame(step);
-          }
-          requestAnimationFrame(step);
-        });
-      }, { threshold: 0.4 });
-      counters.forEach((el) => cio.observe(el));
-    }
-  }, []);
+  useClassReveal();
 
   return (
     <main id="main">
@@ -57,6 +17,9 @@ export default function Page() {
         <span className="eyebrow">Product</span>
         <h1>The dossier workspace built for <span className="serif-i">CBAM exporters</span></h1>
         <p className="lede">One guided environment to enter production data, link evidence, resolve quality findings and seal a verifier-preparation package — without spreadsheets, email threads or version chaos.</p>
+        <p className="aeo-lead">
+          <strong>If you are under buyer pressure:</strong> start a free draft, close the blockers you can see, then buy one USD 249 scoped pack when you are ready to seal. You are preparing for independent review — not buying a fake “verified” stamp.
+        </p>
         <div className="hero-ctas" style={{"marginTop":"30px"}}>
           <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">Start a Dossier <span className="arr">→</span></a>
           <a className="btn btn-ghost btn-lg" href="/sample-dossier">See a Sealed Sample</a>
@@ -138,10 +101,12 @@ export default function Page() {
     </div>
   </section>
 
+  <AeoPageChrome path="/product" answerHeading="Product answers with evidence" answerLimit={2} />
+
   <section className="cta-band">
     <div className="wrap">
       <h2>Build your first case <span className="serif-i">free of charge</span></h2>
-      <p>Pay only when you seal the final dossier. USD 149 per pack — no subscription.</p>
+      <p>Draft free. Buy the USD 249 pack once for one installation and one reporting year — five sealed releases, no subscription.</p>
       <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">Start a Dossier <span className="arr">→</span></a>
     </div>
   </section>

@@ -397,7 +397,7 @@ export default function CbamLandingPage() {
                     href="/credits/buy"
                     className="bg-accent hover:bg-accent-hover text-surface px-4 py-2 rounded-md font-semibold text-xs transition-colors flex items-center gap-1.5"
                   >
-                    <ShoppingBag className="w-3.5 h-3.5" /> Buy Pack — $149
+                    <ShoppingBag className="w-3.5 h-3.5" /> Buy Pack — $249
                   </Link>
                 )}
               </div>
@@ -434,7 +434,7 @@ export default function CbamLandingPage() {
                     <li className="flex items-start gap-2"><span className="font-mono text-accent font-bold">1.</span><span>Review the required data and evidence guidelines below.</span></li>
                     <li className="flex items-start gap-2"><span className="font-mono text-accent font-bold">2.</span><span>Create your first dossier using the draft workspace; no upfront payment is needed.</span></li>
                     <li className="flex items-start gap-2"><span className="font-mono text-accent font-bold">3.</span><span>Complete the eight data-preparation sections with automatic compliance checks.</span></li>
-                    <li className="flex items-start gap-2"><span className="font-mono text-accent font-bold">4.</span><span>Purchase the $149 Preparation Pack before sealing and downloading final deliverables.</span></li>
+                    <li className="flex items-start gap-2"><span className="font-mono text-accent font-bold">4.</span><span>Purchase the $249 Preparation Pack before sealing and downloading final deliverables.</span></li>
                   </ol>
                 </div>
 
@@ -626,7 +626,7 @@ export default function CbamLandingPage() {
                       />
                     ) : (
                       <Link href="/credits/buy" className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center justify-center gap-1.5 w-full shadow-sm">
-                        Buy Pack — $149
+                        Buy Pack — $249
                       </Link>
                     )}
                   </div>

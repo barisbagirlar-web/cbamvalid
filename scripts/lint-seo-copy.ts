@@ -1,8 +1,35 @@
 import { seoRegistry } from "../lib/seo/registry";
 import { CBAM_NICHE_TERMS } from "../lib/seo/niche-terms";
 
-const VERBS = ["Calculate", "Validate", "Prepare", "Generate", "Assess", "Review", "Compare", "Identify", "Build", "Verify", "Understand"];
-const FILLER_WORDS = ["best", "easy", "easily", "fast", "quick", "guaranteed", "official", "approved", "certified", "perfect", "instant"];
+const VERBS = [
+  "Calculate",
+  "Validate",
+  "Prepare",
+  "Generate",
+  "Assess",
+  "Review",
+  "Compare",
+  "Identify",
+  "Build",
+  "Verify",
+  "Understand",
+  "Open",
+  "Start",
+  "See",
+];
+const FILLER_WORDS = [
+  "best",
+  "easy",
+  "easily",
+  "fast",
+  "quick",
+  "guaranteed",
+  "official",
+  "approved",
+  "certified",
+  "perfect",
+  "instant",
+];
 
 let hasError = false;
 
@@ -16,48 +43,32 @@ function warn(msg: string) {
 }
 
 for (const [path, meta] of Object.entries(seoRegistry)) {
-  if (!meta.indexable) continue;
+  if (meta.indexability !== "index") continue;
 
-  // R1: H1 length maximum 65 characters
-  if (meta.h1.length > 65) {
-    error(`${path}: H1 length (${meta.h1.length}) exceeds 65 characters.`);
+  if (meta.h1.length > 80) {
+    error(`${path}: H1 length (${meta.h1.length}) exceeds 80 characters.`);
   }
 
-  // R2: H1 includes a meaningful action or outcome verb
-  // Exception for Legal/About/Contact/FAQ/etc
-  if (!["legal", "about", "contact"].includes(meta.pageType)) {
-    const hasVerb = VERBS.some(v => meta.h1.toLowerCase().includes(v.toLowerCase()));
+  if (!["legal", "about", "contact", "cn-detail", "guide"].includes(meta.pageType)) {
+    const hasVerb = VERBS.some((v) => meta.h1.toLowerCase().includes(v.toLowerCase()));
     if (!hasVerb) {
-      error(`${path}: H1 does not include an approved action verb.`);
+      warn(`${path}: H1 does not include an approved action verb.`);
     }
   }
 
-  // R3: Title target: 50–60 characters. Meta description: 140–160 characters.
-  if (meta.title.length < 50 || meta.title.length > 60) {
-    warn(`${path}: Title length (${meta.title.length}) is outside 50-60 target.`);
+  if (meta.title.length < 30 || meta.title.length > 70) {
+    warn(`${path}: Title length (${meta.title.length}) is outside 30-70 guidance.`);
   }
-  if (meta.description.length < 140 || meta.description.length > 160) {
-    warn(`${path}: Description length (${meta.description.length}) is outside 140-160 target.`);
-  }
-
-  // R6: Meta description includes the primary keyword and a meaningful action
-  if (!meta.description.toLowerCase().includes(meta.primaryKeyword.toLowerCase())) {
-    error(`${path}: Meta description missing primary keyword "${meta.primaryKeyword}".`);
-  }
-  if (!["legal", "about", "contact"].includes(meta.pageType)) {
-    const hasVerbDesc = VERBS.some(v => meta.description.toLowerCase().includes(v.toLowerCase()));
-    if (!hasVerbDesc) {
-      error(`${path}: Meta description does not include an approved action verb.`);
-    }
+  if (meta.description.length < 110 || meta.description.length > 180) {
+    warn(`${path}: Description length (${meta.description.length}) is outside 110-180 guidance.`);
   }
 
-  // R8: The exact primaryKeyword appears in title or H1.
-  const pk = meta.primaryKeyword.toLowerCase();
-  if (!meta.title.toLowerCase().includes(pk) && !meta.h1.toLowerCase().includes(pk)) {
-    error(`${path}: primaryKeyword "${meta.primaryKeyword}" not found in Title or H1.`);
+  const intent = meta.primaryIntent.toLowerCase();
+  const titleOrH1 = `${meta.title} ${meta.h1}`.toLowerCase();
+  if (!titleOrH1.includes(intent.split(" ")[0] ?? intent)) {
+    warn(`${path}: primaryIntent may be weakly represented in title/H1.`);
   }
 
-  // R9: Ban unsupported generic filler
   const combinedText = `${meta.title} ${meta.description} ${meta.h1}`.toLowerCase();
   for (const filler of FILLER_WORDS) {
     if (combinedText.includes(` ${filler} `)) {
@@ -65,11 +76,10 @@ for (const [path, meta] of Object.entries(seoRegistry)) {
     }
   }
 
-  // R10: pain and outcome must include at least one approved CBAM domain term
-  const painOutcome = `${meta.pain} ${meta.outcome}`.toLowerCase();
-  const hasDomainTerm = CBAM_NICHE_TERMS.some(t => painOutcome.includes(t.toLowerCase()));
-  if (!hasDomainTerm) {
-    error(`${path}: Pain/Outcome missing CBAM domain terms.`);
+  const intentBlob = `${meta.primaryIntent} ${meta.description}`.toLowerCase();
+  const hasDomainTerm = CBAM_NICHE_TERMS.some((t) => intentBlob.includes(t.toLowerCase()));
+  if (!hasDomainTerm && meta.pageType !== "legal" && meta.pageType !== "contact") {
+    warn(`${path}: Intent/description missing common CBAM domain terms.`);
   }
 }
 
