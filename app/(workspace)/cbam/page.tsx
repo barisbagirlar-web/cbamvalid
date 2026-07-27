@@ -390,7 +390,7 @@ export default function CbamLandingPage() {
                     href="/account"
                     className="bg-accent hover:bg-accent-hover text-surface px-4 py-2 rounded-md font-semibold text-xs transition-colors flex items-center gap-1.5"
                   >
-                    Unlock Pack from Credits
+                    Unlock Pack
                   </Link>
                 ) : (
                   <Link
@@ -612,7 +612,7 @@ export default function CbamLandingPage() {
                   <div className="space-y-4">
                     <div className="p-3 bg-muted/20 border border-border rounded-lg text-xs text-muted leading-relaxed">
                       <span className="font-bold text-foreground block mb-1">No Active Pack</span>
-                      Account credits: <strong>{availableCredits}</strong>. Sealing requires an unlocked Preparation Pack entitlement.
+                      Sealing requires an active Preparation Pack entitlement. Buy a pack at checkout, or activate unused pack balance on Account.
                     </div>
                     {packsUnlockableFromCredits(availableCredits) > 0 ? (
                       <UnlockPreparationPackPanel

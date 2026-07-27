@@ -246,7 +246,7 @@ export default function BuyCreditsPage() {
   if (!pkg) {
     return (
       <main className="mx-auto flex w-full max-w-5xl flex-col items-center px-4 py-12 sm:px-6 lg:py-16">
-        <p className="text-muted">No active credit packages available.</p>
+        <p className="text-muted">No active Preparation Pack offers available.</p>
       </main>
     );
   }

@@ -11,13 +11,14 @@ import {
   type PreparationPackEntitlement,
 } from "@/lib/functions/client";
 import {
-  CREDITS_PER_PREPARATION_PACK,
   RELEASES_PER_PREPARATION_PACK,
+  describeLedgerAsPackActivity,
+  packsFromCredits,
   packsUnlockableFromCredits,
-  potentialReleasesFromCredits,
 } from "@/lib/billing/credit-contract";
+import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 import { UnlockPreparationPackPanel } from "@/components/billing/UnlockPreparationPackPanel";
-import { User, CreditCard, History, ShieldAlert, ArrowLeft } from "lucide-react";
+import { User, Package, History, ShieldAlert, ArrowLeft, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 
 export default function AccountPage() {
@@ -33,7 +34,7 @@ export default function AccountPage() {
     if (!user) return;
     setLoadError("");
 
-    // Isolate failures: purchase/ledger errors must never zero the credit balance.
+    // Isolate failures: purchase/ledger errors must never zero pack status.
     const [overviewResult, ledgerResult, purchaseResult, entitlementResult] = await Promise.allSettled([
       getAccountOverview(),
       listCreditLedger(),
@@ -45,13 +46,13 @@ export default function AccountPage() {
       setOverview(overviewResult.value);
     } else {
       console.error("Failed to load account overview", overviewResult.reason);
-      setLoadError("Account credit balance could not be loaded. Retry or contact support.");
+      setLoadError("Preparation Pack balance could not be loaded. Retry or contact support.");
     }
 
     if (ledgerResult.status === "fulfilled") {
       setLedger(ledgerResult.value || []);
     } else {
-      console.error("Failed to load credit ledger", ledgerResult.reason);
+      console.error("Failed to load commercial ledger", ledgerResult.reason);
       setLedger([]);
     }
 
@@ -81,12 +82,14 @@ export default function AccountPage() {
   }
 
   const availableCredits = Number(overview?.credits?.availableCredits || 0);
+  const activePackCount = entitlements.length;
   const activeReleasesRemaining = entitlements.reduce(
     (sum, entitlement) => sum + Number(entitlement.releasesRemaining || 0),
     0
   );
   const hasActivePack = activeReleasesRemaining > 0;
   const unlockablePacks = packsUnlockableFromCredits(availableCredits);
+  const unusedPackBalance = packsFromCredits(availableCredits);
 
   return (
     <div className="max-w-4xl mx-auto p-8 space-y-8">
@@ -94,11 +97,20 @@ export default function AccountPage() {
         <ArrowLeft className="h-4 w-4" /> Return to Dashboard
       </Link>
 
-      <div className="flex justify-between items-end border-b border-kil-text/15 pb-6">
+      <div className="flex flex-col gap-4 border-b border-kil-text/15 pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-serif text-3xl font-black mb-2 text-kil-text">Enterprise Account</h1>
-          <p className="text-kil-text/60 font-mono text-sm">Manage profile, credits, and commercial statements.</p>
+          <p className="text-kil-text/60 font-mono text-sm">
+            Manage profile, Preparation Packs, and purchase history.
+          </p>
         </div>
+        <Link
+          href="/credits/buy"
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-kil-accent px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90"
+        >
+          <ShoppingBag className="h-4 w-4" aria-hidden="true" />
+          Buy Preparation Pack — {CANONICAL_PRICING.priceFormatted}
+        </Link>
       </div>
 
       {loadError ? (
@@ -137,21 +149,23 @@ export default function AccountPage() {
 
         <div className="bg-kil-accent/5 border border-kil-accent/20 rounded-sm p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4 text-kil-accent">
-            <CreditCard className="w-5 h-5" />
-            <h2 className="font-serif text-xl">Available Credits</h2>
+            <Package className="w-5 h-5" />
+            <h2 className="font-serif text-xl">Preparation Packs</h2>
           </div>
           <div className="text-4xl font-mono font-bold text-kil-accent">
-            {availableCredits}
+            {activeReleasesRemaining}
           </div>
           <p className="text-xs text-kil-text/60 mt-2">
-            {CREDITS_PER_PREPARATION_PACK} credits unlock 1 Preparation Pack with{" "}
-            {RELEASES_PER_PREPARATION_PACK} sealed releases. Credits never expire.
+            Sealed releases remaining across {activePackCount} active pack
+            {activePackCount === 1 ? "" : "s"}. Each pack includes {RELEASES_PER_PREPARATION_PACK}{" "}
+            successful sealed releases for one operator, one installation, and one reporting year.
           </p>
           <p className="mt-3 font-mono text-xs text-kil-text/70">
-            Active pack releases remaining: {activeReleasesRemaining}
             {unlockablePacks > 0
-              ? ` · Unlockable now: ${unlockablePacks} pack(s) / ${potentialReleasesFromCredits(availableCredits)} releases`
-              : ""}
+              ? `Unused pack balance ready to activate: ${unusedPackBalance}`
+              : hasActivePack
+                ? "No unused pack balance waiting to activate."
+                : "No active pack — buy a Preparation Pack at checkout to seal."}
           </p>
         </div>
       </div>
@@ -166,35 +180,81 @@ export default function AccountPage() {
         }}
       />
 
+      {activePackCount > 0 ? (
+        <div className="bg-kil-surface border border-kil-text/15 rounded-sm shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-kil-text/15 bg-kil-base">
+            <h2 className="font-serif text-xl text-kil-text">Active packs</h2>
+          </div>
+          <div className="p-6">
+            <table className="w-full text-left text-sm font-mono">
+              <thead>
+                <tr className="text-kil-text/60 border-b border-kil-text/15">
+                  <th className="pb-3">Pack</th>
+                  <th className="pb-3">Releases used</th>
+                  <th className="pb-3 text-right">Releases left</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-kil-text/10">
+                {entitlements.map((entitlement, index) => (
+                  <tr key={entitlement.entitlementId || `${entitlement.orderId}-${index}`}>
+                    <td className="py-3">
+                      Pack {index + 1}
+                      {typeof entitlement.scopeCaseId === "string" && entitlement.scopeCaseId ? (
+                        <span className="block text-xs text-kil-text/50">
+                          Scope case: {entitlement.scopeCaseId}
+                        </span>
+                      ) : typeof entitlement.caseId === "string" && entitlement.caseId ? (
+                        <span className="block text-xs text-kil-text/50">
+                          Scope case: {entitlement.caseId}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="py-3">
+                      {Number(entitlement.releasesCount || 0)} / {RELEASES_PER_PREPARATION_PACK}
+                    </td>
+                    <td className="py-3 text-right font-bold text-kil-accent">
+                      {Number(entitlement.releasesRemaining || 0)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
+
       <div className="bg-kil-surface border border-kil-text/15 rounded-sm shadow-sm overflow-hidden">
         <div className="p-6 border-b border-kil-text/15 bg-kil-base">
           <div className="flex items-center gap-2 text-kil-text">
             <History className="w-5 h-5" />
-            <h2 className="font-serif text-xl">Credit Ledger</h2>
+            <h2 className="font-serif text-xl">Pack activity</h2>
           </div>
         </div>
         <div className="p-6">
           {ledger.length === 0 ? (
-            <p className="text-sm font-mono text-kil-text/60">No credit history found.</p>
+            <p className="text-sm font-mono text-kil-text/60">No pack activity found.</p>
           ) : (
             <table className="w-full text-left text-sm font-mono">
               <thead>
                 <tr className="text-kil-text/60 border-b border-kil-text/15">
                   <th className="pb-3">Date</th>
-                  <th className="pb-3">Type</th>
-                  <th className="pb-3">Amount</th>
-                  <th className="pb-3 text-right">Balance</th>
+                  <th className="pb-3">Activity</th>
+                  <th className="pb-3 text-right">Packs</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-kil-text/10">
-                {ledger.map(entry => (
-                  <tr key={entry.id}>
-                    <td className="py-3">{entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : "—"}</td>
-                    <td className="py-3">{entry.type}</td>
-                    <td className="py-3 font-bold text-kil-accent">{entry.amount > 0 ? `+${entry.amount}` : entry.amount}</td>
-                    <td className="py-3 text-right">{entry.balanceAfter ?? "—"}</td>
-                  </tr>
-                ))}
+                {ledger.map((entry) => {
+                  const { activity, packDeltaLabel } = describeLedgerAsPackActivity(entry);
+                  return (
+                    <tr key={entry.id}>
+                      <td className="py-3">
+                        {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : "—"}
+                      </td>
+                      <td className="py-3">{activity}</td>
+                      <td className="py-3 text-right font-bold text-kil-accent">{packDeltaLabel}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -219,11 +279,13 @@ export default function AccountPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-kil-text/10">
-                {purchases.map(purchase => (
+                {purchases.map((purchase) => (
                   <tr key={purchase.id}>
                     <td className="py-3">{new Date(purchase.occurredAt).toLocaleDateString()}</td>
                     <td className="py-3">{purchase.data?.transaction_id || purchase.id}</td>
-                    <td className="py-3">{purchase.data?.totals?.total} {purchase.data?.currency_code}</td>
+                    <td className="py-3">
+                      {purchase.data?.totals?.total} {purchase.data?.currency_code}
+                    </td>
                     <td className="py-3 text-right text-success font-bold">Paid</td>
                   </tr>
                 ))}

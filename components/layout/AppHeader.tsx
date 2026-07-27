@@ -11,6 +11,7 @@ import { BrandLockup } from "@/components/brand/BrandLockup";
 import { APP_NAV } from "@/lib/navigation";
 import { getEntitlements } from "@/lib/functions/client";
 import { packsUnlockableFromCredits } from "@/lib/billing/credit-contract";
+import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 
 export function AppHeader() {
   const { user, claims, signOutUser, loading } = useAuth();
@@ -23,6 +24,7 @@ export function AppHeader() {
   
   const [availableCredits, setAvailableCredits] = useState<number>(0);
   const [availableUses, setAvailableUses] = useState<number>(0);
+  const [activePackCount, setActivePackCount] = useState<number>(0);
 
   const isAdmin = claims?.admin === true || claims?.ownerAdmin === true;
 
@@ -44,6 +46,7 @@ export function AppHeader() {
   useEffect(() => {
     if (!user || isAdmin) {
       setAvailableUses(0);
+      setActivePackCount(0);
       return;
     }
     let cancelled = false;
@@ -55,10 +58,14 @@ export function AppHeader() {
           0
         );
         setAvailableUses(remaining);
+        setActivePackCount(entitlements.length);
       })
       .catch((error) => {
         console.error("Failed to load header entitlement status", error);
-        if (!cancelled) setAvailableUses(0);
+        if (!cancelled) {
+          setAvailableUses(0);
+          setActivePackCount(0);
+        }
       });
     return () => {
       cancelled = true;
@@ -193,11 +200,18 @@ export function AppHeader() {
             <Link href="/account" className="hidden lg:flex items-center gap-2 bg-surface hover:bg-border/30 transition-colors text-foreground px-4 py-1.5 rounded-full border border-border outline-none focus-visible:ring-2 focus-visible:ring-accent">
               <span className="text-[13px] font-medium text-muted">
                 {availableUses > 0 ? (
-                  <>1 Active Preparation Pack &middot; <span className="text-foreground">{availableUses} Sealed Versions Left</span></>
+                  <>
+                    {activePackCount} Active Preparation Pack{activePackCount === 1 ? "" : "s"} &middot;{" "}
+                    <span className="text-foreground">{availableUses} Sealed Releases Left</span>
+                  </>
                 ) : packsUnlockableFromCredits(availableCredits) > 0 ? (
-                  <>{availableCredits} credits · <span className="text-foreground">Unlock pack on Account</span></>
+                  <>
+                    {packsUnlockableFromCredits(availableCredits)} pack
+                    {packsUnlockableFromCredits(availableCredits) === 1 ? "" : "s"} ready ·{" "}
+                    <span className="text-foreground">Activate on Account</span>
+                  </>
                 ) : (
-                  <>No Active Preparation Pack · <span className="text-foreground">{availableCredits} credits</span></>
+                  <>No Active Preparation Pack · <span className="text-foreground">Buy to seal</span></>
                 )}
               </span>
             </Link>
@@ -208,7 +222,7 @@ export function AppHeader() {
               href="/credits/buy" 
               className="hidden lg:inline-flex h-[44px] items-center justify-center gap-2 rounded-md bg-accent px-5 text-[15px] font-medium text-surface transition-colors hover:bg-accent-hover active:bg-accent-active outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent shadow-sm"
             >
-              Buy Pack — $150
+              Buy Pack — {CANONICAL_PRICING.priceFormatted}
             </Link>
           )}
           {!isAdmin && availableUses === 0 && packsUnlockableFromCredits(availableCredits) > 0 && (
@@ -216,7 +230,7 @@ export function AppHeader() {
               href="/account" 
               className="hidden lg:inline-flex h-[44px] items-center justify-center gap-2 rounded-md bg-accent px-5 text-[15px] font-medium text-surface transition-colors hover:bg-accent-hover active:bg-accent-active outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent shadow-sm"
             >
-              Unlock Pack
+              Activate Pack
             </Link>
           )}
 
@@ -248,11 +262,14 @@ export function AppHeader() {
                   <span className="text-[15px] font-semibold text-muted uppercase tracking-wider">Preparation Pack</span>
                   <div className="flex items-center gap-2">
                     {availableUses > 0 ? (
-                      <span className="text-sm font-bold text-accent px-2 py-1 bg-accent/10 rounded">{availableUses} Versions Left</span>
+                      <span className="text-sm font-bold text-accent px-2 py-1 bg-accent/10 rounded">{availableUses} Releases Left</span>
                     ) : packsUnlockableFromCredits(availableCredits) > 0 ? (
-                      <span className="text-sm font-bold text-accent px-2 py-1 bg-accent/10 rounded">{availableCredits} credits · Unlock</span>
+                      <span className="text-sm font-bold text-accent px-2 py-1 bg-accent/10 rounded">
+                        {packsUnlockableFromCredits(availableCredits)} pack
+                        {packsUnlockableFromCredits(availableCredits) === 1 ? "" : "s"} · Activate
+                      </span>
                     ) : (
-                      <span className="text-sm text-muted">No Active Pack · {availableCredits} credits</span>
+                      <span className="text-sm text-muted">No Active Pack</span>
                     )}
                   </div>
                 </Link>

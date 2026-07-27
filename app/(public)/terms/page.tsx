@@ -39,7 +39,7 @@ export default function TermsPage() {
         <div>
           <h2 className="text-xl font-bold mb-2">3. Credits and Delivery</h2>
           <p className="text-sm text-muted">
-            Generation of sealed CBAM reports requires unlocking an Exporter Verification Preparation Pack. One hundred account credits unlock one Preparation Pack with exactly five successful sealed releases. Delivery of the digital report package is completed after a successful seal.
+            Generation of sealed CBAM reports requires an active Exporter Verification Preparation Pack. Each Preparation Pack covers one operator, one installation, and one reporting year, and includes exactly five successful sealed releases. Delivery of the digital report package is completed after a successful seal.
           </p>
         </div>
 

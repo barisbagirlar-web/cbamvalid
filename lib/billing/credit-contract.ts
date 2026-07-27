@@ -1,4 +1,8 @@
-/** Canonical commercial unit: 100 account credits unlock 1 Preparation Pack with 5 seals. */
+/**
+ * Internal ledger unit (do not present as the customer commercial product):
+ * 100 account credits → 1 Preparation Pack → 5 sealed releases.
+ * Customer-facing UI must speak in packs and sealed releases.
+ */
 export const CREDITS_PER_PREPARATION_PACK = 100;
 export const RELEASES_PER_PREPARATION_PACK = 5;
 export const CREDITS_PER_SEALED_RELEASE =
@@ -79,4 +83,44 @@ export function packsUnlockableFromCredits(availableCredits: number): number {
 
 export function potentialReleasesFromCredits(availableCredits: number): number {
   return packsUnlockableFromCredits(availableCredits) * RELEASES_PER_PREPARATION_PACK;
+}
+
+/** Whole packs represented by a credit balance (floor). */
+export function packsFromCredits(credits: number): number {
+  if (!Number.isFinite(credits) || credits <= 0) return 0;
+  return Math.floor(credits / CREDITS_PER_PREPARATION_PACK);
+}
+
+/** Customer-facing ledger row for an internal credit movement. */
+export function describeLedgerAsPackActivity(entry: {
+  amount: number;
+  type?: string;
+  reason?: string;
+}): { activity: string; packDeltaLabel: string } {
+  const amount = Number(entry.amount);
+  const packs = amount / CREDITS_PER_PREPARATION_PACK;
+  const type = String(entry.type || entry.reason || "").toUpperCase();
+  const reason = String(entry.reason || "").toUpperCase();
+
+  let activity = "Account adjustment";
+  if (type.includes("PAYMENT") || reason.includes("PAYMENT") || reason.includes("PURCHASE")) {
+    activity = "Pack purchase";
+  } else if (type.includes("UNLOCK") || reason.includes("UNLOCK") || reason.includes("CBAM_UNLOCK")) {
+    activity = "Pack activated";
+  } else if (type.includes("GRANT") || reason.includes("GRANT") || reason.includes("ADMIN")) {
+    activity = "Pack balance granted";
+  } else if (type.includes("REFUND") || reason.includes("REFUND")) {
+    activity = "Refund adjustment";
+  } else if (amount < 0) {
+    activity = "Pack balance used";
+  } else if (amount > 0) {
+    activity = "Pack balance added";
+  }
+
+  if (!Number.isFinite(packs) || packs === 0) {
+    return { activity, packDeltaLabel: "—" };
+  }
+  const sign = packs > 0 ? "+" : "";
+  const rounded = Number.isInteger(packs) ? String(packs) : packs.toFixed(2);
+  return { activity, packDeltaLabel: `${sign}${rounded} pack` };
 }

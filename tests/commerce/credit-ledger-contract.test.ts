@@ -4,8 +4,10 @@ import {
   CREDITS_PER_PREPARATION_PACK,
   LEGACY_CREDIT_LEDGER_COLLECTION,
   RELEASES_PER_PREPARATION_PACK,
+  describeLedgerAsPackActivity,
   mergeCreditLedgerEntries,
   normalizeCreditLedgerEntry,
+  packsFromCredits,
   packsUnlockableFromCredits,
   potentialReleasesFromCredits,
 } from "@/lib/billing/credit-contract";
@@ -17,6 +19,17 @@ describe("credit contract", () => {
     expect(packsUnlockableFromCredits(1000)).toBe(10);
     expect(potentialReleasesFromCredits(1000)).toBe(50);
     expect(packsUnlockableFromCredits(99)).toBe(0);
+    expect(packsFromCredits(500)).toBe(5);
+  });
+
+  it("describes ledger rows in pack terms for customer UI", () => {
+    expect(describeLedgerAsPackActivity({ amount: -100, reason: "CBAM_UNLOCK" })).toEqual({
+      activity: "Pack activated",
+      packDeltaLabel: "-1 pack",
+    });
+    expect(describeLedgerAsPackActivity({ amount: 100, type: "ADMIN_GRANT" }).activity).toBe(
+      "Pack balance granted"
+    );
   });
 
   it("merges canonical creditLedger over legacy ledger without dropping either", () => {

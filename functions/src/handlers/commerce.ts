@@ -71,7 +71,7 @@ export const unlockCbamUses = createCallable(
           const prior = idempotencyDoc.data() || {};
           return {
             status: "success",
-            message: "The five-release pack was already unlocked.",
+            message: "The five-release pack was already activated.",
             entitlementId: typeof prior.entitlementId === "string" ? prior.entitlementId : undefined,
             releasesGranted: Number(prior.releasesGranted || MAX_RELEASES_PER_PACK),
           };
@@ -81,7 +81,10 @@ export const unlockCbamUses = createCallable(
         const creditDoc = await transaction.get(creditRef);
         const availableCredits = Number(creditDoc.data()?.availableCredits || 0);
         if (!Number.isFinite(availableCredits) || availableCredits < 100) {
-          throw new HttpsError("failed-precondition", "100 account credits are required to unlock one five-release CBAM pack.");
+          throw new HttpsError(
+            "failed-precondition",
+            "A purchased Preparation Pack balance is required to activate one five-release CBAM pack."
+          );
         }
 
         const now = new Date().toISOString();
@@ -128,7 +131,7 @@ export const unlockCbamUses = createCallable(
 
         return {
           status: "success",
-          message: "One CBAM pack with five successful releases was unlocked.",
+          message: "One CBAM pack with five successful releases was activated.",
           entitlementId,
           releasesGranted: MAX_RELEASES_PER_PACK,
         };
