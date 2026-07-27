@@ -67,7 +67,16 @@
     "audit:ledger": "node scripts/guard-commercial-architecture.mjs --audit",
     "test:golden": "vitest run tests/cbam-engine tests/engine/dimensional-safety.test.ts tests/reports/sample-report.test.ts",
     "ci:gate": "npm run guard:hosting-architecture && npm run guard:auth-architecture && npm run guard:workspace-navigation && npm run guard:case-runtime-contract && npm run guard:verifier-grade-deliverables && npm run guard:github-actions && npm run typecheck && npm run build:functions && npm run lint && npm run seo:validate && npm run test:auth && npm run test:integration && npm run test:commerce && npm run test:cbam-engine && npm run test:reports && npm run build",
-    "release:commercial": "npm run guard:auth-architecture && npm run guard:auth-env:prod && npm run guard:hosting-architecture && npm run guard:case-runtime-contract && npm run guard:verifier-grade-deliverables && npm run guard:english-only && npm run guard:visual-system && npm run guard:single-product && npm run guard:single-payment-channel && npm run guard:field-help-coverage && npm run guard:sector-adapters && npm run guard:official-sources && npm run guard:calculation-trace && npm run guard:canonical-report && npm run guard:cross-format && npm run guard:sample-report && npm run guard:claims && npm run guard:commerce && npm run guard:workspace-navigation && npm run guard:github-actions && npm run guard:navigation-routes && npm run guard:canonical-email && npm run typecheck && npm run build:functions && npm run lint && npm run test:auth && npm run test:commerce && npm run test:sectors && npm run test:cbam-engine && npm run test:reports && npm run test:sample-report && npm run build && npm run guard:bundle-scan && npm run test:e2e:commercial && npm run test:e2e:visual && npm run audit:ledger && npm audit --omit=dev --audit-level=high"
+    "release:commercial": "npm run guard:auth-architecture && npm run guard:auth-env:prod && npm run guard:hosting-architecture && npm run guard:case-runtime-contract && npm run guard:verifier-grade-deliverables && npm run guard:english-only && npm run guard:visual-system && npm run guard:single-product && npm run guard:single-payment-channel && npm run guard:field-help-coverage && npm run guard:sector-adapters && npm run guard:official-sources && npm run guard:calculation-trace && npm run guard:canonical-report && npm run guard:cross-format && npm run guard:sample-report && npm run guard:claims && npm run guard:commerce && npm run guard:workspace-navigation && npm run guard:github-actions && npm run guard:navigation-routes && npm run guard:canonical-email && npm run typecheck && npm run build:functions && npm run lint && npm run test:auth && npm run test:commerce && npm run test:sectors && npm run test:cbam-engine && npm run test:reports && npm run test:sample-report && npm run build && npm run guard:bundle-scan && npm run test:e2e:commercial && npm run test:e2e:visual && npm run audit:ledger && npm audit --omit=dev --audit-level=high",
+    "prepare": "husky",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:all": "npm run test:unit && npm run test:e2e",
+    "regression:ci": "npm run typecheck && npm run test:unit && npm run build && npm run test:e2e:critical",
+    "test:e2e:critical": "playwright test tests/e2e/critical-flows.spec.ts --project=chromium"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -102,8 +111,15 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "fast-check": "^4.9.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.10"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,mjs}": [
+      "eslint --max-warnings=0"
+    ]
   }
 }

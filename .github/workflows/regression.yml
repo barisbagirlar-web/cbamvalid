@@ -1,0 +1,62 @@
+name: CBAMValid Regression Guard
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  regression-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js (22)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type Check (strict)
+        run: npm run typecheck
+
+      - name: Vitest Unit Tests
+        run: npx vitest run
+
+      - name: Build (Next.js — Firebase Web Frameworks)
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+          NEXT_PUBLIC_FIREBASE_API_KEY: "ci-placeholder-not-a-secret"
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "cbamvalid-ci.invalid"
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: "cbamvalid-ci"
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "cbamvalid-ci.appspot.com"
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+          NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:0000000000000000000000"
+          ADMIN_USE_ADC: "true"
+          GCLOUD_PROJECT: "cbamvalid-ci"
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Critical-Flow E2E Tests
+        run: npm run test:e2e:critical
+        env:
+          BASE_URL: https://cbamvalid.com
+          PLAYWRIGHT_TEST_BASE_URL: https://cbamvalid.com
+
+      - name: Upload Playwright Report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
