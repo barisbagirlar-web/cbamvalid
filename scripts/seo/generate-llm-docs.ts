@@ -62,16 +62,41 @@ export function renderRobotsTxt(origin: string = siteConfig.canonicalOrigin): st
   return lines.join("\n");
 }
 
+/** Hosting-safe sitemap index — Next multi-sitemap children live at /sitemap/{id}.xml */
+export function renderSitemapIndexXml(origin: string = siteConfig.canonicalOrigin): string {
+  const lastmod = new Date().toISOString();
+  return [
+    `<?xml version="1.0" encoding="UTF-8"?>`,
+    `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`,
+    `  <sitemap>`,
+    `    <loc>${origin}/sitemap/0.xml</loc>`,
+    `    <lastmod>${lastmod}</lastmod>`,
+    `  </sitemap>`,
+    `  <sitemap>`,
+    `    <loc>${origin}/sitemap/1.xml</loc>`,
+    `    <lastmod>${lastmod}</lastmod>`,
+    `  </sitemap>`,
+    `  <sitemap>`,
+    `    <loc>${origin}/sitemap/2.xml</loc>`,
+    `    <lastmod>${lastmod}</lastmod>`,
+    `  </sitemap>`,
+    `</sitemapindex>`,
+    "",
+  ].join("\n");
+}
+
 const root = resolve(process.cwd());
 const model = buildLlmDocModel();
 const llms = renderLlmsTxt(model);
 const full = renderLlmsFullTxt(model);
 const robots = renderRobotsTxt();
+const sitemapIndex = renderSitemapIndexXml();
 
 writeFileSync(resolve(root, "public/llms.txt"), llms, "utf8");
 writeFileSync(resolve(root, "public/llm.txt"), llms, "utf8");
 writeFileSync(resolve(root, "public/llms-full.txt"), full, "utf8");
 writeFileSync(resolve(root, "public/robots.txt"), robots, "utf8");
+writeFileSync(resolve(root, "public/sitemap.xml"), sitemapIndex, "utf8");
 
 const wellKnownDir = resolve(root, "public/.well-known");
 mkdirSync(wellKnownDir, { recursive: true });
@@ -207,5 +232,5 @@ const jsonFeed = {
 writeFileSync(resolve(root, "public/answers.feed.json"), `${JSON.stringify(jsonFeed, null, 2)}\n`, "utf8");
 
 console.log(
-  "Generated public/llms.txt, public/llm.txt, public/llms-full.txt, public/robots.txt, public/.well-known/ai.txt, public/ai-policy.txt, public/answers.json, public/answers.rss, public/answers.feed.json, IndexNow key from SEO SSOT",
+  "Generated public/llms.txt, public/llm.txt, public/llms-full.txt, public/robots.txt, public/sitemap.xml, public/.well-known/ai.txt, public/ai-policy.txt, public/answers.json, public/answers.rss, public/answers.feed.json, IndexNow key from SEO SSOT",
 );

@@ -124,7 +124,14 @@ function validateSitemapDerivation(): GateResult[] {
   }
 
   if (existsSync(resolve("public/sitemap.xml"))) {
-    results.push(fail("G04", "public/sitemap.xml must not compete with app/sitemap.ts"));
+    const indexXml = readFileSync(resolve("public/sitemap.xml"), "utf8");
+    if (!indexXml.includes("<sitemapindex") || !indexXml.includes("/sitemap/0.xml")) {
+      results.push(fail("G04", "public/sitemap.xml must be a Hosting-safe sitemapindex to /sitemap/{id}.xml"));
+    } else {
+      results.push(pass("G04b", "public/sitemap.xml is Hosting-safe multi-sitemap index"));
+    }
+  } else {
+    results.push(fail("G04", "public/sitemap.xml missing — run seo:generate-llm-docs"));
   }
   if (existsSync(resolve("public/robots.txt"))) {
     const publicRobots = readFileSync(resolve("public/robots.txt"), "utf8");
