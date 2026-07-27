@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Source_Sans_3, Source_Serif_4, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthProvider";
@@ -23,6 +23,10 @@ const ibmPlexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#1B4332",
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.canonicalOrigin),
   title: {
@@ -30,7 +34,6 @@ export const metadata: Metadata = {
     default: siteConfig.defaultTitle,
   },
   description: siteConfig.defaultDescription,
-  themeColor: "#1B4332",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
