@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PACKAGE_CODE_PATTERN } from "./package-code";
 
 export const ReportDownloadFormatSchema = z.enum([
   "zip",
@@ -12,6 +13,7 @@ export type ReportDownloadFormat = z.infer<typeof ReportDownloadFormatSchema>;
 
 const HashSchema = z.string().regex(/^[a-f0-9]{64}$/i);
 const ReportIdSchema = z.string().regex(/^report_[a-f0-9]{64}$/);
+const PackageCodeSchema = z.string().regex(PACKAGE_CODE_PATTERN);
 
 const GoodResultSchema = z.object({
   goodIndex: z.number().int().positive(),
@@ -63,6 +65,7 @@ export const PackageMetadataSchema = z.object({
 
 export const SealedReportViewSchema = z.object({
   reportId: ReportIdSchema,
+  packageCode: PackageCodeSchema.optional(),
   uid: z.string().min(1),
   caseId: z.string().min(1),
   entitlementId: z.string().min(1),

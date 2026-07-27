@@ -35,6 +35,7 @@ export class CommercialReportPipelineV2 {
     calculation: DossierCalculationResult;
     controls: QualityControlResult[];
     reportId: string;
+    packageCode: string;
     releaseVersion: number;
     generatedAt: string;
     evidenceFiles: EvidenceBinary[];
@@ -49,6 +50,7 @@ export class CommercialReportPipelineV2 {
       calculation: params.calculation,
       controls: params.controls,
       reportId: params.reportId,
+      packageCode: params.packageCode,
       releaseVersion: params.releaseVersion,
       generatedAt: params.generatedAt,
       evidenceFiles: params.evidenceFiles,
@@ -56,6 +58,7 @@ export class CommercialReportPipelineV2 {
         generatedAt: params.generatedAt,
         assessmentTimestamp: params.generatedAt,
         reportId: params.reportId,
+        packageCode: params.packageCode,
         releaseVersion: params.releaseVersion,
         rulesetVersion: params.calculation.ruleset,
         productCode: params.productCode,
@@ -97,6 +100,7 @@ export class CommercialReportPipelineV2 {
       calculation: params.calculation,
       controls: params.controls,
       reportId: params.reportId,
+      packageCode: params.packageCode,
       releaseVersion: params.releaseVersion,
       generatedAt: params.generatedAt,
       productCode: params.productCode,
@@ -120,6 +124,7 @@ export class CommercialReportPipelineV2 {
       dossierSchemaVersion: "CBAMVALID-DOSSIER-5.0",
       reportingPeriodAssessment: periodAssessment,
       reportId: params.reportId,
+      packageCode: params.packageCode,
       caseId: params.caseData.caseId || "",
       releaseVersion: params.releaseVersion,
       generatedAt: params.generatedAt,

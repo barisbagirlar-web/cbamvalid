@@ -455,13 +455,13 @@ function buildPdfArtifacts(params: {
       { heading: "Allocation reconciliation", table: { headers: ["Control", "Result"], widths: [90, 90], rows: [["Allocation share total", model.totals.allocationShareTotal], ["Allocation reconciliation delta", model.totals.allocationReconciliationDelta], ["Eligible carbon-price certificate reduction", model.totals.eligibleCertificateReduction]] } },
 
       { heading: "Legal sources and trust chain", pageBreakBefore: true, table: legalSourceTable(model) },
-      { heading: "Cryptographic provenance", table: { headers: ["Control", "Value"], widths: [48, 132], rows: [["Report ID", reportId], ["Release", releaseVersion], ["Generated", generatedAt], ["Ruleset", model.ruleset.version], ["Legal-source registry hash", model.ruleset.sourceHash], ["Calculation root hash", model.calculationRootHash]] } },
+      { heading: "Cryptographic provenance", table: { headers: ["Control", "Value"], widths: [48, 132], rows: [["Package ID", model.packageCode], ["Report ID", reportId], ["Release", releaseVersion], ["Generated", generatedAt], ["Ruleset", model.ruleset.version], ["Legal-source registry hash", model.ruleset.sourceHash], ["Calculation root hash", model.calculationRootHash]] } },
       { heading: "Legal and professional boundary", callout: { label: "No verification opinion", value: model.disclaimer } },
     ]),
     pdfFile("Operator Summary Statement.pdf", "Operator Summary Statement", "Executive control statement for the sealed verifier-preparation package", [
       { heading: "Executive statement", paragraphs: [`Release ${releaseVersion} for case ${model.caseId} contains ${model.goods.length} CN-coded good(s), ${model.evidenceSummary.totalEvidenceFiles} evidence file(s), ${model.methodologyDecisionCount} methodology decision(s) and ${model.calculationTraceCount} cryptographically linked calculation node(s).`, `Automated preparation status: ${model.automatedReadiness}. Independent verifier status: ${model.independentVerifierStatus}.`] },
       { heading: "Key totals", table: { headers: ["Total embedded tCO2e", "Production t", "Specific tCO2e/t", "Evidence coverage", "QC blockers"], widths: [38, 32, 38, 34, 38], rows: [[model.totals.totalEmbeddedEmissions, model.totals.productionVolume, model.totals.aggregateSpecificEmbeddedEmissions, `${model.evidenceSummary.coverageRate}%`, model.qualitySummary.blockers]] } },
-      { heading: "Trust chain", table: { headers: ["Control", "Value"], widths: [48, 132], rows: [["Calculation root", model.calculationRootHash], ["Legal source registry", model.ruleset.sourceHash], ["Report ID", reportId], ["Generated", generatedAt]] } },
+      { heading: "Trust chain", table: { headers: ["Control", "Value"], widths: [48, 132], rows: [["Calculation root", model.calculationRootHash], ["Legal source registry", model.ruleset.sourceHash], ["Package ID", model.packageCode], ["Report ID", reportId], ["Generated", generatedAt]] } },
       { heading: "Boundary", callout: { label: "No verification opinion", value: model.disclaimer } },
     ]),
     pdfFile("Verification Readiness Assessment.pdf", "Verification Readiness Assessment", "Risk-based automated readiness assessment and independent-verifier handoff", [
@@ -521,6 +521,7 @@ export async function buildUnsignedVerifierArtifacts(params: {
   calculation: DossierCalculationResult;
   controls: QualityControlResult[];
   reportId: string;
+  packageCode: string;
   releaseVersion: number;
   generatedAt: string;
   evidenceFiles: EvidenceBinary[];
@@ -536,9 +537,9 @@ export async function buildUnsignedVerifierArtifacts(params: {
   const artifacts = [
     ...buildPdfArtifacts({ ...params, model }),
     ...buildCsvArtifacts({ ...params, model }),
-    artifact("Calculation Trace.json", Buffer.from(canonical({ reportId: params.reportId, caseId: params.caseData.caseId, generatedAt: params.generatedAt, verifierModel: model, calculation: params.calculation }), "utf8"), "application/json"),
+    artifact("Calculation Trace.json", Buffer.from(canonical({ reportId: params.reportId, packageCode: params.packageCode, caseId: params.caseData.caseId, generatedAt: params.generatedAt, verifierModel: model, calculation: params.calculation }), "utf8"), "application/json"),
     artifact("Verifier Workspace.xlsx", workbook, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-    artifact("Supporting_Evidence/README.txt", Buffer.from(`CBAMValid immutable evidence copies\r\nReport: ${params.reportId}\r\nCase: ${params.caseData.caseId}\r\nEvidence count: ${params.evidenceFiles.length}\r\nEach binary is verified against Evidence Register.csv and Data Integrity Manifest.json.\r\n`, "utf8"), "text/plain"),
+    artifact("Supporting_Evidence/README.txt", Buffer.from(`CBAMValid immutable evidence copies\r\nPackage ID: ${params.packageCode}\r\nReport: ${params.reportId}\r\nCase: ${params.caseData.caseId}\r\nEvidence count: ${params.evidenceFiles.length}\r\nEach binary is verified against Evidence Register.csv and Data Integrity Manifest.json.\r\n`, "utf8"), "text/plain"),
     ...params.evidenceFiles.map((item) => artifact(supportedEvidencePath(item), item.bytes, "application/octet-stream")),
   ];
   const paths = artifacts.map((item) => item.path);

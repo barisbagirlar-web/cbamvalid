@@ -384,7 +384,8 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     doc.text(val, MARGIN + 48, cy);
     cy += 6.0;
   };
-  writeCoverDetail("Report ID", model.reportId);
+  writeCoverDetail("Package ID", model.packageCode || "—");
+  writeCoverDetail("Technical Report ID", model.reportId);
   writeCoverDetail("Case ID", model.caseId);
   writeCoverDetail("Product Delivery Tier", "Premium Dossier Pack (V5)");
   writeCoverDetail("Dossier Release Iteration", `Iteration #${model.releaseVersion} (Sealed Release)`);
@@ -436,7 +437,8 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     preview: () => tablePreview(
       ["Control Parameter", "Registered Value"],
       [
-        ["Report ID", model.reportId],
+        ["Package ID", model.packageCode || "—"],
+        ["Technical Report ID", model.reportId],
         ["Case ID", model.caseId],
         ["Release Version", `V${model.releaseVersion}`],
         ["Generated Timestamp", model.generatedAt],
@@ -450,7 +452,8 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   drawTable(
     ["Control Parameter", "Registered Value"],
     [
-      ["Report ID", model.reportId],
+      ["Package ID", model.packageCode || "—"],
+      ["Technical Report ID", model.reportId],
       ["Case ID", model.caseId],
       ["Release Version", `V${model.releaseVersion}`],
       ["Generated Timestamp", model.generatedAt],
@@ -992,7 +995,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     doc.text(model.documentTitle, MARGIN, 11);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
-    doc.text(`Report ID: ${model.reportId} · Release Iteration ${model.releaseVersion}`, MARGIN, 16);
+    doc.text(`Package ID: ${model.packageCode || "—"} · Release Iteration ${model.releaseVersion}`, MARGIN, 16);
 
     // Confidentiality Status Badge
     doc.setFillColor(isReady ? 20 : 180, isReady ? 83 : 40, isReady ? 45 : 40);

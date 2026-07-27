@@ -12,6 +12,8 @@ export const FIXTURE_EVIDENCE_ID = "11111111-1111-4111-8111-555555555555";
 
 export const FIXTURE_GENERATED_AT = "2027-01-15T12:00:00.000Z";
 export const FIXTURE_REPORT_ID = `report_${"a".repeat(64)}`;
+/** Human package label for fixture seals (letter + 4 digits). */
+export const FIXTURE_PACKAGE_CODE = "A1111";
 
 export const FIXTURE_EVIDENCE_BYTES = Buffer.from(
   "CBAMValid verifier-grade fixture evidence: monitored production, emissions, electricity, customs classification and allocation records.",

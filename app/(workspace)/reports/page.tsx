@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthProvider";
 import { getReports } from "@/lib/functions/client";
+import { formatPackageCode } from "@/lib/cbam/package-code";
 import { Lock, FileText } from "lucide-react";
 
 export default function ReportsPage() {
@@ -74,7 +75,7 @@ export default function ReportsPage() {
                   <div>
                     <p className="font-semibold text-sm">{r.installationName || r.calculation?.inputs?.installationName || "Sealed dossier"}</p>
                     <p className="text-xs text-muted mt-1 font-mono">
-                      Release ID: {r.reportId.substring(0, 8)}... | Sealed: {new Date(r.createdAt).toLocaleDateString()}
+                      Package ID: {formatPackageCode(r.packageCode)} | Sealed: {new Date(r.createdAt).toLocaleDateString()}
                     </p>
                     <p className="text-[11px] text-muted truncate mt-1 max-w-md font-mono" title={r.documentHash}>
                       Hash: {r.documentHash}

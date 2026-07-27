@@ -23,6 +23,7 @@ import {
   getCaseDisplayName,
   getPrimaryCnCode,
 } from "@/lib/cbam/case-summary";
+import { formatPackageCode } from "@/lib/cbam/package-code";
 import {
   getAccountOverview,
   getCases,
@@ -706,6 +707,7 @@ export default function CbamLandingPage() {
                     <div className="space-y-4">
                       {paginatedReports.map((report, index) => {
                         const reportId = readString(report, "reportId");
+                        const packageCode = formatPackageCode(readString(report, "packageCode"));
                         const createdAt = readString(report, "createdAt");
                         const documentHash = readString(report, "documentHash");
                         return (
@@ -716,7 +718,7 @@ export default function CbamLandingPage() {
                             <div>
                               <p className="font-semibold text-sm">{reportInstallationName(report)}</p>
                               <p className="text-xs text-muted mt-1 font-mono">
-                                Package ID: {reportId ? `${reportId.slice(0, 8)}…` : "Unavailable"} · Locked:{" "}
+                                Package ID: {packageCode} · Locked:{" "}
                                 {createdAt ? formatCaseUpdatedDate(createdAt) : "Unknown"}
                               </p>
                               <p className="text-[11px] text-muted truncate mt-1">

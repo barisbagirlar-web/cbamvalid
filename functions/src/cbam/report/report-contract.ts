@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { VERIFICATION_MATERIALITY_RATE } from "../registry/rulesets";
+import { PackageCodeSchema, resolvePackageCode } from "./package-code";
 
 const HashSchema = z.string().regex(/^[a-f0-9]{64}$/i);
 const ReportIdSchema = z.string().regex(/^report_[a-f0-9]{64}$/);
@@ -54,6 +55,7 @@ const PackageMetadataSchema = z.object({
 
 export const PersistedSealedReportSchema = z.object({
   reportId: ReportIdSchema,
+  packageCode: PackageCodeSchema.optional(),
   uid: z.string().min(1),
   caseId: z.string().min(1),
   entitlementId: z.string().min(1),
@@ -78,6 +80,7 @@ export const PersistedSealedReportSchema = z.object({
 });
 
 export const SealedReportViewSchema = PersistedSealedReportSchema.extend({
+  packageCode: PackageCodeSchema,
   packageTopLevelComponentCount: z.number(),
   automatedReadiness: z.enum([
     "READY_FOR_INDEPENDENT_VERIFICATION",
@@ -134,6 +137,7 @@ export function toSealedReportView(value: unknown): SealedReportView {
 
   return SealedReportViewSchema.parse({
     ...report,
+    packageCode: resolvePackageCode({ packageCode: report.packageCode, reportId: report.reportId }),
     packageTopLevelComponentCount: manifestCount !== undefined ? manifestCount : defaultCount,
     automatedReadiness,
     independentVerifierStatus: "NOT_REVIEWED",

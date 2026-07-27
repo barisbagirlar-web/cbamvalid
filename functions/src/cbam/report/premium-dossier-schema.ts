@@ -289,6 +289,7 @@ export const PremiumDossierViewModelSchema = z.object({
   schemaVersion: z.literal("CBAMVALID-DOSSIER-5.0"),
   reportingPeriodAssessment: ReportingPeriodAssessmentSchema,
   reportId: z.string().min(1),
+  packageCode: z.string().regex(/^[A-Z][0-9]{4}$/).optional(),
   caseId: z.string().min(1),
   releaseVersion: z.number().int().min(1),
   generatedAt: z.string().datetime(),
@@ -385,6 +386,7 @@ export const SealAssessmentContextSchema = z.object({
   generatedAt: z.string(),
   assessmentTimestamp: z.string(),
   reportId: z.string(),
+  packageCode: z.string().regex(/^[A-Z][0-9]{4}$/).optional(),
   releaseVersion: z.number().int().positive(),
   rulesetVersion: z.string(),
   /** Server-trusted product code from reserved entitlement — never client-supplied. */

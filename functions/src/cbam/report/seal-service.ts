@@ -13,6 +13,8 @@ import {
 import { REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5 } from "./package-components";
 import type { SealAssessmentContext } from "./premium-dossier-schema";
 import { CommercialReportPipelineV2 } from "./commercial-report-pipeline-v2";
+import { allocatePackageCode } from "./allocate-package-code";
+import { resolvePackageCode } from "./package-code";
 
 export type SealState =
   | "SEAL_REQUESTED"
@@ -29,6 +31,7 @@ export type SealState =
 
 export interface SealingResult {
   reportId: string;
+  packageCode: string;
   releaseVersion: number;
   documentHash: string;
   manifestHash: string;
@@ -67,6 +70,7 @@ type SealedReportRecord = SealingResult & {
   kmsAlgorithm: string;
   signatureBase64: string;
   storage: Record<string, { path: string; sha256: string; sizeBytes: number }>;
+  packageCode: string;
 };
 
 function sha256(content: Buffer | string): string {
@@ -108,6 +112,7 @@ function resultFromReport(data: unknown): SealingResult {
   ) throw new Error("SEALED_REPORT_RECORD_INVALID");
   return {
     reportId: source.reportId,
+    packageCode: resolvePackageCode({ packageCode: source.packageCode, reportId: source.reportId }),
     releaseVersion: source.releaseVersion,
     documentHash: source.documentHash,
     manifestHash: source.manifestHash,
@@ -360,10 +365,17 @@ export async function sealReport(params: {
       isV5 = true;
       if (releaseVersion > 1 && !params.correctionReason?.trim()) throw new Error("CORRECTION_REASON_REQUIRED_AFTER_FIRST_RELEASE");
 
+      const packageCode = await allocatePackageCode({
+        digest: identity.digest,
+        reportId: identity.reportId,
+        uid: params.uid,
+      });
+
       const assessmentContext: SealAssessmentContext = {
         generatedAt: lease.generatedAt,
         assessmentTimestamp: lease.generatedAt,
         reportId: identity.reportId,
+        packageCode,
         releaseVersion,
         rulesetVersion: ruleset.version,
         productCode: entitlement.productCode,
@@ -416,6 +428,7 @@ export async function sealReport(params: {
       calculation,
       controls,
       reportId: identity.reportId,
+      packageCode,
       releaseVersion,
       generatedAt: lease.generatedAt,
       evidenceFiles,
@@ -458,6 +471,7 @@ export async function sealReport(params: {
     const caseDocumentId = await resolveCaseDocumentId(params.caseId);
     const reportRecord: Record<string, unknown> = {
       reportId: identity.reportId,
+      packageCode,
       uid: params.uid,
       caseId: params.caseId,
       entitlementId: params.entitlementId,
@@ -589,6 +603,7 @@ export async function sealReport(params: {
         valid: true,
         documentHash,
         reportId: identity.reportId,
+        packageCode,
         caseId: params.caseId,
         releaseVersion,
         issuedAt: reportRecord.updatedAt,
@@ -602,11 +617,13 @@ export async function sealReport(params: {
       transaction.set(reportRef, reportRecord);
       transaction.update(caseRef, {
         latestReleaseId: identity.reportId,
+        latestPackageCode: packageCode,
         latestReleaseVersion: releaseVersion,
         updatedAt: reportRecord.updatedAt,
       });
       transaction.set(outboxRef, {
         reportId: identity.reportId,
+        packageCode,
         documentHash,
         uid: params.uid,
         caseId: params.caseId,
@@ -617,6 +634,7 @@ export async function sealReport(params: {
         status: "COMPLETED",
         updatedAt: reportRecord.updatedAt,
         leaseExpiresAt: reportRecord.updatedAt,
+        packageCode,
         error: null,
       });
       transaction.set(adminDb.collection("seal_log").doc(identity.reportId), {
@@ -624,6 +642,7 @@ export async function sealReport(params: {
         timestamp: reportRecord.updatedAt,
         documentHash,
         packageHash: packageResult.zipHash,
+        packageCode,
       }, { merge: true });
     });
     reserved = false;

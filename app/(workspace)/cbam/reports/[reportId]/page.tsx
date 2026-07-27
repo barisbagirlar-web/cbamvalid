@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthProvider";
 import type { ReportDownloadFormat, SealedReportView } from "@/lib/cbam/report-contract";
+import { formatPackageCode } from "@/lib/cbam/package-code";
 import { getReport, getReportDownload } from "@/lib/functions/client";
 
 const DOWNLOADS: Array<{
@@ -211,7 +212,10 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
                 <ShieldCheck className="h-8 w-8 text-accent" strokeWidth={1.7} aria-hidden="true" />
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Sealed verifier-preparation dossier</p>
-                  <h1 className="mt-1 font-serif text-3xl font-bold font-serif">Release {report.releaseVersion} · {componentCount} controlled components</h1>
+                  <h1 className="mt-1 font-serif text-3xl font-bold font-serif">
+                    Package {formatPackageCode(report.packageCode)} · Release {report.releaseVersion}
+                  </h1>
+                  <p className="mt-1 text-sm text-muted">{componentCount} controlled components</p>
                 </div>
               </div>
               <p className="max-w-xl text-sm leading-relaxed text-muted">
@@ -470,7 +474,8 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
           {showIntegrityDetails && (
             <div className="px-6 pb-6 pt-2 border-t border-border/60 divide-y divide-border/60 text-sm">
               {[
-                ["Report ID", report.reportId],
+                ["Package ID", formatPackageCode(report.packageCode)],
+                ["Technical Report ID", report.reportId],
                 ["Case ID", report.caseId],
                 ["Document / Manifest Hash", report.manifestHash],
                 ["Package ZIP Hash", report.packageHash],

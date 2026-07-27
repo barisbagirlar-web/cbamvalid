@@ -178,7 +178,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     empathyLead:
       "Buyers and verifiers ask what they will receive. You should inspect structure and integrity expectations before you purchase.",
     directAnswer:
-      "A sealed package is an immutable operator-prepared dossier with reports, structured data, evidence folder references, and a data integrity manifest with file sizes and SHA-256 hashes — prepared for independent review, not as an accredited verification opinion.",
+      "A sealed package is an immutable operator-prepared dossier with reports, structured data, evidence folder references, and a data integrity manifest with file sizes and SHA-256 hashes — prepared for independent review, not as an accredited verification opinion. Each sealed release also carries a short Package ID (letter + four digits, for example Y7654) so operators can distinguish versions without reading truncated hashes.",
     calculation:
       "Sample calculations illustrate trace shape and unit reporting. Live cases recompute from your installation data under the active ruleset.",
     explanation:

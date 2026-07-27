@@ -130,7 +130,7 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 ### /sample-dossier
 - Primary question: What does a sealed CBAMValid preparation dossier contain?
 - Empathy: Buyers and verifiers ask what they will receive. You should inspect structure and integrity expectations before you purchase.
-- Direct answer: A sealed package is an immutable operator-prepared dossier with reports, structured data, evidence folder references, and a data integrity manifest with file sizes and SHA-256 hashes — prepared for independent review, not as an accredited verification opinion.
+- Direct answer: A sealed package is an immutable operator-prepared dossier with reports, structured data, evidence folder references, and a data integrity manifest with file sizes and SHA-256 hashes — prepared for independent review, not as an accredited verification opinion. Each sealed release also carries a short Package ID (letter + four digits, for example Y7654) so operators can distinguish versions without reading truncated hashes.
 - Calculation: Sample calculations illustrate trace shape and unit reporting. Live cases recompute from your installation data under the active ruleset.
 - Explanation: Use the public interactive viewer (page thumbs, document stage, contents panel), then the authority and answer sections below, to inspect cover-to-integrity structure before sealing your own case.
 - Methodology: Sample content follows the same independence boundary and package-contract discipline as production seals, citing Regulation (EU) 2023/956 and definitive-period implementing rules.

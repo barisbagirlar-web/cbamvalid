@@ -18,6 +18,7 @@ import type { KmsSignatureResult } from "../../functions/src/cbam/report/kms-sig
 import {
   FIXTURE_GENERATED_AT,
   FIXTURE_REPORT_ID,
+  FIXTURE_PACKAGE_CODE,
   createVerifierEvidenceFiles,
   createVerifierGradeCase,
 } from "../fixtures/verifier-grade-case";
@@ -71,6 +72,7 @@ describe("verifier-grade deliverables", () => {
       calculation,
       controls,
       reportId: FIXTURE_REPORT_ID,
+      packageCode: FIXTURE_PACKAGE_CODE,
       releaseVersion: 1,
       generatedAt: FIXTURE_GENERATED_AT,
     });
@@ -101,6 +103,7 @@ describe("verifier-grade deliverables", () => {
       calculation,
       controls,
       reportId: FIXTURE_REPORT_ID,
+      packageCode: FIXTURE_PACKAGE_CODE,
       releaseVersion: 1,
       generatedAt: FIXTURE_GENERATED_AT,
       evidenceFiles: createVerifierEvidenceFiles(),
@@ -171,6 +174,7 @@ describe("verifier-grade deliverables", () => {
       calculation,
       controls,
       reportId: FIXTURE_REPORT_ID,
+      packageCode: FIXTURE_PACKAGE_CODE,
       releaseVersion: 1,
       generatedAt: FIXTURE_GENERATED_AT,
       evidenceFiles: createVerifierEvidenceFiles(),

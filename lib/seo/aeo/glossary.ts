@@ -137,6 +137,14 @@ export const CBAM_GLOSSARY: readonly GlossaryTerm[] = [
     relatedPaths: ["/methodology", "/how-it-works", "/sample-dossier"],
   },
   {
+    slug: "package-id",
+    name: "Package ID",
+    aliases: ["short package code", "human package label", "Y7654"],
+    definition:
+      "A short human label for a sealed CBAMValid release in the form of one Latin letter plus four digits (for example Y7654). It is shown in account lists, report pages, and dossier covers so operators can tell releases apart. The cryptographic report_… identifier remains the storage and integrity key and is not truncated in technical sections.",
+    relatedPaths: ["/how-it-works", "/sample-dossier", "/verify"],
+  },
+  {
     slug: "preparation-pack",
     name: "Exporter Verification Preparation Pack",
     aliases: ["Preparation Pack", "CBAMValid pack"],

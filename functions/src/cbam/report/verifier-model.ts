@@ -58,6 +58,7 @@ export interface MonitoringPlanRequirement {
 
 export interface VerifierPackageModel {
   reportId: string;
+  packageCode: string;
   caseId: string;
   releaseVersion: number;
   generatedAt: string;
@@ -224,6 +225,7 @@ export function buildVerifierPackageModel(params: {
   calculation: DossierCalculationResult;
   controls: QualityControlResult[];
   reportId: string;
+  packageCode: string;
   releaseVersion: number;
   generatedAt: string;
   productCode?: string;
@@ -242,6 +244,7 @@ export function buildVerifierPackageModel(params: {
 
   return {
     reportId: params.reportId,
+    packageCode: params.packageCode,
     caseId: params.caseData.caseId || "",
     releaseVersion: params.releaseVersion,
     generatedAt: params.generatedAt,
