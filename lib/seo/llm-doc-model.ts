@@ -6,6 +6,7 @@ import {
   assertVerifiedClaim,
 } from "./claims";
 import { AEO_ANSWER_BANK } from "./aeo/answer-bank";
+import { AUTHORITY_CHAINS } from "./aeo/authority-chains";
 import { TOPICAL_MAP } from "./aeo/topical-map";
 import { listVerifiedRegulatoryStatements, SEO_LEGAL_SOURCE_INDEX } from "./regulatory-sources";
 import { listSitemapRoutes } from "./registry";
@@ -20,8 +21,28 @@ export interface LlmDocModel {
   readonly paymentFlow: string;
   readonly supportEmail: string;
   readonly resources: readonly { readonly title: string; readonly url: string; readonly note: string }[];
-  readonly topicalMap: readonly { readonly path: string; readonly topic: string; readonly covers: readonly string[] }[];
+  readonly topicalMap: readonly {
+    readonly path: string;
+    readonly topic: string;
+    readonly covers: readonly string[];
+    readonly entities: readonly string[];
+    readonly fanOutQueries: readonly string[];
+  }[];
   readonly answers: readonly { readonly question: string; readonly answer: string; readonly routes: readonly string[] }[];
+  readonly authorityChains: readonly {
+    readonly path: string;
+    readonly primaryQuestion: string;
+    readonly directAnswer: string;
+    readonly empathyLead: string;
+    readonly calculation: string;
+    readonly explanation: string;
+    readonly methodology: string;
+    readonly evidence: string;
+    readonly expert: string;
+    readonly relatedPaths: readonly string[];
+    readonly entities: readonly string[];
+    readonly fanOutQueries: readonly string[];
+  }[];
   readonly regulatoryStatements: readonly string[];
   readonly legalSources: readonly { readonly id: string; readonly title: string; readonly url: string }[];
   readonly lastUpdated: string;
@@ -53,11 +74,27 @@ export function buildLlmDocModel(): LlmDocModel {
       path: node.path,
       topic: node.topic,
       covers: node.covers,
+      entities: node.entities,
+      fanOutQueries: node.fanOutQueries,
     })),
     answers: AEO_ANSWER_BANK.map((answer) => ({
       question: answer.question,
       answer: `${answer.directAnswer} ${answer.empathyContext}`,
       routes: answer.routes,
+    })),
+    authorityChains: AUTHORITY_CHAINS.map((chain) => ({
+      path: chain.path,
+      primaryQuestion: chain.primaryQuestion,
+      directAnswer: chain.directAnswer,
+      empathyLead: chain.empathyLead,
+      calculation: chain.calculation,
+      explanation: chain.explanation,
+      methodology: chain.methodology,
+      evidence: chain.evidence,
+      expert: chain.expert,
+      relatedPaths: chain.relatedProblems.map((item) => item.href),
+      entities: chain.entities,
+      fanOutQueries: chain.fanOutQueries,
     })),
     regulatoryStatements: listVerifiedRegulatoryStatements(),
     legalSources: Object.values(SEO_LEGAL_SOURCE_INDEX).map((source) => ({
@@ -95,10 +132,33 @@ export function renderLlmsTxt(model: LlmDocModel): string {
     lines.push(`  Pages: ${answer.routes.join(", ")}`);
   }
 
-  lines.push("", "## Topical map", "");
+  lines.push(
+    "",
+    "## Authority chains (Direct Answer → Calculation → Explanation → Methodology → Evidence → Expert → Related)",
+    "",
+  );
+  for (const chain of model.authorityChains) {
+    lines.push(`### ${chain.path}`);
+    lines.push(`- Primary question: ${chain.primaryQuestion}`);
+    lines.push(`- Empathy: ${chain.empathyLead}`);
+    lines.push(`- Direct answer: ${chain.directAnswer}`);
+    lines.push(`- Calculation: ${chain.calculation}`);
+    lines.push(`- Explanation: ${chain.explanation}`);
+    lines.push(`- Methodology: ${chain.methodology}`);
+    lines.push(`- Evidence: ${chain.evidence}`);
+    lines.push(`- Expert: ${chain.expert}`);
+    lines.push(`- Related: ${chain.relatedPaths.join(", ")}`);
+    lines.push(`- Entities: ${chain.entities.join("; ")}`);
+    lines.push(`- Fan-out queries: ${chain.fanOutQueries.join("; ")}`);
+    lines.push("");
+  }
+
+  lines.push("## Topical map (topic → entities → fan-out → links)", "");
   for (const node of model.topicalMap) {
     lines.push(`- ${node.path} — ${node.topic}`);
     lines.push(`  Covers: ${node.covers.join("; ")}`);
+    if (node.entities.length > 0) lines.push(`  Entities: ${node.entities.join("; ")}`);
+    if (node.fanOutQueries.length > 0) lines.push(`  Fan-out: ${node.fanOutQueries.join("; ")}`);
   }
 
   lines.push("", "## Core public resources", "");
@@ -141,7 +201,9 @@ export function renderLlmsFullTxt(model: LlmDocModel): string {
     "- Not an official European Commission or CBAM Registry service",
     "- Not customs approval or registry acceptance",
     "- No synthetic customer counts, ratings, or testimonials",
+    "- No fabricated Review / AggregateRating schema nodes",
     "- One pack is not reusable across another installation or reporting year",
+    "- Academic mathematical review is not accredited CBAM verification",
     "",
   ].join("\n");
 }

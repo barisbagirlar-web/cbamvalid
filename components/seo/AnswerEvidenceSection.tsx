@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { AeoAnswerRecord } from "@/lib/seo/aeo/types";
 import { listAnswersForRoute } from "@/lib/seo/aeo/answer-bank";
 import { listRelatedTopics } from "@/lib/seo/aeo/topical-map";
+import { AuthorityChainSection } from "@/components/seo/AuthorityChain";
 
 function AnswerCard({ answer }: { answer: AeoAnswerRecord }) {
   return (
@@ -101,18 +102,21 @@ export function TopicalMapSection({ path }: { path: string }) {
   );
 }
 
-/** Shared footer block for marketing pages. */
+/** Shared AEO chrome for marketing pages: authority chain + answers + topical map. */
 export function AeoPageChrome({
   path,
   answerHeading,
   answerLimit = 2,
+  showAuthorityChain = true,
 }: {
   path: string;
   answerHeading?: string;
   answerLimit?: number;
+  showAuthorityChain?: boolean;
 }) {
   return (
     <>
+      {showAuthorityChain ? <AuthorityChainSection path={path} /> : null}
       <AnswerEvidenceSection path={path} heading={answerHeading} limit={answerLimit} />
       <TopicalMapSection path={path} />
     </>

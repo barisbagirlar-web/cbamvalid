@@ -35,45 +35,329 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Q: Which ruleset does CBAMValid use for calculations?
   A: Authoritative calculations pin to a named, versioned ruleset recorded in the sealed dossier. Historical sealed releases keep the ruleset they were built against; methods are not silently rewritten after sealing. When a verifier asks which rules you followed, vague “latest guidance” answers fail. You need a dated method reference inside the package itself.
   Pages: /methodology, /product
+- Q: When does the CBAM definitive period start, and what is the first declaration deadline for 2026 imports?
+  A: The CBAM definitive period applies from 1 January 2026. For 2026 imports, the first CBAM declaration and corresponding certificate surrender deadline is 30 September 2027. Mixing transitional quarterly reporting habits with definitive-period annual duties creates false deadlines and wasted work.
+  Pages: /, /cbam-2026-definitive-period, /cbam-non-eu-producer-guide
+- Q: How are CBAM embedded emissions calculated?
+  A: Embedded emissions combine direct process/combustion emissions and, where required, electricity-related indirect emissions, plus applicable precursor emissions. Missing material inputs must block authoritative results rather than becoming silent zeros. A wrong total under buyer pressure is worse than a blocked draft. Fail-closed calculation protects you in verification.
+  Pages: /cbam-embedded-emissions-calculation, /methodology, /cbam-methodology
+- Q: Should exporters use actual values or CBAM default values?
+  A: Actual values reflect installation-specific monitored or calculated emissions and generally require independent verification where legally required. Default values are multi-dimensional official fallbacks — not a single universal CN number. Defaults can look easier until a buyer or verifier rejects them. Document the basis choice with evidence.
+  Pages: /cbam-actual-vs-default-values, /cbam-default-values
+- Q: How do exporters prepare for independent CBAM verification?
+  A: Assemble complete, evidence-linked emissions data, methodology decisions, and closed material findings so an independent accredited verifier can perform assurance work. CBAMValid prepares the package; it does not issue the verification opinion. Verifiers need consistent, evidence-linked data — not a reconstructed email history.
+  Pages: /cbam-verification-preparation, /cbam-exporter-evidence-requirements, /sample-dossier
 
-## Topical map
+## Authority chains (Direct Answer → Calculation → Explanation → Methodology → Evidence → Expert → Related)
+
+### /
+- Primary question: What should a non-EU exporter prepare when an EU buyer asks for actual CBAM emissions evidence?
+- Empathy: Buyer pressure arrives before your evidence package is ready. You need a defendable dossier for one plant and one year — without pretending the software issued an accredited verification opinion.
+- Direct answer: $249 buys one Exporter Verification Preparation Pack: one legal operator, one installation, one reporting year, unlimited drafts, and exactly 5 successful sealed releases. CBAMValid prepares an evidence-linked operator dossier for independent accredited verification — it does not verify emissions itself.
+- Calculation: Authoritative embedded-emissions results run server-side against a named, versioned ruleset. Missing material inputs block sealing; they are never silently converted to zero. Client previews stay advisory until a successful seal.
+- Explanation: Define scope, enter goods and production data, link evidence, clear fail-closed quality blockers, buy the pack at checkout, then seal immutable PDF/JSON/O3CI field-mapped exports. Re-download of a sealed release is free; another plant or year needs another pack.
+- Methodology: Methods pin to Regulation (EU) 2023/956 and related implementing rules recorded in the sealed package. Historical seals keep the ruleset they were built against.
+- Evidence: Material values require evidence lineage (hash, size, support status). Sealing requires approved and fully supported evidence; partially supported is not enough.
+- Expert: Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.
+- Related: /pricing, /how-it-works, /methodology, /cbam-2026-definitive-period
+- Entities: CBAMValid; Exporter Verification Preparation Pack; embedded emissions; independent accredited verification; Regulation (EU) 2023/956
+- Fan-out queries: CBAM exporter evidence dossier; CBAM verification preparation software; actual embedded emissions package for EU buyer; CBAM sealed dossier vs verification opinion
+
+### /product
+- Primary question: What capabilities does the Exporter Verification Preparation Pack provide?
+- Empathy: Spreadsheets break under verifier questions. You need deterministic calculations, an evidence register, and fail-closed QC before you hand anything over.
+- Direct answer: The pack provides a scoped working file with deterministic embedded-emissions calculations, evidence register, quality controls, methodology decisions, findings closure, and up to five immutable sealed releases for one operator, one installation, and one reporting year.
+- Calculation: Server-side engine computes direct and indirect emissions with unit-safe conversions, precursor treatment where applicable, and allocation reconciliation. Every authoritative node carries formula identity, inputs, units, and a SHA-256 node hash.
+- Explanation: You compile installation and goods data, link supporting documents, resolve blockers, purchase once, then seal releases for buyer or verifier handover without rewriting prior seals.
+- Methodology: Versioned rulesets and legal source citations travel with each sealed release so method history stays auditable.
+- Evidence: Evidence objects store hash, size, path ownership, review status, and support status. Seal is blocked when evidence is missing, rejected, unsupported, or hash-mismatched.
+- Expert: Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.
+- Related: /pricing, /sample-dossier, /cbam-exporter-evidence-requirements
+- Entities: Preparation Pack; calculation trace; evidence register; quality controls; O3CI field-mapped export
+- Fan-out queries: CBAM verification preparation product; CBAM evidence register software; deterministic CBAM calculation engine
+
+### /pricing
+- Primary question: What does $249 buy, and when is the card charged?
+- Empathy: Nobody wants a surprise charge mid-review or a vague “credits” story. You should finish data quality first, then buy when you are ready to seal.
+- Direct answer: $249 is a one-time Exporter Verification Preparation Pack: unlimited drafts and 5 successful sealed releases for one operator, one installation, and one reporting year. Drafting is free. The card is charged at checkout when you buy the pack — not when you edit drafts.
+- Calculation: Commercial math: 1 pack → 5 successful seals inside the locked scope. Failed or blocked seals consume zero releases. Re-download consumes zero. Another installation or reporting year requires another pack.
+- Explanation: Buy once at checkout after your case is ready. Each successful seal uses one included release. Prior sealed versions remain immutable and re-downloadable.
+- Methodology: Pricing is a commercial entitlement contract, not a regulatory calculation. Emissions methodology is separate and versioned inside the dossier.
+- Evidence: Checkout and entitlement ledgers are server-authoritative. Client-provided credit or price claims are never trusted.
+- Expert: Commercial unit and independence boundary are product policy facts. Mathematical engine review does not change pricing or create an accredited verification claim.
+- Related: /product, /how-it-works, /pricing
+- Entities: USD 249; one-time pack; five sealed releases; scope lock; draft free
+- Fan-out queries: CBAMValid price; CBAM preparation pack cost; is CBAMValid a subscription; when is CBAMValid card charged
+
+### /how-it-works
+- Primary question: How do I go from raw plant data to a sealed CBAM preparation dossier?
+- Empathy: Most teams lose weeks in email threads and version chaos. You need a guided path that shows gaps before a buyer or verifier sees the file.
+- Direct answer: Define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, buy the Preparation Pack at checkout, then seal up to five immutable releases and download PDF, JSON, and O3CI field-mapped exports.
+- Calculation: After material inputs are complete, the server engine computes embedded emissions and writes a calculation trace. Incomplete material data blocks sealing.
+- Explanation: Eight guided stages move from scope setup through evidence linking, QC, purchase, seal, and download. Drafts stay free until you buy the pack.
+- Methodology: Each sealed release records the ruleset and engine version used so replay stays deterministic.
+- Evidence: Every material field should point to approved, fully supported evidence before seal.
+- Expert: Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.
+- Related: /sample-dossier, /pricing, /cbam-verification-preparation
+- Entities: draft-to-seal workflow; quality blockers; sealed release; O3CI export
+- Fan-out queries: how to prepare CBAM dossier; CBAMValid workflow steps; seal CBAM evidence package
+
+### /methodology
+- Primary question: Which ruleset and methods does CBAMValid use for authoritative calculations?
+- Empathy: When a verifier asks which rules you followed, “latest guidance” is not an answer. You need a dated method reference inside the package.
+- Direct answer: Authoritative calculations pin to a named, versioned ruleset recorded in the sealed dossier. Historical sealed releases keep the ruleset they were built against; methods are not silently rewritten after sealing.
+- Calculation: Direct and indirect emissions, precursor treatment, and allocation shares are computed with unit discipline, null/zero separation, and reconciliation guards. Intermediate precision is preserved; reporting-stage rounding is explicit.
+- Explanation: Methodology pages and sealed traces cite Regulation (EU) 2023/956 and implementing rules for calculation and verification principles where applied.
+- Methodology: Ruleset identity, engine version, legal source IDs, and calculation-node hashes form the reproducibility contract.
+- Evidence: Method decisions and material inputs must be evidence-linked where required before a seal can pass.
+- Expert: Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.
+- Related: /cbam-embedded-emissions-calculation, /cbam-actual-vs-default-values, /cbam-methodology
+- Entities: versioned ruleset; Regulation (EU) 2023/956; Implementing Regulation (EU) 2025/2547; calculation trace; deterministic replay
+- Fan-out queries: CBAM calculation methodology; CBAM ruleset versioning; deterministic embedded emissions calculation
+
+### /sample-dossier
+- Primary question: What does a sealed CBAMValid preparation dossier contain?
+- Empathy: Buyers and verifiers ask what they will receive. You should inspect structure and integrity expectations before you purchase.
+- Direct answer: A sealed package is an immutable operator-prepared dossier with reports, structured data, evidence folder references, and a data integrity manifest with file sizes and SHA-256 hashes — prepared for independent review, not as an accredited verification opinion.
+- Calculation: Sample calculations illustrate trace shape and unit reporting. Live cases recompute from your installation data under the active ruleset.
+- Explanation: Browse the public sample structure to understand PDF/JSON/workbook layout and verifier navigation expectations before sealing your own case.
+- Methodology: Sample content follows the same independence boundary and package-contract discipline as production seals.
+- Evidence: Manifest-listed files must exist with matching size and hash. Public sample demonstrates the integrity pattern without exposing tenant data.
+- Expert: Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.
+- Related: /verify, /pricing, /product
+- Entities: sample sealed dossier; integrity manifest; SHA-256; verifier navigation package
+- Fan-out queries: CBAM sample dossier; CBAM verification preparation package contents; CBAM integrity manifest
+
+### /verify
+- Primary question: How can someone check that a sealed CBAMValid dossier was not altered?
+- Empathy: Recipients need a trust check without opening a black box. Integrity verification must be independent of marketing claims.
+- Direct answer: Public verification checks the sealed dossier integrity signature / hash against the published manifest pattern. A passing integrity check confirms package bytes match the seal — it does not mean emissions were accredited-verified.
+- Calculation: Verification compares cryptographic hashes of package contents. It does not re-run emissions formulas unless you open a separate calculation review.
+- Explanation: Use the verify flow with the public token or published hash materials supplied with the sealed release.
+- Methodology: Integrity verification is a data-integrity control, separate from accredited verification under CBAM implementing rules.
+- Evidence: Hash mismatch or missing bytes fails closed. Successful verify ≠ verification opinion.
+- Expert: Integrity tooling is product engineering. Accredited verification remains a separate legal act by an accredited verifier.
+- Related: /sample-dossier, /how-it-works
+- Entities: dossier integrity hash; public verification; manifest SHA-256
+- Fan-out queries: verify CBAM dossier hash; CBAMValid signature verification
+
+### /cn-code
+- Primary question: How do I check whether a CN code is in CBAM goods scope?
+- Empathy: Wrong CN scope wastes months. You need a clear scope decision before you build an entire dossier.
+- Direct answer: Use the CN code hub to inspect CBAM Annex I-oriented public entries for covered goods chapters. Classification remains an operator responsibility; CBAMValid does not replace customs classification advice.
+- Calculation: Scope is a classification and applicability decision, not an emissions total. Emissions calculations start only after goods and routes are in scope.
+- Explanation: Search or browse published CN entries, review sector and route notes, then continue to product setup for in-scope goods.
+- Methodology: Public CN pages cite legal source families used for scope publication. Always re-check effective dates against current official texts.
+- Evidence: Keep customs documents and CN reasoning evidence with the case for verifier review.
+- Expert: Scope guidance is informational. Final classification and legal interpretation remain with the operator and competent advisors.
+- Related: /cbam-cn-code-scope, /cbam-non-eu-producer-guide, /product
+- Entities: CN code; Annex I; CBAM goods scope; customs classification
+- Fan-out queries: is my CN code in CBAM; CBAM CN code list; CBAM Annex I goods
+
+### /cbam-2026-definitive-period
+- Primary question: What changed when the CBAM definitive period started in 2026?
+- Empathy: Teams still mix transitional quarterly reporting habits with definitive-period annual duties. That confusion creates false deadlines and wrong workplans.
+- Direct answer: The CBAM definitive period applies from 1 January 2026. For 2026 imports, the first CBAM declaration and corresponding certificate surrender deadline is 30 September 2027. Certificate price calculation in 2026 follows a quarterly cadence — that is not the same as transitional quarterly emissions reporting.
+- Calculation: Certificate price publication uses quarterly calculation under Implementing Regulation (EU) 2025/2548. Embedded emissions for goods remain installation-based calculations under the emissions implementing rules.
+- Explanation: EU importers face annual declaration and certificate surrender duties. Non-EU producers must supply evidence-linked actual data when buyers require it. Do not treat transitional quarterly report dates as 2026 definitive obligations.
+- Methodology: Cite Regulation (EU) 2023/956 as amended, plus implementing rules for verification, emissions calculation, and certificate price.
+- Evidence: Keep period-correct installation data, goods lists, and evidence hashes aligned to the reporting year you will seal.
+- Expert: Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.
+- Related: /cbam-certificate-price, /cbam-verification-preparation, /cbam-non-eu-producer-guide
+- Entities: CBAM definitive period; 1 January 2026; 30 September 2027; certificate surrender; Regulation (EU) 2025/2083
+- Fan-out queries: CBAM 2026 definitive period; CBAM declaration deadline 2027; CBAM certificate surrender 2026 imports
+
+### /cbam-embedded-emissions-calculation
+- Primary question: How are CBAM embedded emissions calculated for goods?
+- Empathy: A wrong total under buyer pressure is worse than a blocked draft. Missing data must stop the result — not become a silent zero.
+- Direct answer: Embedded emissions combine direct process/combustion emissions and, where required, electricity-related indirect emissions, plus applicable precursor emissions. Authoritative results require complete material inputs, reconciled allocation, and evidence links.
+- Calculation: Compute direct emissions from activity data and factors or measurements; add indirect electricity emissions where required; include precursor embedded emissions when in scope; allocate installation totals to goods so shares reconcile within tolerance; preserve intermediate precision and apply reporting-stage rounding only at the defined stage.
+- Explanation: Separate direct and indirect bases, prevent double counting, and keep unit conversions explicit (including kg/t and energy units). Client previews are advisory until the server seal.
+- Methodology: Follow Implementing Regulation (EU) 2025/2547 calculation principles as applied by the active CBAMValid ruleset version recorded in the seal.
+- Evidence: Activity data, factors, electricity data, precursor quantities, and allocation methodology need evidence IDs and support status before sealing.
+- Expert: Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.
+- Related: /cbam-actual-vs-default-values, /methodology, /cbam-exporter-evidence-requirements
+- Entities: embedded emissions; direct emissions; indirect emissions; precursors; allocation reconciliation
+- Fan-out queries: how to calculate CBAM embedded emissions; CBAM direct and indirect emissions; CBAM precursor emissions calculation
+
+### /cbam-actual-vs-default-values
+- Primary question: When should exporters use actual values instead of CBAM default values?
+- Empathy: Defaults can look easier until a buyer or verifier rejects them. Choosing the wrong basis creates commercial and legal risk.
+- Direct answer: Actual values reflect installation-specific monitored or calculated emissions and generally require independent verification where legally required. Default values are official fallbacks that depend on multiple regulatory dimensions — not a single universal CN number.
+- Calculation: Actual-value pathways use installation data and evidence-linked factors. Default-value pathways apply multi-dimensional official factors (including country, route, and year dimensions where defined). Mixing bases without disclosure breaks reproducibility.
+- Explanation: Prefer actual values when evidence quality can support verification. Use defaults only under conditions permitted by applicable implementing rules, understanding mark-ups and dimensional dependencies.
+- Methodology: Document the actual/default decision in the methodology decision log with legal basis and evidence IDs.
+- Evidence: Actual pathways need stronger primary evidence. Default pathways still need transparent citation of the factor source and dimensions used.
+- Expert: Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.
+- Related: /cbam-default-values, /cbam-embedded-emissions-calculation, /cbam-verification-preparation
+- Entities: actual values; default values; multi-dimensional factors; verification requirement
+- Fan-out queries: CBAM actual vs default values; when are CBAM actual values required; CBAM default value mark-up
+
+### /cbam-default-values
+- Primary question: What are CBAM default values and why are they multi-dimensional?
+- Empathy: Searching for “one default number per CN code” is a common trap. Wrong dimensions produce indefensible figures.
+- Direct answer: CBAM default values are official fallback emission factors that depend on multiple dimensions such as goods, country, production route, and year where the published dataset defines them — not a single timeless CN-only number.
+- Calculation: Select the factor only after matching all required dimensions in the official dataset applicable to the reporting period. Do not invent interpolated factors.
+- Explanation: Defaults exist for defined fallback cases. They are not a shortcut that removes documentation duty or automatic acceptance.
+- Methodology: Cite the default-value dataset version and dimensions in the sealed methodology and calculation trace.
+- Evidence: Retain the factor source reference, effective period, and selection rationale with the case evidence register.
+- Expert: Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.
+- Related: /cbam-actual-vs-default-values, /cn-code, /methodology
+- Entities: default emission factors; country route year dimensions; fallback values
+- Fan-out queries: CBAM default values; CBAM default factor by country; CBAM default values 2026
+
+### /cbam-certificate-price
+- Primary question: How does CBAM certificate pricing work in 2026?
+- Empathy: Finance teams often confuse certificate price publication cadence with transitional quarterly emissions reporting. That mix-up drives the wrong calendar.
+- Direct answer: In 2026, CBAM certificate prices are calculated on a quarterly cadence under Implementing Regulation (EU) 2025/2548. Certificate purchase and surrender obligations follow definitive-period rules and must not be confused with transitional quarterly emissions reporting.
+- Calculation: Certificate price is an official published price used for certificate accounting. It is separate from your installation’s embedded-emissions calculation for goods.
+- Explanation: Track official certificate price publications for the relevant quarters. Do not treat price cadence as a substitute for annual declaration timing.
+- Methodology: Cite IMPL_2025_2548 for price calculation/publication rules; cite emissions implementing rules for goods calculations.
+- Evidence: Keep price references used in financial planning separate from sealed emissions evidence packages.
+- Expert: CBAMValid prepares emissions evidence packages. It does not sell CBAM certificates or set official certificate prices.
+- Related: /cbam-2026-definitive-period, /cbam-embedded-emissions-calculation, /pricing
+- Entities: CBAM certificate price; quarterly price calculation; Implementing Regulation (EU) 2025/2548
+- Fan-out queries: CBAM certificate price 2026; CBAM certificate quarterly price; CBAM certificate surrender cost
+
+### /cbam-verification-preparation
+- Primary question: How should exporters prepare for independent CBAM verification?
+- Empathy: Verifiers do not want a story — they want complete, consistent, evidence-linked data. Preparation quality decides how painful the review becomes.
+- Direct answer: Verification preparation means assembling complete, evidence-linked emissions data, methodology decisions, and findings closure so an independent accredited verifier can perform assurance work. CBAMValid prepares the package; it does not issue the verification opinion.
+- Calculation: Ensure calculation traces reconcile installation totals to goods, with precursors and direct/indirect separation handled without double counting.
+- Explanation: Lock scope, finish evidence support statuses, clear material findings, then seal a package that a verifier can navigate without reconstructing your email history.
+- Methodology: Follow verification principles in Implementing Regulation (EU) 2025/2546 as the assurance framework — preparation software does not replace that assurance.
+- Evidence: Evidence must be approved and fully supported with matching hashes. Partial support blocks a serious seal.
+- Expert: Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.
+- Related: /cbam-exporter-evidence-requirements, /sample-dossier, /pricing
+- Entities: verification preparation; accredited verifier; assurance boundary; Implementing Regulation (EU) 2025/2546
+- Fan-out queries: how to prepare for CBAM verification; CBAM verifier readiness package; CBAM operator dossier for verification
+
+### /cbam-exporter-evidence-requirements
+- Primary question: What evidence do non-EU exporters need for CBAM embedded emissions?
+- Empathy: A beautiful PDF with weak evidence fails. Buyers and verifiers follow the data lineage, not the cover page.
+- Direct answer: Exporters need evidence lineage for material data: document identity, issuer, period, MIME/size, storage path, SHA-256 hash, uploader, confidentiality, review status, support status, and links to input fields and calculations.
+- Calculation: Each material calculation input should resolve to evidence that supports the numeric claim. Unsupported inputs must block authoritative sealing.
+- Explanation: Build an evidence register early. Approve and mark support status before you attempt seal. Duplicate hashes and path traversal attempts are rejected.
+- Methodology: Evidence sufficiency rules are fail-closed and versioned with the product quality-control contract.
+- Evidence: Physical bytes must match registered hash and size. Pending, rejected, unsupported, missing, or tampered evidence blocks sealing.
+- Expert: Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.
+- Related: /cbam-verification-preparation, /product, /methodology
+- Entities: evidence register; SHA-256; support status; field-to-evidence matrix
+- Fan-out queries: CBAM exporter evidence requirements; CBAM evidence hash integrity; CBAM supporting documents checklist
+
+### /cbam-non-eu-producer-guide
+- Primary question: What must non-EU producers and exporters do under CBAM?
+- Empathy: You may not be the declarant, but your EU customer still needs defendable actual data. Waiting until the PO is blocked is already too late.
+- Direct answer: Non-EU producers and exporters should determine goods scope, compile installation and production-route data, calculate evidence-linked embedded emissions, and provide an operator-prepared package that EU importers can use toward CBAM duties. CBAMValid helps prepare that package for independent accredited verification.
+- Calculation: Produce installation-year embedded emissions with clear direct/indirect and precursor treatment aligned to the goods you export.
+- Explanation: Align commercial contracts to data handover, keep CN classification rationale, and seal reproducible packages your buyer can share with advisors or verifiers.
+- Methodology: Use versioned EU rulesets and keep independence language honest: preparation ≠ accredited verification.
+- Evidence: Supply evidence-backed actual values when required; document default-value use only when permitted and disclosed.
+- Expert: Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.
+- Related: /cbam-2026-definitive-period, /how-it-works, /pricing
+- Entities: non-EU producer; exporter; EU importer; embedded emissions handover
+- Fan-out queries: CBAM duties for non-EU producers; CBAM exporter obligations; CBAM evidence for EU buyer
+
+### /cbam-cn-code-scope
+- Primary question: How do I decide if my goods CN code falls under CBAM?
+- Empathy: Scope mistakes cascade into wrong data collection. Confirm Annex I coverage before you build the full evidence stack.
+- Direct answer: Compare your goods’ Combined Nomenclature codes against CBAM Annex I coverage as published in the applicable legal texts and CBAMValid’s public CN registry entries. CBAMValid helps you navigate published scope notes; it does not replace formal customs classification.
+- Calculation: Out-of-scope goods should not receive forced emissions totals. In-scope goods proceed to installation-level calculation.
+- Explanation: Use the CN hub and sector notes, document your classification rationale, and escalate ambiguous cases to competent customs advisors.
+- Methodology: Scope decisions should be logged with legal source IDs and effective dates.
+- Evidence: Retain commercial descriptions, binding tariff information where available, and CN reasoning evidence with the case.
+- Expert: Scope guidance is informational. Classification liability remains with the economic operator.
+- Related: /cn-code, /cbam-non-eu-producer-guide, /product
+- Entities: CN classification; Annex I goods; CBAM scope decision
+- Fan-out queries: CBAM CN code scope; is product under CBAM Annex I; CBAM goods list by CN
+
+### /cbam-methodology
+- Primary question: What is the CBAM methodology overview CBAMValid publishes?
+- Empathy: Teams need a short map before diving into formulas. Methodology without version pins becomes non-reproducible.
+- Direct answer: CBAMValid’s methodology overview explains versioned rulesets, reproducible calculation traces, evidence linkage, and the independence boundary between operator preparation and accredited verification.
+- Calculation: Overview pages point to detailed calculation guides; authoritative numbers still come from the sealed server engine for a specific case snapshot.
+- Explanation: Use this page as the methodology cluster hub, then fan out to embedded-emissions, actual/default, and legal-source pages.
+- Methodology: Ruleset versioning + deterministic replay + legal source citation is the core contract.
+- Evidence: Method claims on public pages stay aligned to verified regulatory facts and product boundaries.
+- Expert: Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.
+- Related: /methodology, /cbam-embedded-emissions-calculation, /product
+- Entities: CBAM methodology; ruleset versioning; reproducible traces
+- Fan-out queries: CBAM methodology overview; CBAM ruleset version; CBAM calculation reproducibility
+
+## Topical map (topic → entities → fan-out → links)
 
 - / — CBAM exporter verification preparation
   Covers: what is CBAMValid; CBAM evidence dossier for exporters; verification preparation vs accredited verification
+  Entities: CBAMValid; Exporter Verification Preparation Pack; embedded emissions; independent accredited verification; Regulation (EU) 2023/956
+  Fan-out: CBAM exporter evidence dossier; CBAM verification preparation software; actual embedded emissions package for EU buyer; CBAM sealed dossier vs verification opinion
 - /product — Preparation Pack product capabilities
   Covers: deterministic CBAM calculation engine; evidence register; quality controls before sealing
+  Entities: Preparation Pack; calculation trace; evidence register; quality controls; O3CI field-mapped export
+  Fan-out: CBAM verification preparation product; CBAM evidence register software; deterministic CBAM calculation engine
 - /pricing — One-time Preparation Pack pricing
   Covers: USD 249 pack inclusions; when card is charged; five sealed releases; scope lock per installation and year
+  Entities: USD 249; one-time pack; five sealed releases; scope lock; draft free
+  Fan-out: CBAMValid price; CBAM preparation pack cost; is CBAMValid a subscription; when is CBAMValid card charged
 - /how-it-works — Draft-to-seal workflow
   Covers: case scope setup; evidence linking; seal and download deliverables
+  Entities: draft-to-seal workflow; quality blockers; sealed release; O3CI export
+  Fan-out: how to prepare CBAM dossier; CBAMValid workflow steps; seal CBAM evidence package
 - /methodology — Calculation methodology and legal sources
   Covers: versioned rulesets; Regulation (EU) 2023/956 basis; deterministic replay
+  Entities: versioned ruleset; Regulation (EU) 2023/956; Implementing Regulation (EU) 2025/2547; calculation trace; deterministic replay
+  Fan-out: CBAM calculation methodology; CBAM ruleset versioning; deterministic embedded emissions calculation
 - /sample-dossier — Sample sealed dossier structure
   Covers: what a sealed package contains; integrity manifest preview
+  Entities: sample sealed dossier; integrity manifest; SHA-256; verifier navigation package
+  Fan-out: CBAM sample dossier; CBAM verification preparation package contents; CBAM integrity manifest
 - /cn-code — CBAM CN code scope
   Covers: is my CN code in CBAM scope
+  Entities: CN code; Annex I; CBAM goods scope; customs classification
+  Fan-out: is my CN code in CBAM; CBAM CN code list; CBAM Annex I goods
 - /verify — Public dossier signature verification
   Covers: verify sealed dossier integrity hash
+  Entities: dossier integrity hash; public verification; manifest SHA-256
+  Fan-out: verify CBAM dossier hash; CBAMValid signature verification
 - /cbam-2026-definitive-period — CBAM 2026 definitive period
   Covers: definitive period start 2026; 30 September 2027 declaration deadline for 2026 imports; certificate surrender timing
+  Entities: CBAM definitive period; 1 January 2026; 30 September 2027; certificate surrender; Regulation (EU) 2025/2083
+  Fan-out: CBAM 2026 definitive period; CBAM declaration deadline 2027; CBAM certificate surrender 2026 imports
 - /cbam-embedded-emissions-calculation — Embedded emissions calculation guide
   Covers: direct and indirect emissions; precursor treatment; evidence requirements for calculations
+  Entities: embedded emissions; direct emissions; indirect emissions; precursors; allocation reconciliation
+  Fan-out: how to calculate CBAM embedded emissions; CBAM direct and indirect emissions; CBAM precursor emissions calculation
 - /cbam-actual-vs-default-values — Actual values vs default values
   Covers: when actual values are required; default value implications; verification preparation impact
+  Entities: actual values; default values; multi-dimensional factors; verification requirement
+  Fan-out: CBAM actual vs default values; when are CBAM actual values required; CBAM default value mark-up
 - /cbam-default-values — CBAM default values
   Covers: multi-dimensional default factors; country route and year dimensions
+  Entities: default emission factors; country route year dimensions; fallback values
+  Fan-out: CBAM default values; CBAM default factor by country; CBAM default values 2026
 - /cbam-certificate-price — CBAM certificate price cadence
   Covers: 2026 quarterly certificate price calculation; not the same as transitional quarterly reporting
+  Entities: CBAM certificate price; quarterly price calculation; Implementing Regulation (EU) 2025/2548
+  Fan-out: CBAM certificate price 2026; CBAM certificate quarterly price; CBAM certificate surrender cost
 - /cbam-verification-preparation — Verification preparation guide
   Covers: how to prepare for CBAM verification
+  Entities: verification preparation; accredited verifier; assurance boundary; Implementing Regulation (EU) 2025/2546
+  Fan-out: how to prepare for CBAM verification; CBAM verifier readiness package; CBAM operator dossier for verification
 - /cbam-exporter-evidence-requirements — Exporter evidence requirements
   Covers: evidence lineage and hashes; support status before sealing
+  Entities: evidence register; SHA-256; support status; field-to-evidence matrix
+  Fan-out: CBAM exporter evidence requirements; CBAM evidence hash integrity; CBAM supporting documents checklist
 - /cbam-non-eu-producer-guide — Non-EU producer CBAM guide
   Covers: CBAM duties for non-EU producers and exporters
+  Entities: non-EU producer; exporter; EU importer; embedded emissions handover
+  Fan-out: CBAM duties for non-EU producers; CBAM exporter obligations; CBAM evidence for EU buyer
 - /cbam-cn-code-scope — CN code scope decision guide
   Covers: Annex I goods scope by CN code
+  Entities: CN classification; Annex I goods; CBAM scope decision
+  Fan-out: CBAM CN code scope; is product under CBAM Annex I; CBAM goods list by CN
 - /cbam-methodology — CBAM methodology overview
   Covers: ruleset versioning; reproducible calculation traces
+  Entities: CBAM methodology; ruleset versioning; reproducible traces
+  Fan-out: CBAM methodology overview; CBAM ruleset version; CBAM calculation reproducibility
 
 ## Core public resources
 

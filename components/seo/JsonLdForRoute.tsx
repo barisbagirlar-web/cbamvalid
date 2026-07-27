@@ -4,27 +4,52 @@ import {
   generateFAQSchema,
   generateOrganizationSchema,
   generateProductOfferSchema,
+  generateUniversalEntityGraph,
   generateWebApplicationSchema,
   generateWebPageSchema,
   generateWebSiteSchema,
 } from "@/lib/seo/schema";
+import { buildCanonicalUrl } from "@/lib/seo/canonical";
 import { requireSeoRoute } from "@/lib/seo/registry";
 import { listSchemaFaqsForRoute } from "@/lib/seo/aeo/answer-bank";
+import { getAuthorityChain } from "@/lib/seo/aeo/authority-chains";
 
 export function JsonLdForRoute({ path }: { path: string }) {
   const route = requireSeoRoute(path);
   const nodes: Record<string, unknown>[] = [];
+  const hasAuthorityChain = Boolean(getAuthorityChain(path));
 
-  if (route.schemaTypes.includes("Organization") || path === "/") {
-    nodes.push(generateOrganizationSchema());
+  // Universal nested entity graph for critical AEO URLs (additive; does not replace FAQ/Product).
+  if (hasAuthorityChain) {
+    const universal = generateUniversalEntityGraph({
+      path: route.canonicalPath,
+      name: route.title,
+      description: route.description,
+    });
+    const graph = universal["@graph"];
+    if (Array.isArray(graph)) {
+      for (const node of graph) {
+        if (node && typeof node === "object") {
+          nodes.push(node as Record<string, unknown>);
+        }
+      }
+    }
+  } else {
+    if (route.schemaTypes.includes("Organization") || path === "/") {
+      nodes.push(generateOrganizationSchema());
+    }
+    if (route.schemaTypes.includes("WebSite") || path === "/") {
+      nodes.push(generateWebSiteSchema());
+    }
   }
-  if (route.schemaTypes.includes("WebSite") || path === "/") {
-    nodes.push(generateWebSiteSchema());
-  }
+
   if (route.schemaTypes.includes("WebApplication")) {
     nodes.push(generateWebApplicationSchema(route.description));
   }
-  if (route.schemaTypes.includes("Product") || route.schemaTypes.includes("Offer")) {
+  if (
+    !hasAuthorityChain &&
+    (route.schemaTypes.includes("Product") || route.schemaTypes.includes("Offer"))
+  ) {
     const productDoc = generateProductOfferSchema();
     const graph = productDoc["@graph"];
     if (Array.isArray(graph)) {
@@ -36,10 +61,11 @@ export function JsonLdForRoute({ path }: { path: string }) {
     }
   }
   if (
-    route.schemaTypes.includes("WebPage") ||
-    route.schemaTypes.includes("CollectionPage") ||
-    route.schemaTypes.includes("AboutPage") ||
-    route.schemaTypes.includes("ContactPage")
+    !hasAuthorityChain &&
+    (route.schemaTypes.includes("WebPage") ||
+      route.schemaTypes.includes("CollectionPage") ||
+      route.schemaTypes.includes("AboutPage") ||
+      route.schemaTypes.includes("ContactPage"))
   ) {
     const type =
       route.pageType === "cn-hub"
@@ -69,7 +95,15 @@ export function JsonLdForRoute({ path }: { path: string }) {
 
   const faqs = listSchemaFaqsForRoute(path);
   if (faqs.length > 0 && (route.schemaTypes.includes("FAQPage") || path === "/" || path === "/pricing")) {
-    nodes.push(generateFAQSchema(faqs));
+    // Avoid duplicate FAQPage @id when authority graph already emitted one.
+    if (!hasAuthorityChain) {
+      nodes.push(generateFAQSchema(faqs));
+    } else {
+      nodes.push({
+        ...generateFAQSchema(faqs),
+        "@id": `${buildCanonicalUrl(route.canonicalPath)}#faq-bank`,
+      });
+    }
   }
 
   const seen = new Set<string>();

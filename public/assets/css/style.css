@@ -566,3 +566,79 @@ h3{font-size:1.35rem}
   line-height:1.55;
   text-align:left;
 }
+
+/* ---------- Authority chain (AEO retrieval contract) ---------- */
+.authority-chain{background:var(--paper-2)}
+.authority-empathy{
+  max-width:720px;
+  margin:0 auto 28px;
+  padding:16px 18px;
+  border:1px solid var(--terra-line);
+  border-radius:var(--r-md);
+  background:var(--terra-soft);
+}
+.authority-empathy-label,.authority-step-label{
+  font-family:var(--mono);
+  font-size:.72rem;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--terra);
+  margin:0 0 8px;
+  display:block;
+}
+.authority-empathy p{margin:0;color:var(--ink-2);line-height:1.55;font-size:.95rem}
+.authority-steps{
+  list-style:none;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  max-width:800px;
+  margin:0 auto;
+  padding:0;
+}
+.authority-step{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--r-md);
+  padding:20px 22px;
+  box-shadow:var(--shadow-sm);
+}
+.authority-step-meta{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.authority-step-num{
+  font-family:var(--mono);
+  font-size:.75rem;
+  color:var(--navy);
+  font-weight:700;
+}
+.authority-step p{margin:0;color:var(--ink-2);line-height:1.55;font-size:.94rem}
+.authority-direct{color:var(--ink)!important;font-size:1.02rem!important;font-weight:560}
+.authority-related{max-width:800px;margin:28px auto 0}
+.authority-related-list{
+  list-style:none;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:12px;
+  padding:0;
+  margin:10px 0 0;
+}
+.authority-related-list a{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  padding:14px 14px;
+  border:1px solid var(--line);
+  border-radius:var(--r-md);
+  background:var(--card);
+}
+.authority-related-list a:hover{border-color:var(--terra-line)}
+.authority-related-q{font-weight:600;color:var(--ink);font-size:.92rem}
+.authority-related-why{font-size:.82rem;color:var(--muted)}
+.authority-entities{
+  max-width:800px;
+  margin:22px auto 0;
+  font-size:.82rem;
+  color:var(--muted);
+  line-height:1.45;
+}
+.authority-lead{margin:0 0 24px;max-width:none}
+.authority-lead-empathy{margin:10px 0 0;color:var(--ink-2);font-size:.9rem}

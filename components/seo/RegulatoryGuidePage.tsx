@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { JsonLdForRoute } from "@/components/seo/JsonLdForRoute";
+import { AuthorityChainSection, AuthorityLead } from "@/components/seo/AuthorityChain";
 import { AnswerEvidenceSection, TopicalMapSection } from "@/components/seo/AnswerEvidenceSection";
 import { requireSeoRoute } from "@/lib/seo/registry";
+import { getAuthorityChain } from "@/lib/seo/aeo/authority-chains";
 import {
   getRegulatoryFact,
   SEO_LEGAL_SOURCE_INDEX,
@@ -16,18 +18,19 @@ export interface GuideSection {
 
 export function RegulatoryGuidePage({
   path,
-  sections,
+  sections = [],
   ctaHref,
   ctaLabel,
 }: {
   path: string;
-  sections: readonly GuideSection[];
+  sections?: readonly GuideSection[];
   ctaHref: string;
   ctaLabel: string;
 }) {
   const route = requireSeoRoute(path);
   const declaration = getRegulatoryFact("FIRST_DECLARATION_DEADLINE");
   const independence = getRegulatoryFact("INDEPENDENCE_BOUNDARY");
+  const chain = getAuthorityChain(path);
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-16 font-sans text-foreground">
@@ -46,10 +49,17 @@ export function RegulatoryGuidePage({
 
       <h1 className="font-serif text-4xl tracking-tight mb-4">{route.h1}</h1>
       <p className="text-lg text-muted leading-relaxed mb-4">{route.description}</p>
-      <p className="text-sm leading-relaxed mb-10 rounded-md border border-border bg-surface p-4">
-        <strong>Why this page exists:</strong> CBAM deadlines and evidence requests create real commercial pressure.
-        This guide states what is known with sources, what CBAMValid prepares, and what only an accredited verifier can decide.
-      </p>
+
+      {chain ? (
+        <AuthorityLead path={path} />
+      ) : (
+        <p className="text-sm leading-relaxed mb-10 rounded-md border border-border bg-surface p-4">
+          <strong>Why this page exists:</strong> CBAM deadlines and evidence requests create real commercial pressure.
+          This guide states what is known with sources, what CBAMValid prepares, and what only an accredited verifier can decide.
+        </p>
+      )}
+
+      {chain ? <AuthorityChainSection path={path} /> : null}
 
       {sections.map((section) => (
         <section key={section.id} id={section.id} className="mb-10 space-y-3">

@@ -1,9 +1,19 @@
 import type { TopicalNode } from "./types";
+import { getAuthorityChain } from "./authority-chains";
 
 /**
  * Topical map: hub → spoke relationships for internal linking and AI citation paths.
+ * Entity + fan-out fields stay aligned with authority-chains where present.
  * Keep in sync with indexable guide/product routes in lib/seo/registry.ts.
  */
+function chainExtras(path: string): Pick<TopicalNode, "entities" | "fanOutQueries"> {
+  const chain = getAuthorityChain(path);
+  return {
+    entities: chain?.entities ?? [],
+    fanOutQueries: chain?.fanOutQueries ?? [],
+  };
+}
+
 export const TOPICAL_MAP: readonly TopicalNode[] = [
   {
     path: "/",
@@ -25,6 +35,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
       "CBAM evidence dossier for exporters",
       "verification preparation vs accredited verification",
     ],
+    ...chainExtras("/"),
   },
   {
     path: "/product",
@@ -37,6 +48,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
       "evidence register",
       "quality controls before sealing",
     ],
+    ...chainExtras("/product"),
   },
   {
     path: "/pricing",
@@ -50,6 +62,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
       "five sealed releases",
       "scope lock per installation and year",
     ],
+    ...chainExtras("/pricing"),
   },
   {
     path: "/how-it-works",
@@ -62,6 +75,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
       "evidence linking",
       "seal and download deliverables",
     ],
+    ...chainExtras("/how-it-works"),
   },
   {
     path: "/methodology",
@@ -74,6 +88,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
       "Regulation (EU) 2023/956 basis",
       "deterministic replay",
     ],
+    ...chainExtras("/methodology"),
   },
   {
     path: "/sample-dossier",
@@ -85,6 +100,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
       "what a sealed package contains",
       "integrity manifest preview",
     ],
+    ...chainExtras("/sample-dossier"),
   },
   {
     path: "/cn-code",
@@ -93,6 +109,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
     parentPath: "/",
     childPaths: ["/cbam-cn-code-scope", "/product"],
     covers: ["is my CN code in CBAM scope"],
+    ...chainExtras("/cn-code"),
   },
   {
     path: "/verify",
@@ -101,6 +118,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
     parentPath: "/sample-dossier",
     childPaths: ["/sample-dossier", "/product"],
     covers: ["verify sealed dossier integrity hash"],
+    ...chainExtras("/verify"),
   },
   {
     path: "/cbam-2026-definitive-period",
@@ -118,6 +136,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
       "30 September 2027 declaration deadline for 2026 imports",
       "certificate surrender timing",
     ],
+    ...chainExtras("/cbam-2026-definitive-period"),
   },
   {
     path: "/cbam-embedded-emissions-calculation",
@@ -130,6 +149,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
       "precursor treatment",
       "evidence requirements for calculations",
     ],
+    ...chainExtras("/cbam-embedded-emissions-calculation"),
   },
   {
     path: "/cbam-actual-vs-default-values",
@@ -142,6 +162,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
       "default value implications",
       "verification preparation impact",
     ],
+    ...chainExtras("/cbam-actual-vs-default-values"),
   },
   {
     path: "/cbam-default-values",
@@ -153,6 +174,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
       "multi-dimensional default factors",
       "country route and year dimensions",
     ],
+    ...chainExtras("/cbam-default-values"),
   },
   {
     path: "/cbam-certificate-price",
@@ -164,6 +186,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
       "2026 quarterly certificate price calculation",
       "not the same as transitional quarterly reporting",
     ],
+    ...chainExtras("/cbam-certificate-price"),
   },
   {
     path: "/cbam-verification-preparation",
@@ -172,6 +195,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
     parentPath: "/",
     childPaths: ["/sample-dossier", "/methodology", "/pricing", "/cbam-exporter-evidence-requirements"],
     covers: ["how to prepare for CBAM verification"],
+    ...chainExtras("/cbam-verification-preparation"),
   },
   {
     path: "/cbam-exporter-evidence-requirements",
@@ -183,6 +207,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
       "evidence lineage and hashes",
       "support status before sealing",
     ],
+    ...chainExtras("/cbam-exporter-evidence-requirements"),
   },
   {
     path: "/cbam-non-eu-producer-guide",
@@ -191,6 +216,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
     parentPath: "/",
     childPaths: ["/pricing", "/how-it-works", "/cbam-exporter-evidence-requirements", "/cbam-2026-definitive-period"],
     covers: ["CBAM duties for non-EU producers and exporters"],
+    ...chainExtras("/cbam-non-eu-producer-guide"),
   },
   {
     path: "/cbam-cn-code-scope",
@@ -199,6 +225,7 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
     parentPath: "/cn-code",
     childPaths: ["/cn-code", "/methodology", "/product"],
     covers: ["Annex I goods scope by CN code"],
+    ...chainExtras("/cbam-cn-code-scope"),
   },
   {
     path: "/cbam-methodology",
@@ -210,8 +237,9 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
       "ruleset versioning",
       "reproducible calculation traces",
     ],
+    ...chainExtras("/cbam-methodology"),
   },
-] as const;
+] satisfies readonly TopicalNode[];
 
 const LABEL_BY_PATH: Record<string, string> = {
   "/": "Home",
@@ -260,4 +288,24 @@ export function listRelatedTopics(path: string): { path: string; label: string; 
 
 export function topicalLabel(path: string): string {
   return LABEL_BY_PATH[path] ?? path;
+}
+
+/** Topic → subtopic → entity → internal link edges for query fan-out audits. */
+export function listFanOutEdges(path: string): {
+  topic: string;
+  entities: readonly string[];
+  fanOutQueries: readonly string[];
+  internalLinks: readonly string[];
+} | null {
+  const node = getTopicalNode(path);
+  if (!node) return null;
+  return {
+    topic: node.topic,
+    entities: node.entities,
+    fanOutQueries: node.fanOutQueries,
+    internalLinks: [
+      ...(node.parentPath ? [node.parentPath] : []),
+      ...node.childPaths,
+    ],
+  };
 }

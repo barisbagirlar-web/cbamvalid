@@ -224,6 +224,126 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
     relatedPaths: ["/methodology", "/cbam-methodology", "/sample-dossier"],
     schemaEligible: true,
   },
+  {
+    id: "definitive-period-2026",
+    question: "When does the CBAM definitive period start, and what is the first declaration deadline for 2026 imports?",
+    aliases: [
+      "CBAM 2026 definitive period",
+      "CBAM declaration deadline 2027",
+      "CBAM certificate surrender deadline",
+    ],
+    directAnswer:
+      "The CBAM definitive period applies from 1 January 2026. For 2026 imports, the first CBAM declaration and corresponding certificate surrender deadline is 30 September 2027.",
+    empathyContext:
+      "Mixing transitional quarterly reporting habits with definitive-period annual duties creates false deadlines and wasted work.",
+    evidence: [
+      {
+        label: "Definitive period start",
+        detail: "1 January 2026",
+        href: "/cbam-2026-definitive-period",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "First declaration deadline",
+        detail: "30 September 2027 for 2026 imports",
+        href: "/cbam-2026-definitive-period",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/", "/cbam-2026-definitive-period", "/cbam-non-eu-producer-guide"],
+    relatedPaths: ["/cbam-certificate-price", "/cbam-verification-preparation"],
+    schemaEligible: true,
+  },
+  {
+    id: "embedded-emissions-calc",
+    question: "How are CBAM embedded emissions calculated?",
+    aliases: [
+      "calculate CBAM embedded emissions",
+      "direct and indirect CBAM emissions",
+      "CBAM precursor emissions",
+    ],
+    directAnswer:
+      "Embedded emissions combine direct process/combustion emissions and, where required, electricity-related indirect emissions, plus applicable precursor emissions. Missing material inputs must block authoritative results rather than becoming silent zeros.",
+    empathyContext:
+      "A wrong total under buyer pressure is worse than a blocked draft. Fail-closed calculation protects you in verification.",
+    evidence: [
+      {
+        label: "Calculation guide",
+        detail: "Direct, indirect, precursor, and allocation reconciliation rules",
+        href: "/cbam-embedded-emissions-calculation",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Methodology index",
+        detail: "Versioned rulesets and deterministic replay",
+        href: "/methodology",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/cbam-embedded-emissions-calculation", "/methodology", "/cbam-methodology"],
+    relatedPaths: ["/cbam-actual-vs-default-values", "/product"],
+    schemaEligible: true,
+  },
+  {
+    id: "actual-vs-default",
+    question: "Should exporters use actual values or CBAM default values?",
+    aliases: [
+      "CBAM actual vs default",
+      "when are actual values required",
+      "CBAM default value risks",
+    ],
+    directAnswer:
+      "Actual values reflect installation-specific monitored or calculated emissions and generally require independent verification where legally required. Default values are multi-dimensional official fallbacks — not a single universal CN number.",
+    empathyContext:
+      "Defaults can look easier until a buyer or verifier rejects them. Document the basis choice with evidence.",
+    evidence: [
+      {
+        label: "Decision guide",
+        detail: "Actual vs default decision utility",
+        href: "/cbam-actual-vs-default-values",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Default dimensions",
+        detail: "Country, route, and year dimensions where defined",
+        href: "/cbam-default-values",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/cbam-actual-vs-default-values", "/cbam-default-values"],
+    relatedPaths: ["/cbam-verification-preparation", "/methodology"],
+    schemaEligible: true,
+  },
+  {
+    id: "verification-preparation",
+    question: "How do exporters prepare for independent CBAM verification?",
+    aliases: [
+      "CBAM verification preparation",
+      "verifier readiness package",
+      "operator dossier for verification",
+    ],
+    directAnswer:
+      "Assemble complete, evidence-linked emissions data, methodology decisions, and closed material findings so an independent accredited verifier can perform assurance work. CBAMValid prepares the package; it does not issue the verification opinion.",
+    empathyContext:
+      "Verifiers need consistent, evidence-linked data — not a reconstructed email history.",
+    evidence: [
+      {
+        label: "Preparation guide",
+        detail: "Scope, evidence, calculation annex, findings closure",
+        href: "/cbam-verification-preparation",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Evidence requirements",
+        detail: "Hash, support status, and lineage fields",
+        href: "/cbam-exporter-evidence-requirements",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/cbam-verification-preparation", "/cbam-exporter-evidence-requirements", "/sample-dossier"],
+    relatedPaths: ["/sample-dossier", "/pricing", "/methodology"],
+    schemaEligible: true,
+  },
 ] as const;
 
 export function listAnswersForRoute(path: string): AeoAnswerRecord[] {

@@ -1,5 +1,7 @@
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
-import { generateBreadcrumbSchema, generateFAQSchema } from "@/lib/seo/schema";
+import { JsonLdForRoute } from "@/components/seo/JsonLdForRoute";
+import { AuthorityChainSection, AuthorityLead } from "@/components/seo/AuthorityChain";
+import { TopicalMapSection } from "@/components/seo/AnswerEvidenceSection";
 import { listIndexablePublicCnEntries } from "@/lib/seo/cn-public-registry";
 import Link from "next/link";
 
@@ -7,49 +9,34 @@ export const metadata = generateSeoMetadata("/cn-code");
 
 export default function CnCodeHubPage() {
   const entries = listIndexablePublicCnEntries();
-  const jsonLd = [
-    generateBreadcrumbSchema([
-      { name: "Home", item: "/" },
-      { name: "CN-Code Hub", item: "/cn-code" },
-    ]),
-    generateFAQSchema([
-      {
-        question: "What is a CN code?",
-        answer:
-          "A Combined Nomenclature (CN) code is the European Union's eight-digit coding system used to classify goods for customs and statistical purposes.",
-      },
-      {
-        question: "Why does the CN code determine CBAM scope?",
-        answer:
-          "Under the CBAM regulation, only specific CN codes listed in Annex I fall within the scope of the carbon border adjustment mechanism. Correct classification is essential for compliance.",
-      },
-    ]),
-    {
-      "@context": "https://schema.org",
-      "@type": "ItemList",
-      itemListElement: entries.map((entry, index) => ({
-        "@type": "ListItem",
-        position: index + 1,
-        url: `https://cbamvalid.com/cn-code/${entry.cnCode}`,
-        name: `CN ${entry.cnCode}`,
-      })),
-    },
-  ];
+  const itemListLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: entries.map((entry, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      url: `https://cbamvalid.com/cn-code/${entry.cnCode}`,
+      name: `CN ${entry.cnCode}`,
+    })),
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-12 font-sans text-foreground">
+      <JsonLdForRoute path="/cn-code" />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
       />
 
-      <h1 className="text-3xl font-serif font-black mb-8">CBAM CN-Code Verification Hub</h1>
+      <h1 className="text-3xl font-serif font-black mb-6">CBAM CN-Code Verification Hub</h1>
+      <AuthorityLead path="/cn-code" />
+      <AuthorityChainSection path="/cn-code" />
 
-      <section className="space-y-12">
+      <section className="space-y-12 mt-10">
         <div>
           <h2 className="text-2xl font-bold mb-3">What is a CN code?</h2>
           <p className="text-sm text-muted leading-relaxed">
-            A Combined Nomenclature (CN) code is the European Union's eight-digit coding system used to
+            A Combined Nomenclature (CN) code is the European Union&apos;s eight-digit coding system used to
             classify goods for customs and statistical purposes. It is fundamental for determining the
             precise category of your imported products.
           </p>
@@ -107,6 +94,8 @@ export default function CnCodeHubPage() {
           </p>
         </div>
       </section>
+
+      <TopicalMapSection path="/cn-code" />
     </div>
   );
 }
