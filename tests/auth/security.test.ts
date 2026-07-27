@@ -301,7 +301,7 @@ describe("Production Security & Foundation Audits", () => {
       set: vi.fn(),
     };
 
-    const entry = await writeLedgerEntry(mockTransaction, {
+    const entry = await writeLedgerEntry(mockTransaction as never, {
       uid: "user-123",
       orderId: "order-123",
       transactionId: "txn-123",

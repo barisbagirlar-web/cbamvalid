@@ -103,7 +103,7 @@ export function buildLlmDocModel(): LlmDocModel {
       title: source.title,
       url: source.eliUri,
     })),
-    lastUpdated: "2026-07-27",
+    lastUpdated: "2026-07-28",
   };
 }
 
@@ -190,6 +190,13 @@ export function renderLlmsTxt(model: LlmDocModel): string {
     `- LLM index: ${siteConfig.canonicalOrigin}/llms.txt`,
     `- LLM full index: ${siteConfig.canonicalOrigin}/llms-full.txt`,
     `- AI crawler policy: ${siteConfig.canonicalOrigin}/.well-known/ai.txt`,
+    `- Sitemap index: ${siteConfig.canonicalOrigin}/sitemap.xml`,
+    `- Sitemap pages: ${siteConfig.canonicalOrigin}/sitemap/0.xml`,
+    `- Sitemap CN codes: ${siteConfig.canonicalOrigin}/sitemap/1.xml`,
+    `- Sitemap brand/icons: ${siteConfig.canonicalOrigin}/sitemap/2.xml`,
+    `- Brand mark (512): ${siteConfig.canonicalOrigin}/icon-512.png`,
+    `- Favicon SVG: ${siteConfig.canonicalOrigin}/favicon.svg`,
+    `- Web app manifest: ${siteConfig.canonicalOrigin}/site.webmanifest`,
     "",
     "## Contact",
     "",

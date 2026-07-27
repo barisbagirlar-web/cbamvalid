@@ -463,10 +463,17 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - LLM index: https://cbamvalid.com/llms.txt
 - LLM full index: https://cbamvalid.com/llms-full.txt
 - AI crawler policy: https://cbamvalid.com/.well-known/ai.txt
+- Sitemap index: https://cbamvalid.com/sitemap.xml
+- Sitemap pages: https://cbamvalid.com/sitemap/0.xml
+- Sitemap CN codes: https://cbamvalid.com/sitemap/1.xml
+- Sitemap brand/icons: https://cbamvalid.com/sitemap/2.xml
+- Brand mark (512): https://cbamvalid.com/icon-512.png
+- Favicon SVG: https://cbamvalid.com/favicon.svg
+- Web app manifest: https://cbamvalid.com/site.webmanifest
 
 ## Contact
 
 - Website: https://cbamvalid.com
 - Support: info@cbamvalid.com
 
-Last updated: 2026-07-27
+Last updated: 2026-07-28

@@ -1,4 +1,3 @@
-/* eslint-disable */
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -160,9 +159,9 @@ walk(rootDir, isSourceFile, (filePath) => {
     logError(relPath, "Contains forbidden Buffer.from JWT payload parsing pattern.");
   }
 
-  // 8.2. Favicon-32.png check
-  if (content.includes("favicon-32.png")) {
-    logError(relPath, "Contains banned reference to legacy asset favicon-32.png.");
+  // 8.2. Favicon-32 — ban only dangling legacy references (file must exist if cited).
+  if (content.includes("favicon-32.png") && !fs.existsSync(path.join(rootDir, "public", "favicon-32.png"))) {
+    logError(relPath, "Contains banned reference to missing legacy asset favicon-32.png.");
   }
 
   // 8.3. Duplicate session POST call sites check

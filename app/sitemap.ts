@@ -3,9 +3,11 @@ import { buildCanonicalUrl } from "@/lib/seo/canonical";
 import { listSitemapRoutes } from "@/lib/seo/registry";
 import { siteConfig } from "@/lib/site-config";
 
+const BRAND_LASTMOD = new Date("2026-07-28");
+
 /**
  * Multi-sitemap segments (crawl-budget split):
- * id 0 = pages, id 1 = CN details, id 2 = brand/OG images
+ * id 0 = pages, id 1 = CN details, id 2 = brand / OG / favicon assets
  *
  * Firebase Hosting returns HTML 404 for Next's generated /sitemap.xml index,
  * while /sitemap/{id}.xml works. A static public/sitemap.xml sitemapindex
@@ -33,20 +35,22 @@ export default async function sitemap(props: {
   }
 
   if (id === 2) {
-    return [
-      {
-        url: siteConfig.ogImage,
-        lastModified: new Date("2026-07-27"),
-      },
-      {
-        url: `${siteConfig.canonicalOrigin}/brand/cbamvalid-mark.svg`,
-        lastModified: new Date("2026-07-27"),
-      },
-      {
-        url: `${siteConfig.canonicalOrigin}/brand/cbamvalid-lockup.svg`,
-        lastModified: new Date("2026-07-27"),
-      },
+    const brandUrls = [
+      siteConfig.ogImage,
+      `${siteConfig.canonicalOrigin}/brand/cbamvalid-mark.svg`,
+      `${siteConfig.canonicalOrigin}/brand/cbamvalid-lockup.svg`,
+      `${siteConfig.canonicalOrigin}/favicon.svg`,
+      `${siteConfig.canonicalOrigin}/favicon.ico`,
+      `${siteConfig.canonicalOrigin}/favicon-32.png`,
+      `${siteConfig.canonicalOrigin}/apple-touch-icon.png`,
+      `${siteConfig.canonicalOrigin}/icon-192.png`,
+      `${siteConfig.canonicalOrigin}/icon-512.png`,
+      `${siteConfig.canonicalOrigin}/site.webmanifest`,
     ];
+    return brandUrls.map((url) => ({
+      url,
+      lastModified: BRAND_LASTMOD,
+    }));
   }
 
   return routes

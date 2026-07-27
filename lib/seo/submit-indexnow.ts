@@ -29,6 +29,10 @@ export async function submitIndexNow(urls?: readonly string[]): Promise<{
     `${siteConfig.canonicalOrigin}/answers.rss`,
     `${siteConfig.canonicalOrigin}/answers.feed.json`,
     `${siteConfig.canonicalOrigin}/.well-known/ai.txt`,
+    `${siteConfig.canonicalOrigin}/sitemap.xml`,
+    `${siteConfig.canonicalOrigin}/favicon.svg`,
+    `${siteConfig.canonicalOrigin}/icon-512.png`,
+    `${siteConfig.canonicalOrigin}/site.webmanifest`,
   ];
   const unique = Array.from(new Set([...urlList, ...extras]));
 

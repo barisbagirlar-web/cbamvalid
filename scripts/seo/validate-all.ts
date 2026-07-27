@@ -407,9 +407,18 @@ function validateAeoDiscoverySurfaces(): GateResult[] {
   if (!/listSitemapRoutes/.test(readFileSync(resolve("app/sitemap.ts"), "utf8"))) {
     results.push(fail("G26", "app/sitemap.ts must emit registry-backed URLs via listSitemapRoutes"));
   }
+  if (!/generateSitemaps/.test(readFileSync(resolve("app/sitemap.ts"), "utf8"))) {
+    results.push(fail("G26", "app/sitemap.ts must use generateSitemaps multi-segment index"));
+  }
+  if (!existsSync(resolve("public/favicon.svg")) || !existsSync(resolve("public/icon-512.png"))) {
+    results.push(fail("G26", "Brand favicon assets missing — run seo:generate-favicons"));
+  }
+  if (!existsSync(resolve("public/site.webmanifest"))) {
+    results.push(fail("G26", "site.webmanifest missing"));
+  }
 
   if (!results.some((r) => r.id === "G26" && !r.ok)) {
-    results.push(pass("G26", "Enterprise AEO: feeds + IndexNow + glossary/answers hubs + sitemap index"));
+    results.push(pass("G26", "Enterprise AEO: feeds + IndexNow + glossary/answers hubs + sitemap index + favicons"));
   }
   return results;
 }

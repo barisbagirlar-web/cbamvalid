@@ -1,7 +1,7 @@
 import type { SeoRouteContract } from "./types";
 import { listIndexablePublicCnEntries } from "./cn-public-registry";
 
-const LASTMOD_IA = "2026-07-27";
+const LASTMOD_IA = "2026-07-28";
 
 const STATIC_ROUTES: readonly SeoRouteContract[] = [
   {
