@@ -57,7 +57,7 @@ export const LEGAL_IDENTITY: LegalIdentityRecord = {
   ),
   country: envOrNull("LEGAL_COUNTRY") ?? "Ireland",
   companyRegistrationNumber: provenOrEnv("LEGAL_CRO", "315881"),
-  vatId: provenOrEnv("LEGAL_VAT", "GB611857162"),
+  vatId: provenOrEnv("LEGAL_VAT", "IE1857162AB"),
   dataProtectionContact: provenOrEnv(
     "LEGAL_DPO",
     "Siobhan O'Connor, Data Protection Officer <info@cbamvalid.com>"

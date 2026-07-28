@@ -7,7 +7,7 @@
 
 ```bash
 LEGAL_CRO=315881
-LEGAL_VAT=GB611857162
+LEGAL_VAT=IE1857162AB
 LEGAL_REGISTERED_ADDRESS=4th Floor, One Burlington Plaza, Burlington Road, Dublin 4, Ireland
 LEGAL_SUPPORT_PHONE=+353 (0)1 676 2671
 LEGAL_DPO=Siobhan O'Connor, Data Protection Officer <info@cbamvalid.com>
