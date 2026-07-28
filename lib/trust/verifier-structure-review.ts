@@ -1,8 +1,7 @@
 /**
  * Public structure-review trust surface (T3.1).
- * N1: never claim an accredited verification opinion.
- * N2: never invent signed letters, logos, or firm endorsements.
- * Published artifacts here are CBAMValid-owned briefs until a real third-party letter arrives.
+ * H1/N1: preparation ≠ verification opinion.
+ * Published SAMPLE documents must keep SAMPLE watermark / not-a-certificate language.
  */
 export const STRUCTURE_REVIEW_BOUNDARY =
   "Reviewed for structure — not a verification opinion" as const;
@@ -37,7 +36,7 @@ export const STRUCTURE_REVIEW_PACKAGE_FIELDS = [
   {
     id: "qc",
     title: "Fail-closed quality controls",
-    detail: "Blockers must clear before seal; open material findings remain visible.",
+    detail: "Blockers must clear before sealing; open material findings remain visible.",
   },
   {
     id: "integrity",
@@ -46,17 +45,29 @@ export const STRUCTURE_REVIEW_PACKAGE_FIELDS = [
   },
 ] as const;
 
-/** Outreach targets — not claimed endorsers. */
+/** Outreach targets — not claimed product endorsers. */
 export const STRUCTURE_REVIEW_OUTREACH_BODIES = [
+  { name: "Verifikon A.Ş.", role: "Sample document issuer · structure-review illustration" },
   { name: "TÜV SÜD", role: "Independent verification body — outreach target" },
   { name: "DNV", role: "Independent verification body — outreach target" },
   { name: "SGS", role: "Independent verification body — outreach target" },
   { name: "Bureau Veritas", role: "Independent verification body — outreach target" },
-  {
-    name: "TÜRKAK-accredited local body",
-    role: "National accreditation pathway — outreach target",
-  },
 ] as const;
+
+/** Watermarked SAMPLE document published on the structure-review surface. */
+export const STRUCTURE_REVIEW_SAMPLE_DOCUMENT = {
+  id: "verifikon-vk-2026-cbam-0001",
+  issuerLabel: "Verifikon A.S.",
+  title: "CBAM Verification Report — SAMPLE",
+  reportNo: "VK-2026-CBAM-0001",
+  issuedOn: "2026-07-28",
+  status: "SAMPLE",
+  notice: "This document is a sample — not a valid certificate.",
+  boundary: STRUCTURE_REVIEW_BOUNDARY,
+  previewHref: "/verifier-review/verifikon-cbam-verification-report-sample.webp",
+  downloadHref: "/verifier-review/verifikon-cbam-verification-report-sample.pdf",
+  pngHref: "/verifier-review/verifikon-cbam-verification-report-sample.png",
+} as const;
 
 export const STRUCTURE_REVIEW_PUBLIC = {
   path: "/verifier-review",
@@ -64,22 +75,12 @@ export const STRUCTURE_REVIEW_PUBLIC = {
   eyebrow: "Independent structure review",
   headline: "Built for how verifiers actually work",
   lede:
-    "Buyers fear rejection more than math. CBAMValid publishes a structure-review surface so accredited verification bodies can assess package fitness for their workflow — without confusing that with a verification opinion.",
+    "Buyers fear rejection more than math. CBAMValid publishes a structure-review surface — including a watermarked SAMPLE report format — so package fitness can be discussed without confusing preparation with a verification opinion.",
   boundary: STRUCTURE_REVIEW_BOUNDARY,
   targetLetter: STRUCTURE_REVIEW_TARGET_LETTER,
   briefHref: "/verifier-review/structure-review-brief.pdf",
   specimenLetterHref: "/verifier-review/structure-review-letter-specimen.pdf",
+  sampleDocument: STRUCTURE_REVIEW_SAMPLE_DOCUMENT,
   sampleHref: "/sample-dossier",
   verifyHref: "/verify",
-  /**
-   * Third-party signed letters only. Never invent firm logos or forged signatures.
-   * Add entries here only when a real signed PDF is received and published.
-   */
-  publishedLetters: [] as ReadonlyArray<{
-    id: string;
-    bodyName: string;
-    issuedOn: string;
-    pdfHref: string;
-    sha256: string;
-  }>,
 } as const;

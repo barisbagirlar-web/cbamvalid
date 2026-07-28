@@ -12,37 +12,55 @@ import {
 
 export default function VerifierReviewPage() {
   useClassReveal();
-  const published = STRUCTURE_REVIEW_PUBLIC.publishedLetters;
+  const sample = STRUCTURE_REVIEW_PUBLIC.sampleDocument;
 
   return (
     <main id="main">
-      <section className="hero" style={{ paddingBottom: "48px" }}>
+      <section className="hero" style={{ paddingBottom: "40px" }}>
         <div className="wrap">
-          <div style={{ maxWidth: "820px" }}>
-            <span className="eyebrow">{STRUCTURE_REVIEW_PUBLIC.eyebrow}</span>
-            <h1>
-              {STRUCTURE_REVIEW_PUBLIC.headline}
-              <br />
-              <span className="serif-i">not a verification opinion</span>
-            </h1>
-            <p className="lede">{STRUCTURE_REVIEW_PUBLIC.lede}</p>
-            <p className="structure-boundary-pill" role="note">
-              {STRUCTURE_REVIEW_PUBLIC.boundary}
-            </p>
-            <div className="hero-ctas" style={{ marginTop: "22px" }}>
-              <a className="btn btn-primary" href={STRUCTURE_REVIEW_PUBLIC.briefHref} download>
-                Download Structure Review Brief
-              </a>
-              <a className="btn btn-ghost" href={STRUCTURE_REVIEW_PUBLIC.specimenLetterHref} download>
-                Download letter specimen
-              </a>
-              <Link className="btn btn-ghost" href={STRUCTURE_REVIEW_PUBLIC.sampleHref}>
-                Open sample dossier
-              </Link>
-              <Link className="btn btn-ghost" href={STRUCTURE_REVIEW_PUBLIC.verifyHref}>
-                Verify integrity
-              </Link>
+          <div className="structure-hero-grid">
+            <div>
+              <span className="eyebrow">{STRUCTURE_REVIEW_PUBLIC.eyebrow}</span>
+              <h1>
+                {STRUCTURE_REVIEW_PUBLIC.headline}
+                <br />
+                <span className="serif-i">not a verification opinion</span>
+              </h1>
+              <p className="lede">{STRUCTURE_REVIEW_PUBLIC.lede}</p>
+              <p className="structure-boundary-pill" role="note">
+                {STRUCTURE_REVIEW_PUBLIC.boundary}
+              </p>
+              <div className="hero-ctas" style={{ marginTop: "22px" }}>
+                <a className="btn btn-primary" href={sample.downloadHref} download>
+                  Download SAMPLE report
+                </a>
+                <a className="btn btn-ghost" href={STRUCTURE_REVIEW_PUBLIC.briefHref} download>
+                  Structure Review Brief
+                </a>
+                <Link className="btn btn-ghost" href={STRUCTURE_REVIEW_PUBLIC.sampleHref}>
+                  Open sample dossier
+                </Link>
+              </div>
             </div>
+
+            <figure className="structure-sample-frame reveal">
+              <div className="structure-sample-meta">
+                <span className="structure-sample-status">{sample.status}</span>
+                <span className="mono">
+                  {sample.issuerLabel} · {sample.reportNo}
+                </span>
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={sample.previewHref}
+                alt={`${sample.title} — ${sample.notice}`}
+                width={1024}
+                height={571}
+              />
+              <figcaption>
+                {sample.notice} {STRUCTURE_REVIEW_PUBLIC.boundary}
+              </figcaption>
+            </figure>
           </div>
         </div>
       </section>
@@ -50,10 +68,34 @@ export default function VerifierReviewPage() {
       <section className="section tight">
         <div className="wrap">
           <div className="notice">
-            <b>Legal boundary:</b> CBAMValid is operator-prepared verification-preparation software.
-            A structure review assesses package fields and evidence lineage for a verification
-            workflow. It is not reasonable assurance, accreditation, EU approval, customs acceptance,
-            or a CBAM Registry decision.
+            <b>Legal boundary:</b> CBAMValid prepares operator dossiers. The Verifikon document above is
+            published as a watermarked <b>SAMPLE</b> for structure-review illustration. It is not a
+            valid certificate, not reasonable assurance, not EU approval, and not a CBAM Registry
+            decision.
+          </div>
+        </div>
+      </section>
+
+      <section className="section" style={{ background: "var(--paper-2)" }}>
+        <div className="wrap">
+          <div className="section-head center reveal">
+            <span className="eyebrow">Published SAMPLE</span>
+            <h2>{sample.title}</h2>
+            <p>
+              Report No {sample.reportNo} · {sample.issuedOn} · Status {sample.status}. Footer on the
+              document: “{sample.notice}”
+            </p>
+          </div>
+          <div className="structure-sample-actions reveal">
+            <a className="btn btn-navy" href={sample.downloadHref} download>
+              Download PDF <span className="arr">→</span>
+            </a>
+            <a className="btn btn-ghost" href={sample.pngHref} download>
+              Download PNG
+            </a>
+            <a className="btn btn-ghost" href={STRUCTURE_REVIEW_PUBLIC.specimenLetterHref} download>
+              Target letter language (specimen)
+            </a>
           </div>
         </div>
       </section>
@@ -109,69 +151,14 @@ export default function VerifierReviewPage() {
         </div>
       </section>
 
-      <section className="section">
-        <div className="wrap">
-          <div className="section-head reveal">
-            <span className="eyebrow">Published letters</span>
-            <h2>Third-party structure letters</h2>
-            <p>
-              Signed letters from accredited verification bodies are published here when received.
-              Until then, download the CBAMValid Structure Review Brief — our field and evidence map
-              for review engagements.
-            </p>
-          </div>
-
-          {published.length === 0 ? (
-            <div className="structure-letter-slot reveal">
-              <div className="structure-letter-slot-inner">
-                <span className="eyebrow">Specimen published · signed letters pending</span>
-                <h3>Letter format is live. Firm-signed PDFs publish here when received.</h3>
-                <p>
-                  Download the specimen (target language) and the Structure Review Brief now.
-                  Signed letters from accredited bodies are added only when real — never invented
-                  logos, seals, or forged endorsements.
-                </p>
-                <div className="hero-ctas" style={{ marginTop: "8px" }}>
-                  <a className="btn btn-navy" href={STRUCTURE_REVIEW_PUBLIC.specimenLetterHref} download>
-                    Download letter specimen
-                  </a>
-                  <a className="btn btn-ghost" href={STRUCTURE_REVIEW_PUBLIC.briefHref} download>
-                    Download Structure Review Brief
-                  </a>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="deliv-grid">
-              {published.map((letter) => (
-                <a
-                  key={letter.id}
-                  className="deliv-card reveal"
-                  href={letter.pdfHref}
-                  download
-                  style={{ textDecoration: "none", color: "inherit" }}
-                >
-                  <span className="fmt">{letter.issuedOn}</span>
-                  <h3>{letter.bodyName}</h3>
-                  <p className="mono" style={{ fontSize: "0.75rem", wordBreak: "break-all" }}>
-                    SHA-256 {letter.sha256}
-                  </p>
-                  <span className="ref">{STRUCTURE_REVIEW_PUBLIC.boundary}</span>
-                </a>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="section tight" style={{ background: "var(--paper-2)" }}>
+      <section className="section tight">
         <div className="wrap">
           <div className="section-head center reveal">
-            <span className="eyebrow">Outreach panel</span>
-            <h2>Bodies we engage for structure review</h2>
+            <span className="eyebrow">Engagement panel</span>
+            <h2>Bodies on the structure-review surface</h2>
             <p>
-              Listed as commercial outreach targets — not as endorsers. Appearance here does not
-              imply a completed review, partnership, or accreditation relationship.
+              Verifikon appears as the SAMPLE document issuer. Other names are outreach targets —
+              not product endorsements unless a signed letter is separately published.
             </p>
           </div>
           <div className="structure-outreach-grid reveal">

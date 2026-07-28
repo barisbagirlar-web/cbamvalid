@@ -6,6 +6,7 @@ import { CountUp, FaqItem, useClassReveal } from '@/components/marketing/Marketi
 import { AeoPageChrome } from '@/components/seo/AnswerEvidenceSection';
 import { HOMEPAGE_STATS } from '@/lib/marketing/homepage-stats';
 import { PUBLIC_SAMPLE_DOSSIER } from '@/lib/sample/public-sample-dossier';
+import { STRUCTURE_REVIEW_PUBLIC } from '@/lib/trust/verifier-structure-review';
 
 export default function HomePageClient() {
   useClassReveal();
@@ -94,9 +95,18 @@ export default function HomePageClient() {
           <span className="eyebrow">Verifier structure review</span>
           <h3>Reviewed for structure — not a verification opinion</h3>
           <p>
-            Package fields, evidence lineage, and integrity — mapped for independent verification
-            workflows. Math is one trust signal; acceptance risk needs a structure surface.
+            Watermarked SAMPLE report format published for structure-review illustration — not a
+            valid certificate. Package fields, evidence lineage, and integrity mapped for independent
+            verification workflows.
           </p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="structure-review-thumb"
+            src={STRUCTURE_REVIEW_PUBLIC.sampleDocument.previewHref}
+            alt={`${STRUCTURE_REVIEW_PUBLIC.sampleDocument.title} — ${STRUCTURE_REVIEW_PUBLIC.sampleDocument.notice}`}
+            width={320}
+            height={178}
+          />
           <span className="structure-review-cta">Open structure review <span className="arr">→</span></span>
         </div>
       </a>

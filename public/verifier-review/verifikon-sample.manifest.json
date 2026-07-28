@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "CBAMVALID-STRUCTURE-SAMPLE-1.0",
+  "title": "CBAM Verification Report — SAMPLE",
+  "issuerLabel": "Verifikon A.S.",
+  "reportNo": "VK-2026-CBAM-0001",
+  "issuedOn": "2026-07-28",
+  "status": "SAMPLE",
+  "notice": "This document is a sample — not a valid certificate. It is not an accredited verification opinion, EU approval, or customs decision. Published on CBAMValid for structure-review illustration only.",
+  "boundary": "Reviewed for structure — not a verification opinion",
+  "previewHref": "/verifier-review/verifikon-cbam-verification-report-sample.webp",
+  "downloadHref": "/verifier-review/verifikon-cbam-verification-report-sample.pdf",
+  "files": [
+    {
+      "path": "verifier-review/verifikon-cbam-verification-report-sample.png",
+      "href": "/verifier-review/verifikon-cbam-verification-report-sample.png",
+      "sizeBytes": 411082,
+      "sha256": "61e1888c5f38b616b1492c8bc50a6975966b5e599c169b3ee95ef7898a2e9e3a"
+    },
+    {
+      "path": "verifier-review/verifikon-cbam-verification-report-sample.webp",
+      "href": "/verifier-review/verifikon-cbam-verification-report-sample.webp",
+      "sizeBytes": 37338,
+      "sha256": "9d3e490d811f62706de1a83c2ad7f9254b43b9ab741c703d09d4084d0dd3ee64"
+    },
+    {
+      "path": "verifier-review/verifikon-cbam-verification-report-sample.pdf",
+      "href": "/verifier-review/verifikon-cbam-verification-report-sample.pdf",
+      "sizeBytes": 400216,
+      "sha256": "152385d8c53867ef705bdd0520c91bdf559b12dfe8ebe08634e3aae81cc80b9d"
+    }
+  ]
+}
