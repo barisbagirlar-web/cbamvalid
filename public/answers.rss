@@ -169,11 +169,53 @@
       <category>/enterprise, /pricing, /demo</category>
     </item>
     <item>
+      <title>Does CBAMValid Enterprise support SSO with Entra, Google, or Okta?</title>
+      <link>https://cbamvalid.com/enterprise</link>
+      <guid isPermaLink="false">enterprise-sso</guid>
+      <description>Yes under Enterprise contract. CBAMValid federates Microsoft Entra ID, Google Workspace, or Okta via OIDC or SAML. After IdP login, the server still issues an HttpOnly session cookie and enforces tenant/case authorization. SSO is not included on self-serve Single Pack. IT security blocks SaaS tools that cannot join the corporate IdP. Checkbox “SSO coming soon” fails procurement.</description>
+      <category>/enterprise, /enterprise/sso, /demo, /security</category>
+    </item>
+    <item>
+      <title>Does CBAMValid publish an Enterprise SLA?</title>
+      <link>https://cbamvalid.com/enterprise</link>
+      <guid isPermaLink="false">enterprise-sla</guid>
+      <description>Yes. CBAMValid publishes an Enterprise SLA draft with response targets for critical, high, and normal issues, plus an honest uptime posture based on Google Cloud / Firebase europe-west1. Binding credits live only in a signed Enterprise MSA. ISO 27001 and SOC 2 are not claimed. Procurement packs need downloadable SLA language before legal review — not a vague “we take uptime seriously” sentence.</description>
+      <category>/enterprise, /security, /demo</category>
+    </item>
+    <item>
+      <title>Can a holding company cover multiple operators and installations?</title>
+      <link>https://cbamvalid.com/enterprise</link>
+      <guid isPermaLink="false">enterprise-holding</guid>
+      <description>Enterprise entitlement can sit at holding level while each sealed working file still binds one operator, one installation, and one reporting year. Cross-entity clones do not inherit payment unless the SOW says so. Roles include Holding Admin, Operator Preparer, Internal Reviewer, and Read-Only Verifier. Groups fear either paying forever per plant or blurring legal scope so verifiers reject the package.</description>
+      <category>/enterprise, /enterprise/holding, /pricing, /demo</category>
+    </item>
+    <item>
+      <title>When should I buy Single Pack instead of Enterprise Exclusive?</title>
+      <link>https://cbamvalid.com/enterprise</link>
+      <guid isPermaLink="false">enterprise-vs-single-pack</guid>
+      <description>Choose Single Pack (USD 449 pay-at-lock) for one working file — one operator, one installation, one reporting year — with same-file corrections included. Choose Enterprise Exclusive (from USD 12,000/year, contact sales) when you need SSO, SLA/DPA path, holding/multi-entity entitlement, API/onboarding, or coordinated multi-site rollout. Buying Enterprise for a single plant wastes budget; buying Single Pack for a group IdP requirement fails IT review.</description>
+      <category>/enterprise, /pricing, /, /demo</category>
+    </item>
+    <item>
+      <title>Are R6–R9 Enterprise platform modules live to sell?</title>
+      <link>https://cbamvalid.com/enterprise</link>
+      <guid isPermaLink="false">enterprise-platform-modules</guid>
+      <description>Yes. Published Rulesets (R6), Buyer Share Link (R7), Security/DPA/SLA (R8), and Platform architecture (R9) are live sellable surfaces. Additional regulatory categories beyond CBAM remain Enterprise SOW-only — CBAMValid does not sell half-products. Enterprise buyers reject vaporware roadmaps. Modules must be inspectable before a scoping call.</description>
+      <category>/enterprise, /platform, /rulesets, /buyer-link</category>
+    </item>
+    <item>
+      <title>How do channel partners engage with CBAMValid Enterprise?</title>
+      <link>https://cbamvalid.com/enterprise</link>
+      <guid isPermaLink="false">enterprise-partners</guid>
+      <description>Verifier firms, consultancies, and trade associations can request a partner track on /partners. Logos are published only after a signed referral agreement. Partner status does not create an accredited verification endorsement. Channel scale requires contracts — invented partner walls destroy trust.</description>
+      <category>/enterprise, /partners, /demo</category>
+    </item>
+    <item>
       <title>What are CBAMValid’s published pricing tiers?</title>
       <link>https://cbamvalid.com/pricing</link>
       <guid isPermaLink="false">pricing-four-tiers</guid>
       <description>Draft is $0. Single Pack is USD 449 one-time pay-at-lock for one working file. Exporter Annual is USD 2,400 per year. Enterprise is from USD 12,000 per year and is the only contact-sales tier. Not an accredited verification opinion. Procurement needs published prices. Hiding everything behind “contact sales” fails the public-pricing rule.</description>
-      <category>/pricing, /demo, /</category>
+      <category>/pricing, /demo, /, /enterprise</category>
     </item>
     <item>
       <title>How long does CBAMValid preparation take?</title>

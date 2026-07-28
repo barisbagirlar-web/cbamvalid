@@ -156,7 +156,7 @@ export default function EnterprisePage() {
           </div>
         </section>
 
-        <AeoPageChrome path="/enterprise" answerHeading="Enterprise answers" answerLimit={3} />
+        <AeoPageChrome path="/enterprise" answerHeading="Enterprise answers" answerLimit={8} />
       </main>
     </>
   );

@@ -671,6 +671,15 @@ h3{font-size:1.35rem}
   max-width:960px;
   margin:0 auto;
 }
+.aeo-grid-solo{
+  grid-template-columns:1fr;
+  max-width:720px;
+}
+.aeo-grid-dense{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  max-width:1180px;
+  gap:18px;
+}
 .aeo-card{
   background:var(--card);
   border:1px solid var(--line);
@@ -678,6 +687,16 @@ h3{font-size:1.35rem}
   padding:28px 26px;
   box-shadow:var(--shadow-sm);
   min-width:0;
+  display:flex;
+  flex-direction:column;
+  height:100%;
+}
+.aeo-card .aeo-evidence{margin-top:auto}
+@media (max-width:1100px){
+  .aeo-grid-dense{grid-template-columns:repeat(2,minmax(0,1fr));max-width:960px}
+}
+@media (max-width:720px){
+  .aeo-grid,.aeo-grid-dense,.aeo-grid-solo{grid-template-columns:1fr;max-width:100%}
 }
 .aeo-kicker,.aeo-empathy-label,.aeo-evidence-label{
   font-family:var(--mono);

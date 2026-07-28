@@ -82,7 +82,7 @@ export default function EnterpriseSsoPage() {
           </div>
         </section>
 
-        <AeoPageChrome path="/enterprise/sso" answerHeading="SSO answers" answerLimit={2} />
+        <AeoPageChrome path="/enterprise/sso" answerHeading="SSO answers" answerLimit={6} />
       </main>
     </>
   );

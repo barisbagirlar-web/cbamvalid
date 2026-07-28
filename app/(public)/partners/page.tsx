@@ -65,7 +65,7 @@ export default function PartnersPage() {
           </div>
         </section>
 
-        <AeoPageChrome path="/partners" answerHeading="Partner answers" answerLimit={2} />
+        <AeoPageChrome path="/partners" answerHeading="Partner answers" answerLimit={6} />
       </main>
     </>
   );

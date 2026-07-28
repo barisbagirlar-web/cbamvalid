@@ -78,7 +78,7 @@ export default function EnterpriseHoldingPage() {
           </div>
         </section>
 
-        <AeoPageChrome path="/enterprise/holding" answerHeading="Holding answers" answerLimit={2} />
+        <AeoPageChrome path="/enterprise/holding" answerHeading="Holding answers" answerLimit={6} />
       </main>
     </>
   );

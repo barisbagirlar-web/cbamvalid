@@ -262,6 +262,76 @@
       ]
     },
     {
+      "id": "enterprise-sso",
+      "url": "https://cbamvalid.com/answers#enterprise-sso",
+      "title": "Does CBAMValid Enterprise support SSO with Entra, Google, or Okta?",
+      "content_text": "Yes under Enterprise contract. CBAMValid federates Microsoft Entra ID, Google Workspace, or Okta via OIDC or SAML. After IdP login, the server still issues an HttpOnly session cookie and enforces tenant/case authorization. SSO is not included on self-serve Single Pack.\n\nIT security blocks SaaS tools that cannot join the corporate IdP. Checkbox “SSO coming soon” fails procurement.",
+      "tags": [
+        "/enterprise",
+        "/enterprise/sso",
+        "/demo",
+        "/security"
+      ]
+    },
+    {
+      "id": "enterprise-sla",
+      "url": "https://cbamvalid.com/answers#enterprise-sla",
+      "title": "Does CBAMValid publish an Enterprise SLA?",
+      "content_text": "Yes. CBAMValid publishes an Enterprise SLA draft with response targets for critical, high, and normal issues, plus an honest uptime posture based on Google Cloud / Firebase europe-west1. Binding credits live only in a signed Enterprise MSA. ISO 27001 and SOC 2 are not claimed.\n\nProcurement packs need downloadable SLA language before legal review — not a vague “we take uptime seriously” sentence.",
+      "tags": [
+        "/enterprise",
+        "/security",
+        "/demo"
+      ]
+    },
+    {
+      "id": "enterprise-holding",
+      "url": "https://cbamvalid.com/answers#enterprise-holding",
+      "title": "Can a holding company cover multiple operators and installations?",
+      "content_text": "Enterprise entitlement can sit at holding level while each sealed working file still binds one operator, one installation, and one reporting year. Cross-entity clones do not inherit payment unless the SOW says so. Roles include Holding Admin, Operator Preparer, Internal Reviewer, and Read-Only Verifier.\n\nGroups fear either paying forever per plant or blurring legal scope so verifiers reject the package.",
+      "tags": [
+        "/enterprise",
+        "/enterprise/holding",
+        "/pricing",
+        "/demo"
+      ]
+    },
+    {
+      "id": "enterprise-vs-single-pack",
+      "url": "https://cbamvalid.com/answers#enterprise-vs-single-pack",
+      "title": "When should I buy Single Pack instead of Enterprise Exclusive?",
+      "content_text": "Choose Single Pack (USD 449 pay-at-lock) for one working file — one operator, one installation, one reporting year — with same-file corrections included. Choose Enterprise Exclusive (from USD 12,000/year, contact sales) when you need SSO, SLA/DPA path, holding/multi-entity entitlement, API/onboarding, or coordinated multi-site rollout.\n\nBuying Enterprise for a single plant wastes budget; buying Single Pack for a group IdP requirement fails IT review.",
+      "tags": [
+        "/enterprise",
+        "/pricing",
+        "/",
+        "/demo"
+      ]
+    },
+    {
+      "id": "enterprise-platform-modules",
+      "url": "https://cbamvalid.com/answers#enterprise-platform-modules",
+      "title": "Are R6–R9 Enterprise platform modules live to sell?",
+      "content_text": "Yes. Published Rulesets (R6), Buyer Share Link (R7), Security/DPA/SLA (R8), and Platform architecture (R9) are live sellable surfaces. Additional regulatory categories beyond CBAM remain Enterprise SOW-only — CBAMValid does not sell half-products.\n\nEnterprise buyers reject vaporware roadmaps. Modules must be inspectable before a scoping call.",
+      "tags": [
+        "/enterprise",
+        "/platform",
+        "/rulesets",
+        "/buyer-link"
+      ]
+    },
+    {
+      "id": "enterprise-partners",
+      "url": "https://cbamvalid.com/answers#enterprise-partners",
+      "title": "How do channel partners engage with CBAMValid Enterprise?",
+      "content_text": "Verifier firms, consultancies, and trade associations can request a partner track on /partners. Logos are published only after a signed referral agreement. Partner status does not create an accredited verification endorsement.\n\nChannel scale requires contracts — invented partner walls destroy trust.",
+      "tags": [
+        "/enterprise",
+        "/partners",
+        "/demo"
+      ]
+    },
+    {
       "id": "pricing-four-tiers",
       "url": "https://cbamvalid.com/answers#pricing-four-tiers",
       "title": "What are CBAMValid’s published pricing tiers?",
@@ -269,7 +339,8 @@
       "tags": [
         "/pricing",
         "/demo",
-        "/"
+        "/",
+        "/enterprise"
       ]
     },
     {

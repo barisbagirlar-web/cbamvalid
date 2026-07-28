@@ -2147,6 +2147,234 @@
       ]
     },
     {
+      "id": "enterprise-sso",
+      "question": "Does CBAMValid Enterprise support SSO with Entra, Google, or Okta?",
+      "aliases": [
+        "Enterprise SAML",
+        "OIDC",
+        "IdP federation",
+        "Microsoft Entra"
+      ],
+      "directAnswer": "Yes under Enterprise contract. CBAMValid federates Microsoft Entra ID, Google Workspace, or Okta via OIDC or SAML. After IdP login, the server still issues an HttpOnly session cookie and enforces tenant/case authorization. SSO is not included on self-serve Single Pack.",
+      "empathyContext": "IT security blocks SaaS tools that cannot join the corporate IdP. Checkbox “SSO coming soon” fails procurement.",
+      "evidence": [
+        {
+          "label": "Enterprise SSO page",
+          "detail": "Protocols, IdP examples, and provisioning steps",
+          "href": "/enterprise/sso",
+          "evidenceStatus": "verified"
+        },
+        {
+          "label": "Security session model",
+          "detail": "Server-verified HttpOnly __session remains authoritative",
+          "href": "/security",
+          "evidenceStatus": "verified"
+        }
+      ],
+      "routes": [
+        "/enterprise",
+        "/enterprise/sso",
+        "/demo",
+        "/security"
+      ],
+      "relatedPaths": [
+        "/enterprise/holding",
+        "/pricing"
+      ]
+    },
+    {
+      "id": "enterprise-sla",
+      "question": "Does CBAMValid publish an Enterprise SLA?",
+      "aliases": [
+        "service level agreement",
+        "uptime",
+        "support response"
+      ],
+      "directAnswer": "Yes. CBAMValid publishes an Enterprise SLA draft with response targets for critical, high, and normal issues, plus an honest uptime posture based on Google Cloud / Firebase europe-west1. Binding credits live only in a signed Enterprise MSA. ISO 27001 and SOC 2 are not claimed.",
+      "empathyContext": "Procurement packs need downloadable SLA language before legal review — not a vague “we take uptime seriously” sentence.",
+      "evidence": [
+        {
+          "label": "SLA draft PDF",
+          "detail": "Public procurement starting point",
+          "href": "/enterprise/sla-draft.pdf",
+          "evidenceStatus": "verified"
+        },
+        {
+          "label": "DPA draft PDF",
+          "detail": "Companion data-protection draft",
+          "href": "/security/dpa-draft.pdf",
+          "evidenceStatus": "verified"
+        },
+        {
+          "label": "Security facts",
+          "detail": "Hosting region and subprocessors without fake certifications",
+          "href": "/security",
+          "evidenceStatus": "verified"
+        }
+      ],
+      "routes": [
+        "/enterprise",
+        "/security",
+        "/demo"
+      ],
+      "relatedPaths": [
+        "/enterprise/sso",
+        "/privacy"
+      ]
+    },
+    {
+      "id": "enterprise-holding",
+      "question": "Can a holding company cover multiple operators and installations?",
+      "aliases": [
+        "multi-entity",
+        "group exporters",
+        "multi-site entitlement"
+      ],
+      "directAnswer": "Enterprise entitlement can sit at holding level while each sealed working file still binds one operator, one installation, and one reporting year. Cross-entity clones do not inherit payment unless the SOW says so. Roles include Holding Admin, Operator Preparer, Internal Reviewer, and Read-Only Verifier.",
+      "empathyContext": "Groups fear either paying forever per plant or blurring legal scope so verifiers reject the package.",
+      "evidence": [
+        {
+          "label": "Holding scope page",
+          "detail": "Parent/child rules and seal-unit discipline",
+          "href": "/enterprise/holding",
+          "evidenceStatus": "verified"
+        },
+        {
+          "label": "Pricing tiers",
+          "detail": "Enterprise vs Single Pack scope contrast",
+          "href": "/pricing",
+          "evidenceStatus": "verified"
+        }
+      ],
+      "routes": [
+        "/enterprise",
+        "/enterprise/holding",
+        "/pricing",
+        "/demo"
+      ],
+      "relatedPaths": [
+        "/enterprise/sso",
+        "/sample-dossier"
+      ]
+    },
+    {
+      "id": "enterprise-vs-single-pack",
+      "question": "When should I buy Single Pack instead of Enterprise Exclusive?",
+      "aliases": [
+        "449 vs 12000",
+        "self-serve vs contact sales",
+        "one plant"
+      ],
+      "directAnswer": "Choose Single Pack (USD 449 pay-at-lock) for one working file — one operator, one installation, one reporting year — with same-file corrections included. Choose Enterprise Exclusive (from USD 12,000/year, contact sales) when you need SSO, SLA/DPA path, holding/multi-entity entitlement, API/onboarding, or coordinated multi-site rollout.",
+      "empathyContext": "Buying Enterprise for a single plant wastes budget; buying Single Pack for a group IdP requirement fails IT review.",
+      "evidence": [
+        {
+          "label": "Public pricing",
+          "detail": "Four tiers with Enterprise as the only contact-sales tier",
+          "href": "/pricing",
+          "evidenceStatus": "verified"
+        },
+        {
+          "label": "Enterprise Exclusive",
+          "detail": "SSO · SLA · Holding module map",
+          "href": "/enterprise",
+          "evidenceStatus": "verified"
+        },
+        {
+          "label": "Sample dossier",
+          "detail": "Inspect the self-serve package before you pay",
+          "href": "/sample-dossier",
+          "evidenceStatus": "verified"
+        }
+      ],
+      "routes": [
+        "/enterprise",
+        "/pricing",
+        "/",
+        "/demo"
+      ],
+      "relatedPaths": [
+        "/how-it-works",
+        "/trust"
+      ]
+    },
+    {
+      "id": "enterprise-platform-modules",
+      "question": "Are R6–R9 Enterprise platform modules live to sell?",
+      "aliases": [
+        "R6 rulesets",
+        "R7 buyer link",
+        "R8 security SLA",
+        "R9 platform"
+      ],
+      "directAnswer": "Yes. Published Rulesets (R6), Buyer Share Link (R7), Security/DPA/SLA (R8), and Platform architecture (R9) are live sellable surfaces. Additional regulatory categories beyond CBAM remain Enterprise SOW-only — CBAMValid does not sell half-products.",
+      "empathyContext": "Enterprise buyers reject vaporware roadmaps. Modules must be inspectable before a scoping call.",
+      "evidence": [
+        {
+          "label": "Published rulesets",
+          "detail": "Version-pinned CBAM ruleset registry",
+          "href": "/rulesets",
+          "evidenceStatus": "verified"
+        },
+        {
+          "label": "Buyer share link",
+          "detail": "/d/token integrity surface",
+          "href": "/buyer-link",
+          "evidenceStatus": "verified"
+        },
+        {
+          "label": "Platform architecture",
+          "detail": "CBAM door live; expansion under Enterprise SOW",
+          "href": "/platform",
+          "evidenceStatus": "verified"
+        }
+      ],
+      "routes": [
+        "/enterprise",
+        "/platform",
+        "/rulesets",
+        "/buyer-link"
+      ],
+      "relatedPaths": [
+        "/security",
+        "/partners"
+      ]
+    },
+    {
+      "id": "enterprise-partners",
+      "question": "How do channel partners engage with CBAMValid Enterprise?",
+      "aliases": [
+        "referral partner",
+        "verifier firm partner",
+        "consultancy partner"
+      ],
+      "directAnswer": "Verifier firms, consultancies, and trade associations can request a partner track on /partners. Logos are published only after a signed referral agreement. Partner status does not create an accredited verification endorsement.",
+      "empathyContext": "Channel scale requires contracts — invented partner walls destroy trust.",
+      "evidence": [
+        {
+          "label": "Partner intake",
+          "detail": "Live inquiry form — logos only after contract",
+          "href": "/partners",
+          "evidenceStatus": "verified"
+        },
+        {
+          "label": "Structure review",
+          "detail": "SAMPLE package-fitness surface for verifier discussion",
+          "href": "/verifier-review",
+          "evidenceStatus": "verified"
+        }
+      ],
+      "routes": [
+        "/enterprise",
+        "/partners",
+        "/demo"
+      ],
+      "relatedPaths": [
+        "/verifier-review",
+        "/sample-dossier"
+      ]
+    },
+    {
       "id": "pricing-four-tiers",
       "question": "What are CBAMValid’s published pricing tiers?",
       "aliases": [
@@ -2168,12 +2396,19 @@
           "detail": "Human path for Annual and Enterprise",
           "href": "/demo",
           "evidenceStatus": "verified"
+        },
+        {
+          "label": "Enterprise Exclusive",
+          "detail": "Contact-sales package detail",
+          "href": "/enterprise",
+          "evidenceStatus": "verified"
         }
       ],
       "routes": [
         "/pricing",
         "/demo",
-        "/"
+        "/",
+        "/enterprise"
       ],
       "relatedPaths": [
         "/how-it-works",

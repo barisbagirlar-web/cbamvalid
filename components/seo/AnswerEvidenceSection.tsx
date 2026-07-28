@@ -58,6 +58,9 @@ export function AnswerEvidenceSection({
   const answers = listAnswersForRoute(path).slice(0, limit ?? 3);
   if (answers.length === 0) return null;
 
+  const gridClass =
+    answers.length >= 5 ? "aeo-grid aeo-grid-dense" : answers.length === 1 ? "aeo-grid aeo-grid-solo" : "aeo-grid";
+
   return (
     <section className="section aeo-section" aria-labelledby={`aeo-heading-${path.replace(/\W/g, "")}`}>
       <div className="wrap">
@@ -65,14 +68,15 @@ export function AnswerEvidenceSection({
           <span className="eyebrow">Answer + Evidence</span>
           <h2 id={`aeo-heading-${path.replace(/\W/g, "")}`}>{heading}</h2>
           <p>
-            Each answer is written so a person — or an answer engine — can cite a single clear statement with supporting evidence and legal/product boundaries.
+            Each answer is written so a person — or an answer engine — can cite a single clear statement with
+            supporting evidence and legal/product boundaries.
             {" "}
             <Link href="/answers">Browse the full answer bank</Link>
             {" · "}
             <Link href="/glossary">Entity glossary</Link>
           </p>
         </div>
-        <div className="aeo-grid">
+        <div className={gridClass}>
           {answers.map((answer) => (
             <AnswerCard key={answer.id} answer={answer} />
           ))}
@@ -147,7 +151,7 @@ export function FanOutQueriesSection({ path }: { path: string }) {
 export function AeoPageChrome({
   path,
   answerHeading,
-  answerLimit = 2,
+  answerLimit = 4,
   showAuthorityChain = true,
   showBreadcrumbs = true,
   showCitations = true,
