@@ -404,6 +404,81 @@ h3{font-size:1.35rem}
 .qc-box .k{font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
 .ui-mock-cta{text-align:center;margin-top:30px}
 
+/* ---------- Product page layout ---------- */
+.product-hero{padding-bottom:72px}
+.product-hero .authority-rail{margin-bottom:28px}
+.product-cap-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:22px;
+}
+.product-cap-card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--r-lg);
+  padding:28px 26px 26px;
+  box-shadow:var(--shadow-sm);
+  min-height:100%;
+  display:flex;
+  flex-direction:column;
+  transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;
+}
+.product-cap-card:hover{
+  transform:translateY(-3px);
+  box-shadow:var(--shadow-md);
+  border-color:var(--terra-line);
+}
+.product-cap-index{
+  font-family:var(--mono);
+  font-size:.68rem;
+  letter-spacing:.14em;
+  color:var(--terra-dark);
+  margin-bottom:14px;
+}
+.product-cap-card h3{margin:0 0 10px;font-size:1.05rem}
+.product-cap-card p{font-size:.9rem;color:var(--muted);flex:1;margin:0 0 16px}
+.product-cap-card .ref{
+  font-family:var(--mono);
+  font-size:.62rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--ink);
+  background:var(--paper-2);
+  border:1px solid var(--line);
+  border-radius:7px;
+  padding:5px 10px;
+  align-self:flex-start;
+}
+.product-workspace{
+  display:grid;
+  grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);
+  gap:48px;
+  align-items:center;
+}
+.product-workspace-copy h2{margin:.45em 0 .5em}
+.product-workspace-copy > p{color:var(--muted);max-width:42ch;margin-bottom:22px}
+.product-workspace-points{display:grid;gap:12px;margin:0;padding:0;list-style:none}
+.product-workspace-points li{
+  display:flex;gap:12px;align-items:flex-start;
+  font-size:.92rem;color:var(--ink-2);line-height:1.45;
+}
+.product-workspace-points li::before{
+  content:"";width:7px;height:7px;border-radius:50%;
+  background:var(--terra);margin-top:8px;flex:none;
+}
+.product-ui-mock{max-width:none;margin:0;width:100%}
+
+@media (max-width:1100px){
+  .product-cap-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:980px){
+  .product-workspace{grid-template-columns:1fr;gap:32px}
+  .product-workspace-copy > p{max-width:none}
+}
+@media (max-width:760px){
+  .product-cap-grid{grid-template-columns:1fr}
+}
+
 /* ---------- Steps vertical (how-it-works) ---------- */
 .vsteps{max-width:760px;margin:0 auto;position:relative}
 .vsteps::before{content:"";position:absolute;left:30px;top:20px;bottom:20px;width:2px;background:var(--terra-line)}
