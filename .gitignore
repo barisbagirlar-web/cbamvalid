@@ -46,3 +46,4 @@ test_sips.png
 test-raster.ts
 CBAMValid_English_A_to_Z_Walkthrough.mp4.png
 create-admin-routes.sh
+tests/e2e/.auth/

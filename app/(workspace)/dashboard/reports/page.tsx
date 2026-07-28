@@ -11,29 +11,31 @@ import { ShieldCheck, Calendar, ArrowRight } from "lucide-react";
 export default function DashboardReportsHistoryPage() {
   const { user, loading } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false);
 
   useEffect(() => {
     if (loading || !user) return;
 
+    let cancelled = false;
     const fetchReports = async () => {
       setDataLoading(true);
       try {
         const data = await getReports();
-        if (data) {
-          setReports(data || []);
-        }
+        if (!cancelled && data) setReports(data || []);
       } catch (err) {
         console.error("Error fetching reports:", err);
       } finally {
-        setDataLoading(false);
+        if (!cancelled) setDataLoading(false);
       }
     };
 
-    fetchReports();
+    void fetchReports();
+    return () => {
+      cancelled = true;
+    };
   }, [user, loading]);
 
-  if (loading || dataLoading) {
+  if (loading || (user && dataLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-kil-base px-6">
         <div className="flex flex-col items-center">
