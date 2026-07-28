@@ -150,11 +150,15 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
   },
   {
     path: "/case-studies",
-    topic: "Permissioned case studies only",
+    topic: "Anonymized illustrative sector scenarios",
     role: "spoke",
     parentPath: "/",
-    childPaths: ["/sample-dossier", "/verifier-review", "/demo"],
-    covers: ["no invented logos", "empty slot until written permission"],
+    childPaths: ["/sample-dossier", "/product", "/enterprise", "/demo"],
+    covers: [
+      "anonymized steel aluminium cement holding scenarios",
+      "no invented logos or testimonials",
+      "named references still permissioned",
+    ],
     ...chainExtras("/case-studies"),
   },
   {

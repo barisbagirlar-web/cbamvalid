@@ -618,7 +618,7 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       "OWNER ACTION",
     ],
     directAnswer:
-      "CBAMValid publishes a Trust Evidence Registry at /trust. Each marketing claim is tagged VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Legal identity is published: SectorCalc Corporation (CBAMValid), CRO 315881, VAT IE1857162AB, Dublin registered address, support phone, and DPO contact. Case studies stay empty until permissioned. SAMPLE documents are watermarked specimens — not certificates.",
+      "CBAMValid publishes a Trust Evidence Registry at /trust. Each marketing claim is tagged VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Legal identity is published: SectorCalc Corporation (CBAMValid), CRO 315881, VAT IE1857162AB, Dublin registered address, support phone, and DPO contact. /case-studies publishes anonymized illustrative scenarios — not named logos. SAMPLE documents are watermarked specimens — not certificates.",
     empathyContext:
       "Procurement teams reverse-engineer claims. Invented identity destroys enterprise deals permanently.",
     evidence: [
@@ -1093,21 +1093,53 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
   {
     id: "case-studies-permissioned",
     question: "Where are CBAMValid customer case studies?",
-    aliases: ["customer logos", "testimonials", "named references"],
+    aliases: ["customer logos", "testimonials", "named references", "illustrative scenarios"],
     directAnswer:
-      "Named case studies are published only with written permission for company name, logo, and a measurable outcome. Until then the case-studies page stays empty by design. Invented logos and unattributed praise strips are forbidden.",
+      "CBAMValid publishes anonymized illustrative sector scenarios on /case-studies (steel, aluminium, holding, cement). Named company logos and quotes publish only with written permission. Invented testimonials remain forbidden.",
     empathyContext:
-      "Fake social proof destroys enterprise trust faster than an empty slot.",
+      "Field realism without fake logos. Buyers recognize anonymized pressure paths; procurement rejects invented praise strips.",
     evidence: [
       {
-        label: "Case studies page",
-        detail: "Honest empty slot with publication criteria",
+        label: "Illustrative scenarios",
+        detail: "Four anonymized sector working-file paths — no company names",
         href: "/case-studies",
         evidenceStatus: "verified",
       },
+      {
+        label: "Sample dossier",
+        detail: "Inspect sealed deliverables before you pay",
+        href: "/sample-dossier",
+        evidenceStatus: "verified",
+      },
     ],
-    routes: ["/case-studies", "/about"],
-    relatedPaths: ["/sample-dossier", "/verifier-review"],
+    routes: ["/case-studies", "/about", "/"],
+    relatedPaths: ["/sample-dossier", "/product", "/enterprise"],
+    schemaEligible: true,
+  },
+  {
+    id: "what-is-idp-msa",
+    question: "What do IdP and MSA mean for CBAMValid Enterprise SSO?",
+    aliases: ["identity provider", "master service agreement", "SSO Entra Okta"],
+    directAnswer:
+      "IdP means Identity Provider — your company login (Microsoft Entra ID, Google Workspace, or Okta). MSA means Master Service Agreement — the signed Enterprise contract covering pricing, SLA, DPA, and which domains are in scope. SSO is enabled after that contract; it is not on Single Pack.",
+    empathyContext:
+      "Procurement jargon blocks deals. Plain labels unblock Enterprise scoping.",
+    evidence: [
+      {
+        label: "Enterprise SSO page",
+        detail: "Plain-English IdP/MSA glossary + cutover simulation",
+        href: "/enterprise/sso",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Enterprise Exclusive",
+        detail: "SSO · SLA · Holding package overview",
+        href: "/enterprise",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/enterprise/sso", "/enterprise", "/demo"],
+    relatedPaths: ["/security", "/pricing"],
     schemaEligible: true,
   },
 ] as const;
