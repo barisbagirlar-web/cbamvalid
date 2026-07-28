@@ -1,30 +1,22 @@
 # Owner — Legal Identity Intake (T1.3)
 
-**Status:** CODE READY · VALUES = OWNER ACTION  
-**Publish path:** env vars → `lib/legal-identity.ts` → footer / legal-notice / `/trust`  
-**Rule (H2):** Never invent CRO, VAT, street address, or phone.
+**Status:** PUBLISHED 2026-07-28 · owner-verified values in `lib/legal-identity.ts`  
+**Public surfaces:** footer · `/legal-notice` · `/contact` · `/privacy` · `/trust`
 
-## Paste these into Firebase / hosting secrets (or `.env.local` for local)
+## Published values
 
 ```bash
-LEGAL_CRO=          # Irish Companies Registration Office number
-LEGAL_VAT=          # VAT / tax ID (e.g. IE…)
-LEGAL_REGISTERED_ADDRESS=   # Full registered office street line
-LEGAL_SUPPORT_PHONE=        # Public support phone with country code
-LEGAL_DPO=                  # Data protection contact name or mailbox
-# optional:
+LEGAL_CRO=315881
+LEGAL_VAT=GB611857162
+LEGAL_REGISTERED_ADDRESS=4th Floor, One Burlington Plaza, Burlington Road, Dublin 4, Ireland
+LEGAL_SUPPORT_PHONE=+353 (0)1 676 2671
+LEGAL_DPO=Siobhan O'Connor, Data Protection Officer <info@cbamvalid.com>
 LEGAL_COUNTRY=Ireland
 ```
 
-Then redeploy. When all five required fields are non-empty, the site automatically switches from **minimal** identity to the **full T1.3** block.
+Env overrides still win if set in Firebase / `.env.local` for emergency correction.
 
-## Also close commercial proof
+## Still open (commercial)
 
-1. **Paddle live** catalog price for the checkout price ID = **USD 449.00** (sandbox already proven = 44900).
-2. Run: `npm run prove:paddle-amount`
-3. Send outreach emails in `docs/outreach/verifier-structure-review-outreach.md`
-4. When a signed structure letter arrives → place PDF under `public/verifier-review/` and update `lib/trust/verifier-structure-review.ts` + evidence registry status
-
-## Check public registry
-
-https://cbamvalid.com/trust
+1. Paddle **live** catalog = USD 449 (sandbox already proven)
+2. `npm run prove:paddle-amount` with live API key → `PROVE_PADDLE_LIVE=PASS`

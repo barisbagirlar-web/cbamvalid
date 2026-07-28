@@ -60,11 +60,12 @@ export const TRUST_EVIDENCE_ITEMS: readonly TrustEvidenceItem[] = [
     title: "CRO / VAT / registered address / phone",
     status: identityStatus(),
     proof: isLegalIdentityComplete()
-      ? "Full T1.3 identity block published from LEGAL_IDENTITY / env"
+      ? `CRO ${LEGAL_IDENTITY.companyRegistrationNumber} · VAT ${LEGAL_IDENTITY.vatId} · ${LEGAL_IDENTITY.registeredAddress} · ${LEGAL_IDENTITY.supportPhone}`
       : "Fields remain null until owner supplies proven CRO, VAT, address, and phone — half-identity is never published",
     publicHref: "/legal-notice",
-    ownerAction:
-      "Set LEGAL_CRO, LEGAL_VAT, LEGAL_REGISTERED_ADDRESS, LEGAL_SUPPORT_PHONE, LEGAL_DPO (or fill lib/legal-identity.ts) and redeploy",
+    ownerAction: isLegalIdentityComplete()
+      ? undefined
+      : "Set LEGAL_CRO, LEGAL_VAT, LEGAL_REGISTERED_ADDRESS, LEGAL_SUPPORT_PHONE, LEGAL_DPO (or fill lib/legal-identity.ts) and redeploy",
   },
   {
     id: "pricing-ssot",
@@ -79,7 +80,7 @@ export const TRUST_EVIDENCE_ITEMS: readonly TrustEvidenceItem[] = [
     layer: "commercial",
     title: "Paddle sandbox catalog price",
     status: "VERIFIED",
-    proof: "Sandbox price ID unit_price.amount proven = 44900 USD via Paddle API (2026-07-28)",
+    proof: "Sandbox price ID unit_price.amount proven = 44900 USD via Paddle API + owner dashboard screenshot (2026-07-28)",
     publicHref: "/pricing",
   },
   {

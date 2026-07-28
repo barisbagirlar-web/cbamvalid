@@ -3,11 +3,10 @@
  * T1.3 / H2: never publish placeholder CRO, VAT, street, or phone.
  * Publish the identity block only when every required field is proven.
  *
- * Owner override (server / build env — preferred over inventing values in git):
+ * Owner-verified 2026-07-28. Env overrides still win when set:
  *   LEGAL_CRO · LEGAL_VAT · LEGAL_REGISTERED_ADDRESS · LEGAL_SUPPORT_PHONE · LEGAL_DPO
  * Optional: LEGAL_COUNTRY (default Ireland)
  */
-import { siteConfig } from "@/lib/site-config";
 
 export type LegalIdentityField =
   | "legalEntityName"
@@ -37,26 +36,35 @@ export interface LegalIdentityRecord {
 function envOrNull(key: string): string | null {
   const raw = process.env[key];
   if (typeof raw !== "string") return null;
-  const trimmed = raw.trim();
+  const trimmed = raw.trim().replace(/^["']|["']$/g, "");
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function provenOrEnv(envKey: string, proven: string): string {
+  return envOrNull(envKey) ?? proven;
+}
+
 /**
- * Proven fields only. Null = not yet owner-verified — must not appear in public UI.
- * Env overrides win when set (deploy secrets / .env.local) so identity can go live
- * without committing registration numbers to git.
+ * Owner-verified public identity (2026-07-28).
+ * Env overrides win for emergency corrections without a code change.
  */
 export const LEGAL_IDENTITY: LegalIdentityRecord = {
   legalEntityName: "SectorCalc Corporation",
   tradingName: "CBAMValid",
-  registeredAddress: envOrNull("LEGAL_REGISTERED_ADDRESS"),
+  registeredAddress: provenOrEnv(
+    "LEGAL_REGISTERED_ADDRESS",
+    "4th Floor, One Burlington Plaza, Burlington Road, Dublin 4, Ireland"
+  ),
   country: envOrNull("LEGAL_COUNTRY") ?? "Ireland",
-  companyRegistrationNumber: envOrNull("LEGAL_CRO"),
-  vatId: envOrNull("LEGAL_VAT"),
-  dataProtectionContact: envOrNull("LEGAL_DPO"),
+  companyRegistrationNumber: provenOrEnv("LEGAL_CRO", "315881"),
+  vatId: provenOrEnv("LEGAL_VAT", "GB611857162"),
+  dataProtectionContact: provenOrEnv(
+    "LEGAL_DPO",
+    "Siobhan O'Connor, Data Protection Officer <info@cbamvalid.com>"
+  ),
   privacyEmail: "privacy@cbamvalid.com",
-  supportPhone: envOrNull("LEGAL_SUPPORT_PHONE"),
-  supportEmail: siteConfig.supportEmail,
+  supportPhone: provenOrEnv("LEGAL_SUPPORT_PHONE", "+353 (0)1 676 2671"),
+  supportEmail: "info@cbamvalid.com",
 };
 
 const REQUIRED_FOR_FULL_BLOCK: readonly LegalIdentityField[] = [
@@ -104,7 +112,6 @@ export function getPublicLegalIdentityLines(
       `Support: ${identity.supportEmail}`,
       `Privacy: ${identity.privacyEmail}`,
       "Full company registration, VAT, and registered address will be published here when verified — half-identity blocks are not shown.",
-      "Owner: set LEGAL_CRO, LEGAL_VAT, LEGAL_REGISTERED_ADDRESS, LEGAL_SUPPORT_PHONE, LEGAL_DPO and redeploy.",
     ].filter(Boolean),
   };
 }

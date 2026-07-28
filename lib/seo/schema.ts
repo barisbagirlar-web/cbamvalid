@@ -37,18 +37,31 @@ function organizationNode(): JsonLdNode {
     },
     image: `${siteConfig.canonicalOrigin}/icon-512.png`,
     email: legalConfig.supportEmail,
-    // Country only — street address in siteConfig is placeholder and must not enter schema.
+    telephone: legalConfig.supportPhone || undefined,
     address: {
       "@type": "PostalAddress",
+      streetAddress: legalConfig.registeredAddress || undefined,
+      addressLocality: "Dublin",
       addressCountry: "IE",
-      addressLocality: "Republic of Ireland",
+      addressRegion: "Dublin 4",
     },
+    identifier: legalConfig.registrationNumber
+      ? [
+          {
+            "@type": "PropertyValue",
+            name: "Company Registration Number",
+            value: legalConfig.registrationNumber,
+          },
+        ]
+      : undefined,
+    vatID: legalConfig.vatIdentifier || undefined,
     contactPoint: {
       "@type": "ContactPoint",
       email: assertVerifiedClaim(
         { value: legalConfig.supportEmail, evidenceStatus: "verified", evidenceId: "legalConfig.supportEmail" },
         "supportEmail",
       ),
+      telephone: legalConfig.supportPhone || undefined,
       contactType: "customer support",
       availableLanguage: ["English"],
     },
