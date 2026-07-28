@@ -100,6 +100,9 @@ export default function AppFooter() {
             <h4>Legal</h4>
             <ul>
               <li>
+                <Link href="/trust">Trust Evidence Registry</Link>
+              </li>
+              <li>
                 <Link href="/security">Security &amp; DPA</Link>
               </li>
               <li>

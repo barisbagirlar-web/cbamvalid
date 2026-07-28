@@ -388,6 +388,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
       "Security facts are operational. Accredited verification remains a separate legal act.",
     relatedProblems: [
       { question: "Privacy notice", href: "/privacy", why: "Data handling" },
+      { question: "Trust registry", href: "/trust", why: "Pinned claims" },
       { question: "Contact privacy", href: "/contact", why: "Requests" },
       { question: "Buyer share link", href: "/buyer-link", why: "Public token path" },
     ],
@@ -396,6 +397,36 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
       "CBAMValid security",
       "CBAMValid DPA",
       "CBAMValid ISO 27001",
+    ],
+  },
+  {
+    path: "/trust",
+    primaryQuestion: "How does CBAMValid prove marketing claims without inventing evidence?",
+    empathyLead:
+      "Enterprise buyers reject sites that invent CRO numbers, logos, or verifier endorsements.",
+    directAnswer:
+      "CBAMValid publishes a Trust Evidence Registry. Each claim is VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Half-identity and forged letters are forbidden. Gaps stay visible until real evidence arrives.",
+    calculation:
+      "Claim discipline does not change sealed emissions arithmetic; it protects procurement trust around the product.",
+    explanation:
+      "SAMPLE documents are watermarked specimens. EMPTY BY DESIGN pages (case studies) refuse invented logos. OWNER ACTION items list the exact fields the operator must supply.",
+    methodology:
+      "H2: no claim without evidence. Status language mirrors the seal engine’s fail-closed posture.",
+    evidence:
+      "Published /trust registry + /legal-notice minimal identity policy + /verifier-review SAMPLE surface.",
+    expert:
+      "Honest incomplete identity beats fraudulent complete identity in enterprise procurement.",
+    relatedProblems: [
+      { question: "Legal notice", href: "/legal-notice", why: "Identity publication" },
+      { question: "Structure review", href: "/verifier-review", why: "SAMPLE boundary" },
+      { question: "Case studies policy", href: "/case-studies", why: "Empty by design" },
+      { question: "Security facts", href: "/security", why: "No fake ISO" },
+    ],
+    entities: ["trust registry", "H2", "SAMPLE", "OWNER ACTION", "EXTERNAL BLOCKER"],
+    fanOutQueries: [
+      "CBAMValid trust evidence",
+      "CBAMValid company registration",
+      "CBAMValid verifier letter",
     ],
   },
   {

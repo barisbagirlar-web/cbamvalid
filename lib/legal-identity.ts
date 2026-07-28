@@ -2,6 +2,10 @@
  * Public legal identity SSOT.
  * T1.3 / H2: never publish placeholder CRO, VAT, street, or phone.
  * Publish the identity block only when every required field is proven.
+ *
+ * Owner override (server / build env — preferred over inventing values in git):
+ *   LEGAL_CRO · LEGAL_VAT · LEGAL_REGISTERED_ADDRESS · LEGAL_SUPPORT_PHONE · LEGAL_DPO
+ * Optional: LEGAL_COUNTRY (default Ireland)
  */
 import { siteConfig } from "@/lib/site-config";
 
@@ -30,20 +34,28 @@ export interface LegalIdentityRecord {
   supportEmail: string;
 }
 
+function envOrNull(key: string): string | null {
+  const raw = process.env[key];
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 /**
  * Proven fields only. Null = not yet owner-verified — must not appear in public UI.
- * Replace nulls with real CRO / VAT / address / phone when owner supplies evidence.
+ * Env overrides win when set (deploy secrets / .env.local) so identity can go live
+ * without committing registration numbers to git.
  */
 export const LEGAL_IDENTITY: LegalIdentityRecord = {
   legalEntityName: "SectorCalc Corporation",
   tradingName: "CBAMValid",
-  registeredAddress: null,
-  country: "Ireland",
-  companyRegistrationNumber: null,
-  vatId: null,
-  dataProtectionContact: null,
+  registeredAddress: envOrNull("LEGAL_REGISTERED_ADDRESS"),
+  country: envOrNull("LEGAL_COUNTRY") ?? "Ireland",
+  companyRegistrationNumber: envOrNull("LEGAL_CRO"),
+  vatId: envOrNull("LEGAL_VAT"),
+  dataProtectionContact: envOrNull("LEGAL_DPO"),
   privacyEmail: "privacy@cbamvalid.com",
-  supportPhone: null,
+  supportPhone: envOrNull("LEGAL_SUPPORT_PHONE"),
   supportEmail: siteConfig.supportEmail,
 };
 
@@ -92,6 +104,7 @@ export function getPublicLegalIdentityLines(
       `Support: ${identity.supportEmail}`,
       `Privacy: ${identity.privacyEmail}`,
       "Full company registration, VAT, and registered address will be published here when verified — half-identity blocks are not shown.",
+      "Owner: set LEGAL_CRO, LEGAL_VAT, LEGAL_REGISTERED_ADDRESS, LEGAL_SUPPORT_PHONE, LEGAL_DPO and redeploy.",
     ].filter(Boolean),
   };
 }

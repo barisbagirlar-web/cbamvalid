@@ -148,6 +148,13 @@
       <category>/security, /privacy</category>
     </item>
     <item>
+      <title>How does CBAMValid prove marketing claims without inventing evidence?</title>
+      <link>https://cbamvalid.com/trust</link>
+      <guid isPermaLink="false">trust-evidence-registry</guid>
+      <description>CBAMValid publishes a Trust Evidence Registry at /trust. Each marketing claim is tagged VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Company registration, VAT, address, and phone stay unpublished until proven. Case studies stay empty until permissioned. SAMPLE documents are watermarked specimens — not certificates. Procurement teams reverse-engineer claims. Invented identity destroys enterprise deals permanently.</description>
+      <category>/trust, /legal-notice, /case-studies</category>
+    </item>
+    <item>
       <title>Is CBAMValid only a calculator, or a broader compliance platform?</title>
       <link>https://cbamvalid.com/platform</link>
       <guid isPermaLink="false">platform-cbam-first</guid>

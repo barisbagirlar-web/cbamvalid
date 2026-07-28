@@ -602,7 +602,45 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       },
     ],
     routes: ["/security", "/privacy"],
-    relatedPaths: ["/contact", "/legal-notice"],
+    relatedPaths: ["/contact", "/legal-notice", "/trust"],
+    schemaEligible: true,
+  },
+  {
+    id: "trust-evidence-registry",
+    question: "How does CBAMValid prove marketing claims without inventing evidence?",
+    aliases: [
+      "trust registry",
+      "CRO VAT published",
+      "fake logos",
+      "proof chain",
+      "OWNER ACTION",
+    ],
+    directAnswer:
+      "CBAMValid publishes a Trust Evidence Registry at /trust. Each marketing claim is tagged VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Company registration, VAT, address, and phone stay unpublished until proven. Case studies stay empty until permissioned. SAMPLE documents are watermarked specimens — not certificates.",
+    empathyContext:
+      "Procurement teams reverse-engineer claims. Invented identity destroys enterprise deals permanently.",
+    evidence: [
+      {
+        label: "Trust Evidence Registry",
+        detail: "Pinned claim statuses for identity, commercial, structure, and customer layers",
+        href: "/trust",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Legal notice",
+        detail: "Minimal identity until CRO/VAT/address proven",
+        href: "/legal-notice",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Structure review SAMPLE",
+        detail: "Watermarked specimen — SAMPLE status, not a verification opinion",
+        href: "/verifier-review",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/trust", "/legal-notice", "/case-studies"],
+    relatedPaths: ["/security", "/verifier-review", "/pricing"],
     schemaEligible: true,
   },
   {

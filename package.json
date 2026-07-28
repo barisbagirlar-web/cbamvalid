@@ -33,6 +33,8 @@
     "guard:github-actions": "node scripts/guard-github-actions.mjs",
     "guard:canonical-email": "npx tsx scripts/guard-canonical-support-email.ts",
     "check:paddle-config": "npx tsx scripts/check-paddle-config.ts",
+    "prove:paddle-amount": "node scripts/prove-paddle-amount.mjs",
+    "guard:paddle-amount": "node scripts/guard-paddle-amount.mjs",
     "test": "vitest",
     "test:auth": "vitest run tests/auth",
     "test:integration": "vitest run tests/integration",

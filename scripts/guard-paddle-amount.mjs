@@ -30,4 +30,4 @@ if (a !== Number(displayPrice[1]) * 100) {
 }
 
 console.log(`PADDLE_AMOUNT_GUARD=PASS amountMinor=${a} displayPrice=${displayPrice[1]}`);
-console.log("PADDLE_DASHBOARD_NOTE=Confirm Paddle price ID unit amount equals amountMinor before paid launch");
+console.log("PADDLE_DASHBOARD_NOTE=Run npm run prove:paddle-amount to prove live/sandbox catalog equals amountMinor");

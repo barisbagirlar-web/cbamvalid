@@ -74,6 +74,9 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Q: Does CBAMValid claim ISO 27001 or SOC 2 certification?
   A: No. The security page publishes hosting region (europe-west1), TLS, session model, encryption-at-rest defaults, subprocessors, and a DPA draft. ISO 27001 and SOC 2 are not claimed. Certificates will be published only with issuer, scope, and validity dates. Procurement needs facts. “In progress” certification language is a trust defect.
   Pages: /security, /privacy
+- Q: How does CBAMValid prove marketing claims without inventing evidence?
+  A: CBAMValid publishes a Trust Evidence Registry at /trust. Each marketing claim is tagged VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Company registration, VAT, address, and phone stay unpublished until proven. Case studies stay empty until permissioned. SAMPLE documents are watermarked specimens — not certificates. Procurement teams reverse-engineer claims. Invented identity destroys enterprise deals permanently.
+  Pages: /trust, /legal-notice, /case-studies
 - Q: Is CBAMValid only a calculator, or a broader compliance platform?
   A: CBAMValid is a sealed, evidence-linked, version-pinned compliance package architecture. The live ruleset family is EU CBAM. Additional regimes can reuse the package contract later — they are not sold until CBAM leadership and opening conditions justify them. No second regulated product is live today. Architecture honesty beats vaporware roadmaps. Door = CBAM; room is larger only when earned.
   Pages: /platform, /
@@ -254,9 +257,22 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Methodology: Certification claims require issuer, scope, and validity dates — never unpublished placeholder status language.
 - Evidence: Published security page + DPA draft PDF. Absence of ISO claim is intentional honesty.
 - Expert: Security facts are operational. Accredited verification remains a separate legal act.
-- Related: /privacy, /contact, /buyer-link
+- Related: /privacy, /trust, /contact, /buyer-link
 - Entities: europe-west1; DPA draft; subprocessors; no ISO 27001 claim
 - Fan-out queries: CBAMValid security; CBAMValid DPA; CBAMValid ISO 27001
+
+### /trust
+- Primary question: How does CBAMValid prove marketing claims without inventing evidence?
+- Empathy: Enterprise buyers reject sites that invent CRO numbers, logos, or verifier endorsements.
+- Direct answer: CBAMValid publishes a Trust Evidence Registry. Each claim is VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Half-identity and forged letters are forbidden. Gaps stay visible until real evidence arrives.
+- Calculation: Claim discipline does not change sealed emissions arithmetic; it protects procurement trust around the product.
+- Explanation: SAMPLE documents are watermarked specimens. EMPTY BY DESIGN pages (case studies) refuse invented logos. OWNER ACTION items list the exact fields the operator must supply.
+- Methodology: H2: no claim without evidence. Status language mirrors the seal engine’s fail-closed posture.
+- Evidence: Published /trust registry + /legal-notice minimal identity policy + /verifier-review SAMPLE surface.
+- Expert: Honest incomplete identity beats fraudulent complete identity in enterprise procurement.
+- Related: /legal-notice, /verifier-review, /case-studies, /security
+- Entities: trust registry; H2; SAMPLE; OWNER ACTION; EXTERNAL BLOCKER
+- Fan-out queries: CBAMValid trust evidence; CBAMValid company registration; CBAMValid verifier letter
 
 ### /platform
 - Primary question: Is CBAMValid opening other regulatory categories beyond CBAM?
@@ -498,6 +514,10 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
   Covers: europe-west1 hosting; subprocessors; DPA draft without fake ISO claims
   Entities: europe-west1; DPA draft; subprocessors; no ISO 27001 claim
   Fan-out: CBAMValid security; CBAMValid DPA; CBAMValid ISO 27001
+- /trust — Trust evidence registry
+  Covers: pinned marketing claims; SAMPLE vs VERIFIED discipline; visible OWNER ACTION gaps
+  Entities: trust registry; H2; SAMPLE; OWNER ACTION; EXTERNAL BLOCKER
+  Fan-out: CBAMValid trust evidence; CBAMValid company registration; CBAMValid verifier letter
 - /platform — Category architecture — CBAM first
   Covers: CBAM is the live door; reusable sealed package contract; second category not open yet
   Entities: category architecture; CBAM first; reusable package contract
