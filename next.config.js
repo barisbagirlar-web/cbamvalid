@@ -128,6 +128,12 @@ const nextConfig = {
         permanent: true,
       },
       {
+        // R7 short buyer share alias → canonical token verify surface
+        source: '/d/:token',
+        destination: '/verify/:token',
+        permanent: true,
+      },
+      {
         source: '/:path*',
         has: [
           {
