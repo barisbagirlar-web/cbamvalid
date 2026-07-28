@@ -482,12 +482,15 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
       { question: "Holding", href: "/enterprise/holding", why: "Multi-entity" },
       { question: "Pricing", href: "/pricing", why: "Tier map" },
       { question: "Partners", href: "/partners", why: "Channel" },
+      { question: "Sample dossier", href: "/sample-dossier", why: "Inspect package" },
+      { question: "Trust registry", href: "/trust", why: "Pinned claims" },
     ],
     entities: ["Enterprise Exclusive", "SSO", "SLA", "holding", "from $12,000"],
     fanOutQueries: [
       "CBAMValid Enterprise",
       "CBAMValid SSO",
       "CBAMValid SLA",
+      "CBAMValid holding multi-entity",
     ],
   },
   {

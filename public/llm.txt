@@ -335,9 +335,9 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Methodology: SSO uses OIDC/SAML via Identity Platform. Holding keeps each seal scoped to one operator/installation/year.
 - Evidence: Published Enterprise pages, SLA draft PDF, DPA draft PDF, inquiry API.
 - Expert: Enterprise is a commitment regime for procurement — not a fake certification badge.
-- Related: /enterprise/sso, /enterprise/holding, /pricing, /partners
+- Related: /enterprise/sso, /enterprise/holding, /pricing, /partners, /sample-dossier, /trust
 - Entities: Enterprise Exclusive; SSO; SLA; holding; from $12,000
-- Fan-out queries: CBAMValid Enterprise; CBAMValid SSO; CBAMValid SLA
+- Fan-out queries: CBAMValid Enterprise; CBAMValid SSO; CBAMValid SLA; CBAMValid holding multi-entity
 
 ### /enterprise/sso
 - Primary question: Does CBAMValid support SSO for Enterprise buyers?
@@ -566,9 +566,9 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
   Entities: book a demo; Exporter Annual; Enterprise
   Fan-out: CBAMValid demo; CBAMValid enterprise demo; CBAMValid annual plan
 - /enterprise — Enterprise Exclusive — SSO SLA Holding
-  Covers: SSO IdP federation; SLA draft; holding multi-entity; from $12000
+  Covers: SSO IdP federation; SLA draft; holding multi-entity; from $12000; sample package inspection; trust evidence registry
   Entities: Enterprise Exclusive; SSO; SLA; holding; from $12,000
-  Fan-out: CBAMValid Enterprise; CBAMValid SSO; CBAMValid SLA
+  Fan-out: CBAMValid Enterprise; CBAMValid SSO; CBAMValid SLA; CBAMValid holding multi-entity
 - /enterprise/sso — Enterprise SSO / IdP federation
   Covers: OIDC SAML; Entra Google Okta
   Entities: SSO; OIDC; SAML; Entra; Okta

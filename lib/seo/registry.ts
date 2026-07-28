@@ -290,6 +290,8 @@ const STATIC_ROUTES: readonly SeoRouteContract[] = [
       "/security",
       "/partners",
       "/demo",
+      "/sample-dossier",
+      "/trust",
       "/platform",
     ],
     regulatorySourceIds: [],

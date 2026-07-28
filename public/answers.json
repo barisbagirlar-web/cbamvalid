@@ -684,6 +684,16 @@
           "question": "Partners",
           "href": "/partners",
           "why": "Channel"
+        },
+        {
+          "question": "Sample dossier",
+          "href": "/sample-dossier",
+          "why": "Inspect package"
+        },
+        {
+          "question": "Trust registry",
+          "href": "/trust",
+          "why": "Pinned claims"
         }
       ],
       "entities": [
@@ -696,7 +706,8 @@
       "fanOutQueries": [
         "CBAMValid Enterprise",
         "CBAMValid SSO",
-        "CBAMValid SLA"
+        "CBAMValid SLA",
+        "CBAMValid holding multi-entity"
       ]
     },
     {
@@ -2625,13 +2636,17 @@
         "/enterprise/holding",
         "/partners",
         "/security",
-        "/demo"
+        "/demo",
+        "/sample-dossier",
+        "/trust"
       ],
       "covers": [
         "SSO IdP federation",
         "SLA draft",
         "holding multi-entity",
-        "from $12000"
+        "from $12000",
+        "sample package inspection",
+        "trust evidence registry"
       ],
       "entities": [
         "Enterprise Exclusive",
@@ -2643,7 +2658,8 @@
       "fanOutQueries": [
         "CBAMValid Enterprise",
         "CBAMValid SSO",
-        "CBAMValid SLA"
+        "CBAMValid SLA",
+        "CBAMValid holding multi-entity"
       ]
     },
     {
