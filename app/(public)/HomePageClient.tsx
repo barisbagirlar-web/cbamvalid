@@ -350,7 +350,7 @@ export default function HomePageClient() {
       <div className="faq-list">
         <FaqItem
           question="How do I inspect CBAMValid claims before paying?"
-          answer="Open the Trust Evidence Registry (/trust), Sample Dossier, Published Rulesets, Security & DPA, and Structure Review SAMPLE. Gaps stay visible — CRO/VAT and named customers are not invented."
+          answer="Open the Trust Evidence Registry (/trust), Sample Dossier, Published Rulesets, Security & DPA, and Structure Review SAMPLE. Anonymized sector scenarios live on /case-studies — named logos stay permissioned. Gaps stay tagged, never invented."
         />
         <FaqItem
           question="Is CBAMValid an official European Commission service?"
