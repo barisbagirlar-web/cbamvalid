@@ -1,61 +1,48 @@
 @import "tailwindcss";
 
-/* Institutional Precision — Oatmeal & Ink × CBAM forest / EU seal */
-
 :root {
   color-scheme: light;
 
-  /* STRUCTURAL — 60% of surface */
-  --surface-primary: #fafaf8;
-  --surface-secondary: #f0ede8;
-  --surface-elevated: #ffffff;
+  --color-background: #F0EEE6;
+  --color-surface: #FAF9F5;
+  --color-text: #1A1915;
+  --color-text-muted: rgba(26, 25, 21, 0.64);
+  --color-text-subtle: rgba(26, 25, 21, 0.46);
 
-  /* TEXT — hierarchy */
-  --text-primary: #1a1a1a;
-  --text-secondary: #4a4a45;
-  --text-muted: #8a8a82;
+  --color-accent: #BD5D3A;
+  --color-accent-hover: #A94F31;
+  --color-accent-active: #93442A;
 
-  /* ACCENT — 10% max */
-  --accent-primary: #1b4332;
-  --accent-hover: #2d6a4f;
-  --accent-cta: #d4a017;
-  --accent-pale: #d8f3dc;
-  --accent-seal-light: #e8c547;
+  --color-border: rgba(26, 25, 21, 0.10);
+  --color-border-strong: rgba(26, 25, 21, 0.18);
 
-  /* SEMANTIC — QC states */
-  --status-blocked: #9b2226;
-  --status-blocked-soft: #f5e4e4;
-  --status-warning: #bb6b00;
-  --status-warning-soft: #f8efd8;
-  --status-pass: #2d6a4f;
-  --status-pass-soft: #d8f3dc;
+  --color-focus-ring: rgba(189, 93, 58, 0.32);
+  --color-neutral-soft: rgba(26, 25, 21, 0.04);
+  --color-accent-soft: rgba(189, 93, 58, 0.08);
 
-  /* BORDERS */
-  --border-default: #d8d1c7;
-  --border-strong: #a8a29e;
+  --font-heading:
+    Georgia,
+    "Times New Roman",
+    Times,
+    ui-serif,
+    serif;
 
-  /* DARK SECTIONS */
-  --dark-surface: #1c1917;
-  --dark-text: #e7e5e4;
+  --font-body:
+    Inter,
+    ui-sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Helvetica,
+    Arial,
+    sans-serif;
 
-  /* Legacy aliases used across the app */
-  --color-background: var(--surface-secondary);
-  --color-surface: var(--surface-primary);
-  --color-text: var(--text-primary);
-  --color-text-muted: var(--text-secondary);
-  --color-text-subtle: var(--text-muted);
-  --color-accent: var(--accent-primary);
-  --color-accent-hover: var(--accent-hover);
-  --color-accent-active: #14532d;
-  --color-border: var(--border-default);
-  --color-border-strong: var(--border-strong);
-  --color-focus-ring: rgba(27, 67, 50, 0.32);
-  --color-neutral-soft: rgba(26, 26, 26, 0.04);
-  --color-accent-soft: rgba(27, 67, 50, 0.08);
-
-  --font-heading: var(--font-source-serif), Georgia, "Times New Roman", Times, ui-serif, serif;
-  --font-body: var(--font-source-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-  --font-mono: var(--font-ibm-plex-mono), ui-monospace, SFMono-Regular, Consolas, monospace;
+  --font-mono:
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    Menlo,
+    monospace;
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -63,55 +50,39 @@
   --radius-xl: 24px;
 
   --shadow-card:
-    0 1px 2px rgba(28, 25, 23, 0.04),
-    0 8px 30px rgba(28, 25, 23, 0.04);
+    0 1px 2px rgba(26, 25, 21, 0.04),
+    0 8px 30px rgba(26, 25, 21, 0.04);
 }
 
 @theme {
-  --color-background: #f0ede8;
-  --color-surface: #fafaf8;
-  --color-surface-elevated: #ffffff;
-  --color-foreground: #1a1a1a;
+  --color-background: #F0EEE6;
+  --color-surface: #FAF9F5;
+  --color-foreground: #1A1915;
 
-  --color-text: #1a1a1a;
-  --color-text-muted: #4a4a45;
-  --color-text-subtle: #8a8a82;
+  --color-text: #1A1915;
+  --color-text-muted: rgba(26, 25, 21, 0.64);
+  --color-text-subtle: rgba(26, 25, 21, 0.46);
 
-  --color-accent: #1b4332;
-  --color-accent-hover: #2d6a4f;
-  --color-accent-active: #14532d;
-  --color-accent-soft: rgba(27, 67, 50, 0.08);
-  --color-accent-medium: rgba(27, 67, 50, 0.14);
-  --color-seal: #d4a017;
-  --color-seal-light: #e8c547;
+  --color-accent: #BD5D3A;
+  --color-accent-hover: #A94F31;
+  --color-accent-active: #93442A;
+  --color-accent-soft: rgba(189, 93, 58, 0.08);
+  --color-accent-medium: rgba(189, 93, 58, 0.14);
 
-  --color-border: #d8d1c7;
-  --color-border-strong: #a8a29e;
+  --color-border: rgba(26, 25, 21, 0.10);
+  --color-border-strong: rgba(26, 25, 21, 0.18);
 
-  --color-focus-ring: rgba(27, 67, 50, 0.32);
-  --color-neutral-soft: rgba(26, 26, 26, 0.04);
+  --color-focus-ring: rgba(189, 93, 58, 0.32);
+  --color-neutral-soft: rgba(26, 25, 21, 0.04);
 
-  --color-forest: #1b4332;
-  --color-forest-light: #2d6a4f;
-  --color-forest-pale: #d8f3dc;
+  --color-kil-base: #F0EEE6;
+  --color-kil-surface: #FAF9F5;
+  --color-kil-text: #1A1915;
+  --color-kil-accent: #BD5D3A;
 
-  --color-status-blocked: #9b2226;
-  --color-status-warning: #bb6b00;
-  --color-status-pass: #2d6a4f;
-
-  --color-dark: #1c1917;
-  --color-dark-text: #e7e5e4;
-
-  --color-kil-base: #f0ede8;
-  --color-kil-surface: #fafaf8;
-  --color-kil-text: #1a1a1a;
-  --color-kil-accent: #1b4332;
-  --color-kil-border: #d8d1c7;
-  --color-kil-card: #ffffff;
-
-  --font-serif: var(--font-source-serif), Georgia, serif;
-  --font-sans: var(--font-source-sans), system-ui, sans-serif;
-  --font-mono: var(--font-ibm-plex-mono), monospace;
+  --font-serif: Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 * {
@@ -133,8 +104,8 @@ body {
 }
 
 ::selection {
-  color: var(--surface-elevated);
-  background: var(--accent-primary);
+  color: var(--color-text);
+  background: rgba(189, 93, 58, 0.20);
 }
 
 :focus-visible {
@@ -153,7 +124,7 @@ input,
 select,
 textarea {
   color: var(--color-text);
-  background: var(--surface-elevated);
+  background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
 }

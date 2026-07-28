@@ -42,6 +42,9 @@ export interface SeoRouteContract {
 
   readonly regulatorySourceIds: readonly string[];
 
+  /** Must equal SEO_REGULATORY_CONTENT_VERSION or CI fails stale-content. */
+  readonly regulatoryContentVersion: string;
+
   /** ISO-8601 date of meaningful content change. Omit when unknown — never invent. */
   readonly factualLastModified?: string;
 }

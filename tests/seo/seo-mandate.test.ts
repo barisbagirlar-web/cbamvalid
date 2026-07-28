@@ -5,6 +5,7 @@ import { generateProductOfferSchema } from "@/lib/seo/schema";
 import { PRICE_CLAIM } from "@/lib/seo/claims";
 import { resolveCanonicalPath } from "@/lib/seo/canonical";
 import { SEO_REGULATORY_FACTS } from "@/lib/seo/regulatory-sources";
+import { FULL_OFFICIAL_SCOPE_RESOLUTION_STATUS } from "@/lib/seo/cn-public-registry";
 
 describe("SEO mandate negative tests", () => {
   it("Case A: unknown CN in valid chapter is not indexable and not in sitemap", () => {
@@ -57,9 +58,31 @@ describe("SEO mandate negative tests", () => {
 
   it("rejects transitional quarterly misinformation and keeps 30 Sep 2027 fact", () => {
     expect(SEO_REGULATORY_FACTS.FIRST_DECLARATION_DEADLINE.statement).toContain("30 September 2027");
+    expect(SEO_REGULATORY_FACTS.FIRST_DECLARATION_DEADLINE.provenanceStatus).toBe(
+      "VERIFIED_PRIMARY_SOURCE",
+    );
     for (const route of SEO_ROUTE_REGISTRY) {
       expect(route.description).not.toMatch(/April 30, 2026/);
       expect(route.title).not.toMatch(/quarterly report template/i);
+      expect(route.regulatoryContentVersion).toBeTruthy();
+    }
+  });
+
+  it("Case A detail: covered chapter member without allowlist is not indexable", () => {
+    const result = evaluateCnIndexability("72019999");
+    expect(result.indexable).toBe(false);
+    expect(result.reason).toBe("COVERED_BUT_NOT_ALLOWLISTED");
+    expect(result.fullScopeResolution).toBe("NOT_IMPLEMENTED");
+    expect(result.stage).toBe("STAGE_1_VERIFIED_ALLOWLIST");
+  });
+
+  it("forbids affirmative complete-coverage CN claims while full resolution is NOT_IMPLEMENTED", () => {
+    expect(FULL_OFFICIAL_SCOPE_RESOLUTION_STATUS).toBe("NOT_IMPLEMENTED");
+    const banned =
+      /(?<!not\s(?:a\s)?)complete CBAM CN|(?<!not\s)all CBAM CN codes|full Annex I coverage|(?<!not\s(?:a\s)?)complete CN directory|entire Annex I/i;
+    for (const route of SEO_ROUTE_REGISTRY) {
+      expect(route.title).not.toMatch(banned);
+      expect(route.description).not.toMatch(banned);
     }
   });
 });

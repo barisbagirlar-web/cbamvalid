@@ -41,32 +41,12 @@ export const PRODUCT_POSITIONING_CLAIM: PublicClaim<string> = {
   evidenceId: "AGENTS.md canonical product definition",
 };
 
-/** Academic mathematical reviewer already published on About / Home — not an accredited CBAM verifier. */
-export const EXPERT_REVIEWER_CLAIM: PublicClaim<{
-  name: string;
-  jobTitle: string;
-  affiliation: string;
-  roleBoundary: string;
-}> = {
-  value: {
-    name: "Prof. Dr. Neela Nataraj",
-    jobTitle: "Professor, Department of Mathematics",
-    affiliation: "Indian Institute of Technology Bombay (IIT Bombay)",
-    roleBoundary:
-      "Academic mathematical review of calculation engines and allocation logic — not an accredited CBAM verification opinion.",
-  },
-  evidenceStatus: "verified",
-  evidenceId: "about/home academic oversight card",
-};
-
 /** Explicitly unverified — must never appear in structured data or LLM docs. */
 export const FORBIDDEN_SOCIAL_PROOF = {
   aggregateRating: { evidenceStatus: "unverified" as const },
   reviewCount: { evidenceStatus: "unverified" as const },
   customerTestimonials: { evidenceStatus: "unverified" as const },
   manufacturerCount: { evidenceStatus: "unverified" as const },
-  /** Synthetic Review nodes are forbidden; Offer price/stock nesting is allowed. */
-  fabricatedReviews: { evidenceStatus: "unverified" as const },
 };
 
 export function assertVerifiedClaim<T>(claim: PublicClaim<T>, label: string): T {

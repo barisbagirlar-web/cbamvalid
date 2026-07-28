@@ -63,7 +63,7 @@ const nextConfig = {
       },
       // Protected/Auth routes should not be cached
       {
-        source: '/(login|register|cbam|admin|account|dashboard|cases)(.*)',
+        source: '/(login|register|cbam|admin|account|dashboard)(.*)',
         headers: [
           {
             key: 'Cache-Control',
@@ -79,44 +79,7 @@ const nextConfig = {
             value: 'private, no-store',
           },
         ],
-      },
-      // SEO / AEO discovery feeds — Hosting-safe cache for crawler surfaces
-      {
-        source: '/llms.txt',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' }],
-      },
-      {
-        source: '/llm.txt',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' }],
-      },
-      {
-        source: '/llms-full.txt',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' }],
-      },
-      {
-        source: '/ai-policy.txt',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' }],
-      },
-      {
-        source: '/.well-known/ai.txt',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' },
-        ],
-      },
-      {
-        source: '/answers.json',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' },
-          { key: 'Content-Type', value: 'application/ld+json; charset=utf-8' },
-        ],
-      },
-      {
-        source: '/site.webmanifest',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
-          { key: 'Content-Type', value: 'application/manifest+json; charset=utf-8' },
-        ],
-      },
+      }
     ];
   },
   async redirects() {
@@ -128,9 +91,9 @@ const nextConfig = {
         permanent: true,
       },
       {
-        // R7 short buyer share alias → canonical token verify surface
-        source: '/d/:token',
-        destination: '/verify/:token',
+        // Canonical consolidation: thin /cbam-methodology → authority /methodology
+        source: '/cbam-methodology',
+        destination: '/methodology',
         permanent: true,
       },
       {

@@ -11,6 +11,12 @@ interface PageProps {
   params: Promise<{ code: string }>;
 }
 
+/**
+ * Only Stage-1 verified allowlist codes are routable entities.
+ * Unknown / unsupported CN detail URLs must hard-404 (not soft-404 + noindex).
+ */
+export const dynamicParams = false;
+
 export async function generateStaticParams() {
   return listIndexablePublicCnEntries().map((entry) => ({ code: entry.cnCode }));
 }
@@ -19,12 +25,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { code } = await params;
   const result = evaluateCnIndexability(code);
   if (!result.indexable || !result.entry) {
-    return {
-      title: "CN Code Not Available | CBAMValid",
-      robots: { index: false, follow: false },
-    };
+    // Should not normally run when dynamicParams=false; keep fail-closed.
+    notFound();
   }
-  return generateSeoMetadata(`/cn-code/${result.entry.cnCode}`);
+  const entry = result.entry;
+  return generateSeoMetadata(`/cn-code/${entry.cnCode}`);
 }
 
 export default async function CNCodeLandingPage({ params }: PageProps) {

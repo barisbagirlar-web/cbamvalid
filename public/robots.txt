@@ -1,4 +1,7 @@
-User-Agent: *
+# Keep aligned with app/robots.ts. Static file is required because Firebase
+# Frameworks Hosting can miss the Next MetadataRoute /robots.txt rewrite.
+
+User-agent: *
 Allow: /
 Disallow: /dashboard/
 Disallow: /admin/
@@ -11,7 +14,7 @@ Disallow: /cbam/
 Disallow: /login
 Disallow: /register
 
-User-Agent: OAI-SearchBot
+User-agent: OAI-SearchBot
 Allow: /
 Disallow: /dashboard/
 Disallow: /admin/
@@ -24,7 +27,7 @@ Disallow: /cbam/
 Disallow: /login
 Disallow: /register
 
-User-Agent: Googlebot
+User-agent: Googlebot
 Allow: /
 Disallow: /dashboard/
 Disallow: /admin/
@@ -37,13 +40,13 @@ Disallow: /cbam/
 Disallow: /login
 Disallow: /register
 
-User-Agent: GPTBot
+User-agent: GPTBot
 Allow: /
 
-User-Agent: ClaudeBot
+User-agent: ClaudeBot
 Allow: /
 
-User-Agent: Google-Extended
+User-agent: Google-Extended
 Allow: /
 
 Sitemap: https://cbamvalid.com/sitemap.xml

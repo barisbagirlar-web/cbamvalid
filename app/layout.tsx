@@ -1,31 +1,15 @@
-import type { Metadata, Viewport } from "next";
-import { Source_Sans_3, Source_Serif_4, IBM_Plex_Mono } from "next/font/google";
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/context/AuthProvider";
+import { AnalyticsBeacon } from "@/components/seo/AnalyticsProvider";
 import { siteConfig } from "@/lib/site-config";
 
-const sourceSans = Source_Sans_3({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-source-sans",
+  variable: "--font-inter",
   display: "swap",
 });
-
-const sourceSerif = Source_Serif_4({
-  subsets: ["latin"],
-  variable: "--font-source-serif",
-  display: "swap",
-});
-
-const ibmPlexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-ibm-plex-mono",
-  display: "swap",
-});
-
-export const viewport: Viewport = {
-  themeColor: "#1B4332",
-};
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.canonicalOrigin),
@@ -35,20 +19,7 @@ export const metadata: Metadata = {
   },
   description: siteConfig.defaultDescription,
   icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-    shortcut: ["/favicon.ico"],
-  },
-  manifest: "/site.webmanifest",
-  other: {
-    "msapplication-TileColor": "#1B4332",
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
   },
   openGraph: {
     images: ["/og.jpg"],
@@ -64,13 +35,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      translate="no"
-      className={`notranslate ${sourceSans.variable} ${sourceSerif.variable} ${ibmPlexMono.variable}`}
-    >
-      <body className={`${sourceSans.className} bg-kil-base text-kil-text antialiased min-h-screen`}>
-        <AuthProvider>{children}</AuthProvider>
+    <html lang="en" className={inter.variable}>
+      <body className={`${inter.className} bg-kil-base text-kil-text antialiased min-h-screen`}>
+        {/* AuthProvider intentionally NOT on public marketing routes — Firebase client
+            was the primary LCP/main-thread tax on anonymous homepage visits. Mounted
+            only under (auth) and (workspace) layouts.
+            Serif/mono use system stacks (see globals.css) to avoid competing webfont LCP delay. */}
+        <Suspense fallback={null}>
+          <AnalyticsBeacon />
+        </Suspense>
+        {children}
       </body>
     </html>
   );

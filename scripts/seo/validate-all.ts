@@ -1,12 +1,28 @@
 import { SEO_ROUTE_REGISTRY, listSitemapRoutes } from "../../lib/seo/registry";
 import { evaluateCnIndexability } from "../../lib/seo/indexability";
-import { listPublicCnCodes } from "../../lib/seo/cn-public-registry";
+import {
+  CN_INDEXABILITY_STAGE,
+  FULL_OFFICIAL_SCOPE_RESOLUTION_STATUS,
+  listPublicCnCodes,
+} from "../../lib/seo/cn-public-registry";
+import { isCbamCovered } from "../../lib/seo/cbam-scope-rules";
 import { buildCanonicalUrl, resolveCanonicalPath } from "../../lib/seo/canonical";
 import { FORBIDDEN_SOCIAL_PROOF, PRICE_CLAIM, collectVerifiedCommercialScalars } from "../../lib/seo/claims";
 import { generateProductOfferSchema, generateWebApplicationSchema } from "../../lib/seo/schema";
-import { SEO_REGULATORY_FACTS } from "../../lib/seo/regulatory-sources";
+import {
+  SEO_REGULATORY_FACTS,
+  SEO_REGULATORY_CONTENT_VERSION,
+  assertNoAssumptions,
+  collectStaleRoutes,
+  REGULATORY_SOURCES,
+} from "../../lib/seo/regulatory-sources";
+import {
+  buildSeoRouteInventory,
+  assertNoindexInventoryInvariant,
+  PUBLIC_NOINDEX_DYNAMIC_ROUTE_PATTERNS,
+} from "../../lib/seo/route-inventory";
 import { buildLlmDocModel, renderLlmsFullTxt, renderLlmsTxt } from "../../lib/seo/llm-doc-model";
-import { INDEXNOW_KEY, INDEXNOW_KEY_PATH } from "../../lib/seo/indexnow";
+import { scanCompleteCoverageClaims } from "./scan-complete-claims";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -124,28 +140,50 @@ function validateSitemapDerivation(): GateResult[] {
   }
 
   if (existsSync(resolve("public/sitemap.xml"))) {
-    const indexXml = readFileSync(resolve("public/sitemap.xml"), "utf8");
-    if (!indexXml.includes("<sitemapindex") || !indexXml.includes("/sitemap/0.xml")) {
-      results.push(fail("G04", "public/sitemap.xml must be a Hosting-safe sitemapindex to /sitemap/{id}.xml"));
-    } else {
-      results.push(pass("G04b", "public/sitemap.xml is Hosting-safe multi-sitemap index"));
-    }
-  } else {
-    results.push(fail("G04", "public/sitemap.xml missing — run seo:generate-llm-docs"));
+    results.push(fail("G04", "public/sitemap.xml must not compete with app/sitemap.ts"));
   }
-  if (existsSync(resolve("public/robots.txt"))) {
-    const publicRobots = readFileSync(resolve("public/robots.txt"), "utf8");
-    if (!/OAI-SearchBot/.test(publicRobots)) {
-      results.push(fail("G16", "public/robots.txt missing OAI-SearchBot allow rule"));
-    }
-    if (/Disallow:\s*\/_next\/static/i.test(publicRobots)) {
-      results.push(fail("G16", "public/robots.txt blocks /_next/static"));
-    }
-    if (!/Sitemap:\s*https:\/\/cbamvalid\.com\/sitemap\.xml/.test(publicRobots)) {
-      results.push(fail("G16", "public/robots.txt missing canonical sitemap line"));
-    }
+  // Firebase Frameworks Hosting can miss Next MetadataRoute /robots.txt (live 404).
+  // Require a static public/robots.txt fallback that stays aligned with app/robots.ts.
+  const staticRobotsPath = resolve("public/robots.txt");
+  if (!existsSync(staticRobotsPath)) {
+    results.push(
+      fail("G16", "public/robots.txt required as Firebase Hosting crawler fallback (app/robots.ts alone can 404)"),
+    );
   } else {
-    results.push(fail("G16", "public/robots.txt missing — required for Firebase Hosting robots reliability"));
+    const staticRobots = readFileSync(staticRobotsPath, "utf8");
+    const robotsSrc = readFileSync(resolve("app/robots.ts"), "utf8");
+    const requiredStaticMarkers = [
+      "User-agent: *",
+      "User-agent: OAI-SearchBot",
+      "User-agent: Googlebot",
+      "User-agent: GPTBot",
+      "User-agent: ClaudeBot",
+      "User-agent: Google-Extended",
+      "Disallow: /dashboard/",
+      "Disallow: /admin/",
+      "Disallow: /api/",
+      "Disallow: /cases/",
+      "Disallow: /reports/",
+      "Disallow: /account/",
+      "Disallow: /credits/",
+      "Disallow: /cbam/",
+      "Disallow: /login",
+      "Disallow: /register",
+      "Sitemap: https://cbamvalid.com/sitemap.xml",
+    ];
+    const missingStatic = requiredStaticMarkers.filter((m) => !staticRobots.includes(m));
+    const missingAppAgents = ["OAI-SearchBot", "Googlebot", "GPTBot", "ClaudeBot", "Google-Extended"].filter(
+      (agent) => !robotsSrc.includes(agent),
+    );
+    if (missingStatic.length > 0) {
+      results.push(fail("G16", `public/robots.txt missing required markers: ${missingStatic.join(", ")}`));
+    } else if (missingAppAgents.length > 0) {
+      results.push(fail("G16", `app/robots.ts missing agents mirrored in static fallback: ${missingAppAgents.join(", ")}`));
+    } else if (/Disallow:\s*\/_next\/static/i.test(staticRobots)) {
+      results.push(fail("G16", "public/robots.txt blocks /_next/static"));
+    } else {
+      results.push(pass("G16", "STATIC_ROBOTS_FIREBASE_FALLBACK parity with app/robots.ts"));
+    }
   }
 
   return results;
@@ -175,11 +213,41 @@ function validateCanonicalHelpers(): GateResult[] {
 function validateCn(): GateResult[] {
   const results: GateResult[] = [];
 
+  if (CN_INDEXABILITY_STAGE !== "STAGE_1_VERIFIED_ALLOWLIST") {
+    results.push(fail("G09", `Unexpected CN stage label: ${CN_INDEXABILITY_STAGE}`));
+  }
+  if (FULL_OFFICIAL_SCOPE_RESOLUTION_STATUS !== "NOT_IMPLEMENTED") {
+    results.push(
+      fail(
+        "G09",
+        `FULL_OFFICIAL_SCOPE_RESOLUTION must remain NOT_IMPLEMENTED until 2026 CN universe ingest; got ${FULL_OFFICIAL_SCOPE_RESOLUTION_STATUS}`,
+      ),
+    );
+  } else {
+    results.push(
+      pass(
+        "G09a",
+        "Honest status: STAGE_1_VERIFIED_ALLOWLIST=PASS; FULL_OFFICIAL_SCOPE_RESOLUTION=NOT_IMPLEMENTED",
+      ),
+    );
+  }
+
+  // Hierarchical coverage: known steel prefix should cover; exclusion should not
+  const covered = isCbamCovered("72011011");
+  if (!covered.covered) results.push(fail("G08a", "72011011 must be covered by Annex prefix rules"));
+  const excluded = isCbamCovered("31056000");
+  if (excluded.covered) results.push(fail("G08a", "31056000 must be excluded by Annex rules"));
+  if (!results.some((r) => r.id === "G08a" && !r.ok)) {
+    results.push(pass("G08a", "Annex hierarchical prefix/exclusion resolver works"));
+  }
+
   const unknown = evaluateCnIndexability("72019999");
   if (unknown.indexable) {
     results.push(fail("G08", "Unknown chapter-valid CN 72019999 must not be indexable"));
+  } else if (unknown.reason === "COVERED_BUT_NOT_ALLOWLISTED") {
+    results.push(pass("G08", `Case A: unknown CN not indexable (${unknown.reason})`));
   } else {
-    results.push(pass("G08", "Case A: unknown CN not indexable"));
+    results.push(fail("G08", `Expected COVERED_BUT_NOT_ALLOWLISTED, got ${unknown.reason}`));
   }
 
   for (const code of listPublicCnCodes()) {
@@ -189,7 +257,12 @@ function validateCn(): GateResult[] {
     }
   }
   if (!results.some((r) => r.id === "G09" && !r.ok)) {
-    results.push(pass("G09", `Case B: ${listPublicCnCodes().length} stage-1 CN pages pass quality gate`));
+    results.push(
+      pass(
+        "G09",
+        `Case B: ${listPublicCnCodes().length} STAGE_1_VERIFIED_ALLOWLIST pages pass quality gate`,
+      ),
+    );
   }
   return results;
 }
@@ -199,7 +272,7 @@ function validateClaimsAndSchema(): GateResult[] {
   if (FORBIDDEN_SOCIAL_PROOF.aggregateRating.evidenceStatus !== "unverified") {
     results.push(fail("G13", "AggregateRating must remain unverified"));
   }
-  if (PRICE_CLAIM.evidenceStatus !== "verified" || PRICE_CLAIM.value.currency !== "USD" || PRICE_CLAIM.value.amount !== "449") {
+  if (PRICE_CLAIM.evidenceStatus !== "verified" || PRICE_CLAIM.value.currency !== "USD" || PRICE_CLAIM.value.amount !== "149") {
     results.push(fail("G14", "Price claim SSOT mismatch"));
   }
 
@@ -237,7 +310,12 @@ function validateClaimsAndSchema(): GateResult[] {
   } else {
     results.push(pass("G11", "Structured data structural checks passed for Product/Offer"));
   }
-  results.push(pass("G12", "Visible parity enforced via PRICE_CLAIM SSOT (runtime page crawl deferred)"));
+  results.push(
+    pass(
+      "G12",
+      "Visible/schema price SSOT parity at code level; rendered HTTP parity enforced by seo:crawl-rendered",
+    ),
+  );
 
   return results;
 }
@@ -280,7 +358,7 @@ function validateRobotsAndLanguage(): GateResult[] {
   }
   if (!/OAI-SearchBot/.test(robotsSrc)) {
     results.push(fail("G16", "OAI-SearchBot allow rule missing"));
-  } else if (!results.some((r) => r.id === "G16" && !r.ok)) {
+  } else if (!results.some((r) => r.id === "G16")) {
     results.push(pass("G16", "Robots crawlability rules OK; OAI-SearchBot present"));
   }
 
@@ -295,9 +373,100 @@ function validateRobotsAndLanguage(): GateResult[] {
     results.push(fail("G24", "Fake hreflang cluster detected in metadata factory"));
   }
 
-  results.push(pass("G25", "Guide/CN pages are server components with HTML text (spot-checked by architecture)"));
-  results.push(pass("G05", "HTTP validity of sitemap URLs requires deployed environment — local structural gate only"));
-  results.push(pass("G21", "Redirect/canonical loop checks require live fetch — deferred to post-deploy"));
+  // G25 is proven by rendered crawl (homepage HTML), not by "use client" absence
+  results.push(
+    pass("G25", "Homepage SSR content proof deferred to seo:crawl-rendered (not decided by use client)"),
+  );
+  results.push(
+    pass("G05", "HTTP validity of sitemap URLs enforced by seo:crawl-rendered against production build"),
+  );
+  results.push(pass("G21", "Redirect/canonical loop checks partially covered by crawl UTM identity tests"));
+  return results;
+}
+
+function validateInventory(): GateResult[] {
+  const results: GateResult[] = [];
+  const inventory = buildSeoRouteInventory();
+  try {
+    assertNoindexInventoryInvariant(inventory);
+    results.push(
+      pass(
+        "G26",
+        [
+          `INDEXABLE_STATIC_URL_COUNT=${inventory.INDEXABLE_STATIC_URL_COUNT}`,
+          `INDEXABLE_DYNAMIC_URL_COUNT=${inventory.INDEXABLE_DYNAMIC_URL_COUNT}`,
+          `NOINDEX_STATIC_ROUTE_COUNT=${inventory.NOINDEX_STATIC_ROUTE_COUNT}`,
+          `NOINDEX_DYNAMIC_ROUTE_PATTERN_COUNT=${inventory.NOINDEX_DYNAMIC_ROUTE_PATTERN_COUNT}`,
+          `PRIVATE_ROUTE_PATTERN_COUNT=${inventory.PRIVATE_ROUTE_PATTERN_COUNT}`,
+          `SITEMAP_URL_COUNT=${inventory.SITEMAP_URL_COUNT}`,
+        ].join(" "),
+      ),
+    );
+  } catch (err) {
+    results.push(fail("G26", err instanceof Error ? err.message : String(err)));
+  }
+
+  // G26 inventory + proxy boundary: public SEO hubs must not match /cbam workspace prefix
+  const proxySrc = readFileSync(resolve("proxy.ts"), "utf8");
+  if (/pathname\.startsWith\(prefix\)/.test(proxySrc) && !/pathname === prefix \|\| pathname\.startsWith\(`\$\{prefix\}\/`\)/.test(proxySrc)) {
+    results.push(fail("G26", "proxy.ts still uses unbounded startsWith(prefix) which captures /cbam-* SEO hubs"));
+  }
+  const verifyLayout = readFileSync(
+    resolve("app/(public)/verify/[publicToken]/layout.tsx"),
+    "utf8",
+  );
+  if (!/index:\s*false/.test(verifyLayout)) {
+    results.push(fail("G26", "verify/[publicToken] layout missing robots index:false"));
+  }
+  if (PUBLIC_NOINDEX_DYNAMIC_ROUTE_PATTERNS.length < 1) {
+    results.push(fail("G26", "PUBLIC_NOINDEX_DYNAMIC_ROUTE_PATTERNS empty"));
+  }
+
+  // Invariant: public noindex dynamic patterns ⇒ NOINDEX_DYNAMIC count cannot be zero
+  if (inventory.NOINDEX_DYNAMIC_ROUTE_PATTERN_COUNT === 0) {
+    results.push(fail("G26", "NOINDEX_DYNAMIC_ROUTE_PATTERN_COUNT cannot be zero while verify layout exists"));
+  }
+
+  const sitemap = listSitemapRoutes();
+  if (sitemap.length !== inventory.SITEMAP_URL_COUNT) {
+    results.push(fail("G26", "Sitemap count drift vs inventory"));
+  }
+
+  return results;
+}
+
+function validateRegulatoryProvenance(): GateResult[] {
+  const results: GateResult[] = [];
+  try {
+    assertNoAssumptions();
+    results.push(pass("G27", "All regulatory facts/sources are VERIFIED_PRIMARY_SOURCE"));
+  } catch (err) {
+    results.push(fail("G27", err instanceof Error ? err.message : String(err)));
+  }
+
+  const pins = new Map(
+    SEO_ROUTE_REGISTRY.map((route) => [route.path, route.regulatoryContentVersion]),
+  );
+  const stale = collectStaleRoutes(pins);
+  if (stale.length > 0) {
+    results.push(fail("G28", `STALE_REGULATORY_CONTENT: ${stale.join(", ")}`));
+  } else {
+    results.push(
+      pass("G28", `regulatoryContentVersion pin matches ${SEO_REGULATORY_CONTENT_VERSION}`),
+    );
+  }
+
+  const declaration = SEO_REGULATORY_FACTS.FIRST_DECLARATION_DEADLINE;
+  if (declaration.provenanceStatus !== "VERIFIED_PRIMARY_SOURCE") {
+    results.push(fail("G27", "FIRST_DECLARATION_DEADLINE must be VERIFIED_PRIMARY_SOURCE"));
+  }
+  if (!declaration.primarySourceIds.includes("EC_CBAM_FIRST_DECLARATION_2026_06_23")) {
+    results.push(fail("G27", "FIRST_DECLARATION_DEADLINE missing EC primary source id"));
+  }
+  if (!REGULATORY_SOURCES.EC_CBAM_FIRST_DECLARATION_2026_06_23.contentDigest) {
+    results.push(fail("G27", "EC source missing contentDigest"));
+  }
+
   return results;
 }
 
@@ -346,80 +515,110 @@ function validateRegulatoryAndLlm(): GateResult[] {
     results.push(pass("G17", "Case I: LLM docs match SSOT generator output"));
   }
 
-  return results;
-}
-
-function validateAeoDiscoverySurfaces(): GateResult[] {
-  const results: GateResult[] = [];
-
-  for (const file of ["public/answers.json", "public/answers.rss", "public/answers.feed.json"] as const) {
-    if (!existsSync(resolve(file))) {
-      results.push(fail("G26", `${file} missing — run seo:generate-llm-docs`));
-      continue;
-    }
-    if (file === "public/answers.json") {
-      try {
-        const parsed = JSON.parse(readFileSync(resolve(file), "utf8")) as { authorityChains?: unknown[] };
-        if (!Array.isArray(parsed.authorityChains) || parsed.authorityChains.length < 1) {
-          results.push(fail("G26", "answers.json missing authorityChains"));
-        }
-      } catch {
-        results.push(fail("G26", "answers.json is not valid JSON"));
-      }
-    } else if (file === "public/answers.feed.json") {
-      try {
-        const parsed = JSON.parse(readFileSync(resolve(file), "utf8")) as { items?: unknown[]; version?: string };
-        if (!parsed.version?.includes("jsonfeed") || !Array.isArray(parsed.items) || parsed.items.length < 1) {
-          results.push(fail("G26", "answers.feed.json missing JSON Feed items"));
-        }
-      } catch {
-        results.push(fail("G26", "answers.feed.json is not valid JSON"));
-      }
-    } else {
-      const rss = readFileSync(resolve(file), "utf8");
-      if (!rss.includes("<rss") || !rss.includes("<item>")) {
-        results.push(fail("G26", "answers.rss missing channel items"));
-      }
-    }
-  }
-
-  for (const page of ["app/(public)/answers/page.tsx", "app/(public)/glossary/page.tsx", "lib/seo/aeo/glossary.ts"] as const) {
-    if (!existsSync(resolve(page))) {
-      results.push(fail("G26", `${page} missing — enterprise AEO HTML hubs required`));
-    }
-  }
-
-  const keyFile = resolve(`public${INDEXNOW_KEY_PATH}`);
-  if (!existsSync(keyFile)) {
-    results.push(fail("G26", `IndexNow key file missing at public${INDEXNOW_KEY_PATH}`));
+  const claims = scanCompleteCoverageClaims();
+  if (claims.hits.length > 0) {
+    results.push(
+      fail(
+        "G29",
+        `COMPLETE_CN_COVERAGE_CLAIMS=${claims.hits.length} e.g. ${claims.hits[0]?.file}:${claims.hits[0]?.line}`,
+      ),
+    );
   } else {
-    const body = readFileSync(keyFile, "utf8").trim();
-    if (body !== INDEXNOW_KEY) {
-      results.push(fail("G26", "IndexNow key file body does not match INDEXNOW_KEY"));
+    results.push(
+      pass(
+        "G29",
+        `COMPLETE_CN_COVERAGE_CLAIMS=0 while FULL_OFFICIAL_SCOPE_RESOLUTION=${claims.status}`,
+      ),
+    );
+  }
+
+  if (!existsSync(resolve("docs/seo/hub-serp-editorial-review.md"))) {
+    results.push(fail("G30", "Missing docs/seo/hub-serp-editorial-review.md"));
+  } else {
+    const review = readFileSync(resolve("docs/seo/hub-serp-editorial-review.md"), "utf8");
+    if (
+      !/SERP_INTENT_REVIEW=PASS/.test(review) ||
+      !/REGULATORY_EDITORIAL_REVIEW=PASS/.test(review) ||
+      !/SEARCH_VOLUME_DATA=NOT_FABRICATED/.test(review) ||
+      !/METHODOLOGY_CONSOLIDATION=PASS/.test(review)
+    ) {
+      results.push(fail("G30", "Hub SERP/editorial review missing required sign-off markers"));
+    } else {
+      results.push(pass("G30", "SERP + regulatory editorial review artifact present with sign-off"));
     }
   }
 
-  const glossarySrc = readFileSync(resolve("lib/seo/aeo/glossary.ts"), "utf8");
-  if ((glossarySrc.match(/slug:/g) ?? []).length < 12) {
-    results.push(fail("G26", "Glossary SSOT too thin for enterprise entity coverage"));
+  const trackSrc = readFileSync(resolve("app/api/seo/track/route.ts"), "utf8");
+  const idemSrc = readFileSync(resolve("lib/seo/purchase-analytics-idempotency.ts"), "utf8");
+  if (/purchaseDedupe|new Map\s*</.test(trackSrc)) {
+    results.push(fail("G31", "Purchase analytics still uses process-local Map dedupe"));
+  } else if (
+    !/createFirestorePurchaseAnalyticsStore/.test(trackSrc) ||
+    !/analytics_purchase:/.test(idemSrc)
+  ) {
+    results.push(fail("G31", "Persistent analytics_purchase:${transactionId} idempotency missing"));
+  } else {
+    results.push(
+      pass("G31", "PURCHASE_DEDUP_PERSISTENT via Firestore analytics_purchase:${transactionId}"),
+    );
   }
 
-  if (!/listSitemapRoutes/.test(readFileSync(resolve("app/sitemap.ts"), "utf8"))) {
-    results.push(fail("G26", "app/sitemap.ts must emit registry-backed URLs via listSitemapRoutes"));
+  const registrySrc = readFileSync(resolve("lib/seo/registry.ts"), "utf8");
+  const nextCfg = readFileSync(resolve("next.config.js"), "utf8");
+  const cnHub = readFileSync(resolve("lib/seo/hub-content.ts"), "utf8");
+  if (/path:\s*"\/cbam-methodology"/.test(registrySrc) && /sitemapEligible:\s*true/.test(registrySrc)) {
+    // Narrow: if route still exists as indexable entry — fail. Removed route is OK.
+    const hasIndexableMethodologyHub =
+      /path:\s*"\/cbam-methodology"[\s\S]{0,400}?indexability:\s*"index"/.test(registrySrc);
+    if (hasIndexableMethodologyHub) {
+      results.push(fail("G32", "/cbam-methodology still indexable — must consolidate to /methodology"));
+    }
   }
-  if (!/generateSitemaps/.test(readFileSync(resolve("app/sitemap.ts"), "utf8"))) {
-    results.push(fail("G26", "app/sitemap.ts must use generateSitemaps multi-segment index"));
-  }
-  if (!existsSync(resolve("public/favicon.svg")) || !existsSync(resolve("public/icon-512.png"))) {
-    results.push(fail("G26", "Brand favicon assets missing — run seo:generate-favicons"));
-  }
-  if (!existsSync(resolve("public/site.webmanifest"))) {
-    results.push(fail("G26", "site.webmanifest missing"));
+  if (!/source:\s*'\/cbam-methodology'/.test(nextCfg) || !/destination:\s*'\/methodology'/.test(nextCfg)) {
+    results.push(fail("G32", "Missing permanent redirect /cbam-methodology → /methodology"));
+  } else if (
+    !/id:\s*"decision-tree"/.test(cnHub) ||
+    !/CN_CODE_SCOPE_SECTIONS/.test(cnHub) ||
+    !/EXPORTER_EVIDENCE_SECTIONS/.test(cnHub)
+  ) {
+    results.push(fail("G32", "Thin hub depth content missing for CN scope / evidence requirements"));
+  } else {
+    results.push(
+      pass("G32", "METHODOLOGY_CONSOLIDATION + thin-hub depth (CN scope / evidence) present"),
+    );
   }
 
-  if (!results.some((r) => r.id === "G26" && !r.ok)) {
-    results.push(pass("G26", "Enterprise AEO: feeds + IndexNow + glossary/answers hubs + sitemap index + favicons"));
+  if (!existsSync(resolve("docs/seo/thin-hub-decisions.md"))) {
+    results.push(fail("G33", "Missing docs/seo/thin-hub-decisions.md"));
+  } else {
+    const board = readFileSync(resolve("docs/seo/thin-hub-decisions.md"), "utf8");
+    const required = [
+      "/cbam-default-values",
+      "/cbam-non-eu-producer-guide",
+      "/cbam-verification-preparation",
+      "/cbam-actual-vs-default-values",
+      "/cbam-certificate-price",
+    ];
+    const missing = required.filter((path) => !board.includes(path));
+    if (
+      missing.length > 0 ||
+      !/THIN_HUB_DECISIONS=PASS/.test(board) ||
+      !/NO_UNREVIEWED_INDEXABLE_HUBS=PASS/.test(board)
+    ) {
+      results.push(fail("G33", `Thin hub decision board incomplete (${missing.join(",") || "markers"})`));
+    } else if (
+      !/DEFAULT_VALUES_SECTIONS/.test(readFileSync(resolve("lib/seo/hub-content.ts"), "utf8")) ||
+      !/NON_EU_PRODUCER_SECTIONS/.test(readFileSync(resolve("lib/seo/hub-content.ts"), "utf8")) ||
+      !/VERIFICATION_PREPARATION_SECTIONS/.test(readFileSync(resolve("lib/seo/hub-content.ts"), "utf8")) ||
+      !/ACTUAL_VS_DEFAULT_SECTIONS/.test(readFileSync(resolve("lib/seo/hub-content.ts"), "utf8")) ||
+      !/CERTIFICATE_PRICE_SECTIONS/.test(readFileSync(resolve("lib/seo/hub-content.ts"), "utf8"))
+    ) {
+      results.push(fail("G33", "ENRICH section stacks missing in hub-content.ts"));
+    } else {
+      results.push(pass("G33", "THIN_HUB_DECISIONS=PASS; NO_UNREVIEWED_INDEXABLE_HUBS=PASS"));
+    }
   }
+
   return results;
 }
 
@@ -432,8 +631,9 @@ export function runAllSeoGates(): GateResult[] {
     ...validateClaimsAndSchema(),
     ...validateLinks(),
     ...validateRobotsAndLanguage(),
+    ...validateInventory(),
+    ...validateRegulatoryProvenance(),
     ...validateRegulatoryAndLlm(),
-    ...validateAeoDiscoverySurfaces(),
   ];
 }
 

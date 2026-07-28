@@ -1,5 +1,10 @@
-import { resolveCNCodeScope } from "@/lib/cbam/regulatory/cn-scope-dataset";
+import { isCbamCovered } from "./cbam-scope-rules";
+import { FULL_OFFICIAL_SCOPE_RESOLUTION } from "./cbam-scope-rules";
 import type { CbamCnPublicEntry, CbamSector } from "./types";
+
+/** Honest stage label — do not claim full official scope resolution. */
+export const CN_INDEXABILITY_STAGE = "STAGE_1_VERIFIED_ALLOWLIST" as const;
+export const FULL_OFFICIAL_SCOPE_RESOLUTION_STATUS = FULL_OFFICIAL_SCOPE_RESOLUTION;
 
 const STAGE1_LASTMOD = "2026-07-26";
 
@@ -104,10 +109,10 @@ const SPECIFIC_DESCRIPTIONS: Record<string, string> = {
 };
 
 /**
- * Stage-1 public CN pages only. Quantity is not a quota — membership is explicit.
- * Prefix-only chapter acceptance is intentionally rejected by indexability.ts.
+ * STAGE_1_VERIFIED_ALLOWLIST only.
+ * Quantity is not a quota. FULL_OFFICIAL_SCOPE_RESOLUTION = NOT_IMPLEMENTED.
  */
-const STAGE1_CODES = [
+const STAGE1_VERIFIED_ALLOWLIST = [
   "72011011",
   "72085120",
   "76011000",
@@ -120,18 +125,21 @@ const STAGE1_CODES = [
 ] as const;
 
 function buildEntry(cnCode: string): CbamCnPublicEntry {
-  const scope = resolveCNCodeScope(cnCode);
-  if (!scope.inScope || !scope.record) {
-    throw new Error(`CN public registry: ${cnCode} is not in official CBAM scope dataset`);
+  const coverage = isCbamCovered(cnCode);
+  if (!coverage.covered || !coverage.matchedRule) {
+    throw new Error(`CN allowlist entry ${cnCode} is not covered by Annex scope rules`);
   }
-  const sector = scope.record.sector;
-  const description = SPECIFIC_DESCRIPTIONS[cnCode] ?? scope.record.description;
+  const sector = coverage.matchedRule.sector;
+  const description = SPECIFIC_DESCRIPTIONS[cnCode];
+  if (!description) {
+    throw new Error(`CN allowlist entry ${cnCode} missing unique description`);
+  }
   return {
     cnCode,
     description,
     sector,
-    effectiveFrom: scope.record.effectiveDate,
-    legalSourceId: "REG_2023_956",
+    effectiveFrom: "2023-10-01",
+    legalSourceId: coverage.matchedRule.legalSourceId,
     productionRoutes: SECTOR_ROUTES[sector],
     publicPageEligible: true,
     requiredProducerData: SECTOR_PRODUCER_DATA[sector],
@@ -140,7 +148,8 @@ function buildEntry(cnCode: string): CbamCnPublicEntry {
   };
 }
 
-export const CN_PUBLIC_REGISTRY: readonly CbamCnPublicEntry[] = STAGE1_CODES.map(buildEntry);
+export const CN_PUBLIC_REGISTRY: readonly CbamCnPublicEntry[] =
+  STAGE1_VERIFIED_ALLOWLIST.map(buildEntry);
 
 const BY_CODE = new Map(CN_PUBLIC_REGISTRY.map((entry) => [entry.cnCode, entry]));
 

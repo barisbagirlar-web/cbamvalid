@@ -33,10 +33,6 @@ firebase-admin-key.json
 firebase-adminsdk*.json
 service-account*.json
 
-# Codebase Memory — local/derived graph only (not a runtime dependency)
-.codebase-memory/
-*.db.zst
-
 # Local test artifacts
 test-out.pdf
 test-page-*.png
@@ -46,4 +42,6 @@ test_sips.png
 test-raster.ts
 CBAMValid_English_A_to_Z_Walkthrough.mp4.png
 create-admin-routes.sh
-tests/e2e/.auth/
+
+# Local SEO lab CWV scratch (baseline lives in docs/seo/)
+.seo-cwv/

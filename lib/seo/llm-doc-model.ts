@@ -5,15 +5,9 @@ import {
   SUPPORT_EMAIL_CLAIM,
   assertVerifiedClaim,
 } from "./claims";
-import { AEO_ANSWER_BANK } from "./aeo/answer-bank";
-import { AUTHORITY_CHAINS } from "./aeo/authority-chains";
-import { TOPICAL_MAP } from "./aeo/topical-map";
-import { listGlossaryTerms } from "./aeo/glossary";
 import { listVerifiedRegulatoryStatements, SEO_LEGAL_SOURCE_INDEX } from "./regulatory-sources";
 import { listSitemapRoutes } from "./registry";
 import { siteConfig } from "@/lib/site-config";
-import { LEGAL_IDENTITY, isLegalIdentityComplete } from "@/lib/legal-identity";
-import { ENTERPRISE_PUBLIC, PLATFORM_MODULES_R6_R9 } from "@/lib/enterprise/enterprise-contract";
 
 export interface LlmDocModel {
   readonly title: string;
@@ -21,31 +15,8 @@ export interface LlmDocModel {
   readonly productPositioning: string;
   readonly independence: string;
   readonly pricingLine: string;
-  readonly paymentFlow: string;
   readonly supportEmail: string;
   readonly resources: readonly { readonly title: string; readonly url: string; readonly note: string }[];
-  readonly topicalMap: readonly {
-    readonly path: string;
-    readonly topic: string;
-    readonly covers: readonly string[];
-    readonly entities: readonly string[];
-    readonly fanOutQueries: readonly string[];
-  }[];
-  readonly answers: readonly { readonly question: string; readonly answer: string; readonly routes: readonly string[] }[];
-  readonly authorityChains: readonly {
-    readonly path: string;
-    readonly primaryQuestion: string;
-    readonly directAnswer: string;
-    readonly empathyLead: string;
-    readonly calculation: string;
-    readonly explanation: string;
-    readonly methodology: string;
-    readonly evidence: string;
-    readonly expert: string;
-    readonly relatedPaths: readonly string[];
-    readonly entities: readonly string[];
-    readonly fanOutQueries: readonly string[];
-  }[];
   readonly regulatoryStatements: readonly string[];
   readonly legalSources: readonly { readonly id: string; readonly title: string; readonly url: string }[];
   readonly lastUpdated: string;
@@ -53,82 +24,31 @@ export interface LlmDocModel {
 
 export function buildLlmDocModel(): LlmDocModel {
   const price = assertVerifiedClaim(PRICE_CLAIM, "PRICE_CLAIM");
-  const priorityPaths = new Set([
-    "/",
-    "/product",
-    "/pricing",
-    "/sample-dossier",
-    "/enterprise",
-    "/enterprise/sso",
-    "/enterprise/holding",
-    "/partners",
-    "/trust",
-    "/security",
-    "/rulesets",
-    "/platform",
-    "/demo",
-    "/buyer-link",
-    "/verifier-review",
-    "/methodology",
-    "/how-it-works",
-  ]);
-  const priority = listSitemapRoutes().filter((route) => priorityPaths.has(route.path));
-  const rest = listSitemapRoutes().filter(
-    (route) =>
-      !priorityPaths.has(route.path) &&
-      route.pageType !== "legal" &&
-      route.pageType !== "cn-detail"
-  );
-  const resources = [...priority, ...rest].slice(0, 32).map((route) => ({
-    title: route.h1,
-    url: `${siteConfig.canonicalOrigin}${route.canonicalPath === "/" ? "" : route.canonicalPath}`,
-    note: route.primaryIntent,
-  }));
+  const resources = listSitemapRoutes()
+    .filter((route) => route.pageType !== "legal" && route.pageType !== "cn-detail")
+    .slice(0, 24)
+    .map((route) => ({
+      title: route.h1,
+      url: `${siteConfig.canonicalOrigin}${route.canonicalPath === "/" ? "" : route.canonicalPath}`,
+      note: route.primaryIntent,
+    }));
 
   return {
     title: "CBAMValid — Exporter Verification Preparation Pack",
     summary:
-      "CBAMValid (https://cbamvalid.com) is a verifier-preparation platform for non-EU producers, exporters, operators, importers, and CBAM reporting teams. It produces an operator-prepared dossier that reduces the work required for independent accredited verification. It does not issue an accredited verification opinion. Enterprise Exclusive adds contracted SSO, SLA, and holding scope for multi-site buyers.",
+      "CBAMValid (https://cbamvalid.com) is a verifier-preparation platform for non-EU producers, exporters, operators, importers, and CBAM reporting teams. It produces an operator-prepared dossier that reduces the work required for independent accredited verification.",
     productPositioning: assertVerifiedClaim(PRODUCT_POSITIONING_CLAIM, "PRODUCT_POSITIONING_CLAIM"),
     independence: assertVerifiedClaim(INDEPENDENCE_CLAIM, "INDEPENDENCE_CLAIM"),
-    pricingLine: `${price.formatted} per working file at lock (${price.packName}; one-time; no subscription; drafts free; 1 operator; 1 installation; 1 reporting year; same-file corrections included; new file = new payment).`,
-    paymentFlow:
-      "Draft free in a working file (eight plain steps in one Where-you-are strip). Clear blockers. Pay once to lock that file. Correct and re-lock the same paid file as needed. Failed locks charge nothing. Re-download is free. A new working file needs a new payment.",
+    pricingLine: `${price.formatted} per ${price.packName} (one-time; no subscription; drafts free; 1 installation; 1 reporting year; 5 sealed releases).`,
     supportEmail: assertVerifiedClaim(SUPPORT_EMAIL_CLAIM, "SUPPORT_EMAIL_CLAIM"),
     resources,
-    topicalMap: TOPICAL_MAP.map((node) => ({
-      path: node.path,
-      topic: node.topic,
-      covers: node.covers,
-      entities: node.entities,
-      fanOutQueries: node.fanOutQueries,
-    })),
-    answers: AEO_ANSWER_BANK.map((answer) => ({
-      question: answer.question,
-      answer: `${answer.directAnswer} ${answer.empathyContext}`,
-      routes: answer.routes,
-    })),
-    authorityChains: AUTHORITY_CHAINS.map((chain) => ({
-      path: chain.path,
-      primaryQuestion: chain.primaryQuestion,
-      directAnswer: chain.directAnswer,
-      empathyLead: chain.empathyLead,
-      calculation: chain.calculation,
-      explanation: chain.explanation,
-      methodology: chain.methodology,
-      evidence: chain.evidence,
-      expert: chain.expert,
-      relatedPaths: chain.relatedProblems.map((item) => item.href),
-      entities: chain.entities,
-      fanOutQueries: chain.fanOutQueries,
-    })),
     regulatoryStatements: listVerifiedRegulatoryStatements(),
     legalSources: Object.values(SEO_LEGAL_SOURCE_INDEX).map((source) => ({
       id: source.id,
       title: source.title,
       url: source.eliUri,
     })),
-    lastUpdated: "2026-07-28",
+    lastUpdated: "2026-07-26",
   };
 }
 
@@ -142,74 +62,14 @@ export function renderLlmsTxt(model: LlmDocModel): string {
     "",
     `- ${model.productPositioning}`,
     `- Pricing: ${model.pricingLine}`,
-    `- Payment flow: ${model.paymentFlow}`,
     "",
     "## Independence boundary",
     "",
     model.independence,
     "",
-    "## Legal identity",
-    "",
-    isLegalIdentityComplete()
-      ? [
-          `- Legal entity: ${LEGAL_IDENTITY.legalEntityName} (trading as ${LEGAL_IDENTITY.tradingName})`,
-          `- Registered address: ${LEGAL_IDENTITY.registeredAddress}`,
-          `- Country: ${LEGAL_IDENTITY.country}`,
-          `- Company Registration No (CRO): ${LEGAL_IDENTITY.companyRegistrationNumber}`,
-          `- VAT ID: ${LEGAL_IDENTITY.vatId}`,
-          `- Support: ${LEGAL_IDENTITY.supportPhone} · ${LEGAL_IDENTITY.supportEmail}`,
-          `- DPO: ${LEGAL_IDENTITY.dataProtectionContact}`,
-          `- Trust registry: ${siteConfig.canonicalOrigin}/trust`,
-        ].join("\n")
-      : "- Full legal identity published only when CRO, VAT, address, and phone are owner-verified.",
-    "",
-    "## Enterprise Exclusive",
-    "",
-    `- ${ENTERPRISE_PUBLIC.headline}`,
-    `- Path: ${siteConfig.canonicalOrigin}${ENTERPRISE_PUBLIC.path}`,
-    `- Modules: ${PLATFORM_MODULES_R6_R9.map((m) => `${m.id} ${m.title} (${m.status})`).join("; ")}`,
-    `- Surfaces: /enterprise, /enterprise/sso, /enterprise/holding, /partners, /security (DPA + SLA drafts)`,
-    "",
-    "## Canonical answers (Answer + Evidence)",
+    "## Core public resources",
     "",
   ];
-
-  for (const answer of model.answers) {
-    lines.push(`- Q: ${answer.question}`);
-    lines.push(`  A: ${answer.answer}`);
-    lines.push(`  Pages: ${answer.routes.join(", ")}`);
-  }
-
-  lines.push(
-    "",
-    "## Authority chains (Direct Answer → Calculation → Explanation → Methodology → Evidence → Expert → Related)",
-    "",
-  );
-  for (const chain of model.authorityChains) {
-    lines.push(`### ${chain.path}`);
-    lines.push(`- Primary question: ${chain.primaryQuestion}`);
-    lines.push(`- Empathy: ${chain.empathyLead}`);
-    lines.push(`- Direct answer: ${chain.directAnswer}`);
-    lines.push(`- Calculation: ${chain.calculation}`);
-    lines.push(`- Explanation: ${chain.explanation}`);
-    lines.push(`- Methodology: ${chain.methodology}`);
-    lines.push(`- Evidence: ${chain.evidence}`);
-    lines.push(`- Expert: ${chain.expert}`);
-    lines.push(`- Related: ${chain.relatedPaths.join(", ")}`);
-    lines.push(`- Entities: ${chain.entities.join("; ")}`);
-    lines.push(`- Fan-out queries: ${chain.fanOutQueries.join("; ")}`);
-    lines.push("");
-  }
-
-  lines.push("## Topical map (topic → entities → fan-out → links)", "");
-  for (const node of model.topicalMap) {
-    lines.push(`- ${node.path} — ${node.topic}`);
-    lines.push(`  Covers: ${node.covers.join("; ")}`);
-    if (node.entities.length > 0) lines.push(`  Entities: ${node.entities.join("; ")}`);
-    if (node.fanOutQueries.length > 0) lines.push(`  Fan-out: ${node.fanOutQueries.join("; ")}`);
-  }
-
-  lines.push("", "## Core public resources", "");
 
   for (const resource of model.resources) {
     lines.push(`- [${resource.title}](${resource.url}): ${resource.note}`);
@@ -227,24 +87,6 @@ export function renderLlmsTxt(model: LlmDocModel): string {
 
   lines.push(
     "",
-    "## Machine-readable feeds",
-    "",
-    `- Answers JSON-LD feed: ${siteConfig.canonicalOrigin}/answers.json`,
-    `- Answers RSS feed: ${siteConfig.canonicalOrigin}/answers.rss`,
-    `- Answers JSON Feed: ${siteConfig.canonicalOrigin}/answers.feed.json`,
-    `- Answer hub (HTML): ${siteConfig.canonicalOrigin}/answers`,
-    `- Entity glossary (HTML): ${siteConfig.canonicalOrigin}/glossary`,
-    `- LLM index: ${siteConfig.canonicalOrigin}/llms.txt`,
-    `- LLM full index: ${siteConfig.canonicalOrigin}/llms-full.txt`,
-    `- AI crawler policy: ${siteConfig.canonicalOrigin}/.well-known/ai.txt`,
-    `- Sitemap index: ${siteConfig.canonicalOrigin}/sitemap.xml`,
-    `- Sitemap pages: ${siteConfig.canonicalOrigin}/sitemap/0.xml`,
-    `- Sitemap CN codes: ${siteConfig.canonicalOrigin}/sitemap/1.xml`,
-    `- Sitemap brand/icons: ${siteConfig.canonicalOrigin}/sitemap/2.xml`,
-    `- Brand mark (512): ${siteConfig.canonicalOrigin}/icon-512.png`,
-    `- Favicon SVG: ${siteConfig.canonicalOrigin}/favicon.svg`,
-    `- Web app manifest: ${siteConfig.canonicalOrigin}/site.webmanifest`,
-    "",
     "## Contact",
     "",
     `- Website: ${siteConfig.canonicalOrigin}`,
@@ -258,28 +100,15 @@ export function renderLlmsTxt(model: LlmDocModel): string {
 }
 
 export function renderLlmsFullTxt(model: LlmDocModel): string {
-  const glossaryLines = listGlossaryTerms().flatMap((term) => [
-    `### ${term.name}`,
-    term.definition,
-    `Related: ${term.relatedPaths.join(", ")}`,
-    "",
-  ]);
-
   return [
     renderLlmsTxt(model).trimEnd(),
     "",
-    "## Entity glossary (DefinedTerm SSOT)",
-    "",
-    ...glossaryLines,
     "## Explicit non-claims",
     "",
     "- Not an accredited verification opinion",
     "- Not an official European Commission or CBAM Registry service",
     "- Not customs approval or registry acceptance",
     "- No synthetic customer counts, ratings, or testimonials",
-    "- No fabricated Review / AggregateRating schema nodes",
-    "- One pack is not reusable across another installation or reporting year",
-    "- Academic mathematical review is not accredited CBAM verification",
     "",
   ].join("\n");
 }
