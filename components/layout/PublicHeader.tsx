@@ -5,6 +5,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandMark } from "@/components/brand/BrandMark";
 
+const PRIMARY_NAV = [
+  { href: "/product", label: "Product" },
+  { href: "/how-it-works", label: "How It Works" },
+  { href: "/sample-dossier", label: "Sample" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/verify", label: "Verify" },
+] as const;
+
+const MORE_NAV = [
+  { href: "/methodology", label: "Methodology & Sources" },
+  { href: "/verifier-review", label: "Structure Review" },
+  { href: "/rulesets", label: "Published Rulesets" },
+  { href: "/security", label: "Security & DPA" },
+  { href: "/demo", label: "Book a Demo" },
+] as const;
+
 export function PublicHeader() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -22,7 +38,8 @@ export function PublicHeader() {
         <div className="wrap">
           <span className="dot" aria-hidden="true"></span>
           <span>
-            <b>CBAM definitive period is now in force.</b> 2026 annual declarations are due — prepare your evidence dossier early.
+            <b>CBAM definitive period is now in force.</b> 2026 annual declarations are due — prepare
+            your evidence dossier early.
           </span>
           <Link href="/rulesets">See the ruleset →</Link>
         </div>
@@ -32,7 +49,7 @@ export function PublicHeader() {
         <div className="wrap">
           <Link href="/" className="brand" aria-label="CBAMValid home">
             <BrandMark />
-            <span style={{ display: "flex", flexDirection: "column" }}>
+            <span>
               <span className="brand-name">
                 CBAM<em>Valid</em>
               </span>
@@ -41,33 +58,17 @@ export function PublicHeader() {
           </Link>
 
           <nav className="main-nav" aria-label="Main navigation">
-            <Link href="/product" className={isActive("/product")}>
-              Product
-            </Link>
-            <Link href="/how-it-works" className={isActive("/how-it-works")}>
-              How It Works
-            </Link>
-            <Link href="/sample-dossier" className={isActive("/sample-dossier")}>
-              Sample Dossier
-            </Link>
-            <Link href="/methodology" className={isActive("/methodology")}>
-              Methodology &amp; Sources
-            </Link>
-            <Link href="/pricing" className={isActive("/pricing")}>
-              Pricing
-            </Link>
-            <Link href="/demo" className={isActive("/demo")}>
-              Book a Demo
-            </Link>
-            <Link href="/verify" className={isActive("/verify")}>
-              Verify a Dossier
-            </Link>
-            <Link href="/verifier-review" className={isActive("/verifier-review")}>
-              Structure Review
-            </Link>
+            {PRIMARY_NAV.map((item) => (
+              <Link key={item.href} href={item.href} className={isActive(item.href)}>
+                {item.label}
+              </Link>
+            ))}
           </nav>
 
           <div className="header-actions">
+            <Link href="/demo" className="btn btn-ghost header-demo">
+              Book a Demo
+            </Link>
             <Link href="/login" className="signin">
               Sign In
             </Link>
@@ -79,6 +80,7 @@ export function PublicHeader() {
               className={`nav-toggle ${isMobileMenuOpen ? "open" : ""}`}
               aria-label="Toggle menu"
               aria-expanded={isMobileMenuOpen}
+              type="button"
             >
               <span></span>
               <span></span>
@@ -93,15 +95,13 @@ export function PublicHeader() {
         aria-label="Mobile navigation"
         style={{ display: isMobileMenuOpen ? "flex" : "none" }}
       >
-        <Link href="/product">Product</Link>
-        <Link href="/how-it-works">How It Works</Link>
-        <Link href="/sample-dossier">Sample Dossier</Link>
-        <Link href="/methodology">Methodology &amp; Sources</Link>
-        <Link href="/pricing">Pricing</Link>
-        <Link href="/demo">Book a Demo</Link>
-        <Link href="/verify">Verify a Dossier</Link>
-        <Link href="/verifier-review">Structure Review</Link>
+        {[...PRIMARY_NAV, ...MORE_NAV].map((item) => (
+          <Link key={item.href} href={item.href}>
+            {item.label}
+          </Link>
+        ))}
         <Link href="/login">Sign In</Link>
+        <Link href="/register?next=/cases/new">Start a Dossier</Link>
       </nav>
     </>
   );
