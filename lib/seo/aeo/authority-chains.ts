@@ -435,28 +435,116 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     empathyLead:
       "Category expansion before CBAM leadership creates half-products and diluted trust.",
     directAnswer:
-      "Door = CBAM. The sealed package architecture can accept other regimes later. No second regulated product is sold today. Opening conditions are intentional, not a vaporware roadmap.",
+      "Door = CBAM. Additional regimes are available only under an Enterprise expansion SOW — not as public half-products. Enterprise Exclusive also sells SSO, SLA, and holding scope for multi-site CBAM buyers. R6–R9 modules are LIVE to sell.",
     calculation:
       "Additional categories would reuse the package contract and ruleset pin model — they are not live engines today.",
     explanation:
-      "Use /rulesets and /product for the live CBAM surface. Treat /platform as architecture honesty.",
+      "Use /enterprise for SSO/SLA/holding. Use /rulesets and /product for the live CBAM surface.",
     methodology:
-      "One live ruleset family first. Supersession and historical pin discipline remain CBAM-specific until another family is opened.",
+      "One live ruleset family first. Enterprise expands commercial depth without inventing certifications.",
     evidence:
-      "Published architecture statement. Absence of EUDR/CSRD product pages is intentional.",
+      "Published /platform, /enterprise, /rulesets, /security with DPA and SLA drafts.",
     expert:
       "Architecture reuse is real. Fake second-product marketing is banned.",
     relatedProblems: [
+      { question: "Enterprise Exclusive", href: "/enterprise", why: "SSO SLA Holding" },
       { question: "Published rulesets", href: "/rulesets", why: "Live CBAM pins" },
       { question: "Product", href: "/product", why: "What ships today" },
-      { question: "Methodology", href: "/methodology", why: "Rules discipline" },
+      { question: "Security", href: "/security", why: "DPA SLA" },
     ],
-    entities: ["category architecture", "CBAM first", "reusable package contract"],
+    entities: ["category architecture", "CBAM first", "Enterprise SOW", "R6-R9"],
     fanOutQueries: [
       "CBAMValid platform architecture",
+      "CBAMValid Enterprise SSO",
       "CBAMValid beyond CBAM",
-      "CBAM sealed package contract",
     ],
+  },
+  {
+    path: "/enterprise",
+    primaryQuestion: "What does CBAMValid Enterprise Exclusive include?",
+    empathyLead:
+      "Multi-site exporters need SSO, SLA, and holding scope — not another self-serve checkbox.",
+    directAnswer:
+      "Enterprise Exclusive starts from USD 12,000 per year (contact sales). It includes contracted SSO/IdP federation, an SLA draft and signed MSA path, holding/multi-entity entitlement, signed DPA path, API/onboarding plan, and verifier coordination. It is not an accredited verification opinion.",
+    calculation:
+      "Enterprise changes entitlement and access control — sealed emissions arithmetic remains the same fail-closed engine.",
+    explanation:
+      "Request scoping on /enterprise. Single Pack stays self-serve at USD 449 pay-at-lock.",
+    methodology:
+      "SSO uses OIDC/SAML via Identity Platform. Holding keeps each seal scoped to one operator/installation/year.",
+    evidence:
+      "Published Enterprise pages, SLA draft PDF, DPA draft PDF, inquiry API.",
+    expert:
+      "Enterprise is a commitment regime for procurement — not a fake certification badge.",
+    relatedProblems: [
+      { question: "SSO", href: "/enterprise/sso", why: "IdP federation" },
+      { question: "Holding", href: "/enterprise/holding", why: "Multi-entity" },
+      { question: "Pricing", href: "/pricing", why: "Tier map" },
+      { question: "Partners", href: "/partners", why: "Channel" },
+    ],
+    entities: ["Enterprise Exclusive", "SSO", "SLA", "holding", "from $12,000"],
+    fanOutQueries: [
+      "CBAMValid Enterprise",
+      "CBAMValid SSO",
+      "CBAMValid SLA",
+    ],
+  },
+  {
+    path: "/enterprise/sso",
+    primaryQuestion: "Does CBAMValid support SSO for Enterprise buyers?",
+    empathyLead:
+      "IT will block any SaaS that cannot federate Entra, Google, or Okta.",
+    directAnswer:
+      "Yes under Enterprise contract. CBAMValid federates Microsoft Entra ID, Google Workspace, or Okta via OIDC/SAML. The server HttpOnly session remains authoritative; SSO does not replace tenant or case authorization.",
+    calculation: "SSO does not alter emissions calculations.",
+    explanation: "Provisioning requires SOW, IdP metadata, domain allow-list, and pilot cutover.",
+    methodology: "Firebase Identity Platform SAML/OIDC bound per tenant.",
+    evidence: "Published /enterprise/sso provisioning steps.",
+    expert: "SSO is contracted enablement, not a Single Pack feature.",
+    relatedProblems: [
+      { question: "Enterprise", href: "/enterprise", why: "Full package" },
+      { question: "Security", href: "/security", why: "Session model" },
+    ],
+    entities: ["SSO", "OIDC", "SAML", "Entra", "Okta"],
+    fanOutQueries: ["CBAMValid SSO", "CBAMValid SAML", "CBAMValid Entra ID"],
+  },
+  {
+    path: "/enterprise/holding",
+    primaryQuestion: "Can a holding company cover multiple operators in CBAMValid?",
+    empathyLead:
+      "Groups fear either paying per plant forever or blurring legal scope.",
+    directAnswer:
+      "Enterprise entitlement can sit at holding level while each sealed working file still binds one operator, one installation, and one reporting year. Cross-entity clones do not inherit payment unless the SOW says so.",
+    calculation: "Holding structure does not merge emissions across entities in one seal.",
+    explanation: "Roles include Holding Admin, Operator Preparer, Internal Reviewer, Read-Only Verifier.",
+    methodology: "Explicit scope remains a seal invariant.",
+    evidence: "Published /enterprise/holding contract rules.",
+    expert: "No silent scope widening — verifiers see clear boundaries.",
+    relatedProblems: [
+      { question: "Enterprise", href: "/enterprise", why: "Commercial package" },
+      { question: "Pricing", href: "/pricing", why: "Tier contrast" },
+    ],
+    entities: ["holding", "multi-entity", "installation scope"],
+    fanOutQueries: ["CBAMValid holding", "CBAMValid multi-site", "CBAMValid group exporters"],
+  },
+  {
+    path: "/partners",
+    primaryQuestion: "How do I become a CBAMValid channel partner?",
+    empathyLead:
+      "Consultancies and verifier firms want a referral track without fake logo walls.",
+    directAnswer:
+      "Open /partners and submit the partner inquiry. Logos are published only after a signed referral agreement. The program does not create accredited verification endorsements.",
+    calculation: "Partner referrals do not change sealed arithmetic.",
+    explanation: "Intake is live; public partner logos remain permissioned.",
+    methodology: "H2: no invented partner logos.",
+    evidence: "Published /partners intake form.",
+    expert: "Channel scale follows contracts, not invented badges.",
+    relatedProblems: [
+      { question: "Enterprise", href: "/enterprise", why: "Buyer path" },
+      { question: "Structure review", href: "/verifier-review", why: "Package fitness" },
+    ],
+    entities: ["channel partner", "referral agreement"],
+    fanOutQueries: ["CBAMValid partner", "CBAMValid reseller", "CBAMValid referral"],
   },
   {
     path: "/cn-code",

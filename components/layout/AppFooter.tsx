@@ -63,13 +63,16 @@ export default function AppFooter() {
                 <Link href="/platform">Platform Architecture</Link>
               </li>
               <li>
+                <Link href="/enterprise">Enterprise Exclusive</Link>
+              </li>
+              <li>
+                <Link href="/partners">Partners</Link>
+              </li>
+              <li>
                 <Link href="/trust">Trust Evidence Registry</Link>
               </li>
               <li>
                 <Link href="/answers">Answer Bank</Link>
-              </li>
-              <li>
-                <Link href="/buyer-link">Buyer Share Link</Link>
               </li>
               <li>
                 <Link href="/case-studies">Case Studies</Link>

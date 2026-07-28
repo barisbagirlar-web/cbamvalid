@@ -666,7 +666,39 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       },
     ],
     routes: ["/platform", "/"],
-    relatedPaths: ["/product", "/methodology"],
+    relatedPaths: ["/product", "/methodology", "/enterprise"],
+    schemaEligible: true,
+  },
+  {
+    id: "enterprise-exclusive",
+    question: "What does CBAMValid Enterprise Exclusive include?",
+    aliases: ["Enterprise SSO", "SLA", "holding multi-entity", "from 12000"],
+    directAnswer:
+      "Enterprise Exclusive starts from USD 12,000 per year (contact sales). It includes contracted SSO/IdP federation (Entra, Google, Okta), SLA draft and signed MSA path, holding/multi-entity entitlement, signed DPA path, API/onboarding, and verifier coordination. Not an accredited verification opinion. Single Pack remains self-serve at USD 449.",
+    empathyContext:
+      "Multi-site buyers need procurement-grade SSO and SLA — not another self-serve checkbox.",
+    evidence: [
+      {
+        label: "Enterprise Exclusive",
+        detail: "SSO · SLA · Holding commercial package",
+        href: "/enterprise",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "SLA draft PDF",
+        detail: "Procurement starting-point draft",
+        href: "/enterprise/sla-draft.pdf",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "SSO page",
+        detail: "OIDC/SAML provisioning path",
+        href: "/enterprise/sso",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/enterprise", "/pricing", "/demo"],
+    relatedPaths: ["/enterprise/holding", "/partners", "/security"],
     schemaEligible: true,
   },
   {

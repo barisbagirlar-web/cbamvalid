@@ -251,6 +251,17 @@
       ]
     },
     {
+      "id": "enterprise-exclusive",
+      "url": "https://cbamvalid.com/answers#enterprise-exclusive",
+      "title": "What does CBAMValid Enterprise Exclusive include?",
+      "content_text": "Enterprise Exclusive starts from USD 12,000 per year (contact sales). It includes contracted SSO/IdP federation (Entra, Google, Okta), SLA draft and signed MSA path, holding/multi-entity entitlement, signed DPA path, API/onboarding, and verifier coordination. Not an accredited verification opinion. Single Pack remains self-serve at USD 449.\n\nMulti-site buyers need procurement-grade SSO and SLA — not another self-serve checkbox.",
+      "tags": [
+        "/enterprise",
+        "/pricing",
+        "/demo"
+      ]
+    },
+    {
       "id": "pricing-four-tiers",
       "url": "https://cbamvalid.com/answers#pricing-four-tiers",
       "title": "What are CBAMValid’s published pricing tiers?",

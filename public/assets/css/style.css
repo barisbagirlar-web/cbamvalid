@@ -985,3 +985,22 @@ a.entity-chip:hover{border-color:var(--terra-line);color:var(--terra)}
   .authority-map-grid{grid-template-columns:1fr}
   .authority-rail{gap:8px}
 }
+
+/* ---------- Enterprise inquiry form ---------- */
+.enterprise-inquiry{display:flex;flex-direction:column;gap:16px;max-width:720px}
+.enterprise-inquiry-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;
+}
+.enterprise-inquiry label{display:flex;flex-direction:column;gap:6px;font-size:.86rem;color:var(--ink-2);text-align:left}
+.enterprise-inquiry input,
+.enterprise-inquiry textarea{
+  font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;
+  background:var(--card);color:var(--ink);
+}
+.enterprise-inquiry-checks{display:flex;flex-wrap:wrap;gap:14px 18px}
+.enterprise-inquiry-checks label{flex-direction:row;align-items:center;gap:8px;font-size:.9rem}
+.enterprise-inquiry-message{display:flex;flex-direction:column;gap:6px}
+.enterprise-inquiry-error{color:#b42318;font-size:.9rem;margin:0}
+@media (max-width:640px){
+  .enterprise-inquiry-grid{grid-template-columns:1fr}
+}

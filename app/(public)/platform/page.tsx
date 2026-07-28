@@ -1,26 +1,31 @@
 import Link from "next/link";
 import { AeoPageChrome } from "@/components/seo/AnswerEvidenceSection";
+import { AuthorityRail } from "@/components/marketing/AuthorityRail";
+import { PLATFORM_MODULES_R6_R9 } from "@/lib/enterprise/enterprise-contract";
 
 export default function PlatformPage() {
   return (
     <main id="main">
       <section className="hero" style={{ paddingBottom: "40px" }}>
         <div className="wrap" style={{ maxWidth: "820px" }}>
-          <span className="eyebrow">R9 · Category architecture</span>
+          <AuthorityRail mode="compact" eyebrow="R9 · Enterprise platform" />
+          <span className="eyebrow">R9 · Category architecture · LIVE</span>
           <h1>
             Door = CBAM.
             <br />
-            <span className="serif-i">Room is larger.</span>
+            <span className="serif-i">Enterprise expands the room.</span>
           </h1>
           <p className="lede">
-            CBAMValid is not only a calculator. It is a sealed, evidence-linked, version-pinned
-            compliance package architecture. The first live ruleset family is EU CBAM. Additional
-            regimes reuse the same package contract — they are not opened until CBAM leadership and
-            recurring revenue justify them.
+            CBAMValid is a sealed, evidence-linked, version-pinned compliance package architecture.
+            EU CBAM is the live door. Additional regimes are available only under an Enterprise
+            expansion SOW — we do not sell half-products.
           </p>
           <div className="hero-ctas">
-            <Link className="btn btn-primary" href="/rulesets">
-              Open published CBAM rulesets
+            <Link className="btn btn-primary" href="/enterprise">
+              Enterprise Exclusive
+            </Link>
+            <Link className="btn btn-ghost" href="/rulesets">
+              Published CBAM rulesets
             </Link>
             <Link className="btn btn-ghost" href="/product">
               Product
@@ -37,29 +42,45 @@ export default function PlatformPage() {
               <h3>EU CBAM definitive package</h3>
               <p>
                 Operator dossier, evidence lineage, QC gates, ruleset pin, integrity hashes, buyer
-                verify link.
+                verify link — sellable today.
               </p>
             </div>
             <div className="deliv-card">
-              <span className="fmt">ARCHITECTURE</span>
-              <h3>Reusable package contract</h3>
+              <span className="fmt">ENTERPRISE</span>
+              <h3>SSO · SLA · Holding</h3>
               <p>
-                Same seal model can accept another ruleset family without forking the core product —
-                only when opening conditions are met.
+                Contracted multi-site regime with IdP federation, SLA/DPA path, and holding scope —
+                see /enterprise.
               </p>
             </div>
             <div className="deliv-card">
-              <span className="fmt">NOT OPEN</span>
-              <h3>Second-category product</h3>
+              <span className="fmt">SOW ONLY</span>
+              <h3>Second-category expansion</h3>
               <p>
-                No second regulated category is sold here yet. Launching another half-product before
-                CBAM leadership is explicitly out of scope.
+                Other regimes reuse the package contract only when an Enterprise expansion SOW is
+                signed. No public half-product storefront.
               </p>
             </div>
           </div>
-          <div className="notice" style={{ marginTop: "28px" }}>
-            <b>Honest status:</b> R9 is an architecture statement and dependency rule — not a claim
-            that EUDR, CSRD, or Digital Product Passport products are live.
+        </div>
+      </section>
+
+      <section className="section" style={{ background: "var(--paper-2)" }}>
+        <div className="wrap">
+          <div className="section-head center">
+            <span className="eyebrow">R6–R9 modules</span>
+            <h2>Platform modules are LIVE to sell</h2>
+          </div>
+          <div className="deliv-grid">
+            {PLATFORM_MODULES_R6_R9.map((m) => (
+              <Link key={m.id} href={m.href} className="deliv-card" style={{ textDecoration: "none", color: "inherit" }}>
+                <span className="fmt">
+                  {m.id} · {m.status}
+                </span>
+                <h3>{m.title}</h3>
+                <p>{m.sellLine}</p>
+              </Link>
+            ))}
           </div>
         </div>
       </section>

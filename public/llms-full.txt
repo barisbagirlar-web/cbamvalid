@@ -80,6 +80,9 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Q: Is CBAMValid only a calculator, or a broader compliance platform?
   A: CBAMValid is a sealed, evidence-linked, version-pinned compliance package architecture. The live ruleset family is EU CBAM. Additional regimes can reuse the package contract later — they are not sold until CBAM leadership and opening conditions justify them. No second regulated product is live today. Architecture honesty beats vaporware roadmaps. Door = CBAM; room is larger only when earned.
   Pages: /platform, /
+- Q: What does CBAMValid Enterprise Exclusive include?
+  A: Enterprise Exclusive starts from USD 12,000 per year (contact sales). It includes contracted SSO/IdP federation (Entra, Google, Okta), SLA draft and signed MSA path, holding/multi-entity entitlement, signed DPA path, API/onboarding, and verifier coordination. Not an accredited verification opinion. Single Pack remains self-serve at USD 449. Multi-site buyers need procurement-grade SSO and SLA — not another self-serve checkbox.
+  Pages: /enterprise, /pricing, /demo
 - Q: What are CBAMValid’s published pricing tiers?
   A: Draft is $0. Single Pack is USD 449 one-time pay-at-lock for one working file. Exporter Annual is USD 2,400 per year. Enterprise is from USD 12,000 per year and is the only contact-sales tier. Not an accredited verification opinion. Procurement needs published prices. Hiding everything behind “contact sales” fails the public-pricing rule.
   Pages: /pricing, /demo, /
@@ -277,15 +280,67 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 ### /platform
 - Primary question: Is CBAMValid opening other regulatory categories beyond CBAM?
 - Empathy: Category expansion before CBAM leadership creates half-products and diluted trust.
-- Direct answer: Door = CBAM. The sealed package architecture can accept other regimes later. No second regulated product is sold today. Opening conditions are intentional, not a vaporware roadmap.
+- Direct answer: Door = CBAM. Additional regimes are available only under an Enterprise expansion SOW — not as public half-products. Enterprise Exclusive also sells SSO, SLA, and holding scope for multi-site CBAM buyers. R6–R9 modules are LIVE to sell.
 - Calculation: Additional categories would reuse the package contract and ruleset pin model — they are not live engines today.
-- Explanation: Use /rulesets and /product for the live CBAM surface. Treat /platform as architecture honesty.
-- Methodology: One live ruleset family first. Supersession and historical pin discipline remain CBAM-specific until another family is opened.
-- Evidence: Published architecture statement. Absence of EUDR/CSRD product pages is intentional.
+- Explanation: Use /enterprise for SSO/SLA/holding. Use /rulesets and /product for the live CBAM surface.
+- Methodology: One live ruleset family first. Enterprise expands commercial depth without inventing certifications.
+- Evidence: Published /platform, /enterprise, /rulesets, /security with DPA and SLA drafts.
 - Expert: Architecture reuse is real. Fake second-product marketing is banned.
-- Related: /rulesets, /product, /methodology
-- Entities: category architecture; CBAM first; reusable package contract
-- Fan-out queries: CBAMValid platform architecture; CBAMValid beyond CBAM; CBAM sealed package contract
+- Related: /enterprise, /rulesets, /product, /security
+- Entities: category architecture; CBAM first; Enterprise SOW; R6-R9
+- Fan-out queries: CBAMValid platform architecture; CBAMValid Enterprise SSO; CBAMValid beyond CBAM
+
+### /enterprise
+- Primary question: What does CBAMValid Enterprise Exclusive include?
+- Empathy: Multi-site exporters need SSO, SLA, and holding scope — not another self-serve checkbox.
+- Direct answer: Enterprise Exclusive starts from USD 12,000 per year (contact sales). It includes contracted SSO/IdP federation, an SLA draft and signed MSA path, holding/multi-entity entitlement, signed DPA path, API/onboarding plan, and verifier coordination. It is not an accredited verification opinion.
+- Calculation: Enterprise changes entitlement and access control — sealed emissions arithmetic remains the same fail-closed engine.
+- Explanation: Request scoping on /enterprise. Single Pack stays self-serve at USD 449 pay-at-lock.
+- Methodology: SSO uses OIDC/SAML via Identity Platform. Holding keeps each seal scoped to one operator/installation/year.
+- Evidence: Published Enterprise pages, SLA draft PDF, DPA draft PDF, inquiry API.
+- Expert: Enterprise is a commitment regime for procurement — not a fake certification badge.
+- Related: /enterprise/sso, /enterprise/holding, /pricing, /partners
+- Entities: Enterprise Exclusive; SSO; SLA; holding; from $12,000
+- Fan-out queries: CBAMValid Enterprise; CBAMValid SSO; CBAMValid SLA
+
+### /enterprise/sso
+- Primary question: Does CBAMValid support SSO for Enterprise buyers?
+- Empathy: IT will block any SaaS that cannot federate Entra, Google, or Okta.
+- Direct answer: Yes under Enterprise contract. CBAMValid federates Microsoft Entra ID, Google Workspace, or Okta via OIDC/SAML. The server HttpOnly session remains authoritative; SSO does not replace tenant or case authorization.
+- Calculation: SSO does not alter emissions calculations.
+- Explanation: Provisioning requires SOW, IdP metadata, domain allow-list, and pilot cutover.
+- Methodology: Firebase Identity Platform SAML/OIDC bound per tenant.
+- Evidence: Published /enterprise/sso provisioning steps.
+- Expert: SSO is contracted enablement, not a Single Pack feature.
+- Related: /enterprise, /security
+- Entities: SSO; OIDC; SAML; Entra; Okta
+- Fan-out queries: CBAMValid SSO; CBAMValid SAML; CBAMValid Entra ID
+
+### /enterprise/holding
+- Primary question: Can a holding company cover multiple operators in CBAMValid?
+- Empathy: Groups fear either paying per plant forever or blurring legal scope.
+- Direct answer: Enterprise entitlement can sit at holding level while each sealed working file still binds one operator, one installation, and one reporting year. Cross-entity clones do not inherit payment unless the SOW says so.
+- Calculation: Holding structure does not merge emissions across entities in one seal.
+- Explanation: Roles include Holding Admin, Operator Preparer, Internal Reviewer, Read-Only Verifier.
+- Methodology: Explicit scope remains a seal invariant.
+- Evidence: Published /enterprise/holding contract rules.
+- Expert: No silent scope widening — verifiers see clear boundaries.
+- Related: /enterprise, /pricing
+- Entities: holding; multi-entity; installation scope
+- Fan-out queries: CBAMValid holding; CBAMValid multi-site; CBAMValid group exporters
+
+### /partners
+- Primary question: How do I become a CBAMValid channel partner?
+- Empathy: Consultancies and verifier firms want a referral track without fake logo walls.
+- Direct answer: Open /partners and submit the partner inquiry. Logos are published only after a signed referral agreement. The program does not create accredited verification endorsements.
+- Calculation: Partner referrals do not change sealed arithmetic.
+- Explanation: Intake is live; public partner logos remain permissioned.
+- Methodology: H2: no invented partner logos.
+- Evidence: Published /partners intake form.
+- Expert: Channel scale follows contracts, not invented badges.
+- Related: /enterprise, /verifier-review
+- Entities: channel partner; referral agreement
+- Fan-out queries: CBAMValid partner; CBAMValid reseller; CBAMValid referral
 
 ### /cn-code
 - Primary question: How do I check whether a CN code is in CBAM goods scope?
@@ -474,6 +529,22 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
   Covers: human demo path; Enterprise contact sales only
   Entities: book a demo; Exporter Annual; Enterprise
   Fan-out: CBAMValid demo; CBAMValid enterprise demo; CBAMValid annual plan
+- /enterprise — Enterprise Exclusive — SSO SLA Holding
+  Covers: SSO IdP federation; SLA draft; holding multi-entity; from $12000
+  Entities: Enterprise Exclusive; SSO; SLA; holding; from $12,000
+  Fan-out: CBAMValid Enterprise; CBAMValid SSO; CBAMValid SLA
+- /enterprise/sso — Enterprise SSO / IdP federation
+  Covers: OIDC SAML; Entra Google Okta
+  Entities: SSO; OIDC; SAML; Entra; Okta
+  Fan-out: CBAMValid SSO; CBAMValid SAML; CBAMValid Entra ID
+- /enterprise/holding — Holding / multi-entity Enterprise scope
+  Covers: holding entitlement; explicit seal scope
+  Entities: holding; multi-entity; installation scope
+  Fan-out: CBAMValid holding; CBAMValid multi-site; CBAMValid group exporters
+- /partners — Channel partner intake
+  Covers: partner inquiry; no invented logos
+  Entities: channel partner; referral agreement
+  Fan-out: CBAMValid partner; CBAMValid reseller; CBAMValid referral
 - /case-studies — Permissioned case studies only
   Covers: no invented logos; empty slot until written permission
   Entities: case studies; permissioned reference; no invented logos
@@ -519,9 +590,9 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
   Entities: trust registry; H2; SAMPLE; OWNER ACTION; EXTERNAL BLOCKER
   Fan-out: CBAMValid trust evidence; CBAMValid company registration; CBAMValid verifier letter
 - /platform — Category architecture — CBAM first
-  Covers: CBAM is the live door; reusable sealed package contract; second category not open yet
-  Entities: category architecture; CBAM first; reusable package contract
-  Fan-out: CBAMValid platform architecture; CBAMValid beyond CBAM; CBAM sealed package contract
+  Covers: CBAM is the live door; Enterprise expands the room under SOW; second category not a public half-product
+  Entities: category architecture; CBAM first; Enterprise SOW; R6-R9
+  Fan-out: CBAMValid platform architecture; CBAMValid Enterprise SSO; CBAMValid beyond CBAM
 - /cbam-2026-definitive-period — CBAM 2026 definitive period
   Covers: definitive period start 2026; 30 September 2027 declaration deadline for 2026 imports; certificate surrender timing
   Entities: CBAM definitive period; 1 January 2026; 30 September 2027; certificate surrender; Regulation (EU) 2025/2083
@@ -594,6 +665,10 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - [Published rulesets — named, dated, pinned](https://cbamvalid.com/rulesets): CBAMValid published ruleset registry
 - [One link for the buyer — integrity, not assurance](https://cbamvalid.com/buyer-link): CBAMValid buyer share link
 - [Case studies — published only with permission](https://cbamvalid.com/case-studies): CBAMValid case studies policy
+- [Enterprise Exclusive — SSO · SLA · Holding](https://cbamvalid.com/enterprise): CBAMValid Enterprise Exclusive
+- [SSO / IdP federation — contracted per tenant](https://cbamvalid.com/enterprise/sso): CBAMValid Enterprise SSO
+- [Holding / multi-entity — explicit scope](https://cbamvalid.com/enterprise/holding): CBAMValid holding multi-entity
+- [Partner program — intake live](https://cbamvalid.com/partners): CBAMValid channel partners
 - [Door = CBAM. Room is larger.](https://cbamvalid.com/platform): CBAMValid platform architecture
 - [Independent CBAM preparation — with clear limits](https://cbamvalid.com/about): About CBAMValid
 - [Need help before a buyer deadline?](https://cbamvalid.com/contact): Contact CBAMValid
@@ -601,10 +676,6 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - [CBAM terms used across CBAMValid](https://cbamvalid.com/glossary): CBAM entity glossary for exporters
 - [CBAM 2026 Definitive Period](https://cbamvalid.com/cbam-2026-definitive-period): CBAM definitive period 2026
 - [Calculate CBAM Embedded Emissions](https://cbamvalid.com/cbam-embedded-emissions-calculation): how to calculate embedded emissions
-- [Actual Values vs Default Values](https://cbamvalid.com/cbam-actual-vs-default-values): CBAM actual vs default values
-- [CBAM Default Values](https://cbamvalid.com/cbam-default-values): CBAM default values
-- [CBAM Certificate Price](https://cbamvalid.com/cbam-certificate-price): CBAM certificate price
-- [CBAM Verification Preparation](https://cbamvalid.com/cbam-verification-preparation): CBAM verifier preparation
 
 ## Key regulatory facts
 

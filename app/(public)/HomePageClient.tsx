@@ -318,7 +318,9 @@ export default function HomePageClient() {
         />
       </div>
       <p style={{ textAlign: "center", marginTop: "18px" }}>
-        <a href="/demo">Book a demo for Annual / Enterprise</a>
+        <a href="/enterprise">Enterprise Exclusive (SSO · SLA · Holding)</a>
+        {" · "}
+        <a href="/demo">Book a demo</a>
         {" · "}
         <a href="/pricing#tiers">See all four tiers</a>
         {" · "}

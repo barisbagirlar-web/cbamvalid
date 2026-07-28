@@ -35,6 +35,8 @@
     "check:paddle-config": "npx tsx scripts/check-paddle-config.ts",
     "prove:paddle-amount": "node scripts/prove-paddle-amount.mjs",
     "guard:paddle-amount": "node scripts/guard-paddle-amount.mjs",
+    "build:sla-draft": "node scripts/build-sla-draft-pdf.mjs",
+    "build:dpa-draft": "node scripts/build-dpa-draft-pdf.mjs",
     "test": "vitest",
     "test:auth": "vitest run tests/auth",
     "test:integration": "vitest run tests/integration",
