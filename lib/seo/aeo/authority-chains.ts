@@ -148,21 +148,32 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     path: "/case-studies",
     primaryQuestion: "Does CBAMValid publish customer logos and case studies?",
     empathyLead:
-      "Procurement trusts empty honesty more than invented praise strips.",
+      "Buyers want field realism without fake logos. Anonymized scenarios beat invented praise strips.",
     directAnswer:
-      "Named case studies are published only with written permission for company name, logo, and a measurable outcome. Until then the case-studies page stays empty by design.",
-    calculation: "Case studies do not alter sealed emissions arithmetic.",
-    explanation: "Use the public sample dossier and structure-review surface while the permissioned slot is empty.",
-    methodology: "H2: no claim without evidence. Fake social proof is banned.",
-    evidence: "Published /case-studies empty-slot policy page.",
-    expert: "Permissioned proof beats fabricated logos.",
+      "CBAMValid publishes anonymized illustrative sector scenarios on /case-studies — steel, aluminium, holding, and cement working-file paths with no company names or logos. Named customer references publish only with written permission.",
+    calculation: "Scenarios do not alter sealed emissions arithmetic.",
+    explanation:
+      "Use scenarios to understand buyer pressure and package shape. Inspect the public sample dossier for sealed deliverables. Named logos stay permissioned-only.",
+    methodology: "H2: no invented testimonials. Anonymized scenarios are labeled as illustrative.",
+    evidence: "Published /case-studies illustrative scenario set + permission note for named references.",
+    expert: "Anonymized field paths beat fabricated logos.",
     relatedProblems: [
       { question: "Sample dossier", href: "/sample-dossier", why: "Inspect output" },
-      { question: "Structure review", href: "/verifier-review", why: "Package fitness" },
+      { question: "Product capabilities", href: "/product", why: "What ships" },
+      { question: "Enterprise Exclusive", href: "/enterprise", why: "SSO · Holding path" },
       { question: "Book a demo", href: "/demo", why: "Talk to a human" },
     ],
-    entities: ["case studies", "permissioned reference", "no invented logos"],
-    fanOutQueries: ["CBAMValid case studies", "CBAMValid customer logos", "CBAMValid testimonials"],
+    entities: [
+      "illustrative scenarios",
+      "anonymized sector paths",
+      "permissioned named reference",
+      "no invented logos",
+    ],
+    fanOutQueries: [
+      "CBAMValid case studies",
+      "CBAMValid customer scenarios",
+      "CBAM preparation steel exporter example",
+    ],
   },
   {
     path: "/how-it-works",

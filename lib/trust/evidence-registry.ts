@@ -88,9 +88,11 @@ export const TRUST_EVIDENCE_ITEMS: readonly TrustEvidenceItem[] = [
     layer: "commercial",
     title: "Paddle live catalog price",
     status: "EXTERNAL_BLOCKER",
-    proof: "Live Paddle API not queryable with current sandbox key (HTTP 403) — owner must set live price to $449 and prove",
+    proof:
+      "Sandbox catalog = USD 449 PROVEN. Live API still returns HTTP 403 with the current sandbox API key; production env still has NEXT_PUBLIC_PADDLE_SANDBOX=true. Panel price alone is not live checkout proof.",
     publicHref: "/pricing",
-    ownerAction: "In Paddle live dashboard set the checkout price ID to USD 449.00, then run npm run prove:paddle-amount",
+    ownerAction:
+      "1) Create/confirm Live price ID at USD 449. 2) Store Live PADDLE_API_KEY in Secret Manager (not pdl_sdbx_*). 3) Set production NEXT_PUBLIC_PADDLE_SANDBOX=false + live client token + live price ID. 4) Redeploy. 5) npm run prove:paddle-amount → LIVE=PASS.",
   },
   {
     id: "structure-sample",
@@ -104,19 +106,19 @@ export const TRUST_EVIDENCE_ITEMS: readonly TrustEvidenceItem[] = [
     id: "structure-letter-signed",
     layer: "structure",
     title: "Third-party signed structure letter",
-    status: "OWNER_ACTION",
-    proof: "Specimen letter only — no accredited-body signed PDF published",
+    status: "EMPTY_BY_DESIGN",
+    proof:
+      "Owner waived — signed structure letters are not a competitive requirement. Package fitness stays on the SAMPLE structure-review surface.",
     publicHref: STRUCTURE_REVIEW_PUBLIC.path,
-    ownerAction: "Send outreach in docs/outreach/verifier-structure-review-outreach.md; publish signed PDF when received",
   },
   {
     id: "case-studies",
     layer: "customer",
-    title: "Named customer references",
-    status: "EMPTY_BY_DESIGN",
-    proof: "No invented logos or testimonials — /case-studies stays empty until written permission",
+    title: "Anonymized illustrative sector scenarios",
+    status: "CODE_PROVEN",
+    proof:
+      "Four anonymized sector scenarios on /case-studies — no company names, logos, or testimonials. Named references remain permissioned-only.",
     publicHref: "/case-studies",
-    ownerAction: "Obtain written permission (name, logo, measurable outcome) then publish",
   },
   {
     id: "security-facts",
@@ -158,5 +160,5 @@ export const TRUST_PUBLIC = {
   eyebrow: "Proof chain · H2 disciplined",
   headline: "Every claim pinned — or not published",
   lede:
-    "This registry is the public court of truth for CBAMValid marketing claims. SAMPLE means watermarked specimen. EMPTY BY DESIGN means intentionally blank. OWNER ACTION and EXTERNAL BLOCKER are visible gaps — never filled with invented evidence.",
+    "This registry is the public court of truth for CBAMValid marketing claims. SAMPLE means watermarked specimen. EMPTY BY DESIGN means intentionally blank or owner-waived. OWNER ACTION and EXTERNAL BLOCKER are visible gaps — never filled with invented evidence.",
 } as const;
