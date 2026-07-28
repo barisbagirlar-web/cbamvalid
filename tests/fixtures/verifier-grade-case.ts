@@ -70,8 +70,8 @@ export function createVerifierGradeCase(): AuditReadyCase {
       address: datum("Rotterdam, Netherlands", undefined, undefined),
     },
     exporterIdentity: {
-      legalName: datum("Verified Steel Operator GmbH", undefined, undefined),
-      address: datum("Duisburg, Germany", undefined, undefined),
+      legalName: datum("Verified Steel Operator A.S.", undefined, undefined),
+      address: datum("Iskenderun, Turkiye", undefined, undefined),
     },
     reportingPeriod: {
       year: datum("2026", undefined, undefined),
@@ -95,8 +95,8 @@ export function createVerifierGradeCase(): AuditReadyCase {
     ],
     installation: {
       name: datum("Verified Integrated Steel Installation", undefined, undefined),
-      unloCode: datum("DEDUI", undefined, undefined),
-      country: datum("DE", undefined, undefined),
+      unloCode: datum("TRISK", undefined, undefined),
+      country: datum("TR", undefined, undefined),
       productionRoute: datum("Blast Furnace Route (BF-BOF)", undefined, undefined),
       systemBoundaries:
         "Coke preparation, sinter plant, blast furnace, basic oxygen furnace, casting and finishing operations within the controlled installation boundary.",
@@ -110,9 +110,9 @@ export function createVerifierGradeCase(): AuditReadyCase {
       {
         evidenceId: EVIDENCE_1_ID,
         documentType: "CUSTOMS_DECLARATION",
-        fileName: "customs-declaration-classification.txt",
-        storagePath: `evidence/${FIXTURE_OWNER_ID}/${FIXTURE_CASE_ID}/${EVIDENCE_1_ID}/customs-declaration-classification.txt`,
-        mimeType: "text/plain",
+        fileName: "customs-declaration-classification.pdf",
+        storagePath: `evidence/${FIXTURE_OWNER_ID}/${FIXTURE_CASE_ID}/${EVIDENCE_1_ID}/customs-declaration-classification.pdf`,
+        mimeType: "application/pdf",
         sizeBytes: EVIDENCE_1_BYTES.byteLength,
         issuer: "Customs Authority",
         issueDate: "2026-03-31",
@@ -136,9 +136,9 @@ export function createVerifierGradeCase(): AuditReadyCase {
       {
         evidenceId: EVIDENCE_2_ID,
         documentType: "UTILITY_BILL",
-        fileName: "electricity-utility-invoice.txt",
-        storagePath: `evidence/${FIXTURE_OWNER_ID}/${FIXTURE_CASE_ID}/${EVIDENCE_2_ID}/electricity-utility-invoice.txt`,
-        mimeType: "text/plain",
+        fileName: "electricity-utility-invoice.pdf",
+        storagePath: `evidence/${FIXTURE_OWNER_ID}/${FIXTURE_CASE_ID}/${EVIDENCE_2_ID}/electricity-utility-invoice.pdf`,
+        mimeType: "application/pdf",
         sizeBytes: EVIDENCE_2_BYTES.byteLength,
         issuer: "National Power Utility",
         issueDate: "2026-03-31",
@@ -161,9 +161,9 @@ export function createVerifierGradeCase(): AuditReadyCase {
       {
         evidenceId: EVIDENCE_3_ID,
         documentType: "PRODUCTION_RECONCILIATION_REPORT",
-        fileName: "production-reconciliation-ledger.txt",
-        storagePath: `evidence/${FIXTURE_OWNER_ID}/${FIXTURE_CASE_ID}/${EVIDENCE_3_ID}/production-reconciliation-ledger.txt`,
-        mimeType: "text/plain",
+        fileName: "production-reconciliation-ledger.pdf",
+        storagePath: `evidence/${FIXTURE_OWNER_ID}/${FIXTURE_CASE_ID}/${EVIDENCE_3_ID}/production-reconciliation-ledger.pdf`,
+        mimeType: "application/pdf",
         sizeBytes: EVIDENCE_3_BYTES.byteLength,
         issuer: "Internal Production Auditor",
         issueDate: "2026-03-31",
@@ -192,9 +192,9 @@ export function createVerifierGradeCase(): AuditReadyCase {
       {
         evidenceId: FIXTURE_EVIDENCE_ID,
         documentType: "PRIMARY_MONITORING_AND_CUSTOMS_PACKAGE",
-        fileName: "verified-monitoring-package.txt",
-        storagePath: `evidence/${FIXTURE_OWNER_ID}/${FIXTURE_CASE_ID}/${FIXTURE_EVIDENCE_ID}/verified-monitoring-package.txt`,
-        mimeType: "text/plain",
+        fileName: "verified-monitoring-package.pdf",
+        storagePath: `evidence/${FIXTURE_OWNER_ID}/${FIXTURE_CASE_ID}/${FIXTURE_EVIDENCE_ID}/verified-monitoring-package.pdf`,
+        mimeType: "application/pdf",
         sizeBytes: FIXTURE_EVIDENCE_BYTES.byteLength,
         issuer: "Independent Monitoring Auditor",
         issueDate: "2026-03-31",
@@ -258,22 +258,22 @@ export function createVerifierEvidenceFiles(): EvidenceBinary[] {
   return [
     {
       evidenceId: EVIDENCE_1_ID,
-      fileName: "customs-declaration-classification.txt",
+      fileName: "customs-declaration-classification.pdf",
       bytes: EVIDENCE_1_BYTES,
     },
     {
       evidenceId: EVIDENCE_2_ID,
-      fileName: "electricity-utility-invoice.txt",
+      fileName: "electricity-utility-invoice.pdf",
       bytes: EVIDENCE_2_BYTES,
     },
     {
       evidenceId: EVIDENCE_3_ID,
-      fileName: "production-reconciliation-ledger.txt",
+      fileName: "production-reconciliation-ledger.pdf",
       bytes: EVIDENCE_3_BYTES,
     },
     {
       evidenceId: FIXTURE_EVIDENCE_ID,
-      fileName: "verified-monitoring-package.txt",
+      fileName: "verified-monitoring-package.pdf",
       bytes: FIXTURE_EVIDENCE_BYTES,
     },
   ];

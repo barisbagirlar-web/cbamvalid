@@ -59,6 +59,7 @@ function createSignature(manifestBytes: Buffer): KmsSignatureResult {
     manifestHash,
     signatureBase64: signature.toString("base64"),
     publicKeyPem: publicKey,
+    protectionLevel: "SOFTWARE",
   };
 }
 
@@ -80,14 +81,15 @@ describe("verifier-grade deliverables", () => {
     expect(controls.filter((item) => item.status === "BLOCKER")).toEqual([]);
     expect(calculation.totalDirectEmissions).toBe("80");
     expect(calculation.totalIndirectEmissions).toBe("40");
-    expect(calculation.totalEmbeddedEmissions).toBe("120");
+    expect(calculation.totalEmbeddedEmissions).toBe("80");
     expect(calculation.productionVolume).toBe("100");
-    expect(calculation.specificEmbeddedEmissions).toBe("1.2");
+    expect(calculation.specificEmbeddedEmissions).toBe("0.8");
     expect(calculation.allocationShareTotal).toBe("1");
     expect(calculation.allocationReconciliationDelta).toBe("0");
-    expect(calculation.goods.map((item) => item.allocatedEmbeddedEmissions)).toEqual(["72", "48"]);
-    expect(calculation.goods.map((item) => item.specificEmbeddedEmissions)).toEqual(["1.2", "1.2"]);
-    expect(model.goods.map((item) => item.materialityThresholdSpecific)).toEqual(["0.06", "0.06"]);
+    expect(calculation.goods.map((item) => item.allocatedEmbeddedEmissions)).toEqual(["48", "32"]);
+    expect(calculation.goods.map((item) => item.specificEmbeddedEmissions)).toEqual(["0.8", "0.8"]);
+    expect(calculation.goods.map((item) => item.indirectExclusionCode)).toEqual(["ANNEX_II_DIRECT_ONLY", "ANNEX_II_DIRECT_ONLY"]);
+    expect(model.goods.map((item) => item.materialityThresholdSpecific)).toEqual(["0.04", "0.04"]);
     expect(model.automatedReadiness).toBe("READY_FOR_INDEPENDENT_VERIFICATION");
     expect(model.independentVerifierStatus).toBe("NOT_REVIEWED");
     expect(model.monitoringPlan.every((item) => item.status === "DOCUMENTED")).toBe(true);

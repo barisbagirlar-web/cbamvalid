@@ -93,6 +93,7 @@ function createSignature(manifestBytes: Buffer): KmsSignatureResult {
     manifestHash,
     signatureBase64: signature.toString("base64"),
     publicKeyPem: publicKey,
+    protectionLevel: "SOFTWARE",
   };
 }
 
@@ -138,11 +139,11 @@ describe("premium-dossier-v5 deliverables", () => {
     // Test base readiness
     const readiness = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: "2027-01-15" });
     console.log("DEBUG_READINESS:", JSON.stringify(readiness, null, 2));
-    expect(readiness.operatorStatus).toBe("OPERATOR_PREPARATION_COMPLETE");
-    expect(parseFloat(readiness.score)).toBeGreaterThanOrEqual(90);
+    expect(readiness.operatorStatus).toBe("NOT_READY");
+    expect(parseFloat(readiness.score)).toBeLessThan(90);
+    // WP-07/08: concentration + diversity + incomplete operator evidence must prevent perfect readiness
     expect(parseFloat(readiness.assessedCoveragePercent)).toBe(100);
-    expect(readiness.recommendedDecision).toBe("READY_FOR_ACCREDITED_VERIFIER_ENGAGEMENT");
-    expect(readiness.criticalBlockerCount).toBe(0);
+    expect(readiness.recommendedDecision).toBe("DO_NOT_SUBMIT");
     expect(readiness.dimensions.every((d) => d.assessmentState === "ASSESSED")).toBe(true);
 
     // Test PARTIALLY_SUPPORTED evidence blocking sealing/readiness
@@ -533,12 +534,15 @@ describe("premium-dossier-v5 deliverables", () => {
     // Check critical findings & evidence references are present
     expect(text).toContain("11111111");
     expect(text).toContain("Prepared for Independent");
-    expect(text).toContain("Verified Steel Operator GmbH");
+    expect(text).toContain("Verified Steel Operator A.S.");
     expect(text).toContain("NOT_PROVIDED");
     expect(text).not.toContain("2023/1776");
     expect(text).toContain("2025/2547");
     expect(text).toContain(`${REQUIRED_TOP_LEVEL_COMPONENTS_V5.length} controlled`);
-    expect(text).toContain("OPERATOR_PREPARATION_COMPLETE");
+    expect(text).toContain("NOT_READY");
+    expect(text).toContain("ANNEX II");
+    expect(text).not.toContain("FIPS 140-2 Level 3 KMS Sealed Hash");
+    expect(text).toContain("detached KMS signature");
     expect(text).toContain("72011011");
     expect(text).toContain("72011019");
 

@@ -5,6 +5,7 @@ import {
   GRID_EMISSION_FACTOR_SCALE_ERROR,
 } from "../input-constraints";
 import { getActiveRuleset } from "../registry/rulesets";
+import { assessOrigin } from "../../dossier/01-ruleset/origin.rules";
 
 export type QualityControlStatus = "PASS" | "WARNING" | "BLOCKER" | "NOT_APPLICABLE";
 export interface QualityControlResult { ruleId: string; name: string; status: QualityControlStatus; message?: string; remediationCode?: string; }
@@ -48,6 +49,15 @@ export function runQualityControls(caseData: AuditReadyCase): QualityControlResu
   );
   const identityComplete = [caseData.importerIdentity.legalName.value, caseData.exporterIdentity.legalName.value, caseData.installation.name.value, caseData.installation.country.value, caseData.installation.productionRoute.value, caseData.installation.systemBoundaries].every((value) => String(value || "").trim());
   add("QC_00", "Operator, installation and boundary identity", identityComplete ? "PASS" : "BLOCKER", identityComplete ? undefined : "Importer, exporter, installation, country, route and boundary statement are required.", "REM_COMPLETE_CASE_IDENTITY");
+
+  const originScope = assessOrigin(String(caseData.installation.country.value || ""));
+  add(
+    "QC_00_ORIGIN",
+    "Installation country of origin CBAM scope",
+    originScope.inScope ? "PASS" : "BLOCKER",
+    originScope.inScope ? undefined : originScope.plainLanguage,
+    originScope.inScope ? undefined : "REM_CORRECT_ORIGIN_COUNTRY"
+  );
 
   const eori = String(caseData.importerIdentity.eoriNumber.value || "").trim();
   if (!/^[A-Z]{2}[A-Z0-9]{6,15}$/i.test(eori)) add("QC_01", "EORI format", "BLOCKER", "EORI requires a two-letter country prefix and 6–15 alphanumeric characters.", "REM_CORRECT_EORI");

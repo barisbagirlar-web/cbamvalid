@@ -164,7 +164,9 @@ export class CommercialReportPipelineV2 {
         kmsKeyVersion: signature.keyVersion,
         kmsAlgorithm: signature.algorithm,
         signatureBase64: signature.signatureBase64,
-        publicVerificationState: "ACTIVE",
+        kmsProtectionLevel: signature.protectionLevel,
+        publicVerificationState: "UNAVAILABLE",
+        publicVerificationUrl: null,
       },
     };
 

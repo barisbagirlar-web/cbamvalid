@@ -69,7 +69,7 @@ describe("CBAM Quality Controls Traceability", () => {
         confidenceStatus: "HIGH_VERIFIED",
       },
       country: {
-        value: "NL",
+        value: "TR",
         sourceType: "PRIMARY",
         confidenceStatus: "HIGH_VERIFIED",
       },

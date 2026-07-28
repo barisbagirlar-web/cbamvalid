@@ -376,6 +376,8 @@ export const PremiumDossierViewModelV2Schema = PremiumDossierViewModelSchema.ext
     kmsAlgorithm: z.string(),
     signatureBase64: z.string(),
     publicVerificationState: z.string(),
+    kmsProtectionLevel: z.string().optional(),
+    publicVerificationUrl: z.string().nullable().optional(),
   }),
 });
 

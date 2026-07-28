@@ -270,7 +270,7 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       "CBAM precursor emissions",
     ],
     directAnswer:
-      "Embedded emissions combine direct process/combustion emissions and, where required, electricity-related indirect emissions, plus applicable precursor emissions. Missing material inputs must block authoritative results rather than becoming silent zeros.",
+      "Embedded emissions combine direct process/combustion emissions and, where required by sector rules, electricity-related indirect emissions, plus applicable precursor emissions. For Annex II sectors (including iron and steel, aluminium, hydrogen, and electricity), only direct emissions enter the priced specific embedded emissions used for CBAM certificates; indirect emissions are disclosed but excluded from pricing. Installation countries outside CBAM scope (EU Member States and Annex III excluded territories) are hard-blocked before authoritative calculation or sealing. Missing material inputs must block authoritative results rather than becoming silent zeros.",
     empathyContext:
       "A wrong total under buyer pressure is worse than a blocked draft. Fail-closed calculation protects you in verification.",
     evidence: [

@@ -1,4 +1,6 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 import JSZip from "jszip";
 import { Decimal } from "decimal.js";
 import type { AuditReadyCase } from "../schema";
@@ -13,6 +15,20 @@ import { buildVerifierWorkbook } from "./xlsx-builder";
 function cleanSmokeText(val: string): string {
   if (!val) return "";
   return val.replace(/\s*\(?smoke_test\)?/gi, "").trim();
+}
+
+function loadVerifyCliBytes(): Buffer {
+  const candidates = [
+    path.join(__dirname, "../../dossier/90-verify/cli/verify-package.js"),
+    path.join(__dirname, "../../../src/dossier/90-verify/cli/verify-package.js"),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return fs.readFileSync(candidate);
+  }
+  return Buffer.from(
+    '#!/usr/bin/env node\nconsole.error("CBAMValid verify CLI missing from package build"); process.exit(2);\n',
+    "utf8"
+  );
 }
 
 // V5 engines imports
@@ -540,6 +556,22 @@ export async function buildUnsignedVerifierArtifacts(params: {
     artifact("Calculation Trace.json", Buffer.from(canonical({ reportId: params.reportId, packageCode: params.packageCode, caseId: params.caseData.caseId, generatedAt: params.generatedAt, verifierModel: model, calculation: params.calculation }), "utf8"), "application/json"),
     artifact("Verifier Workspace.xlsx", workbook, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
     artifact("Supporting_Evidence/README.txt", Buffer.from(`CBAMValid immutable evidence copies\r\nPackage ID: ${params.packageCode}\r\nReport: ${params.reportId}\r\nCase: ${params.caseData.caseId}\r\nEvidence count: ${params.evidenceFiles.length}\r\nEach binary is verified against Evidence Register.csv and Data Integrity Manifest.json.\r\n`, "utf8"), "text/plain"),
+    artifact("Supporting_Evidence/verify/cli.js", loadVerifyCliBytes(), "application/javascript"),
+    artifact(
+      "Supporting_Evidence/verify/README.txt",
+      Buffer.from(
+        [
+          "CBAMValid Independent Package Verifier",
+          "Run offline (no install, no network):",
+          "  node Supporting_Evidence/verify/cli.js --package <extracted-zip-root> --strict",
+          "Checks: component SHA-256 vs manifest, detached signature, calculation-trace structure.",
+          `Package: ${params.packageCode}`,
+          `Report: ${params.reportId}`,
+        ].join("\r\n") + "\r\n",
+        "utf8"
+      ),
+      "text/plain"
+    ),
     ...params.evidenceFiles.map((item) => artifact(supportedEvidencePath(item), item.bytes, "application/octet-stream")),
   ];
   const paths = artifacts.map((item) => item.path);

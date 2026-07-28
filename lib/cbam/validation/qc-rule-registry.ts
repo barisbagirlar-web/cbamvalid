@@ -18,6 +18,11 @@ export const QC_RULE_REGISTRY = [
     expansion: "singleton",
   },
   {
+    ruleId: "QC_00_ORIGIN",
+    name: "Installation country CBAM origin scope",
+    expansion: "singleton",
+  },
+  {
     ruleId: "QC_01",
     name: "EORI format and evidence",
     expansion: "singleton",

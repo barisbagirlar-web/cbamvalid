@@ -6,6 +6,10 @@ import type { AuditReadyCase } from "../schema";
 import { assertSectorSealable, type CbamSector } from "../sectors/sector-adapter";
 import { OFFICIAL_SOURCES } from "../registry/legal-sources";
 import { REQUIRED_TOP_LEVEL_COMPONENTS_V5, REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5 } from "./package-components";
+import { buildCryptoClaims, integrityManifestWording } from "../../dossier/70-seal/crypto-claims";
+import { applicableActStack } from "../../dossier/01-ruleset/regulations.registry";
+import { releaseHistoryNarrative } from "../../dossier/50-model/version-stamp";
+import { ANNEX_II_EXCLUSION_NOTE, getSectorRule } from "../../dossier/01-ruleset/sectors.rules";
 
 const CALCULATION_LEGAL_CITATION = `${OFFICIAL_SOURCES.IMPL_2025_2547.title} (CELEX ${OFFICIAL_SOURCES.IMPL_2025_2547.celexId})`;
 const COMPONENT_COUNT_V5 = REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5;
@@ -63,6 +67,12 @@ function formatEnum(val: string): string {
 export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseData: AuditReadyCase): Buffer {
   const uniqueSectors = new Set(caseData.goods.map((item) => item.sector));
   const methodologies = [...uniqueSectors].map((sector) => assertSectorSealable(sector as CbamSector));
+  const componentCount = model.manifestSummary?.requiredTopLevelComponentCount || COMPONENT_COUNT_V5;
+  const cryptoClaims = buildCryptoClaims({
+    protectionLevel: model.manifestSummary?.kmsProtectionLevel,
+    componentCount,
+    publicVerificationUrl: model.manifestSummary?.publicVerificationUrl,
+  });
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
   doc.setCreationDate(new Date(model.generatedAt));
@@ -394,7 +404,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   writeCoverDetail("Reporting Year & Period", model.identity.reportingPeriod);
   writeCoverDetail("Operator Name", model.identity.exporterOperator);
   writeCoverDetail("Installation Name", model.identity.installation);
-  writeCoverDetail("Regulatory Basis", "Regulation (EU) 2023/956 & Implementing Regulation (EU) 2025/2546");
+  writeCoverDetail("Regulatory Basis", applicableActStack().map((entry) => entry.short).join("; "));
 
   // Secure Cryptographic Trust Stamp Card
   doc.setFillColor(245, 247, 250);
@@ -415,8 +425,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   doc.text(`Sealed Package Hash: ${model.manifestSummary?.packageHash || "NOT_AVAILABLE"}`, MARGIN + 6, 211);
   doc.text(`KMS Key Version: ${model.manifestSummary?.kmsKeyVersion || "NOT_AVAILABLE"}`, MARGIN + 6, 216);
   doc.text(`KMS Signature Prefix: ${model.manifestSummary?.signatureBase64 ? model.manifestSummary.signatureBase64.substring(0, 32) + "..." : "NOT_AVAILABLE"}`, MARGIN + 6, 221);
-  const componentCount = model.manifestSummary?.requiredTopLevelComponentCount || COMPONENT_COUNT_V5;
-  doc.text(`Sealed Package Integrity: All ${componentCount} controlled package components frozen & digitally signed.`, MARGIN + 6, 226);
+  doc.text(integrityManifestWording(componentCount), MARGIN + 6, 226);
 
   // Cover Legal Boundary statement
   doc.setFont("helvetica", "normal");
@@ -702,6 +711,9 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
 
   // Section 17: Indirect Emissions
   beginSection(17, "Indirect Emissions", 35);
+  if (caseData.goods.some((good) => getSectorRule(good.sector).annexII)) {
+    drawCallout("Annex II — Direct Emissions Only", ANNEX_II_EXCLUSION_NOTE);
+  }
   drawParagraph("Indirect emissions associated with imported electricity consumed in production processes:");
   drawTable(
     ["Indirect Emissions Component", "Data Source Type", "Consumed Quantity", "Grid Factor Basis", "Calculated Indirect Emissions"],
@@ -853,8 +865,11 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
       ["KMS Signature Base64", signatureBase64 !== "NOT_AVAILABLE" ? signatureBase64.substring(0, 48) + "..." : "NOT_AVAILABLE"],
       ["Schema Specification", model.schemaVersion],
       ["Digital Signature ID", model.reportId],
-      ["Cryptographic Security Class", "FIPS 140-2 Level 3 KMS Sealed Hash"],
-      ["Public Verification State", model.manifestSummary?.publicVerificationState || "ACTIVE"],
+      ["Cryptographic Security Class", cryptoClaims.securityClassLabel],
+      ["Public Verification State", cryptoClaims.publicVerificationState],
+      ...(cryptoClaims.publicVerificationUrl
+        ? [["Public Verification URL", cryptoClaims.publicVerificationUrl] as [string, string]]
+        : [["Public Verification URL", "NOT_PUBLISHED"] as [string, string]]),
     ],
     [65, 115]
   );
@@ -885,8 +900,8 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     title: "Version Comparison",
     preview: () => paragraphPreview("This register tracks the history of released and sealed package versions under this case scope:")
   });
-  drawParagraph("This register tracks the history of released and sealed package versions under this case scope:");
-  if (!model.previousReleases || model.previousReleases.length === 0) {
+  drawParagraph(releaseHistoryNarrative(model.releaseVersion));
+  if (model.releaseVersion === 1 && (!model.previousReleases || model.previousReleases.length === 0)) {
     drawParagraph("No previous sealed release exists.");
   }
   drawTable(

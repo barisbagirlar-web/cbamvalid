@@ -1665,7 +1665,7 @@
         "direct and indirect CBAM emissions",
         "CBAM precursor emissions"
       ],
-      "directAnswer": "Embedded emissions combine direct process/combustion emissions and, where required, electricity-related indirect emissions, plus applicable precursor emissions. Missing material inputs must block authoritative results rather than becoming silent zeros.",
+      "directAnswer": "Embedded emissions combine direct process/combustion emissions and, where required by sector rules, electricity-related indirect emissions, plus applicable precursor emissions. For Annex II sectors (including iron and steel, aluminium, hydrogen, and electricity), only direct emissions enter the priced specific embedded emissions used for CBAM certificates; indirect emissions are disclosed but excluded from pricing. Installation countries outside CBAM scope (EU Member States and Annex III excluded territories) are hard-blocked before authoritative calculation or sealing. Missing material inputs must block authoritative results rather than becoming silent zeros.",
       "empathyContext": "A wrong total under buyer pressure is worse than a blocked draft. Fail-closed calculation protects you in verification.",
       "evidence": [
         {
@@ -2539,12 +2539,12 @@
         "seal blockers",
         "automated quality controls CBAM"
       ],
-      "directAnswer": "15 automated QC rule families run against EU guidance — including unit consistency, boundary completeness, allocation balance, and default-value flagging. Material blockers must be resolved before sealing. Missing inputs are not silently converted to zero.",
+      "directAnswer": "16 automated QC rule families run against EU guidance — including unit consistency, boundary completeness, allocation balance, and default-value flagging. Material blockers must be resolved before sealing. Missing inputs are not silently converted to zero.",
       "empathyContext": "A package that seals with open blockers creates verifier friction and buyer rejection risk. Fail-closed is the durable path.",
       "evidence": [
         {
           "label": "Product QC capabilities",
-          "detail": "15 rule families · always on before seal",
+          "detail": "16 rule families · always on before seal",
           "href": "/product",
           "evidenceStatus": "verified"
         },

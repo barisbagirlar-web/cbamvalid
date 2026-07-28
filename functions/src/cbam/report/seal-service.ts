@@ -384,6 +384,10 @@ export async function sealReport(params: {
       };
 
     const controls = runQualityControls(caseData);
+    const originBlocker = controls.find((control) => control.ruleId === "QC_00_ORIGIN" && control.status === "BLOCKER");
+    if (originBlocker) {
+      throw new Error(`SEALING_BLOCKED_BY_ORIGIN_SCOPE:${originBlocker.message || "Installation country is outside CBAM scope."}`);
+    }
     if (isV5) {
       const { assessReadiness } = await import("../validation/readiness-score");
       const readinessV5 = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: assessmentContext.assessmentTimestamp });

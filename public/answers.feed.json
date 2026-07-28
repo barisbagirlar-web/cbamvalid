@@ -103,7 +103,7 @@
       "id": "embedded-emissions-calc",
       "url": "https://cbamvalid.com/answers#embedded-emissions-calc",
       "title": "How are CBAM embedded emissions calculated?",
-      "content_text": "Embedded emissions combine direct process/combustion emissions and, where required, electricity-related indirect emissions, plus applicable precursor emissions. Missing material inputs must block authoritative results rather than becoming silent zeros.\n\nA wrong total under buyer pressure is worse than a blocked draft. Fail-closed calculation protects you in verification.",
+      "content_text": "Embedded emissions combine direct process/combustion emissions and, where required by sector rules, electricity-related indirect emissions, plus applicable precursor emissions. For Annex II sectors (including iron and steel, aluminium, hydrogen, and electricity), only direct emissions enter the priced specific embedded emissions used for CBAM certificates; indirect emissions are disclosed but excluded from pricing. Installation countries outside CBAM scope (EU Member States and Annex III excluded territories) are hard-blocked before authoritative calculation or sealing. Missing material inputs must block authoritative results rather than becoming silent zeros.\n\nA wrong total under buyer pressure is worse than a blocked draft. Fail-closed calculation protects you in verification.",
       "tags": [
         "/cbam-embedded-emissions-calculation",
         "/methodology",
@@ -369,7 +369,7 @@
       "id": "product-fail-closed-qc",
       "url": "https://cbamvalid.com/answers#product-fail-closed-qc",
       "title": "What quality controls run before a CBAMValid seal?",
-      "content_text": "15 automated QC rule families run against EU guidance — including unit consistency, boundary completeness, allocation balance, and default-value flagging. Material blockers must be resolved before sealing. Missing inputs are not silently converted to zero.\n\nA package that seals with open blockers creates verifier friction and buyer rejection risk. Fail-closed is the durable path.",
+      "content_text": "16 automated QC rule families run against EU guidance — including unit consistency, boundary completeness, allocation balance, and default-value flagging. Material blockers must be resolved before sealing. Missing inputs are not silently converted to zero.\n\nA package that seals with open blockers creates verifier friction and buyer rejection risk. Fail-closed is the durable path.",
       "tags": [
         "/product",
         "/how-it-works",

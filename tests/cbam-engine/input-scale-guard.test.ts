@@ -40,8 +40,11 @@ describe("grid emission-factor scale guard", () => {
     const serverResult = performServerCalculation(serverCase);
 
     expect(browserResult.totalIndirectEmissions).toBe("43.44");
-    expect(browserResult.totalEmbeddedEmissions).toBe("123.44");
+    expect(browserResult.totalDirectEmissions).toBe("80");
+    // Annex II iron & steel: CBAM-priced embedded = direct only
+    expect(browserResult.totalEmbeddedEmissions).toBe("80");
     expect(serverResult.electricityIndirectEmissions).toBe("43.44");
-    expect(serverResult.totalEmbeddedEmissions).toBe("123.44");
+    expect(serverResult.totalEmbeddedEmissions).toBe("80");
+    expect(serverResult.goods.every((g) => g.indirectExclusionCode === "ANNEX_II_DIRECT_ONLY")).toBe(true);
   });
 });
