@@ -1,64 +1,110 @@
 import React from "react";
-import fs from "fs";
-import path from "path";
-import SampleViewer from "./SampleViewer";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import type { Metadata } from "next";
+import { AeoPageChrome } from "@/components/seo/AnswerEvidenceSection";
+import { AuthorityRail } from "@/components/marketing/AuthorityRail";
+import { PUBLIC_SAMPLE_DOSSIER } from "@/lib/sample/public-sample-dossier";
+import SampleDossierViewer from "./SampleDossierViewer";
 
-export const metadata: Metadata = {
-  title: "CBAMValid Sample Dossier | Audit-Preparation Report",
-  description: "Review a complete fictional CBAM dossier generated to demonstrate the calculation, evidence, quality-control and report-delivery structure of CBAMValid.",
-};
-
-// We load the manifest on the server to pass it down to the client viewer
-async function getManifest() {
-  const manifestPath = path.join(process.cwd(), "public", "sample-dossier", "v1", "manifest.json");
-  const data = await fs.promises.readFile(manifestPath, "utf-8");
-  return JSON.parse(data);
-}
-
-export default async function SampleDossierPage() {
-  const manifest = await getManifest();
+export default function SampleDossierPage() {
+  const pdfHash = PUBLIC_SAMPLE_DOSSIER.primaryDocumentSha256;
+  const verifyHref = `/verify?hash=${pdfHash}&try=sample`;
 
   return (
-    <main className="min-h-screen bg-background pt-24 pb-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Hero Section */}
-        <div className="text-center max-w-3xl mx-auto mb-10">
-          <h1 className="text-4xl md:text-5xl font-extrabold font-serif text-foreground tracking-tight mb-6">
-            See the Dossier Before You Buy
+    <main id="main">
+      <section className="hero" style={{ paddingBottom: "40px" }}>
+        <div className="wrap" style={{ textAlign: "center" }}>
+          <AuthorityRail mode="compact" eyebrow="Authority · Sample is gate-free" />
+          <span className="eyebrow">Public sample · Gate-free</span>
+          <h1 style={{ maxWidth: "820px", marginLeft: "auto", marginRight: "auto" }}>
+            Full sample dossier
+            <br />
+            <span className="serif-i">PDF · JSON · XLSX</span>
           </h1>
-          <p className="text-xl text-muted mb-6">
-            Review a complete fictional demonstration dossier showing how CBAMValid structures calculation results, evidence coverage, quality controls and report deliverables.
+          <p className="lede" style={{ margin: "0 auto 22px" }}>
+            A {PUBLIC_SAMPLE_DOSSIER.pageCount}-page Exporter Verification Preparation Pack built from
+            fictional demonstration data. No email gate. No account required. Download every format
+            directly.
           </p>
-          
-          <div className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-4 mb-8 text-rose-700 text-sm max-w-2xl mx-auto">
-            <strong>Important Notice:</strong> This sample dossier uses fictional demonstration data. It is not a customs declaration, an official Registry submission or an accredited verifier opinion.
-          </div>
-
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-            <Link 
-              href="/register?next=/cases/new" 
-              className="bg-accent text-surface px-8 py-3 rounded-full font-medium hover:bg-accent-hover transition-colors flex items-center justify-center w-full sm:w-auto"
-            >
-              Start a Dossier <ArrowRight className="ml-2 w-4 h-4" />
-            </Link>
-            <Link 
-              href="/pricing" 
-              className="bg-surface border border-border text-foreground px-8 py-3 rounded-full font-medium hover:bg-muted/10 transition-colors flex items-center justify-center w-full sm:w-auto"
-            >
-              View Pricing
+          <div className="hero-ctas" style={{ justifyContent: "center", flexWrap: "wrap" }}>
+            <a className="btn btn-primary" href={PUBLIC_SAMPLE_DOSSIER.downloads.pdf} download>
+              Download PDF ({PUBLIC_SAMPLE_DOSSIER.pageCount} pages)
+            </a>
+            <a className="btn btn-ghost" href={PUBLIC_SAMPLE_DOSSIER.downloads.json} download>
+              Download JSON
+            </a>
+            <a className="btn btn-ghost" href={PUBLIC_SAMPLE_DOSSIER.downloads.xlsx} download>
+              Download XLSX
+            </a>
+            <Link className="btn btn-ghost" href={verifyHref}>
+              Try it on /verify
             </Link>
           </div>
         </div>
+      </section>
 
-        {/* The Viewer */}
-        <div className="max-w-6xl mx-auto mb-20 shadow-2xl rounded-xl">
-          <SampleViewer manifest={manifest} />
+      <section className="section tight" style={{ paddingTop: "8px" }}>
+        <div className="wrap">
+          <div className="notice">
+            <b>Important notice:</b> {PUBLIC_SAMPLE_DOSSIER.notice}
+          </div>
+
+          <div
+            className="deliv-grid"
+            style={{ marginBottom: "32px" }}
+            aria-label="Direct sample downloads"
+          >
+            <div className="deliv-card">
+              <span className="fmt">PDF · {PUBLIC_SAMPLE_DOSSIER.pageCount} pages</span>
+              <h3>Sample dossier PDF</h3>
+              <p className="mono" style={{ fontSize: "0.75rem", wordBreak: "break-all" }}>
+                SHA-256 {pdfHash}
+              </p>
+              <a className="btn btn-primary" href={PUBLIC_SAMPLE_DOSSIER.downloads.pdf} download>
+                Download PDF
+              </a>
+            </div>
+            <div className="deliv-card">
+              <span className="fmt">JSON · Canonical</span>
+              <h3>Calculation trace JSON</h3>
+              <p>Machine-readable sample calculation and verifier-model payload.</p>
+              <a className="btn btn-ghost" href={PUBLIC_SAMPLE_DOSSIER.downloads.json} download>
+                Download JSON
+              </a>
+            </div>
+            <div className="deliv-card">
+              <span className="fmt">XLSX · O3CI-mapped</span>
+              <h3>Verifier workspace Excel</h3>
+              <p>Field-mapped workbook for buyer and verifier navigation practice.</p>
+              <a className="btn btn-ghost" href={PUBLIC_SAMPLE_DOSSIER.downloads.xlsx} download>
+                Download XLSX
+              </a>
+            </div>
+          </div>
+
+          <SampleDossierViewer />
         </div>
-      </div>
+      </section>
+
+      <AeoPageChrome
+        path="/sample-dossier"
+        answerHeading="Sample dossier answers with evidence"
+        answerLimit={2}
+      />
+
+      <section className="cta-band">
+        <div className="wrap">
+          <h2>
+            Ready to build <span className="serif-i">yours?</span>
+          </h2>
+          <p>
+            Draft free. Pay once to lock your own working file — same-file corrections included, no
+            subscription.
+          </p>
+          <Link className="btn btn-primary btn-lg" href="/register?next=/cases/new">
+            Start a Dossier <span className="arr">→</span>
+          </Link>
+        </div>
+      </section>
     </main>
   );
 }

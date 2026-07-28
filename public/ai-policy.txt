@@ -1,0 +1,44 @@
+# AI crawler policy for CBAMValid
+# https://cbamvalid.com/.well-known/ai.txt
+
+User-Agent: *
+Allow: /
+Allow: /llms.txt
+Allow: /llm.txt
+Allow: /llms-full.txt
+Allow: /answers.json
+Allow: /answers.rss
+Allow: /answers.feed.json
+Allow: /answers
+Allow: /glossary
+Allow: /sitemap.xml
+Allow: /sitemap/
+Allow: /favicon.svg
+Allow: /icon-512.png
+Allow: /site.webmanifest
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /cases/
+Disallow: /reports/
+Disallow: /account/
+Disallow: /credits/
+Disallow: /cbam/
+Disallow: /login
+Disallow: /register
+
+Sitemap: https://cbamvalid.com/sitemap.xml
+Sitemap-Pages: https://cbamvalid.com/sitemap/0.xml
+Sitemap-CN: https://cbamvalid.com/sitemap/1.xml
+Sitemap-Brand: https://cbamvalid.com/sitemap/2.xml
+Llms-Txt: https://cbamvalid.com/llms.txt
+Answers-Feed: https://cbamvalid.com/answers.json
+Answers-Rss: https://cbamvalid.com/answers.rss
+Answers-Json-Feed: https://cbamvalid.com/answers.feed.json
+Answers-Hub: https://cbamvalid.com/answers
+Glossary: https://cbamvalid.com/glossary
+Brand-Icon: https://cbamvalid.com/icon-512.png
+
+Content-Usage: train-opt-out=no; search=yes; cite=yes
+Note: Public pages may be cited. Do not invent accredited verification, EU approval, ratings, or fake reviews.
+Contact: info@cbamvalid.com

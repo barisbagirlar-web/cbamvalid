@@ -4,8 +4,12 @@ import { adminDb } from "../firebase-admin";
 import { DoubleSpendViolationError, EntitlementUnavailableError } from "./commerce-errors";
 import { writeLedgerEntry } from "./ledger-service";
 import { validateIdentifier } from "../firestore-validator";
+import { CASE_COMMERCIAL_SERVER } from "./case-commercial-contract";
 
+/** Legacy pack meter (grandfathered unbound entitlements). */
 const DEFAULT_MAX_RELEASES = 5;
+/** Case-scoped pay-at-lock: unlimited corrections on the paid file (storage ceiling). */
+const CASE_SCOPED_MAX_RELEASES = CASE_COMMERCIAL_SERVER.maxReleasesPerPaidCase;
 
 export interface Entitlement {
   entitlementId: string;
@@ -87,14 +91,23 @@ export async function createEntitlement(
     eventId: string;
     productCode: string;
     quantity: number;
+    /** When set, payment is bound to this working file only (pay-at-lock). */
+    scopeCaseId?: string;
+    billingModel?: string;
+    maxReleases?: number;
   }
 ): Promise<Entitlement> {
   validateIdentifier("uid", params.uid);
   validateIdentifier("orderId", params.orderId);
   validateIdentifier("transactionId", params.transactionId);
+  if (params.scopeCaseId) validateIdentifier("caseId", params.scopeCaseId);
 
   const entitlementRef = adminDb.collection("entitlements").doc();
   const now = new Date().toISOString();
+  const caseScoped = Boolean(params.scopeCaseId);
+  const maxReleases = caseScoped
+    ? Number(params.maxReleases || CASE_SCOPED_MAX_RELEASES)
+    : Number(params.maxReleases || DEFAULT_MAX_RELEASES);
   const entitlement: Entitlement = {
     entitlementId: entitlementRef.id,
     uid: params.uid,
@@ -102,11 +115,16 @@ export async function createEntitlement(
     productCode: params.productCode,
     status: "AVAILABLE",
     quantity: params.quantity,
-    maxReleases: DEFAULT_MAX_RELEASES,
+    maxReleases,
     createdAt: now,
     updatedAt: now,
     releasesCount: 0,
     releasesList: [],
+    ...(params.scopeCaseId ? { scopeCaseId: params.scopeCaseId } : {}),
+  };
+  const entitlementPayload: Record<string, unknown> = {
+    ...entitlement,
+    billingModel: params.billingModel || (caseScoped ? CASE_COMMERCIAL_SERVER.billingModel : "LEGACY_PACK"),
   };
   await writeLedgerEntry(transaction, {
     uid: params.uid,
@@ -117,13 +135,21 @@ export async function createEntitlement(
     quantity: params.quantity,
     idempotencyKey: `entitlement:${params.transactionId}:${params.productCode}`,
   });
-  transaction.set(entitlementRef, entitlement);
+  transaction.set(entitlementRef, entitlementPayload);
   return entitlement;
 }
 
 export async function reserveEntitlement(
   transaction: admin.firestore.Transaction,
-  params: { entitlementId: string; uid: string; reportId: string; caseId: string; expiresInSeconds?: number; auth?: any }
+  params: {
+    entitlementId: string;
+    uid: string;
+    reportId: string;
+    caseId: string;
+    expiresInSeconds?: number;
+    /** Callable auth context; may carry syntheticTest claims for smoke seals. */
+    auth?: unknown;
+  }
 ): Promise<Entitlement> {
   validateIdentifier("entitlementId", params.entitlementId);
   validateIdentifier("uid", params.uid);
@@ -155,6 +181,10 @@ export async function reserveEntitlement(
   const reservationExpiresAt = new Date(
     now.getTime() + (params.expiresInSeconds || 300) * 1000
   ).toISOString();
+  const authToken =
+    params.auth && typeof params.auth === "object" && "token" in params.auth
+      ? ((params.auth as { token?: Record<string, unknown> }).token || {})
+      : {};
   await writeLedgerEntry(transaction, {
     uid: entitlement.uid,
     orderId: entitlement.orderId,
@@ -163,12 +193,14 @@ export async function reserveEntitlement(
     type: "ENTITLEMENT_RESERVED",
     quantity: 1,
     idempotencyKey: `reserve:${params.entitlementId}:${params.reportId}`,
-    ...(params.auth?.token?.syntheticTest ? {
-      syntheticTest: true,
-      environment: params.auth.token.environment || "",
-      testRunId: params.auth.token.testRunId || "",
-      testLifecycle: "ACTIVE_TEST",
-    } : {}),
+    ...(authToken.syntheticTest
+      ? {
+          syntheticTest: true,
+          environment: String(authToken.environment || ""),
+          testRunId: String(authToken.testRunId || ""),
+          testLifecycle: "ACTIVE_TEST",
+        }
+      : {}),
   });
   transaction.update(entitlementRef, {
     status: "RESERVED",
@@ -189,7 +221,7 @@ export async function consumeEntitlement(
     reportHash: string;
     version: number;
     correctionReason?: string;
-    auth?: any;
+    auth?: unknown;
   }
 ): Promise<Entitlement> {
   validateIdentifier("entitlementId", params.entitlementId);
@@ -227,6 +259,10 @@ export async function consumeEntitlement(
   };
   const releasesList = [...entitlement.releasesList, releaseItem];
   const status: Entitlement["status"] = newCount === maxReleases ? "CONSUMED" : "AVAILABLE";
+  const authToken =
+    params.auth && typeof params.auth === "object" && "token" in params.auth
+      ? ((params.auth as { token?: Record<string, unknown> }).token || {})
+      : {};
   await writeLedgerEntry(transaction, {
     uid: entitlement.uid,
     orderId: entitlement.orderId,
@@ -235,12 +271,14 @@ export async function consumeEntitlement(
     type: "ENTITLEMENT_CONSUMED",
     quantity: 1,
     idempotencyKey: `consume:${params.entitlementId}:${params.reportId}:${newCount}`,
-    ...(params.auth?.token?.syntheticTest ? {
-      syntheticTest: true,
-      environment: params.auth.token.environment || "",
-      testRunId: params.auth.token.testRunId || "",
-      testLifecycle: "COMPLETED_TEST",
-    } : {}),
+    ...(authToken.syntheticTest
+      ? {
+          syntheticTest: true,
+          environment: String(authToken.environment || ""),
+          testRunId: String(authToken.testRunId || ""),
+          testLifecycle: "COMPLETED_TEST",
+        }
+      : {}),
   });
   transaction.update(entitlementRef, {
     status,

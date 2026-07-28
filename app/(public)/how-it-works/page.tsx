@@ -1,81 +1,133 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
-import { PlayCircle, ArrowRight, CheckCircle2 } from "lucide-react";
-import type { Metadata } from "next";
+import { useClassReveal } from "@/components/marketing/MarketingUi";
+import { AeoPageChrome } from "@/components/seo/AnswerEvidenceSection";
+import { CASE_COMMERCIAL, COMMERCIAL_TOPIC_CARDS } from "@/lib/billing/case-commercial-contract";
+import { WORKFLOW_STEPS_PLAIN } from "@/lib/product/customer-language";
+import {
+  PREFLIGHT_CSV_HREF,
+  PREFLIGHT_XLSX_HREF,
+  READINESS_CHECKLIST,
+  READINESS_TIME_HONESTY,
+} from "@/lib/product/readiness-kit";
+import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 
-import VideoPlayer from "@/components/ui/VideoPlayer";
-
-export const metadata: Metadata = {
-  title: "How CBAMValid Works | CBAM Dossier Workflow",
-  description: "See how CBAMValid guides users from case creation and evidence collection to quality review, secure credit purchase and sealed dossier delivery.",
-};
-
-export default function HowItWorksPage() {
-  const workflowStages = [
-    { title: "Case & Reporting Scope", desc: "Define the boundaries of your CBAM declaration." },
-    { title: "Goods & Customs Data", desc: "Import CN codes and customs evidence." },
-    { title: "Installation & Production Route", desc: "Map the manufacturing origins of your goods." },
-    { title: "Embedded Emissions", desc: "Calculate direct and indirect carbon footprints." },
-    { title: "Precursors & Adjustments", desc: "Account for complex supply chains." },
-    { title: "Evidence Register", desc: "Link primary documents to calculation nodes." },
-    { title: "Quality Review", desc: "Automated integrity checks against EU guidelines." },
-    { title: "Seal & Deliverables", desc: "Generate the final locked dossier and structured data export." }
-  ];
+export default function Page() {
+  useClassReveal();
 
   return (
-    <main className="min-h-screen bg-background pt-24 pb-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Hero Section */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h1 className="text-4xl md:text-5xl font-extrabold font-serif text-foreground tracking-tight mb-6">
-            How CBAMValid Works
+    <main id="main">
+      <section className="hero" style={{ paddingBottom: "40px" }}>
+        <div className="wrap" style={{ textAlign: "center" }}>
+          <span className="eyebrow">T4.2 · Readiness kit</span>
+          <h1 style={{ maxWidth: "820px", marginLeft: "auto", marginRight: "auto" }}>
+            From raw plant data to a sealed package — without email chaos
           </h1>
-          <p className="text-muted text-lg max-w-2xl mx-auto">
-            Build a structured dossier for one installation and one reporting year. Enter production and emissions data, link supporting evidence, resolve quality findings, and generate a sealed verifier-preparation package.
+          <p className="lede" style={{ margin: "0 auto" }}>
+            One factory + one year = one working file. Enter production and emissions data, link
+            evidence, clear blockers, then pay once to lock and download. Same file: correct and
+            re-lock as needed.
           </p>
-        </div>
-
-        {/* Premium Video Section */}
-        <div className="max-w-5xl mx-auto mb-20">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold font-serif text-foreground mb-4">See the Complete Workflow</h2>
-            <p className="text-muted text-lg max-w-2xl mx-auto">
-              This walkthrough explains each stage of the CBAMValid dossier process and the purpose of the key data inputs.
-            </p>
+          <p className="aeo-lead" style={{ margin: "18px auto 0" }}>
+            <strong>Direct answer:</strong>{" "}
+            <span className="speakable-answer">{CASE_COMMERCIAL.speakableAnswer}</span>
+          </p>
+          <p className="notice" style={{ margin: "22px auto 0", maxWidth: "56ch", textAlign: "left" }}>
+            <b>Honest time:</b> {READINESS_TIME_HONESTY}
+          </p>
+          <div className="hero-ctas" style={{ justifyContent: "center", marginTop: "22px" }}>
+            <a className="btn btn-primary" href={PREFLIGHT_XLSX_HREF} download>
+              Download pre-flight XLSX
+            </a>
+            <a className="btn btn-ghost" href={PREFLIGHT_CSV_HREF} download>
+              Download CSV
+            </a>
+            <Link className="btn btn-ghost" href="/demo">
+              Book a demo
+            </Link>
           </div>
-
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-border bg-black aspect-video group">
-            <VideoPlayer
-              src="/media/cbamvalid-product-walkthrough.mp4"
-              poster="/media/cbamvalid-product-walkthrough-poster.webp"
-              ariaLabel="CBAMValid product workflow walkthrough"
-              className="w-full h-full object-cover"
-            />
-          </div>
         </div>
+      </section>
 
-        {/* Workflow Stages */}
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {workflowStages.map((stage, index) => (
-              <div key={index} className="bg-surface border border-border rounded-xl p-6 hover:border-accent/50 transition-colors">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-8 h-8 rounded-full bg-accent/10 text-accent flex items-center justify-center font-bold text-sm">
-                    {index + 1}
-                  </div>
-                  <h3 className="font-bold text-foreground">{stage.title}</h3>
-                </div>
-                <p className="text-sm text-muted mb-4">{stage.desc}</p>
-                <Link href="/methodology" className="text-xs font-semibold text-accent hover:underline flex items-center">
-                  Learn more <ArrowRight className="w-3 h-3 ml-1" />
-                </Link>
+      <section className="section tight" id="readiness-checklist">
+        <div className="wrap">
+          <div className="section-head center reveal" style={{ marginBottom: "28px" }}>
+            <span className="eyebrow">Readiness checklist</span>
+            <h2>Four data categories before you start</h2>
+            <p>Send the pre-flight sheet to the plant. Bring it back filled. Then open a working file.</p>
+          </div>
+          <div className="deliv-grid">
+            {READINESS_CHECKLIST.map((cat) => (
+              <div className="deliv-card reveal" key={cat.id}>
+                <span className="fmt">{cat.id}</span>
+                <h3>{cat.title}</h3>
+                <ul className="feat-list">
+                  {cat.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
               </div>
             ))}
           </div>
         </div>
+      </section>
 
-      </div>
+      <section className="section tight" id="payment-rules" style={{ background: "var(--paper-2)" }}>
+        <div className="wrap">
+          <div className="section-head center reveal" style={{ marginBottom: "28px" }}>
+            <span className="eyebrow">Payment — before you start</span>
+            <h2>How money works in this workflow</h2>
+          </div>
+          <div className="method-grid">
+            {COMMERCIAL_TOPIC_CARDS.map((card) => (
+              <div className="method-card reveal" key={card.id}>
+                <h3>{card.title}</h3>
+                <p>{card.body}</p>
+              </div>
+            ))}
+          </div>
+          <p style={{ textAlign: "center", marginTop: "28px" }}>
+            Single Pack is {CANONICAL_PRICING.priceFormatted} at lock.{" "}
+            <Link href="/pricing#how-payment-works">Full pricing rules</Link>
+            {" · "}
+            <Link href="/terms">Terms of Service</Link>
+            {" · "}
+            <Link href="/refund-policy">Refund Policy</Link>
+          </p>
+        </div>
+      </section>
+
+      <section className="section tight">
+        <div className="wrap">
+          <div className="section-head center reveal" style={{ marginBottom: "28px" }}>
+            <span className="eyebrow">Eight plain steps</span>
+            <h2>What you do inside the working file</h2>
+          </div>
+          <div className="vsteps">
+            {WORKFLOW_STEPS_PLAIN.map((step) => (
+              <div className="vstep reveal" key={step.num}>
+                <div className="n">{step.num}</div>
+                <div className="body">
+                  <h3>{step.title}</h3>
+                  <p>
+                    {step.desc}
+                    {step.num === 8 ? ` ${CASE_COMMERCIAL.customerOneLiner}` : ""}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ textAlign: "center", marginTop: "56px" }}>
+            <Link className="btn btn-primary btn-lg" href="/register?next=/cases/new">
+              Create your first working file — Free <span className="arr">→</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <AeoPageChrome path="/how-it-works" answerHeading="Workflow answers with evidence" answerLimit={2} />
     </main>
   );
 }

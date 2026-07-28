@@ -14,6 +14,8 @@ export interface SectorConfig {
   displayName: string;
   legalStatus: SectorLegalStatus;
   sealingAllowed: boolean;
+  annexII: boolean;
+  indirectPriced: boolean;
   allowedUnits: string[];
   requiredPrecursors: string[];
   defaultBoundaries: string;
@@ -31,6 +33,8 @@ export const SECTOR_CONFIGS: Record<CbamSector, SectorConfig> = {
     displayName: "Iron and Steel",
     legalStatus: "IN_FORCE",
     sealingAllowed: true,
+    annexII: true,
+    indirectPriced: false,
     allowedUnits: ["metric_tonne"],
     requiredPrecursors: ["7201", "7202", "7205"],
     defaultBoundaries: "Coke oven, sinter or pellet preparation, blast furnace, basic oxygen furnace, direct reduction, electric arc furnace, casting and finishing processes within the installation boundary.",
@@ -46,6 +50,8 @@ export const SECTOR_CONFIGS: Record<CbamSector, SectorConfig> = {
     displayName: "Aluminium",
     legalStatus: "IN_FORCE",
     sealingAllowed: true,
+    annexII: true,
+    indirectPriced: false,
     allowedUnits: ["metric_tonne"],
     requiredPrecursors: ["2606", "2818", "7601", "7602"],
     defaultBoundaries: "Alumina preparation where applicable, electrolysis, anode production or baking, remelting, casting and finishing within the installation boundary.",
@@ -61,6 +67,8 @@ export const SECTOR_CONFIGS: Record<CbamSector, SectorConfig> = {
     displayName: "Cement",
     legalStatus: "IN_FORCE",
     sealingAllowed: true,
+    annexII: false,
+    indirectPriced: true,
     allowedUnits: ["metric_tonne"],
     requiredPrecursors: ["25231000"],
     defaultBoundaries: "Raw meal preparation, kiln calcination, clinker production, blending, grinding and directly connected energy flows.",
@@ -76,6 +84,8 @@ export const SECTOR_CONFIGS: Record<CbamSector, SectorConfig> = {
     displayName: "Fertilisers",
     legalStatus: "IN_FORCE",
     sealingAllowed: true,
+    annexII: false,
+    indirectPriced: true,
     allowedUnits: ["metric_tonne"],
     requiredPrecursors: ["2814", "2808"],
     defaultBoundaries: "Hydrogen and ammonia production, nitric acid production, urea or fertiliser synthesis, granulation and directly connected utilities.",
@@ -91,6 +101,8 @@ export const SECTOR_CONFIGS: Record<CbamSector, SectorConfig> = {
     displayName: "Hydrogen",
     legalStatus: "IN_FORCE",
     sealingAllowed: true,
+    annexII: true,
+    indirectPriced: false,
     allowedUnits: ["metric_tonne"],
     requiredPrecursors: [],
     defaultBoundaries: "Hydrogen production, purification, directly connected energy supply and eligible carbon capture or transfer treatment.",
@@ -106,6 +118,8 @@ export const SECTOR_CONFIGS: Record<CbamSector, SectorConfig> = {
     displayName: "Electricity",
     legalStatus: "IN_FORCE",
     sealingAllowed: true,
+    annexII: true,
+    indirectPriced: false,
     allowedUnits: ["MWh"],
     requiredPrecursors: [],
     defaultBoundaries: "Generating unit, eligible fuel and energy inputs, net electricity output and direct technical connection where claimed.",
@@ -121,6 +135,8 @@ export const SECTOR_CONFIGS: Record<CbamSector, SectorConfig> = {
     displayName: "Downstream Complex Goods",
     legalStatus: "PROPOSAL_ONLY",
     sealingAllowed: false,
+    annexII: false,
+    indirectPriced: false,
     allowedUnits: ["metric_tonne"],
     requiredPrecursors: ["72", "73", "76"],
     defaultBoundaries: "Advisory mapping only. Downstream extension proposals do not create current definitive-period scope unless and until binding legislation enters into force.",

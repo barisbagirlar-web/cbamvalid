@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { VERIFICATION_MATERIALITY_RATE } from "../registry/rulesets";
+import { PackageCodeSchema, resolvePackageCode } from "./package-code";
 
 const HashSchema = z.string().regex(/^[a-f0-9]{64}$/i);
 const ReportIdSchema = z.string().regex(/^report_[a-f0-9]{64}$/);
@@ -54,6 +55,7 @@ const PackageMetadataSchema = z.object({
 
 export const PersistedSealedReportSchema = z.object({
   reportId: ReportIdSchema,
+  packageCode: PackageCodeSchema.optional(),
   uid: z.string().min(1),
   caseId: z.string().min(1),
   entitlementId: z.string().min(1),
@@ -78,12 +80,16 @@ export const PersistedSealedReportSchema = z.object({
 });
 
 export const SealedReportViewSchema = PersistedSealedReportSchema.extend({
+  packageCode: PackageCodeSchema,
   packageTopLevelComponentCount: z.number(),
   automatedReadiness: z.enum([
     "READY_FOR_INDEPENDENT_VERIFICATION",
     "BLOCKED_BEFORE_INDEPENDENT_VERIFICATION",
     "READY_FOR_VERIFIER_REVIEW",
+    "OPERATOR_PREPARATION_COMPLETE",
+    "INCOMPLETE_ASSESSMENT",
     "NOT_READY",
+    "CONDITIONAL",
   ]),
   independentVerifierStatus: z.union([
     z.literal("NOT_REVIEWED"),
@@ -98,8 +104,17 @@ export type PersistedSealedReport = z.infer<typeof PersistedSealedReportSchema>;
 export type SealedReportView = z.infer<typeof SealedReportViewSchema>;
 
 export function toSealedReportView(value: unknown): SealedReportView {
-  const report = PersistedSealedReportSchema.parse(value);
-  const raw = value as Record<string, unknown>;
+  const raw = { ...value as Record<string, unknown> };
+  if (raw.packageMetadata && typeof raw.packageMetadata === "object") {
+    const metaParse = PackageMetadataSchema.safeParse(raw.packageMetadata);
+    if (!metaParse.success) {
+      delete raw.packageMetadata;
+    } else {
+      raw.packageMetadata = metaParse.data;
+    }
+  }
+
+  const report = PersistedSealedReportSchema.parse(raw);
   const isV5 =
     raw.productCode === "pack_premium_dossier_v5" ||
     raw.releaseContractVersion === 5 ||
@@ -107,11 +122,24 @@ export function toSealedReportView(value: unknown): SealedReportView {
 
   const manifestCount = report.packageMetadata?.actualTopLevelComponentCount;
   const defaultCount = isV5 ? 25 : 27;
+  const storedStatus = typeof raw.operatorReadinessStatus === "string" ? raw.operatorReadinessStatus : undefined;
+  const automatedReadiness = storedStatus === "OPERATOR_PREPARATION_COMPLETE" ||
+    storedStatus === "INCOMPLETE_ASSESSMENT" ||
+    storedStatus === "NOT_READY" ||
+    storedStatus === "CONDITIONAL" ||
+    storedStatus === "READY_FOR_VERIFIER_REVIEW"
+    ? storedStatus === "READY_FOR_VERIFIER_REVIEW"
+      ? "OPERATOR_PREPARATION_COMPLETE"
+      : storedStatus
+    : isV5
+      ? "OPERATOR_PREPARATION_COMPLETE"
+      : "READY_FOR_INDEPENDENT_VERIFICATION";
 
   return SealedReportViewSchema.parse({
     ...report,
+    packageCode: resolvePackageCode({ packageCode: report.packageCode, reportId: report.reportId }),
     packageTopLevelComponentCount: manifestCount !== undefined ? manifestCount : defaultCount,
-    automatedReadiness: isV5 ? "READY_FOR_VERIFIER_REVIEW" : "READY_FOR_INDEPENDENT_VERIFICATION",
+    automatedReadiness,
     independentVerifierStatus: "NOT_REVIEWED",
     verificationMaterialityRate: VERIFICATION_MATERIALITY_RATE,
   });

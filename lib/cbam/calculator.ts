@@ -1,5 +1,11 @@
 import { Decimal } from "decimal.js";
 import { AuditReadyCase, CalculationTraceNode } from "./schema";
+import {
+  GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH,
+  GRID_EMISSION_FACTOR_SCALE_ERROR,
+} from "./input-constraints";
+import { getSectorRule } from "../dossier/01-ruleset/sectors.rules";
+import { computePricedSeeFromStrings } from "../dossier/20-kernel/allocation";
 
 Decimal.set({ precision: 28, rounding: Decimal.ROUND_HALF_UP });
 
@@ -95,6 +101,10 @@ export type GoodCalculationPreview = {
 export type DossierCalculationPreview = {
   trace: CalculationTraceNode[];
   goods: GoodCalculationPreview[];
+  installationDirectEmissions: string;
+  electricityIndirectEmissions: string;
+  precursorDirectEmissions: string;
+  precursorIndirectEmissions: string;
   totalDirectEmissions: string;
   totalIndirectEmissions: string;
   totalPrecursorEmissions: string;
@@ -110,6 +120,10 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
   const direct = decimal(caseData.directEmissions.value, "directEmissions");
   const electricity = decimal(caseData.electricityConsumed.value, "electricityConsumed");
   const gridFactor = decimal(caseData.gridEmissionFactor.value, "gridEmissionFactor");
+
+  if (gridFactor?.gt(GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH)) {
+    throw new Error(`CALCULATION_GRID_FACTOR_SCALE_INVALID:${GRID_EMISSION_FACTOR_SCALE_ERROR}`);
+  }
 
   const productionRecords = caseData.goods.map((good, index) => ({
     good,
@@ -157,7 +171,7 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
 
   const totalDirect = direct !== null && precursorComplete ? direct.plus(precursorDirect) : null;
   const totalIndirect = indirect !== null && precursorComplete ? indirect.plus(precursorIndirect) : null;
-  const totalEmbedded = totalDirect !== null && totalIndirect !== null ? totalDirect.plus(totalIndirect) : null;
+  const totalDisclosed = totalDirect !== null && totalIndirect !== null ? totalDirect.plus(totalIndirect) : null;
   trace.push(node({
     formulaId: "CBAM_TOTAL_EMBEDDED_EMISSIONS",
     inputs: {
@@ -166,9 +180,9 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
       precursorDirectEmissions: precursorDirect.toString(),
       precursorIndirectEmissions: precursorIndirect.toString(),
     },
-    outputValue: totalEmbedded ?? "NOT_CALCULATED",
+    outputValue: totalDisclosed ?? "NOT_CALCULATED",
     outputUnit: "tCO2e",
-    warnings: totalEmbedded === null ? ["Required emissions values are incomplete."] : [],
+    warnings: totalDisclosed === null ? ["Required emissions values are incomplete."] : [],
   }));
 
   const shares = caseData.goods.length === 1
@@ -184,45 +198,61 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
   const allocationReady = allocationReconciliationDelta !== null && allocationReconciliationDelta.lte(ALLOCATION_TOLERANCE);
 
   const goods: GoodCalculationPreview[] = [];
-  if (totalEmbedded !== null && productionComplete && allocationReady) {
+  let totalPriced: Decimal | null = null;
+  if (totalDirect !== null && totalIndirect !== null && productionComplete && allocationReady) {
+    totalPriced = new Decimal(0);
     productionRecords.forEach((record, index) => {
       const share = (shares as Decimal[])[index];
-      const allocated = totalEmbedded.times(share);
-      const specific = allocated.dividedBy(record.production!).toDecimalPlaces(6, Decimal.ROUND_HALF_UP);
+      const rule = getSectorRule(record.good.sector);
+      const priced = computePricedSeeFromStrings({
+        totalDirect: totalDirect.toString(),
+        totalIndirect: totalIndirect.toString(),
+        allocationShare: share.toString(),
+        productionTonnes: record.production!.toString(),
+        rule,
+      });
+      totalPriced = totalPriced!.plus(priced.attributedPriced);
       goods.push({
         goodIndex: index + 1,
         cnCode: String(record.good.cnCode.value || ""),
         sector: record.good.sector,
         allocationShare: share.toString(),
         productionVolume: record.production!.toString(),
-        allocatedEmbeddedEmissions: allocated.toString(),
-        specificEmbeddedEmissions: specific.toString(),
+        allocatedEmbeddedEmissions: priced.attributedPriced,
+        specificEmbeddedEmissions: priced.seePriced,
       });
       trace.push(node({
         formulaId: `CBAM_GOOD_EMISSIONS_ALLOCATION_${index + 1}`,
         inputs: {
-          totalEmbeddedEmissions: totalEmbedded.toString(),
+          totalDirectEmissions: totalDirect.toString(),
+          totalIndirectEmissions: totalIndirect.toString(),
           allocationShare: share.toString(),
           productionVolume: record.production!.toString(),
+          annexII: rule.annexII,
+          indirectPriced: rule.indirectPriced,
         },
-        outputValue: specific,
+        outputValue: new Decimal(priced.seePriced),
         outputUnit: "tCO2e/t",
-        roundingApplied: { decimalPlaces: 6, mode: "ROUND_HALF_UP", stage: "per-good specific embedded emissions" },
+        roundingApplied: { decimalPlaces: 6, mode: "ROUND_HALF_UP", stage: "per-good specific embedded emissions (priced)" },
       }));
     });
   }
 
-  const aggregateSpecific = totalEmbedded !== null && production !== null
-    ? totalEmbedded.dividedBy(production).toDecimalPlaces(6, Decimal.ROUND_HALF_UP)
+  const aggregateSpecific = totalPriced !== null && production !== null
+    ? totalPriced.dividedBy(production).toDecimalPlaces(6, Decimal.ROUND_HALF_UP)
     : null;
 
   return {
     trace,
     goods,
+    installationDirectEmissions: direct?.toString() ?? "NOT_CALCULATED",
+    electricityIndirectEmissions: indirect?.toString() ?? "NOT_CALCULATED",
+    precursorDirectEmissions: precursorComplete ? precursorDirect.toString() : "NOT_CALCULATED",
+    precursorIndirectEmissions: precursorComplete ? precursorIndirect.toString() : "NOT_CALCULATED",
     totalDirectEmissions: totalDirect?.toString() ?? "NOT_CALCULATED",
     totalIndirectEmissions: totalIndirect?.toString() ?? "NOT_CALCULATED",
     totalPrecursorEmissions: precursorTotal?.toString() ?? "NOT_CALCULATED",
-    totalEmbeddedEmissions: totalEmbedded?.toString() ?? "NOT_CALCULATED",
+    totalEmbeddedEmissions: totalPriced?.toString() ?? "NOT_CALCULATED",
     productionVolume: production?.toString() ?? "NOT_CALCULATED",
     specificEmbeddedEmissions: aggregateSpecific?.toString() ?? "NOT_CALCULATED",
     allocationShareTotal: allocationShareTotal?.toString() ?? "NOT_CALCULATED",

@@ -9,6 +9,9 @@ import { firebaseDb } from "@/lib/firebase/client";
 import { Menu, X, User, LogOut, Shield, FileText, LayoutDashboard, CreditCard, Activity, Plus } from "lucide-react";
 import { BrandLockup } from "@/components/brand/BrandLockup";
 import { APP_NAV } from "@/lib/navigation";
+import { getEntitlements } from "@/lib/functions/client";
+import { packsUnlockableFromCredits } from "@/lib/billing/credit-contract";
+import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 
 export function AppHeader() {
   const { user, claims, signOutUser, loading } = useAuth();
@@ -21,25 +24,53 @@ export function AppHeader() {
   
   const [availableCredits, setAvailableCredits] = useState<number>(0);
   const [availableUses, setAvailableUses] = useState<number>(0);
+  const [activePackCount, setActivePackCount] = useState<number>(0);
 
   const isAdmin = claims?.admin === true || claims?.ownerAdmin === true;
 
-  // Listen to live credit balance
+  // Live credit balance (display only). Pack/seal capacity comes from entitlements.
   useEffect(() => {
     if (user && !isAdmin) {
       const unsub = onSnapshot(doc(firebaseDb, "users", user.uid, "creditSummary", "current"), (snapshot) => {
         if (snapshot.exists()) {
-          const credits = snapshot.data().availableCredits || 0;
-          setAvailableCredits(credits);
-          setAvailableUses(Math.floor(credits / 20)); // 100 credits = 5 uses, so 1 use = 20 credits
+          setAvailableCredits(Number(snapshot.data().availableCredits || 0));
         } else {
           setAvailableCredits(0);
-          setAvailableUses(0);
         }
       });
       return () => unsub();
     }
   }, [user, isAdmin]);
+
+  // Active Preparation Pack releases must come from AVAILABLE entitlements, not credits/20.
+  useEffect(() => {
+    if (!user || isAdmin) {
+      setAvailableUses(0);
+      setActivePackCount(0);
+      return;
+    }
+    let cancelled = false;
+    void getEntitlements()
+      .then((entitlements) => {
+        if (cancelled) return;
+        const remaining = entitlements.reduce(
+          (sum, entitlement) => sum + Number(entitlement.releasesRemaining || 0),
+          0
+        );
+        setAvailableUses(remaining);
+        setActivePackCount(entitlements.length);
+      })
+      .catch((error) => {
+        console.error("Failed to load header entitlement status", error);
+        if (!cancelled) {
+          setAvailableUses(0);
+          setActivePackCount(0);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, isAdmin, pathname]);
 
   // Click outside listener for account menu
   useEffect(() => {
@@ -166,23 +197,40 @@ export function AppHeader() {
         {/* RIGHT: Actions - no wrap */}
         <div className="flex-shrink-0 flex items-center gap-4 lg:gap-5">
           {!isAdmin && (
-            <Link href="/credits/buy" className="hidden lg:flex items-center gap-2 bg-surface hover:bg-border/30 transition-colors text-foreground px-4 py-1.5 rounded-full border border-border outline-none focus-visible:ring-2 focus-visible:ring-accent">
+            <Link href="/account" className="hidden lg:flex items-center gap-2 bg-surface hover:bg-border/30 transition-colors text-foreground px-4 py-1.5 rounded-full border border-border outline-none focus-visible:ring-2 focus-visible:ring-accent">
               <span className="text-[13px] font-medium text-muted">
                 {availableUses > 0 ? (
-                  <>1 Active Preparation Pack &middot; <span className="text-foreground">{availableUses} Sealed Versions Left</span></>
+                  <>
+                    {activePackCount} Active Preparation Pack{activePackCount === 1 ? "" : "s"} &middot;{" "}
+                    <span className="text-foreground">{availableUses} Sealed Releases Left</span>
+                  </>
+                ) : packsUnlockableFromCredits(availableCredits) > 0 ? (
+                  <>
+                    {packsUnlockableFromCredits(availableCredits)} pack
+                    {packsUnlockableFromCredits(availableCredits) === 1 ? "" : "s"} ready ·{" "}
+                    <span className="text-foreground">Activate on Account</span>
+                  </>
                 ) : (
-                  <>No Active Preparation Pack</>
+                  <>No Active Preparation Pack · <span className="text-foreground">Buy to seal</span></>
                 )}
               </span>
             </Link>
           )}
 
-          {!isAdmin && availableUses === 0 && (
+          {!isAdmin && availableUses === 0 && packsUnlockableFromCredits(availableCredits) === 0 && (
             <Link 
               href="/credits/buy" 
               className="hidden lg:inline-flex h-[44px] items-center justify-center gap-2 rounded-md bg-accent px-5 text-[15px] font-medium text-surface transition-colors hover:bg-accent-hover active:bg-accent-active outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent shadow-sm"
             >
-              Buy Pack — $150
+              Buy Pack — {CANONICAL_PRICING.priceFormatted}
+            </Link>
+          )}
+          {!isAdmin && availableUses === 0 && packsUnlockableFromCredits(availableCredits) > 0 && (
+            <Link 
+              href="/account" 
+              className="hidden lg:inline-flex h-[44px] items-center justify-center gap-2 rounded-md bg-accent px-5 text-[15px] font-medium text-surface transition-colors hover:bg-accent-hover active:bg-accent-active outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent shadow-sm"
+            >
+              Activate Pack
             </Link>
           )}
 
@@ -207,11 +255,19 @@ export function AppHeader() {
           <nav className="flex flex-col py-2" aria-label="Mobile Application Navigation">
             {!isAdmin && (
               <div className="px-6 py-4 mb-2 bg-accent/5 border-b border-border">
-                <Link href="/credits/buy" className="flex items-center justify-between outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm">
+                <Link
+                  href={availableUses > 0 || packsUnlockableFromCredits(availableCredits) > 0 ? "/account" : "/credits/buy"}
+                  className="flex items-center justify-between outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
+                >
                   <span className="text-[15px] font-semibold text-muted uppercase tracking-wider">Preparation Pack</span>
                   <div className="flex items-center gap-2">
                     {availableUses > 0 ? (
-                      <span className="text-sm font-bold text-accent px-2 py-1 bg-accent/10 rounded">{availableUses} Versions Left</span>
+                      <span className="text-sm font-bold text-accent px-2 py-1 bg-accent/10 rounded">{availableUses} Releases Left</span>
+                    ) : packsUnlockableFromCredits(availableCredits) > 0 ? (
+                      <span className="text-sm font-bold text-accent px-2 py-1 bg-accent/10 rounded">
+                        {packsUnlockableFromCredits(availableCredits)} pack
+                        {packsUnlockableFromCredits(availableCredits) === 1 ? "" : "s"} · Activate
+                      </span>
                     ) : (
                       <span className="text-sm text-muted">No Active Pack</span>
                     )}

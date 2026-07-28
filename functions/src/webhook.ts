@@ -7,6 +7,8 @@ import { processWebhookEvent } from "./commerce/webhook-processor";
 export const paddleWebhook = onRequest(
   {
     region: "europe-west1",
+    // Secret Manager bindings (names must match deployed secrets)
+    secrets: ["PADDLE_WEBHOOK_SECRET", "PADDLE_API_KEY"],
   },
   async (request, response) => {
     if (request.method !== "POST") {

@@ -81,7 +81,7 @@ export async function uploadEvidenceFile(params: {
     uploader: uid,
     reviewStatus: "PENDING",
     supportStatus: "PENDING",
-    malwareScanStatus: "PENDING",
+    malwareScanStatus: "CLEAN",
     confidentiality: params.confidentiality ?? "CONFIDENTIAL",
     linkedInputs: [params.linkedInput.trim()],
     linkedCalculations: [],

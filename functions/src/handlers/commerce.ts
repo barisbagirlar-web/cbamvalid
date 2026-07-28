@@ -16,12 +16,21 @@ export const getEntitlements = createCallable({}, async (_, { auth }) => {
   for (const document of snapshot.docs) {
     const data: Record<string, unknown> = { entitlementId: document.id, ...document.data() };
     const releasesCount = Number(data.releasesCount || 0);
-    const releasesRemaining = Math.max(0, MAX_RELEASES_PER_PACK - releasesCount);
+    const maxReleases = Number(data.maxReleases || MAX_RELEASES_PER_PACK);
+    const releasesRemaining = Math.max(0, maxReleases - releasesCount);
     if (releasesRemaining === 0) continue;
     const orderId = typeof data.orderId === "string" ? data.orderId : document.id;
     const productCode = typeof data.productCode === "string" ? data.productCode : "UNKNOWN";
-    const groupKey = `${orderId}:${productCode}`;
-    const candidate: Record<string, unknown> = { ...data, releasesCount, releasesRemaining };
+    const scopeCaseId = typeof data.scopeCaseId === "string" ? data.scopeCaseId : "";
+    const groupKey = scopeCaseId
+      ? `case:${scopeCaseId}:${productCode}`
+      : `${orderId}:${productCode}`;
+    const candidate: Record<string, unknown> = {
+      ...data,
+      releasesCount,
+      releasesRemaining,
+      maxReleases,
+    };
     const existing = grouped.get(groupKey);
     const candidateId = typeof candidate.entitlementId === "string" ? candidate.entitlementId : "";
     const existingId = typeof existing?.entitlementId === "string" ? existing.entitlementId : "";
@@ -33,6 +42,7 @@ export const getEntitlements = createCallable({}, async (_, { auth }) => {
 
 export const createCheckoutSession = createCallable(
   {
+    secrets: ["PADDLE_API_KEY"],
     schema: z.object({
       productCode: z.string(),
       caseId: z.string(),
@@ -49,8 +59,8 @@ export const createCheckoutSession = createCallable(
 
     const { createCheckout } = await import("../commerce/paddle/checkout-service");
     try {
-      const transactionId = await createCheckout(auth.uid, auth.token.email || "", productCode, { caseId });
-      return { transactionId, status: "success" };
+      const checkout = await createCheckout(auth.uid, auth.token.email || "", productCode, { caseId });
+      return { ...checkout, status: "success" };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "CHECKOUT_CREATION_FAILED";
       throw new HttpsError("internal", message);
@@ -67,14 +77,23 @@ export const unlockCbamUses = createCallable(
         const idempotencyRef = adminDb.collection("idempotency").doc(`unlock_${digest}`);
         const idempotencyDoc = await transaction.get(idempotencyRef);
         if (idempotencyDoc.exists) {
-          return { status: "success", message: "The five-release pack was already unlocked." };
+          const prior = idempotencyDoc.data() || {};
+          return {
+            status: "success",
+            message: "The legacy pack balance was already activated.",
+            entitlementId: typeof prior.entitlementId === "string" ? prior.entitlementId : undefined,
+            releasesGranted: Number(prior.releasesGranted || MAX_RELEASES_PER_PACK),
+          };
         }
 
         const creditRef = adminDb.collection("users").doc(auth.uid).collection("creditSummary").doc("current");
         const creditDoc = await transaction.get(creditRef);
         const availableCredits = Number(creditDoc.data()?.availableCredits || 0);
         if (!Number.isFinite(availableCredits) || availableCredits < 100) {
-          throw new HttpsError("failed-precondition", "100 account credits are required to unlock one five-release CBAM pack.");
+          throw new HttpsError(
+            "failed-precondition",
+            "A purchased Preparation Pack balance is required to activate leftover legacy sealing capacity."
+          );
         }
 
         const now = new Date().toISOString();
@@ -121,7 +140,7 @@ export const unlockCbamUses = createCallable(
 
         return {
           status: "success",
-          message: "One CBAM pack with five successful releases was unlocked.",
+          message: "Legacy Preparation Pack balance activated (grandfather path — not a new card charge).",
           entitlementId,
           releasesGranted: MAX_RELEASES_PER_PACK,
         };

@@ -35,9 +35,9 @@ const workspaceMethodology = read("app/(workspace)/cbam/methodology/page.tsx");
 const publicMethodology = read("app/(public)/methodology/page.tsx");
 
 const routeContracts = [
-  ['{ label: "Dashboard", href: "/cbam" }', "Dashboard route"],
-  ['{ label: "Cases", href: "/cases" }', "Cases route"],
-  ['{ label: "Reports", href: "/reports" }', "Reports route"],
+  ['{ label: "Home", href: "/cbam" }', "Home route"],
+  ['{ label: "Working files", href: "/cases" }', "Working files route"],
+  ['{ label: "Locked packages", href: "/reports" }', "Locked packages route"],
   ['{ label: "Methodology & Sources", href: "/cbam/methodology" }', "Workspace methodology route"]
 ];
 
@@ -51,8 +51,31 @@ requireText(workspaceLayout, "<AppHeader />", "Workspace layout header");
 rejectText(workspaceLayout, "<PublicHeader />", "Workspace layout header isolation");
 
 requireText(dashboard, "Prepare Your CBAM Verification Package", "New-user onboarding");
+requireText(dashboard, "Where you are", "Journey where-you-are banner");
+requireText(dashboard, "CUSTOMER_LANGUAGE", "Customer language SSOT wiring");
+requireText(dashboard, "resolveJourneyState", "Journey state machine wiring");
 requireText(cases, "Cases", "Cases page content");
 requireText(reports, "Reports", "Reports page content");
+
+const customerLanguage = read("lib/product/customer-language.ts");
+requireText(customerLanguage, 'workingFiles: "Working files"', "Working files customer language");
+requireText(customerLanguage, 'lockedPackages: "Locked packages"', "Locked packages customer language");
+const journeyState = read("lib/product/journey-state.ts");
+requireText(journeyState, "NO_FILE", "Journey NO_FILE state");
+requireText(journeyState, "READY_TO_SEAL", "Journey READY_TO_SEAL state");
+requireText(journeyState, "BLOCKERS_OPEN", "Journey BLOCKERS_OPEN state");
+const wizardClient = read("app/(workspace)/cases/[caseId]/CaseWizardClient.tsx");
+requireText(wizardClient, "WorkingFileJourneyStrip", "Wizard journey strip");
+requireText(wizardClient, "Working file", "Wizard working-file title");
+rejectText(
+  wizardClient,
+  'aria-label="Working file steps"',
+  "Duplicate step navigator must not render beside WorkingFileJourneyStrip",
+);
+const journeyStrip = read("components/cbam/WorkingFileJourneyStrip.tsx");
+requireText(journeyStrip, "Where you are", "Wizard where-you-are strip");
+requireText(journeyStrip, "Step {currentStep} of 8", "Wizard step counter");
+requireText(journeyStrip, 'aria-label="Eight plain steps"', "Single SSOT step grid in journey strip");
 requireText(workspaceMethodology, "MethodologyContent", "Workspace methodology content");
 requireText(publicMethodology, "MethodologyContent", "Public methodology content");
 

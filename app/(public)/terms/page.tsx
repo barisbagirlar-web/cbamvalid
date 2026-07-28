@@ -1,6 +1,9 @@
+import Link from "next/link";
 import { legalConfig } from "@/lib/legal-config";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 import { generateBreadcrumbSchema } from "@/lib/seo/schema";
+import { COMMERCIAL_LEGAL_CLAUSES } from "@/lib/billing/case-commercial-contract";
+import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 
 export const metadata = generateSeoMetadata("/terms");
 
@@ -8,8 +11,8 @@ export default function TermsPage() {
   const jsonLd = [
     generateBreadcrumbSchema([
       { name: "Home", item: "/" },
-      { name: "Terms of Service", item: "/terms" }
-    ])
+      { name: "Terms of Service", item: "/terms" },
+    ]),
   ];
 
   return (
@@ -25,43 +28,86 @@ export default function TermsPage() {
         <div>
           <h2 className="text-xl font-bold mb-2">1. Introduction</h2>
           <p className="text-sm text-muted">
-            These Terms of Service govern your use of CBAMValid, operated by {legalConfig.legalEntityName} ({legalConfig.registrationNumber ? `Reg: ${legalConfig.registrationNumber}` : ''}). By using our service, you agree to these terms.
+            These Terms of Service govern your use of CBAMValid, operated by {legalConfig.legalEntityName}
+            {legalConfig.registrationNumber ? ` (Reg: ${legalConfig.registrationNumber})` : ""}. By
+            using our service, you agree to these terms.
           </p>
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-2">2. Product Scope & Account Requirements</h2>
+          <h2 className="text-xl font-bold mb-2">2. Product Scope &amp; Account Requirements</h2>
           <p className="text-sm text-muted">
-            CBAMValid provides software tools for compiling Carbon Border Adjustment Mechanism (CBAM) exporter evidence. You must provide accurate information when creating an account and generating reports. Our services are intended for business use.
+            CBAMValid provides software tools for compiling Carbon Border Adjustment Mechanism (CBAM)
+            exporter evidence and sealing an operator-prepared verifier-preparation package. You must
+            provide accurate information when creating an account and generating packages. Our
+            services are intended for business use.
+          </p>
+        </div>
+
+        <div id="commercial-terms">
+          <h2 className="text-xl font-bold mb-2">3. Commercial Model — Pay at Lock</h2>
+          <p className="text-sm text-muted mb-4">
+            The following commercial rules are binding. A plain-language summary also appears on{" "}
+            <Link href="/pricing#how-payment-works" className="underline">
+              Pricing
+            </Link>
+            .
+          </p>
+          <ol className="list-decimal space-y-4 pl-5 text-sm text-muted">
+            {COMMERCIAL_LEGAL_CLAUSES.map((clause) => (
+              <li key={clause.title}>
+                <strong className="text-foreground">{clause.title}.</strong> {clause.body}
+              </li>
+            ))}
+          </ol>
+          <p className="text-sm text-muted mt-4">
+            Current list price for one Working File unlock is {CANONICAL_PRICING.priceFormatted} unless
+            a different amount is shown at checkout. Taxes may apply by jurisdiction.
           </p>
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-2">3. Credits and Delivery</h2>
+          <h2 className="text-xl font-bold mb-2">4. Delivery</h2>
           <p className="text-sm text-muted">
-            Generation of sealed CBAM reports requires the purchase of digital credits (entitlements). One credit allows the generation of one sealed report. Delivery of the digital report is instantaneous upon expenditure of the credit.
+            Digital delivery of a sealed package is completed after a successful server-side seal for a
+            paid Working File. Immutable prior sealed versions remain available for re-download without
+            an additional charge.
           </p>
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-2">4. Disclaimers</h2>
+          <h2 className="text-xl font-bold mb-2">5. Disclaimers</h2>
           <p className="text-sm text-muted">
-            <strong>No Guarantee of Authority Acceptance:</strong> CBAMValid relies on user input and regulatory-source versioning. We do not guarantee that your report will be accepted by the EU CBAM Registry or any official authority. <br />
-            <strong>No Professional Advice:</strong> The information provided does not constitute legal, tax, or official EU advice. Users are responsible for their own inputs.
+            <strong>No Guarantee of Authority Acceptance:</strong> CBAMValid relies on user input and
+            regulatory-source versioning. We do not guarantee that your package will be accepted by the
+            EU CBAM Registry or any official authority.
+            <br />
+            <strong>No Professional Advice:</strong> The information provided does not constitute legal,
+            tax, or official EU advice. Users are responsible for their own inputs.
+            <br />
+            <strong>No Accredited Verification:</strong> Purchase does not create an accredited
+            verification opinion, reasonable assurance, customs approval, or registry acceptance.
           </p>
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-2">5. Payments and Taxes</h2>
+          <h2 className="text-xl font-bold mb-2">6. Payments and Taxes</h2>
           <p className="text-sm text-muted">
-            Payments are processed securely via our Merchant of Record, Paddle. Prices displayed are subject to applicable taxes, depending on your jurisdiction. 
+            Payments are processed securely via our Merchant of Record, Paddle. Prices displayed are
+            subject to applicable taxes, depending on your jurisdiction. Refunds are governed by the{" "}
+            <Link href="/refund-policy" className="underline">
+              Refund Policy
+            </Link>
+            .
           </p>
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-2">6. Limitation of Liability & Governing Law</h2>
+          <h2 className="text-xl font-bold mb-2">7. Limitation of Liability &amp; Governing Law</h2>
           <p className="text-sm text-muted">
-            To the maximum extent permitted by applicable law, {legalConfig.legalEntityName} shall not be liable for direct, indirect, incidental, or consequential damages arising from the use of our reports. These terms shall be governed by the laws of {legalConfig.governingLaw}.
+            To the maximum extent permitted by applicable law, {legalConfig.legalEntityName} shall not
+            be liable for direct, indirect, incidental, or consequential damages arising from the use of
+            our packages. These terms shall be governed by the laws of {legalConfig.governingLaw}.
           </p>
         </div>
       </section>

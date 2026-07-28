@@ -12,20 +12,40 @@ export class AuthError extends Error {
   }
 }
 
-export async function requireFirebaseSession(): Promise<DecodedIdToken> {
+/**
+ * Require an authenticated Firebase user for App Router API routes.
+ * Primary: HttpOnly `__session` cookie (server session).
+ * Fallback: `Authorization: Bearer <Firebase ID token>` for same-origin API calls
+ * that already hold a fresh client ID token (never stored as `__session`).
+ */
+export async function requireFirebaseSession(request?: Request): Promise<DecodedIdToken> {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("__session")?.value;
+
+  if (sessionCookie) {
+    try {
+      return await adminAuth.verifySessionCookie(sessionCookie, true);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("[AUTH_SESSION_ERROR]:", message);
+      // Fall through to Bearer if present; otherwise fail closed.
+    }
+  }
+
+  const authHeader = request?.headers.get("authorization") || request?.headers.get("Authorization") || "";
+  const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+  if (bearerMatch?.[1]) {
+    try {
+      return await adminAuth.verifyIdToken(bearerMatch[1], true);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("[AUTH_BEARER_ERROR]:", message);
+      throw new AuthError("UNAUTHORIZED", "Session expired or invalid token.", 401);
+    }
+  }
 
   if (!sessionCookie) {
     throw new AuthError("UNAUTHORIZED", "Missing session cookie.", 401);
   }
-
-  try {
-    // Verify session cookie and check revocation status
-    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
-    return decodedClaims;
-  } catch (error: any) {
-    console.error("[AUTH_SESSION_ERROR]:", error.message || error);
-    throw new AuthError("UNAUTHORIZED", "Session expired or invalid cookie.", 401);
-  }
+  throw new AuthError("UNAUTHORIZED", "Session expired or invalid cookie.", 401);
 }

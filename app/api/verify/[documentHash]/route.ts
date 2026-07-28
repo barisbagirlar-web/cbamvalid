@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { firebaseDb } from "@/lib/firebase/client";
 import { doc, getDoc } from "firebase/firestore";
 import { apiSuccess, apiFailure } from "@/lib/http/api-response";
+import { findPublicSampleByHash } from "@/lib/sample/public-sample-dossier";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,30 @@ export async function GET(request: NextRequest, props: { params: Promise<{ docum
         "INVALID_FORMAT",
         "The document hash must be a 64-character hexadecimal string.",
         400
+      );
+    }
+
+    const sample = findPublicSampleByHash(documentHash);
+    if (sample) {
+      return apiSuccess(
+        {
+          valid: true,
+          documentHash: sample.sha256.toLowerCase(),
+          reportId: `public-sample:${sample.role}`,
+          version: 1,
+          issuedAt: "public-sample",
+          commercialStatus: "PUBLIC_SAMPLE",
+          methodologyVersion: "EU-CBAM-DEFINITIVE-2026",
+          regulatorySnapshotId: "PUBLIC_SAMPLE_INTEGRITY",
+          sampleRole: sample.role,
+          samplePath: sample.href,
+          disclaimer:
+            "Public sample integrity match only. Fictional demonstration data. Not an accredited verification opinion, customs decision, or CBAM Registry submission.",
+        },
+        200,
+        {
+          "Cache-Control": "public, max-age=3600, must-revalidate",
+        }
       );
     }
 
@@ -43,8 +68,9 @@ export async function GET(request: NextRequest, props: { params: Promise<{ docum
     }, 200, {
       "Cache-Control": "public, max-age=86400, must-revalidate",
     });
-  } catch (error: any) {
-    console.error("[PUBLIC VERIFY ENDPOINT ERROR]:", error.message || error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[PUBLIC VERIFY ENDPOINT ERROR]:", message);
     return apiFailure("INTERNAL_SERVER_ERROR", "Server error", 500);
   }
 }

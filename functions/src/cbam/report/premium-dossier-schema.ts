@@ -179,6 +179,7 @@ export const ReadinessDimensionSchema = z.object({
   weight: z.string(),
   rawScore: z.string(),
   weightedScore: z.string(),
+  assessmentState: z.enum(["ASSESSED", "NOT_ASSESSED"]),
   passedRequirementCount: z.number().int().nonnegative(),
   applicableRequirementCount: z.number().int().nonnegative(),
   blockerFindingIds: z.array(z.string()),
@@ -190,7 +191,8 @@ export const OperatorReadinessStatusSchema = z.enum([
   "DRAFT",
   "NOT_READY",
   "CONDITIONAL",
-  "READY_FOR_VERIFIER_REVIEW",
+  "INCOMPLETE_ASSESSMENT",
+  "OPERATOR_PREPARATION_COMPLETE",
 ]);
 export type OperatorReadinessStatus = z.infer<typeof OperatorReadinessStatusSchema>;
 
@@ -207,6 +209,8 @@ export const ReadinessAssessmentSchema = z.object({
   independentVerifierStatus: IndependentVerifierStatusSchema,
   score: z.string(),
   scoreScale: z.literal("0-100"),
+  assessedCoveragePercent: z.string(),
+  passedWithinAssessedPercent: z.string(),
   dimensions: z.array(ReadinessDimensionSchema).length(8),
   criticalBlockerCount: z.number().int().nonnegative(),
   materialFindingCount: z.number().int().nonnegative(),
@@ -214,7 +218,7 @@ export const ReadinessAssessmentSchema = z.object({
   missingMaterialEvidenceCount: z.number().int().nonnegative(),
   unresolvedCalculationExceptionCount: z.number().int().nonnegative(),
   recommendedDecision: z.enum([
-    "DO_NOT_SUBMIT", "REMEDIATE_BEFORE_REVIEW", "READY_TO_HAND_OVER",
+    "DO_NOT_SUBMIT", "REMEDIATE_BEFORE_REVIEW", "READY_FOR_ACCREDITED_VERIFIER_ENGAGEMENT",
   ]),
   canSeal: z.boolean(),
   decisionReasonCodes: z.array(z.string().min(1)),
@@ -266,6 +270,7 @@ export const ReportingPeriodAssessmentSchema = z.object({
   coveredDays: z.number().int(),
   expectedDays: z.number().int(),
   completenessPercent: z.string(),
+  completenessStatus: z.enum(["PASSED", "BLOCKED"]),
   definitiveAnnualEligible: z.boolean(),
   hardBlockerFindingIds: z.array(z.string()),
 });
@@ -284,11 +289,14 @@ export const PremiumDossierViewModelSchema = z.object({
   schemaVersion: z.literal("CBAMVALID-DOSSIER-5.0"),
   reportingPeriodAssessment: ReportingPeriodAssessmentSchema,
   reportId: z.string().min(1),
+  packageCode: z.string().regex(/^[A-Z][0-9]{4}$/).optional(),
   caseId: z.string().min(1),
   releaseVersion: z.number().int().min(1),
   generatedAt: z.string().datetime(),
   documentTitle: z.string().min(1),
   legalBoundary: z.string().min(1),
+  caseDataHash: z.string().optional(),
+  calculationRootHash: z.string().optional(),
   identity: z.object({
     importer: z.string(),
     eori: z.string(),
@@ -353,10 +361,52 @@ export const PremiumDossierViewModelSchema = z.object({
 
 export type PremiumDossierViewModel = z.infer<typeof PremiumDossierViewModelSchema>;
 
+export const PremiumDossierViewModelV2Schema = PremiumDossierViewModelSchema.extend({
+  productCode: z.literal("pack_premium_dossier_v5"),
+  releaseContractVersion: z.literal(5),
+  dossierSchemaVersion: z.literal("CBAMVALID-DOSSIER-5.0"),
+  manifestSummary: z.object({
+    totalFiles: z.number().int(),
+    manifestHash: z.string(),
+    packageHash: z.string(),
+    requiredTopLevelComponentCount: z.number().int(),
+    actualTopLevelComponentCount: z.number().int(),
+    manifestFileCount: z.number().int(),
+    evidenceFileCount: z.number().int(),
+    kmsKeyVersion: z.string(),
+    kmsAlgorithm: z.string(),
+    signatureBase64: z.string(),
+    publicVerificationState: z.string(),
+    kmsProtectionLevel: z.string().optional(),
+    publicVerificationUrl: z.string().nullable().optional(),
+  }),
+  honestScoreboard: z
+    .object({
+      operatorReadiness: z.number(),
+      verifierReservedCount: z.number().int(),
+      verifierReservedTotal: z.number().int(),
+      dossierCompleteness: z.number(),
+      status: z.string(),
+      formula: z.string(),
+    })
+    .optional(),
+  versionStamp: z
+    .object({
+      product: z.string(),
+      schema: z.string(),
+      rulesetId: z.string(),
+      releaseIteration: z.number().int().positive(),
+    })
+    .optional(),
+});
+
+export type PremiumDossierViewModelV2 = z.infer<typeof PremiumDossierViewModelV2Schema>;
+
 export const SealAssessmentContextSchema = z.object({
   generatedAt: z.string(),
   assessmentTimestamp: z.string(),
   reportId: z.string(),
+  packageCode: z.string().regex(/^[A-Z][0-9]{4}$/).optional(),
   releaseVersion: z.number().int().positive(),
   rulesetVersion: z.string(),
   /** Server-trusted product code from reserved entitlement — never client-supplied. */

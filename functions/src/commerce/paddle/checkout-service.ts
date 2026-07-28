@@ -4,12 +4,24 @@ import { adminDb } from "../../firebase-admin";
 import { createOrder } from "../order-service";
 import crypto from "crypto";
 
-export async function createCheckout(uid: string, email: string, productCode: string, metadata: { caseId: string }) {
+export type CheckoutSessionResult = {
+  mode: "transaction" | "items";
+  orderId: string;
+  correlationId: string;
+  priceId: string;
+  transactionId?: string;
+};
+
+export async function createCheckout(
+  uid: string,
+  email: string,
+  productCode: string,
+  metadata: { caseId: string }
+): Promise<CheckoutSessionResult> {
   const { caseId } = metadata;
-  
-  // Force canonical product mapping
+
   const canonicalProductCode = "pack_premium_dossier_v5";
-  
+
   const product = PRODUCT_CATALOG[canonicalProductCode];
   if (!product || !product.active) {
     throw new Error("Product is inactive or invalid");
@@ -24,7 +36,6 @@ export async function createCheckout(uid: string, email: string, productCode: st
   const correlationId = crypto.randomUUID();
 
   const result = await adminDb.runTransaction(async (dbTransaction: any) => {
-    // Create server-side tracking order
     const order = await createOrder(dbTransaction, {
       uid: uid,
       caseId: caseId,
@@ -39,23 +50,50 @@ export async function createCheckout(uid: string, email: string, productCode: st
     return order;
   });
 
-  const paddleTransaction = await paddle.transactions.create({
-    items: [
-      {
-        priceId: priceId,
-        quantity: 1,
+  try {
+    const paddleTransaction = await paddle.transactions.create({
+      items: [
+        {
+          priceId: priceId,
+          quantity: 1,
+        },
+      ],
+      customData: {
+        orderId: result.orderId,
+        correlationId: correlationId,
       },
-    ],
-    customData: {
+      ...(email ? { customer: { email } } : {}),
+    });
+
+    await adminDb.collection("commerce_orders").doc(result.orderId).update({
+      paddleTransactionId: paddleTransaction.id,
+      status: "PAYMENT_PENDING",
+      checkoutMode: "transaction",
+      correlationId,
+    });
+
+    return {
+      mode: "transaction",
       orderId: result.orderId,
-      correlationId: correlationId,
-    },
-  });
-
-  await adminDb.collection("commerce_orders").doc(result.orderId).update({
-    paddleTransactionId: paddleTransaction.id,
-    status: "PAYMENT_PENDING",
-  });
-
-  return paddleTransaction.id;
+      correlationId,
+      priceId,
+      transactionId: paddleTransaction.id,
+    };
+  } catch (error: unknown) {
+    // API keys without transaction.write still support client items overlay checkout.
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn("[CHECKOUT] transaction.create unavailable; falling back to items mode:", message);
+    await adminDb.collection("commerce_orders").doc(result.orderId).update({
+      status: "PAYMENT_PENDING",
+      checkoutMode: "items",
+      correlationId,
+      updatedAt: new Date().toISOString(),
+    });
+    return {
+      mode: "items",
+      orderId: result.orderId,
+      correlationId,
+      priceId,
+    };
+  }
 }

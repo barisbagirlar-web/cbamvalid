@@ -14,19 +14,16 @@ import {
   finalizeVerifierPackage,
   type DataIntegrityManifest,
 } from "../../functions/src/cbam/report/verifier-package-builder";
-import { buildVerifierPackageModel } from "../../functions/src/cbam/report/verifier-model";
-import { DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT } from "../../functions/src/cbam/registry/legal-sources";
 import type { KmsSignatureResult } from "../../functions/src/cbam/report/kms-signature";
 import {
   FIXTURE_GENERATED_AT,
   FIXTURE_REPORT_ID,
-  FIXTURE_EVIDENCE_ID,
+  FIXTURE_PACKAGE_CODE,
   createVerifierEvidenceFiles,
   createVerifierGradeCase,
 } from "../fixtures/verifier-grade-case";
 import { assessReadiness, getReportingPeriodAssessment } from "../../functions/src/cbam/validation/readiness-score";
 import { generateFindingsAndActions } from "../../functions/src/cbam/validation/findings-engine";
-import { runEvidenceSufficiency } from "../../functions/src/cbam/validation/evidence-sufficiency";
 
 async function verifyPdfGeometry(pdfBytes: Buffer) {
   const document = await pdfjsLib.getDocument({
@@ -45,7 +42,7 @@ async function verifyPdfGeometry(pdfBytes: Buffer) {
     const width = viewport.width;
     const height = viewport.height;
 
-    content.items.forEach((item: any) => {
+    content.items.forEach((item) => {
       if (!("str" in item) || !item.str.trim()) return;
       
       const tx = item.transform; // [scaleX, skewX, skewY, scaleY, x, y]
@@ -96,6 +93,7 @@ function createSignature(manifestBytes: Buffer): KmsSignatureResult {
     manifestHash,
     signatureBase64: signature.toString("base64"),
     publicKeyPem: publicKey,
+    protectionLevel: "SOFTWARE",
   };
 }
 
@@ -118,16 +116,35 @@ describe("premium-dossier-v5 deliverables", () => {
       "goods.1.allocationShare"
     );
     
-    // Enforce annual period for base readiness test
+    const firstEvId = caseData.evidenceRegister[0].evidenceId;
+    caseData.importerIdentity.legalName.evidenceId = firstEvId;
+    caseData.importerIdentity.eoriNumber.evidenceId = firstEvId;
+    caseData.importerIdentity.address!.evidenceId = firstEvId;
+    caseData.exporterIdentity.legalName.evidenceId = firstEvId;
+    caseData.exporterIdentity.address!.evidenceId = firstEvId;
+    caseData.installation.name.evidenceId = firstEvId;
+    caseData.installation.country.evidenceId = firstEvId;
+    caseData.installation.productionRoute.evidenceId = firstEvId;
+    caseData.reportingPeriod.year.evidenceId = firstEvId;
+    caseData.reportingPeriod.quarter.evidenceId = firstEvId;
+    caseData.goods[0]!.cnCode.evidenceId = firstEvId;
+    caseData.goods[0]!.allocationShare!.evidenceId = firstEvId;
+    caseData.goods[1]!.cnCode.evidenceId = firstEvId;
+    caseData.goods[1]!.allocationShare!.evidenceId = firstEvId;
+
     caseData.reportingPeriod.quarter.value = "ANNUAL";
     caseData.reportingPeriod.startDate = { value: "2026-01-01", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
     caseData.reportingPeriod.endDate = { value: "2026-12-31", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
-    caseData.evidenceRegister[0].reportingPeriod = "2026 ANNUAL";
+    caseData.evidenceRegister.forEach(e => { e.reportingPeriod = "2026 ANNUAL"; });
     // Test base readiness
     const readiness = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: "2027-01-15" });
-    expect(readiness.operatorStatus).toBe("READY_FOR_VERIFIER_REVIEW");
-    expect(parseFloat(readiness.score)).toBeGreaterThanOrEqual(90);
-    expect(readiness.criticalBlockerCount).toBe(0);
+    console.log("DEBUG_READINESS:", JSON.stringify(readiness, null, 2));
+    expect(readiness.operatorStatus).toBe("NOT_READY");
+    expect(parseFloat(readiness.score)).toBeLessThan(90);
+    // WP-07/08: concentration + diversity + incomplete operator evidence must prevent perfect readiness
+    expect(parseFloat(readiness.assessedCoveragePercent)).toBe(100);
+    expect(readiness.recommendedDecision).toBe("DO_NOT_SUBMIT");
+    expect(readiness.dimensions.every((d) => d.assessmentState === "ASSESSED")).toBe(true);
 
     // Test PARTIALLY_SUPPORTED evidence blocking sealing/readiness
     const dirtyCase = JSON.parse(JSON.stringify(caseData));
@@ -168,10 +185,27 @@ describe("premium-dossier-v5 deliverables", () => {
       "goods.1.cnCode",
       "goods.1.allocationShare"
     );
+    
+    const firstEvId = caseData.evidenceRegister[0].evidenceId;
+    caseData.importerIdentity.legalName.evidenceId = firstEvId;
+    caseData.importerIdentity.eoriNumber.evidenceId = firstEvId;
+    caseData.importerIdentity.address!.evidenceId = firstEvId;
+    caseData.exporterIdentity.legalName.evidenceId = firstEvId;
+    caseData.exporterIdentity.address!.evidenceId = firstEvId;
+    caseData.installation.name.evidenceId = firstEvId;
+    caseData.installation.country.evidenceId = firstEvId;
+    caseData.installation.productionRoute.evidenceId = firstEvId;
+    caseData.reportingPeriod.year.evidenceId = firstEvId;
+    caseData.reportingPeriod.quarter.evidenceId = firstEvId;
+    caseData.goods[0]!.cnCode.evidenceId = firstEvId;
+    caseData.goods[0]!.allocationShare!.evidenceId = firstEvId;
+    caseData.goods[1]!.cnCode.evidenceId = firstEvId;
+    caseData.goods[1]!.allocationShare!.evidenceId = firstEvId;
+
     caseData.reportingPeriod.quarter.value = "ANNUAL";
     caseData.reportingPeriod.startDate = { value: "2026-01-01", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
     caseData.reportingPeriod.endDate = { value: "2026-12-31", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
-    caseData.evidenceRegister[0].reportingPeriod = "2026 ANNUAL";
+    caseData.evidenceRegister.forEach(e => { e.reportingPeriod = "2026 ANNUAL"; });
     const controls = runQualityControls(caseData);
     const calculation = performDossierCalculations(caseData);
     
@@ -180,6 +214,7 @@ describe("premium-dossier-v5 deliverables", () => {
       calculation,
       controls,
       reportId: FIXTURE_REPORT_ID,
+      packageCode: FIXTURE_PACKAGE_CODE,
       releaseVersion: 5,
       generatedAt: FIXTURE_GENERATED_AT,
       evidenceFiles: createVerifierEvidenceFiles(),
@@ -187,6 +222,7 @@ describe("premium-dossier-v5 deliverables", () => {
         generatedAt: FIXTURE_GENERATED_AT,
         assessmentTimestamp: FIXTURE_GENERATED_AT,
         reportId: FIXTURE_REPORT_ID,
+        packageCode: FIXTURE_PACKAGE_CODE,
         releaseVersion: 5,
         rulesetVersion: "test",
         productCode: "pack_premium_dossier_v5",
@@ -201,7 +237,7 @@ describe("premium-dossier-v5 deliverables", () => {
       reportId: FIXTURE_REPORT_ID,
       releaseVersion: 5,
       generatedAt: FIXTURE_GENERATED_AT,
-      evidenceCount: 1,
+      evidenceCount: 4,
       productCode: "pack_premium_dossier_v5",
       releaseContractVersion: 5,
     });
@@ -227,7 +263,7 @@ describe("premium-dossier-v5 deliverables", () => {
     expect(primaryPdf).toBeDefined();
     const pdf = await pdfText(primaryPdf!.bytes);
     expect(pdf.text).toContain("CBAMValid");
-    expect(pdf.text).toContain("Verification Readiness & Evidence Assurance Dossier");
+    expect(pdf.text).toContain("Operator-Prepared Emissions Statement");
 
     const premiumPdf = artifacts.find((item) => item.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
     expect(premiumPdf).toBeDefined();
@@ -253,10 +289,27 @@ describe("premium-dossier-v5 deliverables", () => {
       "goods.1.cnCode",
       "goods.1.allocationShare"
     );
+    
+    const firstEvId = caseData.evidenceRegister[0].evidenceId;
+    caseData.importerIdentity.legalName.evidenceId = firstEvId;
+    caseData.importerIdentity.eoriNumber.evidenceId = firstEvId;
+    caseData.importerIdentity.address!.evidenceId = firstEvId;
+    caseData.exporterIdentity.legalName.evidenceId = firstEvId;
+    caseData.exporterIdentity.address!.evidenceId = firstEvId;
+    caseData.installation.name.evidenceId = firstEvId;
+    caseData.installation.country.evidenceId = firstEvId;
+    caseData.installation.productionRoute.evidenceId = firstEvId;
+    caseData.reportingPeriod.year.evidenceId = firstEvId;
+    caseData.reportingPeriod.quarter.evidenceId = firstEvId;
+    caseData.goods[0]!.cnCode.evidenceId = firstEvId;
+    caseData.goods[0]!.allocationShare!.evidenceId = firstEvId;
+    caseData.goods[1]!.cnCode.evidenceId = firstEvId;
+    caseData.goods[1]!.allocationShare!.evidenceId = firstEvId;
+
     caseData.reportingPeriod.quarter.value = "ANNUAL";
     caseData.reportingPeriod.startDate = { value: "2026-01-01", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
     caseData.reportingPeriod.endDate = { value: "2026-12-31", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
-    caseData.evidenceRegister[0].reportingPeriod = "2026 ANNUAL";
+    caseData.evidenceRegister.forEach(e => { e.reportingPeriod = "2026 ANNUAL"; });
     const controls = runQualityControls(caseData);
     const calculation = performDossierCalculations(caseData);
     
@@ -265,6 +318,7 @@ describe("premium-dossier-v5 deliverables", () => {
       controls,
       calculation,
       reportId: FIXTURE_REPORT_ID,
+      packageCode: FIXTURE_PACKAGE_CODE,
       releaseVersion: 5,
       generatedAt: FIXTURE_GENERATED_AT,
       evidenceFiles: createVerifierEvidenceFiles(),
@@ -272,6 +326,7 @@ describe("premium-dossier-v5 deliverables", () => {
         generatedAt: FIXTURE_GENERATED_AT,
         assessmentTimestamp: FIXTURE_GENERATED_AT,
         reportId: FIXTURE_REPORT_ID,
+        packageCode: FIXTURE_PACKAGE_CODE,
         releaseVersion: 5,
         rulesetVersion: "test",
         productCode: "pack_premium_dossier_v5",
@@ -286,7 +341,7 @@ describe("premium-dossier-v5 deliverables", () => {
       reportId: FIXTURE_REPORT_ID,
       releaseVersion: 5,
       generatedAt: FIXTURE_GENERATED_AT,
-      evidenceCount: 1,
+      evidenceCount: 4,
       productCode: "pack_premium_dossier_v5",
       releaseContractVersion: 5,
     });
@@ -372,6 +427,7 @@ describe("premium-dossier-v5 deliverables", () => {
     const fyAss = getReportingPeriodAssessment(fyCase, "2027-01-15");
     expect(fyAss.type).toBe("DEFINITIVE_ANNUAL");
     expect(fyAss.definitiveAnnualEligible).toBe(true);
+    expect(fyAss.completenessStatus).toBe("PASSED");
 
     // 6. leap-year full year
     const leapCase = makePeriodCase("2024", "ANNUAL", "2024-01-01", "2024-12-31");
@@ -399,12 +455,65 @@ describe("premium-dossier-v5 deliverables", () => {
     const futureCase = makePeriodCase("2099", "ANNUAL", "2099-01-01", "2099-12-31");
     const futAss = getReportingPeriodAssessment(futureCase, "2027-01-15");
     expect(futAss.hardBlockerFindingIds).toContain("FND-PERIOD-FUTURE-END-DATE");
+    expect(futAss.completenessStatus).toBe("BLOCKED");
+    expect(futAss.completenessPercent).toBe("0");
+    expect(futAss.definitiveAnnualEligible).toBe(false);
+
+    // 10b. mid-year assessment cannot PASS full-year 2026 completeness
+    const midYearCase = makePeriodCase("2026", "ANNUAL", "2026-01-01", "2026-12-31");
+    const midAss = getReportingPeriodAssessment(midYearCase, "2026-07-27T12:00:00.000Z");
+    expect(midAss.hardBlockerFindingIds).toContain("FND-PERIOD-FUTURE-END-DATE");
+    expect(midAss.completenessStatus).toBe("BLOCKED");
+    expect(midAss.definitiveAnnualEligible).toBe(false);
 
     // 11. custom internal period
     const customCase = makePeriodCase("2026", "CUSTOM_PERIOD", "2026-03-01", "2026-08-15");
     const custAss = getReportingPeriodAssessment(customCase, "2027-01-15");
     expect(custAss.type).toBe("CUSTOM_INTERNAL");
     expect(custAss.definitiveAnnualEligible).toBe(false);
+  });
+
+  it("blocks READY decision when any readiness dimension is NOT_ASSESSED and never renormalizes to 100", () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    // Minimal identity-only case without material evidence/methods — forces sparse assessment.
+    caseData.evidenceRegister = [];
+    caseData.methodologyDecisions = [];
+    caseData.goods = [];
+    caseData.directEmissions.evidenceId = undefined;
+    caseData.electricityConsumed.evidenceId = undefined;
+    caseData.gridEmissionFactor.evidenceId = undefined;
+
+    const readiness = assessReadiness({
+      caseData,
+      isDraft: false,
+      assessmentTimestamp: FIXTURE_GENERATED_AT,
+    });
+
+    const unassessedWeight = readiness.dimensions
+      .filter((d) => d.assessmentState === "NOT_ASSESSED")
+      .reduce((sum, d) => sum + Number(d.weight), 0);
+
+    if (unassessedWeight > 0) {
+      expect(Number(readiness.score)).toBeLessThan(100);
+      expect(readiness.recommendedDecision).not.toBe("READY_FOR_ACCREDITED_VERIFIER_ENGAGEMENT");
+      expect(readiness.operatorStatus === "INCOMPLETE_ASSESSMENT" || readiness.operatorStatus === "NOT_READY").toBe(true);
+    }
+
+    // Absolute scoring invariant: score cannot exceed assessedCoverage.
+    expect(Number(readiness.score)).toBeLessThanOrEqual(Number(readiness.assessedCoveragePercent) + 0.01);
+  });
+
+  it("rejects goods lineage / methodology contamination (one-good vs two-goods)", () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    // Collapse to one good but leave stale goods.1 lineage + two-goods methodology text.
+    caseData.goods = [caseData.goods[1]!];
+    caseData.goods[0]!.allocationShare = {
+      ...caseData.goods[0]!.allocationShare!,
+      value: "1",
+    };
+    const controls = runQualityControls(caseData);
+    const goodsConsistency = controls.find((c) => c.ruleId === "QC_12");
+    expect(goodsConsistency?.status).toBe("BLOCKER");
   });
 
   it("verifies PDF visual geometry and ensures all 30 sections, IDs and labels are present without silent truncation", async () => {
@@ -425,8 +534,17 @@ describe("premium-dossier-v5 deliverables", () => {
     // Check critical findings & evidence references are present
     expect(text).toContain("11111111");
     expect(text).toContain("Prepared for Independent");
-    expect(text).toContain("Verified Steel Operator GmbH");
+    expect(text).toContain("Verified Steel Operator A.S.");
     expect(text).toContain("NOT_PROVIDED");
+    expect(text).not.toContain("2023/1776");
+    expect(text).toContain("2025/2547");
+    expect(text).toContain(`${REQUIRED_TOP_LEVEL_COMPONENTS_V5.length} controlled`);
+    expect(text).toContain("NOT_READY");
+    expect(text).toContain("ANNEX II");
+    expect(text).not.toContain("FIPS 140-2 Level 3 KMS Sealed Hash");
+    expect(text).toContain("detached KMS signature");
+    expect(text).toContain("72011011");
+    expect(text).toContain("72011019");
 
     console.log(`Verified PDF Geometry successfully. Total pages: ${pages}`);
   });

@@ -205,7 +205,7 @@ export const AuditReadyCaseSchema = z.object({
     productionVolume: InputDatumSchema,
     shipmentRecords: InputDatumSchema,
     allocationShare: InputDatumSchema.nullable().optional(),
-  })),
+  })).default([]),
   installation: z.object({
     name: InputDatumSchema,
     unloCode: InputDatumSchema.nullable().optional(),
@@ -222,19 +222,29 @@ export const AuditReadyCaseSchema = z.object({
     directEmissions: InputDatumSchema,
     indirectEmissions: InputDatumSchema,
     countryOfOrigin: InputDatumSchema,
-  })),
-  carbonPriceRecords: z.array(CarbonPricePaidSchema),
-  evidenceRegister: z.array(EvidenceRecordSchema),
-  calculationTrace: z.array(CalculationTraceNodeSchema),
-  gapAssessment: z.array(GapRecordSchema),
+  })).default([]),
+  carbonPriceRecords: z.array(CarbonPricePaidSchema).default([]),
+  evidenceRegister: z.array(EvidenceRecordSchema).default([]),
+  calculationTrace: z.array(CalculationTraceNodeSchema).default([]),
+  gapAssessment: z.array(GapRecordSchema).default([]),
   methodologyDecisions: z.array(MethodologyDecisionSchema).default([]),
+  operatorSignOffs: z
+    .array(
+      z.object({
+        role: z.enum(["OPERATOR_PREPARER", "INTERNAL_REVIEWER", "DATA_OWNER"]),
+        name: z.string().min(1),
+        title: z.string().min(1),
+        signedAt: z.string().min(1),
+      })
+    )
+    .default([]),
   auditEvents: z.array(z.object({
     eventId: z.string().uuid(),
     timestamp: z.string().datetime(),
     actor: z.string(),
     action: z.string(),
     metadata: z.record(z.string(), z.unknown()).optional(),
-  })),
+  })).default([]),
 });
 
 export type AuditReadyCase = z.infer<typeof AuditReadyCaseSchema>;

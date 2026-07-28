@@ -94,11 +94,12 @@ function buildSheets(params: {
       rows: [
         title("CBAMValid — Independent Verification Preparation Workspace"),
         [c("Document classification", 4), c(model.documentClassification), c("Release", 4), c(releaseVersion, 8)],
-        [c("Report ID", 4), c(reportId), c("Generated", 4), c(generatedAt)],
-        [c("Case ID", 4), c(model.caseId), c("Ruleset", 4), c(`${model.ruleset.version} · ${model.ruleset.name}`)],
+        [c("Package ID", 4), c(model.packageCode), c("Generated", 4), c(generatedAt)],
+        [c("Technical Report ID", 4), c(reportId), c("Case ID", 4), c(model.caseId)],
+        [c("Ruleset", 4), c(`${model.ruleset.version} · ${model.ruleset.name}`), c("Materiality rate", 4), c(`${model.ruleset.materialityRate}% per good`)],
         [c("Automated readiness", 4), c(model.automatedReadiness, statusStyle(model.automatedReadiness)), c("Independent verifier status", 4), c(model.independentVerifierStatus, 6)],
         [c("Calculation root hash", 4), c(model.calculationRootHash), c("Source registry hash", 4), c(model.ruleset.sourceHash)],
-        [c("Quality controls", 4), c("Calculated below"), c("Materiality rate", 4), c(`${model.ruleset.materialityRate}% per good`)],
+        [c("Quality controls", 4), c("Calculated below"), c("Package boundary", 4), c("Sealed operator preparation")],
         [c("Passed", 4), f('COUNTIF(QUALITY_CONTROLS!C:C,"PASS")', model.qualitySummary.passed), c("Blockers", 4), f('COUNTIF(QUALITY_CONTROLS!C:C,"BLOCKER")', model.qualitySummary.blockers)],
         [c("Warnings", 4), f('COUNTIF(QUALITY_CONTROLS!C:C,"WARNING")', model.qualitySummary.warnings), c("Monitoring-plan gaps", 4), f('COUNTIF(MONITORING_PLAN!C:C,"GAP")', model.monitoringPlan.filter((item) => item.status === "GAP").length)],
         [c("Evidence files", 4), f("COUNTA(EVIDENCE!A2:A1048576)", model.evidenceSummary.totalEvidenceFiles), c("Approved clean evidence", 4), c(model.evidenceSummary.approvedCleanEvidenceFiles, 8)],
@@ -340,6 +341,7 @@ export async function buildVerifierWorkbook(params: {
   calculation: DossierCalculationResult;
   controls: QualityControlResult[];
   reportId: string;
+  packageCode: string;
   releaseVersion: number;
   generatedAt: string;
   model?: VerifierPackageModel;

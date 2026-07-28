@@ -1,5 +1,14 @@
-import { httpsCallable } from "firebase/functions";
-import { firebaseFunctions } from "@/lib/firebase/client";
+import {
+  httpsCallable as createFirebaseCallable,
+  type Functions,
+  type HttpsCallable,
+} from "firebase/functions";
+import {
+  firebaseAuth,
+  firebaseAuthPersistenceReady,
+  firebaseFunctions,
+} from "@/lib/firebase/client";
+import { withCallableAuthentication } from "@/lib/functions/authenticated-callable";
 import {
   AuditReadyCaseSchema,
   type AuditReadyCase,
@@ -56,6 +65,18 @@ export type ReportDownloadDescriptor = {
   status: "success";
 };
 
+function httpsCallable<RequestData, ResponseData>(
+  functions: Functions,
+  name: string
+): HttpsCallable<RequestData, ResponseData> {
+  const callable = createFirebaseCallable<RequestData, ResponseData>(functions, name);
+  return withCallableAuthentication(
+    firebaseAuth,
+    firebaseAuthPersistenceReady,
+    callable
+  );
+}
+
 export const getCbamCasesCallable = httpsCallable<void, { cases: CbamCaseRecord[] }>(firebaseFunctions, "getCbamCases");
 export const getCbamCaseCallable = httpsCallable<{ caseId: string }, { case: unknown }>(firebaseFunctions, "getCbamCase");
 export const saveCbamCaseCallable = httpsCallable<{
@@ -96,7 +117,18 @@ export const getReportDownloadUrlCallable = httpsCallable<{
 }, ReportDownloadDescriptor>(firebaseFunctions, "getReportDownloadUrl");
 
 export const getEntitlementsCallable = httpsCallable<void, { entitlements: PreparationPackEntitlement[] }>(firebaseFunctions, "getEntitlements");
-export const createCheckoutSessionCallable = httpsCallable<{ productCode: string; caseId: string }, { transactionId: string; error?: string }>(firebaseFunctions, "createCheckoutSession");
+export const createCheckoutSessionCallable = httpsCallable<
+  { productCode: string; caseId: string },
+  {
+    mode?: "transaction" | "items";
+    orderId?: string;
+    correlationId?: string;
+    priceId?: string;
+    transactionId?: string;
+    status?: string;
+    error?: string;
+  }
+>(firebaseFunctions, "createCheckoutSession");
 export const unlockCbamUsesCallable = httpsCallable<{ requestId: string }, UnknownRecord>(firebaseFunctions, "unlockCbamUses");
 
 export const adminSetUserTokensCallable = httpsCallable<{ targetUserId: string; tokensToSet: number }, { success: boolean }>(firebaseFunctions, "adminSetUserTokens");

@@ -1,0 +1,4 @@
+Contact: mailto:info@cbamvalid.com
+Preferred-Languages: en
+Canonical: https://cbamvalid.com/.well-known/security.txt
+Expires: 2027-07-27T00:00:00.000Z

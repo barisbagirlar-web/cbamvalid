@@ -6,8 +6,13 @@ export interface PaddleConfig {
   webhookSecret: string;
 }
 
+function detectSandboxFromApiKey(apiKey: string): boolean | null {
+  if (apiKey.startsWith("pdl_sdbx_")) return true;
+  if (apiKey.startsWith("pdl_live_")) return false;
+  return null;
+}
+
 export function getPaddleConfig(): PaddleConfig {
-  const isSandbox = process.env.NEXT_PUBLIC_PADDLE_SANDBOX === "true";
   const apiKey = process.env.PADDLE_API_KEY || "";
   const clientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || "";
   const priceId = process.env.NEXT_PUBLIC_PADDLE_PRICE_ID || "";
@@ -17,17 +22,26 @@ export function getPaddleConfig(): PaddleConfig {
     throw new Error("PADDLE_CONFIGURATION_ERROR: Missing required Paddle configuration variables.");
   }
 
-  if (isSandbox) {
-    if (apiKey && !apiKey.startsWith("pdl_sdbx_")) {
-      console.warn("[PADDLE-CONFIG-WARNING]: NEXT_PUBLIC_PADDLE_SANDBOX is true but PADDLE_API_KEY does not start with pdl_sdbx_");
-    }
-  } else {
-    if (apiKey && apiKey.startsWith("pdl_sdbx_")) {
-      throw new Error("PADDLE_CONFIGURATION_ERROR: Sandbox API key cannot be used in production.");
-    }
-    if (clientToken && clientToken.startsWith("pdl_sdbx_apikey_")) {
-      throw new Error("PADDLE_CONFIGURATION_ERROR: Sandbox client token cannot be used in production.");
-    }
+  const keySandbox = detectSandboxFromApiKey(apiKey);
+  const flagSandbox =
+    process.env.NEXT_PUBLIC_PADDLE_SANDBOX === "true" ||
+    process.env.NEXT_PUBLIC_PADDLE_ENV === "sandbox";
+  // API key environment is authoritative when detectable — prevents sandbox key → live API 403.
+  const isSandbox = keySandbox === null ? flagSandbox : keySandbox;
+
+  if (keySandbox === true && process.env.NEXT_PUBLIC_PADDLE_SANDBOX === "false") {
+    console.warn(
+      "[PADDLE-CONFIG-WARNING]: Sandbox API key detected while NEXT_PUBLIC_PADDLE_SANDBOX=false. Using sandbox API."
+    );
+  }
+  if (keySandbox === false && flagSandbox) {
+    throw new Error("PADDLE_CONFIGURATION_ERROR: Live API key cannot be used with sandbox client configuration.");
+  }
+  if (isSandbox && clientToken && clientToken.startsWith("pdl_live_")) {
+    throw new Error("PADDLE_CONFIGURATION_ERROR: Live client token cannot be used in sandbox mode.");
+  }
+  if (!isSandbox && clientToken.startsWith("pdl_sdbx_apikey_")) {
+    throw new Error("PADDLE_CONFIGURATION_ERROR: Sandbox client token cannot be used in production.");
   }
 
   return {

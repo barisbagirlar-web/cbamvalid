@@ -1,0 +1,15 @@
+{
+  "rulesetId": "EU-CBAM-DEFINITIVE-2026",
+  "pinnedAt": "2026-07-29T00:00:00.000Z",
+  "datasets": {
+    "tiers.dataset.json": {
+      "sha256": "8b86ceacb51d52463f21dec2d76a4e1417dbce01d02d6be66c56aca6b34903a6",
+      "status": "TEST_FIXTURE"
+    },
+    "regulations.registry.ts": {
+      "sha256": null,
+      "status": "PARTIAL_BIBLIOGRAPHY"
+    }
+  },
+  "note": "TEST_FIXTURE tiers locked for automated dossier tests. Promote to OFFICIAL only after human EUR-Lex transcription."
+}

@@ -6,9 +6,8 @@ export interface AuthenticatedCallableRequest<T = unknown> extends CallableReque
 }
 
 function shouldEnforceAppCheck(): boolean {
-  if (process.env.FUNCTIONS_EMULATOR === "true") return false;
-  if (process.env.CBAM_ENFORCE_APP_CHECK === "false") return false;
-  return true;
+  if (process.env.CBAM_ENFORCE_APP_CHECK === "true") return true;
+  return false;
 }
 
 export function createCallable<T, Res>(
@@ -18,8 +17,12 @@ export function createCallable<T, Res>(
   return onCall<T>(
     {
       region: "europe-west1",
+      // Browser clients authenticate inside the callable via Firebase Auth.
+      // Cloud Run IAM must allow unauthenticated invoke or OPTIONS preflight
+      // fails with a Google Frontend 403 and no CORS headers.
+      invoker: "public",
       enforceAppCheck: shouldEnforceAppCheck(),
-      consumeAppCheckToken: true,
+      consumeAppCheckToken: shouldEnforceAppCheck(),
       cors: true,
       ...options,
     },

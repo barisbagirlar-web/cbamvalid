@@ -4,10 +4,25 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 vi.mock("server-only", () => ({}));
 
 const { verifySessionCookie, createSessionCookie, verifyIdToken, mockCookiesSet, mockCookiesGet, mockCollection } = vi.hoisted(() => {
-  const mockGet = vi.fn().mockResolvedValue({
-    exists: true,
-    data: () => ({ publicPaidLaunchEnabled: true })
+  const mockGet = vi.fn().mockImplementation(async () => {
+    // Default: system config + case docs exist. Omit uid so ownership check is not
+    // falsely mismatched across different authenticated test UIDs.
+    return {
+      exists: true,
+      data: () => ({
+        publicPaidLaunchEnabled: true,
+        commercial: { status: "UNPAID" },
+      }),
+    };
   });
+
+  const mockEmptyQueryGet = vi.fn().mockResolvedValue({ empty: true, docs: [] });
+  const mockQuery = {
+    where: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    get: mockEmptyQueryGet,
+  };
 
   const mockDoc = vi.fn().mockReturnValue({
     get: mockGet,
@@ -17,6 +32,7 @@ const { verifySessionCookie, createSessionCookie, verifyIdToken, mockCookiesSet,
 
   const mockCollectionFn = vi.fn().mockReturnValue({
     doc: mockDoc,
+    where: vi.fn().mockReturnValue(mockQuery),
   });
 
   return {
@@ -163,7 +179,7 @@ describe("Production Security & Foundation Audits", () => {
   it("7. Checkout accepts an authenticated request", async () => {
     process.env.NEXT_PUBLIC_PADDLE_SANDBOX = "true";
     process.env.PADDLE_API_KEY = "pdl_sdbx_testkey";
-    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN = "pdl_sdbx_testclient";
+    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN = "test_client_token";
     process.env.NEXT_PUBLIC_PADDLE_PRICE_ID = "pri_testprice";
 
     const mockClaims = { uid: "user-123", email: "user@cbamvalid.com" };
@@ -177,16 +193,90 @@ describe("Production Security & Foundation Audits", () => {
 
     const req = new Request("http://localhost/api/checkout/cbam", {
       method: "POST",
-      body: JSON.stringify({ slug: "cbam-5-reports" }),
+      body: JSON.stringify({ slug: "cbam-5-reports", caseId: "case_test_checkout_001" }),
     });
 
     const res = await checkoutPost(req);
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.ok).toBe(true);
+    expect(data.data.mode).toBe("transaction");
     expect(data.data.transactionId).toBe("txn_123");
+    expect(data.data.orderId).toMatch(/^ord_/);
+    expect(data.data.priceId).toBe("pri_testprice");
 
     // Cleanup
+    delete process.env.NEXT_PUBLIC_PADDLE_SANDBOX;
+    delete process.env.PADDLE_API_KEY;
+    delete process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
+    delete process.env.NEXT_PUBLIC_PADDLE_PRICE_ID;
+  });
+
+  it("7b. Checkout falls back to items mode when Paddle transaction.write is forbidden", async () => {
+    process.env.NEXT_PUBLIC_PADDLE_SANDBOX = "true";
+    process.env.PADDLE_API_KEY = "pdl_sdbx_readonly";
+    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN = "test_client_token";
+    process.env.NEXT_PUBLIC_PADDLE_PRICE_ID = "pri_testprice";
+
+    const mockClaims = { uid: "user-123", email: "user@cbamvalid.com" };
+    mockCookiesGet.mockReturnValue({ value: "valid-session" });
+    verifySessionCookie.mockResolvedValueOnce(mockClaims);
+
+    global.fetch = vi.fn().mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          error: { code: "forbidden", detail: "not authorized to create|read transaction" },
+        }),
+        { status: 403 }
+      )
+    );
+
+    const req = new Request("http://localhost/api/checkout/cbam", {
+      method: "POST",
+      body: JSON.stringify({ slug: "pack_premium_dossier_v5", caseId: "case_test_checkout_002" }),
+    });
+
+    const res = await checkoutPost(req);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.ok).toBe(true);
+    expect(data.data.mode).toBe("items");
+    expect(data.data.transactionId).toBeUndefined();
+    expect(data.data.orderId).toMatch(/^ord_/);
+    expect(data.data.priceId).toBe("pri_testprice");
+    expect(data.data.correlationId).toBeTruthy();
+
+    delete process.env.NEXT_PUBLIC_PADDLE_SANDBOX;
+    delete process.env.PADDLE_API_KEY;
+    delete process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
+    delete process.env.NEXT_PUBLIC_PADDLE_PRICE_ID;
+  });
+
+  it("7c. Checkout accepts Bearer ID token when session cookie is missing", async () => {
+    process.env.NEXT_PUBLIC_PADDLE_SANDBOX = "true";
+    process.env.PADDLE_API_KEY = "pdl_sdbx_testkey";
+    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN = "test_client_token";
+    process.env.NEXT_PUBLIC_PADDLE_PRICE_ID = "pri_testprice";
+
+    mockCookiesGet.mockReturnValue(null);
+    verifyIdToken.mockResolvedValueOnce({ uid: "user-bearer", email: "bearer@cbamvalid.com" });
+    global.fetch = vi.fn().mockResolvedValueOnce(
+      new Response(JSON.stringify({ data: { id: "txn_bearer" } }), { status: 200 })
+    );
+
+    const req = new Request("http://localhost/api/checkout/cbam", {
+      method: "POST",
+      headers: { Authorization: "Bearer firebase-id-token" },
+      body: JSON.stringify({ slug: "pack_premium_dossier_v5", caseId: "case_test_checkout_003" }),
+    });
+
+    const res = await checkoutPost(req);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.ok).toBe(true);
+    expect(data.data.transactionId).toBe("txn_bearer");
+    expect(verifyIdToken).toHaveBeenCalled();
+
     delete process.env.NEXT_PUBLIC_PADDLE_SANDBOX;
     delete process.env.PADDLE_API_KEY;
     delete process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
@@ -203,7 +293,7 @@ describe("Production Security & Foundation Audits", () => {
   it("9. duplicate Paddle webhook creates zero duplicate credit", async () => {
     // Verify our logic in webhook processor rejects duplicate idempotencyKey
     const { writeLedgerEntry } = await import("../../functions/src/commerce/ledger-service");
-    const mockTransaction: any = {
+    const mockTransaction = {
       get: vi.fn().mockResolvedValueOnce({
         empty: false,
         docs: [{ data: () => ({ entryHash: "existing-hash" }) }],
@@ -211,7 +301,7 @@ describe("Production Security & Foundation Audits", () => {
       set: vi.fn(),
     };
 
-    const entry = await writeLedgerEntry(mockTransaction, {
+    const entry = await writeLedgerEntry(mockTransaction as never, {
       uid: "user-123",
       orderId: "order-123",
       transactionId: "txn-123",
@@ -237,34 +327,23 @@ describe("Production Security & Foundation Audits", () => {
 
   it("11. End-to-end sandbox payment webhook lifecycle with idempotency", async () => {
     const { processWebhookEvent } = await import("../../functions/src/commerce/webhook-processor");
-    const analyticsDocs = new Map<string, Record<string, unknown>>();
-    let commerceGetCalls = 0;
-
+    
     // We mock firestore runTransaction and get/set calls
-    const mockDbTransaction: any = {
-      get: vi.fn(async (reference: { path?: string; empty?: boolean; exists?: boolean }) => {
-        if (typeof reference?.path === "string" && reference.path.includes("seo_analytics_idempotency/")) {
-          const data = analyticsDocs.get(reference.path);
-          return { exists: Boolean(data), data: () => data };
-        }
-        commerceGetCalls += 1;
-        // Commerce fulfillment sequence (6 gets inside the fulfillment txn)
-        if (commerceGetCalls === 1 || commerceGetCalls === 2 || commerceGetCalls === 4 || commerceGetCalls === 5) {
-          return { empty: true };
-        }
-        if (commerceGetCalls === 3) {
-          return { exists: true, data: () => ({ status: "PENDING" }) };
-        }
-        if (commerceGetCalls === 6) {
-          return { exists: true, data: () => ({ status: "PAID" }) };
-        }
-        return { empty: true };
-      }),
-      set: vi.fn((reference: { path?: string }, data: Record<string, unknown>) => {
-        if (typeof reference?.path === "string" && reference.path.includes("seo_analytics_idempotency/")) {
-          analyticsDocs.set(reference.path, data);
-        }
-      }),
+    const mockDbTransaction = {
+      get: vi.fn()
+        // 1. First writeLedgerEntry call checks existing idempotency key -> empty snapshot
+        .mockResolvedValueOnce({ empty: true })
+        // 2. First writeLedgerEntry fetch latest ledger entry -> empty snapshot
+        .mockResolvedValueOnce({ empty: true })
+        // 3. transitionOrderStatus fetches order (PAID transition) -> active order document
+        .mockResolvedValueOnce({ exists: true, data: () => ({ status: "PENDING" }) })
+        // 4. createEntitlement writeLedgerEntry checks existing key -> empty snapshot
+        .mockResolvedValueOnce({ empty: true })
+        // 5. createEntitlement writeLedgerEntry fetch latest entry -> empty snapshot
+        .mockResolvedValueOnce({ empty: true })
+        // 6. transitionOrderStatus fetches order (ENTITLED transition) -> active order document
+        .mockResolvedValueOnce({ exists: true, data: () => ({ status: "PAID" }) }),
+      set: vi.fn(),
       update: vi.fn(),
     };
 
@@ -279,10 +358,11 @@ describe("Production Security & Foundation Audits", () => {
       data: () => ({
         uid: "test-user-uid",
         orderId: "ord_test_123",
+        caseId: "case_test_fulfill_001",
         canonicalProductCode: "pack_premium_dossier_v5",
         paddlePriceId: "pri_testprice",
         currency: "USD",
-        amountMinor: 14900,
+        amountMinor: 44900,
       })
     });
 
@@ -290,7 +370,7 @@ describe("Production Security & Foundation Audits", () => {
       get: mockOrderGet,
     });
 
-    adminDb.collection = vi.fn().mockImplementation((colName: string) => {
+    adminDb.collection = vi.fn().mockImplementation((colName) => {
       const mockQuery = {
         orderBy: vi.fn().mockReturnThis(),
         limit: vi.fn().mockReturnThis(),
@@ -305,20 +385,6 @@ describe("Production Security & Foundation Audits", () => {
       };
       if (colName === "commerce_orders") {
         return colObj;
-      }
-      if (colName === "seo_analytics_idempotency") {
-        return {
-          ...colObj,
-          doc: (documentId: string) => ({
-            id: documentId,
-            path: `seo_analytics_idempotency/${documentId}`,
-            get: async () => {
-              const path = `seo_analytics_idempotency/${documentId}`;
-              const data = analyticsDocs.get(path);
-              return { exists: Boolean(data), data: () => data };
-            },
-          }),
-        };
       }
       return {
         ...colObj,
@@ -346,7 +412,7 @@ describe("Production Security & Foundation Audits", () => {
         ],
         details: {
           totals: {
-            grandTotal: 14900,
+            grandTotal: 44900,
           }
         }
       }
@@ -354,11 +420,8 @@ describe("Production Security & Foundation Audits", () => {
 
     await processWebhookEvent(event);
 
-    // Assert that the ledger entries and entitlements are set and updated
-    // 2 ledger + 1 entitlement + 1 analytics idempotency doc
-    expect(mockDbTransaction.set).toHaveBeenCalledTimes(4);
+    // Assert ledger, entitlement, and case commercial PAID merge writes.
+    expect(mockDbTransaction.set).toHaveBeenCalledTimes(4); // 2 ledger + entitlement + case commercial
     expect(mockDbTransaction.update).toHaveBeenCalledTimes(2); // Order transition to PAID + transition to ENTITLED
-    expect(analyticsDocs.size).toBe(1);
-    expect(analyticsDocs.has("seo_analytics_idempotency/analytics_purchase:txn_sandbox_payment_123")).toBe(true);
   });
 });

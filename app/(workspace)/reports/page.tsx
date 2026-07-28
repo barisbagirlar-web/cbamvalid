@@ -5,34 +5,37 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthProvider";
 import { getReports } from "@/lib/functions/client";
+import { formatPackageCode } from "@/lib/cbam/package-code";
 import { Lock, FileText } from "lucide-react";
 
 export default function ReportsPage() {
   const { user, loading } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false);
 
   useEffect(() => {
     if (loading || !user) return;
 
+    let cancelled = false;
     const fetchReports = async () => {
       setDataLoading(true);
       try {
         const res = await getReports();
-        if (res) {
-          setReports(res || []);
-        }
+        if (!cancelled && res) setReports(res || []);
       } catch (err) {
         console.error("Error fetching reports:", err);
       } finally {
-        setDataLoading(false);
+        if (!cancelled) setDataLoading(false);
       }
     };
 
-    fetchReports();
+    void fetchReports();
+    return () => {
+      cancelled = true;
+    };
   }, [user, loading]);
 
-  if (loading || dataLoading) {
+  if (loading || (user && dataLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-kil-base px-6">
         <div className="flex flex-col items-center">
@@ -49,14 +52,16 @@ export default function ReportsPage() {
     <div className="min-h-screen bg-background text-foreground px-4 py-8 md:px-8">
       <div className="max-w-6xl mx-auto">
         <div className="pb-6 border-b border-border mb-8">
-          <h1 className="text-3xl font-extrabold tracking-tight font-serif text-foreground">Sealed Reports History</h1>
-          <p className="text-sm text-muted mt-1">Review, re-verify and download your immutable verifier-preparation packages.</p>
+          <h1 className="text-3xl font-extrabold tracking-tight font-serif text-foreground">Locked packages</h1>
+          <p className="text-muted text-sm mt-1">
+            Reports = immutable locked packages from sealing a working file. Re-download is free.
+          </p>
         </div>
 
         {reports.length === 0 ? (
           <div className="bg-surface border border-border border-dashed rounded-2xl p-12 text-center max-w-xl mx-auto shadow-sm">
             <Lock className="w-10 h-10 text-muted/65 mx-auto mb-4" />
-            <h2 className="text-xl font-bold mb-2">No Sealed Reports Found</h2>
+            <h2 className="text-xl font-bold mb-2">No locked packages (Reports) found</h2>
             <p className="text-muted text-sm mb-6 leading-relaxed">
               Once you complete a draft case, verify all compliance rules, and apply a Preparation Pack seal, your immutable verifier ZIP downloads will appear here.
             </p>
@@ -72,7 +77,7 @@ export default function ReportsPage() {
                   <div>
                     <p className="font-semibold text-sm">{r.installationName || r.calculation?.inputs?.installationName || "Sealed dossier"}</p>
                     <p className="text-xs text-muted mt-1 font-mono">
-                      Release ID: {r.reportId.substring(0, 8)}... | Sealed: {new Date(r.createdAt).toLocaleDateString()}
+                      Package ID: {formatPackageCode(r.packageCode)} | Sealed: {new Date(r.createdAt).toLocaleDateString()}
                     </p>
                     <p className="text-[11px] text-muted truncate mt-1 max-w-md font-mono" title={r.documentHash}>
                       Hash: {r.documentHash}

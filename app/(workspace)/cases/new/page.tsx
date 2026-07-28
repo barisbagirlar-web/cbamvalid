@@ -51,14 +51,14 @@ export default function NewCasePage() {
   if (error) {
     return (
       <main className="min-h-screen bg-background px-6 py-16 text-foreground">
-        <section className="mx-auto max-w-xl rounded-2xl border border-red-300 bg-surface p-8 shadow-sm">
+        <section className="mx-auto max-w-xl rounded-2xl border border-status-blocked/40 bg-surface p-8 shadow-sm">
           <div className="flex items-start gap-4">
-            <AlertCircle className="mt-0.5 h-6 w-6 shrink-0 text-red-700" aria-hidden="true" />
+            <AlertCircle className="mt-0.5 h-6 w-6 shrink-0 text-status-blocked" aria-hidden="true" />
             <div>
-              <h1 className="font-serif text-2xl font-bold">New case could not be opened</h1>
+              <h1 className="font-serif text-2xl font-bold">New working file could not be opened</h1>
               <p className="mt-3 text-sm leading-relaxed text-muted">{error}</p>
               <p className="mt-2 text-xs leading-relaxed text-muted">
-                Retry uses the same protected creation request, so a lost network response cannot create another duplicate draft.
+                Retry uses the same protected creation request, so a lost network response cannot create another duplicate working file.
               </p>
             </div>
           </div>
@@ -68,13 +68,13 @@ export default function NewCasePage() {
               onClick={() => setAttempt((current) => current + 1)}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent px-5 text-sm font-semibold text-surface hover:bg-accent-hover"
             >
-              <RefreshCw className="h-4 w-4" aria-hidden="true" /> Retry New Case
+              <RefreshCw className="h-4 w-4" aria-hidden="true" /> Retry new working file
             </button>
             <Link
               href="/cases"
               className="inline-flex h-11 items-center justify-center rounded-md border border-border bg-surface px-5 text-sm font-semibold hover:bg-neutral-soft"
             >
-              Back to Cases
+              Back to working files
             </Link>
           </div>
         </section>
@@ -90,9 +90,9 @@ export default function NewCasePage() {
         aria-live="polite"
       >
         <Loader2 className="h-8 w-8 animate-spin text-accent" aria-hidden="true" />
-        <h1 className="mt-5 font-serif text-2xl font-bold">Creating and opening your case</h1>
+        <h1 className="mt-5 font-serif text-2xl font-bold">Creating your working file</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          CBAMValid is creating one idempotent draft and loading the eight-step dossier workspace.
+          CBAMValid is creating one idempotent working file and opening the eight plain steps.
         </p>
       </section>
     </main>

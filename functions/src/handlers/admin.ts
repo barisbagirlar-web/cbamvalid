@@ -3,8 +3,8 @@ import { z } from "zod";
 import { HttpsError } from "firebase-functions/v2/https";
 import { adminDb } from "../firebase-admin";
 
-async function requireAdmin(auth: any): Promise<void> {
-  if (auth.token.admin === true || auth.token.ownerAdmin === true) {
+async function requireAdmin(auth: { token?: Record<string, unknown> }): Promise<void> {
+  if (auth.token?.admin === true || auth.token?.ownerAdmin === true) {
     return;
   }
   // Production-smoke UID must NEVER satisfy requireAdmin (no general admin capability).
@@ -19,7 +19,7 @@ export const listAllUsers = createCallable({
 }, async (data, { auth }) => {
   await requireAdmin(auth);
 
-  let query = adminDb.collection("users").orderBy("email").limit(data?.limit || 100);
+  const query = adminDb.collection("users").orderBy("email").limit(data?.limit || 100);
   
   if (data?.pageToken) {
     // Basic pagination mock (replace with real document reference in production)
@@ -50,13 +50,32 @@ export const listAllTransactions = createCallable({
   }).optional()
 }, async (data, { auth }) => {
   await requireAdmin(auth);
+  const { toCustomerPurchaseRecord } = await import("../commerce/purchase-history");
+  const limitCount = data?.limit || 100;
 
-  const snapshot = await adminDb.collection("paddle_events")
-    .orderBy("occurredAt", "desc")
-    .limit(data?.limit || 100)
-    .get();
-
-  return { transactions: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) };
+  try {
+    const snapshot = await adminDb
+      .collection("commerce_orders")
+      .orderBy("createdAt", "desc")
+      .limit(limitCount)
+      .get();
+    return {
+      transactions: snapshot.docs.map((doc) => ({
+        ...toCustomerPurchaseRecord(doc.id, doc.data() as Record<string, unknown>),
+        uid: String((doc.data() as { uid?: string }).uid || ""),
+      })),
+    };
+  } catch (error) {
+    console.warn("listAllTransactions orderBy fallback", error);
+    const snapshot = await adminDb.collection("commerce_orders").limit(limitCount).get();
+    const rows = snapshot.docs
+      .map((doc) => ({
+        ...toCustomerPurchaseRecord(doc.id, doc.data() as Record<string, unknown>),
+        uid: String((doc.data() as { uid?: string }).uid || ""),
+      }))
+      .sort((a, b) => Date.parse(b.occurredAt || "0") - Date.parse(a.occurredAt || "0"));
+    return { transactions: rows };
+  }
 });
 
 export const adminSetUserTokens = createCallable({

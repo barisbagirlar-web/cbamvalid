@@ -30,6 +30,7 @@ export const adminDb = getFirestore(app);
 export const adminAuth = getAuth(app);
 export { FieldValue };
 export type { DecodedIdToken } from "firebase-admin/auth";
+export type { DocumentData } from "firebase-admin/firestore";
 
 export function getAdminStorageBucket() {
   return getStorage(app).bucket();

@@ -35,7 +35,7 @@ export default function GrantCreditsForm({ initialUid }: { initialUid: string })
   return (
     <form onSubmit={handleGrant} className="space-y-4">
       {error && (
-        <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm rounded flex items-center gap-2">
+        <div className="p-3 bg-status-blocked/10 border border-status-blocked/20 text-status-blocked dark:text-status-blocked text-sm rounded flex items-center gap-2">
           <AlertTriangle className="w-4 h-4" /> {error}
         </div>
       )}

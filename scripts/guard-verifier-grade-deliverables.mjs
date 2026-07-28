@@ -38,6 +38,7 @@ const reportClient = read("lib/functions/client.ts");
 const reportPage = read("app/(workspace)/cbam/reports/[reportId]/page.tsx");
 const reportTests = read("tests/reports/verifier-grade-deliverables.test.ts");
 const regulatoryTests = read("tests/cbam-engine/regulatory-registry.test.ts");
+const functionsPackage = read("functions/package.json");
 
 if (rootLegal !== functionsLegal) failures.push("Browser and Functions legal-source registries must be byte-identical");
 if (rootRulesets !== functionsRulesets) failures.push("Browser and Functions rulesets must be byte-identical");
@@ -49,6 +50,20 @@ for (const [source, label] of [[rootLegal, "Legal registry"], [rootRulesets, "Ru
   rejectText(source.toLowerCase(), "placeholder", label);
   rejectText(source, "a1b2c3", label);
 }
+
+const premiumPdf = read("functions/src/cbam/report/premium-dossier-pdf.ts");
+const packageComponents = read("functions/src/cbam/report/package-components.ts");
+const readinessScore = read("functions/src/cbam/validation/readiness-score.ts");
+rejectText(premiumPdf, "2023/1776", "Premium dossier PDF must not cite non-CBAM EU 2023/1776");
+rejectText(premiumPdf, "23 controlled components", "Premium dossier annex must not hardcode component count");
+requireText(premiumPdf, "REQUIRED_TOP_LEVEL_COMPONENTS_V5", "Premium dossier annex uses package-component SSOT");
+requireText(premiumPdf, "IMPL_2025_2547", "Premium dossier cites definitive calculation regulation");
+requireText(packageComponents, "REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5", "Package component count SSOT export");
+requireText(readinessScore, "INCOMPLETE_DIMENSION_ASSESSMENT", "Score engine blocks incomplete coverage");
+requireText(readinessScore, "totalWeightedScoreSum.toDecimalPlaces", "Absolute score without assessed-only renormalization");
+requireText(readinessScore, "OPERATOR_PREPARATION_COMPLETE", "Operator preparation complete status");
+requireText(readinessScore, "READY_FOR_ACCREDITED_VERIFIER_ENGAGEMENT", "Accredited verifier engagement decision");
+requireText(readinessScore, "FND-PERIOD-FUTURE-END-DATE", "Future reporting-period end gate");
 
 for (const sourceId of [
   "REG_2023_956",
@@ -78,7 +93,22 @@ for (const text of [
   "Page ${pageNumber} of ${pageCount}",
   "input.model.documentClassification",
   "input.model.disclaimer",
+  "PdfWaterfallChart",
+  "drawWaterfallChart",
+  "drawBarChart",
+  "packageCode",
 ]) requireText(pdf, text, "Professional PDF contract");
+if ((pdf.match(/document\.setFillColor/g) || []).length < 8) failures.push("Professional PDF must reset fill state for chart and table cells");
+
+for (const text of [
+  "Executive summary",
+  "Emissions waterfall",
+  "Sensitivity analysis",
+  "Evidence register",
+  "Mathematical audit trail",
+  "Time-series availability",
+]) requireText(packageBuilder, text, "Professional operator report content");
+requireText(functionsPackage, '"decimal.js": "^10.6.0"', "Direct Decimal.js Functions runtime dependency");
 
 for (const text of [
   'name: "VERIFIER_SIGN_OFF"',
@@ -92,18 +122,27 @@ for (const text of [
   "NO_OPINION",
 ]) requireText(xlsx, text, "Verifier XLSX contract");
 
-const componentMatches = [...packageBuilder.matchAll(/^\s{2}"([^"]+)",$/gm)].map((match) => match[1]);
+const componentSource = read("functions/src/cbam/report/package-components.ts");
+const componentMatches = [...componentSource.matchAll(/^\s{2}"([^"]+)",$/gm)].map((match) => match[1]);
 const requiredStart = componentMatches.indexOf("Product and Scope Definition.pdf");
 const requiredEnd = componentMatches.indexOf("Supporting_Evidence/");
 const requiredComponents = requiredStart >= 0 && requiredEnd >= requiredStart
   ? componentMatches.slice(requiredStart, requiredEnd + 1)
   : [];
 if (requiredComponents.length !== 27) failures.push(`Verifier package must define exactly 27 top-level components; found ${requiredComponents.length}`);
+const v5Start = componentMatches.indexOf("CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
+const v5End = componentMatches.lastIndexOf("Supporting_Evidence/");
+const v5Components = v5Start >= 0 && v5End >= v5Start
+  ? componentMatches.slice(v5Start, v5End + 1)
+  : [];
+if (v5Components.length !== 25) failures.push(`V5 package must define exactly 25 top-level components; found ${v5Components.length}`);
 requireText(packageBuilder, 'schemaVersion: "CBAMVALID-DOSSIER-4.0"', "Manifest schema v4");
 requireText(packageBuilder, "legalSourceRegistryHash", "Manifest regulatory fingerprint");
 requireText(packageBuilder, "PACKAGE_REOPEN_HASH_MISMATCH", "ZIP read-back hash validation");
 requireText(packageBuilder, "PACKAGE_REOPEN_SIGNATURE_INVALID", "ZIP signature read-back validation");
 requireText(packageBuilder, "PACKAGE_PRIMARY_ARTIFACT_MISSING_OR_TRIVIAL", "Non-trivial primary artifacts");
+requireText(packageBuilder, "REQUIRED_TOP_LEVEL_COMPONENTS_V5", "V5 component contract re-export");
+requireText(packageBuilder, "./package-components", "Package component SSOT import");
 
 requireText(reportContract, "PersistedSealedReportSchema", "Server report schema");
 requireText(browserContract, "SealedReportViewSchema", "Browser report schema");
@@ -115,6 +154,8 @@ rejectText(reportPage, "alert(", "Report page observable errors");
 requireText(reportPage, "controlled components", "Report package component disclosure");
 requireText(reportPage, "Independent verifier status", "Verifier boundary disclosure");
 requireText(reportPage, "getReportDownload", "Controlled download client");
+requireText(reportPage, "Direct to indirect composition", "Sealed-report emissions visualization");
+requireText(reportPage, "CN-code emissions allocation", "Sealed-report allocation visualization");
 
 for (const text of [
   "5% materiality",
@@ -122,6 +163,9 @@ for (const text of [
   "<conditionalFormatting",
   "CBAMVALID-DOSSIER-4.0",
   "REQUIRED_TOP_LEVEL_COMPONENTS",
+  "Emissions waterfall",
+  "Sensitivity analysis",
+  "Time-series availability",
 ]) requireText(reportTests, text, "Behavioral deliverable tests");
 requireText(regulatoryTests, "recomputes the pinned fingerprint", "Regulatory fingerprint test");
 requireText(regulatoryTests, "contains no speculative legal instruments", "Speculative-source rejection test");
@@ -137,6 +181,7 @@ console.log("REGULATORY_SINGLE_SOURCE=PASS");
 console.log("REGULATORY_SOURCE_FINGERPRINT=PASS");
 console.log("VERIFICATION_MATERIALITY_5_PERCENT=PASS");
 console.log("PROFESSIONAL_PDF_CONTRACT=PASS");
+console.log("PROFESSIONAL_REPORT_VISUALS=PASS");
 console.log("VERIFIER_XLSX_CONTRACT=PASS");
 console.log("PACKAGE_27_COMPONENT_CONTRACT=PASS");
 console.log("SEALED_REPORT_TYPED_BOUNDARY=PASS");

@@ -21,8 +21,36 @@ import {
 const CreationRequestIdSchema = z.string().uuid();
 
 function parseCaseData(data: unknown, uid: string, caseId?: string): AuditReadyCase {
+  const caseDataObj = { ...(data as Record<string, unknown>) };
+  if (caseDataObj.reportingPeriod && typeof caseDataObj.reportingPeriod === "object") {
+    const rp = caseDataObj.reportingPeriod as Record<string, { value?: string | number; sourceType?: string; confidenceStatus?: string } | undefined>;
+    const yearVal = rp.year?.value;
+    const quarterVal = rp.quarter?.value;
+    if (yearVal && quarterVal) {
+      if (!rp.startDate) rp.startDate = { sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", value: "" };
+      if (!rp.endDate) rp.endDate = { sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", value: "" };
+      
+      if (quarterVal === "ANNUAL") {
+        rp.startDate.value = `${yearVal}-01-01`;
+        rp.endDate.value = `${yearVal}-12-31`;
+      } else if (quarterVal === "Q1") {
+        rp.startDate.value = `${yearVal}-01-01`;
+        rp.endDate.value = `${yearVal}-03-31`;
+      } else if (quarterVal === "Q2") {
+        rp.startDate.value = `${yearVal}-04-01`;
+        rp.endDate.value = `${yearVal}-06-30`;
+      } else if (quarterVal === "Q3") {
+        rp.startDate.value = `${yearVal}-07-01`;
+        rp.endDate.value = `${yearVal}-09-30`;
+      } else if (quarterVal === "Q4") {
+        rp.startDate.value = `${yearVal}-10-01`;
+        rp.endDate.value = `${yearVal}-12-31`;
+      }
+    }
+  }
+
   const parsed = AuditReadyCaseSchema.safeParse({
-    ...(data as Record<string, unknown>),
+    ...caseDataObj,
     ownerId: uid,
     ...(caseId ? { caseId } : {}),
   });

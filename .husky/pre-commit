@@ -1,0 +1,9 @@
+#!/bin/sh
+
+echo "🔍 [CBAMValid] Pre-commit guard starting..."
+
+# Fast local gate only. Full suite runs in CI (.github/workflows/regression.yml)
+# and via: npm run regression:ci
+npx lint-staged || { echo "❌ Lint-staged failed"; exit 1; }
+
+echo "✅ [CBAMValid] Pre-commit guard passed."

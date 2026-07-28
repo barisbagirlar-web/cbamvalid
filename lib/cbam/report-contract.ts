@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PACKAGE_CODE_PATTERN } from "./package-code";
 
 export const ReportDownloadFormatSchema = z.enum([
   "zip",
@@ -12,6 +13,7 @@ export type ReportDownloadFormat = z.infer<typeof ReportDownloadFormatSchema>;
 
 const HashSchema = z.string().regex(/^[a-f0-9]{64}$/i);
 const ReportIdSchema = z.string().regex(/^report_[a-f0-9]{64}$/);
+const PackageCodeSchema = z.string().regex(PACKAGE_CODE_PATTERN);
 
 const GoodResultSchema = z.object({
   goodIndex: z.number().int().positive(),
@@ -63,6 +65,7 @@ export const PackageMetadataSchema = z.object({
 
 export const SealedReportViewSchema = z.object({
   reportId: ReportIdSchema,
+  packageCode: PackageCodeSchema.optional(),
   uid: z.string().min(1),
   caseId: z.string().min(1),
   entitlementId: z.string().min(1),
@@ -87,7 +90,10 @@ export const SealedReportViewSchema = z.object({
     "READY_FOR_INDEPENDENT_VERIFICATION",
     "BLOCKED_BEFORE_INDEPENDENT_VERIFICATION",
     "READY_FOR_VERIFIER_REVIEW",
+    "OPERATOR_PREPARATION_COMPLETE",
+    "INCOMPLETE_ASSESSMENT",
     "NOT_READY",
+    "CONDITIONAL",
   ]),
   independentVerifierStatus: z.union([
     z.literal("NOT_REVIEWED"),
@@ -104,12 +110,23 @@ export const SealedReportViewSchema = z.object({
 export type SealedReportView = z.infer<typeof SealedReportViewSchema>;
 
 export function parseSealedReportView(value: unknown): SealedReportView {
-  const parsed = SealedReportViewSchema.safeParse(value);
-  if (parsed.success) return parsed.data;
-  
-  // If parsing failed only due to count or status, dynamically fix it for compatibility
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const raw = value as Record<string, any>;
+  const raw = { ...value as Record<string, any> };
+  let packageMetadata: z.infer<typeof PackageMetadataSchema> | undefined;
+  if (raw.packageMetadata && typeof raw.packageMetadata === "object") {
+    const metaParse = PackageMetadataSchema.safeParse(raw.packageMetadata);
+    if (metaParse.success) {
+      packageMetadata = metaParse.data;
+    }
+  }
+  // Always strip raw/partial metadata — incomplete objects must not reach Zod.parse.
+  delete raw.packageMetadata;
+
+  const withMeta = packageMetadata ? { ...raw, packageMetadata } : { ...raw };
+  const parsed = SealedReportViewSchema.safeParse(withMeta);
+  if (parsed.success) return parsed.data;
+
+  // Compatibility path for legacy sealed reports missing newer readiness fields.
   const isV5 = Boolean(
     raw &&
       (raw.productCode === "pack_premium_dossier_v5" ||
@@ -118,13 +135,14 @@ export function parseSealedReportView(value: unknown): SealedReportView {
         raw.packageTopLevelComponentCount === 23)
   );
 
-  const manifestCount = raw.packageMetadata?.actualTopLevelComponentCount;
+  const manifestCount = packageMetadata?.actualTopLevelComponentCount;
   const defaultCount = isV5 ? 25 : 27;
 
   return SealedReportViewSchema.parse({
     ...raw,
+    ...(packageMetadata ? { packageMetadata } : {}),
     packageTopLevelComponentCount: manifestCount !== undefined ? manifestCount : defaultCount,
-    automatedReadiness: isV5 ? "READY_FOR_VERIFIER_REVIEW" : "READY_FOR_INDEPENDENT_VERIFICATION",
+    automatedReadiness: isV5 ? "OPERATOR_PREPARATION_COMPLETE" : "READY_FOR_INDEPENDENT_VERIFICATION",
     independentVerifierStatus: (raw.independentVerifierStatus as string) || "NOT_REVIEWED",
   });
 }

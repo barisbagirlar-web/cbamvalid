@@ -47,7 +47,7 @@ export default function VideoPlayer({ src, poster, className, ariaLabel }: Video
       onLoadedMetadata={handleLoadedMetadata}
     >
       <source src={src} type="video/mp4" />
-      <p className="text-white p-4">Your browser does not support the video tag.</p>
+      <p className="text-surface-elevated p-4">Your browser does not support the video tag.</p>
     </video>
   );
 }

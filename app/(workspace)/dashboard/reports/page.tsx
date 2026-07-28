@@ -4,35 +4,38 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthProvider";
 import { getReports } from "@/lib/functions/client";
+import { formatPackageCode } from "@/lib/cbam/package-code";
 import Link from "next/link";
 import { ShieldCheck, Calendar, ArrowRight } from "lucide-react";
 
 export default function DashboardReportsHistoryPage() {
   const { user, loading } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false);
 
   useEffect(() => {
     if (loading || !user) return;
 
+    let cancelled = false;
     const fetchReports = async () => {
       setDataLoading(true);
       try {
         const data = await getReports();
-        if (data) {
-          setReports(data || []);
-        }
+        if (!cancelled && data) setReports(data || []);
       } catch (err) {
         console.error("Error fetching reports:", err);
       } finally {
-        setDataLoading(false);
+        if (!cancelled) setDataLoading(false);
       }
     };
 
-    fetchReports();
+    void fetchReports();
+    return () => {
+      cancelled = true;
+    };
   }, [user, loading]);
 
-  if (loading || dataLoading) {
+  if (loading || (user && dataLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-kil-base px-6">
         <div className="flex flex-col items-center">
@@ -79,7 +82,7 @@ export default function DashboardReportsHistoryPage() {
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3.5 h-3.5" strokeWidth={1.75} /> {new Date(r.createdAt).toLocaleDateString()}
                       </span>
-                      <span>Hash: {r.documentHash.substring(0, 16)}...</span>
+                      <span>Package ID: {formatPackageCode(r.packageCode)}</span>
                     </div>
                   </div>
                   <Link

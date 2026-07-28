@@ -18,6 +18,7 @@ import type { KmsSignatureResult } from "../../functions/src/cbam/report/kms-sig
 import {
   FIXTURE_GENERATED_AT,
   FIXTURE_REPORT_ID,
+  FIXTURE_PACKAGE_CODE,
   createVerifierEvidenceFiles,
   createVerifierGradeCase,
 } from "../fixtures/verifier-grade-case";
@@ -58,6 +59,7 @@ function createSignature(manifestBytes: Buffer): KmsSignatureResult {
     manifestHash,
     signatureBase64: signature.toString("base64"),
     publicKeyPem: publicKey,
+    protectionLevel: "SOFTWARE",
   };
 }
 
@@ -71,6 +73,7 @@ describe("verifier-grade deliverables", () => {
       calculation,
       controls,
       reportId: FIXTURE_REPORT_ID,
+      packageCode: FIXTURE_PACKAGE_CODE,
       releaseVersion: 1,
       generatedAt: FIXTURE_GENERATED_AT,
     });
@@ -78,14 +81,15 @@ describe("verifier-grade deliverables", () => {
     expect(controls.filter((item) => item.status === "BLOCKER")).toEqual([]);
     expect(calculation.totalDirectEmissions).toBe("80");
     expect(calculation.totalIndirectEmissions).toBe("40");
-    expect(calculation.totalEmbeddedEmissions).toBe("120");
+    expect(calculation.totalEmbeddedEmissions).toBe("80");
     expect(calculation.productionVolume).toBe("100");
-    expect(calculation.specificEmbeddedEmissions).toBe("1.2");
+    expect(calculation.specificEmbeddedEmissions).toBe("0.8");
     expect(calculation.allocationShareTotal).toBe("1");
     expect(calculation.allocationReconciliationDelta).toBe("0");
-    expect(calculation.goods.map((item) => item.allocatedEmbeddedEmissions)).toEqual(["72", "48"]);
-    expect(calculation.goods.map((item) => item.specificEmbeddedEmissions)).toEqual(["1.2", "1.2"]);
-    expect(model.goods.map((item) => item.materialityThresholdSpecific)).toEqual(["0.06", "0.06"]);
+    expect(calculation.goods.map((item) => item.allocatedEmbeddedEmissions)).toEqual(["48", "32"]);
+    expect(calculation.goods.map((item) => item.specificEmbeddedEmissions)).toEqual(["0.8", "0.8"]);
+    expect(calculation.goods.map((item) => item.indirectExclusionCode)).toEqual(["ANNEX_II_DIRECT_ONLY", "ANNEX_II_DIRECT_ONLY"]);
+    expect(model.goods.map((item) => item.materialityThresholdSpecific)).toEqual(["0.04", "0.04"]);
     expect(model.automatedReadiness).toBe("READY_FOR_INDEPENDENT_VERIFICATION");
     expect(model.independentVerifierStatus).toBe("NOT_REVIEWED");
     expect(model.monitoringPlan.every((item) => item.status === "DOCUMENTED")).toBe(true);
@@ -101,6 +105,7 @@ describe("verifier-grade deliverables", () => {
       calculation,
       controls,
       reportId: FIXTURE_REPORT_ID,
+      packageCode: FIXTURE_PACKAGE_CODE,
       releaseVersion: 1,
       generatedAt: FIXTURE_GENERATED_AT,
       evidenceFiles: createVerifierEvidenceFiles(),
@@ -114,15 +119,21 @@ describe("verifier-grade deliverables", () => {
       expect(item.bytes.byteLength).toBeGreaterThan(5000);
       const parsed = await pdfText(item.bytes);
       expect(parsed.pages).toBeGreaterThanOrEqual(1);
-      expect(parsed.text).toContain("CBAMValid");
-      expect(parsed.text).toContain("independent");
+       expect(parsed.text).toContain("Verified Steel");
+       expect(parsed.text).toContain("independent");
       expect(parsed.text).toContain("Page 1 of");
     }
 
     const operator = artifacts.find((item) => item.path === "Operator Emissions Report.pdf");
     expect(operator).toBeDefined();
     const operatorPdf = await pdfText(operator!.bytes);
-    expect(operatorPdf.pages).toBeGreaterThanOrEqual(2);
+    expect(operatorPdf.pages).toBeGreaterThanOrEqual(6);
+    expect(operatorPdf.text).toContain("Executive summary");
+    expect(operatorPdf.text).toContain("Emissions waterfall");
+    expect(operatorPdf.text).toContain("Sensitivity analysis");
+    expect(operatorPdf.text).toContain("Evidence register");
+    expect(operatorPdf.text).toContain("Mathematical audit trail");
+    expect(operatorPdf.text).toContain("Time-series availability");
     expect(operatorPdf.text).toContain("Total embedded emissions");
     expect(operatorPdf.text).toContain("5% materiality");
     expect(operatorPdf.text).toContain("NOT_REVIEWED");
@@ -165,6 +176,7 @@ describe("verifier-grade deliverables", () => {
       calculation,
       controls,
       reportId: FIXTURE_REPORT_ID,
+      packageCode: FIXTURE_PACKAGE_CODE,
       releaseVersion: 1,
       generatedAt: FIXTURE_GENERATED_AT,
       evidenceFiles: createVerifierEvidenceFiles(),
@@ -176,7 +188,7 @@ describe("verifier-grade deliverables", () => {
       reportId: FIXTURE_REPORT_ID,
       releaseVersion: 1,
       generatedAt: FIXTURE_GENERATED_AT,
-      evidenceCount: 1,
+      evidenceCount: 4,
     });
     const manifest = JSON.parse(manifestResult.bytes.toString("utf8")) as DataIntegrityManifest;
     expect(manifest.schemaVersion).toBe("CBAMVALID-DOSSIER-4.0");

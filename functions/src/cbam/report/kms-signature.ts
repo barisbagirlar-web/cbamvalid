@@ -7,6 +7,7 @@ export type KmsSignatureResult = {
   manifestHash: string;
   signatureBase64: string;
   publicKeyPem: string;
+  protectionLevel: string;
 };
 
 function requiredKeyVersion(): string {
@@ -69,11 +70,20 @@ export async function signManifestWithKms(manifest: Buffer): Promise<KmsSignatur
     throw new Error("KMS_SIGNATURE_VERIFICATION_FAILED");
   }
 
+  let protectionLevel = "UNKNOWN";
+  try {
+    const versionMeta = await kmsRequest<{ protectionLevel?: string }>(baseUrl, { method: "GET" }, token);
+    protectionLevel = versionMeta.protectionLevel || "UNKNOWN";
+  } catch {
+    protectionLevel = "UNKNOWN";
+  }
+
   return {
     keyVersion,
     algorithm: publicKey.algorithm,
     manifestHash,
     signatureBase64: signed.signature,
     publicKeyPem: publicKey.pem,
+    protectionLevel,
   };
 }

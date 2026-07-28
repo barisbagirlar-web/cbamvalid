@@ -1,6 +1,13 @@
 import type { AuditReadyCase } from "../schema";
 import type { EvidenceSufficiencyRow, EvidenceCoverageAssessment } from "../premium-dossier-model";
 import { deriveMaterialRequirements } from "./material-input-registry";
+import {
+  type EvidenceClass,
+  requirementClassForPath,
+  isMimeAdmissible,
+  assessSingleSourceConcentration,
+  assessEvidenceDiversity,
+} from "../../dossier/30-evidence/evidence-classes";
 
 function parsePeriodDates(periodStr: unknown): { start: string; end: string } | null {
   if (typeof periodStr !== "string") return null;
@@ -34,8 +41,8 @@ function parsePeriodDates(periodStr: unknown): { start: string; end: string } | 
 }
 
 function getValueAtPath(obj: unknown, path: string): unknown {
-  const parts = path.split(".");
-  let current = obj;
+  const parts = path.split(/[.]/);
+  let current: unknown = obj;
   for (const part of parts) {
     if (current === null || current === undefined) return undefined;
     const match = part.match(/^(\w+)\[(\d+)\]$/);
@@ -181,7 +188,8 @@ function calculateIntervalUnionCoverage(
   };
 }
 
-export function runEvidenceSufficiency(caseData: AuditReadyCase, _assessmentTimestamp?: string): EvidenceSufficiencyRow[] {
+export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimestamp?: string): EvidenceSufficiencyRow[] {
+  void assessmentTimestamp;
   const requirements = deriveMaterialRequirements(caseData);
   const rows: EvidenceSufficiencyRow[] = [];
 
@@ -365,9 +373,20 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, _assessmentTime
     );
 
     // If all individual records were valid but union doesn't cover 100.00%, row state becomes OUT_OF_PERIOD
-    if (worstState === "SUPPORTED" && !coverageAssessment.complete) {
+    if (worstState === "SUPPORTED" && req.reportingPeriodRequired && !coverageAssessment.complete) {
       worstState = "OUT_OF_PERIOD";
       allReasonCodes.add("EVIDENCE_ANNUAL_COVERAGE_INCOMPLETE");
+    }
+
+    const evidenceClass = requirementClassForPath(req.inputPath);
+    for (const evidenceId of linkedEvidenceIds) {
+      const record = caseData.evidenceRegister.find((item) => item.evidenceId === evidenceId);
+      if (record && !isMimeAdmissible(evidenceClass, record.mimeType)) {
+        if (STATE_SEVERITY.PARTIALLY_SUPPORTED > STATE_SEVERITY[worstState]) {
+          worstState = "PARTIALLY_SUPPORTED";
+        }
+        allReasonCodes.add("EVIDENCE_CLASS_MIME_INADMISSIBLE");
+      }
     }
 
     const blocksSealing = isMaterial && worstState !== "SUPPORTED";
@@ -391,6 +410,50 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, _assessmentTime
       coveragePercent: coverageAssessment.coveragePercent,
       coverageAssessment,
     });
+  }
+
+  const evidenceIdToClasses = new Map<string, Set<EvidenceClass>>();
+  for (const req of requirements) {
+    const row = rows.find((item) => item.requirementId === req.requirementId);
+    if (!row) continue;
+    const evidenceClass = requirementClassForPath(req.inputPath);
+    for (const evidenceId of row.evidenceIds) {
+      if (!evidenceIdToClasses.has(evidenceId)) evidenceIdToClasses.set(evidenceId, new Set());
+      evidenceIdToClasses.get(evidenceId)!.add(evidenceClass);
+    }
+  }
+
+  const { finding: concentrationFinding, concentratedIds } = assessSingleSourceConcentration(evidenceIdToClasses);
+  if (concentrationFinding) {
+    for (const row of rows) {
+      if (!row.evidenceIds.some((evidenceId) => concentratedIds.includes(evidenceId))) continue;
+      if (row.state === "SUPPORTED") row.state = "PARTIALLY_SUPPORTED";
+      if (!row.reasonCodes.includes("SINGLE_SOURCE_CONCENTRATION")) {
+        row.reasonCodes = [...row.reasonCodes.filter((code) => code !== "PASS"), "SINGLE_SOURCE_CONCENTRATION"];
+      }
+      const req = requirements.find((item) => item.requirementId === row.requirementId);
+      const isMat = req?.requirementLevel === "MATERIAL_REQUIRED" || req?.requirementLevel === "REQUIRED";
+      if (isMat) {
+        row.blocksSealing = true;
+        row.blocksOperatorReadiness = true;
+      }
+    }
+  }
+
+  const distinctDocumentCount = new Set(caseData.evidenceRegister.map((record) => record.evidenceId)).size;
+  const { fullScoreAllowed } = assessEvidenceDiversity(distinctDocumentCount, requirements.length);
+  if (!fullScoreAllowed) {
+    for (const row of rows) {
+      const req = requirements.find((item) => item.requirementId === row.requirementId);
+      const isMat = req?.requirementLevel === "MATERIAL_REQUIRED" || req?.requirementLevel === "REQUIRED";
+      if (!isMat) continue;
+      if (row.state === "SUPPORTED") row.state = "PARTIALLY_SUPPORTED";
+      if (!row.reasonCodes.includes("EVIDENCE_DIVERSITY_INSUFFICIENT")) {
+        row.reasonCodes = [...row.reasonCodes.filter((code) => code !== "PASS"), "EVIDENCE_DIVERSITY_INSUFFICIENT"];
+      }
+      row.blocksSealing = true;
+      row.blocksOperatorReadiness = true;
+    }
   }
 
   return rows;
