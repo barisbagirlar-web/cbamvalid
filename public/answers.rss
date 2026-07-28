@@ -168,5 +168,12 @@
       <description>Honest time: 2–4 hours if your data is ready. 2–3 weeks if starting from zero. Use the readiness checklist and downloadable pre-flight XLSX before opening a working file. False “instant CBAM” claims create failed seals. Time honesty reduces buyer deadline panic.</description>
       <category>/how-it-works, /product</category>
     </item>
+    <item>
+      <title>Where are CBAMValid customer case studies?</title>
+      <link>https://cbamvalid.com/case-studies</link>
+      <guid isPermaLink="false">case-studies-permissioned</guid>
+      <description>Named case studies are published only with written permission for company name, logo, and a measurable outcome. Until then the case-studies page stays empty by design. Invented logos and unattributed praise strips are forbidden. Fake social proof destroys enterprise trust faster than an empty slot.</description>
+      <category>/case-studies, /about</category>
+    </item>
   </channel>
 </rss>

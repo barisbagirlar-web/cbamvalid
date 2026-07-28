@@ -900,3 +900,29 @@ a.entity-chip:hover{border-color:var(--terra-line);color:var(--terra)}
 @media (max-width:720px){
   .glossary-toc ol{columns:1}
 }
+
+/* ---------- Seal signature mark (FAZ 5) ---------- */
+.seal-signature{
+  display:flex;gap:22px;align-items:center;max-width:560px;
+  padding:22px 26px;border:1px solid var(--line);border-radius:var(--r-lg);
+  background:linear-gradient(135deg, var(--card) 0%, #f7f3ea 100%);
+  box-shadow:var(--shadow-sm);
+}
+.seal-signature-ring{
+  width:92px;height:92px;border-radius:50%;flex:none;
+  border:3px solid var(--gold);display:flex;align-items:center;justify-content:center;
+  transform:rotate(-8deg);background:rgba(212,160,23,.12);
+}
+.seal-signature-ring span{
+  font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.14em;
+  color:var(--terra-dark);text-transform:uppercase;
+}
+.seal-signature-brand{font-family:var(--serif);font-size:1.15rem;margin:0 0 8px;color:var(--ink)}
+.seal-signature-brand em{font-style:normal;color:var(--terra)}
+.seal-signature-line{font-size:.78rem;color:var(--ink-2);margin:0 0 4px;word-break:break-all}
+.seal-signature-note{font-size:.78rem;color:var(--muted);margin:8px 0 0}
+.seal-signature[data-compact="true"]{padding:14px 16px;gap:14px}
+.seal-signature[data-compact="true"] .seal-signature-ring{width:64px;height:64px}
+@media (max-width:640px){
+  .seal-signature{flex-direction:column;text-align:center}
+}

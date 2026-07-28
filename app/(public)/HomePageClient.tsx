@@ -3,6 +3,7 @@
 import React from 'react';
 import { HeroDossierNarrative } from '@/components/marketing/HeroDossierNarrative';
 import { CountUp, FaqItem, useClassReveal } from '@/components/marketing/MarketingUi';
+import { SealSignatureMark } from '@/components/marketing/SealSignatureMark';
 import { AeoPageChrome } from '@/components/seo/AnswerEvidenceSection';
 import { HOMEPAGE_STATS } from '@/lib/marketing/homepage-stats';
 import { PUBLIC_SAMPLE_DOSSIER } from '@/lib/sample/public-sample-dossier';
@@ -41,8 +42,8 @@ export default function HomePageClient() {
         <p className="price-line">USD 449 per working file at lock. <span>No subscription. Drafts free. Same-file corrections included.</span></p>
         <div className="hero-ctas">
           <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">Start a Dossier <span className="arr">→</span></a>
-          <a className="btn btn-ghost btn-lg" href="/how-it-works">Watch the Workflow</a>
           <a className="btn btn-ghost btn-lg" href="/sample-dossier">View the Sample Dossier</a>
+          <a className="btn btn-navy btn-lg" href="/demo">Book a Demo</a>
         </div>
         <ul className="hero-micro">
           <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Deterministic engine</li>
@@ -300,6 +301,19 @@ export default function HomePageClient() {
         <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true"><path d="M12 2 20 5.5v6c0 5-3.5 8.5-8 10.5-4.5-2-8-5.5-8-10.5v-6L12 2Z"/></svg>Refund policy published</li>
         <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true"><path d="M12 2 20 5.5v6c0 5-3.5 8.5-8 10.5-4.5-2-8-5.5-8-10.5v-6L12 2Z"/></svg>GDPR compliant · EU hosted</li>
       </ul>
+      <div style={{ marginTop: "48px", display: "flex", justifyContent: "center" }}>
+        <SealSignatureMark
+          rulesetVersion="v3.0.0-DEFINITIVE"
+          documentHash={PUBLIC_SAMPLE_DOSSIER.primaryDocumentSha256}
+        />
+      </div>
+      <p style={{ textAlign: "center", marginTop: "18px" }}>
+        <a href="/demo">Book a demo for Annual / Enterprise</a>
+        {" · "}
+        <a href="/pricing#tiers">See all four tiers</a>
+        {" · "}
+        <a href="/case-studies">Case studies (permissioned only)</a>
+      </p>
     </div>
   </section>
 

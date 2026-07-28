@@ -96,7 +96,7 @@ for (const text of [
   "PdfWaterfallChart",
   "drawWaterfallChart",
   "drawBarChart",
-  "compactIdentifier",
+  "packageCode",
 ]) requireText(pdf, text, "Professional PDF contract");
 if ((pdf.match(/document\.setFillColor/g) || []).length < 8) failures.push("Professional PDF must reset fill state for chart and table cells");
 

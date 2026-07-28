@@ -83,6 +83,9 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Q: How long does CBAMValid preparation take?
   A: Honest time: 2–4 hours if your data is ready. 2–3 weeks if starting from zero. Use the readiness checklist and downloadable pre-flight XLSX before opening a working file. False “instant CBAM” claims create failed seals. Time honesty reduces buyer deadline panic.
   Pages: /how-it-works, /product
+- Q: Where are CBAMValid customer case studies?
+  A: Named case studies are published only with written permission for company name, logo, and a measurable outcome. Until then the case-studies page stays empty by design. Invented logos and unattributed praise strips are forbidden. Fake social proof destroys enterprise trust faster than an empty slot.
+  Pages: /case-studies, /about
 
 ## Authority chains (Direct Answer → Calculation → Explanation → Methodology → Evidence → Expert → Related)
 
@@ -137,6 +140,19 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Related: /pricing, /sample-dossier, /security
 - Entities: book a demo; Exporter Annual; Enterprise
 - Fan-out queries: CBAMValid demo; CBAMValid enterprise demo; CBAMValid annual plan
+
+### /case-studies
+- Primary question: Does CBAMValid publish customer logos and case studies?
+- Empathy: Procurement trusts empty honesty more than invented praise strips.
+- Direct answer: Named case studies are published only with written permission for company name, logo, and a measurable outcome. Until then the case-studies page stays empty by design.
+- Calculation: Case studies do not alter sealed emissions arithmetic.
+- Explanation: Use the public sample dossier and structure-review surface while the permissioned slot is empty.
+- Methodology: H2: no claim without evidence. Fake social proof is banned.
+- Evidence: Published /case-studies empty-slot policy page.
+- Expert: Permissioned proof beats fabricated logos.
+- Related: /sample-dossier, /verifier-review, /demo
+- Entities: case studies; permissioned reference; no invented logos
+- Fan-out queries: CBAMValid case studies; CBAMValid customer logos; CBAMValid testimonials
 
 ### /how-it-works
 - Primary question: How do I go from raw plant data to a sealed CBAM preparation dossier?
@@ -235,7 +251,7 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Direct answer: CBAMValid publishes europe-west1 hosting, TLS, HttpOnly sessions, provider encryption at rest, subprocessors (Firebase/Google Cloud and Paddle), and a DPA draft. ISO 27001 and SOC 2 are not claimed.
 - Calculation: Security controls protect case and evidence data; they do not alter sealed emissions arithmetic.
 - Explanation: Download the DPA draft for procurement discussion. Signed DPAs remain a bilateral commercial step.
-- Methodology: Certification claims require issuer, scope, and validity dates — never “in progress.”
+- Methodology: Certification claims require issuer, scope, and validity dates — never unpublished placeholder status language.
 - Evidence: Published security page + DPA draft PDF. Absence of ISO claim is intentional honesty.
 - Expert: Security facts are operational. Accredited verification remains a separate legal act.
 - Related: /privacy, /contact, /buyer-link
@@ -442,6 +458,10 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
   Covers: human demo path; Enterprise contact sales only
   Entities: book a demo; Exporter Annual; Enterprise
   Fan-out: CBAMValid demo; CBAMValid enterprise demo; CBAMValid annual plan
+- /case-studies — Permissioned case studies only
+  Covers: no invented logos; empty slot until written permission
+  Entities: case studies; permissioned reference; no invented logos
+  Fan-out: CBAMValid case studies; CBAMValid customer logos; CBAMValid testimonials
 - /how-it-works — Working-file to locked-package workflow
   Covers: case scope setup; evidence linking; seal and download deliverables
   Entities: draft-to-seal workflow; quality blockers; sealed release; O3CI export
@@ -553,6 +573,7 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - [Built for how verifiers actually work](https://cbamvalid.com/verifier-review): CBAMValid verifier structure review
 - [Published rulesets — named, dated, pinned](https://cbamvalid.com/rulesets): CBAMValid published ruleset registry
 - [One link for the buyer — integrity, not assurance](https://cbamvalid.com/buyer-link): CBAMValid buyer share link
+- [Case studies — published only with permission](https://cbamvalid.com/case-studies): CBAMValid case studies policy
 - [Door = CBAM. Room is larger.](https://cbamvalid.com/platform): CBAMValid platform architecture
 - [Independent CBAM preparation — with clear limits](https://cbamvalid.com/about): About CBAMValid
 - [Need help before a buyer deadline?](https://cbamvalid.com/contact): Contact CBAMValid
@@ -564,7 +585,6 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - [CBAM Default Values](https://cbamvalid.com/cbam-default-values): CBAM default values
 - [CBAM Certificate Price](https://cbamvalid.com/cbam-certificate-price): CBAM certificate price
 - [CBAM Verification Preparation](https://cbamvalid.com/cbam-verification-preparation): CBAM verifier preparation
-- [Exporter Evidence Requirements](https://cbamvalid.com/cbam-exporter-evidence-requirements): CBAM exporter evidence requirements
 
 ## Key regulatory facts
 

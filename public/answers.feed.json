@@ -259,6 +259,16 @@
         "/how-it-works",
         "/product"
       ]
+    },
+    {
+      "id": "case-studies-permissioned",
+      "url": "https://cbamvalid.com/answers#case-studies-permissioned",
+      "title": "Where are CBAMValid customer case studies?",
+      "content_text": "Named case studies are published only with written permission for company name, logo, and a measurable outcome. Until then the case-studies page stays empty by design. Invented logos and unattributed praise strips are forbidden.\n\nFake social proof destroys enterprise trust faster than an empty slot.",
+      "tags": [
+        "/case-studies",
+        "/about"
+      ]
     }
   ]
 }

@@ -134,6 +134,26 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     fanOutQueries: ["CBAMValid demo", "CBAMValid enterprise demo", "CBAMValid annual plan"],
   },
   {
+    path: "/case-studies",
+    primaryQuestion: "Does CBAMValid publish customer logos and case studies?",
+    empathyLead:
+      "Procurement trusts empty honesty more than invented praise strips.",
+    directAnswer:
+      "Named case studies are published only with written permission for company name, logo, and a measurable outcome. Until then the case-studies page stays empty by design.",
+    calculation: "Case studies do not alter sealed emissions arithmetic.",
+    explanation: "Use the public sample dossier and structure-review surface while the permissioned slot is empty.",
+    methodology: "H2: no claim without evidence. Fake social proof is banned.",
+    evidence: "Published /case-studies empty-slot policy page.",
+    expert: "Permissioned proof beats fabricated logos.",
+    relatedProblems: [
+      { question: "Sample dossier", href: "/sample-dossier", why: "Inspect output" },
+      { question: "Structure review", href: "/verifier-review", why: "Package fitness" },
+      { question: "Book a demo", href: "/demo", why: "Talk to a human" },
+    ],
+    entities: ["case studies", "permissioned reference", "no invented logos"],
+    fanOutQueries: ["CBAMValid case studies", "CBAMValid customer logos", "CBAMValid testimonials"],
+  },
+  {
     path: "/how-it-works",
     primaryQuestion: "How do I go from raw plant data to a sealed CBAM preparation dossier?",
     empathyLead:
@@ -361,7 +381,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     explanation:
       "Download the DPA draft for procurement discussion. Signed DPAs remain a bilateral commercial step.",
     methodology:
-      "Certification claims require issuer, scope, and validity dates — never “in progress.”",
+      "Certification claims require issuer, scope, and validity dates — never unpublished placeholder status language.",
     evidence:
       "Published security page + DPA draft PDF. Absence of ISO claim is intentional honesty.",
     expert:

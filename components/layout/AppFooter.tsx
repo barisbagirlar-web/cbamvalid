@@ -62,6 +62,12 @@ export default function AppFooter() {
               <li>
                 <Link href="/platform">Platform Architecture</Link>
               </li>
+              <li>
+                <Link href="/case-studies">Case Studies</Link>
+              </li>
+              <li>
+                <Link href="/demo">Book a Demo</Link>
+              </li>
             </ul>
           </div>
           <div>
@@ -95,9 +101,6 @@ export default function AppFooter() {
             <ul>
               <li>
                 <Link href="/security">Security &amp; DPA</Link>
-              </li>
-              <li>
-                <Link href="/demo">Book a Demo</Link>
               </li>
               <li>
                 <Link href="/privacy">Privacy Notice</Link>

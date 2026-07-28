@@ -683,6 +683,26 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
     relatedPaths: ["/pricing", "/sample-dossier"],
     schemaEligible: true,
   },
+  {
+    id: "case-studies-permissioned",
+    question: "Where are CBAMValid customer case studies?",
+    aliases: ["customer logos", "testimonials", "named references"],
+    directAnswer:
+      "Named case studies are published only with written permission for company name, logo, and a measurable outcome. Until then the case-studies page stays empty by design. Invented logos and unattributed praise strips are forbidden.",
+    empathyContext:
+      "Fake social proof destroys enterprise trust faster than an empty slot.",
+    evidence: [
+      {
+        label: "Case studies page",
+        detail: "Honest empty slot with publication criteria",
+        href: "/case-studies",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/case-studies", "/about"],
+    relatedPaths: ["/sample-dossier", "/verifier-review"],
+    schemaEligible: true,
+  },
 ] as const;
 
 export function listAnswersForRoute(path: string): AeoAnswerRecord[] {

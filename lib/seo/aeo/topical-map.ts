@@ -83,6 +83,15 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
     ...chainExtras("/demo"),
   },
   {
+    path: "/case-studies",
+    topic: "Permissioned case studies only",
+    role: "spoke",
+    parentPath: "/",
+    childPaths: ["/sample-dossier", "/verifier-review", "/demo"],
+    covers: ["no invented logos", "empty slot until written permission"],
+    ...chainExtras("/case-studies"),
+  },
+  {
     path: "/how-it-works",
     topic: "Working-file to locked-package workflow",
     role: "spoke",
@@ -390,6 +399,7 @@ const LABEL_BY_PATH: Record<string, string> = {
   "/product": "Product",
   "/pricing": "Pricing",
   "/demo": "Book a demo",
+  "/case-studies": "Case studies",
   "/how-it-works": "How it works",
   "/methodology": "Methodology",
   "/sample-dossier": "Sample dossier",
