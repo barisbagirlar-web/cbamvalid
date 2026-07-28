@@ -93,7 +93,7 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
   A: No. The security page publishes hosting region (europe-west1), TLS, session model, encryption-at-rest defaults, subprocessors, and a DPA draft. ISO 27001 and SOC 2 are not claimed. Certificates will be published only with issuer, scope, and validity dates. Procurement needs facts. “In progress” certification language is a trust defect.
   Pages: /security, /privacy
 - Q: How does CBAMValid prove marketing claims without inventing evidence?
-  A: CBAMValid publishes a Trust Evidence Registry at /trust. Each marketing claim is tagged VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Legal identity is published: SectorCalc Corporation (CBAMValid), CRO 315881, VAT IE1857162AB, Dublin registered address, support phone, and DPO contact. Case studies stay empty until permissioned. SAMPLE documents are watermarked specimens — not certificates. Procurement teams reverse-engineer claims. Invented identity destroys enterprise deals permanently.
+  A: CBAMValid publishes a Trust Evidence Registry at /trust. Each marketing claim is tagged VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Legal identity is published: SectorCalc Corporation (CBAMValid), CRO 315881, VAT IE1857162AB, Dublin registered address, support phone, and DPO contact. /case-studies publishes anonymized illustrative scenarios — not named logos. SAMPLE documents are watermarked specimens — not certificates. Procurement teams reverse-engineer claims. Invented identity destroys enterprise deals permanently.
   Pages: /trust, /legal-notice, /case-studies
 - Q: Is CBAMValid only a calculator, or a broader compliance platform?
   A: CBAMValid is a sealed, evidence-linked, version-pinned compliance package architecture. The live ruleset family is EU CBAM. Additional regimes can reuse the package contract later — they are not sold until CBAM leadership and opening conditions justify them. No second regulated product is live today. Architecture honesty beats vaporware roadmaps. Door = CBAM; room is larger only when earned.
@@ -141,8 +141,11 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
   A: Honest time: 2–4 hours if your data is ready. 2–3 weeks if starting from zero. Use the readiness checklist and downloadable pre-flight XLSX before opening a working file. False “instant CBAM” claims create failed seals. Time honesty reduces buyer deadline panic.
   Pages: /how-it-works, /product
 - Q: Where are CBAMValid customer case studies?
-  A: Named case studies are published only with written permission for company name, logo, and a measurable outcome. Until then the case-studies page stays empty by design. Invented logos and unattributed praise strips are forbidden. Fake social proof destroys enterprise trust faster than an empty slot.
-  Pages: /case-studies, /about
+  A: CBAMValid publishes anonymized illustrative sector scenarios on /case-studies (steel, aluminium, holding, cement). Named company logos and quotes publish only with written permission. Invented testimonials remain forbidden. Field realism without fake logos. Buyers recognize anonymized pressure paths; procurement rejects invented praise strips.
+  Pages: /case-studies, /about, /
+- Q: What do IdP and MSA mean for CBAMValid Enterprise SSO?
+  A: IdP means Identity Provider — your company login (Microsoft Entra ID, Google Workspace, or Okta). MSA means Master Service Agreement — the signed Enterprise contract covering pricing, SLA, DPA, and which domains are in scope. SSO is enabled after that contract; it is not on Single Pack. Procurement jargon blocks deals. Plain labels unblock Enterprise scoping.
+  Pages: /enterprise/sso, /enterprise, /demo
 
 ## Authority chains (Direct Answer → Calculation → Explanation → Methodology → Evidence → Expert → Related)
 
@@ -200,16 +203,16 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 
 ### /case-studies
 - Primary question: Does CBAMValid publish customer logos and case studies?
-- Empathy: Procurement trusts empty honesty more than invented praise strips.
-- Direct answer: Named case studies are published only with written permission for company name, logo, and a measurable outcome. Until then the case-studies page stays empty by design.
-- Calculation: Case studies do not alter sealed emissions arithmetic.
-- Explanation: Use the public sample dossier and structure-review surface while the permissioned slot is empty.
-- Methodology: H2: no claim without evidence. Fake social proof is banned.
-- Evidence: Published /case-studies empty-slot policy page.
-- Expert: Permissioned proof beats fabricated logos.
-- Related: /sample-dossier, /verifier-review, /demo
-- Entities: case studies; permissioned reference; no invented logos
-- Fan-out queries: CBAMValid case studies; CBAMValid customer logos; CBAMValid testimonials
+- Empathy: Buyers want field realism without fake logos. Anonymized scenarios beat invented praise strips.
+- Direct answer: CBAMValid publishes anonymized illustrative sector scenarios on /case-studies — steel, aluminium, holding, and cement working-file paths with no company names or logos. Named customer references publish only with written permission.
+- Calculation: Scenarios do not alter sealed emissions arithmetic.
+- Explanation: Use scenarios to understand buyer pressure and package shape. Inspect the public sample dossier for sealed deliverables. Named logos stay permissioned-only.
+- Methodology: H2: no invented testimonials. Anonymized scenarios are labeled as illustrative.
+- Evidence: Published /case-studies illustrative scenario set + permission note for named references.
+- Expert: Anonymized field paths beat fabricated logos.
+- Related: /sample-dossier, /product, /enterprise, /demo
+- Entities: illustrative scenarios; anonymized sector paths; permissioned named reference; no invented logos
+- Fan-out queries: CBAMValid case studies; CBAMValid customer scenarios; CBAM preparation steel exporter example
 
 ### /how-it-works
 - Primary question: How do I go from raw plant data to a sealed CBAM preparation dossier?
@@ -596,10 +599,10 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
   Covers: partner inquiry; no invented logos
   Entities: channel partner; referral agreement
   Fan-out: CBAMValid partner; CBAMValid reseller; CBAMValid referral
-- /case-studies — Permissioned case studies only
-  Covers: no invented logos; empty slot until written permission
-  Entities: case studies; permissioned reference; no invented logos
-  Fan-out: CBAMValid case studies; CBAMValid customer logos; CBAMValid testimonials
+- /case-studies — Anonymized illustrative sector scenarios
+  Covers: anonymized steel aluminium cement holding scenarios; no invented logos or testimonials; named references still permissioned
+  Entities: illustrative scenarios; anonymized sector paths; permissioned named reference; no invented logos
+  Fan-out: CBAMValid case studies; CBAMValid customer scenarios; CBAM preparation steel exporter example
 - /how-it-works — Working-file to locked-package workflow
   Covers: case scope setup; evidence linking; seal and download deliverables
   Entities: draft-to-seal workflow; quality blockers; sealed release; O3CI export
@@ -722,7 +725,7 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - [Door = CBAM. Room is larger.](https://cbamvalid.com/platform): CBAMValid platform architecture
 - [Verify CBAM CN-Code Scope](https://cbamvalid.com/cn-code): CBAM CN code scope
 - [Verify a Dossier](https://cbamvalid.com/verify): CBAMValid dossier verification
-- [Case studies — published only with permission](https://cbamvalid.com/case-studies): CBAMValid case studies policy
+- [Field scenarios — anonymized on purpose](https://cbamvalid.com/case-studies): CBAMValid illustrative sector scenarios
 - [Independent CBAM preparation — with clear limits](https://cbamvalid.com/about): About CBAMValid
 - [Need help before a buyer deadline?](https://cbamvalid.com/contact): Contact CBAMValid
 - [CBAMValid answer bank](https://cbamvalid.com/answers): CBAMValid FAQ and answer engine hub

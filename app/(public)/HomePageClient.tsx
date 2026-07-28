@@ -328,7 +328,7 @@ export default function HomePageClient() {
         {" · "}
         <a href="/trust">Trust registry</a>
         {" · "}
-        <a href="/case-studies">Case studies (permissioned only)</a>
+        <a href="/case-studies">Illustrative sector scenarios</a>
       </p>
     </div>
   </section>

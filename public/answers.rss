@@ -151,7 +151,7 @@
       <title>How does CBAMValid prove marketing claims without inventing evidence?</title>
       <link>https://cbamvalid.com/trust</link>
       <guid isPermaLink="false">trust-evidence-registry</guid>
-      <description>CBAMValid publishes a Trust Evidence Registry at /trust. Each marketing claim is tagged VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Legal identity is published: SectorCalc Corporation (CBAMValid), CRO 315881, VAT IE1857162AB, Dublin registered address, support phone, and DPO contact. Case studies stay empty until permissioned. SAMPLE documents are watermarked specimens — not certificates. Procurement teams reverse-engineer claims. Invented identity destroys enterprise deals permanently.</description>
+      <description>CBAMValid publishes a Trust Evidence Registry at /trust. Each marketing claim is tagged VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Legal identity is published: SectorCalc Corporation (CBAMValid), CRO 315881, VAT IE1857162AB, Dublin registered address, support phone, and DPO contact. /case-studies publishes anonymized illustrative scenarios — not named logos. SAMPLE documents are watermarked specimens — not certificates. Procurement teams reverse-engineer claims. Invented identity destroys enterprise deals permanently.</description>
       <category>/trust, /legal-notice, /case-studies</category>
     </item>
     <item>
@@ -263,8 +263,15 @@
       <title>Where are CBAMValid customer case studies?</title>
       <link>https://cbamvalid.com/case-studies</link>
       <guid isPermaLink="false">case-studies-permissioned</guid>
-      <description>Named case studies are published only with written permission for company name, logo, and a measurable outcome. Until then the case-studies page stays empty by design. Invented logos and unattributed praise strips are forbidden. Fake social proof destroys enterprise trust faster than an empty slot.</description>
-      <category>/case-studies, /about</category>
+      <description>CBAMValid publishes anonymized illustrative sector scenarios on /case-studies (steel, aluminium, holding, cement). Named company logos and quotes publish only with written permission. Invented testimonials remain forbidden. Field realism without fake logos. Buyers recognize anonymized pressure paths; procurement rejects invented praise strips.</description>
+      <category>/case-studies, /about, /</category>
+    </item>
+    <item>
+      <title>What do IdP and MSA mean for CBAMValid Enterprise SSO?</title>
+      <link>https://cbamvalid.com/enterprise/sso</link>
+      <guid isPermaLink="false">what-is-idp-msa</guid>
+      <description>IdP means Identity Provider — your company login (Microsoft Entra ID, Google Workspace, or Okta). MSA means Master Service Agreement — the signed Enterprise contract covering pricing, SLA, DPA, and which domains are in scope. SSO is enabled after that contract; it is not on Single Pack. Procurement jargon blocks deals. Plain labels unblock Enterprise scoping.</description>
+      <category>/enterprise/sso, /enterprise, /demo</category>
     </item>
   </channel>
 </rss>
