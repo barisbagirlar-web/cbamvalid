@@ -362,7 +362,7 @@ describe("Production Security & Foundation Audits", () => {
         canonicalProductCode: "pack_premium_dossier_v5",
         paddlePriceId: "pri_testprice",
         currency: "USD",
-        amountMinor: 24900,
+        amountMinor: 44900,
       })
     });
 
@@ -412,7 +412,7 @@ describe("Production Security & Foundation Audits", () => {
         ],
         details: {
           totals: {
-            grandTotal: 24900,
+            grandTotal: 44900,
           }
         }
       }

@@ -13,7 +13,7 @@ test.describe("live pay-at-lock commercial surfaces", () => {
     const html = await res.text();
     expect(html.toLowerCase()).toContain("pay once");
     expect(html.toLowerCase()).not.toMatch(/five seals|exactly 5 sealed|5 successful seals/);
-    expect(html).toContain("249");
+    expect(html).toContain("449");
   });
 
   test("homepage step 4 is pay-at-lock", async ({ request }) => {

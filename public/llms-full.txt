@@ -5,7 +5,7 @@
 ## Product positioning
 
 - CBAMValid Exporter Verification Preparation Pack — Prepared for Independent Accredited Verification
-- Pricing: $249 per working file at lock (Exporter Verification Preparation Pack; one-time; no subscription; drafts free; 1 operator; 1 installation; 1 reporting year; same-file corrections included; new file = new payment).
+- Pricing: $449 per working file at lock (Exporter Verification Preparation Pack; one-time; no subscription; drafts free; 1 operator; 1 installation; 1 reporting year; same-file corrections included; new file = new payment).
 - Payment flow: Draft free in a working file (eight plain steps in one Where-you-are strip). Clear blockers. Pay once to lock that file. Correct and re-lock the same paid file as needed. Failed locks charge nothing. Re-download is free. A new working file needs a new payment.
 
 ## Independence boundary
@@ -14,11 +14,11 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 
 ## Canonical answers (Answer + Evidence)
 
-- Q: What does $249 buy on CBAMValid?
-  A: $249 unlocks lock-and-download for one working file: one legal operator, one production installation, and one reporting year — with unlimited drafts and correction re-locks on that same paid file. It is a one-time pay-at-lock purchase, not a subscription, and not a soft Excel-only export. EU buyers increasingly ask for actual embedded-emissions evidence. You should finish data quality work without a card, then pay once when the locked package matters — without another checkout every time a buyer asks for a correction on the same file.
+- Q: What does $449 buy on CBAMValid?
+  A: $449 unlocks lock-and-download for one working file: one legal operator, one production installation, and one reporting year — with unlimited drafts and correction re-locks on that same paid file. It is a one-time pay-at-lock purchase, not a subscription, and not a soft Excel-only export. EU buyers increasingly ask for actual embedded-emissions evidence. You should finish data quality work without a card, then pay once when the locked package matters — without another checkout every time a buyer asks for a correction on the same file.
   Pages: /, /pricing, /product
 - Q: When is my card charged?
-  A: Drafting and editing are free. Your card is charged $249 when you pay to lock a specific working file. After that, correct and re-lock the same file as needed at no extra charge. A new working file needs a new payment. Failed locks charge nothing. Re-download is free. Nobody wants a surprise charge mid-review. Finish data quality work first, then pay when you lock — and keep correction room on that same file without another checkout.
+  A: Drafting and editing are free. Your card is charged $449 when you pay to lock a specific working file. After that, correct and re-lock the same file as needed at no extra charge. A new working file needs a new payment. Failed locks charge nothing. Re-download is free. Nobody wants a surprise charge mid-review. Finish data quality work first, then pay when you lock — and keep correction room on that same file without another checkout.
   Pages: /, /pricing, /how-it-works
 - Q: What is CBAMValid?
   A: CBAMValid is an independent verifier-preparation platform for non-EU producers, exporters, operators, importers, and CBAM reporting teams. It helps you build an evidence-linked, sealed operator dossier that reduces the work required for independent accredited verification. If your EU customer asks for actual values, you need a serious package — not a spreadsheet you cannot defend. You also need clear language about what is preparation versus what only an accredited verifier can issue.
@@ -50,8 +50,8 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Q: Why not just send a spreadsheet when an EU buyer asks for CBAM evidence?
   A: A spreadsheet usually cannot prove evidence lineage, ruleset version, fail-closed quality controls, or an integrity hash. CBAMValid seals an operator-prepared dossier with calculation traces, evidence register, and immutable release hashes so a buyer or verifier can inspect what was locked. Buyer pressure often arrives before your files are audit-ready. The risk is not formatting — it is defending numbers without evidence, method pins, or a sealed integrity trail.
   Pages: /, /product, /how-it-works, /sample-dossier
-- Q: Can one USD 249 payment cover a second plant or another reporting year?
-  A: No. $249 unlocks one working file: one legal operator, one production installation, and one reporting year, with same-file correction re-locks included. Another plant, year, or working file requires another payment. Procurement teams often hope one purchase covers the group. Scope lock prevents silent widening that would break evidence and entitlement integrity.
+- Q: Can one USD 449 payment cover a second plant or another reporting year?
+  A: No. $449 unlocks one working file: one legal operator, one production installation, and one reporting year, with same-file correction re-locks included. Another plant, year, or working file requires another payment. Procurement teams often hope one purchase covers the group. Scope lock prevents silent widening that would break evidence and entitlement integrity.
   Pages: /, /pricing, /product
 - Q: What should I do first if my EU buyer asks for actual CBAM emissions evidence this week?
   A: Start a free draft for one installation and one reporting year, confirm CN scope, enter production and emissions inputs you already have, link available evidence, and clear visible blockers. Pay once to lock that working file when you are ready to seal a handover package — drafting does not charge your card. Same-file corrections stay included; a new file needs a new payment. Urgent buyer emails create panic buys. The durable move is to make gaps visible first, then seal a defendable package — without claiming an accredited verification opinion.
@@ -77,13 +77,19 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Q: Is CBAMValid only a calculator, or a broader compliance platform?
   A: CBAMValid is a sealed, evidence-linked, version-pinned compliance package architecture. The live ruleset family is EU CBAM. Additional regimes can reuse the package contract later — they are not sold until CBAM leadership and opening conditions justify them. No second regulated product is live today. Architecture honesty beats vaporware roadmaps. Door = CBAM; room is larger only when earned.
   Pages: /platform, /
+- Q: What are CBAMValid’s published pricing tiers?
+  A: Draft is $0. Single Pack is USD 449 one-time pay-at-lock for one working file. Exporter Annual is USD 2,400 per year. Enterprise is from USD 12,000 per year and is the only contact-sales tier. Not an accredited verification opinion. Procurement needs published prices. Hiding everything behind “contact sales” fails the public-pricing rule.
+  Pages: /pricing, /demo, /
+- Q: How long does CBAMValid preparation take?
+  A: Honest time: 2–4 hours if your data is ready. 2–3 weeks if starting from zero. Use the readiness checklist and downloadable pre-flight XLSX before opening a working file. False “instant CBAM” claims create failed seals. Time honesty reduces buyer deadline panic.
+  Pages: /how-it-works, /product
 
 ## Authority chains (Direct Answer → Calculation → Explanation → Methodology → Evidence → Expert → Related)
 
 ### /
 - Primary question: What should a non-EU exporter prepare when an EU buyer asks for actual CBAM emissions evidence?
 - Empathy: Buyer pressure arrives before your evidence package is ready. You need a defendable dossier for one plant and one year — without pretending the software issued an accredited verification opinion.
-- Direct answer: $249 unlocks lock-and-download for one working file: one legal operator, one installation, one reporting year — unlimited drafts and same-file correction re-locks. CBAMValid prepares an evidence-linked operator dossier for independent accredited verification — it does not verify emissions itself.
+- Direct answer: $449 unlocks lock-and-download for one working file: one legal operator, one installation, one reporting year — unlimited drafts and same-file correction re-locks. CBAMValid prepares an evidence-linked operator dossier for independent accredited verification — it does not verify emissions itself.
 - Calculation: Authoritative embedded-emissions results run server-side against a named, versioned ruleset. Missing material inputs block sealing; they are never silently converted to zero. Client previews stay advisory until a successful seal.
 - Explanation: Define scope, enter goods and production data, link evidence, clear fail-closed quality blockers, pay once to lock that working file, then download immutable PDF/JSON/O3CI field-mapped exports. Same-file corrections stay included; another plant or year needs another payment.
 - Methodology: Methods pin to Regulation (EU) 2023/956 and related implementing rules recorded in the sealed package. Historical seals keep the ruleset they were built against.
@@ -107,22 +113,35 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Fan-out queries: CBAM verification preparation product; CBAM evidence register software; deterministic CBAM calculation engine
 
 ### /pricing
-- Primary question: What does $249 buy, and when is the card charged?
+- Primary question: What does $449 buy, and when is the card charged?
 - Empathy: Nobody wants a surprise charge mid-review or a vague “credits” story. You should finish data quality first, then buy when you are ready to seal.
-- Direct answer: $249 unlocks lock-and-download for one working file (Exporter Verification Preparation Pack): unlimited drafts and same-file correction re-locks for one operator, one installation, and one reporting year. Drafting is free. The card is charged when you pay to lock that file — not while you edit drafts. A new file needs a new payment.
+- Direct answer: $449 unlocks lock-and-download for one working file (Exporter Verification Preparation Pack): unlimited drafts and same-file correction re-locks for one operator, one installation, and one reporting year. Drafting is free. The card is charged when you pay to lock that file — not while you edit drafts. A new file needs a new payment.
 - Calculation: Commercial math: 1 payment → 1 working file unlock. Same-file correction reseals included. Failed or blocked locks charge nothing. Re-download consumes zero. Another installation, reporting year, or working file requires another payment.
 - Explanation: Pay at lock after your working file is ready. Correct and re-lock the same paid file as needed. Prior sealed versions remain immutable and re-downloadable.
 - Methodology: Pricing is a commercial entitlement contract, not a regulatory calculation. Emissions methodology is separate and versioned inside the dossier.
 - Evidence: Checkout and entitlement ledgers are server-authoritative. Client-provided credit or price claims are never trusted.
 - Expert: Commercial unit and independence boundary are product policy facts. Mathematical engine review does not change pricing or create an accredited verification claim.
-- Related: /product, /how-it-works, /pricing, /refund-policy
-- Entities: USD 249; pay at lock; same-file corrections; scope lock; draft free
-- Fan-out queries: CBAMValid price; CBAM preparation pack cost; is CBAMValid a subscription; when is CBAMValid card charged
+- Related: /product, /how-it-works, /demo, /pricing, /refund-policy
+- Entities: USD 449; pay at lock; Exporter Annual; Enterprise contact sales; ROI calculator; same-file corrections
+- Fan-out queries: CBAMValid price; CBAMValid USD 449; CBAM preparation pack cost; is CBAMValid a subscription; when is CBAMValid card charged
+
+### /demo
+- Primary question: How do I book a CBAMValid demo for Annual or Enterprise?
+- Empathy: Self-serve Single Pack is not enough for multi-site buyers who need DPA, SSO, and coordination.
+- Direct answer: Email info@cbamvalid.com or open the Book a demo page. Single Pack remains self-serve at USD 449 pay-at-lock. Annual and Enterprise require a human scoping conversation. No accredited verification claims are made in demos.
+- Calculation: Demos do not produce sealed emissions results.
+- Explanation: Come with installation count, reporting year, and CN family. We walk working-file flow, QC, seal integrity, and buyer share links.
+- Methodology: Independence boundary remains preparation ≠ verification.
+- Evidence: Published /demo page and pricing tiers.
+- Expert: Enterprise is a commitment regime, not a feature checkbox.
+- Related: /pricing, /sample-dossier, /security
+- Entities: book a demo; Exporter Annual; Enterprise
+- Fan-out queries: CBAMValid demo; CBAMValid enterprise demo; CBAMValid annual plan
 
 ### /how-it-works
 - Primary question: How do I go from raw plant data to a sealed CBAM preparation dossier?
 - Empathy: Most teams lose weeks in email threads and version chaos. You need a guided path that shows gaps before a buyer or verifier sees the file.
-- Direct answer: Define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, pay once to lock that working file, then download PDF, JSON, and O3CI field-mapped exports. Same file: correct and re-lock as needed. A new file needs a new payment.
+- Direct answer: Start with the readiness checklist and pre-flight XLSX. Honest time: 2–4 hours if data is ready, 2–3 weeks if starting from zero. Then define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, pay once to lock that working file, and download PDF, JSON, and O3CI field-mapped exports.
 - Calculation: After material inputs are complete, the server engine computes embedded emissions and writes a calculation trace. Incomplete material data blocks sealing.
 - Explanation: One Where-you-are strip guides eight plain stages from scope setup through evidence linking, QC, pay-at-lock, seal, and download — without a second duplicate step bar. Drafts stay free until you pay to lock that file.
 - Methodology: Each sealed release records the ruleset and engine version used so replay stays deterministic.
@@ -416,9 +435,13 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
   Entities: Preparation Pack; calculation trace; evidence register; quality controls; O3CI field-mapped export
   Fan-out: CBAM verification preparation product; CBAM evidence register software; deterministic CBAM calculation engine
 - /pricing — One-time Preparation Pack pricing
-  Covers: USD 249 pay-at-lock inclusions; when card is charged; same-file corrections included; new file requires new payment; scope lock per installation and year
-  Entities: USD 249; pay at lock; same-file corrections; scope lock; draft free
-  Fan-out: CBAMValid price; CBAM preparation pack cost; is CBAMValid a subscription; when is CBAMValid card charged
+  Covers: USD 449 pay-at-lock inclusions; four published tiers; when card is charged; same-file corrections included; new file requires new payment; scope lock per installation and year; ROI default-value exposure calculator
+  Entities: USD 449; pay at lock; Exporter Annual; Enterprise contact sales; ROI calculator; same-file corrections
+  Fan-out: CBAMValid price; CBAMValid USD 449; CBAM preparation pack cost; is CBAMValid a subscription; when is CBAMValid card charged
+- /demo — Book a demo — Annual & Enterprise
+  Covers: human demo path; Enterprise contact sales only
+  Entities: book a demo; Exporter Annual; Enterprise
+  Fan-out: CBAMValid demo; CBAMValid enterprise demo; CBAMValid annual plan
 - /how-it-works — Working-file to locked-package workflow
   Covers: case scope setup; evidence linking; seal and download deliverables
   Entities: draft-to-seal workflow; quality blockers; sealed release; O3CI export
@@ -521,6 +544,7 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - [CBAM Exporter Final Evidence Report](https://cbamvalid.com): CBAM verification preparation software
 - [When spreadsheets fail under verifier questions](https://cbamvalid.com/product): CBAM verification preparation product
 - [Exporter Verification Preparation Pack](https://cbamvalid.com/pricing): CBAMValid pricing
+- [Book a demo — self-serve is not the only door](https://cbamvalid.com/demo): CBAMValid demo booking
 - [From raw plant data to a sealed package — without email chaos](https://cbamvalid.com/how-it-works): CBAMValid workflow
 - [See the dossier before you purchase](https://cbamvalid.com/sample-dossier): CBAM sample dossier
 - [When a verifier asks “which rules?”, you need a dated answer](https://cbamvalid.com/methodology): CBAM calculation methodology
@@ -541,7 +565,6 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - [CBAM Certificate Price](https://cbamvalid.com/cbam-certificate-price): CBAM certificate price
 - [CBAM Verification Preparation](https://cbamvalid.com/cbam-verification-preparation): CBAM verifier preparation
 - [Exporter Evidence Requirements](https://cbamvalid.com/cbam-exporter-evidence-requirements): CBAM exporter evidence requirements
-- [CBAM Guide for Non-EU Producers](https://cbamvalid.com/cbam-non-eu-producer-guide): CBAM non-EU producer guide
 
 ## Key regulatory facts
 

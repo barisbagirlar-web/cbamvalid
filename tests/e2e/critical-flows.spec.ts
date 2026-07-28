@@ -36,12 +36,10 @@ test.describe("Case Workflow", () => {
 });
 
 test.describe("Pricing & Credits", () => {
-  test("pricing page loads with USD 249 pack", async ({ page }) => {
+  test("pricing page loads with USD 449 pack", async ({ page }) => {
     await page.goto("/pricing");
-    await expect(page.getByText(/\$249|USD\s*249|\b249\b/).first()).toBeVisible();
-    await expect(
-      page.locator('button:has-text("Buy"), a:has-text("Buy"), button:has-text("Get"), a:has-text("Get")').first(),
-    ).toBeVisible();
+    await expect(page.getByText(/\$449|USD\s*449|\b449\b/).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Start free|lock|Book a demo/i }).first()).toBeVisible();
   });
 
   test("credits/buy page loads", async ({ page }) => {

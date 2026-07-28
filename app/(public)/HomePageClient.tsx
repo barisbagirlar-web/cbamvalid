@@ -28,7 +28,7 @@ export default function HomePageClient() {
         <p className="aeo-lead">
           <strong>Direct answer:</strong>{" "}
           <span className="speakable-answer">
-            USD 249 unlocks lock-and-download for one working file — unlimited drafts and same-file
+            USD 449 unlocks lock-and-download for one working file — unlimited drafts and same-file
             correction re-locks for that operator, installation, and year. Card charged when you pay
             to lock that file. A new file needs a new payment. Not an accredited verification opinion.
           </span>
@@ -38,7 +38,7 @@ export default function HomePageClient() {
           is ready. You need a defendable dossier for one plant and one year — without pretending the
           software issued an accredited verification opinion.
         </p>
-        <p className="price-line">USD 249 per working file at lock. <span>No subscription. Drafts free. Same-file corrections included.</span></p>
+        <p className="price-line">USD 449 per working file at lock. <span>No subscription. Drafts free. Same-file corrections included.</span></p>
         <div className="hero-ctas">
           <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">Start a Dossier <span className="arr">→</span></a>
           <a className="btn btn-ghost btn-lg" href="/how-it-works">Watch the Workflow</a>
@@ -136,7 +136,7 @@ export default function HomePageClient() {
         </div>
         <div className="tl-step reveal">
           <div className="tl-node"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg></div>
-          <p className="step-no">Step 4</p><h3>Pay once to lock this file</h3><p>USD 249 for one operator, one installation, one year — same-file corrections included</p>
+          <p className="step-no">Step 4</p><h3>Pay once to lock this file</h3><p>USD 449 for one operator, one installation, one year — same-file corrections included</p>
         </div>
         <div className="tl-step reveal">
           <div className="tl-node"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 15a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/><path d="M12 3v2m0 14v2M3 12h2m14 0h2M6 6l1.4 1.4M16.6 16.6 18 18M18 6l-1.4 1.4M7.4 16.6 6 18"/></svg></div>
@@ -272,7 +272,7 @@ export default function HomePageClient() {
           <span className="badge-pop">Pay at lock · One-time</span>
           <h3>Exporter Verification Preparation Pack</h3>
           <p className="sub">Prepared for independent accredited verification</p>
-          <p className="price-fig"><span data-usd="$249" data-eur="≈ €229">$249</span> <small data-cur-note="per file at lock · no subscription">per file at lock · no subscription</small></p>
+          <p className="price-fig"><span data-usd="$449" data-eur="≈ €415">$449</span> <small data-cur-note="per file at lock · no subscription">per file at lock · no subscription</small></p>
           <ul className="feat-list">
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>1 operator · 1 installation · 1 reporting year</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Unlimited drafts on that working file</li>
@@ -324,7 +324,7 @@ export default function HomePageClient() {
         />
         <FaqItem
           question="When is the card charged?"
-          answer="Drafting is free. You pay USD 249 once when you lock that working file. Same-file corrections and re-locks stay included. A new working file needs a new payment. Failed locks and re-downloads charge nothing."
+          answer="Drafting is free. You pay USD 449 once when you lock that working file. Same-file corrections and re-locks stay included. A new working file needs a new payment. Failed locks and re-downloads charge nothing."
         />
         <FaqItem
           question="What formats do I receive after sealing?"
@@ -360,7 +360,7 @@ export default function HomePageClient() {
     <div className="wrap">
       <span className="eyebrow navy">Definitive Period · 2026</span>
       <h2>Your buyer will ask for evidence.<br /><span className="serif-i">Be ready before they do.</span></h2>
-      <p>Drafts are free. Pay USD 249 once to lock this working file — same-file corrections included. A new file needs a new payment.</p>
+      <p>Drafts are free. Pay USD 449 once to lock this working file — same-file corrections included. A new file needs a new payment.</p>
       <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">Start a Dossier <span className="arr">→</span></a>
     </div>
   </section>

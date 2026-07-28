@@ -62,21 +62,13 @@ export default function ContactPage() {
             </div>
             <div className="method-card reveal">
               <h3>Company information</h3>
-              <p className="font-mono" style={{ fontSize: "0.9rem", lineHeight: 1.55 }}>
-                {legalConfig.legalEntityName}
-                <br />
-                {legalConfig.tradingName ? `Trading as ${legalConfig.tradingName}` : null}
-                <br />
-                {legalConfig.registeredAddress}
-                <br />
-                {legalConfig.country}
-                <br />
-                {legalConfig.registrationNumber
-                  ? `Registration: ${legalConfig.registrationNumber}`
-                  : null}
-                <br />
-                {legalConfig.taxId ? `VAT/Tax ID: ${legalConfig.taxId}` : null}
-              </p>
+              <div className="font-mono" style={{ fontSize: "0.9rem", lineHeight: 1.55 }}>
+                {legalConfig.identityPublication.lines.map((line) => (
+                  <p key={line} style={{ margin: "2px 0" }}>
+                    {line}
+                  </p>
+                ))}
+              </div>
             </div>
           </div>
         </div>

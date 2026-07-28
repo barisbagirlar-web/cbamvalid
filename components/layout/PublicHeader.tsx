@@ -56,6 +56,9 @@ export function PublicHeader() {
             <Link href="/pricing" className={isActive("/pricing")}>
               Pricing
             </Link>
+            <Link href="/demo" className={isActive("/demo")}>
+              Book a Demo
+            </Link>
             <Link href="/verify" className={isActive("/verify")}>
               Verify a Dossier
             </Link>
@@ -95,6 +98,7 @@ export function PublicHeader() {
         <Link href="/sample-dossier">Sample Dossier</Link>
         <Link href="/methodology">Methodology &amp; Sources</Link>
         <Link href="/pricing">Pricing</Link>
+        <Link href="/demo">Book a Demo</Link>
         <Link href="/verify">Verify a Dossier</Link>
         <Link href="/verifier-review">Structure Review</Link>
         <Link href="/login">Sign In</Link>

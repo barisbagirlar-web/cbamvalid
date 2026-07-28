@@ -14,7 +14,7 @@
   "dateModified": "2026-07-28",
   "product": {
     "name": "CBAMValid Exporter Verification Preparation Pack — Prepared for Independent Accredited Verification",
-    "price": "$249",
+    "price": "$449",
     "independence": "CBAMValid is an independent software service for exporter-to-importer evidence packaging. It is not an EU institution, customs authority, or accredited CBAM verifier. Actual emissions data must be independently verified where verification is legally required."
   },
   "authorityChains": [
@@ -23,7 +23,7 @@
       "url": "https://cbamvalid.com",
       "primaryQuestion": "What should a non-EU exporter prepare when an EU buyer asks for actual CBAM emissions evidence?",
       "empathyLead": "Buyer pressure arrives before your evidence package is ready. You need a defendable dossier for one plant and one year — without pretending the software issued an accredited verification opinion.",
-      "directAnswer": "$249 unlocks lock-and-download for one working file: one legal operator, one installation, one reporting year — unlimited drafts and same-file correction re-locks. CBAMValid prepares an evidence-linked operator dossier for independent accredited verification — it does not verify emissions itself.",
+      "directAnswer": "$449 unlocks lock-and-download for one working file: one legal operator, one installation, one reporting year — unlimited drafts and same-file correction re-locks. CBAMValid prepares an evidence-linked operator dossier for independent accredited verification — it does not verify emissions itself.",
       "calculation": "Authoritative embedded-emissions results run server-side against a named, versioned ruleset. Missing material inputs block sealing; they are never silently converted to zero. Client previews stay advisory until a successful seal.",
       "explanation": "Define scope, enter goods and production data, link evidence, clear fail-closed quality blockers, pay once to lock that working file, then download immutable PDF/JSON/O3CI field-mapped exports. Same-file corrections stay included; another plant or year needs another payment.",
       "methodology": "Methods pin to Regulation (EU) 2023/956 and related implementing rules recorded in the sealed package. Historical seals keep the ruleset they were built against.",
@@ -31,7 +31,7 @@
       "expert": "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.",
       "relatedProblems": [
         {
-          "question": "What does the USD 249 pack include?",
+          "question": "What does the USD 449 pack include?",
           "href": "/pricing",
           "why": "Commercial scope and release math"
         },
@@ -109,9 +109,9 @@
     {
       "path": "/pricing",
       "url": "https://cbamvalid.com/pricing",
-      "primaryQuestion": "What does $249 buy, and when is the card charged?",
+      "primaryQuestion": "What does $449 buy, and when is the card charged?",
       "empathyLead": "Nobody wants a surprise charge mid-review or a vague “credits” story. You should finish data quality first, then buy when you are ready to seal.",
-      "directAnswer": "$249 unlocks lock-and-download for one working file (Exporter Verification Preparation Pack): unlimited drafts and same-file correction re-locks for one operator, one installation, and one reporting year. Drafting is free. The card is charged when you pay to lock that file — not while you edit drafts. A new file needs a new payment.",
+      "directAnswer": "$449 unlocks lock-and-download for one working file (Exporter Verification Preparation Pack): unlimited drafts and same-file correction re-locks for one operator, one installation, and one reporting year. Drafting is free. The card is charged when you pay to lock that file — not while you edit drafts. A new file needs a new payment.",
       "calculation": "Commercial math: 1 payment → 1 working file unlock. Same-file correction reseals included. Failed or blocked locks charge nothing. Re-download consumes zero. Another installation, reporting year, or working file requires another payment.",
       "explanation": "Pay at lock after your working file is ready. Correct and re-lock the same paid file as needed. Prior sealed versions remain immutable and re-downloadable.",
       "methodology": "Pricing is a commercial entitlement contract, not a regulatory calculation. Emissions methodology is separate and versioned inside the dossier.",
@@ -129,6 +129,11 @@
           "why": "Payment vs seal timing"
         },
         {
+          "question": "Book a demo",
+          "href": "/demo",
+          "why": "Annual / Enterprise path"
+        },
+        {
           "question": "Can one payment cover another plant?",
           "href": "/pricing",
           "why": "Scope lock clarification"
@@ -140,17 +145,58 @@
         }
       ],
       "entities": [
-        "USD 249",
+        "USD 449",
         "pay at lock",
-        "same-file corrections",
-        "scope lock",
-        "draft free"
+        "Exporter Annual",
+        "Enterprise contact sales",
+        "ROI calculator",
+        "same-file corrections"
       ],
       "fanOutQueries": [
         "CBAMValid price",
+        "CBAMValid USD 449",
         "CBAM preparation pack cost",
         "is CBAMValid a subscription",
         "when is CBAMValid card charged"
+      ]
+    },
+    {
+      "path": "/demo",
+      "url": "https://cbamvalid.com/demo",
+      "primaryQuestion": "How do I book a CBAMValid demo for Annual or Enterprise?",
+      "empathyLead": "Self-serve Single Pack is not enough for multi-site buyers who need DPA, SSO, and coordination.",
+      "directAnswer": "Email info@cbamvalid.com or open the Book a demo page. Single Pack remains self-serve at USD 449 pay-at-lock. Annual and Enterprise require a human scoping conversation. No accredited verification claims are made in demos.",
+      "calculation": "Demos do not produce sealed emissions results.",
+      "explanation": "Come with installation count, reporting year, and CN family. We walk working-file flow, QC, seal integrity, and buyer share links.",
+      "methodology": "Independence boundary remains preparation ≠ verification.",
+      "evidence": "Published /demo page and pricing tiers.",
+      "expert": "Enterprise is a commitment regime, not a feature checkbox.",
+      "relatedProblems": [
+        {
+          "question": "Public pricing",
+          "href": "/pricing",
+          "why": "Tier amounts"
+        },
+        {
+          "question": "Sample dossier",
+          "href": "/sample-dossier",
+          "why": "Inspect output"
+        },
+        {
+          "question": "Security",
+          "href": "/security",
+          "why": "DPA draft"
+        }
+      ],
+      "entities": [
+        "book a demo",
+        "Exporter Annual",
+        "Enterprise"
+      ],
+      "fanOutQueries": [
+        "CBAMValid demo",
+        "CBAMValid enterprise demo",
+        "CBAMValid annual plan"
       ]
     },
     {
@@ -158,7 +204,7 @@
       "url": "https://cbamvalid.com/how-it-works",
       "primaryQuestion": "How do I go from raw plant data to a sealed CBAM preparation dossier?",
       "empathyLead": "Most teams lose weeks in email threads and version chaos. You need a guided path that shows gaps before a buyer or verifier sees the file.",
-      "directAnswer": "Define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, pay once to lock that working file, then download PDF, JSON, and O3CI field-mapped exports. Same file: correct and re-lock as needed. A new file needs a new payment.",
+      "directAnswer": "Start with the readiness checklist and pre-flight XLSX. Honest time: 2–4 hours if data is ready, 2–3 weeks if starting from zero. Then define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, pay once to lock that working file, and download PDF, JSON, and O3CI field-mapped exports.",
       "calculation": "After material inputs are complete, the server engine computes embedded emissions and writes a calculation trace. Incomplete material data blocks sealing.",
       "explanation": "One Where-you-are strip guides eight plain stages from scope setup through evidence linking, QC, pay-at-lock, seal, and download — without a second duplicate step bar. Drafts stay free until you pay to lock that file.",
       "methodology": "Each sealed release records the ruleset and engine version used so replay stays deterministic.",
@@ -1025,15 +1071,15 @@
   ],
   "answers": [
     {
-      "id": "what-does-usd-249-buy",
-      "question": "What does $249 buy on CBAMValid?",
+      "id": "what-does-usd-449-buy",
+      "question": "What does $449 buy on CBAMValid?",
       "aliases": [
         "CBAMValid price",
         "Exporter Verification Preparation Pack cost",
         "is CBAMValid a subscription",
         "what is included in the preparation pack"
       ],
-      "directAnswer": "$249 unlocks lock-and-download for one working file: one legal operator, one production installation, and one reporting year — with unlimited drafts and correction re-locks on that same paid file. It is a one-time pay-at-lock purchase, not a subscription, and not a soft Excel-only export.",
+      "directAnswer": "$449 unlocks lock-and-download for one working file: one legal operator, one production installation, and one reporting year — with unlimited drafts and correction re-locks on that same paid file. It is a one-time pay-at-lock purchase, not a subscription, and not a soft Excel-only export.",
       "empathyContext": "EU buyers increasingly ask for actual embedded-emissions evidence. You should finish data quality work without a card, then pay once when the locked package matters — without another checkout every time a buyer asks for a correction on the same file.",
       "evidence": [
         {
@@ -1074,7 +1120,7 @@
         "is drafting free",
         "CBAMValid payment flow"
       ],
-      "directAnswer": "Drafting and editing are free. Your card is charged $249 when you pay to lock a specific working file. After that, correct and re-lock the same file as needed at no extra charge. A new working file needs a new payment. Failed locks charge nothing. Re-download is free.",
+      "directAnswer": "Drafting and editing are free. Your card is charged $449 when you pay to lock a specific working file. After that, correct and re-lock the same file as needed at no extra charge. A new working file needs a new payment. Failed locks charge nothing. Re-download is free.",
       "empathyContext": "Nobody wants a surprise charge mid-review. Finish data quality work first, then pay when you lock — and keep correction room on that same file without another checkout.",
       "evidence": [
         {
@@ -1453,14 +1499,14 @@
     },
     {
       "id": "one-pack-scope-lock",
-      "question": "Can one USD 249 payment cover a second plant or another reporting year?",
+      "question": "Can one USD 449 payment cover a second plant or another reporting year?",
       "aliases": [
         "CBAMValid multi plant pricing",
         "one pack two installations",
         "CBAMValid scope lock",
         "one payment many CBAM files"
       ],
-      "directAnswer": "No. $249 unlocks one working file: one legal operator, one production installation, and one reporting year, with same-file correction re-locks included. Another plant, year, or working file requires another payment.",
+      "directAnswer": "No. $449 unlocks one working file: one legal operator, one production installation, and one reporting year, with same-file correction re-locks included. Another plant, year, or working file requires another payment.",
       "empathyContext": "Procurement teams often hope one purchase covers the group. Scope lock prevents silent widening that would break evidence and entitlement integrity.",
       "evidence": [
         {
@@ -1761,6 +1807,72 @@
         "/product",
         "/methodology"
       ]
+    },
+    {
+      "id": "pricing-four-tiers",
+      "question": "What are CBAMValid’s published pricing tiers?",
+      "aliases": [
+        "Enterprise contact sales",
+        "Exporter Annual",
+        "Single Pack 449"
+      ],
+      "directAnswer": "Draft is $0. Single Pack is USD 449 one-time pay-at-lock for one working file. Exporter Annual is USD 2,400 per year. Enterprise is from USD 12,000 per year and is the only contact-sales tier. Not an accredited verification opinion.",
+      "empathyContext": "Procurement needs published prices. Hiding everything behind “contact sales” fails the public-pricing rule.",
+      "evidence": [
+        {
+          "label": "Pricing page",
+          "detail": "Four published tiers + ROI calculator",
+          "href": "/pricing",
+          "evidenceStatus": "verified"
+        },
+        {
+          "label": "Book a demo",
+          "detail": "Human path for Annual and Enterprise",
+          "href": "/demo",
+          "evidenceStatus": "verified"
+        }
+      ],
+      "routes": [
+        "/pricing",
+        "/demo",
+        "/"
+      ],
+      "relatedPaths": [
+        "/how-it-works",
+        "/security"
+      ]
+    },
+    {
+      "id": "readiness-kit-time",
+      "question": "How long does CBAMValid preparation take?",
+      "aliases": [
+        "readiness checklist",
+        "pre-flight spreadsheet"
+      ],
+      "directAnswer": "Honest time: 2–4 hours if your data is ready. 2–3 weeks if starting from zero. Use the readiness checklist and downloadable pre-flight XLSX before opening a working file.",
+      "empathyContext": "False “instant CBAM” claims create failed seals. Time honesty reduces buyer deadline panic.",
+      "evidence": [
+        {
+          "label": "How it works",
+          "detail": "Readiness checklist at the top of the workflow page",
+          "href": "/how-it-works",
+          "evidenceStatus": "verified"
+        },
+        {
+          "label": "Pre-flight XLSX",
+          "detail": "Plant-fillable checklist workbook",
+          "href": "/onboarding/cbamvalid-preflight-checklist.xlsx",
+          "evidenceStatus": "verified"
+        }
+      ],
+      "routes": [
+        "/how-it-works",
+        "/product"
+      ],
+      "relatedPaths": [
+        "/pricing",
+        "/sample-dossier"
+      ]
     }
   ],
   "topicalMap": [
@@ -1844,27 +1956,59 @@
       "childPaths": [
         "/how-it-works",
         "/sample-dossier",
-        "/product"
+        "/product",
+        "/demo"
       ],
       "covers": [
-        "USD 249 pay-at-lock inclusions",
+        "USD 449 pay-at-lock inclusions",
+        "four published tiers",
         "when card is charged",
         "same-file corrections included",
         "new file requires new payment",
-        "scope lock per installation and year"
+        "scope lock per installation and year",
+        "ROI default-value exposure calculator"
       ],
       "entities": [
-        "USD 249",
+        "USD 449",
         "pay at lock",
-        "same-file corrections",
-        "scope lock",
-        "draft free"
+        "Exporter Annual",
+        "Enterprise contact sales",
+        "ROI calculator",
+        "same-file corrections"
       ],
       "fanOutQueries": [
         "CBAMValid price",
+        "CBAMValid USD 449",
         "CBAM preparation pack cost",
         "is CBAMValid a subscription",
         "when is CBAMValid card charged"
+      ]
+    },
+    {
+      "path": "/demo",
+      "url": "https://cbamvalid.com/demo",
+      "topic": "Book a demo — Annual & Enterprise",
+      "role": "commercial",
+      "parentPath": "/pricing",
+      "childPaths": [
+        "/pricing",
+        "/sample-dossier",
+        "/security",
+        "/contact"
+      ],
+      "covers": [
+        "human demo path",
+        "Enterprise contact sales only"
+      ],
+      "entities": [
+        "book a demo",
+        "Exporter Annual",
+        "Enterprise"
+      ],
+      "fanOutQueries": [
+        "CBAMValid demo",
+        "CBAMValid enterprise demo",
+        "CBAMValid annual plan"
       ]
     },
     {

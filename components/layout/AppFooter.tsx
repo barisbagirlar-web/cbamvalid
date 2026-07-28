@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { BrandMark } from "@/components/brand/BrandMark";
+import { legalConfig } from "@/lib/legal-config";
 
 export default function AppFooter() {
   return (
@@ -96,6 +97,9 @@ export default function AppFooter() {
                 <Link href="/security">Security &amp; DPA</Link>
               </li>
               <li>
+                <Link href="/demo">Book a Demo</Link>
+              </li>
+              <li>
                 <Link href="/privacy">Privacy Notice</Link>
               </li>
               <li>
@@ -136,6 +140,13 @@ export default function AppFooter() {
         </div>
         <div className="footer-bottom">
           <p>&copy; {new Date().getFullYear()} SectorCalc Corporation (CBAMValid). All rights reserved.</p>
+          <div className="legal-identity-block" style={{ margin: "12px 0 16px", fontSize: "0.85rem", opacity: 0.92 }}>
+            {legalConfig.identityPublication.lines.map((line) => (
+              <p key={line} style={{ margin: "2px 0" }}>
+                {line}
+              </p>
+            ))}
+          </div>
           <p className="disclaimer">
             <b>Independence Notice:</b> CBAMValid is an independent software service for exporter-to-importer evidence packaging. It is not an EU institution, customs authority or accredited CBAM verifier. Actual emissions data must be independently verified where verification is legally required.
           </p>

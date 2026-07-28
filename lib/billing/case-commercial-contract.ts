@@ -67,9 +67,8 @@ export const COMMERCIAL_PUBLIC_FAQ = [
     answer: `Drafting and editing are free. Your card is charged ${CANONICAL_PRICING.priceFormatted} when you pay to lock a specific working file. Sealing that paid file does not charge again for ordinary corrections on the same file.`,
   },
   {
-    question: "What exactly does USD 249 unlock?",
-    answer:
-      "Lock-and-download for one working file scoped to one legal operator, one installation, and one reporting year — including unlimited drafts on that file and correction re-locks on that same file. It is a verifier-preparation dossier, not a subscription and not an Excel-only export.",
+    question: `What exactly does ${CANONICAL_PRICING.priceFormatted} unlock?`,
+    answer: `Lock-and-download for one working file scoped to one legal operator, one installation, and one reporting year — including unlimited drafts on that file and correction re-locks on that same file. It is a verifier-preparation dossier, not a subscription and not an Excel-only export.`,
   },
   {
     question: "If my buyer asks for corrections, do I pay again?",

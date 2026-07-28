@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { CASE_COMMERCIAL, isCasePaidForSealing } from "@/lib/billing/case-commercial-contract";
 
 describe("CASE_COMMERCIAL pay-at-lock contract", () => {
-  it("keeps $249 amount and case-scoped billing model", () => {
+  it("keeps $449 amount and case-scoped billing model", () => {
     expect(CASE_COMMERCIAL.billingModel).toBe("CASE_PAY_AT_LOCK");
-    expect(CASE_COMMERCIAL.amountMinor).toBe(24900);
+    expect(CASE_COMMERCIAL.amountMinor).toBe(44900);
     expect(CASE_COMMERCIAL.maxReleasesPerPaidCase).toBeGreaterThanOrEqual(50);
   });
 

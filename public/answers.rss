@@ -8,17 +8,17 @@
     <lastBuildDate>Tue, 28 Jul 2026 00:00:00 GMT</lastBuildDate>
     <atom:link href="https://cbamvalid.com/answers.rss" rel="self" type="application/rss+xml"/>
     <item>
-      <title>What does $249 buy on CBAMValid?</title>
+      <title>What does $449 buy on CBAMValid?</title>
       <link>https://cbamvalid.com</link>
-      <guid isPermaLink="false">what-does-usd-249-buy</guid>
-      <description>$249 unlocks lock-and-download for one working file: one legal operator, one production installation, and one reporting year — with unlimited drafts and correction re-locks on that same paid file. It is a one-time pay-at-lock purchase, not a subscription, and not a soft Excel-only export. EU buyers increasingly ask for actual embedded-emissions evidence. You should finish data quality work without a card, then pay once when the locked package matters — without another checkout every time a buyer asks for a correction on the same file.</description>
+      <guid isPermaLink="false">what-does-usd-449-buy</guid>
+      <description>$449 unlocks lock-and-download for one working file: one legal operator, one production installation, and one reporting year — with unlimited drafts and correction re-locks on that same paid file. It is a one-time pay-at-lock purchase, not a subscription, and not a soft Excel-only export. EU buyers increasingly ask for actual embedded-emissions evidence. You should finish data quality work without a card, then pay once when the locked package matters — without another checkout every time a buyer asks for a correction on the same file.</description>
       <category>/, /pricing, /product</category>
     </item>
     <item>
       <title>When is my card charged?</title>
       <link>https://cbamvalid.com</link>
       <guid isPermaLink="false">when-is-card-charged</guid>
-      <description>Drafting and editing are free. Your card is charged $249 when you pay to lock a specific working file. After that, correct and re-lock the same file as needed at no extra charge. A new working file needs a new payment. Failed locks charge nothing. Re-download is free. Nobody wants a surprise charge mid-review. Finish data quality work first, then pay when you lock — and keep correction room on that same file without another checkout.</description>
+      <description>Drafting and editing are free. Your card is charged $449 when you pay to lock a specific working file. After that, correct and re-lock the same file as needed at no extra charge. A new working file needs a new payment. Failed locks charge nothing. Re-download is free. Nobody wants a surprise charge mid-review. Finish data quality work first, then pay when you lock — and keep correction room on that same file without another checkout.</description>
       <category>/, /pricing, /how-it-works</category>
     </item>
     <item>
@@ -92,10 +92,10 @@
       <category>/, /product, /how-it-works, /sample-dossier</category>
     </item>
     <item>
-      <title>Can one USD 249 payment cover a second plant or another reporting year?</title>
+      <title>Can one USD 449 payment cover a second plant or another reporting year?</title>
       <link>https://cbamvalid.com</link>
       <guid isPermaLink="false">one-pack-scope-lock</guid>
-      <description>No. $249 unlocks one working file: one legal operator, one production installation, and one reporting year, with same-file correction re-locks included. Another plant, year, or working file requires another payment. Procurement teams often hope one purchase covers the group. Scope lock prevents silent widening that would break evidence and entitlement integrity.</description>
+      <description>No. $449 unlocks one working file: one legal operator, one production installation, and one reporting year, with same-file correction re-locks included. Another plant, year, or working file requires another payment. Procurement teams often hope one purchase covers the group. Scope lock prevents silent widening that would break evidence and entitlement integrity.</description>
       <category>/, /pricing, /product</category>
     </item>
     <item>
@@ -153,6 +153,20 @@
       <guid isPermaLink="false">platform-cbam-first</guid>
       <description>CBAMValid is a sealed, evidence-linked, version-pinned compliance package architecture. The live ruleset family is EU CBAM. Additional regimes can reuse the package contract later — they are not sold until CBAM leadership and opening conditions justify them. No second regulated product is live today. Architecture honesty beats vaporware roadmaps. Door = CBAM; room is larger only when earned.</description>
       <category>/platform, /</category>
+    </item>
+    <item>
+      <title>What are CBAMValid’s published pricing tiers?</title>
+      <link>https://cbamvalid.com/pricing</link>
+      <guid isPermaLink="false">pricing-four-tiers</guid>
+      <description>Draft is $0. Single Pack is USD 449 one-time pay-at-lock for one working file. Exporter Annual is USD 2,400 per year. Enterprise is from USD 12,000 per year and is the only contact-sales tier. Not an accredited verification opinion. Procurement needs published prices. Hiding everything behind “contact sales” fails the public-pricing rule.</description>
+      <category>/pricing, /demo, /</category>
+    </item>
+    <item>
+      <title>How long does CBAMValid preparation take?</title>
+      <link>https://cbamvalid.com/how-it-works</link>
+      <guid isPermaLink="false">readiness-kit-time</guid>
+      <description>Honest time: 2–4 hours if your data is ready. 2–3 weeks if starting from zero. Use the readiness checklist and downloadable pre-flight XLSX before opening a working file. False “instant CBAM” claims create failed seals. Time honesty reduces buyer deadline panic.</description>
+      <category>/how-it-works, /product</category>
     </item>
   </channel>
 </rss>

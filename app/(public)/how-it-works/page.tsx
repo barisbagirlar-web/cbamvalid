@@ -6,15 +6,22 @@ import { useClassReveal } from "@/components/marketing/MarketingUi";
 import { AeoPageChrome } from "@/components/seo/AnswerEvidenceSection";
 import { CASE_COMMERCIAL, COMMERCIAL_TOPIC_CARDS } from "@/lib/billing/case-commercial-contract";
 import { WORKFLOW_STEPS_PLAIN } from "@/lib/product/customer-language";
+import {
+  PREFLIGHT_CSV_HREF,
+  PREFLIGHT_XLSX_HREF,
+  READINESS_CHECKLIST,
+  READINESS_TIME_HONESTY,
+} from "@/lib/product/readiness-kit";
+import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 
 export default function Page() {
   useClassReveal();
 
   return (
     <main id="main">
-      <section className="hero" style={{ paddingBottom: "48px" }}>
+      <section className="hero" style={{ paddingBottom: "40px" }}>
         <div className="wrap" style={{ textAlign: "center" }}>
-          <span className="eyebrow">The Complete Workflow</span>
+          <span className="eyebrow">T4.2 · Readiness kit</span>
           <h1 style={{ maxWidth: "820px", marginLeft: "auto", marginRight: "auto" }}>
             From raw plant data to a sealed package — without email chaos
           </h1>
@@ -27,10 +34,47 @@ export default function Page() {
             <strong>Direct answer:</strong>{" "}
             <span className="speakable-answer">{CASE_COMMERCIAL.speakableAnswer}</span>
           </p>
+          <p className="notice" style={{ margin: "22px auto 0", maxWidth: "56ch", textAlign: "left" }}>
+            <b>Honest time:</b> {READINESS_TIME_HONESTY}
+          </p>
+          <div className="hero-ctas" style={{ justifyContent: "center", marginTop: "22px" }}>
+            <a className="btn btn-primary" href={PREFLIGHT_XLSX_HREF} download>
+              Download pre-flight XLSX
+            </a>
+            <a className="btn btn-ghost" href={PREFLIGHT_CSV_HREF} download>
+              Download CSV
+            </a>
+            <Link className="btn btn-ghost" href="/demo">
+              Book a demo
+            </Link>
+          </div>
         </div>
       </section>
 
-      <section className="section tight" id="payment-rules">
+      <section className="section tight" id="readiness-checklist">
+        <div className="wrap">
+          <div className="section-head center reveal" style={{ marginBottom: "28px" }}>
+            <span className="eyebrow">Readiness checklist</span>
+            <h2>Four data categories before you start</h2>
+            <p>Send the pre-flight sheet to the plant. Bring it back filled. Then open a working file.</p>
+          </div>
+          <div className="deliv-grid">
+            {READINESS_CHECKLIST.map((cat) => (
+              <div className="deliv-card reveal" key={cat.id}>
+                <span className="fmt">{cat.id}</span>
+                <h3>{cat.title}</h3>
+                <ul className="feat-list">
+                  {cat.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section tight" id="payment-rules" style={{ background: "var(--paper-2)" }}>
         <div className="wrap">
           <div className="section-head center reveal" style={{ marginBottom: "28px" }}>
             <span className="eyebrow">Payment — before you start</span>
@@ -45,6 +89,7 @@ export default function Page() {
             ))}
           </div>
           <p style={{ textAlign: "center", marginTop: "28px" }}>
+            Single Pack is {CANONICAL_PRICING.priceFormatted} at lock.{" "}
             <Link href="/pricing#how-payment-works">Full pricing rules</Link>
             {" · "}
             <Link href="/terms">Terms of Service</Link>
@@ -68,9 +113,7 @@ export default function Page() {
                   <h3>{step.title}</h3>
                   <p>
                     {step.desc}
-                    {step.num === 8
-                      ? ` ${CASE_COMMERCIAL.customerOneLiner}`
-                      : ""}
+                    {step.num === 8 ? ` ${CASE_COMMERCIAL.customerOneLiner}` : ""}
                   </p>
                 </div>
               </div>

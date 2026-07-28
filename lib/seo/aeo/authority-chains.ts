@@ -28,7 +28,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
       "Material values require evidence lineage (hash, size, support status). Sealing requires approved and fully supported evidence; partially supported is not enough.",
     expert: EXPERT_BLOCK,
     relatedProblems: [
-      { question: "What does the USD 249 pack include?", href: "/pricing", why: "Commercial scope and release math" },
+      { question: "What does the USD 449 pack include?", href: "/pricing", why: "Commercial scope and release math" },
       { question: "How does the draft-to-seal workflow work?", href: "/how-it-works", why: "Operational steps" },
       { question: "Which calculation methodology is used?", href: "/methodology", why: "Ruleset and replay" },
       { question: "What changed for the 2026 definitive period?", href: "/cbam-2026-definitive-period", why: "Deadline fan-out" },
@@ -99,16 +99,39 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     relatedProblems: [
       { question: "What is included in the product?", href: "/product", why: "Capability detail" },
       { question: "When do I seal?", href: "/how-it-works", why: "Payment vs seal timing" },
+      { question: "Book a demo", href: "/demo", why: "Annual / Enterprise path" },
       { question: "Can one payment cover another plant?", href: "/pricing", why: "Scope lock clarification" },
       { question: "Refund rules", href: "/refund-policy", why: "Unused unlock / duplicates" },
     ],
-    entities: ["USD 249", "pay at lock", "same-file corrections", "scope lock", "draft free"],
+    entities: ["USD 449", "pay at lock", "Exporter Annual", "Enterprise contact sales", "ROI calculator", "same-file corrections"],
     fanOutQueries: [
       "CBAMValid price",
+      "CBAMValid USD 449",
       "CBAM preparation pack cost",
       "is CBAMValid a subscription",
       "when is CBAMValid card charged",
     ],
+  },
+  {
+    path: "/demo",
+    primaryQuestion: "How do I book a CBAMValid demo for Annual or Enterprise?",
+    empathyLead:
+      "Self-serve Single Pack is not enough for multi-site buyers who need DPA, SSO, and coordination.",
+    directAnswer:
+      "Email info@cbamvalid.com or open the Book a demo page. Single Pack remains self-serve at USD 449 pay-at-lock. Annual and Enterprise require a human scoping conversation. No accredited verification claims are made in demos.",
+    calculation: "Demos do not produce sealed emissions results.",
+    explanation:
+      "Come with installation count, reporting year, and CN family. We walk working-file flow, QC, seal integrity, and buyer share links.",
+    methodology: "Independence boundary remains preparation ≠ verification.",
+    evidence: "Published /demo page and pricing tiers.",
+    expert: "Enterprise is a commitment regime, not a feature checkbox.",
+    relatedProblems: [
+      { question: "Public pricing", href: "/pricing", why: "Tier amounts" },
+      { question: "Sample dossier", href: "/sample-dossier", why: "Inspect output" },
+      { question: "Security", href: "/security", why: "DPA draft" },
+    ],
+    entities: ["book a demo", "Exporter Annual", "Enterprise"],
+    fanOutQueries: ["CBAMValid demo", "CBAMValid enterprise demo", "CBAMValid annual plan"],
   },
   {
     path: "/how-it-works",
@@ -116,7 +139,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     empathyLead:
       "Most teams lose weeks in email threads and version chaos. You need a guided path that shows gaps before a buyer or verifier sees the file.",
     directAnswer:
-      "Define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, pay once to lock that working file, then download PDF, JSON, and O3CI field-mapped exports. Same file: correct and re-lock as needed. A new file needs a new payment.",
+      "Start with the readiness checklist and pre-flight XLSX. Honest time: 2–4 hours if data is ready, 2–3 weeks if starting from zero. Then define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, pay once to lock that working file, and download PDF, JSON, and O3CI field-mapped exports.",
     calculation:
       "After material inputs are complete, the server engine computes embedded emissions and writes a calculation trace. Incomplete material data blocks sealing.",
     explanation:

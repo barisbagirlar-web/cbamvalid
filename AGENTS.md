@@ -191,11 +191,13 @@ linked goods/CN groups
 Canonical entitlement contract (case-scoped pay-at-lock):
 
 ```text
-$249 one-time
+$449 one-time
 → unlock lock & download for 1 working file (caseId)
 → same file: unlimited correction reseals (storage ceiling enforced server-side)
 → new working file = new payment
 ```
+
+Public tier architecture (H4): Draft $0 · Single Pack $449 · Exporter Annual $2,400/yr · Enterprise from $12,000/yr (contact sales only).
 
 Legacy internal ledger (admin / grandfather only; not the customer path):
 
@@ -214,8 +216,10 @@ Rules:
 - A correction on the same paid case creates a new sealed release without a new charge.
 - Prior releases remain immutable and traceable.
 - Case clone / save-as-new does not inherit payment.
-- Do not change pricing amount without explicit owner instruction.
+- Do not change pricing amount without explicit owner instruction (owner FAZ 2 mandate 2026-07-28 set Single Pack to $449).
+- Existing fulfilled unlocks at a prior checkout amount remain grandfathered for that working file.
 - Customer UI must not require a separate “activate pack from credits” step for the normal path.
+- Paddle catalog unit amount must match `CANONICAL_PRICING.amountMinor` (44900) or fulfillment fails closed.
 
 ---
 

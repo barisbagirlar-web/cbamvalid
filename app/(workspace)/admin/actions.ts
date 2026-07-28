@@ -167,6 +167,6 @@ export async function fetchSystemMetrics() {
   return {
     totalUsers: usersCount,
     sealedReports: reportsCount,
-    monthlyRevenue: reportsCount * 249, // Approximation based on pack list price
+    monthlyRevenue: reportsCount * 449, // Approximation based on pack list price
   };
 }

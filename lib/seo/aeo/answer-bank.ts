@@ -9,7 +9,7 @@ const PRICE = CANONICAL_PRICING.priceFormatted;
  */
 export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
   {
-    id: "what-does-usd-249-buy",
+    id: "what-does-usd-449-buy",
     question: `What does ${PRICE} buy on CBAMValid?`,
     aliases: [
       "CBAMValid price",
@@ -381,7 +381,7 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
   },
   {
     id: "one-pack-scope-lock",
-    question: "Can one USD 249 payment cover a second plant or another reporting year?",
+    question: "Can one USD 449 payment cover a second plant or another reporting year?",
     aliases: [
       "CBAMValid multi plant pricing",
       "one pack two installations",
@@ -629,6 +629,58 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
     ],
     routes: ["/platform", "/"],
     relatedPaths: ["/product", "/methodology"],
+    schemaEligible: true,
+  },
+  {
+    id: "pricing-four-tiers",
+    question: "What are CBAMValid’s published pricing tiers?",
+    aliases: ["Enterprise contact sales", "Exporter Annual", "Single Pack 449"],
+    directAnswer:
+      "Draft is $0. Single Pack is USD 449 one-time pay-at-lock for one working file. Exporter Annual is USD 2,400 per year. Enterprise is from USD 12,000 per year and is the only contact-sales tier. Not an accredited verification opinion.",
+    empathyContext:
+      "Procurement needs published prices. Hiding everything behind “contact sales” fails the public-pricing rule.",
+    evidence: [
+      {
+        label: "Pricing page",
+        detail: "Four published tiers + ROI calculator",
+        href: "/pricing",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Book a demo",
+        detail: "Human path for Annual and Enterprise",
+        href: "/demo",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/pricing", "/demo", "/"],
+    relatedPaths: ["/how-it-works", "/security"],
+    schemaEligible: true,
+  },
+  {
+    id: "readiness-kit-time",
+    question: "How long does CBAMValid preparation take?",
+    aliases: ["readiness checklist", "pre-flight spreadsheet"],
+    directAnswer:
+      "Honest time: 2–4 hours if your data is ready. 2–3 weeks if starting from zero. Use the readiness checklist and downloadable pre-flight XLSX before opening a working file.",
+    empathyContext:
+      "False “instant CBAM” claims create failed seals. Time honesty reduces buyer deadline panic.",
+    evidence: [
+      {
+        label: "How it works",
+        detail: "Readiness checklist at the top of the workflow page",
+        href: "/how-it-works",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Pre-flight XLSX",
+        detail: "Plant-fillable checklist workbook",
+        href: "/onboarding/cbamvalid-preflight-checklist.xlsx",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/how-it-works", "/product"],
+    relatedPaths: ["/pricing", "/sample-dossier"],
     schemaEligible: true,
   },
 ] as const;

@@ -27,8 +27,14 @@ export default function PrivacyPage() {
           <h2 className="text-xl font-bold mb-2">1. Controller Identity</h2>
           <p className="text-sm text-muted">
             The data controller responsible for processing personal data is: <br />
-            <strong>{legalConfig.legalEntityName}</strong> (Trading as {legalConfig.tradingName}) <br />
-            {legalConfig.registeredAddress}, {legalConfig.country} <br />
+            <strong>{legalConfig.legalEntityName}</strong> (Trading as {legalConfig.tradingName})
+            <br />
+            {legalConfig.identityPublication.lines.map((line) => (
+              <span key={line}>
+                {line}
+                <br />
+              </span>
+            ))}
             Contact: {legalConfig.privacyContactEmail}
           </p>
         </div>

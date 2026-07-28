@@ -1,12 +1,12 @@
 import { mapLegacyProductCode } from "./migration";
 
 /** Keep in sync with lib/billing/pricing-config.ts CANONICAL_PRICING.amountMinor */
-const PACK_AMOUNT_MINOR_USD = 24900;
+const PACK_AMOUNT_MINOR_USD = 44900;
 
 export interface ProductDefinition {
   productCode: string;
   currency: string;
-  expectedUnitAmount: number; // in minor units (e.g. 24900 = $249.00)
+  expectedUnitAmount: number; // in minor units (e.g. 44900 = $449.00)
   entitlementType: string;
   entitlementQuantity: number;
   correctionWindowDays: number;

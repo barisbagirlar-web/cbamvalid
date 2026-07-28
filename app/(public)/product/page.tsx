@@ -21,7 +21,7 @@ export default function Page() {
         <p className="aeo-lead">
           <strong>Direct answer:</strong>{" "}
           <span className="speakable-answer">
-            Start a free draft, close the blockers you can see, then pay USD 249 once to lock that working file. Same-file corrections stay included. A new file needs a new payment. You are preparing for independent review — not buying a fake “verified” stamp.
+            Start a free draft, close the blockers you can see, then pay USD 449 once to lock that working file. Same-file corrections stay included. A new file needs a new payment. You are preparing for independent review — not buying a fake “verified” stamp.
           </span>
         </p>
         <div className="hero-ctas" style={{"marginTop":"30px"}}>
@@ -110,7 +110,7 @@ export default function Page() {
   <section className="cta-band">
     <div className="wrap">
       <h2>Build your first case <span className="serif-i">free of charge</span></h2>
-      <p>Draft free. Pay USD 249 once to lock this working file — same-file corrections included, no subscription. A new file needs a new payment.</p>
+      <p>Draft free. Pay USD 449 once to lock this working file — same-file corrections included, no subscription. A new file needs a new payment.</p>
       <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">Start a Dossier <span className="arr">→</span></a>
     </div>
   </section>
