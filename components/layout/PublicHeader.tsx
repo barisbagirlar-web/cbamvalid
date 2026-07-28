@@ -10,8 +10,8 @@ export function PublicHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const id = window.setTimeout(() => setIsMobileMenuOpen(false), 0);
-    return () => window.clearTimeout(id);
+    const id = globalThis.setTimeout(() => setIsMobileMenuOpen(false), 0);
+    return () => globalThis.clearTimeout(id);
   }, [pathname]);
 
   const isActive = (path: string) => (pathname === path ? "active" : "");

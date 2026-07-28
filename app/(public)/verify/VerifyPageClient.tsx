@@ -98,10 +98,10 @@ export default function VerifyPageClient() {
           ? PUBLIC_SAMPLE_DOSSIER.primaryDocumentSha256
           : null;
     if (!target) return;
-    const id = window.setTimeout(() => {
+    const id = globalThis.setTimeout(() => {
       void runVerify(target);
     }, 0);
-    return () => window.clearTimeout(id);
+    return () => globalThis.clearTimeout(id);
   }, [searchParams]);
 
   const handleVerify = async (e: React.FormEvent) => {

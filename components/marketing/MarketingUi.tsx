@@ -16,9 +16,9 @@ export function Reveal({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (!("IntersectionObserver" in window)) {
-      const id = window.setTimeout(() => setVisible(true), 0);
-      return () => window.clearTimeout(id);
+    if (typeof IntersectionObserver === "undefined") {
+      const id = globalThis.setTimeout(() => setVisible(true), 0);
+      return () => globalThis.clearTimeout(id);
     }
     const io = new IntersectionObserver(
       (entries) => {
@@ -85,9 +85,9 @@ export function CountUp({
       requestAnimationFrame(step);
     };
 
-    if (!("IntersectionObserver" in window)) {
-      const id = window.setTimeout(run, 0);
-      return () => window.clearTimeout(id);
+    if (typeof IntersectionObserver === "undefined") {
+      const id = globalThis.setTimeout(run, 0);
+      return () => globalThis.clearTimeout(id);
     }
 
     const io = new IntersectionObserver(
