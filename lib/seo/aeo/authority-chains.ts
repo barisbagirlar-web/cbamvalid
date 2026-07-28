@@ -405,28 +405,29 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     empathyLead:
       "Enterprise buyers reject sites that invent CRO numbers, logos, or verifier endorsements.",
     directAnswer:
-      "CBAMValid publishes a Trust Evidence Registry. Each claim is VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Half-identity and forged letters are forbidden. Gaps stay visible until real evidence arrives.",
+      "CBAMValid publishes a Trust Evidence Registry. Each claim is VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Legal identity is published (CRO 315881, VAT IE1857162AB, Dublin address). Half-identity and forged letters remain forbidden. Remaining gaps stay visible.",
     calculation:
       "Claim discipline does not change sealed emissions arithmetic; it protects procurement trust around the product.",
     explanation:
-      "SAMPLE documents are watermarked specimens. EMPTY BY DESIGN pages (case studies) refuse invented logos. OWNER ACTION items list the exact fields the operator must supply.",
+      "SAMPLE documents are watermarked specimens. EMPTY BY DESIGN pages (case studies) refuse invented logos. OWNER ACTION / EXTERNAL BLOCKER items stay visible until closed.",
     methodology:
       "H2: no claim without evidence. Status language mirrors the seal engine’s fail-closed posture.",
     evidence:
-      "Published /trust registry + /legal-notice minimal identity policy + /verifier-review SAMPLE surface.",
+      "Published /trust registry + full T1.3 /legal-notice identity + /verifier-review SAMPLE surface.",
     expert:
-      "Honest incomplete identity beats fraudulent complete identity in enterprise procurement.",
+      "Published legal identity plus visible claim gaps beats invented completeness in enterprise procurement.",
     relatedProblems: [
       { question: "Legal notice", href: "/legal-notice", why: "Identity publication" },
       { question: "Structure review", href: "/verifier-review", why: "SAMPLE boundary" },
       { question: "Case studies policy", href: "/case-studies", why: "Empty by design" },
       { question: "Security facts", href: "/security", why: "No fake ISO" },
+      { question: "Enterprise Exclusive", href: "/enterprise", why: "SSO SLA Holding" },
     ],
-    entities: ["trust registry", "H2", "SAMPLE", "OWNER ACTION", "EXTERNAL BLOCKER"],
+    entities: ["trust registry", "H2", "SAMPLE", "CRO 315881", "VAT IE1857162AB"],
     fanOutQueries: [
       "CBAMValid trust evidence",
       "CBAMValid company registration",
-      "CBAMValid verifier letter",
+      "CBAMValid VAT",
     ],
   },
   {

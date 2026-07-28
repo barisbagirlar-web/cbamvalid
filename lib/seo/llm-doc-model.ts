@@ -12,6 +12,8 @@ import { listGlossaryTerms } from "./aeo/glossary";
 import { listVerifiedRegulatoryStatements, SEO_LEGAL_SOURCE_INDEX } from "./regulatory-sources";
 import { listSitemapRoutes } from "./registry";
 import { siteConfig } from "@/lib/site-config";
+import { LEGAL_IDENTITY, isLegalIdentityComplete } from "@/lib/legal-identity";
+import { ENTERPRISE_PUBLIC, PLATFORM_MODULES_R6_R9 } from "@/lib/enterprise/enterprise-contract";
 
 export interface LlmDocModel {
   readonly title: string;
@@ -51,19 +53,42 @@ export interface LlmDocModel {
 
 export function buildLlmDocModel(): LlmDocModel {
   const price = assertVerifiedClaim(PRICE_CLAIM, "PRICE_CLAIM");
-  const resources = listSitemapRoutes()
-    .filter((route) => route.pageType !== "legal" && route.pageType !== "cn-detail")
-    .slice(0, 24)
-    .map((route) => ({
-      title: route.h1,
-      url: `${siteConfig.canonicalOrigin}${route.canonicalPath === "/" ? "" : route.canonicalPath}`,
-      note: route.primaryIntent,
-    }));
+  const priorityPaths = new Set([
+    "/",
+    "/product",
+    "/pricing",
+    "/sample-dossier",
+    "/enterprise",
+    "/enterprise/sso",
+    "/enterprise/holding",
+    "/partners",
+    "/trust",
+    "/security",
+    "/rulesets",
+    "/platform",
+    "/demo",
+    "/buyer-link",
+    "/verifier-review",
+    "/methodology",
+    "/how-it-works",
+  ]);
+  const priority = listSitemapRoutes().filter((route) => priorityPaths.has(route.path));
+  const rest = listSitemapRoutes().filter(
+    (route) =>
+      !priorityPaths.has(route.path) &&
+      route.pageType !== "legal" &&
+      route.pageType !== "cn-detail"
+  );
+  const resources = [...priority, ...rest].slice(0, 32).map((route) => ({
+    title: route.h1,
+    url: `${siteConfig.canonicalOrigin}${route.canonicalPath === "/" ? "" : route.canonicalPath}`,
+    note: route.primaryIntent,
+  }));
 
   return {
     title: "CBAMValid — Exporter Verification Preparation Pack",
     summary:
-      "CBAMValid (https://cbamvalid.com) is a verifier-preparation platform for non-EU producers, exporters, operators, importers, and CBAM reporting teams. It produces an operator-prepared dossier that reduces the work required for independent accredited verification. It does not issue an accredited verification opinion.",
+      "CBAMValid (https://cbamvalid.com) is a verifier-preparation platform for non-EU producers, exporters, operators, importers, and CBAM reporting teams. It produces an operator-prepared dossier that reduces the work required for independent accredited verification. It does not issue an accredited verification opinion. Enterprise Exclusive adds contracted SSO, SLA, and holding scope for multi-site buyers.",
     productPositioning: assertVerifiedClaim(PRODUCT_POSITIONING_CLAIM, "PRODUCT_POSITIONING_CLAIM"),
     independence: assertVerifiedClaim(INDEPENDENCE_CLAIM, "INDEPENDENCE_CLAIM"),
     pricingLine: `${price.formatted} per working file at lock (${price.packName}; one-time; no subscription; drafts free; 1 operator; 1 installation; 1 reporting year; same-file corrections included; new file = new payment).`,
@@ -122,6 +147,28 @@ export function renderLlmsTxt(model: LlmDocModel): string {
     "## Independence boundary",
     "",
     model.independence,
+    "",
+    "## Legal identity",
+    "",
+    isLegalIdentityComplete()
+      ? [
+          `- Legal entity: ${LEGAL_IDENTITY.legalEntityName} (trading as ${LEGAL_IDENTITY.tradingName})`,
+          `- Registered address: ${LEGAL_IDENTITY.registeredAddress}`,
+          `- Country: ${LEGAL_IDENTITY.country}`,
+          `- Company Registration No (CRO): ${LEGAL_IDENTITY.companyRegistrationNumber}`,
+          `- VAT ID: ${LEGAL_IDENTITY.vatId}`,
+          `- Support: ${LEGAL_IDENTITY.supportPhone} · ${LEGAL_IDENTITY.supportEmail}`,
+          `- DPO: ${LEGAL_IDENTITY.dataProtectionContact}`,
+          `- Trust registry: ${siteConfig.canonicalOrigin}/trust`,
+        ].join("\n")
+      : "- Full legal identity published only when CRO, VAT, address, and phone are owner-verified.",
+    "",
+    "## Enterprise Exclusive",
+    "",
+    `- ${ENTERPRISE_PUBLIC.headline}`,
+    `- Path: ${siteConfig.canonicalOrigin}${ENTERPRISE_PUBLIC.path}`,
+    `- Modules: ${PLATFORM_MODULES_R6_R9.map((m) => `${m.id} ${m.title} (${m.status})`).join("; ")}`,
+    `- Surfaces: /enterprise, /enterprise/sso, /enterprise/holding, /partners, /security (DPA + SLA drafts)`,
     "",
     "## Canonical answers (Answer + Evidence)",
     "",

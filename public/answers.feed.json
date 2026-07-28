@@ -233,7 +233,7 @@
       "id": "trust-evidence-registry",
       "url": "https://cbamvalid.com/answers#trust-evidence-registry",
       "title": "How does CBAMValid prove marketing claims without inventing evidence?",
-      "content_text": "CBAMValid publishes a Trust Evidence Registry at /trust. Each marketing claim is tagged VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Company registration, VAT, address, and phone stay unpublished until proven. Case studies stay empty until permissioned. SAMPLE documents are watermarked specimens — not certificates.\n\nProcurement teams reverse-engineer claims. Invented identity destroys enterprise deals permanently.",
+      "content_text": "CBAMValid publishes a Trust Evidence Registry at /trust. Each marketing claim is tagged VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Legal identity is published: SectorCalc Corporation (CBAMValid), CRO 315881, VAT IE1857162AB, Dublin registered address, support phone, and DPO contact. Case studies stay empty until permissioned. SAMPLE documents are watermarked specimens — not certificates.\n\nProcurement teams reverse-engineer claims. Invented identity destroys enterprise deals permanently.",
       "tags": [
         "/trust",
         "/legal-notice",

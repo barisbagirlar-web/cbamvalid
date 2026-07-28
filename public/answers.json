@@ -562,12 +562,12 @@
       "url": "https://cbamvalid.com/trust",
       "primaryQuestion": "How does CBAMValid prove marketing claims without inventing evidence?",
       "empathyLead": "Enterprise buyers reject sites that invent CRO numbers, logos, or verifier endorsements.",
-      "directAnswer": "CBAMValid publishes a Trust Evidence Registry. Each claim is VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Half-identity and forged letters are forbidden. Gaps stay visible until real evidence arrives.",
+      "directAnswer": "CBAMValid publishes a Trust Evidence Registry. Each claim is VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Legal identity is published (CRO 315881, VAT IE1857162AB, Dublin address). Half-identity and forged letters remain forbidden. Remaining gaps stay visible.",
       "calculation": "Claim discipline does not change sealed emissions arithmetic; it protects procurement trust around the product.",
-      "explanation": "SAMPLE documents are watermarked specimens. EMPTY BY DESIGN pages (case studies) refuse invented logos. OWNER ACTION items list the exact fields the operator must supply.",
+      "explanation": "SAMPLE documents are watermarked specimens. EMPTY BY DESIGN pages (case studies) refuse invented logos. OWNER ACTION / EXTERNAL BLOCKER items stay visible until closed.",
       "methodology": "H2: no claim without evidence. Status language mirrors the seal engine’s fail-closed posture.",
-      "evidence": "Published /trust registry + /legal-notice minimal identity policy + /verifier-review SAMPLE surface.",
-      "expert": "Honest incomplete identity beats fraudulent complete identity in enterprise procurement.",
+      "evidence": "Published /trust registry + full T1.3 /legal-notice identity + /verifier-review SAMPLE surface.",
+      "expert": "Published legal identity plus visible claim gaps beats invented completeness in enterprise procurement.",
       "relatedProblems": [
         {
           "question": "Legal notice",
@@ -588,19 +588,24 @@
           "question": "Security facts",
           "href": "/security",
           "why": "No fake ISO"
+        },
+        {
+          "question": "Enterprise Exclusive",
+          "href": "/enterprise",
+          "why": "SSO SLA Holding"
         }
       ],
       "entities": [
         "trust registry",
         "H2",
         "SAMPLE",
-        "OWNER ACTION",
-        "EXTERNAL BLOCKER"
+        "CRO 315881",
+        "VAT IE1857162AB"
       ],
       "fanOutQueries": [
         "CBAMValid trust evidence",
         "CBAMValid company registration",
-        "CBAMValid verifier letter"
+        "CBAMValid VAT"
       ]
     },
     {
@@ -2031,7 +2036,7 @@
         "proof chain",
         "OWNER ACTION"
       ],
-      "directAnswer": "CBAMValid publishes a Trust Evidence Registry at /trust. Each marketing claim is tagged VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Company registration, VAT, address, and phone stay unpublished until proven. Case studies stay empty until permissioned. SAMPLE documents are watermarked specimens — not certificates.",
+      "directAnswer": "CBAMValid publishes a Trust Evidence Registry at /trust. Each marketing claim is tagged VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Legal identity is published: SectorCalc Corporation (CBAMValid), CRO 315881, VAT IE1857162AB, Dublin registered address, support phone, and DPO contact. Case studies stay empty until permissioned. SAMPLE documents are watermarked specimens — not certificates.",
       "empathyContext": "Procurement teams reverse-engineer claims. Invented identity destroys enterprise deals permanently.",
       "evidence": [
         {
@@ -2042,7 +2047,7 @@
         },
         {
           "label": "Legal notice",
-          "detail": "Minimal identity until CRO/VAT/address proven",
+          "detail": "Full T1.3 identity block — CRO, VAT, address, phone, DPO",
           "href": "/legal-notice",
           "evidenceStatus": "verified"
         },
@@ -2061,7 +2066,8 @@
       "relatedPaths": [
         "/security",
         "/verifier-review",
-        "/pricing"
+        "/pricing",
+        "/enterprise"
       ]
     },
     {
@@ -2780,13 +2786,13 @@
         "trust registry",
         "H2",
         "SAMPLE",
-        "OWNER ACTION",
-        "EXTERNAL BLOCKER"
+        "CRO 315881",
+        "VAT IE1857162AB"
       ],
       "fanOutQueries": [
         "CBAMValid trust evidence",
         "CBAMValid company registration",
-        "CBAMValid verifier letter"
+        "CBAMValid VAT"
       ]
     },
     {

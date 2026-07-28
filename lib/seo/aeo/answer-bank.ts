@@ -616,7 +616,7 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       "OWNER ACTION",
     ],
     directAnswer:
-      "CBAMValid publishes a Trust Evidence Registry at /trust. Each marketing claim is tagged VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Company registration, VAT, address, and phone stay unpublished until proven. Case studies stay empty until permissioned. SAMPLE documents are watermarked specimens — not certificates.",
+      "CBAMValid publishes a Trust Evidence Registry at /trust. Each marketing claim is tagged VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Legal identity is published: SectorCalc Corporation (CBAMValid), CRO 315881, VAT IE1857162AB, Dublin registered address, support phone, and DPO contact. Case studies stay empty until permissioned. SAMPLE documents are watermarked specimens — not certificates.",
     empathyContext:
       "Procurement teams reverse-engineer claims. Invented identity destroys enterprise deals permanently.",
     evidence: [
@@ -628,7 +628,7 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       },
       {
         label: "Legal notice",
-        detail: "Minimal identity until CRO/VAT/address proven",
+        detail: "Full T1.3 identity block — CRO, VAT, address, phone, DPO",
         href: "/legal-notice",
         evidenceStatus: "verified",
       },
@@ -640,7 +640,7 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       },
     ],
     routes: ["/trust", "/legal-notice", "/case-studies"],
-    relatedPaths: ["/security", "/verifier-review", "/pricing"],
+    relatedPaths: ["/security", "/verifier-review", "/pricing", "/enterprise"],
     schemaEligible: true,
   },
   {
