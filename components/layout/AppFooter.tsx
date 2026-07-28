@@ -52,6 +52,15 @@ export default function AppFooter() {
               <li>
                 <Link href="/verifier-review">Structure Review</Link>
               </li>
+              <li>
+                <Link href="/rulesets">Published Rulesets</Link>
+              </li>
+              <li>
+                <Link href="/buyer-link">Buyer Share Link</Link>
+              </li>
+              <li>
+                <Link href="/platform">Platform Architecture</Link>
+              </li>
             </ul>
           </div>
           <div>
@@ -83,6 +92,9 @@ export default function AppFooter() {
           <div>
             <h4>Legal</h4>
             <ul>
+              <li>
+                <Link href="/security">Security &amp; DPA</Link>
+              </li>
               <li>
                 <Link href="/privacy">Privacy Notice</Link>
               </li>

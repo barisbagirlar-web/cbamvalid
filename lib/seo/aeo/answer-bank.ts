@@ -527,6 +527,110 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
     relatedPaths: ["/sample-dossier", "/methodology"],
     schemaEligible: true,
   },
+  {
+    id: "published-rulesets-pin",
+    question: "Does CBAMValid publish the rulesets used in sealed packages?",
+    aliases: ["ruleset registry", "which ruleset version", "source hash pin"],
+    directAnswer:
+      "Yes. CBAMValid publishes a public ruleset registry with named versions, active dates, source-registry hashes, and linked official sources. Every sealed package pins a named ruleset. Historical seals keep the ruleset they were built against. Publishing the registry is not an accredited verification opinion.",
+    empathyContext:
+      "Verifiers and buyers ask which rules applied. A dated, named pin beats a vague “latest methodology” claim.",
+    evidence: [
+      {
+        label: "Published rulesets page",
+        detail: "Public registry of transitional and definitive rulesets",
+        href: "/rulesets",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Methodology page",
+        detail: "How calculations pin to a ruleset",
+        href: "/methodology",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/rulesets", "/methodology", "/platform"],
+    relatedPaths: ["/sample-dossier", "/verify"],
+    schemaEligible: true,
+  },
+  {
+    id: "buyer-share-link",
+    question: "How does a CBAMValid buyer share link work?",
+    aliases: ["/d/token", "buyer token URL", "share sealed dossier link"],
+    directAnswer:
+      "After lock, a public token URL opens the sealed release summary. Short form /d/<token> aliases the canonical /verify/<token> view. The buyer can inspect integrity and download for authorized tokens without logging in. A successful open is integrity and preparation status only — not an accredited verification opinion.",
+    empathyContext:
+      "EU buyers need a single link, not email-attachment chaos. The link must stay an integrity surface, not fake assurance.",
+    evidence: [
+      {
+        label: "Buyer share link explainer",
+        detail: "How /d/token and /verify/token relate",
+        href: "/buyer-link",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Public verify",
+        detail: "Hash and token verification entry",
+        href: "/verify",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/buyer-link", "/verify"],
+    relatedPaths: ["/sample-dossier", "/security"],
+    schemaEligible: true,
+  },
+  {
+    id: "security-no-fake-iso",
+    question: "Does CBAMValid claim ISO 27001 or SOC 2 certification?",
+    aliases: ["ISO 27001", "SOC 2", "security certification", "DPA"],
+    directAnswer:
+      "No. The security page publishes hosting region (europe-west1), TLS, session model, encryption-at-rest defaults, subprocessors, and a DPA draft. ISO 27001 and SOC 2 are not claimed. Certificates will be published only with issuer, scope, and validity dates.",
+    empathyContext:
+      "Procurement needs facts. “In progress” certification language is a trust defect.",
+    evidence: [
+      {
+        label: "Security page",
+        detail: "Published security facts and certification honesty",
+        href: "/security",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "DPA draft PDF",
+        detail: "Procurement starting-point draft, not a signed agreement",
+        href: "/security/dpa-draft.pdf",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/security", "/privacy"],
+    relatedPaths: ["/contact", "/legal-notice"],
+    schemaEligible: true,
+  },
+  {
+    id: "platform-cbam-first",
+    question: "Is CBAMValid only a calculator, or a broader compliance platform?",
+    aliases: ["category architecture", "second product", "EUDR CSRD"],
+    directAnswer:
+      "CBAMValid is a sealed, evidence-linked, version-pinned compliance package architecture. The live ruleset family is EU CBAM. Additional regimes can reuse the package contract later — they are not sold until CBAM leadership and opening conditions justify them. No second regulated product is live today.",
+    empathyContext:
+      "Architecture honesty beats vaporware roadmaps. Door = CBAM; room is larger only when earned.",
+    evidence: [
+      {
+        label: "Platform architecture page",
+        detail: "CBAM-first category statement",
+        href: "/platform",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Published rulesets",
+        detail: "Live CBAM ruleset registry",
+        href: "/rulesets",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/platform", "/"],
+    relatedPaths: ["/product", "/methodology"],
+    schemaEligible: true,
+  },
 ] as const;
 
 export function listAnswersForRoute(path: string): AeoAnswerRecord[] {

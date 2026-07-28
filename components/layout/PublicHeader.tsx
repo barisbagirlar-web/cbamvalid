@@ -24,7 +24,7 @@ export function PublicHeader() {
           <span>
             <b>CBAM definitive period is now in force.</b> 2026 annual declarations are due — prepare your evidence dossier early.
           </span>
-          <Link href="/methodology">See the ruleset →</Link>
+          <Link href="/rulesets">See the ruleset →</Link>
         </div>
       </div>
 

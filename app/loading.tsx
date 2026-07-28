@@ -1,13 +1,15 @@
+/** Silent route transition — spinner only, no visible loading copy in HTML. */
 export default function Loading() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-kil-base px-6">
-      <div className="flex flex-col items-center">
-        {/* Minimalist Spinner */}
-        <div className="w-8 h-8 border-2 border-kil-text/20 border-t-kil-accent rounded-full animate-spin mb-6"></div>
-        <p className="font-mono text-sm text-kil-text/60 tracking-widest uppercase">
-          Loading…
-        </p>
-      </div>
+    <div
+      className="min-h-[40vh] flex items-center justify-center"
+      aria-busy="true"
+      aria-label="Busy"
+    >
+      <div
+        className="w-6 h-6 border-2 border-[color:var(--line)] border-t-[color:var(--terra)] rounded-full animate-spin"
+        aria-hidden="true"
+      />
     </div>
   );
 }

@@ -269,6 +269,122 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     ],
   },
   {
+    path: "/rulesets",
+    primaryQuestion: "Where are CBAMValid ruleset versions published?",
+    empathyLead:
+      "A sealed dossier without a named ruleset pin is hard to defend when a verifier asks which rules applied.",
+    directAnswer:
+      "CBAMValid publishes a public ruleset registry with named versions, active dates, source-registry hashes, and linked official sources. Historical seals keep the ruleset they were built against.",
+    calculation:
+      "Authoritative calculations run against the pinned ruleset for that seal. Changing published rulesets does not rewrite historical seals.",
+    explanation:
+      "Open /rulesets for the registry, then /methodology for how pins appear in sealed packages.",
+    methodology:
+      "Rulesets cite EUR-Lex-linked official source IDs from the legal source registry.",
+    evidence:
+      "Source hash and registry version are published beside each ruleset entry.",
+    expert:
+      "Publishing rulesets is an authority surface for preparation software — not an accredited verification opinion.",
+    relatedProblems: [
+      { question: "Methodology sources", href: "/methodology", why: "How pins work" },
+      { question: "Sample dossier", href: "/sample-dossier", why: "See sealed structure" },
+      { question: "Platform architecture", href: "/platform", why: "CBAM-first category" },
+    ],
+    entities: ["ruleset version", "source-registry hash", "historical seal pin"],
+    fanOutQueries: [
+      "CBAMValid ruleset registry",
+      "which CBAM ruleset version",
+      "CBAM ruleset source hash",
+    ],
+  },
+  {
+    path: "/buyer-link",
+    primaryQuestion: "How does the CBAMValid buyer share link work?",
+    empathyLead:
+      "Buyers want one URL, not a ZIP emailed into oblivion. The URL must stay integrity-only.",
+    directAnswer:
+      "After lock, /d/<token> aliases /verify/<token> for the same sealed-release summary and authorized download path. No login is required for the public token view. Success proves integrity and preparation status — not accredited verification.",
+    calculation:
+      "The share link does not recalculate emissions. It surfaces the sealed release already produced by the server engine.",
+    explanation:
+      "Operators share the token URL with EU buyers or reporting teams. Short and canonical forms resolve to the same integrity view.",
+    methodology:
+      "Token verification is a data-integrity control separate from accredited verification under CBAM implementing rules.",
+    evidence:
+      "Invalid or inactive tokens fail closed. Successful open ≠ verification opinion.",
+    expert:
+      "Buyer share is a commercial distribution path for sealed packages, not an assurance badge.",
+    relatedProblems: [
+      { question: "Public verify", href: "/verify", why: "Hash and token entry" },
+      { question: "Sample dossier", href: "/sample-dossier", why: "Inspect before buy" },
+      { question: "Security facts", href: "/security", why: "Hosting and DPA" },
+    ],
+    entities: ["buyer share link", "/d/token", "public verification token"],
+    fanOutQueries: [
+      "CBAMValid buyer share link",
+      "CBAM dossier token URL",
+      "/d/token CBAMValid",
+    ],
+  },
+  {
+    path: "/security",
+    primaryQuestion: "What security facts does CBAMValid publish — and does it claim ISO 27001?",
+    empathyLead:
+      "Procurement asks for region, encryption, subprocessors, and a DPA. Fake certification language destroys trust.",
+    directAnswer:
+      "CBAMValid publishes europe-west1 hosting, TLS, HttpOnly sessions, provider encryption at rest, subprocessors (Firebase/Google Cloud and Paddle), and a DPA draft. ISO 27001 and SOC 2 are not claimed.",
+    calculation:
+      "Security controls protect case and evidence data; they do not alter sealed emissions arithmetic.",
+    explanation:
+      "Download the DPA draft for procurement discussion. Signed DPAs remain a bilateral commercial step.",
+    methodology:
+      "Certification claims require issuer, scope, and validity dates — never “in progress.”",
+    evidence:
+      "Published security page + DPA draft PDF. Absence of ISO claim is intentional honesty.",
+    expert:
+      "Security facts are operational. Accredited verification remains a separate legal act.",
+    relatedProblems: [
+      { question: "Privacy notice", href: "/privacy", why: "Data handling" },
+      { question: "Contact privacy", href: "/contact", why: "Requests" },
+      { question: "Buyer share link", href: "/buyer-link", why: "Public token path" },
+    ],
+    entities: ["europe-west1", "DPA draft", "subprocessors", "no ISO 27001 claim"],
+    fanOutQueries: [
+      "CBAMValid security",
+      "CBAMValid DPA",
+      "CBAMValid ISO 27001",
+    ],
+  },
+  {
+    path: "/platform",
+    primaryQuestion: "Is CBAMValid opening other regulatory categories beyond CBAM?",
+    empathyLead:
+      "Category expansion before CBAM leadership creates half-products and diluted trust.",
+    directAnswer:
+      "Door = CBAM. The sealed package architecture can accept other regimes later. No second regulated product is sold today. Opening conditions are intentional, not a vaporware roadmap.",
+    calculation:
+      "Additional categories would reuse the package contract and ruleset pin model — they are not live engines today.",
+    explanation:
+      "Use /rulesets and /product for the live CBAM surface. Treat /platform as architecture honesty.",
+    methodology:
+      "One live ruleset family first. Supersession and historical pin discipline remain CBAM-specific until another family is opened.",
+    evidence:
+      "Published architecture statement. Absence of EUDR/CSRD product pages is intentional.",
+    expert:
+      "Architecture reuse is real. Fake second-product marketing is banned.",
+    relatedProblems: [
+      { question: "Published rulesets", href: "/rulesets", why: "Live CBAM pins" },
+      { question: "Product", href: "/product", why: "What ships today" },
+      { question: "Methodology", href: "/methodology", why: "Rules discipline" },
+    ],
+    entities: ["category architecture", "CBAM first", "reusable package contract"],
+    fanOutQueries: [
+      "CBAMValid platform architecture",
+      "CBAMValid beyond CBAM",
+      "CBAM sealed package contract",
+    ],
+  },
+  {
     path: "/cn-code",
     primaryQuestion: "How do I check whether a CN code is in CBAM goods scope?",
     empathyLead:
