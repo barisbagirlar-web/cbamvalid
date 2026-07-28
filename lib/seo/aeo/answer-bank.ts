@@ -1,7 +1,9 @@
 import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
+import { getQcRuleFamilyCount } from "@/lib/cbam/validation/qc-rule-registry";
 import type { AeoAnswerRecord } from "./types";
 
 const PRICE = CANONICAL_PRICING.priceFormatted;
+const QC_RULE_FAMILIES = getQcRuleFamilyCount();
 
 /**
  * Canonical Answer + Evidence bank for AEO / FAQPage / visible page blocks.
@@ -905,6 +907,161 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
     ],
     routes: ["/pricing", "/demo", "/", "/enterprise"],
     relatedPaths: ["/how-it-works", "/security"],
+    schemaEligible: true,
+  },
+  {
+    id: "product-deterministic-engine",
+    question: "Is the CBAMValid calculation engine deterministic and replayable?",
+    aliases: [
+      "deterministic CBAM calculation",
+      "calculation trace SHA-256",
+      "replayable embedded emissions",
+    ],
+    directAnswer:
+      "Yes. Authoritative calculations run server-side and are replayable: same case snapshot, same ruleset, and same engine version produce the same outputs and node hashes. Every authoritative node records formula identity, inputs, units, conversions, and a SHA-256 node hash.",
+    empathyContext:
+      "Verifier questions collapse spreadsheets that cannot reproduce a figure. Replayability is what lets you defend a number weeks later.",
+    evidence: [
+      {
+        label: "Product capabilities",
+        detail: "Deterministic calculation engine with full calculation trace",
+        href: "/product",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Methodology & sources",
+        detail: "Versioned method citations travel with sealed releases",
+        href: "/methodology",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/product", "/methodology", "/"],
+    relatedPaths: ["/sample-dossier", "/rulesets"],
+    schemaEligible: true,
+  },
+  {
+    id: "product-evidence-register",
+    question: "How does the CBAMValid evidence register work?",
+    aliases: [
+      "CBAM evidence register software",
+      "link evidence to calculation nodes",
+      "evidence coverage visible",
+    ],
+    directAnswer:
+      "Evidence objects store file identity, SHA-256 hash, size, path ownership, review status, and support status, and link to the calculation nodes they support. Coverage is visible in the working file — not assumed. Missing, rejected, unsupported, or hash-mismatched evidence blocks sealing.",
+    empathyContext:
+      "Buyers and verifiers ask which document supports which figure. An unlinked folder of PDFs is not an evidence register.",
+    evidence: [
+      {
+        label: "Product evidence register",
+        detail: "Node-linked evidence with support and review status",
+        href: "/product",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Exporter evidence requirements",
+        detail: "Hash, support status, and lineage fields",
+        href: "/cbam-exporter-evidence-requirements",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/product", "/cbam-exporter-evidence-requirements", "/sample-dossier"],
+    relatedPaths: ["/how-it-works", "/methodology"],
+    schemaEligible: true,
+  },
+  {
+    id: "product-fail-closed-qc",
+    question: "What quality controls run before a CBAMValid seal?",
+    aliases: [
+      "CBAM fail-closed QC",
+      "seal blockers",
+      "automated quality controls CBAM",
+    ],
+    directAnswer: `${QC_RULE_FAMILIES} automated QC rule families run against EU guidance — including unit consistency, boundary completeness, allocation balance, and default-value flagging. Material blockers must be resolved before sealing. Missing inputs are not silently converted to zero.`,
+    empathyContext:
+      "A package that seals with open blockers creates verifier friction and buyer rejection risk. Fail-closed is the durable path.",
+    evidence: [
+      {
+        label: "Product QC capabilities",
+        detail: `${QC_RULE_FAMILIES} rule families · always on before seal`,
+        href: "/product",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Workflow",
+        detail: "Clear blockers in the working file before pay-at-lock",
+        href: "/how-it-works",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/product", "/how-it-works", "/"],
+    relatedPaths: ["/sample-dossier", "/methodology"],
+    schemaEligible: true,
+  },
+  {
+    id: "product-o3ci-export",
+    question: "Does CBAMValid provide an O3CI field-mapped export?",
+    aliases: [
+      "O3CI field-mapped structured data export",
+      "CBAM installation communication template export",
+      "official Registry XML CBAMValid",
+    ],
+    directAnswer:
+      "Yes. CBAMValid produces an O3CI field-mapped structured data export (XLSX) aligned to the installation communication template circulating in EU supply chains. It is not an official CBAM Registry XML submission and does not claim customs or registry acceptance.",
+    empathyContext:
+      "Buyers often ask for field-mapped data they can reuse without re-typing. Naming the export correctly prevents false “Registry XML” claims.",
+    evidence: [
+      {
+        label: "Product export capability",
+        detail: "O3CI field-mapped XLSX — not official Registry XML",
+        href: "/product",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Independence boundary",
+        detail: "Not a customs authority or Registry submission service",
+        href: "/methodology",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/product", "/sample-dossier", "/methodology"],
+    relatedPaths: ["/pricing", "/how-it-works"],
+    schemaEligible: true,
+  },
+  {
+    id: "product-seal-integrity",
+    question: "How does CBAMValid sealing and integrity hashing work?",
+    aliases: [
+      "SHA-256 sealed dossier",
+      "integrity manifest CBAM",
+      "verify sealed package hash",
+    ],
+    directAnswer:
+      "On sealing, deliverables are hashed (SHA-256), timestamped, and recorded in a data integrity manifest. Prior sealed releases remain immutable. Anyone holding the dossier can confirm bytes were not altered after the seal via the public verify path.",
+    empathyContext:
+      "Without a sealed integrity trail, a buyer cannot tell whether a file changed after handover. Hash + timestamp is the operational proof.",
+    evidence: [
+      {
+        label: "Product sealing",
+        detail: "SHA-256 · UTC seal · integrity manifest",
+        href: "/product",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Verify a dossier",
+        detail: "Public hash verification surface",
+        href: "/verify",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Sample dossier",
+        detail: "Inspect sealed structure before you pay",
+        href: "/sample-dossier",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/product", "/verify", "/sample-dossier"],
+    relatedPaths: ["/trust", "/how-it-works"],
     schemaEligible: true,
   },
   {

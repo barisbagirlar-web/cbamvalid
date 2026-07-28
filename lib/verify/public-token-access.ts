@@ -1,6 +1,5 @@
 import crypto from "crypto";
-import { FieldValue, type DocumentData } from "firebase-admin/firestore";
-import { adminDb } from "@/lib/firebase/admin";
+import { adminDb, FieldValue, type DocumentData } from "@/lib/firebase/admin";
 
 export type PublicTokenReport = {
   id: string;

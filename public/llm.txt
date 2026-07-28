@@ -122,6 +122,21 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Q: What are CBAMValid’s published pricing tiers?
   A: Draft is $0. Single Pack is USD 449 one-time pay-at-lock for one working file. Exporter Annual is USD 2,400 per year. Enterprise is from USD 12,000 per year and is the only contact-sales tier. Not an accredited verification opinion. Procurement needs published prices. Hiding everything behind “contact sales” fails the public-pricing rule.
   Pages: /pricing, /demo, /, /enterprise
+- Q: Is the CBAMValid calculation engine deterministic and replayable?
+  A: Yes. Authoritative calculations run server-side and are replayable: same case snapshot, same ruleset, and same engine version produce the same outputs and node hashes. Every authoritative node records formula identity, inputs, units, conversions, and a SHA-256 node hash. Verifier questions collapse spreadsheets that cannot reproduce a figure. Replayability is what lets you defend a number weeks later.
+  Pages: /product, /methodology, /
+- Q: How does the CBAMValid evidence register work?
+  A: Evidence objects store file identity, SHA-256 hash, size, path ownership, review status, and support status, and link to the calculation nodes they support. Coverage is visible in the working file — not assumed. Missing, rejected, unsupported, or hash-mismatched evidence blocks sealing. Buyers and verifiers ask which document supports which figure. An unlinked folder of PDFs is not an evidence register.
+  Pages: /product, /cbam-exporter-evidence-requirements, /sample-dossier
+- Q: What quality controls run before a CBAMValid seal?
+  A: 15 automated QC rule families run against EU guidance — including unit consistency, boundary completeness, allocation balance, and default-value flagging. Material blockers must be resolved before sealing. Missing inputs are not silently converted to zero. A package that seals with open blockers creates verifier friction and buyer rejection risk. Fail-closed is the durable path.
+  Pages: /product, /how-it-works, /
+- Q: Does CBAMValid provide an O3CI field-mapped export?
+  A: Yes. CBAMValid produces an O3CI field-mapped structured data export (XLSX) aligned to the installation communication template circulating in EU supply chains. It is not an official CBAM Registry XML submission and does not claim customs or registry acceptance. Buyers often ask for field-mapped data they can reuse without re-typing. Naming the export correctly prevents false “Registry XML” claims.
+  Pages: /product, /sample-dossier, /methodology
+- Q: How does CBAMValid sealing and integrity hashing work?
+  A: On sealing, deliverables are hashed (SHA-256), timestamped, and recorded in a data integrity manifest. Prior sealed releases remain immutable. Anyone holding the dossier can confirm bytes were not altered after the seal via the public verify path. Without a sealed integrity trail, a buyer cannot tell whether a file changed after handover. Hash + timestamp is the operational proof.
+  Pages: /product, /verify, /sample-dossier
 - Q: How long does CBAMValid preparation take?
   A: Honest time: 2–4 hours if your data is ready. 2–3 weeks if starting from zero. Use the readiness checklist and downloadable pre-flight XLSX before opening a working file. False “instant CBAM” claims create failed seals. Time honesty reduces buyer deadline panic.
   Pages: /how-it-works, /product
@@ -153,9 +168,9 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Methodology: Versioned rulesets and legal source citations travel with each sealed release so method history stays auditable.
 - Evidence: Evidence objects store hash, size, path ownership, review status, and support status. Seal is blocked when evidence is missing, rejected, unsupported, or hash-mismatched.
 - Expert: Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.
-- Related: /pricing, /sample-dossier, /cbam-exporter-evidence-requirements
-- Entities: Preparation Pack; calculation trace; evidence register; quality controls; O3CI field-mapped export
-- Fan-out queries: CBAM verification preparation product; CBAM evidence register software; deterministic CBAM calculation engine
+- Related: /pricing, /sample-dossier, /cbam-exporter-evidence-requirements, /how-it-works, /rulesets, /enterprise, /verify, /trust
+- Entities: Exporter Verification Preparation Pack; calculation trace; evidence register; fail-closed quality controls; O3CI field-mapped export; versioned EU rulesets; SHA-256 integrity manifest; case readiness
+- Fan-out queries: CBAM verification preparation product; CBAM evidence register software; deterministic CBAM calculation engine; CBAM O3CI field-mapped export; CBAM sealed dossier integrity hash; CBAM fail-closed quality controls
 
 ### /pricing
 - Primary question: What does $449 buy, and when is the card charged?
@@ -554,9 +569,9 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
   Entities: CBAMValid; Exporter Verification Preparation Pack; embedded emissions; independent accredited verification; Regulation (EU) 2023/956
   Fan-out: CBAM exporter evidence dossier; CBAM verification preparation software; actual embedded emissions package for EU buyer; CBAM sealed dossier vs verification opinion
 - /product — Preparation Pack product capabilities
-  Covers: deterministic CBAM calculation engine; evidence register; quality controls before sealing
-  Entities: Preparation Pack; calculation trace; evidence register; quality controls; O3CI field-mapped export
-  Fan-out: CBAM verification preparation product; CBAM evidence register software; deterministic CBAM calculation engine
+  Covers: deterministic CBAM calculation engine; evidence register; fail-closed quality controls before sealing; O3CI field-mapped export; versioned EU rulesets; integrity manifest and SHA-256 sealing; case readiness workspace
+  Entities: Exporter Verification Preparation Pack; calculation trace; evidence register; fail-closed quality controls; O3CI field-mapped export; versioned EU rulesets; SHA-256 integrity manifest; case readiness
+  Fan-out: CBAM verification preparation product; CBAM evidence register software; deterministic CBAM calculation engine; CBAM O3CI field-mapped export; CBAM sealed dossier integrity hash; CBAM fail-closed quality controls
 - /pricing — One-time Preparation Pack pricing
   Covers: USD 449 pay-at-lock inclusions; four published tiers; when card is charged; same-file corrections included; new file requires new payment; scope lock per installation and year; ROI default-value exposure calculator
   Entities: USD 449; pay at lock; Exporter Annual; Enterprise contact sales; ROI calculator; same-file corrections

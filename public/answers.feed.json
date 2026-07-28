@@ -344,6 +344,61 @@
       ]
     },
     {
+      "id": "product-deterministic-engine",
+      "url": "https://cbamvalid.com/answers#product-deterministic-engine",
+      "title": "Is the CBAMValid calculation engine deterministic and replayable?",
+      "content_text": "Yes. Authoritative calculations run server-side and are replayable: same case snapshot, same ruleset, and same engine version produce the same outputs and node hashes. Every authoritative node records formula identity, inputs, units, conversions, and a SHA-256 node hash.\n\nVerifier questions collapse spreadsheets that cannot reproduce a figure. Replayability is what lets you defend a number weeks later.",
+      "tags": [
+        "/product",
+        "/methodology",
+        "/"
+      ]
+    },
+    {
+      "id": "product-evidence-register",
+      "url": "https://cbamvalid.com/answers#product-evidence-register",
+      "title": "How does the CBAMValid evidence register work?",
+      "content_text": "Evidence objects store file identity, SHA-256 hash, size, path ownership, review status, and support status, and link to the calculation nodes they support. Coverage is visible in the working file — not assumed. Missing, rejected, unsupported, or hash-mismatched evidence blocks sealing.\n\nBuyers and verifiers ask which document supports which figure. An unlinked folder of PDFs is not an evidence register.",
+      "tags": [
+        "/product",
+        "/cbam-exporter-evidence-requirements",
+        "/sample-dossier"
+      ]
+    },
+    {
+      "id": "product-fail-closed-qc",
+      "url": "https://cbamvalid.com/answers#product-fail-closed-qc",
+      "title": "What quality controls run before a CBAMValid seal?",
+      "content_text": "15 automated QC rule families run against EU guidance — including unit consistency, boundary completeness, allocation balance, and default-value flagging. Material blockers must be resolved before sealing. Missing inputs are not silently converted to zero.\n\nA package that seals with open blockers creates verifier friction and buyer rejection risk. Fail-closed is the durable path.",
+      "tags": [
+        "/product",
+        "/how-it-works",
+        "/"
+      ]
+    },
+    {
+      "id": "product-o3ci-export",
+      "url": "https://cbamvalid.com/answers#product-o3ci-export",
+      "title": "Does CBAMValid provide an O3CI field-mapped export?",
+      "content_text": "Yes. CBAMValid produces an O3CI field-mapped structured data export (XLSX) aligned to the installation communication template circulating in EU supply chains. It is not an official CBAM Registry XML submission and does not claim customs or registry acceptance.\n\nBuyers often ask for field-mapped data they can reuse without re-typing. Naming the export correctly prevents false “Registry XML” claims.",
+      "tags": [
+        "/product",
+        "/sample-dossier",
+        "/methodology"
+      ]
+    },
+    {
+      "id": "product-seal-integrity",
+      "url": "https://cbamvalid.com/answers#product-seal-integrity",
+      "title": "How does CBAMValid sealing and integrity hashing work?",
+      "content_text": "On sealing, deliverables are hashed (SHA-256), timestamped, and recorded in a data integrity manifest. Prior sealed releases remain immutable. Anyone holding the dossier can confirm bytes were not altered after the seal via the public verify path.\n\nWithout a sealed integrity trail, a buyer cannot tell whether a file changed after handover. Hash + timestamp is the operational proof.",
+      "tags": [
+        "/product",
+        "/verify",
+        "/sample-dossier"
+      ]
+    },
+    {
       "id": "readiness-kit-time",
       "url": "https://cbamvalid.com/answers#readiness-kit-time",
       "title": "How long does CBAMValid preparation take?",

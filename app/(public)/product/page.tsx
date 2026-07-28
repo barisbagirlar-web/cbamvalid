@@ -233,7 +233,7 @@ export default function Page() {
         </div>
       </section>
 
-      <AeoPageChrome path="/product" answerHeading="Product answers with evidence" answerLimit={2} />
+      <AeoPageChrome path="/product" answerHeading="Product answers with evidence" answerLimit={8} />
 
       <section className="cta-band">
         <div className="wrap">
