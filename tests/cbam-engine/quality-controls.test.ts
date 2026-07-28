@@ -132,6 +132,7 @@ describe("CBAM Quality Controls Traceability", () => {
         rulesetVersion: "EU-CBAM-DEFINITIVE-2026",
       },
     ],
+    operatorSignOffs: [],
     auditEvents: [],
   });
 

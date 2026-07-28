@@ -43,6 +43,28 @@ export const DEFAULT_ROUNDING: RoundingPolicy = {
   },
 };
 
+/**
+ * INV-3: every displayed number carries value + unit + precision + sourceNodeId.
+ * Bare numbers are rejected by DossierModel schema.
+ */
+export interface Quantity {
+  readonly value: Decimal;
+  readonly unit: UnitSymbol;
+  readonly precision: number;
+  readonly sourceNodeId: string;
+}
+
+export function quantity(
+  value: Decimal,
+  unit: UnitSymbol,
+  sourceNodeId: string,
+  policy: RoundingPolicy = DEFAULT_ROUNDING
+): Quantity {
+  if (!sourceNodeId) throw new Error("QUANTITY_MISSING_SOURCE_NODE_ID");
+  const precision = policy.displayDp[unit] ?? 6;
+  return { value, unit, precision, sourceNodeId };
+}
+
 function asBrand<B extends string>(value: Decimal.Value, _unit: B): Brand<Decimal, B> {
   const d = value instanceof Decimal ? value : new Decimal(value);
   if (!d.isFinite()) throw new Error(`UNIT_NOT_FINITE:${_unit}`);

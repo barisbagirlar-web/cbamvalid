@@ -228,6 +228,16 @@ export const AuditReadyCaseSchema = z.object({
   calculationTrace: z.array(CalculationTraceNodeSchema).default([]),
   gapAssessment: z.array(GapRecordSchema).default([]),
   methodologyDecisions: z.array(MethodologyDecisionSchema).default([]),
+  operatorSignOffs: z
+    .array(
+      z.object({
+        role: z.enum(["OPERATOR_PREPARER", "INTERNAL_REVIEWER", "DATA_OWNER"]),
+        name: z.string().min(1),
+        title: z.string().min(1),
+        signedAt: z.string().min(1),
+      })
+    )
+    .default([]),
   auditEvents: z.array(z.object({
     eventId: z.string().uuid(),
     timestamp: z.string().datetime(),

@@ -10,6 +10,8 @@ import { buildCryptoClaims, integrityManifestWording } from "../../dossier/70-se
 import { applicableActStack } from "../../dossier/01-ruleset/regulations.registry";
 import { releaseHistoryNarrative } from "../../dossier/50-model/version-stamp";
 import { ANNEX_II_EXCLUSION_NOTE, getSectorRule } from "../../dossier/01-ruleset/sectors.rules";
+import { footerOneLine } from "../../dossier/60-render/pdf/layout";
+import { evaluateEnterpriseChapters } from "../../dossier/50-model/enterprise-chapters";
 
 const CALCULATION_LEGAL_CITATION = `${OFFICIAL_SOURCES.IMPL_2025_2547.title} (CELEX ${OFFICIAL_SOURCES.IMPL_2025_2547.celexId})`;
 const COMPONENT_COUNT_V5 = REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5;
@@ -368,17 +370,26 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   doc.setFontSize(10.5);
   doc.text(isReady ? "OPERATOR_PREPARATION_COMPLETE" : "REMEDIATION REQUIRED", MARGIN + 5, 92);
 
-  // Score Box on Cover (Sophisticated dark slate)
+  // Score Box on Cover — three honest figures when present (WP-08); never a lone vanity number
   doc.setFillColor(34, 50, 75);
   doc.roundedRect(MARGIN + 93, 76, 42, 24, 1.5, 1.5, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
-  doc.text("DIAGNOSTIC SCORE", MARGIN + 98, 83);
-  doc.setFontSize(12.5);
-  // Gold color for score text
-  doc.setTextColor(201, 154, 73);
-  doc.text(`${model.readiness.score} / 100`, MARGIN + 98, 92);
+  if (model.honestScoreboard) {
+    doc.text("OPERATOR READINESS", MARGIN + 95, 81);
+    doc.setTextColor(201, 154, 73);
+    doc.setFontSize(11);
+    doc.text(`${model.honestScoreboard.operatorReadiness}`, MARGIN + 98, 88);
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(5.5);
+    doc.text(`Completeness ${model.honestScoreboard.dossierCompleteness}`, MARGIN + 95, 94);
+  } else {
+    doc.text("DIAGNOSTIC SCORE", MARGIN + 98, 83);
+    doc.setFontSize(12.5);
+    doc.setTextColor(201, 154, 73);
+    doc.text(`${model.readiness.score} / 100`, MARGIN + 98, 92);
+  }
 
   // Cover Page Bottom Details
   doc.setTextColor(12, 30, 54);
@@ -394,17 +405,32 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     doc.text(val, MARGIN + 48, cy);
     cy += 6.0;
   };
-  writeCoverDetail("Package ID", model.packageCode || "—");
+  writeCoverDetail("Package ID", model.packageCode || "NOT_AVAILABLE");
   writeCoverDetail("Technical Report ID", model.reportId);
   writeCoverDetail("Case ID", model.caseId);
-  writeCoverDetail("Product Delivery Tier", "Premium Dossier Pack (V5)");
-  writeCoverDetail("Dossier Release Iteration", `Iteration #${model.releaseVersion} (Sealed Release)`);
-  writeCoverDetail("Product Engine Version", "V5.0 (Definitive)");
+  writeCoverDetail(
+    "Product Delivery Tier",
+    model.productCode === "pack_premium_dossier_v5" ? "Premium Dossier Pack" : model.productCode
+  );
+  writeCoverDetail("Dossier Release Iteration", `Iteration ${model.releaseVersion}`);
+  if (model.versionStamp) {
+    writeCoverDetail("Product version", model.versionStamp.product);
+    writeCoverDetail("Schema version", model.versionStamp.schema);
+    writeCoverDetail("Ruleset version", model.versionStamp.rulesetId);
+  }
   writeCoverDetail("Generated At", model.generatedAt);
   writeCoverDetail("Reporting Year & Period", model.identity.reportingPeriod);
   writeCoverDetail("Operator Name", model.identity.exporterOperator);
   writeCoverDetail("Installation Name", model.identity.installation);
   writeCoverDetail("Regulatory Basis", applicableActStack().map((entry) => entry.short).join("; "));
+  if (model.honestScoreboard) {
+    writeCoverDetail(
+      "Verifier-reserved",
+      `${model.honestScoreboard.verifierReservedCount} of ${model.honestScoreboard.verifierReservedTotal}`
+    );
+    writeCoverDetail("Dossier completeness", String(model.honestScoreboard.dossierCompleteness));
+    writeCoverDetail("Score status", model.honestScoreboard.status);
+  }
 
   // Secure Cryptographic Trust Stamp Card
   doc.setFillColor(245, 247, 250);
@@ -619,7 +645,38 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
 
   // Section 10: Installation and System Boundary
   beginSection(10, "Installation and System Boundary", 30);
-  drawCallout("Declared System Boundary", model.identity.systemBoundary);
+  {
+    const boundary = String(model.identity.systemBoundary || "").trim();
+    if (!boundary || boundary === "Boundaries defined.") {
+      drawCallout(
+        "DATA GAP",
+        "Missing physicalBoundaryDescription, sitePlanEvidenceId, includedProcesses, excludedProcesses, crossingFlows, meteringPointMap. Operator must supply these fields before this chapter can be rendered."
+      );
+    } else {
+      drawCallout("Declared System Boundary", boundary);
+    }
+  }
+
+  // Enterprise / Exclusive chapter readiness (Part D)
+  beginSection(31, "Enterprise Chapter Completeness", 40);
+  {
+    const chapterEval = evaluateEnterpriseChapters({
+      tier: "STANDARD",
+      providedByChapterId: {},
+    });
+    drawParagraph(
+      "Standard test packages apply WP-00..14 engine controls. Premium/Enterprise/Exclusive chapters are gated by content contracts and are marked NOT_APPLICABLE on the Standard tier. Missing required fields on higher tiers render as DATA GAP — never placeholder prose."
+    );
+    drawTable(
+      ["Chapter", "Required", "Status"],
+      chapterEval.evaluations.map((e) => [
+        `${e.id} ${e.title}`,
+        e.required ? "YES" : "NO",
+        e.outcome.status,
+      ]),
+      [90, 25, 35]
+    );
+  }
 
   // Section 11: Production Processes and Functional Units
   beginSection(11, "Production Processes and Functional Units", 35);
@@ -1020,14 +1077,22 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     doc.setFontSize(6.5);
     doc.text(isReady ? "CHECKS PASSED" : "REMEDIATION REQUIRED", 168.5, 11.5, { align: "center" });
 
-    // Running Footer
+    // Running Footer — WP-14 one line
     doc.setDrawColor(211, 218, 227);
     doc.line(MARGIN, 283, PAGE_WIDTH - MARGIN, 283);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
+    doc.setFont("courier", "normal");
+    doc.setFontSize(6.5);
     doc.setTextColor(90, 99, 112);
-    doc.text("CONFIDENTIAL - Prepared for Independent Verification", MARGIN, 288);
-    doc.text(`Page ${pNum} of ${pageCount}`, PAGE_WIDTH - MARGIN, 288, { align: "right" });
+    doc.text(
+      footerOneLine({
+        packageCode: model.packageCode || "PKG",
+        releaseIteration: model.releaseVersion,
+        page: pNum,
+        pageCount,
+      }),
+      MARGIN,
+      288
+    );
   }
 
   return Buffer.from(doc.output("arraybuffer"));

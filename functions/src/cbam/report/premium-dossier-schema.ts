@@ -380,6 +380,24 @@ export const PremiumDossierViewModelV2Schema = PremiumDossierViewModelSchema.ext
     kmsProtectionLevel: z.string().optional(),
     publicVerificationUrl: z.string().nullable().optional(),
   }),
+  honestScoreboard: z
+    .object({
+      operatorReadiness: z.number(),
+      verifierReservedCount: z.number().int(),
+      verifierReservedTotal: z.number().int(),
+      dossierCompleteness: z.number(),
+      status: z.string(),
+      formula: z.string(),
+    })
+    .optional(),
+  versionStamp: z
+    .object({
+      product: z.string(),
+      schema: z.string(),
+      rulesetId: z.string(),
+      releaseIteration: z.number().int().positive(),
+    })
+    .optional(),
 });
 
 export type PremiumDossierViewModelV2 = z.infer<typeof PremiumDossierViewModelV2Schema>;

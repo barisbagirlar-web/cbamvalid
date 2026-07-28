@@ -542,6 +542,20 @@ export async function buildUnsignedVerifierArtifacts(params: {
   generatedAt: string;
   evidenceFiles: EvidenceBinary[];
   assessmentContext?: SealAssessmentContext;
+  calcGraph?: {
+    rootHash: string;
+    nodes: ReadonlyArray<{
+      id: string;
+      label: string;
+      formula: string;
+      legalBasis: readonly string[];
+      inputNodes: readonly string[];
+      inputPaths: readonly { path: string }[];
+      value: { toString(): string };
+      unit: string;
+      hash: string;
+    }>;
+  };
 }): Promise<PackageArtifact[]> {
   const model = buildVerifierPackageModel({
     ...params,
@@ -554,6 +568,31 @@ export async function buildUnsignedVerifierArtifacts(params: {
     ...buildPdfArtifacts({ ...params, model }),
     ...buildCsvArtifacts({ ...params, model }),
     artifact("Calculation Trace.json", Buffer.from(canonical({ reportId: params.reportId, packageCode: params.packageCode, caseId: params.caseData.caseId, generatedAt: params.generatedAt, verifierModel: model, calculation: params.calculation }), "utf8"), "application/json"),
+    ...(params.calcGraph
+      ? [
+          artifact(
+            "Calculation Graph.json",
+            Buffer.from(
+              JSON.stringify({
+                rootHash: params.calcGraph.rootHash,
+                nodes: params.calcGraph.nodes.map((n) => ({
+                  id: n.id,
+                  label: n.label,
+                  formula: n.formula,
+                  legalBasis: n.legalBasis,
+                  inputNodes: n.inputNodes,
+                  inputPaths: n.inputPaths,
+                  value: n.value.toString(),
+                  unit: n.unit,
+                  hash: n.hash,
+                })),
+              }),
+              "utf8"
+            ),
+            "application/json"
+          ),
+        ]
+      : []),
     artifact("Verifier Workspace.xlsx", workbook, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
     artifact("Supporting_Evidence/README.txt", Buffer.from(`CBAMValid immutable evidence copies\r\nPackage ID: ${params.packageCode}\r\nReport: ${params.reportId}\r\nCase: ${params.caseData.caseId}\r\nEvidence count: ${params.evidenceFiles.length}\r\nEach binary is verified against Evidence Register.csv and Data Integrity Manifest.json.\r\n`, "utf8"), "text/plain"),
     artifact("Supporting_Evidence/verify/cli.js", loadVerifyCliBytes(), "application/javascript"),

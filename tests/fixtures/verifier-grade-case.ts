@@ -41,6 +41,13 @@ export const EVIDENCE_3_BYTES = Buffer.from(
 );
 export const EVIDENCE_3_HASH = createHash("sha256").update(EVIDENCE_3_BYTES).digest("hex");
 
+export const EVIDENCE_4_ID = "11111111-1111-4111-8111-666666666666";
+export const EVIDENCE_4_BYTES = Buffer.from(
+  "Accredited laboratory calibration certificate for fuel and electricity meters covering 2026 reporting year.",
+  "utf8"
+);
+export const EVIDENCE_4_HASH = createHash("sha256").update(EVIDENCE_4_BYTES).digest("hex");
+
 function datum(
   value: string,
   canonicalUnit?: string,
@@ -75,7 +82,7 @@ export function createVerifierGradeCase(): AuditReadyCase {
     },
     reportingPeriod: {
       year: datum("2026", undefined, undefined),
-      quarter: datum("Q1", undefined, undefined),
+      quarter: datum("ANNUAL", undefined, undefined),
     },
     goods: [
       {
@@ -88,7 +95,7 @@ export function createVerifierGradeCase(): AuditReadyCase {
       {
         cnCode: datum("72011019", undefined, EVIDENCE_1_ID),
         sector: "IRON_AND_STEEL",
-        productionVolume: datum("40", "t", EVIDENCE_3_ID),
+        productionVolume: datum("40", "t", FIXTURE_EVIDENCE_ID),
         shipmentRecords: datum("40", "t", undefined),
         allocationShare: datum("0.4", "fraction", EVIDENCE_3_ID),
       },
@@ -105,7 +112,18 @@ export function createVerifierGradeCase(): AuditReadyCase {
     electricityConsumed: datum("100", "MWh", EVIDENCE_2_ID),
     gridEmissionFactor: datum("0.4", "tCO2e/MWh", EVIDENCE_2_ID),
     precursors: [],
-    carbonPriceRecords: [],
+    carbonPriceRecords: [
+      {
+        id: "55555555-5555-4555-8555-555555555555",
+        amountPaid: "1200",
+        applicableEmissions: "10",
+        currency: "EUR",
+        paymentPeriod: "2026",
+        legislationReference: "Test fixture Art.9 carbon price record for dossier engine tests",
+        proofOfPaymentEvidenceId: FIXTURE_EVIDENCE_ID,
+        eligibleCertificateReduction: "10",
+      },
+    ],
     evidenceRegister: [
       {
         evidenceId: EVIDENCE_1_ID,
@@ -179,7 +197,6 @@ export function createVerifierGradeCase(): AuditReadyCase {
         linkedInputs: [
           "goods.0.productionVolume",
           "goods.0.allocationShare",
-          "goods.1.productionVolume",
           "goods.1.allocationShare",
         ],
         linkedCalculations: [
@@ -209,12 +226,35 @@ export function createVerifierGradeCase(): AuditReadyCase {
         confidentiality: "CONFIDENTIAL",
         linkedInputs: [
           "directEmissions",
+          "goods.1.productionVolume",
         ],
         linkedCalculations: [
           "CBAM_TOTAL_EMBEDDED_EMISSIONS",
         ],
         reviewerNotes:
           "Approved for the verifier-preparation package after ownership, period, hash, content and control linkage review.",
+      },
+      {
+        evidenceId: EVIDENCE_4_ID,
+        documentType: "CALIBRATION_CERTIFICATE",
+        fileName: "meter-calibration-certificate.pdf",
+        storagePath: `evidence/${FIXTURE_OWNER_ID}/${FIXTURE_CASE_ID}/${EVIDENCE_4_ID}/meter-calibration-certificate.pdf`,
+        mimeType: "application/pdf",
+        sizeBytes: EVIDENCE_4_BYTES.byteLength,
+        issuer: "Accredited Calibration Laboratory",
+        issueDate: "2026-01-15",
+        reportingPeriod: "2026",
+        pageReference: "Certificate pages 1-3",
+        fileHash: EVIDENCE_4_HASH,
+        uploadTimestamp: "2026-04-01T00:00:00.000Z",
+        uploader: FIXTURE_OWNER_ID,
+        reviewStatus: "APPROVED",
+        supportStatus: "SUPPORTED",
+        malwareScanStatus: "CLEAN",
+        confidentiality: "CONFIDENTIAL",
+        linkedInputs: ["directEmissions"],
+        linkedCalculations: [],
+        reviewerNotes: "Calibration certificates cover fuel and electricity meters for the reporting year.",
       },
     ],
     calculationTrace: [],
@@ -241,6 +281,26 @@ export function createVerifierGradeCase(): AuditReadyCase {
         evidenceIds: [EVIDENCE_3_ID],
         reviewStatus: "ACCEPTED",
         rulesetVersion: "EU-CBAM-DEFINITIVE-2026",
+      },
+    ],
+    operatorSignOffs: [
+      {
+        role: "OPERATOR_PREPARER",
+        name: "Ayse Preparer",
+        title: "Data Preparer",
+        signedAt: "2026-04-01T10:00:00.000Z",
+      },
+      {
+        role: "INTERNAL_REVIEWER",
+        name: "Mehmet Reviewer",
+        title: "Internal Reviewer",
+        signedAt: "2026-04-02T10:00:00.000Z",
+      },
+      {
+        role: "DATA_OWNER",
+        name: "Fatma Manager",
+        title: "Installation Manager",
+        signedAt: "2026-04-03T10:00:00.000Z",
       },
     ],
     auditEvents: [
@@ -275,6 +335,11 @@ export function createVerifierEvidenceFiles(): EvidenceBinary[] {
       evidenceId: FIXTURE_EVIDENCE_ID,
       fileName: "verified-monitoring-package.pdf",
       bytes: FIXTURE_EVIDENCE_BYTES,
+    },
+    {
+      evidenceId: EVIDENCE_4_ID,
+      fileName: "meter-calibration-certificate.pdf",
+      bytes: EVIDENCE_4_BYTES,
     },
   ];
 }

@@ -42,6 +42,30 @@ export class CommercialReportPipelineV2 {
     productCode: string;
     releaseContractVersion: number;
     signManifest: (manifestBytes: Buffer) => Promise<KmsSignatureResult>;
+    calcGraph?: {
+      rootHash: string;
+      nodes: ReadonlyArray<{
+        id: string;
+        label: string;
+        formula: string;
+        legalBasis: readonly string[];
+        inputNodes: readonly string[];
+        inputPaths: readonly { path: string }[];
+        value: { toString(): string };
+        unit: string;
+        hash: string;
+      }>;
+    };
+    honestScoreboard?: {
+      operatorReadiness: number;
+      verifierReservedCount: number;
+      verifierReservedTotal: number;
+      dossierCompleteness: number;
+      status: string;
+      formula: string;
+    };
+    versionStamp?: { product: string; schema: string; rulesetId: string; releaseIteration: number };
+    publicVerificationUrl?: string | null;
   }) {
     // --- Pass 1: Build Unsigned Artifacts ---
     // Build initial artifacts with placeholder hashes
@@ -54,6 +78,7 @@ export class CommercialReportPipelineV2 {
       releaseVersion: params.releaseVersion,
       generatedAt: params.generatedAt,
       evidenceFiles: params.evidenceFiles,
+      calcGraph: params.calcGraph,
       assessmentContext: {
         generatedAt: params.generatedAt,
         assessmentTimestamp: params.generatedAt,
@@ -165,10 +190,12 @@ export class CommercialReportPipelineV2 {
         kmsAlgorithm: signature.algorithm,
         signatureBase64: signature.signatureBase64,
         kmsProtectionLevel: signature.protectionLevel,
-        publicVerificationState: "UNAVAILABLE",
-        publicVerificationUrl: null,
+        publicVerificationState: params.publicVerificationUrl ? "ACTIVE" : "UNAVAILABLE",
+        publicVerificationUrl: params.publicVerificationUrl ?? null,
       },
-    };
+      honestScoreboard: params.honestScoreboard,
+      versionStamp: params.versionStamp,
+    } as PremiumDossierViewModelV2;
 
     // Re-render PDF with actual hashes
     const updatedPdfBuffer = buildPremiumDossierPdf(updatedDossierModel, params.caseData);

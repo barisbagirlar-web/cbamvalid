@@ -1,7 +1,9 @@
 /**
  * Legal act registry — SSOT for every citation in dossier artifacts.
- * Fields marked null are [MISSING] pending human EUR-Lex transcription.
- * gate:legal-refs must fail closed when a cited entry has null celex/eli/oj.
+ *
+ * [MISSING] RULE (spec WP-01): celex/eli/oj/adopted are confirmed ONLY for
+ * CBAM_BASE and IR_METHODOLOGY. All other bibliographic fields stay null until
+ * a human pastes exact EUR-Lex strings. Do not invent.
  */
 
 export type RegulationKey =
@@ -35,10 +37,10 @@ export const REGULATIONS = {
   IR_VERIFICATION: {
     key: "IR_VERIFICATION",
     short: "Commission Implementing Regulation (EU) 2025/2546",
-    celex: "32025R2546",
-    eli: "http://data.europa.eu/eli/reg_impl/2025/2546/oj",
-    oj: "OJ L, 2025/2546, 22.12.2025",
-    adopted: "2025-12-10",
+    celex: null,
+    eli: null,
+    oj: null,
+    adopted: null,
     role: "Verification principles and requirements; accredited verifier obligations",
   },
   IR_METHODOLOGY: {
@@ -53,7 +55,6 @@ export const REGULATIONS = {
   IR_FREE_ALLOCATION: {
     key: "IR_FREE_ALLOCATION",
     short: "Commission Implementing Regulation (EU) 2025/2620",
-    /** [MISSING] Confirm CELEX/ELI/OJ from EUR-Lex before citing in sealed packages. */
     celex: null,
     eli: null,
     oj: null,
@@ -63,7 +64,6 @@ export const REGULATIONS = {
   IR_DEFAULT_VALUES: {
     key: "IR_DEFAULT_VALUES",
     short: "Commission Implementing Regulation (EU) 2025/2621",
-    /** [MISSING] Confirm CELEX/ELI/OJ from EUR-Lex before citing in sealed packages. */
     celex: null,
     eli: null,
     oj: null,
@@ -73,8 +73,8 @@ export const REGULATIONS = {
   ETS_MRV: {
     key: "ETS_MRV",
     short: "Commission Implementing Regulation (EU) 2018/2066",
-    celex: "32018R2066",
-    eli: "http://data.europa.eu/eli/reg_impl/2018/2066/oj",
+    celex: null,
+    eli: null,
     oj: null,
     adopted: null,
     role: "EU ETS monitoring and reporting methodology; basis for CBAM tiers",
@@ -87,23 +87,32 @@ export function cite(key: RegulationKey, article?: string): string {
   return article ? `${entry.short}, ${article}` : entry.short;
 }
 
-export function citeWithRole(key: RegulationKey): { citation: string; role: string; complete: boolean } {
+export function citeWithRole(key: RegulationKey): {
+  citation: string;
+  role: string;
+  complete: boolean;
+} {
   const entry = REGULATIONS[key];
-  const complete = entry.celex !== null && entry.eli !== null;
+  const complete = entry.celex !== null && entry.eli !== null && entry.oj !== null;
   return { citation: entry.short, role: entry.role, complete };
 }
 
-/** Cover-page applicable act stack (only entries with complete bibliographic fields). */
-export function applicableActStack(): ReadonlyArray<{ key: RegulationKey; short: string; role: string }> {
+/** Cover-page stack: only entries with complete bibliographic fields. */
+export function applicableActStack(): ReadonlyArray<{
+  key: RegulationKey;
+  short: string;
+  role: string;
+}> {
   return (Object.keys(REGULATIONS) as RegulationKey[])
     .map((key) => REGULATIONS[key])
-    .filter((e) => e.celex !== null && e.eli !== null)
+    .filter((e) => e.celex !== null && e.eli !== null && e.oj !== null)
     .map((e) => ({ key: e.key, short: e.short, role: e.role }));
 }
 
+/** Fail-closed: citing an incomplete entry for sealed output. */
 export function assertCitationComplete(key: RegulationKey): void {
   const entry = REGULATIONS[key];
-  if (entry.celex === null || entry.eli === null) {
-    throw new Error(`LEGAL_REF_INCOMPLETE:${key}`);
+  if (entry.celex === null || entry.eli === null || entry.oj === null) {
+    throw new Error(`REGULATION_BIBLIOGRAPHY_MISSING:${key}`);
   }
 }

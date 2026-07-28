@@ -1,0 +1,25 @@
+{
+  "status": "TEST_FIXTURE",
+  "note": "TEST-ONLY tier thresholds for CBAMValid dossier engine automated tests and sample seals. Not a transcription of official IR tier tables. Replace with OFFICIAL rows + sha256 lock before claiming regulatory-grade tier compliance in production.",
+  "sourceRegulationKeys": ["IR_METHODOLOGY", "ETS_MRV"],
+  "tiers": [
+    {
+      "category": "MAJOR",
+      "requiredTier": ["1", "2", "3", "4"],
+      "maxPermissibleUncertaintyPercent": 1.5,
+      "activityDataMethod": "MEASUREMENT"
+    },
+    {
+      "category": "MINOR",
+      "requiredTier": ["1", "2", "3"],
+      "maxPermissibleUncertaintyPercent": 5.0,
+      "activityDataMethod": "MEASUREMENT_OR_CALCULATION"
+    },
+    {
+      "category": "DE_MINIMIS",
+      "requiredTier": ["1", "2"],
+      "maxPermissibleUncertaintyPercent": 7.5,
+      "activityDataMethod": "ESTIMATION_ALLOWED_WITH_JUSTIFICATION"
+    }
+  ]
+}
