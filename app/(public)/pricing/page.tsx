@@ -10,6 +10,7 @@ import {
 } from "@/lib/billing/case-commercial-contract";
 import { FaqItem, useClassReveal } from "@/components/marketing/MarketingUi";
 import { RoiCalculatorPanel } from "@/components/marketing/RoiCalculatorPanel";
+import { AuthorityRail } from "@/components/marketing/AuthorityRail";
 import { AeoPageChrome } from "@/components/seo/AnswerEvidenceSection";
 
 function CheckIcon() {
@@ -31,6 +32,7 @@ export default function PricingPage() {
     <main id="main">
       <section className="hero" style={{ paddingBottom: "32px" }}>
         <div className="wrap" style={{ textAlign: "center" }}>
+          <AuthorityRail mode="compact" eyebrow="Authority · Inspect before pay" />
           <span className="eyebrow">Four tiers · Pay at lock · H4 public pricing</span>
           <h1>
             Exporter Verification

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandMark } from "@/components/brand/BrandMark";
+import { AUTHORITY_MORE_NAV } from "@/lib/marketing/authority-surfaces";
 
 const PRIMARY_NAV = [
   { href: "/product", label: "Product" },
@@ -13,13 +14,9 @@ const PRIMARY_NAV = [
   { href: "/verify", label: "Verify" },
 ] as const;
 
-const MORE_NAV = [
-  { href: "/methodology", label: "Methodology & Sources" },
-  { href: "/verifier-review", label: "Structure Review" },
-  { href: "/rulesets", label: "Published Rulesets" },
-  { href: "/security", label: "Security & DPA" },
-  { href: "/demo", label: "Book a Demo" },
-] as const;
+/** Authority + deeper surfaces — derived from marketing SSOT (Trust, Rulesets, …). */
+const MORE_NAV = AUTHORITY_MORE_NAV;
+
 
 export function PublicHeader() {
   const pathname = usePathname();
@@ -41,6 +38,7 @@ export function PublicHeader() {
             <b>CBAM definitive period is now in force.</b> 2026 annual declarations are due — prepare
             your evidence dossier early.
           </span>
+          <Link href="/trust">Trust registry →</Link>
           <Link href="/rulesets">See the ruleset →</Link>
         </div>
       </div>

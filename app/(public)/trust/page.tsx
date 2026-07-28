@@ -3,6 +3,7 @@ import Link from "next/link";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 import { JsonLdForRoute } from "@/components/seo/JsonLdForRoute";
 import { AeoPageChrome } from "@/components/seo/AnswerEvidenceSection";
+import { AuthorityRail } from "@/components/marketing/AuthorityRail";
 import {
   TRUST_EVIDENCE_ITEMS,
   TRUST_PUBLIC,
@@ -30,6 +31,7 @@ export default function TrustPage() {
       <main id="main">
         <section className="hero" style={{ paddingBottom: "40px" }}>
           <div className="wrap" style={{ maxWidth: "820px" }}>
+            <AuthorityRail mode="compact" eyebrow="Authority · Claim court of truth" />
             <span className="eyebrow">{TRUST_PUBLIC.eyebrow}</span>
             <h1>
               Trust evidence registry

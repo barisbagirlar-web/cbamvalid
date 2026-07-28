@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { AeoPageChrome } from "@/components/seo/AnswerEvidenceSection";
+import { AuthorityRail } from "@/components/marketing/AuthorityRail";
 import { PUBLIC_SAMPLE_DOSSIER } from "@/lib/sample/public-sample-dossier";
 import SampleDossierViewer from "./SampleDossierViewer";
 
@@ -12,6 +13,7 @@ export default function SampleDossierPage() {
     <main id="main">
       <section className="hero" style={{ paddingBottom: "40px" }}>
         <div className="wrap" style={{ textAlign: "center" }}>
+          <AuthorityRail mode="compact" eyebrow="Authority · Sample is gate-free" />
           <span className="eyebrow">Public sample · Gate-free</span>
           <h1 style={{ maxWidth: "820px", marginLeft: "auto", marginRight: "auto" }}>
             Full sample dossier

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AeoPageChrome } from "@/components/seo/AnswerEvidenceSection";
+import { AuthorityRail } from "@/components/marketing/AuthorityRail";
 import {
   getRulesetSourceRows,
   listPublishedRulesets,
@@ -13,6 +14,7 @@ export default function RulesetsPage() {
     <main id="main">
       <section className="hero" style={{ paddingBottom: "40px" }}>
         <div className="wrap" style={{ maxWidth: "820px" }}>
+          <AuthorityRail mode="compact" eyebrow="Authority · Version-pinned rules" />
           <span className="eyebrow">R6 · Authority surface</span>
           <h1>
             Published rulesets

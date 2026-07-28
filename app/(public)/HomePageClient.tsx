@@ -4,6 +4,7 @@ import React from 'react';
 import { HeroDossierNarrative } from '@/components/marketing/HeroDossierNarrative';
 import { CountUp, FaqItem, useClassReveal } from '@/components/marketing/MarketingUi';
 import { SealSignatureMark } from '@/components/marketing/SealSignatureMark';
+import { AuthorityRail } from '@/components/marketing/AuthorityRail';
 import { AeoPageChrome } from '@/components/seo/AnswerEvidenceSection';
 import { HOMEPAGE_STATS } from '@/lib/marketing/homepage-stats';
 import { PUBLIC_SAMPLE_DOSSIER } from '@/lib/sample/public-sample-dossier';
@@ -70,6 +71,12 @@ export default function HomePageClient() {
       <p className="proof-note">Built around current published EU CBAM rules and official source data. QC count is derived from the engine rule registry.</p>
     </div>
   </section>
+
+  <AuthorityRail
+    mode="map"
+    eyebrow="Authority · Proof chain"
+    title="Inspect every public proof surface before you pay"
+  />
 
   
   <section className="section tight">
@@ -283,6 +290,9 @@ export default function HomePageClient() {
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>O3CI field-mapped structured data export</li>
           </ul>
           <a className="btn btn-primary" href="/pricing">See pay-at-lock pricing <span className="arr">→</span></a>
+          <a className="btn btn-ghost" href="/pricing#roi" style={{ marginTop: "10px" }}>
+            Open ROI exposure calculator <span className="arr">→</span>
+          </a>
         </div>
         <div className="price-card free">
           <h3>Free Drafts</h3>
@@ -312,6 +322,10 @@ export default function HomePageClient() {
         {" · "}
         <a href="/pricing#tiers">See all four tiers</a>
         {" · "}
+        <a href="/pricing#roi">ROI calculator</a>
+        {" · "}
+        <a href="/trust">Trust registry</a>
+        {" · "}
         <a href="/case-studies">Case studies (permissioned only)</a>
       </p>
     </div>
@@ -332,6 +346,10 @@ export default function HomePageClient() {
         <h2>Boundaries before you spend money or promise a buyer</h2>
       </div>
       <div className="faq-list">
+        <FaqItem
+          question="How do I inspect CBAMValid claims before paying?"
+          answer="Open the Trust Evidence Registry (/trust), Sample Dossier, Published Rulesets, Security & DPA, and Structure Review SAMPLE. Gaps stay visible — CRO/VAT and named customers are not invented."
+        />
         <FaqItem
           question="Is CBAMValid an official European Commission service?"
           answer="No. CBAMValid is an independent software service that assists exporters and importers with calculations and reporting preparation."
@@ -360,7 +378,7 @@ export default function HomePageClient() {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true"><path d="M12 2 20 5.5v6c0 5-3.5 8.5-8 10.5-4.5-2-8-5.5-8-10.5v-6L12 2Z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>
           <div>
             <h3 style={{"fontSize":"1.15rem","marginBottom":"6px"}}>Trust Statement</h3>
-            <p>Built around current published EU CBAM rules and official source data. Designed for exporter-to-importer evidence transfer and verification readiness.</p>
+            <p>Built around current published EU CBAM rules and official source data. Designed for exporter-to-importer evidence transfer and verification readiness. Full claim registry: <a href="/trust">cbamvalid.com/trust</a>.</p>
           </div>
         </div>
         <p className="disc-title">Mandatory Limitation &amp; Regulatory Disclaimer</p>

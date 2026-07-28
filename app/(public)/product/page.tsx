@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useClassReveal } from '@/components/marketing/MarketingUi';
+import { AuthorityRail } from '@/components/marketing/AuthorityRail';
 import { AeoPageChrome } from '@/components/seo/AnswerEvidenceSection';
 import { HOMEPAGE_STATS } from '@/lib/marketing/homepage-stats';
 
@@ -14,6 +15,7 @@ export default function Page() {
 
   <section className="hero" style={{"paddingBottom":"64px"}}>
     <div className="wrap">
+      <AuthorityRail mode="compact" eyebrow="Authority · Product proof path" />
       <div style={{"maxWidth":"720px"}}>
         <span className="eyebrow">Product</span>
         <h1>When spreadsheets fail under verifier questions</h1>
