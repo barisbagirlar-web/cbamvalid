@@ -471,6 +471,62 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
     relatedPaths: ["/about", "/methodology", "/legal-notice"],
     schemaEligible: true,
   },
+  {
+    id: "structure-review-vs-opinion",
+    question: "What is a CBAMValid structure review — and is it a verification opinion?",
+    aliases: [
+      "verifier structure review",
+      "reviewed for structure",
+      "CBAMValid accredited review",
+    ],
+    directAnswer:
+      "A structure review assesses whether the Preparation Pack contains the data fields and evidence lineage a verification workflow needs. It is not a verification opinion, reasonable assurance, accreditation endorsement, EU approval, or customs decision. Canonical boundary: Reviewed for structure — not a verification opinion.",
+    empathyContext:
+      "Buyers fear package rejection more than arithmetic. Structure fitness and accredited verification are different trust signals — confusing them creates legal and commercial risk.",
+    evidence: [
+      {
+        label: "Structure review surface",
+        detail: "Public page maps package fields, target letter language, and legal boundary",
+        href: "/verifier-review",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Structure Review Brief",
+        detail: "Downloadable CBAMValid-owned brief for verification-body engagements",
+        href: "/verifier-review/structure-review-brief.pdf",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Sample dossier",
+        detail: "Gate-free package buyers and verifiers can inspect before outreach",
+        href: "/sample-dossier",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/verifier-review", "/", "/about", "/methodology"],
+    relatedPaths: ["/sample-dossier", "/verify", "/product"],
+    schemaEligible: true,
+  },
+  {
+    id: "structure-review-letter-language",
+    question: "What letter language does CBAMValid request from verification bodies?",
+    aliases: ["structure review letter", "IR 2025/2621 structure letter"],
+    directAnswer:
+      "Target language: We reviewed the CBAMValid Preparation Pack structure. It contains the data fields and evidence lineage required under IR 2025/2621 for our verification workflow. This is a structural review, not a verification opinion.",
+    empathyContext:
+      "Without a hard boundary sentence, a marketing page can be misread as assurance. The letter must stay structural.",
+    evidence: [
+      {
+        label: "Published target letter",
+        detail: "Exact wording on the structure review page",
+        href: "/verifier-review",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/verifier-review"],
+    relatedPaths: ["/sample-dossier", "/methodology"],
+    schemaEligible: true,
+  },
 ] as const;
 
 export function listAnswersForRoute(path: string): AeoAnswerRecord[] {

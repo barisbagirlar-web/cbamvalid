@@ -17,8 +17,8 @@ export function Reveal({
     const el = ref.current;
     if (!el) return;
     if (!("IntersectionObserver" in window)) {
-      setVisible(true);
-      return;
+      const id = window.setTimeout(() => setVisible(true), 0);
+      return () => window.clearTimeout(id);
     }
     const io = new IntersectionObserver(
       (entries) => {
@@ -45,7 +45,11 @@ export function Reveal({
   );
 }
 
-/** Count-up that owns its text via React state (never textContent). */
+/**
+ * Count-up progressive enhancement.
+ * SSR and first paint render `to` (never 0). Animation may only run from a
+ * lower value UP to the SSR value after hydration + intersection.
+ */
 export function CountUp({
   to,
   suffix = "",
@@ -56,31 +60,34 @@ export function CountUp({
   className?: string;
 }) {
   const ref = useRef<HTMLSpanElement | null>(null);
-  const [value, setValue] = useState(0);
+  const [value, setValue] = useState(to);
   const started = useRef(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    if (to <= 0) return;
 
     const run = () => {
       if (started.current) return;
       started.current = true;
+      const from = Math.max(0, Math.floor(to * 0.35));
       const dur = 1300;
       let start: number | null = null;
+      setValue(from);
       const step = (ts: number) => {
         if (!start) start = ts;
         const p = Math.min((ts - start) / dur, 1);
         const eased = 1 - Math.pow(1 - p, 3);
-        setValue(Math.round(to * eased));
+        setValue(Math.round(from + (to - from) * eased));
         if (p < 1) requestAnimationFrame(step);
       };
       requestAnimationFrame(step);
     };
 
     if (!("IntersectionObserver" in window)) {
-      run();
-      return;
+      const id = window.setTimeout(run, 0);
+      return () => window.clearTimeout(id);
     }
 
     const io = new IntersectionObserver(

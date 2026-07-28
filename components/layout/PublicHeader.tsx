@@ -10,7 +10,8 @@ export function PublicHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    setIsMobileMenuOpen(false);
+    const id = window.setTimeout(() => setIsMobileMenuOpen(false), 0);
+    return () => window.clearTimeout(id);
   }, [pathname]);
 
   const isActive = (path: string) => (pathname === path ? "active" : "");
@@ -58,6 +59,9 @@ export function PublicHeader() {
             <Link href="/verify" className={isActive("/verify")}>
               Verify a Dossier
             </Link>
+            <Link href="/verifier-review" className={isActive("/verifier-review")}>
+              Structure Review
+            </Link>
           </nav>
 
           <div className="header-actions">
@@ -92,6 +96,7 @@ export function PublicHeader() {
         <Link href="/methodology">Methodology &amp; Sources</Link>
         <Link href="/pricing">Pricing</Link>
         <Link href="/verify">Verify a Dossier</Link>
+        <Link href="/verifier-review">Structure Review</Link>
         <Link href="/login">Sign In</Link>
       </nav>
     </>

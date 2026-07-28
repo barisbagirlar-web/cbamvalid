@@ -49,6 +49,9 @@ export default function AppFooter() {
               <li>
                 <Link href="/verify">Verify a Dossier</Link>
               </li>
+              <li>
+                <Link href="/verifier-review">Structure Review</Link>
+              </li>
             </ul>
           </div>
           <div>
@@ -108,7 +111,7 @@ export default function AppFooter() {
               </li>
               <li>
                 <span className="f-lbl">Email Support</span>
-                <a className="mono font-semibold" href="mailto:info@cbamvalid.com">
+                <a className="mono" href="mailto:info@cbamvalid.com">
                   info@cbamvalid.com
                 </a>
               </li>

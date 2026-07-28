@@ -176,6 +176,27 @@
         "/contact",
         "/"
       ]
+    },
+    {
+      "id": "structure-review-vs-opinion",
+      "url": "https://cbamvalid.com/answers#structure-review-vs-opinion",
+      "title": "What is a CBAMValid structure review — and is it a verification opinion?",
+      "content_text": "A structure review assesses whether the Preparation Pack contains the data fields and evidence lineage a verification workflow needs. It is not a verification opinion, reasonable assurance, accreditation endorsement, EU approval, or customs decision. Canonical boundary: Reviewed for structure — not a verification opinion.\n\nBuyers fear package rejection more than arithmetic. Structure fitness and accredited verification are different trust signals — confusing them creates legal and commercial risk.",
+      "tags": [
+        "/verifier-review",
+        "/",
+        "/about",
+        "/methodology"
+      ]
+    },
+    {
+      "id": "structure-review-letter-language",
+      "url": "https://cbamvalid.com/answers#structure-review-letter-language",
+      "title": "What letter language does CBAMValid request from verification bodies?",
+      "content_text": "Target language: We reviewed the CBAMValid Preparation Pack structure. It contains the data fields and evidence lineage required under IR 2025/2621 for our verification workflow. This is a structural review, not a verification opinion.\n\nWithout a hard boundary sentence, a marketing page can be misread as assurance. The letter must stay structural.",
+      "tags": [
+        "/verifier-review"
+      ]
     }
   ]
 }

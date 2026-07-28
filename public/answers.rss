@@ -112,5 +112,19 @@
       <description>No. CBAMValid is an independent software service for exporter-to-importer evidence packaging. It is not an EU institution, customs authority, or accredited CBAM verifier. Procurement and legal teams need a clear independence boundary before they trust a vendor with emissions data.</description>
       <category>/about, /contact, /</category>
     </item>
+    <item>
+      <title>What is a CBAMValid structure review — and is it a verification opinion?</title>
+      <link>https://cbamvalid.com/verifier-review</link>
+      <guid isPermaLink="false">structure-review-vs-opinion</guid>
+      <description>A structure review assesses whether the Preparation Pack contains the data fields and evidence lineage a verification workflow needs. It is not a verification opinion, reasonable assurance, accreditation endorsement, EU approval, or customs decision. Canonical boundary: Reviewed for structure — not a verification opinion. Buyers fear package rejection more than arithmetic. Structure fitness and accredited verification are different trust signals — confusing them creates legal and commercial risk.</description>
+      <category>/verifier-review, /, /about, /methodology</category>
+    </item>
+    <item>
+      <title>What letter language does CBAMValid request from verification bodies?</title>
+      <link>https://cbamvalid.com/verifier-review</link>
+      <guid isPermaLink="false">structure-review-letter-language</guid>
+      <description>Target language: We reviewed the CBAMValid Preparation Pack structure. It contains the data fields and evidence lineage required under IR 2025/2621 for our verification workflow. This is a structural review, not a verification opinion. Without a hard boundary sentence, a marketing page can be misread as assurance. The letter must stay structural.</description>
+      <category>/verifier-review</category>
+    </item>
   </channel>
 </rss>

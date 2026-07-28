@@ -310,6 +310,46 @@
       ]
     },
     {
+      "path": "/verifier-review",
+      "url": "https://cbamvalid.com/verifier-review",
+      "primaryQuestion": "How does CBAMValid handle verifier structure review without claiming a verification opinion?",
+      "empathyLead": "Acceptance risk is the buyer’s real fear. Structure fitness must be discussed without inventing accreditation badges.",
+      "directAnswer": "CBAMValid publishes a structure-review surface mapping package fields, evidence lineage, and integrity controls for independent verification workflows. Canonical boundary: Reviewed for structure — not a verification opinion. Third-party signed letters are published only when received — never invented.",
+      "calculation": "Structure review does not restate sealed emissions as assured. Calculation integrity remains separate from accredited verification.",
+      "explanation": "Use the Structure Review Brief and gate-free sample dossier when engaging verification bodies. Home page badge links to this surface.",
+      "methodology": "Target letter language is pinned to IR 2025/2621 workflow fitness and explicitly excludes verification opinions.",
+      "evidence": "Published brief PDF + field map + empty letter slot until a real signed letter arrives.",
+      "expert": "Structure review is a package-fitness engagement. Accredited verification remains a separate legal act.",
+      "relatedProblems": [
+        {
+          "question": "Open sample dossier",
+          "href": "/sample-dossier",
+          "why": "Inspect structure"
+        },
+        {
+          "question": "Verify integrity hash",
+          "href": "/verify",
+          "why": "Byte integrity"
+        },
+        {
+          "question": "Methodology sources",
+          "href": "/methodology",
+          "why": "Ruleset pin"
+        }
+      ],
+      "entities": [
+        "structure review",
+        "verification opinion boundary",
+        "IR 2025/2621",
+        "evidence lineage"
+      ],
+      "fanOutQueries": [
+        "CBAM structure review vs verification",
+        "CBAMValid verifier review letter",
+        "reviewed for structure not a verification opinion"
+      ]
+    },
+    {
       "path": "/cn-code",
       "url": "https://cbamvalid.com/cn-code",
       "primaryQuestion": "How do I check whether a CN code is in CBAM goods scope?",
@@ -1363,6 +1403,73 @@
         "/methodology",
         "/legal-notice"
       ]
+    },
+    {
+      "id": "structure-review-vs-opinion",
+      "question": "What is a CBAMValid structure review — and is it a verification opinion?",
+      "aliases": [
+        "verifier structure review",
+        "reviewed for structure",
+        "CBAMValid accredited review"
+      ],
+      "directAnswer": "A structure review assesses whether the Preparation Pack contains the data fields and evidence lineage a verification workflow needs. It is not a verification opinion, reasonable assurance, accreditation endorsement, EU approval, or customs decision. Canonical boundary: Reviewed for structure — not a verification opinion.",
+      "empathyContext": "Buyers fear package rejection more than arithmetic. Structure fitness and accredited verification are different trust signals — confusing them creates legal and commercial risk.",
+      "evidence": [
+        {
+          "label": "Structure review surface",
+          "detail": "Public page maps package fields, target letter language, and legal boundary",
+          "href": "/verifier-review",
+          "evidenceStatus": "verified"
+        },
+        {
+          "label": "Structure Review Brief",
+          "detail": "Downloadable CBAMValid-owned brief for verification-body engagements",
+          "href": "/verifier-review/structure-review-brief.pdf",
+          "evidenceStatus": "verified"
+        },
+        {
+          "label": "Sample dossier",
+          "detail": "Gate-free package buyers and verifiers can inspect before outreach",
+          "href": "/sample-dossier",
+          "evidenceStatus": "verified"
+        }
+      ],
+      "routes": [
+        "/verifier-review",
+        "/",
+        "/about",
+        "/methodology"
+      ],
+      "relatedPaths": [
+        "/sample-dossier",
+        "/verify",
+        "/product"
+      ]
+    },
+    {
+      "id": "structure-review-letter-language",
+      "question": "What letter language does CBAMValid request from verification bodies?",
+      "aliases": [
+        "structure review letter",
+        "IR 2025/2621 structure letter"
+      ],
+      "directAnswer": "Target language: We reviewed the CBAMValid Preparation Pack structure. It contains the data fields and evidence lineage required under IR 2025/2621 for our verification workflow. This is a structural review, not a verification opinion.",
+      "empathyContext": "Without a hard boundary sentence, a marketing page can be misread as assurance. The letter must stay structural.",
+      "evidence": [
+        {
+          "label": "Published target letter",
+          "detail": "Exact wording on the structure review page",
+          "href": "/verifier-review",
+          "evidenceStatus": "verified"
+        }
+      ],
+      "routes": [
+        "/verifier-review"
+      ],
+      "relatedPaths": [
+        "/sample-dossier",
+        "/methodology"
+      ]
     }
   ],
   "topicalMap": [
@@ -1586,7 +1693,8 @@
       "parentPath": "/sample-dossier",
       "childPaths": [
         "/sample-dossier",
-        "/product"
+        "/product",
+        "/verifier-review"
       ],
       "covers": [
         "verify sealed dossier integrity hash"
@@ -1599,6 +1707,34 @@
       "fanOutQueries": [
         "verify CBAM dossier hash",
         "CBAMValid signature verification"
+      ]
+    },
+    {
+      "path": "/verifier-review",
+      "url": "https://cbamvalid.com/verifier-review",
+      "topic": "Verifier structure review surface",
+      "role": "verification",
+      "parentPath": "/",
+      "childPaths": [
+        "/sample-dossier",
+        "/verify",
+        "/methodology"
+      ],
+      "covers": [
+        "structure review vs verification opinion",
+        "package fields for verifier workflows",
+        "target structure-review letter language"
+      ],
+      "entities": [
+        "structure review",
+        "verification opinion boundary",
+        "IR 2025/2621",
+        "evidence lineage"
+      ],
+      "fanOutQueries": [
+        "CBAM structure review vs verification",
+        "CBAMValid verifier review letter",
+        "reviewed for structure not a verification opinion"
       ]
     },
     {

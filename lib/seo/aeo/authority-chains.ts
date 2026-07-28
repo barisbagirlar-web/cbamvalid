@@ -235,6 +235,40 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     ],
   },
   {
+    path: "/verifier-review",
+    primaryQuestion: "How does CBAMValid handle verifier structure review without claiming a verification opinion?",
+    empathyLead:
+      "Acceptance risk is the buyer’s real fear. Structure fitness must be discussed without inventing accreditation badges.",
+    directAnswer:
+      "CBAMValid publishes a structure-review surface mapping package fields, evidence lineage, and integrity controls for independent verification workflows. Canonical boundary: Reviewed for structure — not a verification opinion. Third-party signed letters are published only when received — never invented.",
+    calculation:
+      "Structure review does not restate sealed emissions as assured. Calculation integrity remains separate from accredited verification.",
+    explanation:
+      "Use the Structure Review Brief and gate-free sample dossier when engaging verification bodies. Home page badge links to this surface.",
+    methodology:
+      "Target letter language is pinned to IR 2025/2621 workflow fitness and explicitly excludes verification opinions.",
+    evidence:
+      "Published brief PDF + field map + empty letter slot until a real signed letter arrives.",
+    expert:
+      "Structure review is a package-fitness engagement. Accredited verification remains a separate legal act.",
+    relatedProblems: [
+      { question: "Open sample dossier", href: "/sample-dossier", why: "Inspect structure" },
+      { question: "Verify integrity hash", href: "/verify", why: "Byte integrity" },
+      { question: "Methodology sources", href: "/methodology", why: "Ruleset pin" },
+    ],
+    entities: [
+      "structure review",
+      "verification opinion boundary",
+      "IR 2025/2621",
+      "evidence lineage",
+    ],
+    fanOutQueries: [
+      "CBAM structure review vs verification",
+      "CBAMValid verifier review letter",
+      "reviewed for structure not a verification opinion",
+    ],
+  },
+  {
     path: "/cn-code",
     primaryQuestion: "How do I check whether a CN code is in CBAM goods scope?",
     empathyLead:

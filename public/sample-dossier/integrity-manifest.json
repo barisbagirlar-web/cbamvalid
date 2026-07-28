@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "CBAMVALID-PUBLIC-SAMPLE-1.0",
+  "title": "CBAMValid Public Sample Dossier",
+  "notice": "Fictional demonstration data. Not a customs declaration, official CBAM Registry submission, or accredited verifier opinion.",
+  "pageCount": 16,
+  "generatedAt": "2026-07-28T10:37:58.960Z",
+  "primaryDocumentSha256": "2b13f3eb53c33d791899ebaf5daa7c2701bd6219b306e9c347f3e49d9a01b314",
+  "files": [
+    {
+      "path": "CBAMValid-Sample-Dossier.pdf",
+      "mediaType": "application/pdf",
+      "role": "sample-pdf",
+      "href": "/sample-dossier/CBAMValid-Sample-Dossier.pdf",
+      "sizeBytes": 5146064,
+      "sha256": "2b13f3eb53c33d791899ebaf5daa7c2701bd6219b306e9c347f3e49d9a01b314"
+    },
+    {
+      "path": "CBAMValid-Sample-Dossier.json",
+      "mediaType": "application/json",
+      "role": "sample-json",
+      "href": "/sample-dossier/CBAMValid-Sample-Dossier.json",
+      "sizeBytes": 20701,
+      "sha256": "8f4e5388a117108bf69ad9ce65046377729449f1e25cfafcd7d40cfd41f53d79"
+    },
+    {
+      "path": "CBAMValid-Sample-Dossier.xlsx",
+      "mediaType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "role": "sample-xlsx",
+      "href": "/sample-dossier/CBAMValid-Sample-Dossier.xlsx",
+      "sizeBytes": 23676,
+      "sha256": "59fcf9d383f5235996b51f76631507cd2d0e0c9ba60717eed5ce94365b4fa3a1"
+    }
+  ],
+  "spreads": {
+    "cover": "/sample-dossier/v1/pages/page-001.webp",
+    "calculationTrace": "/sample-dossier/v1/pages/page-011.webp",
+    "evidenceRegister": "/sample-dossier/v1/pages/page-013.webp"
+  }
+}

@@ -3,6 +3,7 @@
 import React from 'react';
 import { useClassReveal } from '@/components/marketing/MarketingUi';
 import { AeoPageChrome } from '@/components/seo/AnswerEvidenceSection';
+import { HOMEPAGE_STATS } from '@/lib/marketing/homepage-stats';
 
 export default function Page() {
   useClassReveal();
@@ -50,8 +51,8 @@ export default function Page() {
         </div>
         <div className="method-card reveal">
           <h3>Real-time quality controls</h3>
-          <p>148 automated checks run continuously against EU guidance: unit consistency, boundary completeness, allocation balance and default-value flagging. Blockers must be resolved before sealing.</p>
-          <span className="ref">148 CHECKS · ALWAYS ON</span>
+          <p>{HOMEPAGE_STATS.qcChecks} automated QC rule families run against EU guidance: unit consistency, boundary completeness, allocation balance and default-value flagging. Blockers must be resolved before sealing.</p>
+          <span className="ref">{HOMEPAGE_STATS.qcChecks} RULE FAMILIES · ALWAYS ON</span>
         </div>
         <div className="method-card reveal">
           <h3>O3CI field-mapped export</h3>

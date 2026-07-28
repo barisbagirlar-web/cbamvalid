@@ -4,6 +4,8 @@ import React from 'react';
 import { HeroDossierNarrative } from '@/components/marketing/HeroDossierNarrative';
 import { CountUp, FaqItem, useClassReveal } from '@/components/marketing/MarketingUi';
 import { AeoPageChrome } from '@/components/seo/AnswerEvidenceSection';
+import { HOMEPAGE_STATS } from '@/lib/marketing/homepage-stats';
+import { PUBLIC_SAMPLE_DOSSIER } from '@/lib/sample/public-sample-dossier';
 
 export default function HomePageClient() {
   useClassReveal();
@@ -58,12 +60,12 @@ export default function HomePageClient() {
   <section className="proof-strip">
     <div className="wrap">
       <div className="proof-grid">
-        <div className="proof-item"><div className="num"><CountUp to={16} /></div><div className="lbl">Pages per sealed dossier</div></div>
-        <div className="proof-item"><div className="num"><CountUp to={8} /></div><div className="lbl">Guided workflow stages</div></div>
-        <div className="proof-item"><div className="num"><CountUp to={148} /></div><div className="lbl">Automated QC checks</div></div>
-        <div className="proof-item"><div className="num"><CountUp to={3} /></div><div className="lbl">Export formats · PDF/JSON/XLSX</div></div>
+        <div className="proof-item"><div className="num"><CountUp to={HOMEPAGE_STATS.dossierPages} /></div><div className="lbl">Pages per sealed dossier</div></div>
+        <div className="proof-item"><div className="num"><CountUp to={HOMEPAGE_STATS.workflowStages} /></div><div className="lbl">Guided workflow stages</div></div>
+        <div className="proof-item"><div className="num"><CountUp to={HOMEPAGE_STATS.qcChecks} /></div><div className="lbl">Automated QC rule families</div></div>
+        <div className="proof-item"><div className="num"><CountUp to={HOMEPAGE_STATS.exportFormats} /></div><div className="lbl">Export formats · PDF/JSON/XLSX</div></div>
       </div>
-      <p className="proof-note">Built around current published EU CBAM rules and official source data.</p>
+      <p className="proof-note">Built around current published EU CBAM rules and official source data. QC count is derived from the engine rule registry.</p>
     </div>
   </section>
 
@@ -71,8 +73,8 @@ export default function HomePageClient() {
   <section className="section tight">
     <div className="wrap">
       <div className="section-head center reveal">
-        <span className="eyebrow">Academic Oversight &amp; Expert Review</span>
-        <h2>You need math you can defend — not a black-box number</h2>
+        <span className="eyebrow">Math review · Structure review</span>
+        <h2>You need math you can defend — and a package verifiers can navigate</h2>
       </div>
       <div className="academic-card reveal">
         <div className="academic-badge" aria-hidden="true">IIT</div>
@@ -85,6 +87,19 @@ export default function HomePageClient() {
           </div>
         </div>
       </div>
+
+      <a className="structure-review-card reveal" href="/verifier-review">
+        <div className="structure-review-badge" aria-hidden="true">SR</div>
+        <div>
+          <span className="eyebrow">Verifier structure review</span>
+          <h3>Reviewed for structure — not a verification opinion</h3>
+          <p>
+            Package fields, evidence lineage, and integrity — mapped for independent verification
+            workflows. Math is one trust signal; acceptance risk needs a structure surface.
+          </p>
+          <span className="structure-review-cta">Open structure review <span className="arr">→</span></span>
+        </div>
+      </a>
     </div>
   </section>
 
@@ -151,6 +166,48 @@ export default function HomePageClient() {
           <h3>O3CI Field-Mapped Excel</h3>
           <p>Emissions data mapped field-by-field to the installation communication template used across EU supply chains.</p>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <section className="section tight" style={{"background":"var(--paper-2)"}}>
+    <div className="wrap">
+      <div className="section-head center reveal">
+        <span className="eyebrow">Sample Dossier Spreads</span>
+        <h2>See three pages from the public sample</h2>
+        <p>Cover, calculation trace, and evidence register — gate-free. Download the full 16-page PDF, JSON, and XLSX without an account.</p>
+      </div>
+      <div className="deliv-grid">
+        <a className="deliv-card reveal" href="/sample-dossier" style={{ textDecoration: "none", color: "inherit" }}>
+          <span className="fmt">Cover</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={PUBLIC_SAMPLE_DOSSIER.spreads.cover}
+            alt="Sample dossier cover page"
+            style={{ width: "100%", borderRadius: "8px", border: "1px solid var(--line)", marginTop: "12px" }}
+          />
+        </a>
+        <a className="deliv-card reveal" href="/sample-dossier" style={{ textDecoration: "none", color: "inherit" }}>
+          <span className="fmt">Calculation trace</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={PUBLIC_SAMPLE_DOSSIER.spreads.calculationTrace}
+            alt="Sample dossier calculation trace page"
+            style={{ width: "100%", borderRadius: "8px", border: "1px solid var(--line)", marginTop: "12px" }}
+          />
+        </a>
+        <a className="deliv-card reveal" href="/sample-dossier" style={{ textDecoration: "none", color: "inherit" }}>
+          <span className="fmt">Evidence register</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={PUBLIC_SAMPLE_DOSSIER.spreads.evidenceRegister}
+            alt="Sample dossier evidence register page"
+            style={{ width: "100%", borderRadius: "8px", border: "1px solid var(--line)", marginTop: "12px" }}
+          />
+        </a>
+      </div>
+      <div style={{ textAlign: "center", marginTop: "32px" }}>
+        <a className="btn btn-navy" href="/sample-dossier">Open sample dossier <span className="arr">→</span></a>
       </div>
     </div>
   </section>

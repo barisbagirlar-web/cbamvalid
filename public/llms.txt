@@ -59,6 +59,12 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Q: Is CBAMValid an official European Commission service?
   A: No. CBAMValid is an independent software service for exporter-to-importer evidence packaging. It is not an EU institution, customs authority, or accredited CBAM verifier. Procurement and legal teams need a clear independence boundary before they trust a vendor with emissions data.
   Pages: /about, /contact, /
+- Q: What is a CBAMValid structure review — and is it a verification opinion?
+  A: A structure review assesses whether the Preparation Pack contains the data fields and evidence lineage a verification workflow needs. It is not a verification opinion, reasonable assurance, accreditation endorsement, EU approval, or customs decision. Canonical boundary: Reviewed for structure — not a verification opinion. Buyers fear package rejection more than arithmetic. Structure fitness and accredited verification are different trust signals — confusing them creates legal and commercial risk.
+  Pages: /verifier-review, /, /about, /methodology
+- Q: What letter language does CBAMValid request from verification bodies?
+  A: Target language: We reviewed the CBAMValid Preparation Pack structure. It contains the data fields and evidence lineage required under IR 2025/2621 for our verification workflow. This is a structural review, not a verification opinion. Without a hard boundary sentence, a marketing page can be misread as assurance. The letter must stay structural.
+  Pages: /verifier-review
 
 ## Authority chains (Direct Answer → Calculation → Explanation → Methodology → Evidence → Expert → Related)
 
@@ -152,6 +158,19 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - Related: /sample-dossier, /how-it-works
 - Entities: dossier integrity hash; public verification; manifest SHA-256
 - Fan-out queries: verify CBAM dossier hash; CBAMValid signature verification
+
+### /verifier-review
+- Primary question: How does CBAMValid handle verifier structure review without claiming a verification opinion?
+- Empathy: Acceptance risk is the buyer’s real fear. Structure fitness must be discussed without inventing accreditation badges.
+- Direct answer: CBAMValid publishes a structure-review surface mapping package fields, evidence lineage, and integrity controls for independent verification workflows. Canonical boundary: Reviewed for structure — not a verification opinion. Third-party signed letters are published only when received — never invented.
+- Calculation: Structure review does not restate sealed emissions as assured. Calculation integrity remains separate from accredited verification.
+- Explanation: Use the Structure Review Brief and gate-free sample dossier when engaging verification bodies. Home page badge links to this surface.
+- Methodology: Target letter language is pinned to IR 2025/2621 workflow fitness and explicitly excludes verification opinions.
+- Evidence: Published brief PDF + field map + empty letter slot until a real signed letter arrives.
+- Expert: Structure review is a package-fitness engagement. Accredited verification remains a separate legal act.
+- Related: /sample-dossier, /verify, /methodology
+- Entities: structure review; verification opinion boundary; IR 2025/2621; evidence lineage
+- Fan-out queries: CBAM structure review vs verification; CBAMValid verifier review letter; reviewed for structure not a verification opinion
 
 ### /cn-code
 - Primary question: How do I check whether a CN code is in CBAM goods scope?
@@ -356,6 +375,10 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
   Covers: verify sealed dossier integrity hash
   Entities: dossier integrity hash; public verification; manifest SHA-256
   Fan-out: verify CBAM dossier hash; CBAMValid signature verification
+- /verifier-review — Verifier structure review surface
+  Covers: structure review vs verification opinion; package fields for verifier workflows; target structure-review letter language
+  Entities: structure review; verification opinion boundary; IR 2025/2621; evidence lineage
+  Fan-out: CBAM structure review vs verification; CBAMValid verifier review letter; reviewed for structure not a verification opinion
 - /cbam-2026-definitive-period — CBAM 2026 definitive period
   Covers: definitive period start 2026; 30 September 2027 declaration deadline for 2026 imports; certificate surrender timing
   Entities: CBAM definitive period; 1 January 2026; 30 September 2027; certificate surrender; Regulation (EU) 2025/2083
@@ -423,6 +446,7 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - [When a verifier asks “which rules?”, you need a dated answer](https://cbamvalid.com/methodology): CBAM calculation methodology
 - [Verify CBAM CN-Code Scope](https://cbamvalid.com/cn-code): CBAM CN code scope
 - [Verify a Dossier](https://cbamvalid.com/verify): CBAMValid dossier verification
+- [Built for how verifiers actually work](https://cbamvalid.com/verifier-review): CBAMValid verifier structure review
 - [Independent CBAM preparation — with clear limits](https://cbamvalid.com/about): About CBAMValid
 - [Need help before a buyer deadline?](https://cbamvalid.com/contact): Contact CBAMValid
 - [CBAMValid answer bank](https://cbamvalid.com/answers): CBAMValid FAQ and answer engine hub

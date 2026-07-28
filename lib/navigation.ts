@@ -4,7 +4,8 @@ export const PUBLIC_NAV = [
   { label: "Sample Dossier", href: "/sample-dossier" },
   { label: "Methodology & Sources", href: "/methodology" },
   { label: "Pricing", href: "/pricing" },
-  { label: "Verify a Dossier", href: "/verify" }
+  { label: "Verify a Dossier", href: "/verify" },
+  { label: "Structure Review", href: "/verifier-review" },
 ] as const;
 
 export const APP_NAV = [
