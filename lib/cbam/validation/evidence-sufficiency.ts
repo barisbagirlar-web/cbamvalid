@@ -188,7 +188,8 @@ function calculateIntervalUnionCoverage(
   };
 }
 
-export function runEvidenceSufficiency(caseData: AuditReadyCase): EvidenceSufficiencyRow[] {
+export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimestamp?: string): EvidenceSufficiencyRow[] {
+  void assessmentTimestamp;
   const requirements = deriveMaterialRequirements(caseData);
   const rows: EvidenceSufficiencyRow[] = [];
 
