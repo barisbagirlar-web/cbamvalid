@@ -1,13 +1,6 @@
-import React from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
-
-export const metadata = {
-  title: "Pricing | CBAMValid",
-  description:
-    "Draft free, then pay USD 449 once to lock and download one case-scoped working file. Same-file correction re-locks are included.",
-};
 
 export default function PricingPage() {
   return (

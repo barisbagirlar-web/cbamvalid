@@ -1,12 +1,17 @@
 import { create } from "xmlbuilder2";
 import { CalculationOutput } from "../engine/calculation-orchestrator";
 
+type XmlReportData = {
+  declarantEORI?: string;
+  installationName?: string;
+};
+
 /**
  * Generates machine-readable CBAMValid interoperability XML structure.
  * Employs target namespace https://cbamvalid.com/schema/exporter-evidence/1.0,
  * explicit units, source version tags, and audit calculation traces.
  */
-export function buildXml(data: any, calc: CalculationOutput, docHash?: string): string {
+export function buildXml(data: XmlReportData, calc: CalculationOutput, docHash?: string): string {
   const root = create({ version: "1.0", encoding: "UTF-8" })
     .ele("CBAMDefinitiveDossier", {
       xmlns: "https://cbamvalid.com/schema/exporter-evidence/1.0",

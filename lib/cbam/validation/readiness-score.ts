@@ -60,6 +60,10 @@ function assessVirtualRequirements(
         { requirementId: "VIRT-DQ-METHODS", passed: methodsDocumented },
         { requirementId: "VIRT-DQ-CONFIDENCE", passed: confidenceOk },
         { requirementId: "VIRT-DQ-ESTIMATE-GOVERNANCE", passed: noUndocumentedEstimate },
+        { requirementId: "VIRT-DQ-PROCESS-REGISTER", passed: qcStatus("QC_13") },
+        { requirementId: "VIRT-DQ-SOURCE-STREAMS", passed: qcStatus("QC_14") },
+        { requirementId: "VIRT-DQ-EMISSION-SOURCES", passed: qcStatus("QC_15") },
+        { requirementId: "VIRT-DQ-METER-REGISTER", passed: qcStatus("QC_16") },
       ];
     }
     case "PACKAGE_INTEGRITY": {
@@ -288,7 +292,7 @@ export function assessReadiness(params: {
     DATA_QUALITY_AND_UNCERTAINTY: {
       weight: new Decimal("10"),
       reqIds: [],
-      rulePrefixes: [],
+      rulePrefixes: ["QC_13", "QC_14", "QC_15", "QC_16"],
     },
     PACKAGE_INTEGRITY: {
       weight: new Decimal("5"),

@@ -5,16 +5,26 @@ import { apiSuccess, apiFailure } from "@/lib/http/api-response";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export async function POST(request: Request) {
   try {
-    let payload;
+    let payload: unknown;
     try {
       payload = await request.json();
     } catch {
       return apiFailure("BAD_REQUEST", "Malformed JSON request payload.", 400);
     }
 
-    const { idToken } = payload;
+    const idToken =
+      typeof payload === "object" &&
+      payload !== null &&
+      "idToken" in payload &&
+      typeof payload.idToken === "string"
+        ? payload.idToken
+        : "";
     if (!idToken) {
       return apiFailure("MISSING_TOKEN", "ID Token is required.", 400);
     }
@@ -23,8 +33,8 @@ export async function POST(request: Request) {
     let decodedIdToken;
     try {
       decodedIdToken = await adminAuth.verifyIdToken(idToken);
-    } catch (verifyError: any) {
-      console.error("[SESSION VERIFY ERROR]:", verifyError.message || verifyError);
+    } catch (verifyError: unknown) {
+      console.error("[SESSION VERIFY ERROR]:", errorMessage(verifyError));
       return apiFailure("INVALID_TOKEN", "ID token verification failed.", 401);
     }
 
@@ -40,8 +50,8 @@ export async function POST(request: Request) {
     let sessionCookie;
     try {
       sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
-    } catch (cookieError: any) {
-      console.error("[SESSION COOKIE CREATE ERROR]:", cookieError.message || cookieError);
+    } catch (cookieError: unknown) {
+      console.error("[SESSION COOKIE CREATE ERROR]:", errorMessage(cookieError));
       return apiFailure("COOKIE_CREATION_FAILED", "Failed to create session cookie.", 500);
     }
 
@@ -58,8 +68,8 @@ export async function POST(request: Request) {
 
     return apiSuccess({ status: "success" });
 
-  } catch (err: any) {
-    console.error("[SESSION UNEXPECTED ERROR]:", err.message || err);
+  } catch (err: unknown) {
+    console.error("[SESSION UNEXPECTED ERROR]:", errorMessage(err));
     return apiFailure("INTERNAL_SERVER_ERROR", "Session could not be established.", 500);
   }
 }
@@ -72,8 +82,8 @@ export async function DELETE() {
       path: "/",
     });
     return apiSuccess({ status: "success" });
-  } catch (err: any) {
-    console.error("[SESSION LOGOUT ERROR]:", err.message || err);
+  } catch (err: unknown) {
+    console.error("[SESSION LOGOUT ERROR]:", errorMessage(err));
     return apiFailure("INTERNAL_SERVER_ERROR", "Session logout failed.", 500);
   }
 }

@@ -7,9 +7,9 @@ console.log("=== STARTING PREMIUM DOSSIER RELEASE GUARD ===");
 function runCommand(command) {
   console.log(`Running: ${command}`);
   try {
-    const output = execSync(command, { stdio: "inherit" });
+    execSync(command, { stdio: "inherit" });
     return true;
-  } catch (error) {
+  } catch {
     console.error(`Command failed: ${command}`);
     return false;
   }

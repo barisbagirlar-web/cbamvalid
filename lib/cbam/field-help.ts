@@ -190,6 +190,46 @@ export const fieldHelpData = {
     evidence: "Internal change log, correction request, or auditor comment.",
     format: "Provide a clear description of the updated fields and the reason for modification.",
   },
+  productionProcessName: {
+    source: "Name each production process exactly as it appears in the monitoring plan and process map.",
+    evidence: "Monitoring plan, process flow diagram and Annex II process definition.",
+    format: "Use a stable operator process name that can be linked to goods and emission sources.",
+  },
+  productionProcessAttribution: {
+    source: "Attribute installation direct and electricity-indirect emissions to each declared process for the reporting period.",
+    evidence: "Process-level monitoring workbook or reconciled installation allocation to processes.",
+    format: "Finite non-negative tCO2e values; all processes must reconcile to installation totals.",
+  },
+  sourceStreamName: {
+    source: "List each material source stream monitored for activity data or emissions.",
+    evidence: "Monitoring plan source-stream register and meter identification records.",
+    format: "Name the stream and assign MAJOR, MINOR or DE_MINIMIS category.",
+  },
+  sourceStreamInstrument: {
+    source: "Link each source stream to the meter or instrument that measures it.",
+    evidence: "Instrument tag list and meter register entry for the same installation.",
+    format: "Enter the exact meter ID from the meter register; do not invent temporary IDs.",
+  },
+  sourceStreamUncertainty: {
+    source: "Record maximum permissible and achieved uncertainty and the applied tier for the stream.",
+    evidence: "Uncertainty assessment and calibration certificate covering the reporting period.",
+    format: "Percents from 0 to 100 with achieved ≤ maximum; applied tier is an integer 1–4.",
+  },
+  emissionSourceName: {
+    source: "Identify each physical emission source that releases greenhouse gases inside the boundary.",
+    evidence: "Emission-source register in the monitoring plan and process map.",
+    format: "Name the source and select the gas; link process and stream IDs when applicable.",
+  },
+  meterDescription: {
+    source: "Describe each meter used for fuel, electricity or activity data in the reporting period.",
+    evidence: "Instrument inventory and calibration certificate.",
+    format: "Provide meter ID, type and a short description that matches the physical instrument.",
+  },
+  meterCalibration: {
+    source: "Enter calibration date, validity end date and link the approved calibration evidence.",
+    evidence: "Accredited calibration certificate that is APPROVED, SUPPORTED and malware-clean.",
+    format: "ISO dates YYYY-MM-DD; validity must cover the full reporting period.",
+  },
 } as const satisfies Record<string, FieldHelpContent>;
 
 export type FieldHelpKey = keyof typeof fieldHelpData;

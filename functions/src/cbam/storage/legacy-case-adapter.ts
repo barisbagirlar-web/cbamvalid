@@ -178,6 +178,10 @@ export function adaptLegacyCaseData(params: {
         }]
       : [],
     carbonPriceRecords: [],
+    productionProcesses: [],
+    sourceStreamRegister: [],
+    emissionSourceRegister: [],
+    meterRegister: [],
     evidenceRegister: [],
     calculationTrace: [],
     gapAssessment: [],

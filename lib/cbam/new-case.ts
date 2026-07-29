@@ -87,6 +87,10 @@ export function createBlankCaseDraft(
     electricityConsumed: createEmptyInput("MWh"),
     gridEmissionFactor: createEmptyInput("tCO2e/MWh"),
     precursors: [],
+    productionProcesses: [],
+    sourceStreamRegister: [],
+    emissionSourceRegister: [],
+    meterRegister: [],
     carbonPriceRecords: [],
     evidenceRegister: [],
     calculationTrace: [],
@@ -159,6 +163,10 @@ export function createNewCaseDraft(
         countryOfOrigin: scenarioInput("TR"),
       },
     ],
+    productionProcesses: [],
+    sourceStreamRegister: [],
+    emissionSourceRegister: [],
+    meterRegister: [],
     carbonPriceRecords: [
       {
         id: crypto.randomUUID(),

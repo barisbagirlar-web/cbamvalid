@@ -168,6 +168,20 @@ describe("carbon-price fail-closed controls", () => {
 
   it("fails closed when the formula and currency policy are not proven", () => {
     expect(CALCULATION_CONTRACT.carbonPricePolicy.status).toBe("NOT_PROVEN");
+    expect(CALCULATION_CONTRACT.carbonPricePolicy.adoptionStatus)
+      .toBe("AWAITING_FINAL_IMPLEMENTING_ACT");
+    expect(CALCULATION_CONTRACT.carbonPricePolicy.lastPrimarySourceReview)
+      .toBe("2026-07-29");
+    expect(CALCULATION_CONTRACT.carbonPricePolicy.legalBasis).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          url: "https://eur-lex.europa.eu/eli/reg/2023/956",
+        }),
+        expect.objectContaining({
+          url: "https://taxation-customs.ec.europa.eu/news/carbon-price-paid-third-countries-2026-05-13_en",
+        }),
+      ])
+    );
     for (const currency of ["EUR", "USD", "GBP", "TRY"] as const) {
       const caseData = createVerifierGradeCase();
       caseData.carbonPriceRecords[0].eligibleCertificateReduction = "10";

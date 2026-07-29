@@ -147,8 +147,12 @@ export const getReportDownloadUrl = createCallable(
     const [exists] = await file.exists();
     if (!exists) throw new HttpsError("not-found", "Requested immutable report artifact is missing.");
     const [metadata] = await file.getMetadata();
-    const storedHash = metadata.metadata.sha256?.toLowerCase() || "";
-    if (Number(metadata.size) !== entry.sizeBytes || (storedHash && storedHash !== entry.sha256.toLowerCase())) {
+    const storedHash = String(metadata.metadata?.sha256 || "").toLowerCase();
+    if (
+      !/^[a-f0-9]{64}$/.test(storedHash) ||
+      Number(metadata.size) !== entry.sizeBytes ||
+      storedHash !== entry.sha256.toLowerCase()
+    ) {
       throw new HttpsError("failed-precondition", "Immutable report artifact metadata does not match the sealed index.");
     }
 

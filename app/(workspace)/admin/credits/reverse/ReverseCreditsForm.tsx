@@ -26,8 +26,8 @@ export default function ReverseCreditsForm({ initialUid }: { initialUid: string 
         setSuccess(`Successfully reversed ${amount} credits. Reversal ID: ${res.reversalId}`);
         router.refresh();
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to reverse credits.");
+    } catch (err: unknown) {
+      setError(err instanceof Error && err.message ? err.message : "Failed to reverse credits.");
     } finally {
       setLoading(false);
     }

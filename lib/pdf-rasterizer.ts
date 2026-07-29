@@ -1,6 +1,23 @@
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import { createCanvas } from "canvas";
-import fs from "fs";
+
+type NodeCanvasContext = ReturnType<ReturnType<typeof createCanvas>["getContext"]>;
+
+type NodeCanvasRenderablePage = {
+  render(params: {
+    canvasContext: NodeCanvasContext;
+    viewport: unknown;
+  }): { promise: Promise<unknown> };
+};
+
+function supportsNodeCanvasRendering(value: unknown): value is NodeCanvasRenderablePage {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "render" in value &&
+    typeof value.render === "function"
+  );
+}
 
 export async function rasterizePdfToWebPBuffers(pdfBuffer: Buffer): Promise<Buffer[]> {
   const data = new Uint8Array(pdfBuffer);
@@ -18,11 +35,15 @@ export async function rasterizePdfToWebPBuffers(pdfBuffer: Buffer): Promise<Buff
     
     const canvas = createCanvas(viewport.width, viewport.height);
     const context = canvas.getContext("2d");
-    
-    await page.render({
-      canvasContext: context as any,
+
+    const renderablePage: unknown = page;
+    if (!supportsNodeCanvasRendering(renderablePage)) {
+      throw new Error("PDF_PAGE_RENDER_UNAVAILABLE");
+    }
+    await renderablePage.render({
+      canvasContext: context,
       viewport: viewport,
-    } as any).promise;
+    }).promise;
     
     // Convert to WebP buffer
     // canvas.toBuffer can output image/jpeg or image/png. canvas may not support webp natively without specific build flags.

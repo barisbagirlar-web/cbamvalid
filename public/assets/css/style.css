@@ -1,3 +1,4 @@
+@layer legacy-marketing {
 /* ============================================================
    CBAMValid — Institutional Precision 2026
    Palette: Oatmeal & Ink × Deep Forest × EU Seal Gold
@@ -827,6 +828,7 @@ h3{font-size:1.35rem}
   .authority-related-list{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:760px){
+  .header-actions .btn-primary{display:none}
   .section{padding:64px 0}
   .hero{padding:56px 0 72px}
   .hero-visual{min-height:0}
@@ -1203,4 +1205,5 @@ a.entity-chip:hover{border-color:var(--terra-line);color:var(--terra)}
 .enterprise-inquiry-error{color:#b42318;font-size:.9rem;margin:0}
 @media (max-width:640px){
   .enterprise-inquiry-grid{grid-template-columns:1fr}
+}
 }

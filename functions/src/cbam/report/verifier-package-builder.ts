@@ -88,7 +88,7 @@ function csvCell(value: unknown): string {
 }
 
 function csv(rows: unknown[][]): Buffer {
-  return Buffer.from(rows.map((row) => row.map(csvCell).join(",")).join("\r\n") + "\r\n", "utf8");
+  return Buffer.from(rows.map((row) => row.map(csvCell).join(",")).join("\n") + "\n", "utf8");
 }
 
 function artifact(path: string, bytes: Buffer, mediaType: string): PackageArtifact {

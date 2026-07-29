@@ -56,7 +56,7 @@ export async function uploadEvidenceFile(params: {
   const storagePath = `evidence/${uid}/${params.caseId}/${evidenceId}/${fileName}`;
   const { bytes, sha256 } = await sha256File(params.file);
   const storageReference = ref(firebaseStorage, storagePath);
-  await uploadBytes(storageReference, bytes, {
+  const uploadResult = await uploadBytes(storageReference, bytes, {
     contentType: params.file.type,
     customMetadata: {
       ownerId: uid,
@@ -65,6 +65,10 @@ export async function uploadEvidenceFile(params: {
       sha256,
     },
   });
+  const objectGeneration = Number(uploadResult.metadata.generation);
+  if (!Number.isSafeInteger(objectGeneration) || objectGeneration <= 0) {
+    throw new Error("EVIDENCE_STORAGE_GENERATION_INVALID");
+  }
 
   const record: EvidenceRecord = {
     evidenceId,
@@ -77,6 +81,7 @@ export async function uploadEvidenceFile(params: {
     issueDate: params.issueDate.trim(),
     reportingPeriod: params.reportingPeriod.trim(),
     fileHash: sha256,
+    objectGeneration,
     uploadTimestamp: new Date().toISOString(),
     uploader: uid,
     reviewStatus: "PENDING",

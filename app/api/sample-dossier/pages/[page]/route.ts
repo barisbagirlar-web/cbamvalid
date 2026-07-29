@@ -24,14 +24,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ page
 
     const [buffer] = await file.download();
 
-    return new NextResponse(buffer as any, {
+    return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "image/png",
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
 
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Unknown sample page error" },
+      { status: 500 }
+    );
   }
 }

@@ -4,11 +4,17 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, signOut, onAuthStateChanged } from "firebase/auth";
 import { firebaseAuth as auth } from "@/lib/firebase/client";
 
+declare global {
+  interface Window {
+    __sessionEstablished?: boolean;
+  }
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: Error | null;
-  claims: Record<string, any> | null;
+  claims: Record<string, unknown> | null;
   signOutUser: () => Promise<void>;
 }
 
@@ -24,7 +30,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
-  const [claims, setClaims] = useState<Record<string, any> | null>(null);
+  const [claims, setClaims] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     // Set up the single unified auth state listener
@@ -41,7 +47,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const authTimeMs = Date.parse(tokenResult.authTime);
             const nowMs = Date.now();
             const isFresh = nowMs - authTimeMs < 5 * 60 * 1000;
-            const alreadyEstablished = typeof window !== "undefined" && (window as any).__sessionEstablished;
+            const alreadyEstablished =
+              typeof window !== "undefined" && window.__sessionEstablished;
             
             if (isFresh && !alreadyEstablished) {
               const token = await currentUser.getIdToken(true);
@@ -77,11 +84,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOutUser = async () => {
     try {
       if (typeof window !== "undefined") {
-        delete (window as any).__sessionEstablished;
+        delete window.__sessionEstablished;
       }
       await fetch("/api/auth/session", { method: "DELETE" });
       await signOut(auth);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Firebase signOut error:", err);
     } finally {
       window.location.replace("/login");

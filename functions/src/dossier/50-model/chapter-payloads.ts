@@ -87,12 +87,9 @@ export function buildChapterPayloadsFromDossier(
   };
 
   payloads["E-06"] = {
-    processes:
-      model.attribution.processes.length > 0
-        ? model.attribution.processes
-        : [{ processId: "IMPLICIT_INSTALLATION", name: "Implicit single-process attribution" }],
+    processes: model.attribution.processes.length > 0 ? model.attribution.processes : [],
     nonAssociatedFlows: model.dto.nonAssociatedFlows,
-    records: [{ id: "attr-1" }],
+    records: model.attribution.processes.length > 0 ? [{ id: "attr-1" }] : [],
   };
 
   const precursors = recordsOrEmpty(source.precursors);

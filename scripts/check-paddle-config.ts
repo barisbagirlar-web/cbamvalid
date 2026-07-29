@@ -46,11 +46,15 @@ try {
       validPricesCount++;
     }
   });
+  void validPricesCount;
   
   console.log("PADDLE_PRICE_IDS=CONFIGURED");
   
   process.exit(0);
-} catch (error: any) {
-  console.error("PADDLE_CONFIGURATION_ERROR:", error.message || error);
+} catch (error: unknown) {
+  console.error(
+    "PADDLE_CONFIGURATION_ERROR:",
+    error instanceof Error ? error.message : error
+  );
   process.exit(1);
 }

@@ -1,6 +1,7 @@
 /**
  * Bridge AuditReadyCase → RawCaseInput for L0→L6 dossier engine.
- * Does not invent emission values; throws when required fields missing.
+ * Maps only operator-provided case fields. Does not invent emission values,
+ * processes, meters, or monitoring instrumentation.
  */
 import type { AuditReadyCase } from "../schema";
 import type { RawCaseInput } from "../../dossier/00-schema/case.schema";
@@ -24,12 +25,23 @@ export function auditReadyCaseToRawCaseInput(caseData: AuditReadyCase): RawCaseI
         }
       : { type: "DEFINITIVE_ANNUAL" as const, year };
 
-  const goods = caseData.goods.map((g) => {
+  const processByGoodIndex = new Map<number, string>();
+  for (const process of caseData.productionProcesses || []) {
+    for (const goodIndex of process.producedGoodIndexes || []) {
+      if (!processByGoodIndex.has(goodIndex)) {
+        processByGoodIndex.set(goodIndex, process.processId);
+      }
+    }
+  }
+
+  const goods = caseData.goods.map((g, index) => {
     const share = g.allocationShare?.value;
+    const processId = processByGoodIndex.get(index);
     const base = {
       cnCode: datum(g.cnCode?.value),
       sector: String(g.sector || ""),
       netMassTonnes: datum(g.productionVolume?.value),
+      ...(processId ? { processId } : {}),
     };
     if (share === null || share === undefined || String(share).trim() === "") {
       return base;
@@ -50,6 +62,21 @@ export function auditReadyCaseToRawCaseInput(caseData: AuditReadyCase): RawCaseI
     signedAt: datum(s.signedAt),
   }));
 
+  const productionProcesses = (caseData.productionProcesses || []).map((process) => {
+    const direct = datum(process.attributedDirectTco2e);
+    const indirect = datum(process.attributedIndirectTco2e);
+    return {
+      processId: datum(process.processId),
+      name: datum(process.name),
+      ...(process.annexIiDefinition?.trim()
+        ? { annexIiDefinition: process.annexIiDefinition.trim() }
+        : {}),
+      producedGoodIndexes: [...(process.producedGoodIndexes || [])],
+      ...(direct ? { attributedDirectTco2e: direct } : {}),
+      ...(indirect ? { attributedIndirectTco2e: indirect } : {}),
+    };
+  });
+
   return {
     caseId: String(caseData.caseId || ""),
     operatorLegalName: datum(caseData.exporterIdentity?.legalName?.value),
@@ -60,7 +87,7 @@ export function auditReadyCaseToRawCaseInput(caseData: AuditReadyCase): RawCaseI
     electricityMwh: datum(caseData.electricityConsumed?.value),
     gridFactorTco2ePerMwh: datum(caseData.gridEmissionFactor?.value),
     goods,
-    productionProcesses: [],
+    productionProcesses,
     signOffs,
     evidenceIds,
   };

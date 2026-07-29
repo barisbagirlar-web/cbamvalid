@@ -11,8 +11,24 @@ export const CALCULATION_CONTRACT = Object.freeze({
     "Regulation (EU) 2023/956, Annex IV; active definitive-period implementing rules",
   carbonPricePolicy: Object.freeze({
     status: "NOT_PROVEN" as CarbonPricePolicyStatus,
+    adoptionStatus: "AWAITING_FINAL_IMPLEMENTING_ACT",
+    lastPrimarySourceReview: "2026-07-29",
+    legalBasis: Object.freeze([
+      Object.freeze({
+        title: "Consolidated Regulation (EU) 2023/956, Article 9",
+        url: "https://eur-lex.europa.eu/eli/reg/2023/956",
+        effect:
+          "Requires an implementing act for certificate-reduction conversion, yearly-average foreign-exchange conversion, payment evidence, rebates and independent-person requirements.",
+      }),
+      Object.freeze({
+        title: "European Commission public consultation published 13 May 2026",
+        url: "https://taxation-customs.ec.europa.eu/news/carbon-price-paid-third-countries-2026-05-13_en",
+        effect:
+          "Confirms the carbon-price-paid implementing act remained a public-consultation instrument and was not a final adopted production rule at review time.",
+      }),
+    ]),
     reason:
-      "The authoritative carbon-price certificate-conversion formula and currency-conversion policy are not registered as verified rules.",
+      "No final adopted Article 9 implementing act was available in the official EU sources reviewed on 2026-07-29. A draft consultation cannot authorize a production deduction. Non-zero certificate reduction remains blocked.",
   }),
 });
 

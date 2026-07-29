@@ -29,7 +29,8 @@ function walk(dir, filter, callback) {
         file !== 'tests' &&
         file !== 'release-evidence' &&
         file !== 'scratch' &&
-        file !== 'functions'
+        file !== 'functions' &&
+        file !== 'services'
       ) {
         walk(fullPath, filter, callback);
       }

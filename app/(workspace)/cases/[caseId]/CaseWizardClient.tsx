@@ -63,7 +63,7 @@ interface CaseWizardClientProps {
 const STEPS = [
   { id: 1, label: "Who and where" },
   { id: 2, label: "What you sell" },
-  { id: 3, label: "How you make it" },
+  { id: 3, label: "How you monitor it" },
   { id: 4, label: "Direct emissions" },
   { id: 5, label: "Electricity" },
   { id: 6, label: "Bought inputs" },
@@ -117,6 +117,10 @@ function gapResolution(gap: GapRecord): { step: number; action: string; evidence
   if (requirement.includes("directemissions") || code.includes("QC_06")) return { step: 4, action: "Enter period-total direct emissions and link the approved monitoring calculation.", evidence: "Fuel/activity ledger, meter/lab records and emissions workbook." };
   if (requirement.includes("electricity") || requirement.includes("gridemissionfactor") || code.includes("QC_07") || code.includes("QC_08")) return { step: 5, action: "Enter electricity and a correctly scaled grid factor, then link each value to approved evidence.", evidence: "Meter/invoice records and the official or supplier-specific factor source with period/version." };
   if (requirement.includes("precursor") || code.includes("PRECURSOR")) return { step: 6, action: "Complete each precursor quantity and emissions field, or document an evidenced no-precursor decision.", evidence: "Bill of materials, mass balance and supplier/operator emissions communication." };
+  if (code.includes("QC_13") || code.includes("PRODUCTION_PROCESS") || requirement.includes("production process")) return { step: 3, action: "Add each production process, attribute direct and indirect emissions, and link the goods indexes they produce.", evidence: "Monitoring plan process map and process-level attribution workbook." };
+  if (code.includes("QC_14") || code.includes("SOURCE_STREAM") || requirement.includes("source stream")) return { step: 3, action: "Complete source streams with meter links, calibration evidence and bounded uncertainty/tier values covering the reporting period.", evidence: "Source-stream register and APPROVED calibration certificate." };
+  if (code.includes("QC_15") || code.includes("EMISSION_SOURCE") || requirement.includes("emission source")) return { step: 3, action: "Add emission sources and link them to existing process and stream IDs where applicable.", evidence: "Emission-source register in the monitoring plan." };
+  if (code.includes("QC_16") || code.includes("METER") || requirement.includes("meter")) return { step: 3, action: "Add meters with calibration dates covering the reporting period and link APPROVED+SUPPORTED+CLEAN calibration evidence.", evidence: "Accredited calibration certificates and instrument inventory." };
   if (requirement.includes("carbon") || code.includes("CARBON_PRICE")) return { step: 7, action: "Link the carbon-price record to approved proof of assessment and payment, or remove an unsupported deduction.", evidence: "Official assessment, receipt, applicable-emissions reconciliation and rebate documentation." };
   return { step: 7, action: "Upload the source document, link it to the exact input and complete malware and support review.", evidence: "Original source file with issuer, issue date, reporting period and SHA-256 integrity record." };
 }
@@ -528,6 +532,76 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     }));
   };
 
+  const addProductionProcess = () => {
+    setCaseData((previous) => ({
+      ...previous,
+      productionProcesses: [
+        ...previous.productionProcesses,
+        {
+          processId: `PROC-${crypto.randomUUID().slice(0, 8)}`,
+          name: "",
+          producedGoodIndexes: previous.goods.length === 1 ? [0] : [],
+          attributedDirectTco2e: "",
+          attributedIndirectTco2e: "",
+        },
+      ],
+    }));
+  };
+
+  const addSourceStream = () => {
+    setCaseData((previous) => ({
+      ...previous,
+      sourceStreamRegister: [
+        ...previous.sourceStreamRegister,
+        {
+          streamId: `STREAM-${crypto.randomUUID().slice(0, 8)}`,
+          name: "",
+          category: "MAJOR",
+          instrumentId: previous.meterRegister[0]?.meterId || "",
+          calibrationDate: "",
+          calibrationValidityEnd: "",
+          maximumPermissibleUncertaintyPercent: "",
+          achievedUncertaintyPercent: "",
+          appliedTier: "",
+        },
+      ],
+    }));
+  };
+
+  const addEmissionSource = () => {
+    setCaseData((previous) => ({
+      ...previous,
+      emissionSourceRegister: [
+        ...previous.emissionSourceRegister,
+        {
+          sourceId: `ES-${crypto.randomUUID().slice(0, 8)}`,
+          name: "",
+          gas: "CO2",
+          linkedProcessId: previous.productionProcesses[0]?.processId,
+          linkedStreamId: previous.sourceStreamRegister[0]?.streamId,
+        },
+      ],
+    }));
+  };
+
+  const addMeter = () => {
+    setCaseData((previous) => ({
+      ...previous,
+      meterRegister: [
+        ...previous.meterRegister,
+        {
+          meterId: `METER-${crypto.randomUUID().slice(0, 8)}`,
+          description: "",
+          meterType: "FUEL",
+          calibrationDate: "",
+          calibrationValidityEnd: "",
+          maximumPermissibleUncertaintyPercent: "",
+          achievedUncertaintyPercent: "",
+        },
+      ],
+    }));
+  };
+
   const handleCsvImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -809,14 +883,119 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const renderStep3 = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold">3. Installation and system boundary</h2>
-        <p className="mt-1 text-sm text-muted">Specify the manufacturing facility details, geographic location, production technology route, and write a system-boundary statement.</p>
+        <h2 className="text-xl font-bold">3. Installation, processes and monitoring</h2>
+        <p className="mt-1 text-sm text-muted">Describe the installation boundary, then add the production processes, source streams, emission sources and meters that will appear in the sealed dossier. Draft rows may stay incomplete; sealing requires complete, evidence-linked registers.</p>
       </div>
       <div className="grid gap-4 rounded-xl border border-border bg-surface p-6 md:grid-cols-2">
         <div><FieldLabel helpKey="installationName">Installation name</FieldLabel><input aria-label="Installation name" value={datumValue(caseData.installation.name.value)} onChange={(event) => updateDatum("installation.name", { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.installationName.source}</p></div>
         <div><FieldLabel helpKey="installationCountry">Installation country</FieldLabel><input aria-label="Installation country" value={datumValue(caseData.installation.country.value)} onChange={(event) => updateDatum("installation.country", { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.installationCountry.source}</p></div>
         <div><FieldLabel helpKey="productionRoute">Production route</FieldLabel><input aria-label="Production route" value={datumValue(caseData.installation.productionRoute.value)} onChange={(event) => updateDatum("installation.productionRoute", { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.productionRoute.source}</p></div>
         <div className="md:col-span-2"><FieldLabel helpKey="systemBoundary">System-boundary statement</FieldLabel><textarea aria-label="System-boundary statement" value={caseData.installation.systemBoundaries || ""} onChange={(event) => updatePlain("installation.systemBoundaries", event.target.value)} rows={5} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.systemBoundary.source}</p></div>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-base font-semibold">Production processes</h3>
+          <button type="button" onClick={addProductionProcess} className="inline-flex items-center gap-2 rounded border border-border bg-surface px-3 py-2 text-sm"><Plus className="h-4 w-4" /> Add process</button>
+        </div>
+        {caseData.productionProcesses.length === 0 && <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted">No production processes yet. Add the processes that produce your declared goods.</div>}
+        {caseData.productionProcesses.map((process, index) => (
+          <div key={process.processId} className="grid gap-4 rounded-xl border border-border bg-surface p-5 md:grid-cols-2">
+            <div><FieldLabel helpKey="productionProcessName">Process name</FieldLabel><input aria-label={`Production process ${index + 1} name`} value={process.name} onChange={(event) => updatePlain(`productionProcesses.${index}.name`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.productionProcessName.source}</p></div>
+            <div><label className="mb-1 block text-xs font-bold">Process ID</label><input aria-label={`Production process ${index + 1} id`} value={process.processId} onChange={(event) => updatePlain(`productionProcesses.${index}.processId`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
+            <div><FieldLabel helpKey="productionProcessAttribution">Attributed direct emissions (tCO2e)</FieldLabel><DecimalInput ariaLabel={`Production process ${index + 1} attributed direct`} min="0" value={process.attributedDirectTco2e} onValueChange={(value) => updatePlain(`productionProcesses.${index}.attributedDirectTco2e`, value)} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.productionProcessAttribution.source}</p></div>
+            <div><FieldLabel helpKey="productionProcessAttribution">Attributed indirect emissions (tCO2e)</FieldLabel><DecimalInput ariaLabel={`Production process ${index + 1} attributed indirect`} min="0" value={process.attributedIndirectTco2e} onValueChange={(value) => updatePlain(`productionProcesses.${index}.attributedIndirectTco2e`, value)} /></div>
+            <div className="md:col-span-2">
+              <label className="mb-1 block text-xs font-bold">Produced goods</label>
+              <div className="flex flex-wrap gap-3">
+                {caseData.goods.map((good, goodIndex) => {
+                  const checked = process.producedGoodIndexes.includes(goodIndex);
+                  return (
+                    <label key={`process-${index}-good-${goodIndex}`} className="inline-flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) => {
+                          setCaseData((previous) => {
+                            const next = structuredClone(previous);
+                            const indexes = new Set(next.productionProcesses[index].producedGoodIndexes);
+                            if (event.target.checked) indexes.add(goodIndex);
+                            else indexes.delete(goodIndex);
+                            next.productionProcesses[index].producedGoodIndexes = [...indexes].sort((a, b) => a - b);
+                            return next;
+                          });
+                        }}
+                      />
+                      Good {goodIndex + 1} ({datumValue(good.cnCode.value) || "CN pending"})
+                    </label>
+                  );
+                })}
+                {caseData.goods.length === 0 && <span className="text-sm text-muted">Add goods in step 2 before linking processes.</span>}
+              </div>
+            </div>
+            <button type="button" onClick={() => setCaseData((previous) => ({ ...previous, productionProcesses: previous.productionProcesses.filter((_, itemIndex) => itemIndex !== index) }))} className="inline-flex items-center gap-2 text-sm text-status-blocked md:col-span-2"><Trash2 className="h-4 w-4" /> Remove process</button>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-base font-semibold">Meters and calibration</h3>
+          <button type="button" onClick={addMeter} className="inline-flex items-center gap-2 rounded border border-border bg-surface px-3 py-2 text-sm"><Plus className="h-4 w-4" /> Add meter</button>
+        </div>
+        {caseData.meterRegister.length === 0 && <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted">No meters yet. Add fuel, electricity or activity meters before linking source streams.</div>}
+        {caseData.meterRegister.map((meter, index) => (
+          <div key={meter.meterId} className="grid gap-4 rounded-xl border border-border bg-surface p-5 md:grid-cols-2">
+            <div><FieldLabel helpKey="meterDescription">Meter ID</FieldLabel><input aria-label={`Meter ${index + 1} id`} value={meter.meterId} onChange={(event) => updatePlain(`meterRegister.${index}.meterId`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
+            <div><FieldLabel helpKey="meterDescription">Description</FieldLabel><input aria-label={`Meter ${index + 1} description`} value={meter.description} onChange={(event) => updatePlain(`meterRegister.${index}.description`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.meterDescription.source}</p></div>
+            <div><label className="mb-1 block text-xs font-bold">Meter type</label><select aria-label={`Meter ${index + 1} type`} value={meter.meterType} onChange={(event) => updatePlain(`meterRegister.${index}.meterType`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="FUEL">Fuel</option><option value="ELECTRICITY">Electricity</option><option value="ACTIVITY">Activity</option><option value="OTHER">Other</option></select></div>
+            <div><FieldLabel helpKey="meterCalibration">Calibration evidence</FieldLabel><select aria-label={`Meter ${index + 1} calibration evidence`} value={meter.calibrationEvidenceId || ""} onChange={(event) => updatePlain(`meterRegister.${index}.calibrationEvidenceId`, event.target.value || undefined)} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="">Select evidence</option>{caseData.evidenceRegister.map((evidence) => <option key={evidence.evidenceId} value={evidence.evidenceId}>{evidence.fileName}</option>)}</select><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.meterCalibration.source}</p></div>
+            <div><FieldLabel helpKey="meterCalibration">Calibration date</FieldLabel><input aria-label={`Meter ${index + 1} calibration date`} type="date" value={meter.calibrationDate} onChange={(event) => updatePlain(`meterRegister.${index}.calibrationDate`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
+            <div><FieldLabel helpKey="meterCalibration">Calibration validity end</FieldLabel><input aria-label={`Meter ${index + 1} calibration validity end`} type="date" value={meter.calibrationValidityEnd} onChange={(event) => updatePlain(`meterRegister.${index}.calibrationValidityEnd`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
+            <div><FieldLabel helpKey="sourceStreamUncertainty">Maximum permissible uncertainty (%)</FieldLabel><DecimalInput ariaLabel={`Meter ${index + 1} MPU`} min="0" max="100" value={meter.maximumPermissibleUncertaintyPercent} onValueChange={(value) => updatePlain(`meterRegister.${index}.maximumPermissibleUncertaintyPercent`, value)} /></div>
+            <div><FieldLabel helpKey="sourceStreamUncertainty">Achieved uncertainty (%)</FieldLabel><DecimalInput ariaLabel={`Meter ${index + 1} achieved uncertainty`} min="0" max="100" value={meter.achievedUncertaintyPercent} onValueChange={(value) => updatePlain(`meterRegister.${index}.achievedUncertaintyPercent`, value)} /></div>
+            <button type="button" onClick={() => setCaseData((previous) => ({ ...previous, meterRegister: previous.meterRegister.filter((_, itemIndex) => itemIndex !== index) }))} className="inline-flex items-center gap-2 text-sm text-status-blocked md:col-span-2"><Trash2 className="h-4 w-4" /> Remove meter</button>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-base font-semibold">Source streams</h3>
+          <button type="button" onClick={addSourceStream} className="inline-flex items-center gap-2 rounded border border-border bg-surface px-3 py-2 text-sm"><Plus className="h-4 w-4" /> Add source stream</button>
+        </div>
+        {caseData.sourceStreamRegister.length === 0 && <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted">No source streams yet. Link each stream to a meter and calibration evidence.</div>}
+        {caseData.sourceStreamRegister.map((stream, index) => (
+          <div key={stream.streamId} className="grid gap-4 rounded-xl border border-border bg-surface p-5 md:grid-cols-2">
+            <div><FieldLabel helpKey="sourceStreamName">Stream name</FieldLabel><input aria-label={`Source stream ${index + 1} name`} value={stream.name} onChange={(event) => updatePlain(`sourceStreamRegister.${index}.name`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.sourceStreamName.source}</p></div>
+            <div><label className="mb-1 block text-xs font-bold">Category</label><select aria-label={`Source stream ${index + 1} category`} value={stream.category} onChange={(event) => updatePlain(`sourceStreamRegister.${index}.category`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="MAJOR">Major</option><option value="MINOR">Minor</option><option value="DE_MINIMIS">De minimis</option></select></div>
+            <div><FieldLabel helpKey="sourceStreamInstrument">Instrument / meter ID</FieldLabel><select aria-label={`Source stream ${index + 1} instrument`} value={stream.instrumentId} onChange={(event) => updatePlain(`sourceStreamRegister.${index}.instrumentId`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="">Select meter</option>{caseData.meterRegister.map((meter) => <option key={meter.meterId} value={meter.meterId}>{meter.meterId} — {meter.description || meter.meterType}</option>)}</select><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.sourceStreamInstrument.source}</p></div>
+            <div><FieldLabel helpKey="meterCalibration">Calibration evidence</FieldLabel><select aria-label={`Source stream ${index + 1} calibration evidence`} value={stream.calibrationEvidenceId || ""} onChange={(event) => updatePlain(`sourceStreamRegister.${index}.calibrationEvidenceId`, event.target.value || undefined)} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="">Select evidence</option>{caseData.evidenceRegister.map((evidence) => <option key={evidence.evidenceId} value={evidence.evidenceId}>{evidence.fileName}</option>)}</select></div>
+            <div><FieldLabel helpKey="meterCalibration">Calibration date</FieldLabel><input aria-label={`Source stream ${index + 1} calibration date`} type="date" value={stream.calibrationDate} onChange={(event) => updatePlain(`sourceStreamRegister.${index}.calibrationDate`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
+            <div><FieldLabel helpKey="meterCalibration">Calibration validity end</FieldLabel><input aria-label={`Source stream ${index + 1} calibration validity end`} type="date" value={stream.calibrationValidityEnd} onChange={(event) => updatePlain(`sourceStreamRegister.${index}.calibrationValidityEnd`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /></div>
+            <div><FieldLabel helpKey="sourceStreamUncertainty">Maximum permissible uncertainty (%)</FieldLabel><DecimalInput ariaLabel={`Source stream ${index + 1} MPU`} min="0" max="100" value={stream.maximumPermissibleUncertaintyPercent} onValueChange={(value) => updatePlain(`sourceStreamRegister.${index}.maximumPermissibleUncertaintyPercent`, value)} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.sourceStreamUncertainty.source}</p></div>
+            <div><FieldLabel helpKey="sourceStreamUncertainty">Achieved uncertainty (%)</FieldLabel><DecimalInput ariaLabel={`Source stream ${index + 1} achieved uncertainty`} min="0" max="100" value={stream.achievedUncertaintyPercent} onValueChange={(value) => updatePlain(`sourceStreamRegister.${index}.achievedUncertaintyPercent`, value)} /></div>
+            <div><FieldLabel helpKey="sourceStreamUncertainty">Applied tier (1–4)</FieldLabel><DecimalInput ariaLabel={`Source stream ${index + 1} applied tier`} min="1" max="4" value={stream.appliedTier} onValueChange={(value) => updatePlain(`sourceStreamRegister.${index}.appliedTier`, value)} /></div>
+            <button type="button" onClick={() => setCaseData((previous) => ({ ...previous, sourceStreamRegister: previous.sourceStreamRegister.filter((_, itemIndex) => itemIndex !== index) }))} className="inline-flex items-center gap-2 text-sm text-status-blocked md:col-span-2"><Trash2 className="h-4 w-4" /> Remove source stream</button>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-base font-semibold">Emission sources</h3>
+          <button type="button" onClick={addEmissionSource} className="inline-flex items-center gap-2 rounded border border-border bg-surface px-3 py-2 text-sm"><Plus className="h-4 w-4" /> Add emission source</button>
+        </div>
+        {caseData.emissionSourceRegister.length === 0 && <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted">No emission sources yet. Add each stack, combustion unit or process release point.</div>}
+        {caseData.emissionSourceRegister.map((source, index) => (
+          <div key={source.sourceId} className="grid gap-4 rounded-xl border border-border bg-surface p-5 md:grid-cols-2">
+            <div><FieldLabel helpKey="emissionSourceName">Emission source name</FieldLabel><input aria-label={`Emission source ${index + 1} name`} value={source.name} onChange={(event) => updatePlain(`emissionSourceRegister.${index}.name`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.emissionSourceName.source}</p></div>
+            <div><label className="mb-1 block text-xs font-bold">Gas</label><select aria-label={`Emission source ${index + 1} gas`} value={source.gas} onChange={(event) => updatePlain(`emissionSourceRegister.${index}.gas`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="CO2">CO2</option><option value="N2O">N2O</option><option value="PFCs">PFCs</option><option value="CO2e">CO2e</option></select></div>
+            <div><label className="mb-1 block text-xs font-bold">Linked process</label><select aria-label={`Emission source ${index + 1} process`} value={source.linkedProcessId || ""} onChange={(event) => updatePlain(`emissionSourceRegister.${index}.linkedProcessId`, event.target.value || undefined)} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="">None</option>{caseData.productionProcesses.map((process) => <option key={process.processId} value={process.processId}>{process.name || process.processId}</option>)}</select></div>
+            <div><label className="mb-1 block text-xs font-bold">Linked source stream</label><select aria-label={`Emission source ${index + 1} stream`} value={source.linkedStreamId || ""} onChange={(event) => updatePlain(`emissionSourceRegister.${index}.linkedStreamId`, event.target.value || undefined)} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="">None</option>{caseData.sourceStreamRegister.map((stream) => <option key={stream.streamId} value={stream.streamId}>{stream.name || stream.streamId}</option>)}</select></div>
+            <button type="button" onClick={() => setCaseData((previous) => ({ ...previous, emissionSourceRegister: previous.emissionSourceRegister.filter((_, itemIndex) => itemIndex !== index) }))} className="inline-flex items-center gap-2 text-sm text-status-blocked md:col-span-2"><Trash2 className="h-4 w-4" /> Remove emission source</button>
+          </div>
+        ))}
       </div>
     </div>
   );

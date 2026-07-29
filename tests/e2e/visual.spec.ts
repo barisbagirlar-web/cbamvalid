@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 test.describe("Visual Regression E2E Verification", () => {
   let mockJwt: string;
@@ -59,7 +59,7 @@ test.describe("Visual Regression E2E Verification", () => {
   });
 
   /** Reject AI-default purple/indigo/neon; allow Institutional Precision forest + seal gold. */
-  const assertNoUnapprovedColors = async (page: any, pageName: string) => {
+  const assertNoUnapprovedColors = async (page: Page, pageName: string) => {
     const colorViolations = await page.evaluate(() => {
       const elements = Array.from(document.querySelectorAll("*"));
       const violations: string[] = [];
@@ -105,12 +105,16 @@ test.describe("Visual Regression E2E Verification", () => {
         [167, 196, 176],
       ] as [number, number, number][];
 
-      elements.forEach((el: any) => {
+      elements.forEach((el) => {
         const style = window.getComputedStyle(el);
         const bg = parseRgb(style.backgroundColor);
         const text = parseRgb(style.color);
 
-        if (el.closest("svg") || el.tagName.toLowerCase() === "path" || el.innerText === "mock") {
+        if (
+          el.closest("svg") ||
+          el.tagName.toLowerCase() === "path" ||
+          (el instanceof HTMLElement && el.innerText === "mock")
+        ) {
           return;
         }
 

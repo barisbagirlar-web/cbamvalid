@@ -87,6 +87,26 @@ export const QC_RULE_REGISTRY = [
     name: "Goods cross-artifact consistency",
     expansion: "singleton",
   },
+  {
+    ruleId: "QC_13",
+    name: "Production process register and attribution reconciliation",
+    expansion: "per_process",
+  },
+  {
+    ruleId: "QC_14",
+    name: "Source stream register, calibration and uncertainty",
+    expansion: "per_source_stream",
+  },
+  {
+    ruleId: "QC_15",
+    name: "Emission source register",
+    expansion: "per_emission_source",
+  },
+  {
+    ruleId: "QC_16",
+    name: "Meter register, calibration and uncertainty",
+    expansion: "per_meter",
+  },
 ] as const;
 
 export type QcRuleFamilyId = (typeof QC_RULE_REGISTRY)[number]["ruleId"];
@@ -107,6 +127,14 @@ export function isRegisteredQcFamily(ruleId: string): boolean {
     }
     if (rule.expansion === "per_carbon_price_or_na") {
       return ruleId === "QC_11" || ruleId.startsWith("QC_11_");
+    }
+    if (
+      rule.expansion === "per_process" ||
+      rule.expansion === "per_source_stream" ||
+      rule.expansion === "per_emission_source" ||
+      rule.expansion === "per_meter"
+    ) {
+      return ruleId === rule.ruleId || new RegExp(`^${rule.ruleId}_\\d+$`).test(ruleId);
     }
     return false;
   });

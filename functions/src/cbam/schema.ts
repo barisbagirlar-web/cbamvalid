@@ -34,6 +34,38 @@ export const EvidenceSupportStatusSchema = z.enum([
   "NOT_REQUIRED",
 ]);
 
+export const EvidenceMalwareScanReceiptSchema = z.object({
+  receiptVersion: z.literal("SEC-001-v1"),
+  eventId: z.string().trim().min(1).max(256),
+  status: z.enum(["CLEAN", "INFECTED"]),
+  signature: z.string().trim().min(1).max(500).nullable(),
+  scannerEngine: z.literal("ClamAV"),
+  scannerVersion: z.string().trim().min(1).max(80),
+  definitionsVersion: z.string().trim().min(1).max(120),
+  definitionsUpdatedAt: z.string().datetime(),
+  sourceBucket: z.string().trim().min(1).max(222),
+  sourceObject: z.string().trim().min(1).max(1024),
+  sourceGeneration: z.number().int().positive(),
+  sourceSizeBytes: z.number().int().positive().max(20 * 1024 * 1024),
+  sourceSha256: z.string().regex(/^[a-f0-9]{64}$/),
+  scannedAt: z.string().datetime(),
+  quarantineBucket: z.string().trim().min(1).max(222).nullable(),
+  quarantineObject: z.string().trim().min(1).max(1024).nullable(),
+  quarantineGeneration: z.number().int().positive().nullable(),
+}).superRefine((receipt, context) => {
+  const hasQuarantine =
+    receipt.quarantineBucket !== null &&
+    receipt.quarantineObject !== null &&
+    receipt.quarantineGeneration !== null;
+  if ((receipt.status === "INFECTED") !== hasQuarantine) {
+    context.addIssue({
+      code: "custom",
+      message: "Quarantine fields must be present only for infected evidence.",
+      path: ["quarantineObject"],
+    });
+  }
+});
+
 export const EvidenceRecordSchema = z.object({
   evidenceId: z.string().uuid(),
   documentType: z.string().trim().min(1).max(120),
@@ -46,11 +78,13 @@ export const EvidenceRecordSchema = z.object({
   reportingPeriod: z.string().trim().max(80),
   pageReference: z.string().trim().max(160).optional(),
   fileHash: z.string().regex(/^[a-f0-9]{64}$/i),
+  objectGeneration: z.number().int().positive().optional(),
   uploadTimestamp: z.string().datetime(),
   uploader: z.string().min(1),
   reviewStatus: EvidenceReviewStatusSchema.default("PENDING"),
   supportStatus: EvidenceSupportStatusSchema.default("PENDING"),
   malwareScanStatus: z.enum(["CLEAN", "INFECTED", "PENDING"]).default("PENDING"),
+  malwareScanReceipt: EvidenceMalwareScanReceiptSchema.optional(),
   confidentiality: z.enum(["CONFIDENTIAL", "INTERNAL", "PUBLIC"]).default("CONFIDENTIAL"),
   linkedInputs: z.array(z.string().min(1)).min(1),
   linkedCalculations: z.array(z.string()),
@@ -161,6 +195,64 @@ export const CaseStatusSchema = z.enum([
   "REVOKED",
 ]);
 
+const RegisterIdSchema = z.string().trim().min(1).max(120);
+const DraftIsoDateSchema = z.string().trim().max(10);
+const DraftDecimalSchema = z.string().trim().max(64);
+
+export const SourceStreamCategorySchema = z.enum(["MAJOR", "MINOR", "DE_MINIMIS"]);
+export const EmissionGasSchema = z.enum(["CO2", "N2O", "PFCs", "CO2e"]);
+export const MeterTypeSchema = z.enum(["FUEL", "ELECTRICITY", "ACTIVITY", "OTHER"]);
+
+/** Operator-editable production process register. Draft rows may be incomplete; seal/QC fail closed. */
+export const ProductionProcessRecordSchema = z.object({
+  processId: RegisterIdSchema,
+  name: z.string().trim().max(240),
+  annexIiDefinition: z.string().trim().max(2000).optional(),
+  producedGoodIndexes: z.array(z.number().int().nonnegative().max(999)).default([]),
+  attributedDirectTco2e: DraftDecimalSchema.default(""),
+  attributedIndirectTco2e: DraftDecimalSchema.default(""),
+});
+
+/** Source stream with instrument, calibration and uncertainty lineage. */
+export const SourceStreamRecordSchema = z.object({
+  streamId: RegisterIdSchema,
+  name: z.string().trim().max(240),
+  category: SourceStreamCategorySchema,
+  instrumentId: z.string().trim().max(120),
+  calibrationEvidenceId: z.string().uuid().optional(),
+  calibrationDate: DraftIsoDateSchema.default(""),
+  calibrationValidityEnd: DraftIsoDateSchema.default(""),
+  maximumPermissibleUncertaintyPercent: DraftDecimalSchema.default(""),
+  achievedUncertaintyPercent: DraftDecimalSchema.default(""),
+  appliedTier: z.string().trim().max(40).default(""),
+});
+
+/** Emission source register row. */
+export const EmissionSourceRecordSchema = z.object({
+  sourceId: RegisterIdSchema,
+  name: z.string().trim().max(240),
+  gas: EmissionGasSchema,
+  linkedProcessId: z.string().trim().max(120).optional(),
+  linkedStreamId: z.string().trim().max(120).optional(),
+});
+
+/** Meter / calibration / uncertainty register row. */
+export const MeterRegisterRecordSchema = z.object({
+  meterId: RegisterIdSchema,
+  description: z.string().trim().max(240),
+  meterType: MeterTypeSchema,
+  calibrationDate: DraftIsoDateSchema.default(""),
+  calibrationValidityEnd: DraftIsoDateSchema.default(""),
+  calibrationEvidenceId: z.string().uuid().optional(),
+  maximumPermissibleUncertaintyPercent: DraftDecimalSchema.default(""),
+  achievedUncertaintyPercent: DraftDecimalSchema.default(""),
+});
+
+export type ProductionProcessRecord = z.infer<typeof ProductionProcessRecordSchema>;
+export type SourceStreamRecord = z.infer<typeof SourceStreamRecordSchema>;
+export type EmissionSourceRecord = z.infer<typeof EmissionSourceRecordSchema>;
+export type MeterRegisterRecord = z.infer<typeof MeterRegisterRecordSchema>;
+
 export const AuditReadyCaseSchema = z.object({
   caseId: CaseIdSchema.optional(),
   status: CaseStatusSchema.default("DRAFT"),
@@ -205,6 +297,10 @@ export const AuditReadyCaseSchema = z.object({
     indirectEmissions: InputDatumSchema,
     countryOfOrigin: InputDatumSchema,
   })).default([]),
+  productionProcesses: z.array(ProductionProcessRecordSchema).default([]),
+  sourceStreamRegister: z.array(SourceStreamRecordSchema).default([]),
+  emissionSourceRegister: z.array(EmissionSourceRecordSchema).default([]),
+  meterRegister: z.array(MeterRegisterRecordSchema).default([]),
   carbonPriceRecords: z.array(CarbonPricePaidSchema).default([]),
   evidenceRegister: z.array(EvidenceRecordSchema).default([]),
   calculationTrace: z.array(CalculationTraceNodeSchema).default([]),

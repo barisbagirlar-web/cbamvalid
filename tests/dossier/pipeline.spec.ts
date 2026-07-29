@@ -320,7 +320,19 @@ describe("WP-11 TSA + WP-02 delta + Part D chapters", () => {
     const { evaluateEnterpriseChapters } = await import(
       "../../src/dossier/50-model/enterprise-chapters"
     );
-    const model = assembleDossier(steelFixture, {
+    const exclusiveFixture = {
+      ...steelFixture,
+      productionProcesses: [
+        {
+          processId: "PROC-BF-BOF-001",
+          name: "Blast furnace / BOF integrated steelmaking",
+          producedGoodIndexes: [0, 1],
+          attributedDirectTco2e: "80",
+          attributedIndirectTco2e: "40",
+        },
+      ],
+    };
+    const model = assembleDossier(exclusiveFixture, {
       evidenceDimensionScore01: 0.9,
       chapterNonEmpty: {
         EVIDENCE: true,
@@ -364,6 +376,8 @@ describe("WP-11 TSA + WP-02 delta + Part D chapters", () => {
       providedByChapterId: payloads,
     });
     expect(result.blockingGaps).toEqual([]);
+    expect(JSON.stringify(payloads["E-06"].processes)).toContain("PROC-BF-BOF-001");
+    expect(JSON.stringify(payloads["E-06"].processes)).not.toContain("IMPLICIT_INSTALLATION");
     expect(model.scores.findings).not.toContain("SIGNOFF_MISSING");
     expect(model.scores.findings).not.toContain("DIMENSION_CHAPTER_EMPTY:DATA_QUALITY_UNCERTAINTY");
   });

@@ -38,6 +38,12 @@ export function generateFindingsAndActions(caseData: AuditReadyCase, assessmentT
     else if (qc.ruleId === "QC_06" || qc.ruleId === "QC_07" || qc.ruleId === "QC_08") category = "EVIDENCE_GAP";
     else if (qc.ruleId.startsWith("QC_09")) category = "PRECURSOR_EXCEPTION";
     else if (qc.ruleId === "QC_10") category = "EVIDENCE_INTEGRITY";
+    else if (
+      qc.ruleId.startsWith("QC_13") ||
+      qc.ruleId.startsWith("QC_14") ||
+      qc.ruleId.startsWith("QC_15") ||
+      qc.ruleId.startsWith("QC_16")
+    ) category = "DATA_QUALITY";
 
     const blocksOperatorReadiness = qc.status === "BLOCKER";
     const blocksSealing = qc.status === "BLOCKER";

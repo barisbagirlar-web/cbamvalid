@@ -57,8 +57,14 @@ export default function SampleViewerClient() {
               className={`cursor-pointer rounded border-2 transition-all overflow-hidden ${currentPage === i + 1 ? "border-primary shadow-sm" : "border-transparent hover:border-border"}`}
             >
               <div className="relative aspect-[1/1.414] w-full bg-surface">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt={`Page ${i + 1}`} className="object-contain w-full h-full" loading="lazy" />
+                <Image
+                  src={src}
+                  alt={`Page ${i + 1}`}
+                  fill
+                  className="object-contain"
+                  sizes="256px"
+                  unoptimized
+                />
               </div>
               <div className="text-center py-1 text-xs text-muted">Page {i + 1}</div>
             </div>
@@ -101,7 +107,7 @@ export default function SampleViewerClient() {
         {/* Viewport */}
         <div className="flex-1 overflow-auto p-4 md:p-8 flex items-start justify-center">
           <div 
-            className="bg-surface shadow-xl transition-transform origin-top"
+            className="relative bg-surface shadow-xl transition-transform origin-top"
             style={{ 
               transform: `scale(${scale})`, 
               width: "100%", 
@@ -109,12 +115,13 @@ export default function SampleViewerClient() {
               aspectRatio: "1/1.414"
             }}
           >
-            {/* Using standard img instead of Next Image to ensure unoptimized rendering of the raster buffer */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
-              src={pages[currentPage - 1]} 
-              alt={`Page ${currentPage}`} 
-              className="w-full h-full object-contain select-none"
+            <Image
+              src={pages[currentPage - 1]}
+              alt={`Page ${currentPage}`}
+              fill
+              className="object-contain select-none"
+              sizes="(max-width: 768px) 100vw, 800px"
+              unoptimized
               onContextMenu={e => e.preventDefault()}
               draggable={false}
             />

@@ -417,49 +417,40 @@ export async function sealReport(params: {
       })),
     });
     const evidenceIds = (caseData.evidenceRegister || []).map((e) => String(e.evidenceId));
-    const primaryEvidenceId = evidenceIds[0] || "";
-    const calibrationEvidenceId =
-      String(
-        (caseData.evidenceRegister || []).find((e) => e.documentType === "CALIBRATION_CERTIFICATE")
-          ?.evidenceId || ""
-      ) || evidenceIds[evidenceIds.length - 1] || primaryEvidenceId;
-    // Test-complete instrumentation: mirrors operator-filled meters/streams required for WP-06 / E-02..E-04.
-    const sourceStreams = [
-      {
-        name: "Process fuel / combustion stream",
-        category: "MAJOR",
-        instrumentId: "TEST-METER-FUEL-001",
-        calibrationEvidenceId,
-        calibrationDate: "2026-01-15",
-        calibrationValidityEnd: "2027-01-14",
-        maximumPermissibleUncertaintyPercent: "1.5",
-        achievedUncertaintyPercent: "1.2",
-        appliedTier: "2",
-      },
-      {
-        name: "Electricity import meter",
-        category: "MAJOR",
-        instrumentId: "TEST-METER-EL-001",
-        calibrationEvidenceId,
-        calibrationDate: "2026-01-15",
-        calibrationValidityEnd: "2027-01-14",
-        maximumPermissibleUncertaintyPercent: "1.5",
-        achievedUncertaintyPercent: "1.0",
-        appliedTier: "2",
-      },
-    ];
-    const meters = [
-      {
-        id: "TEST-METER-FUEL-001",
-        calibrationValidity: "2027-01-14",
-        evidenceId: calibrationEvidenceId,
-      },
-      {
-        id: "TEST-METER-EL-001",
-        calibrationValidity: "2027-01-14",
-        evidenceId: calibrationEvidenceId,
-      },
-    ];
+    const monitoringPlanEvidenceId = String(
+      (caseData.evidenceRegister || []).find((e) =>
+        String(e.documentType || "").toUpperCase().includes("MONITORING_PLAN")
+      )?.evidenceId || ""
+    );
+    const sourceStreams = (caseData.sourceStreamRegister || []).map((stream) => ({
+      streamId: stream.streamId,
+      name: stream.name,
+      category: stream.category,
+      instrumentId: stream.instrumentId,
+      calibrationEvidenceId: stream.calibrationEvidenceId || "",
+      calibrationDate: stream.calibrationDate,
+      calibrationValidityEnd: stream.calibrationValidityEnd,
+      maximumPermissibleUncertaintyPercent: stream.maximumPermissibleUncertaintyPercent,
+      achievedUncertaintyPercent: stream.achievedUncertaintyPercent,
+      appliedTier: stream.appliedTier,
+    }));
+    const emissionSources = (caseData.emissionSourceRegister || []).map((source) => ({
+      sourceId: source.sourceId,
+      name: source.name,
+      gas: source.gas,
+      ...(source.linkedProcessId ? { linkedProcessId: source.linkedProcessId } : {}),
+      ...(source.linkedStreamId ? { linkedStreamId: source.linkedStreamId } : {}),
+    }));
+    const meters = (caseData.meterRegister || []).map((meter) => ({
+      id: meter.meterId,
+      description: meter.description,
+      meterType: meter.meterType,
+      calibrationDate: meter.calibrationDate,
+      calibrationValidity: meter.calibrationValidityEnd,
+      evidenceId: meter.calibrationEvidenceId || "",
+      maximumPermissibleUncertaintyPercent: meter.maximumPermissibleUncertaintyPercent,
+      achievedUncertaintyPercent: meter.achievedUncertaintyPercent,
+    }));
     const uncertainty = assessUncertainty({
       sourceStreamCount: sourceStreams.length,
       streamsWithInstrument: sourceStreams.filter((s) => Boolean(s.instrumentId)).length,
@@ -504,7 +495,7 @@ export async function sealReport(params: {
       tier: chapterTierGate,
       providedByChapterId: buildChapterPayloadsFromDossier(dossierModel, {
         systemBoundary: caseData.installation?.systemBoundaries,
-        monitoringPlanEvidenceId: primaryEvidenceId,
+        monitoringPlanEvidenceId,
         precursors: caseData.precursors,
         carbonPriceRecords: caseData.carbonPriceRecords,
         evidenceCount: evidenceIds.length,
@@ -512,10 +503,7 @@ export async function sealReport(params: {
         installationCountry: String(caseData.installation?.country?.value || ""),
         sector: caseData.goods[0]?.sector,
         sourceStreams,
-        emissionSources: [
-          { name: "Blast furnace / process stack", gas: "CO2" },
-          { name: "Combustion units", gas: "CO2" },
-        ],
+        emissionSources,
         meters,
       }),
     });

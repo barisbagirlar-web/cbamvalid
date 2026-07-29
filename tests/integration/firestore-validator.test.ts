@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { validateIdentifier, InvalidIdentifierError } from "../../functions/src/firestore-validator";
 import { getCase } from "../../functions/src/cbam/storage/case-repository";
 

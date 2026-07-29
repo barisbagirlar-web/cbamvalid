@@ -1,10 +1,48 @@
 import { jsPDF } from "jspdf";
 import { CalculationOutput } from "../engine/calculation-orchestrator";
 
+type ReportDatum = {
+  value?: string | number | null;
+};
+
+type PdfReportData = {
+  cnCode?: string;
+  declarantEORI?: string;
+  importer?: { eori?: ReportDatum };
+  reportingPeriod?: { year?: ReportDatum };
+  goods?: Array<{
+    cnCode?: ReportDatum;
+    productionVolume?: ReportDatum;
+  }>;
+  installationName?: string;
+  installation?: { name?: ReportDatum };
+  productionVolume?: string | number;
+  isComplexGood?: boolean;
+};
+
+type PdfCalculation = {
+  inputs?: Partial<CalculationOutput["inputs"]>;
+  applicability?: Partial<CalculationOutput["applicability"]>;
+  pathway?: Partial<CalculationOutput["pathway"]>;
+  pricing?: Partial<CalculationOutput["pricing"]>;
+  specificDirectEmissions?: string | number;
+  specificIndirectEmissions?: string | number;
+  totalDirectEmissions?: string | number;
+  totalIndirectEmissions?: string | number;
+  totalEmbeddedEmissions?: string | number;
+  certificatesBeforeReduction?: string | number;
+  carbonPricePaidCurrency?: string | number;
+  carbonPricePaidPerTco2e?: string | number;
+  eligibleCertificateReduction?: string | number;
+  netCertificatesDue?: string | number;
+  estimatedCertificateCostEur?: string | number;
+  traces?: CalculationOutput["traces"];
+};
+
 /**
  * Builds the cost evidence PDF report dossier and returns it as a Buffer
  */
-export function buildPdfDossier(data: any, calc: CalculationOutput, docHash?: string, isSample?: boolean, redactForPublicSample?: boolean): Buffer {
+export function buildPdfDossier(data: PdfReportData, calc: PdfCalculation, docHash?: string, isSample?: boolean, redactForPublicSample?: boolean): Buffer {
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -56,7 +94,7 @@ export function buildPdfDossier(data: any, calc: CalculationOutput, docHash?: st
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.text(`EORI: `, 15, 40);
-  renderText(data.declarantEORI || data.importer?.eori?.value || "N/A", 30, 40, true);
+  renderText(String(data.declarantEORI || data.importer?.eori?.value || "N/A"), 30, 40, true);
   doc.text(`Reporting Year: ${calc.inputs?.importYear || data.reportingPeriod?.year?.value}`, 15, 45);
   doc.text(`Goods Classification CN Code: ${calc.inputs?.cnCode || data.goods?.[0]?.cnCode?.value}`, 15, 50);
 
@@ -67,7 +105,7 @@ export function buildPdfDossier(data: any, calc: CalculationOutput, docHash?: st
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.text(`Installation Name: `, 15, 66);
-  renderText(data.installationName || data.installation?.name?.value || "N/A", 45, 66, true);
+  renderText(String(data.installationName || data.installation?.name?.value || "N/A"), 45, 66, true);
   doc.text(`Production Volume: ${data.productionVolume || data.goods?.[0]?.productionVolume?.value} ${calc.applicability?.sector === "ELECTRICITY" ? "MWh" : "Tonnes"}`, 15, 71);
   doc.text(`Complex Good: ${data.isComplexGood !== undefined ? (data.isComplexGood ? "Yes" : "No") : "Yes"}`, 15, 76);
 
@@ -137,7 +175,7 @@ export function buildPdfDossier(data: any, calc: CalculationOutput, docHash?: st
   doc.setFontSize(8);
   
   doc.text(`The declarant `, 20, 234);
-  renderText(data.declarantEORI || data.importer?.eori?.value || "N/A", 42, 234, true);
+  renderText(String(data.declarantEORI || data.importer?.eori?.value || "N/A"), 42, 234, true);
   const execText = ` imports ${data.productionVolume || data.goods?.[0]?.productionVolume?.value} tonnes of ${calc.applicability?.sector || "goods"}. Based on the evaluated data, total embedded emissions are ${calc.totalEmbeddedEmissions} tCO2e, resulting in an estimated net liability of ${calc.netCertificatesDue} certificates (${calc.estimatedCertificateCostEur} EUR).`;
   doc.text(doc.splitTextToSize(execText, 170), 20, 238);
 
@@ -183,12 +221,12 @@ export function buildPdfDossier(data: any, calc: CalculationOutput, docHash?: st
         yOffset = 20;
       }
       doc.setFont("helvetica", "bold");
-      doc.text(`Node: ${key} (${(trace as any).formulaId})`, 15, yOffset);
+      doc.text(`Node: ${key} (${trace.formulaId})`, 15, yOffset);
       doc.setFont("helvetica", "normal");
-      doc.text(`Rule: ${(trace as any).legalVersionRef} | Unit: ${(trace as any).units}`, 15, yOffset + 5);
+      doc.text(`Rule: ${trace.legalVersionRef} | Unit: ${trace.units}`, 15, yOffset + 5);
       doc.text(`Inputs: `, 15, yOffset + 10);
-      renderText(JSON.stringify((trace as any).inputs), 28, yOffset + 10, true);
-      doc.text(`Result: ${(trace as any).finalResult}`, 15, yOffset + 15);
+      renderText(JSON.stringify(trace.inputs), 28, yOffset + 10, true);
+      doc.text(`Result: ${trace.finalResult}`, 15, yOffset + 15);
       doc.line(15, yOffset + 18, 195, yOffset + 18);
       yOffset += 25;
     }

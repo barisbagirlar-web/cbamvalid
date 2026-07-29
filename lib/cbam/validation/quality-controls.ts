@@ -204,5 +204,216 @@ export function runQualityControls(caseData: AuditReadyCase): QualityControlResu
     add("QC_12", "Goods cross-artifact consistency", "PASS");
   }
 
+  const isoDate = /^\d{4}-\d{2}-\d{2}$/;
+  const processes = caseData.productionProcesses || [];
+  const streams = caseData.sourceStreamRegister || [];
+  const emissionSources = caseData.emissionSourceRegister || [];
+  const meters = caseData.meterRegister || [];
+  const processIds = new Set(processes.map((process) => process.processId));
+  const streamIds = new Set(streams.map((stream) => stream.streamId));
+  const meterIds = new Set(meters.map((meter) => meter.meterId));
+
+  const yearValue = Number(caseData.reportingPeriod.year.value);
+  const quarterRaw = String(caseData.reportingPeriod.quarter.value || "").trim().toUpperCase();
+  const quarterMatch = /^Q?([1-4])$/.exec(quarterRaw) || /^([1-4])$/.exec(quarterRaw);
+  let periodStart = "";
+  let periodEnd = "";
+  if (Number.isInteger(yearValue) && yearValue >= 2023 && yearValue <= 2100) {
+    if (quarterMatch) {
+      const quarter = Number(quarterMatch[1]);
+      const startMonth = (quarter - 1) * 3 + 1;
+      const endMonth = startMonth + 2;
+      const endDay = endMonth === 2 ? 28 : [4, 6, 9, 11].includes(endMonth) ? 30 : 31;
+      periodStart = `${yearValue}-${String(startMonth).padStart(2, "0")}-01`;
+      periodEnd = `${yearValue}-${String(endMonth).padStart(2, "0")}-${String(endDay).padStart(2, "0")}`;
+    } else {
+      periodStart = `${yearValue}-01-01`;
+      periodEnd = `${yearValue}-12-31`;
+    }
+  }
+
+  function approvedCalibrationEvidence(evidenceId: string | undefined): boolean {
+    if (!evidenceId) return false;
+    const record = caseData.evidenceRegister.find((item) => item.evidenceId === evidenceId);
+    return Boolean(
+      record &&
+      record.reviewStatus === "APPROVED" &&
+      record.supportStatus === "SUPPORTED" &&
+      record.malwareScanStatus === "CLEAN"
+    );
+  }
+
+  function boundedUncertainty(value: unknown): boolean {
+    const parsed = decimal(value);
+    return parsed !== null && parsed.gte(0) && parsed.lte(100);
+  }
+
+  function boundedTier(value: unknown): boolean {
+    const raw = String(value || "").trim();
+    if (!raw) return false;
+    const parsed = decimal(raw);
+    return parsed !== null && parsed.gte(1) && parsed.lte(4) && parsed.equals(parsed.toDecimalPlaces(0));
+  }
+
+  function calibrationCoversPeriod(calibrationDate: string, validityEnd: string): boolean {
+    if (!periodStart || !periodEnd) return false;
+    if (!isoDate.test(calibrationDate) || !isoDate.test(validityEnd)) return false;
+    return calibrationDate <= periodStart && validityEnd >= periodEnd && calibrationDate <= validityEnd;
+  }
+
+  if (processes.length === 0) {
+    add("QC_13", "Production process register", "BLOCKER", "At least one production process is required before sealing.", "REM_ADD_PRODUCTION_PROCESS");
+  } else {
+    const duplicateProcessIds = processes.length !== processIds.size;
+    let processInvalid = duplicateProcessIds;
+    let attributedDirectSum = new Decimal(0);
+    let attributedIndirectSum = new Decimal(0);
+    let hasAllAttributed = true;
+    for (const [index, process] of processes.entries()) {
+      if (!process.name.trim()) {
+        processInvalid = true;
+        add(`QC_13_${index}`, `Production process ${index + 1} name`, "BLOCKER", "Process name is required.", "REM_COMPLETE_PRODUCTION_PROCESS");
+        continue;
+      }
+      if (process.producedGoodIndexes.some((goodIndex) => !Number.isInteger(goodIndex) || goodIndex < 0 || goodIndex >= goodsCount)) {
+        processInvalid = true;
+        add(`QC_13_${index}`, `Production process ${index + 1} goods link`, "BLOCKER", "producedGoodIndexes must reference existing goods rows.", "REM_LINK_PROCESS_GOODS");
+        continue;
+      }
+      const direct = decimal(process.attributedDirectTco2e);
+      const indirect = decimal(process.attributedIndirectTco2e);
+      if (direct === null || direct.lt(0) || indirect === null || indirect.lt(0)) {
+        hasAllAttributed = false;
+        processInvalid = true;
+        add(`QC_13_${index}`, `Production process ${index + 1} attribution`, "BLOCKER", "Attributed direct and indirect tCO2e must be finite and non-negative.", "REM_COMPLETE_PROCESS_ATTRIBUTION");
+        continue;
+      }
+      attributedDirectSum = attributedDirectSum.plus(direct);
+      attributedIndirectSum = attributedIndirectSum.plus(indirect);
+      add(`QC_13_${index}`, `Production process ${index + 1}`, "PASS");
+    }
+    if (hasAllAttributed && !processInvalid) {
+      const installationDirect = decimal(caseData.directEmissions.value);
+      const electricity = decimal(caseData.electricityConsumed.value);
+      const factor = decimal(caseData.gridEmissionFactor.value);
+      if (installationDirect === null || electricity === null || factor === null) {
+        add("QC_13", "Production process reconciliation", "BLOCKER", "Installation emissions inputs are required to reconcile process attribution.", "REM_COMPLETE_PROCESS_ATTRIBUTION");
+      } else {
+        const expectedIndirect = electricity.times(factor);
+        if (attributedDirectSum.minus(installationDirect).abs().gt(ALLOCATION_TOLERANCE) || attributedIndirectSum.minus(expectedIndirect).abs().gt(ALLOCATION_TOLERANCE)) {
+          add("QC_13", "Production process reconciliation", "BLOCKER", `Attributed process emissions must reconcile to installation totals within ${ALLOCATION_TOLERANCE.toString()}.`, "REM_RECONCILE_PROCESS_ATTRIBUTION");
+        } else if (!duplicateProcessIds) {
+          add("QC_13", "Production process register", "PASS");
+        } else {
+          add("QC_13", "Production process IDs", "BLOCKER", "Production process IDs must be unique.", "REM_UNIQUE_PROCESS_IDS");
+        }
+      }
+    } else if (duplicateProcessIds) {
+      add("QC_13", "Production process IDs", "BLOCKER", "Production process IDs must be unique.", "REM_UNIQUE_PROCESS_IDS");
+    }
+  }
+
+  if (streams.length === 0) {
+    add("QC_14", "Source stream register", "BLOCKER", "At least one source stream is required before sealing.", "REM_ADD_SOURCE_STREAM");
+  } else if (streams.length !== streamIds.size) {
+    add("QC_14", "Source stream IDs", "BLOCKER", "Source stream IDs must be unique.", "REM_UNIQUE_SOURCE_STREAM_IDS");
+  } else {
+    let streamPass = true;
+    for (const [index, stream] of streams.entries()) {
+      const instrumentOk = Boolean(stream.instrumentId.trim()) && meterIds.has(stream.instrumentId);
+      const evidenceOk = approvedCalibrationEvidence(stream.calibrationEvidenceId);
+      const datesOk = calibrationCoversPeriod(stream.calibrationDate, stream.calibrationValidityEnd);
+      const uncertaintyOk = boundedUncertainty(stream.maximumPermissibleUncertaintyPercent) && boundedUncertainty(stream.achievedUncertaintyPercent);
+      const achieved = decimal(stream.achievedUncertaintyPercent);
+      const mpu = decimal(stream.maximumPermissibleUncertaintyPercent);
+      const achievedWithinMpu = achieved !== null && mpu !== null && achieved.lte(mpu);
+      const tiersOk = boundedTier(stream.appliedTier);
+      if (!stream.name.trim() || !instrumentOk || !evidenceOk || !datesOk || !uncertaintyOk || !achievedWithinMpu || !tiersOk) {
+        streamPass = false;
+        add(
+          `QC_14_${index}`,
+          `Source stream ${index + 1}`,
+          "BLOCKER",
+          !instrumentOk
+            ? "Source stream instrumentId must reference a meter in the meter register."
+            : !evidenceOk
+              ? "Source stream calibration evidence must be APPROVED, SUPPORTED and CLEAN."
+              : !datesOk
+                ? "Calibration dates must be ISO YYYY-MM-DD and cover the full reporting period."
+                : !tiersOk
+                  ? "Applied tier must be an integer from 1 through 4."
+                  : "Uncertainty percents must be finite, within 0–100, and achieved ≤ maximum permissible.",
+          "REM_COMPLETE_SOURCE_STREAM"
+        );
+      } else {
+        add(`QC_14_${index}`, `Source stream ${index + 1}`, "PASS");
+      }
+    }
+    if (streamPass) add("QC_14", "Source stream register", "PASS");
+  }
+
+  if (emissionSources.length === 0) {
+    add("QC_15", "Emission source register", "BLOCKER", "At least one emission source is required before sealing.", "REM_ADD_EMISSION_SOURCE");
+  } else {
+    let emissionPass = true;
+    const emissionIds = new Set(emissionSources.map((source) => source.sourceId));
+    if (emissionIds.size !== emissionSources.length) {
+      emissionPass = false;
+      add("QC_15", "Emission source IDs", "BLOCKER", "Emission source IDs must be unique.", "REM_UNIQUE_EMISSION_SOURCE_IDS");
+    }
+    for (const [index, source] of emissionSources.entries()) {
+      const processLinkOk = !source.linkedProcessId || processIds.has(source.linkedProcessId);
+      const streamLinkOk = !source.linkedStreamId || streamIds.has(source.linkedStreamId);
+      if (!source.name.trim() || !processLinkOk || !streamLinkOk) {
+        emissionPass = false;
+        add(
+          `QC_15_${index}`,
+          `Emission source ${index + 1}`,
+          "BLOCKER",
+          !source.name.trim()
+            ? "Emission source name is required."
+            : "Emission source process/stream links must reference existing register IDs.",
+          "REM_COMPLETE_EMISSION_SOURCE"
+        );
+      } else {
+        add(`QC_15_${index}`, `Emission source ${index + 1}`, "PASS");
+      }
+    }
+    if (emissionPass) add("QC_15", "Emission source register", "PASS");
+  }
+
+  if (meters.length === 0) {
+    add("QC_16", "Meter register", "BLOCKER", "At least one meter with calibration and uncertainty is required before sealing.", "REM_ADD_METER");
+  } else if (meters.length !== meterIds.size) {
+    add("QC_16", "Meter IDs", "BLOCKER", "Meter IDs must be unique.", "REM_UNIQUE_METER_IDS");
+  } else {
+    let meterPass = true;
+    for (const [index, meter] of meters.entries()) {
+      const evidenceOk = approvedCalibrationEvidence(meter.calibrationEvidenceId);
+      const datesOk = calibrationCoversPeriod(meter.calibrationDate, meter.calibrationValidityEnd);
+      const uncertaintyOk = boundedUncertainty(meter.maximumPermissibleUncertaintyPercent) && boundedUncertainty(meter.achievedUncertaintyPercent);
+      const achieved = decimal(meter.achievedUncertaintyPercent);
+      const mpu = decimal(meter.maximumPermissibleUncertaintyPercent);
+      const achievedWithinMpu = achieved !== null && mpu !== null && achieved.lte(mpu);
+      if (!meter.description.trim() || !evidenceOk || !datesOk || !uncertaintyOk || !achievedWithinMpu) {
+        meterPass = false;
+        add(
+          `QC_16_${index}`,
+          `Meter ${index + 1}`,
+          "BLOCKER",
+          !evidenceOk
+            ? "Meter calibration evidence must be APPROVED, SUPPORTED and CLEAN."
+            : !datesOk
+              ? "Meter calibration dates must be ISO YYYY-MM-DD and cover the full reporting period."
+              : "Meter uncertainty percents must be finite, within 0–100, and achieved ≤ maximum permissible.",
+          "REM_COMPLETE_METER"
+        );
+      } else {
+        add(`QC_16_${index}`, `Meter ${index + 1}`, "PASS");
+      }
+    }
+    if (meterPass) add("QC_16", "Meter register", "PASS");
+  }
+
   return results;
 }

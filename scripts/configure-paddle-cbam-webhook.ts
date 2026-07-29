@@ -21,6 +21,28 @@ const API_BASE =
     ? "https://api.paddle.com"
     : "https://sandbox-api.paddle.com");
 
+type NotificationSetting = {
+  id?: string;
+  destination?: string;
+  active?: boolean;
+  endpoint_secret_key?: string;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isNotificationSetting(value: unknown): value is NotificationSetting {
+  if (!isRecord(value)) return false;
+  return (
+    (value.id === undefined || typeof value.id === "string") &&
+    (value.destination === undefined || typeof value.destination === "string") &&
+    (value.active === undefined || typeof value.active === "boolean") &&
+    (value.endpoint_secret_key === undefined ||
+      typeof value.endpoint_secret_key === "string")
+  );
+}
+
 async function paddleFetch(path: string, init?: RequestInit) {
   const key = process.env.PADDLE_API_KEY || "";
   if (!key) throw new Error("PADDLE_API_KEY is required");
@@ -34,9 +56,10 @@ async function paddleFetch(path: string, init?: RequestInit) {
     },
   });
   const text = await res.text();
-  let body: Record<string, any> = {};
+  let body: Record<string, unknown> = {};
   try {
-    body = text ? JSON.parse(text) : {};
+    const parsed: unknown = text ? JSON.parse(text) : {};
+    body = isRecord(parsed) ? parsed : { raw: text };
   } catch {
     body = { raw: text };
   }
@@ -53,13 +76,16 @@ async function main() {
     process.exit(1);
   }
 
-  const existing = (list.body.data || []).find(
-    (row: any) =>
+  const rows = Array.isArray(list.body.data)
+    ? list.body.data.filter(isNotificationSetting)
+    : [];
+  const existing = rows.find(
+    (row) =>
       String(row.destination || "").includes("cbam-desk") ||
       String(row.destination || "").includes("cbamvalid")
   );
 
-  let setting = existing;
+  let setting: NotificationSetting | undefined = existing;
   const eventNames = [
     "transaction.completed",
     "transaction.payment_failed",
@@ -86,7 +112,13 @@ async function main() {
       );
       process.exit(1);
     }
-    setting = created.body.data;
+    setting = isNotificationSetting(created.body.data)
+      ? created.body.data
+      : undefined;
+    if (!setting) {
+      console.error("CREATE_FAILED_INVALID_RESPONSE", created.body);
+      process.exit(1);
+    }
     console.log("CREATED", setting.id);
   } else if (!existing.active || existing.destination !== DEST) {
     const patched = await paddleFetch(`/notification-settings/${existing.id}`, {
@@ -102,7 +134,13 @@ async function main() {
       console.error("PATCH_FAILED", patched.status, JSON.stringify(patched.body, null, 2));
       process.exit(1);
     }
-    setting = patched.body.data;
+    setting = isNotificationSetting(patched.body.data)
+      ? patched.body.data
+      : undefined;
+    if (!setting) {
+      console.error("PATCH_FAILED_INVALID_RESPONSE", patched.body);
+      process.exit(1);
+    }
     console.log("UPDATED", setting.id);
   } else {
     console.log("ALREADY_CONFIGURED", existing.id);

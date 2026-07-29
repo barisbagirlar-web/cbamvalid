@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -54,19 +54,19 @@ export default function SampleViewer({ manifest }: { manifest: Manifest }) {
     16: "Limitations and Deliverables",
   };
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentPageIndex < manifest.pageCount - 1) {
       setCurrentPageIndex((prev) => prev + 1);
       setZoom(1);
     }
-  };
+  }, [currentPageIndex, manifest.pageCount]);
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     if (currentPageIndex > 0) {
       setCurrentPageIndex((prev) => prev - 1);
       setZoom(1);
     }
-  };
+  }, [currentPageIndex]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -75,7 +75,7 @@ export default function SampleViewer({ manifest }: { manifest: Manifest }) {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentPageIndex]);
+  }, [handleNext, handlePrev]);
 
   return (
     <div

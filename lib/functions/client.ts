@@ -103,12 +103,6 @@ export const reviewCbamEvidenceCallable = httpsCallable<{
   supportStatus: EvidenceSupportStatus;
   reviewerNotes: string;
 }, { case: unknown }>(firebaseFunctions, "reviewCbamEvidence");
-export const recordCbamEvidenceScanCallable = httpsCallable<{
-  caseId: string;
-  evidenceId: string;
-  status: "CLEAN" | "INFECTED";
-  scannerReference: string;
-}, { case: unknown }>(firebaseFunctions, "recordCbamEvidenceScan");
 export const deleteCbamEvidenceCallable = httpsCallable<{
   caseId: string;
   evidenceId: string;
@@ -158,7 +152,10 @@ export const listCreditLedgerCallable = httpsCallable<{ limit?: number }, { ledg
 export const listPurchaseHistoryCallable = httpsCallable<{ limit?: number }, { history: UnknownRecord[] }>(firebaseFunctions, "listPurchaseHistory");
 export const requestAccountClosureCallable = httpsCallable<void, UnknownRecord>(firebaseFunctions, "requestAccountClosure");
 
-export const listAllUsersCallable = httpsCallable<{ limit?: number; pageToken?: string }, { users: UnknownRecord[] }>(firebaseFunctions, "listAllUsers");
+export const listAllUsersCallable = httpsCallable<
+  { limit?: number; pageToken?: string },
+  { users: UnknownRecord[]; nextPageToken?: string }
+>(firebaseFunctions, "listAllUsers");
 export const listAllTransactionsCallable = httpsCallable<{ limit?: number }, { transactions: UnknownRecord[] }>(firebaseFunctions, "listAllTransactions");
 
 function parseCaseWorkspace(rawCase: unknown): CaseWorkspace {
@@ -205,16 +202,6 @@ export async function reviewEvidence(params: {
   reviewerNotes: string;
 }): Promise<CaseWorkspace> {
   const result = await reviewCbamEvidenceCallable(params);
-  return parseCaseWorkspace(result.data.case);
-}
-
-export async function recordEvidenceScan(params: {
-  caseId: string;
-  evidenceId: string;
-  status: "CLEAN" | "INFECTED";
-  scannerReference: string;
-}): Promise<CaseWorkspace> {
-  const result = await recordCbamEvidenceScanCallable(params);
   return parseCaseWorkspace(result.data.case);
 }
 

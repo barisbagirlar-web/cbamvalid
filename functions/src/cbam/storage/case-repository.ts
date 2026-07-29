@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { adminDb, getStorageBucket } from "../../firebase-admin";
+import { adminDb, adminStorage, getStorageBucket } from "../../firebase-admin";
 import { CaseOwnershipViolationError } from "../../commerce/commerce-errors";
 import { validateIdentifier } from "../../firestore-validator";
 import {
@@ -26,7 +26,6 @@ type ResolvedCaseDocument = {
 };
 
 type EvidenceReviewDecision = "APPROVED" | "REJECTED";
-type EvidenceScanStatus = "CLEAN" | "INFECTED";
 
 function parseStoredCase(data: unknown, documentId: string): CbamCaseRecord {
   if (!data || typeof data !== "object") throw new Error("CASE_RECORD_INVALID");
@@ -109,6 +108,7 @@ function sanitizeCaseData(submittedData: unknown, existingData?: AuditReadyCase)
         reviewStatus: "PENDING" as const,
         supportStatus: "PENDING" as const,
         malwareScanStatus: "PENDING" as const,
+        malwareScanReceipt: undefined,
         reviewerNotes: undefined,
       };
     }
@@ -120,11 +120,13 @@ function sanitizeCaseData(submittedData: unknown, existingData?: AuditReadyCase)
       mimeType: existing.mimeType,
       sizeBytes: existing.sizeBytes,
       fileHash: existing.fileHash,
+      objectGeneration: existing.objectGeneration,
       uploadTimestamp: existing.uploadTimestamp,
       uploader: existing.uploader,
       reviewStatus: existing.reviewStatus,
       supportStatus: existing.supportStatus,
       malwareScanStatus: existing.malwareScanStatus,
+      malwareScanReceipt: existing.malwareScanReceipt,
       reviewerNotes: existing.reviewerNotes,
     };
   });
@@ -190,13 +192,17 @@ async function verifyEvidenceObject(
     typeof customMetadata.sha256 === "string"
       ? customMetadata.sha256.toLowerCase()
       : "";
+  const generation = Number(metadata.generation);
   if (
+    !Number.isSafeInteger(generation) ||
+    generation <= 0 ||
+    (evidence.objectGeneration !== undefined && generation !== evidence.objectGeneration) ||
     Number(metadata.size) !== evidence.sizeBytes ||
     metadata.contentType !== evidence.mimeType ||
-    (customMetadata.ownerId && customMetadata.ownerId !== uid) ||
-    (customMetadata.caseId && customMetadata.caseId !== caseId) ||
-    (customMetadata.evidenceId && customMetadata.evidenceId !== evidence.evidenceId) ||
-    (storedSha256 && storedSha256 !== evidence.fileHash.toLowerCase())
+    customMetadata.ownerId !== uid ||
+    customMetadata.caseId !== caseId ||
+    customMetadata.evidenceId !== evidence.evidenceId ||
+    storedSha256 !== evidence.fileHash.toLowerCase()
   ) {
     throw new Error("EVIDENCE_STORAGE_METADATA_MISMATCH");
   }
@@ -411,45 +417,6 @@ export async function reviewCaseEvidence(params: {
   return persistTrustedCaseData(resolved, nextData);
 }
 
-export async function recordEvidenceMalwareScan(params: {
-  caseId: string;
-  evidenceId: string;
-  status: EvidenceScanStatus;
-  scannerReference: string;
-  actorUid: string;
-}): Promise<CbamCaseRecord> {
-  const resolved = await resolveCaseDocument(params.caseId);
-  if (!resolved) throw new Error("CASE_NOT_FOUND");
-  const evidence = resolved.record.data.evidenceRegister.find(
-    (record) => record.evidenceId === params.evidenceId
-  );
-  if (!evidence) throw new Error("EVIDENCE_NOT_FOUND");
-  await verifyEvidenceObject(resolved.record.caseId, resolved.record.uid, evidence);
-
-  const updatedEvidence = resolved.record.data.evidenceRegister.map((record) =>
-    record.evidenceId === params.evidenceId
-      ? {
-          ...record,
-          malwareScanStatus: params.status,
-          reviewStatus: params.status === "INFECTED" ? "REJECTED" as const : record.reviewStatus,
-          supportStatus: params.status === "INFECTED" ? "UNSUPPORTED" as const : record.supportStatus,
-        }
-      : record
-  );
-
-  const nextData = appendAuditEvent(
-    { ...resolved.record.data, evidenceRegister: updatedEvidence },
-    params.actorUid,
-    "EVIDENCE_MALWARE_SCAN_RECORDED",
-    {
-      evidenceId: params.evidenceId,
-      status: params.status,
-      scannerReference: params.scannerReference,
-    }
-  );
-  return persistTrustedCaseData(resolved, nextData);
-}
-
 export async function deleteCaseEvidence(params: {
   caseId: string;
   uid: string;
@@ -497,27 +464,56 @@ export async function deleteCaseEvidence(params: {
   }
   const object = getStorageBucket().file(evidence.storagePath);
   const [exists] = await object.exists();
-  if (!exists) {
-    return persistEvidenceDeletionAudit({
-      resolved,
-      actor: params.uid,
-      evidenceId: params.evidenceId,
-      action: "EVIDENCE_DELETED",
-      metadata: {
-        evidenceId: params.evidenceId,
-        storagePath: evidence.storagePath,
-        fileHash: evidence.fileHash,
-        reason: `${params.reason.trim()} (storage object was already absent)`,
-      },
-    });
+  if (exists) {
+    await verifyEvidenceObject(resolved.record.caseId, params.uid, evidence);
+    const [metadata] = await object.getMetadata();
+    const generation = Number(metadata.generation);
+    if (!Number.isSafeInteger(generation) || generation <= 0) {
+      throw new Error("EVIDENCE_STORAGE_GENERATION_INVALID");
+    }
+    if (evidence.objectGeneration && generation !== evidence.objectGeneration) {
+      throw new Error("EVIDENCE_STORAGE_GENERATION_MISMATCH");
+    }
+    await object.delete({ ifGenerationMatch: generation });
   }
-  await verifyEvidenceObject(resolved.record.caseId, params.uid, evidence);
-  const [metadata] = await object.getMetadata();
-  const generation = Number(metadata.generation);
-  if (!Number.isSafeInteger(generation) || generation <= 0) {
-    throw new Error("EVIDENCE_STORAGE_GENERATION_INVALID");
+
+  const scanReceipt = evidence.malwareScanReceipt;
+  if (scanReceipt?.status === "INFECTED") {
+    const expectedPrefix =
+      `${params.uid}/${resolved.record.caseId}/${params.evidenceId}/` +
+      `${scanReceipt.sourceGeneration}/`;
+    if (
+      !scanReceipt.quarantineBucket ||
+      !scanReceipt.quarantineObject?.startsWith(expectedPrefix) ||
+      !scanReceipt.quarantineGeneration
+    ) {
+      throw new Error("EVIDENCE_QUARANTINE_RECEIPT_INVALID");
+    }
+    const quarantineObject = adminStorage
+      .bucket(scanReceipt.quarantineBucket)
+      .file(scanReceipt.quarantineObject, { generation: scanReceipt.quarantineGeneration });
+    const [quarantineExists] = await quarantineObject.exists();
+    if (quarantineExists) {
+      const [quarantineMetadata] = await quarantineObject.getMetadata();
+      const custom = quarantineMetadata.metadata ?? {};
+      if (
+        Number(quarantineMetadata.generation) !== scanReceipt.quarantineGeneration ||
+        Number(quarantineMetadata.size) !== evidence.sizeBytes ||
+        custom.ownerId !== params.uid ||
+        custom.caseId !== resolved.record.caseId ||
+        custom.evidenceId !== params.evidenceId ||
+        custom.sha256 !== evidence.fileHash.toLowerCase() ||
+        custom.originalObject !== evidence.storagePath ||
+        Number(custom.originalGeneration) !== scanReceipt.sourceGeneration
+      ) {
+        throw new Error("EVIDENCE_QUARANTINE_METADATA_MISMATCH");
+      }
+      await quarantineObject.delete({
+        ifGenerationMatch: scanReceipt.quarantineGeneration,
+      });
+    }
   }
-  await object.delete({ ifGenerationMatch: generation });
+
   return persistEvidenceDeletionAudit({
     resolved,
     actor: params.uid,
@@ -527,7 +523,8 @@ export async function deleteCaseEvidence(params: {
       evidenceId: params.evidenceId,
       storagePath: evidence.storagePath,
       fileHash: evidence.fileHash,
-      reason: params.reason.trim(),
+      reason: `${params.reason.trim()}${exists ? "" : " (source object was already absent)"}`,
+      quarantineObject: scanReceipt?.quarantineObject ?? null,
     },
   });
 }

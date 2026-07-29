@@ -57,8 +57,12 @@ function main() {
   }
   if (hashFails === 0) pass(`Re-hashed ${files.length} manifest components`);
 
-  const sigPath = path.join(root, "Manifest Signature.sig");
-  if (fs.existsSync(sigPath)) {
+  const sigCandidates = [
+    path.join(root, "Supporting_Evidence", "Manifest Signature.sig"),
+    path.join(root, "Manifest Signature.sig"),
+  ];
+  const sigPath = sigCandidates.find((candidate) => fs.existsSync(candidate));
+  if (sigPath) {
     try {
       const sigJson = JSON.parse(fs.readFileSync(sigPath, "utf8"));
       const pem = sigJson.publicKeyPem;
@@ -66,7 +70,7 @@ function main() {
       const manifestBytes = fs.readFileSync(manifestPath);
       if (pem && signature.length) {
         const ok = crypto.verify("sha256", manifestBytes, pem, signature);
-        if (ok) pass("Manifest detached signature verified (embedded public key)");
+        if (ok) pass(`Manifest detached signature verified (${path.relative(root, sigPath)})`);
         else fail("Manifest signature verification failed");
       } else {
         fail("Manifest Signature.sig missing publicKeyPem or signatureBase64");

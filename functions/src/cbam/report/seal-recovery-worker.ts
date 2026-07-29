@@ -1,7 +1,7 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { adminDb } from "../../firebase-admin";
 
-export const sealRecoveryWorker = onSchedule("every 5 minutes", async (event) => {
+export const sealRecoveryWorker = onSchedule("every 5 minutes", async () => {
   console.log("[SEAL-RECOVERY] Starting sweep of stale outbox entries...");
   const outboxRef = adminDb.collection("seal_outbox");
   const threshold = new Date(Date.now() - 5 * 60 * 1000).toISOString();

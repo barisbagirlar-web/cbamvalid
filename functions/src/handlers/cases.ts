@@ -8,14 +8,12 @@ import {
   deleteCaseEvidence,
   getCase,
   getCasesForUser,
-  recordEvidenceMalwareScan,
   reviewCaseEvidence,
   updateCase,
 } from "../cbam/storage/case-repository";
 import { toCaseWorkspaceView } from "../cbam/storage/case-contract";
 import { AuditReadyCaseSchema, type AuditReadyCase } from "../cbam/schema";
 import { CaseIdSchema } from "../cbam/case-id";
-import { requireCanonicalOwner } from "../auth/owner-contract";
 
 const CreationRequestIdSchema = z.string().uuid();
 
@@ -187,29 +185,6 @@ export const reviewCbamEvidence = createCallable(
   async (data, { auth }) => {
     try {
       const updated = await reviewCaseEvidence({ ...data, uid: auth.uid });
-      return { case: toCaseWorkspaceView(updated), status: "success" };
-    } catch (error) {
-      translateEvidenceError(error);
-    }
-  }
-);
-
-export const recordCbamEvidenceScan = createCallable(
-  {
-    schema: z.object({
-      caseId: CaseIdSchema,
-      evidenceId: z.string().uuid(),
-      status: z.enum(["CLEAN", "INFECTED"]),
-      scannerReference: z.string().trim().min(8).max(500),
-    }),
-  },
-  async (data, { auth }) => {
-    requireCanonicalOwner(auth);
-    try {
-      const updated = await recordEvidenceMalwareScan({
-        ...data,
-        actorUid: auth.uid,
-      });
       return { case: toCaseWorkspaceView(updated), status: "success" };
     } catch (error) {
       translateEvidenceError(error);

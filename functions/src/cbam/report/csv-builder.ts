@@ -1,7 +1,8 @@
 import { AuditReadyCase } from "../schema";
+import { CalculationOutput } from "../engine/calculation-orchestrator";
 
 
-export function buildCsvDossier(caseData: AuditReadyCase, calcResult: any): string {
+export function buildCsvDossier(caseData: AuditReadyCase, calcResult: CalculationOutput): string {
   // Cross-format parity: matching XML and JSON precisely
   // The CSV provides a flat projection of the same data structure
   

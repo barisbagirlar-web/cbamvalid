@@ -6,7 +6,7 @@ export async function logAdminAction(
   action: string,
   targetType: string,
   targetId: string,
-  details: Record<string, any>
+  details: Record<string, unknown>
 ) {
   try {
     await adminDb.collection("admin_audit_log").add({

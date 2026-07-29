@@ -84,6 +84,50 @@ describe("CBAM Quality Controls Traceability", () => {
     electricityConsumed: linkedEvidenceInput("20", "MWh"),
     gridEmissionFactor: linkedEvidenceInput("0.5", "tCO2e/MWh"),
     precursors: [],
+    productionProcesses: [
+      {
+        processId: "PROC-TEST-001",
+        name: "Primary steelmaking process",
+        producedGoodIndexes: [0],
+        attributedDirectTco2e: "50",
+        attributedIndirectTco2e: "10",
+      },
+    ],
+    sourceStreamRegister: [
+      {
+        streamId: "STREAM-TEST-FUEL",
+        name: "Process fuel stream",
+        category: "MAJOR",
+        instrumentId: "METER-TEST-FUEL",
+        calibrationEvidenceId: EVIDENCE_ID,
+        calibrationDate: "2025-12-01",
+        calibrationValidityEnd: "2026-12-31",
+        maximumPermissibleUncertaintyPercent: "2.0",
+        achievedUncertaintyPercent: "1.5",
+        appliedTier: "2",
+      },
+    ],
+    emissionSourceRegister: [
+      {
+        sourceId: "ES-TEST-001",
+        name: "Process stack",
+        gas: "CO2",
+        linkedProcessId: "PROC-TEST-001",
+        linkedStreamId: "STREAM-TEST-FUEL",
+      },
+    ],
+    meterRegister: [
+      {
+        meterId: "METER-TEST-FUEL",
+        description: "Fuel flow meter",
+        meterType: "FUEL",
+        calibrationDate: "2025-12-01",
+        calibrationValidityEnd: "2026-12-31",
+        calibrationEvidenceId: EVIDENCE_ID,
+        maximumPermissibleUncertaintyPercent: "2.0",
+        achievedUncertaintyPercent: "1.5",
+      },
+    ],
     carbonPriceRecords: [],
     evidenceRegister: [
       {
@@ -110,6 +154,8 @@ describe("CBAM Quality Controls Traceability", () => {
           "directEmissions",
           "electricityConsumed",
           "gridEmissionFactor",
+          "meterRegister.0",
+          "sourceStreamRegister.0",
         ],
         linkedCalculations: [
           "CBAM_INDIRECT_EMISSIONS",
@@ -150,7 +196,37 @@ describe("CBAM Quality Controls Traceability", () => {
     expect(results.find((result) => result.ruleId === "QC_08")?.status).toBe("PASS");
     expect(results.find((result) => result.ruleId === "QC_09")?.status).toBe("PASS");
     expect(results.find((result) => result.ruleId === "QC_10")?.status).toBe("PASS");
+    expect(results.find((result) => result.ruleId === "QC_13")?.status).toBe("PASS");
+    expect(results.find((result) => result.ruleId === "QC_14")?.status).toBe("PASS");
+    expect(results.find((result) => result.ruleId === "QC_15")?.status).toBe("PASS");
+    expect(results.find((result) => result.ruleId === "QC_16")?.status).toBe("PASS");
     expect(blockers).toEqual([]);
+  });
+
+  it("blocks sealing when monitoring registers are missing", () => {
+    const caseData = createValidCase();
+    caseData.productionProcesses = [];
+    caseData.sourceStreamRegister = [];
+    caseData.emissionSourceRegister = [];
+    caseData.meterRegister = [];
+
+    const results = runQualityControls(caseData);
+    expect(results.find((result) => result.ruleId === "QC_13")?.status).toBe("BLOCKER");
+    expect(results.find((result) => result.ruleId === "QC_14")?.status).toBe("BLOCKER");
+    expect(results.find((result) => result.ruleId === "QC_15")?.status).toBe("BLOCKER");
+    expect(results.find((result) => result.ruleId === "QC_16")?.status).toBe("BLOCKER");
+  });
+
+  it("blocks invalid uncertainty, calibration coverage and unresolved instrument links", () => {
+    const caseData = createValidCase();
+    caseData.sourceStreamRegister[0].achievedUncertaintyPercent = "3.5";
+    caseData.sourceStreamRegister[0].instrumentId = "MISSING-METER";
+    caseData.meterRegister[0].calibrationValidityEnd = "2026-01-15";
+    caseData.meterRegister[0].calibrationEvidenceId = undefined;
+
+    const results = runQualityControls(caseData);
+    expect(results.some((result) => result.ruleId.startsWith("QC_14") && result.status === "BLOCKER")).toBe(true);
+    expect(results.some((result) => result.ruleId.startsWith("QC_16") && result.status === "BLOCKER")).toBe(true);
   });
 
   it("blocks a grid factor entered at an incompatible scale in both runtimes", () => {

@@ -20,7 +20,10 @@ export async function GET() {
       generatedAt: data.generatedAt,
       // We don't return canonicalHash publicly
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Unknown manifest error" },
+      { status: 500 }
+    );
   }
 }

@@ -33,7 +33,7 @@ service firebase.storage {
         && allowedEvidenceContentType()
         && validEvidenceMetadata(userId, caseId, evidenceId);
       allow update: if false;
-      allow delete: if ownsCase(userId, caseId);
+      allow delete: if false;
     }
 
     match /reports/{userId}/{reportId}/{allPaths=**} {

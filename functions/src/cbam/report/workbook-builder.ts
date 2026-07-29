@@ -1,9 +1,15 @@
 import { CalculationOutput } from "../engine/calculation-orchestrator";
 
+type WorkbookReportData = {
+  declarantEORI?: string;
+  installationName?: string;
+  isComplexGood?: boolean;
+};
+
 /**
  * Builds a multi-sheet spreadsheet workbook and returns it as a Buffer
  */
-export function buildWorkbook(data: any, calc: CalculationOutput): Buffer {
+export function buildWorkbook(data: WorkbookReportData, calc: CalculationOutput): Buffer {
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"

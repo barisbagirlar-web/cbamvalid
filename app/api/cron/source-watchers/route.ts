@@ -136,8 +136,11 @@ export async function GET(request: Request) {
       results
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Cron Source Watcher Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unknown source watcher error" },
+      { status: 500 }
+    );
   }
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { PRODUCT_CATALOG, getPriceIdForProduct } from "../../functions/src/commerce/catalog";
+import { getPriceIdForProduct } from "../../functions/src/commerce/catalog";
 import { verifyWebhookSignature } from "../../functions/src/commerce/webhook-verifier";
 import { InvalidWebhookSignatureError } from "../../functions/src/commerce/commerce-errors";
 

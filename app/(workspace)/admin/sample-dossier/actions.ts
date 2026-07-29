@@ -23,7 +23,7 @@ export async function generateSampleDossierAction(version: string) {
     const calcResult = performDossierCalculations(caseData);
 
     // 3. Build Canonical PDF (with Redaction)
-    const pdfBuffer = buildPdfDossier(caseData, calcResult as any, "SAMPLE-DOSSIER-V1", true, true);
+    const pdfBuffer = buildPdfDossier(caseData, calcResult, "SAMPLE-DOSSIER-V1", true, true);
     
     // 4. Rasterize Pages
     const pageBuffers = await rasterizePdfToWebPBuffers(pdfBuffer);
@@ -69,8 +69,11 @@ export async function generateSampleDossierAction(version: string) {
 
     return { success: true, pageCount: pageBuffers.length };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[SAMPLE-GENERATOR] Error:", error);
-    return { success: false, error: error.message };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown sample generation error",
+    };
   }
 }

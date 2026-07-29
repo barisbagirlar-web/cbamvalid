@@ -134,7 +134,7 @@ async function processPdf() {
       }
       try {
         return origDrawImage.apply(this, [image, ...args]);
-      } catch (err) {
+      } catch {
         // Skip incompatible images
       }
     };

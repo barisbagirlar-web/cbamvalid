@@ -2,6 +2,10 @@
 const nextConfig = {
   reactStrictMode: true,
   compress: true,
+  env: {
+    NEXT_PUBLIC_CBAM_RELEASE_SHA:
+      process.env.CBAM_RELEASE_SHA || "NOT_PROVEN",
+  },
   images: {
     unoptimized: false,
   },

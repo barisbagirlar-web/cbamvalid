@@ -1,25 +1,34 @@
 import { createCallable } from "../wrapper";
-import { z } from "zod";
 import { adminDb } from "../firebase-admin";
 import { requireCanonicalOwner } from "../auth/owner-contract";
+import { FieldPath } from "firebase-admin/firestore";
+import {
+  AdminListTransactionsInputSchema,
+  AdminListUsersInputSchema,
+  AdminSetUserTokensInputSchema,
+  decodeUserPageToken,
+  encodeUserPageToken,
+} from "../admin/user-pagination";
 
 export const listAllUsers = createCallable({
-  schema: z.object({
-    limit: z.number().max(500).nullish().transform(v => v ?? 100),
-    pageToken: z.string().optional()
-  }).optional()
+  schema: AdminListUsersInputSchema
 }, async (data, { auth }) => {
   requireCanonicalOwner(auth);
 
-  const query = adminDb.collection("users").orderBy("email").limit(data?.limit || 100);
-  
+  const limit = data?.limit || 100;
+  let query = adminDb
+    .collection("users")
+    .orderBy(FieldPath.documentId())
+    .limit(limit + 1);
+
   if (data?.pageToken) {
-    // Basic pagination mock (replace with real document reference in production)
-    // For simplicity, we assume we just return the first set.
+    const cursor = decodeUserPageToken(data.pageToken);
+    query = query.startAfter(cursor.documentId);
   }
 
   const snapshot = await query.get();
-  const users = await Promise.all(snapshot.docs.map(async (doc) => {
+  const pageDocuments = snapshot.docs.slice(0, limit);
+  const users = await Promise.all(pageDocuments.map(async (doc) => {
     const profile = doc.data();
     const creditSnap = await adminDb.collection("users").doc(doc.id).collection("creditSummary").doc("current").get();
     const credits = creditSnap.exists ? creditSnap.data() : { availableCredits: 0 };
@@ -33,13 +42,16 @@ export const listAllUsers = createCallable({
     };
   }));
 
-  return { users };
+  const nextPageToken =
+    snapshot.docs.length > limit && pageDocuments.length > 0
+      ? encodeUserPageToken(pageDocuments[pageDocuments.length - 1].id)
+      : undefined;
+
+  return { users, nextPageToken };
 });
 
 export const listAllTransactions = createCallable({
-  schema: z.object({
-    limit: z.number().max(500).nullish().transform(v => v ?? 100)
-  }).optional()
+  schema: AdminListTransactionsInputSchema
 }, async (data, { auth }) => {
   requireCanonicalOwner(auth);
   const { toCustomerPurchaseRecord } = await import("../commerce/purchase-history");
@@ -71,10 +83,7 @@ export const listAllTransactions = createCallable({
 });
 
 export const adminSetUserTokens = createCallable({
-  schema: z.object({
-    targetUserId: z.string(),
-    tokensToSet: z.number()
-  })
+  schema: AdminSetUserTokensInputSchema
 }, async ({ targetUserId, tokensToSet }, { auth }) => {
   requireCanonicalOwner(auth);
 
