@@ -9,8 +9,7 @@ export type WorkingFileJourneyStripProps = {
   currentStep: number;
   completenessPercentage: number;
   blockerCount: number;
-  releasesRemaining: number;
-  unlockablePacks: number;
+  hasPaidUnlock: boolean;
   canLock: boolean;
   caseId: string;
   onGoToStep: (step: number) => void;
@@ -21,7 +20,7 @@ export function WorkingFileJourneyStrip({
   currentStep,
   completenessPercentage,
   blockerCount,
-  releasesRemaining,
+  hasPaidUnlock,
   canLock,
   caseId,
   onGoToStep,
@@ -38,7 +37,7 @@ export function WorkingFileJourneyStrip({
     if (blockerCount > 0) {
       nextLabel = `Fix ${blockerCount} blocker${blockerCount === 1 ? "" : "s"} before lock`;
       nextAction = null;
-    } else if (releasesRemaining <= 0) {
+    } else if (!hasPaidUnlock) {
       nextLabel = `Pay ${CANONICAL_PRICING.priceFormatted} to lock this file`;
       nextHref = `/credits/buy?caseId=${encodeURIComponent(caseId)}`;
       nextAction = null;
@@ -52,45 +51,20 @@ export function WorkingFileJourneyStrip({
   }
 
   return (
-    <section
+    <nav
       aria-label="Where you are in this working file"
-      className="rounded-xl border border-accent/25 bg-accent/5 p-4 md:p-5"
+      className="rounded-xl border border-border bg-surface p-4"
     >
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="min-w-0 space-y-1">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-accent">Where you are</p>
-          <p className="font-serif text-lg font-bold text-foreground md:text-xl">
-            Working file · Step {currentStep} of 8 · {step.title}
-          </p>
-          <p className="text-xs text-muted leading-relaxed">
-            {step.desc} Completeness {completenessPercentage}%
-            {blockerCount > 0
-              ? ` · ${blockerCount} blocker${blockerCount === 1 ? "" : "s"} still open`
-              : " · no open blockers on last assessment"}
-            {releasesRemaining > 0
-              ? " · this file is paid — lock allowed"
-              : " · this file is unpaid — pay once to lock"}
-          </p>
-        </div>
-        {nextHref ? (
-          <Link
-            href={nextHref}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-surface hover:bg-accent-hover"
-          >
-            {nextLabel} <ArrowRight className="h-4 w-4" />
-          </Link>
-        ) : (
-          <button
-            type="button"
-            onClick={() => nextAction?.()}
-            disabled={!nextAction}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-surface hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {nextLabel} {nextAction ? <ArrowRight className="h-4 w-4" /> : null}
-          </button>
-        )}
+      <div className="space-y-1">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-accent">File progress</p>
+        <p className="font-semibold text-foreground">Step {currentStep} of 8 · {step.title}</p>
+        <p className="text-xs leading-relaxed text-muted">
+          {completenessPercentage}% complete · {blockerCount > 0
+            ? `${blockerCount} blocker${blockerCount === 1 ? "" : "s"} open`
+            : "no open blockers"}
+        </p>
       </div>
-      <ol className="mt-4 grid grid-cols-4 gap-2 md:grid-cols-8" aria-label="Eight plain steps">
+      <ol className="mt-4 space-y-1" aria-label="Eight plain steps">
         {WORKFLOW_STEPS_PLAIN.map((item) => {
           const done = item.num < currentStep;
           const active = item.num === currentStep;
@@ -99,22 +73,48 @@ export function WorkingFileJourneyStrip({
               <button
                 type="button"
                 onClick={() => onGoToStep(item.num)}
-                className={`w-full rounded-md border px-1 py-2 text-center transition-colors ${
+                className={`flex min-h-11 w-full items-center gap-3 rounded-md border px-3 py-2 text-left transition-colors ${
                   active
-                    ? "border-accent bg-accent text-surface"
+                    ? "border-accent bg-accent/10 text-accent"
                     : done
-                      ? "border-accent/30 bg-surface text-accent"
-                      : "border-border bg-surface text-muted"
+                      ? "border-transparent text-foreground hover:bg-neutral-soft"
+                      : "border-transparent text-muted hover:bg-neutral-soft"
                 }`}
                 aria-current={active ? "step" : undefined}
               >
-                <span className="block font-mono text-[10px] font-bold">{item.num}</span>
-                <span className="mt-0.5 block truncate text-[10px] font-semibold leading-tight">{item.title}</span>
+                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                  active ? "bg-accent text-surface" : "bg-neutral-soft"
+                }`}>
+                  {item.num}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-xs font-semibold">{item.title}</span>
+                  {active ? <span className="block text-[11px] text-muted">{item.desc}</span> : null}
+                </span>
               </button>
             </li>
           );
         })}
       </ol>
-    </section>
+      <div className="mt-4 border-t border-border pt-4">
+        {nextHref ? (
+          <Link
+            href={nextHref}
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-surface hover:bg-accent-hover"
+          >
+            {nextLabel} <ArrowRight className="h-4 w-4" />
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={() => nextAction?.()}
+            disabled={!nextAction}
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-surface hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {nextLabel} {nextAction ? <ArrowRight className="h-4 w-4" /> : null}
+          </button>
+        )}
+      </div>
+    </nav>
   );
 }

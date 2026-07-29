@@ -50,7 +50,7 @@ export default function PartnersPage() {
                 <p>Exporter onboarding cohorts under a referral agreement.</p>
               </div>
               <div className="deliv-card">
-                <span className="fmt">H2</span>
+                <span className="fmt">EVIDENCE</span>
                 <h3>No invented partner wall</h3>
                 <p>Public logos appear only after a signed agreement and written permission.</p>
               </div>

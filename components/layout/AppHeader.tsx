@@ -2,20 +2,18 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthProvider";
 import { doc, onSnapshot } from "firebase/firestore";
 import { firebaseDb } from "@/lib/firebase/client";
-import { Menu, X, User, LogOut, Shield, FileText, LayoutDashboard, CreditCard, Activity, Plus } from "lucide-react";
+import { Menu, X, User, LogOut, Shield, CreditCard } from "lucide-react";
 import { BrandLockup } from "@/components/brand/BrandLockup";
 import { APP_NAV } from "@/lib/navigation";
 import { getEntitlements } from "@/lib/functions/client";
 import { packsUnlockableFromCredits } from "@/lib/billing/credit-contract";
-import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 
 export function AppHeader() {
   const { user, claims, signOutUser, loading } = useAuth();
-  const router = useRouter();
   const pathname = usePathname();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -45,8 +43,6 @@ export function AppHeader() {
   // Active Preparation Pack releases must come from AVAILABLE entitlements, not credits/20.
   useEffect(() => {
     if (!user || isAdmin) {
-      setAvailableUses(0);
-      setActivePackCount(0);
       return;
     }
     let cancelled = false;
@@ -83,11 +79,21 @@ export function AppHeader() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Close menus on route change
   useEffect(() => {
-    setIsMobileMenuOpen(false);
-    setIsAccountMenuOpen(false);
-  }, [pathname]);
+    if (!isMobileMenuOpen && !isAccountMenuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setIsMobileMenuOpen(false);
+      setIsAccountMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isAccountMenuOpen, isMobileMenuOpen]);
+
+  // Admin routes provide their own server-gated chrome.
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    return null;
+  }
 
   if (loading) {
     return (
@@ -104,10 +110,10 @@ export function AppHeader() {
     if (isAdmin) {
       return (
         <nav className="hidden md:flex items-center gap-7 lg:gap-9" aria-label="Main Navigation">
-          <Link href="/admin" className={`text-[15px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1 py-1 ${pathname === "/admin" ? "text-accent" : "text-muted hover:text-foreground"}`}>Admin Console</Link>
-          <Link href="/admin/users" className={`text-[15px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1 py-1 ${pathname.startsWith("/admin/users") ? "text-accent" : "text-muted hover:text-foreground"}`}>Users</Link>
-          <Link href="/admin/reports" className={`text-[15px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1 py-1 ${pathname.startsWith("/admin/reports") ? "text-accent" : "text-muted hover:text-foreground"}`}>Reports</Link>
-          <Link href="/admin/audit" className={`text-[15px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1 py-1 ${pathname.startsWith("/admin/audit") ? "text-accent" : "text-muted hover:text-foreground"}`}>Audit</Link>
+          <Link href="/admin" aria-current={pathname === "/admin" ? "page" : undefined} className={`text-[15px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1 py-1 ${pathname === "/admin" ? "text-accent" : "text-muted hover:text-foreground"}`}>Admin Console</Link>
+          <Link href="/admin/users" aria-current={pathname.startsWith("/admin/users") ? "page" : undefined} className={`text-[15px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1 py-1 ${pathname.startsWith("/admin/users") ? "text-accent" : "text-muted hover:text-foreground"}`}>Users</Link>
+          <Link href="/admin/credits" aria-current={pathname.startsWith("/admin/credits") ? "page" : undefined} className={`text-[15px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1 py-1 ${pathname.startsWith("/admin/credits") ? "text-accent" : "text-muted hover:text-foreground"}`}>Credit adjustments</Link>
+          <Link href="/admin/sample-dossier" aria-current={pathname.startsWith("/admin/sample-dossier") ? "page" : undefined} className={`text-[15px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1 py-1 ${pathname.startsWith("/admin/sample-dossier") ? "text-accent" : "text-muted hover:text-foreground"}`}>Sample dossier</Link>
         </nav>
       );
     }
@@ -120,6 +126,7 @@ export function AppHeader() {
             <Link 
               key={link.label}
               href={link.href} 
+              aria-current={isActive ? "page" : undefined}
               className={`text-[15px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm px-1 py-1 ${isActive ? "text-foreground" : "text-muted hover:text-foreground"}`}
             >
               {link.label}
@@ -154,15 +161,15 @@ export function AppHeader() {
               <p className="text-sm font-medium text-foreground truncate" title={user.email || ""}>{user.email}</p>
             </div>
             
-            <Link href="/account" className="flex items-center gap-3 px-4 py-2 text-[15px] text-foreground hover:bg-border/30 transition-colors outline-none focus-visible:bg-border/30">
+            <Link href="/account" onClick={() => setIsAccountMenuOpen(false)} className="flex items-center gap-3 px-4 py-2 text-[15px] text-foreground hover:bg-border/30 transition-colors outline-none focus-visible:bg-border/30">
               <User className="w-4 h-4 text-muted" /> Account
             </Link>
             {!isAdmin && (
-              <Link href="/credits/buy" className="flex items-center gap-3 px-4 py-2 text-[15px] text-foreground hover:bg-border/30 transition-colors outline-none focus-visible:bg-border/30">
-                <CreditCard className="w-4 h-4 text-muted" /> Billing & Packs
+              <Link href="/cbam" onClick={() => setIsAccountMenuOpen(false)} className="flex items-center gap-3 px-4 py-2 text-[15px] text-foreground hover:bg-border/30 transition-colors outline-none focus-visible:bg-border/30">
+                <CreditCard className="w-4 h-4 text-muted" /> Working files & payment
               </Link>
             )}
-            <Link href="/account#security" className="flex items-center gap-3 px-4 py-2 text-[15px] text-foreground hover:bg-border/30 transition-colors outline-none focus-visible:bg-border/30">
+            <Link href="/account#security" onClick={() => setIsAccountMenuOpen(false)} className="flex items-center gap-3 px-4 py-2 text-[15px] text-foreground hover:bg-border/30 transition-colors outline-none focus-visible:bg-border/30">
               <Shield className="w-4 h-4 text-muted" /> Security
             </Link>
             
@@ -201,17 +208,16 @@ export function AppHeader() {
               <span className="text-[13px] font-medium text-muted">
                 {availableUses > 0 ? (
                   <>
-                    {activePackCount} Active Preparation Pack{activePackCount === 1 ? "" : "s"} &middot;{" "}
-                    <span className="text-foreground">{availableUses} Sealed Releases Left</span>
+                    {activePackCount} paid working file{activePackCount === 1 ? "" : "s"} ·{" "}
+                    <span className="text-foreground">corrections included</span>
                   </>
                 ) : packsUnlockableFromCredits(availableCredits) > 0 ? (
                   <>
-                    {packsUnlockableFromCredits(availableCredits)} pack
-                    {packsUnlockableFromCredits(availableCredits) === 1 ? "" : "s"} ready ·{" "}
+                    Legacy pack balance ready ·{" "}
                     <span className="text-foreground">Activate on Account</span>
                   </>
                 ) : (
-                  <>No Active Preparation Pack · <span className="text-foreground">Buy to seal</span></>
+                  <>No paid unlock yet · <span className="text-foreground">Open a working file</span></>
                 )}
               </span>
             </Link>
@@ -219,10 +225,10 @@ export function AppHeader() {
 
           {!isAdmin && availableUses === 0 && packsUnlockableFromCredits(availableCredits) === 0 && (
             <Link 
-              href="/credits/buy" 
+              href="/cbam" 
               className="hidden lg:inline-flex h-[44px] items-center justify-center gap-2 rounded-md bg-accent px-5 text-[15px] font-medium text-surface transition-colors hover:bg-accent-hover active:bg-accent-active outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent shadow-sm"
             >
-              Buy Pack — {CANONICAL_PRICING.priceFormatted}
+              Continue working file
             </Link>
           )}
           {!isAdmin && availableUses === 0 && packsUnlockableFromCredits(availableCredits) > 0 && (
@@ -256,20 +262,19 @@ export function AppHeader() {
             {!isAdmin && (
               <div className="px-6 py-4 mb-2 bg-accent/5 border-b border-border">
                 <Link
-                  href={availableUses > 0 || packsUnlockableFromCredits(availableCredits) > 0 ? "/account" : "/credits/buy"}
+                  href={availableUses > 0 || packsUnlockableFromCredits(availableCredits) > 0 ? "/account" : "/cbam"}
                   className="flex items-center justify-between outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
                 >
-                  <span className="text-[15px] font-semibold text-muted uppercase tracking-wider">Preparation Pack</span>
+                  <span className="text-[15px] font-semibold text-muted uppercase tracking-wider">Payment status</span>
                   <div className="flex items-center gap-2">
                     {availableUses > 0 ? (
-                      <span className="text-sm font-bold text-accent px-2 py-1 bg-accent/10 rounded">{availableUses} Releases Left</span>
+                      <span className="text-sm font-bold text-accent px-2 py-1 bg-accent/10 rounded">Paid unlock active</span>
                     ) : packsUnlockableFromCredits(availableCredits) > 0 ? (
                       <span className="text-sm font-bold text-accent px-2 py-1 bg-accent/10 rounded">
-                        {packsUnlockableFromCredits(availableCredits)} pack
-                        {packsUnlockableFromCredits(availableCredits) === 1 ? "" : "s"} · Activate
+                        Activate on Account
                       </span>
                     ) : (
-                      <span className="text-sm text-muted">No Active Pack</span>
+                      <span className="text-sm text-muted">No paid unlock</span>
                     )}
                   </div>
                 </Link>
@@ -278,10 +283,10 @@ export function AppHeader() {
             
             {isAdmin ? (
               <>
-                <Link href="/admin" className={`px-6 py-3 text-[15px] font-medium border-l-4 outline-none focus-visible:bg-border/30 ${pathname === "/admin" ? "border-accent text-accent bg-accent/5" : "border-transparent text-foreground"}`}>Admin Console</Link>
-                <Link href="/admin/users" className={`px-6 py-3 text-[15px] font-medium border-l-4 outline-none focus-visible:bg-border/30 ${pathname.startsWith("/admin/users") ? "border-accent text-accent bg-accent/5" : "border-transparent text-foreground"}`}>Users</Link>
-                <Link href="/admin/reports" className={`px-6 py-3 text-[15px] font-medium border-l-4 outline-none focus-visible:bg-border/30 ${pathname.startsWith("/admin/reports") ? "border-accent text-accent bg-accent/5" : "border-transparent text-foreground"}`}>Reports</Link>
-                <Link href="/admin/audit" className={`px-6 py-3 text-[15px] font-medium border-l-4 outline-none focus-visible:bg-border/30 ${pathname.startsWith("/admin/audit") ? "border-accent text-accent bg-accent/5" : "border-transparent text-foreground"}`}>Audit</Link>
+                <Link href="/admin" aria-current={pathname === "/admin" ? "page" : undefined} className={`px-6 py-3 text-[15px] font-medium border-l-4 outline-none focus-visible:bg-border/30 ${pathname === "/admin" ? "border-accent text-accent bg-accent/5" : "border-transparent text-foreground"}`}>Admin Console</Link>
+                <Link href="/admin/users" aria-current={pathname.startsWith("/admin/users") ? "page" : undefined} className={`px-6 py-3 text-[15px] font-medium border-l-4 outline-none focus-visible:bg-border/30 ${pathname.startsWith("/admin/users") ? "border-accent text-accent bg-accent/5" : "border-transparent text-foreground"}`}>Users</Link>
+                <Link href="/admin/credits" aria-current={pathname.startsWith("/admin/credits") ? "page" : undefined} className={`px-6 py-3 text-[15px] font-medium border-l-4 outline-none focus-visible:bg-border/30 ${pathname.startsWith("/admin/credits") ? "border-accent text-accent bg-accent/5" : "border-transparent text-foreground"}`}>Credit adjustments</Link>
+                <Link href="/admin/sample-dossier" aria-current={pathname.startsWith("/admin/sample-dossier") ? "page" : undefined} className={`px-6 py-3 text-[15px] font-medium border-l-4 outline-none focus-visible:bg-border/30 ${pathname.startsWith("/admin/sample-dossier") ? "border-accent text-accent bg-accent/5" : "border-transparent text-foreground"}`}>Sample dossier</Link>
               </>
             ) : (
               <>
@@ -291,6 +296,8 @@ export function AppHeader() {
                     <Link 
                       key={link.label}
                       href={link.href} 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      aria-current={isActive ? "page" : undefined}
                       className={`px-6 py-3 text-[15px] font-medium border-l-4 outline-none focus-visible:bg-border/30 ${isActive ? "border-accent text-accent bg-accent/5" : "border-transparent text-foreground"}`}
                     >
                       {link.label}
@@ -302,7 +309,7 @@ export function AppHeader() {
             
             <div className="my-2 border-t border-border"></div>
             
-            <Link href="/account" className="flex items-center gap-3 px-6 py-3 text-[15px] text-foreground outline-none focus-visible:bg-border/30">
+            <Link href="/account" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-6 py-3 text-[15px] text-foreground outline-none focus-visible:bg-border/30">
               <User className="w-5 h-5 text-muted" /> Account Settings
             </Link>
             <button 

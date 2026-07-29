@@ -154,7 +154,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     calculation: "Scenarios do not alter sealed emissions arithmetic.",
     explanation:
       "Use scenarios to understand buyer pressure and package shape. Inspect the public sample dossier for sealed deliverables. Named logos stay permissioned-only.",
-    methodology: "H2: no invented testimonials. Anonymized scenarios are labeled as illustrative.",
+    methodology: "No invented testimonials. Anonymized scenarios are labeled as illustrative.",
     evidence: "Published /case-studies illustrative scenario set + permission note for named references.",
     expert: "Anonymized field paths beat fabricated logos.",
     relatedProblems: [
@@ -433,9 +433,9 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     explanation:
       "SAMPLE documents are watermarked specimens. EMPTY BY DESIGN pages (case studies) refuse invented logos. OWNER ACTION / EXTERNAL BLOCKER items stay visible until closed.",
     methodology:
-      "H2: no claim without evidence. Status language mirrors the seal engine’s fail-closed posture.",
+      "No claim without evidence. Status language mirrors the seal engine’s fail-closed posture.",
     evidence:
-      "Published /trust registry + full T1.3 /legal-notice identity + /verifier-review SAMPLE surface.",
+      "Published /trust registry + full /legal-notice identity + /verifier-review sample surface.",
     expert:
       "Published legal identity plus visible claim gaps beats invented completeness in enterprise procurement.",
     relatedProblems: [
@@ -445,7 +445,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
       { question: "Security facts", href: "/security", why: "No fake ISO" },
       { question: "Enterprise Exclusive", href: "/enterprise", why: "SSO SLA Holding" },
     ],
-    entities: ["trust registry", "H2", "SAMPLE", "CRO 315881", "VAT IE1857162AB"],
+    entities: ["trust registry", "SAMPLE", "CRO 315881", "VAT IE1857162AB"],
     fanOutQueries: [
       "CBAMValid trust evidence",
       "CBAMValid company registration",
@@ -458,7 +458,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     empathyLead:
       "Category expansion before CBAM leadership creates half-products and diluted trust.",
     directAnswer:
-      "Door = CBAM. Additional regimes are available only under an Enterprise expansion SOW — not as public half-products. Enterprise Exclusive also sells SSO, SLA, and holding scope for multi-site CBAM buyers. R6–R9 modules are LIVE to sell.",
+      "CBAM remains the public product scope. Additional regimes are available only under an Enterprise expansion statement of work. Enterprise also offers SSO, SLA, and holding scope for multi-site CBAM buyers.",
     calculation:
       "Additional categories would reuse the package contract and ruleset pin model — they are not live engines today.",
     explanation:
@@ -475,7 +475,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
       { question: "Product", href: "/product", why: "What ships today" },
       { question: "Security", href: "/security", why: "DPA SLA" },
     ],
-    entities: ["category architecture", "CBAM first", "Enterprise SOW", "R6-R9"],
+    entities: ["category architecture", "CBAM first", "Enterprise SOW"],
     fanOutQueries: [
       "CBAMValid platform architecture",
       "CBAMValid Enterprise SSO",
@@ -562,7 +562,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
       "Open /partners and submit the partner inquiry. Logos are published only after a signed referral agreement. The program does not create accredited verification endorsements.",
     calculation: "Partner referrals do not change sealed arithmetic.",
     explanation: "Intake is live; public partner logos remain permissioned.",
-    methodology: "H2: no invented partner logos.",
+    methodology: "No invented partner logos.",
     evidence: "Published /partners intake form.",
     expert: "Channel scale follows contracts, not invented badges.",
     relatedProblems: [

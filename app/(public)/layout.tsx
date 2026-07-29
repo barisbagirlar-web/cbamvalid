@@ -33,6 +33,9 @@ export default function PublicLayout({
         title="CBAMValid JSON Feed"
       />
       <link rel="author" href={`${siteConfig.canonicalOrigin}/about`} />
+      <a className="skip-link" href="#main">
+        Skip to main content
+      </a>
       <PublicHeader />
       {children}
       <AppFooter />

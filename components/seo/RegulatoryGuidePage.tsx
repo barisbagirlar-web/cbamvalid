@@ -25,7 +25,7 @@ export function RegulatoryGuidePage({
   const independence = getRegulatoryFact("INDEPENDENCE_BOUNDARY");
 
   return (
-    <main className="max-w-3xl mx-auto px-6 py-10 md:py-14 font-sans text-foreground">
+    <main id="main" className="max-w-3xl mx-auto px-6 py-10 md:py-14 font-sans text-foreground">
       <JsonLdForRoute path={path} />
       <nav aria-label="Breadcrumb" className="text-sm text-muted mb-4">
         <ol className="flex gap-2">
@@ -41,7 +41,18 @@ export function RegulatoryGuidePage({
 
       {/* H1 uses sans (Inter, preloaded) — serif Lora is deferred and delayed LCP on guide pages. */}
       <h1 className="font-sans text-3xl md:text-4xl font-bold tracking-tight mb-3">{route.h1}</h1>
-      <p className="text-base md:text-lg text-muted leading-relaxed mb-8">{route.description}</p>
+      <p className="text-base md:text-lg text-muted leading-relaxed mb-5">{route.description}</p>
+
+      <section className="mb-8 rounded-md border border-border bg-surface p-5" aria-labelledby="guide-next-step">
+        <h2 id="guide-next-step" className="text-lg font-serif mb-3">Next step</h2>
+        <Link
+          href={ctaHref}
+          prefetch={ctaHref.startsWith("/login") || ctaHref.startsWith("/register") ? false : undefined}
+          className="inline-flex min-h-11 items-center justify-center rounded-md bg-accent px-6 py-3 text-sm font-medium text-surface"
+        >
+          {ctaLabel}
+        </Link>
+      </section>
 
       {sections.map((section) => (
         <section key={section.id} id={section.id} className="mb-8 space-y-3">
@@ -60,17 +71,6 @@ export function RegulatoryGuidePage({
           ) : null}
         </section>
       ))}
-
-      <section className="mb-10 rounded-md border border-border bg-surface p-6">
-        <h2 className="text-xl font-serif mb-3">Next step</h2>
-        <Link
-          href={ctaHref}
-          prefetch={ctaHref.startsWith("/login") || ctaHref.startsWith("/register") ? false : undefined}
-          className="inline-flex min-h-11 items-center justify-center rounded-md bg-accent px-6 py-3 text-sm font-medium text-surface"
-        >
-          {ctaLabel}
-        </Link>
-      </section>
 
       <section className="border-t border-border pt-6 text-xs text-muted space-y-2">
         <h2 className="text-sm font-semibold text-foreground">Regulatory basis / last review</h2>

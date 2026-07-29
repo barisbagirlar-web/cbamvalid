@@ -104,8 +104,8 @@ export default function EnterprisePage() {
         <section className="section" id="r69">
           <div className="wrap">
             <div className="section-head center">
-              <span className="eyebrow">R6–R9 · Enterprise platform modules</span>
-              <h2>Live to sell — not waiting on vanity volume gates</h2>
+              <span className="eyebrow">Enterprise platform capabilities</span>
+              <h2>Enterprise capabilities available for scoping</h2>
               <p>
                 Rulesets, buyer share, security/SLA, and platform architecture are published and
                 usable in Enterprise deals today.

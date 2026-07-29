@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -24,7 +24,6 @@ import {
 import { DecimalInput } from "@/components/cbam/DecimalInput";
 import { FieldHelp } from "@/components/cbam/FieldHelp";
 import { WorkingFileJourneyStrip } from "@/components/cbam/WorkingFileJourneyStrip";
-import { packsUnlockableFromCredits } from "@/lib/billing/credit-contract";
 import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 import { assessCaseReadiness } from "@/lib/cbam/validation/readiness-assessor";
 import { performDossierCalculations } from "@/lib/cbam/calculator";
@@ -46,7 +45,6 @@ import {
 } from "@/lib/cbam/schema";
 import { uploadEvidenceFile } from "@/lib/cbam/evidence-upload";
 import {
-  getAccountOverview,
   reviewEvidence,
   saveCase,
   sealReport,
@@ -63,11 +61,11 @@ const STEPS = [
   { id: 1, label: "Who and where" },
   { id: 2, label: "What you sell" },
   { id: 3, label: "How you make it" },
-  { id: 4, label: "Emissions numbers" },
-  { id: 5, label: "Bought inputs" },
-  { id: 6, label: "Proof documents" },
-  { id: 7, label: "Fix blockers" },
-  { id: 8, label: "Lock & download" },
+  { id: 4, label: "Direct emissions" },
+  { id: 5, label: "Electricity" },
+  { id: 6, label: "Bought inputs" },
+  { id: 7, label: "Proof documents" },
+  { id: 8, label: "Fix, lock & download" },
 ] as const;
 
 const SECTORS = [
@@ -162,16 +160,16 @@ function StatusBanner({ status, tone = "neutral" }: { status: string; tone?: "ne
       : tone === "warning"
         ? "border-status-warning/40 bg-[color:var(--status-warning-soft)] text-status-warning"
         : "border-border bg-neutral-soft text-foreground";
-  return <div role="status" className={`rounded-lg border px-4 py-3 text-sm ${classes}`}>{status}</div>;
+  return <div role={tone === "error" ? "alert" : "status"} className={`rounded-lg border px-4 py-3 text-sm ${classes}`}>{status}</div>;
 }
 
 export default function CaseWizardClient({ sessionUser, initialCase, availableEntitlements }: CaseWizardClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const sealRequestId = useRef<string | null>(null);
-  const [currentStep, setCurrentStep] = useState(1);
+  const [savedSnapshot, setSavedSnapshot] = useState(() => JSON.stringify(initialCase));
   const [caseData, setCaseData] = useState<AuditReadyCase>(() => AuditReadyCaseSchema.parse(initialCase));
   const entitlements = availableEntitlements;
-  const [availableCredits, setAvailableCredits] = useState(0);
   const [saving, setSaving] = useState(false);
   const [clearingScenario, setClearingScenario] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
@@ -188,21 +186,23 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [correctionReason, setCorrectionReason] = useState("");
 
+  const currentStep = useMemo(() => {
+    if (searchParams.get("purchase") === "success") return 8;
+    const requestedStep = Number(searchParams.get("step"));
+    return Number.isInteger(requestedStep) && requestedStep >= 1 && requestedStep <= 8
+      ? requestedStep
+      : 1;
+  }, [searchParams]);
+  const isDirty = JSON.stringify(caseData) !== savedSnapshot;
+
   useEffect(() => {
-    let cancelled = false;
-    void getAccountOverview()
-      .then((overview) => {
-        if (cancelled) return;
-        const credits = overview.credits as { availableCredits?: number } | undefined;
-        setAvailableCredits(Number(credits?.availableCredits || 0));
-      })
-      .catch((error) => {
-        console.error("Failed to load case credit balance", error);
-      });
-    return () => {
-      cancelled = true;
+    const warnUnsaved = (event: BeforeUnloadEvent) => {
+      if (!isDirty) return;
+      event.preventDefault();
     };
-  }, []);
+    window.addEventListener("beforeunload", warnUnsaved);
+    return () => window.removeEventListener("beforeunload", warnUnsaved);
+  }, [isDirty]);
 
   const readiness = useMemo(() => assessCaseReadiness(caseData), [caseData]);
   const scenarioActive = useMemo(() => isIllustrativeScenarioActive(caseData), [caseData]);
@@ -236,16 +236,16 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     });
   }, [entitlements, caseData.caseId]);
 
-  const releasesRemaining = useMemo(
-    () =>
-      usableEntitlements.reduce(
-        (sum, entitlement) => sum + Number(entitlement.releasesRemaining || 0),
-        0
-      ),
-    [usableEntitlements]
-  );
-
-  const unlockablePacks = packsUnlockableFromCredits(availableCredits);
+  const setStepAndUrl = (step: number) => {
+    const safeStep = Math.min(8, Math.max(1, step));
+    const url = new URL(window.location.href);
+    url.searchParams.set("step", String(safeStep));
+    if (safeStep !== 8) {
+      url.searchParams.delete("purchase");
+    }
+    router.replace(`${url.pathname}?${url.searchParams.toString()}`, { scroll: false });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const updateDatum = (path: string, patch: Partial<InputDatum>) => {
     setCaseData((previous) => setAtPath(previous, path, (current) => ({
@@ -295,22 +295,36 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     
     const parsed = AuditReadyCaseSchema.parse(cloned);
     await saveCase(parsed, parsed.caseId);
+    const snapshot = JSON.stringify(parsed);
+    setSavedSnapshot(snapshot);
+    setCaseData(parsed);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<boolean> => {
     setSaving(true);
     setSaveStatus("");
     try {
       await persistDraft();
       setSaveTone("success");
-      setSaveStatus("Draft saved and validated by the server.");
+      setSaveStatus("Saved.");
+      return true;
     } catch (error) {
       console.error("Draft save failed", error);
       setSaveTone("error");
-      setSaveStatus(errorMessage(error));
+      setSaveStatus(`Could not save. ${errorMessage(error)} Try again before leaving this file.`);
+      return false;
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleStepChange = async (step: number) => {
+    if (step === currentStep || saving) return;
+    if (isDirty) {
+      const saved = await handleSave();
+      if (!saved) return;
+    }
+    setStepAndUrl(step);
   };
 
   const handleStartBlankCase = async () => {
@@ -323,10 +337,9 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     try {
       const blank = replaceIllustrativeScenarioWithBlank(caseData, sessionUser.uid);
       await persistDraft(blank);
-      setCaseData(blank);
       setSaveTone("success");
       setSaveStatus("Illustrative values were removed. Enter and evidence your case-specific data.");
-      setCurrentStep(1);
+      setStepAndUrl(1);
     } catch (error) {
       console.error("Illustrative scenario removal failed", error);
       setSaveTone("error");
@@ -727,7 +740,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         <div className="md:col-span-2"><FieldLabel helpKey="evidenceLinkedInput">Linked input</FieldLabel><select aria-label="Evidence linked input" value={evidenceLinkedInput} onChange={(event) => setEvidenceLinkedInput(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm">{EVIDENCE_LINK_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}{caseData.goods.flatMap((_, index) => [[`goods.${index}.cnCode`, `Good ${index + 1} CN code`], [`goods.${index}.productionVolume`, `Good ${index + 1} production`], [`goods.${index}.allocationShare`, `Good ${index + 1} allocation`]]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}{caseData.precursors.flatMap((_, index) => [[`precursors.${index}.quantity`, `Precursor ${index + 1} quantity`], [`precursors.${index}.directEmissions`, `Precursor ${index + 1} direct emissions`], [`precursors.${index}.indirectEmissions`, `Precursor ${index + 1} indirect emissions`]]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.evidenceLinkedInput.source}</p></div>
       </div><button type="button" onClick={handleEvidenceUpload} disabled={uploading} className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-sm font-semibold text-surface disabled:opacity-50">{uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />} Upload and register evidence</button><StatusBanner status={evidenceStatus} tone={evidenceStatus.toLowerCase().includes("failed") || evidenceStatus.includes("EVIDENCE_") ? "error" : "warning"} /></div>
 
-      <div className="space-y-3">{caseData.evidenceRegister.map((evidence) => <div key={evidence.evidenceId} className="rounded-xl border border-border bg-surface p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{evidence.fileName}</p><p className="text-xs text-muted">{evidence.documentType} · {evidence.sizeBytes} bytes · {evidence.reviewStatus}/{evidence.supportStatus}/{evidence.malwareScanStatus}</p><p className="mt-1 break-all font-mono text-[10px] text-muted">SHA-256 {evidence.fileHash}</p></div></div><div className="mt-3"><FieldLabel helpKey="evidenceReviewNotes">Internal review note</FieldLabel><div className="flex flex-col gap-2 md:flex-row"><input aria-label={`Review notes for ${evidence.fileName}`} value={reviewNotes[evidence.evidenceId] || ""} onChange={(event) => setReviewNotes((previous) => ({ ...previous, [evidence.evidenceId]: event.target.value }))} placeholder="Internal review note" className="flex-1 rounded border border-border bg-background p-2 text-sm" /><button type="button" disabled={evidence.malwareScanStatus !== "CLEAN"} onClick={() => handleEvidenceReview(evidence.evidenceId, "APPROVED")} className="rounded bg-status-pass px-3 py-2 text-xs font-semibold text-surface-elevated disabled:opacity-40">Approve</button><button type="button" onClick={() => handleEvidenceReview(evidence.evidenceId, "REJECTED")} className="rounded bg-status-blocked px-3 py-2 text-xs font-semibold text-surface-elevated">Reject</button></div></div>{evidence.malwareScanStatus !== "CLEAN" && <p className="mt-2 text-xs text-status-warning">Approval is disabled until an administrator records an external malware scan as CLEAN.</p>}</div>)}</div>
+      <div className="space-y-3">{caseData.evidenceRegister.map((evidence) => <div key={evidence.evidenceId} className="rounded-xl border border-border bg-surface p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{evidence.fileName}</p><p className="text-xs text-muted">{evidence.documentType} · {evidence.sizeBytes} bytes · {evidence.reviewStatus}/{evidence.supportStatus}/{evidence.malwareScanStatus}</p><p className="mt-1 break-all font-mono text-[10px] text-muted">SHA-256 {evidence.fileHash}</p></div></div><div className="mt-3"><FieldLabel helpKey="evidenceReviewNotes">Internal review note</FieldLabel><div className="flex flex-col gap-2 md:flex-row"><input aria-label={`Review notes for ${evidence.fileName}`} value={reviewNotes[evidence.evidenceId] || ""} onChange={(event) => setReviewNotes((previous) => ({ ...previous, [evidence.evidenceId]: event.target.value }))} placeholder="Internal review note" className="flex-1 rounded border border-border bg-background p-2 text-sm" /><button type="button" disabled={evidence.malwareScanStatus !== "CLEAN"} onClick={() => handleEvidenceReview(evidence.evidenceId, "APPROVED")} className="min-h-11 rounded bg-status-pass px-3 py-2 text-xs font-semibold text-surface-elevated disabled:opacity-40">Approve</button><button type="button" onClick={() => handleEvidenceReview(evidence.evidenceId, "REJECTED")} className="min-h-11 rounded bg-status-blocked px-3 py-2 text-xs font-semibold text-surface-elevated">Reject</button></div></div>{evidence.malwareScanStatus !== "CLEAN" && <div className="mt-3 rounded border border-status-warning/30 bg-[color:var(--status-warning-soft)] p-3 text-xs text-status-warning"><p>{evidence.malwareScanStatus === "PENDING" ? "Security scan is still pending. Refresh this working file later; do not upload the same document again." : "This document cannot be approved in its current scan state. Upload a clean replacement or ask support to review the scan result."}</p><a href="mailto:info@cbamvalid.com" className="mt-2 inline-flex min-h-11 items-center font-semibold underline">Contact support</a></div>}</div>)}</div>
     </div>
   );
 
@@ -735,8 +748,49 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold">8. Lock &amp; download your package</h2>
-        <p className="mt-1 text-sm text-muted">Review the automated quality controls, inspect the mathematical audit trace, and generate the final sealed verifier package.</p>
+        <p className="mt-1 text-sm text-muted">Clear any blockers, then lock and download the package for this working file.</p>
       </div>
+      <section
+        className={`rounded-xl border-2 p-5 ${
+          readiness.isEligibleForSealing
+            ? "border-forest-light bg-forest-pale text-forest"
+            : "border-status-blocked/40 bg-[color:var(--status-blocked-soft)] text-status-blocked"
+        }`}
+        aria-label="Your next action"
+      >
+        <p className="text-xs font-bold uppercase tracking-[0.14em]">Your next action</p>
+        <h3 className="mt-1 text-lg font-bold">
+          {readiness.isEligibleForSealing
+            ? usableEntitlements.length > 0
+              ? "This file is ready to lock"
+              : "Quality checks passed — pay to lock this file"
+            : `Fix ${readiness.criticalBlockers.length} blocker${readiness.criticalBlockers.length === 1 ? "" : "s"}`}
+        </h3>
+        <p className="mt-2 text-sm">
+          {readiness.isEligibleForSealing
+            ? "Payment and locking apply only to this working file. Same-file corrections remain included."
+            : "Open the blocker list below and use each “Fix in step” link. A blocked lock never creates a charge."}
+        </p>
+        {readiness.isEligibleForSealing && usableEntitlements.length === 0 ? (
+          <Link
+            href={`/credits/buy?caseId=${encodeURIComponent(caseData.caseId || "")}`}
+            className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md bg-accent px-5 py-2.5 text-sm font-semibold text-surface"
+          >
+            Pay {CANONICAL_PRICING.priceFormatted} to lock this file
+          </Link>
+        ) : null}
+        {readiness.isEligibleForSealing && usableEntitlements.length > 0 ? (
+          <button
+            type="button"
+            onClick={handleSeal}
+            disabled={sealing}
+            className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent px-5 py-2.5 text-sm font-semibold text-surface disabled:opacity-50"
+          >
+            {sealing ? <Loader2 className="h-4 w-4 animate-spin" /> : <LockKeyhole className="h-4 w-4" />}
+            Lock &amp; download package
+          </button>
+        ) : null}
+      </section>
       {scenarioActive && calculation.result && (
         <section className="rounded-xl border-2 border-forest-light bg-forest-pale p-6 text-forest" aria-label="Illustrative scenario report">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
@@ -808,7 +862,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
                   <article key={gap.gapId} className="rounded-lg border border-status-blocked/30 bg-[color:var(--status-blocked-soft)] p-4 text-xs text-status-blocked">
                     <div className="flex items-start gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-status-blocked" /><div><h4 className="font-bold">{gap.requirement}</h4><p className="mt-1 leading-relaxed text-status-blocked">{gap.whyItMatters}</p></div></div>
                     <div className="mt-3 rounded border border-status-blocked/30 bg-surface-elevated/70 p-3"><p><strong>How to fix:</strong> {resolution.action}</p><p className="mt-1"><strong>Evidence:</strong> {resolution.evidence}</p></div>
-                    <button type="button" onClick={() => setCurrentStep(resolution.step)} className="mt-3 inline-flex items-center gap-1 font-semibold text-status-blocked underline underline-offset-2">Fix in step {resolution.step} <ArrowRight className="h-3 w-3" /></button>
+                    <button type="button" onClick={() => void handleStepChange(resolution.step)} className="mt-3 inline-flex min-h-11 items-center gap-1 font-semibold text-status-blocked underline underline-offset-2">Fix in step {resolution.step} <ArrowRight className="h-3 w-3" /></button>
                   </article>
                 );
               })}
@@ -817,7 +871,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
 
           {currentReleasesCount > 0 && (
             <div className="mt-5 border-t border-border pt-4">
-              <FieldLabel helpKey="correctionReason">Correction Reason (Required for Release {currentReleasesCount + 1})</FieldLabel>
+              <FieldLabel helpKey="correctionReason">Correction reason for this update</FieldLabel>
               <textarea
                 aria-label="Correction reason"
                 value={correctionReason}
@@ -849,7 +903,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
             <button type="button" aria-label="Lock and download package" onClick={handleSeal} disabled={sealing} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-40">{sealing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Lock &amp; download package</button>
           ) : null}
           {readiness.isEligibleForSealing ? null : (
-            <button type="button" onClick={() => setCurrentStep(scenarioActive ? 1 : 7)} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface"><FileUp className="h-4 w-4" /> {scenarioActive ? "Replace demo with case data" : "Resolve evidence blockers"}</button>
+            <button type="button" onClick={() => void handleStepChange(scenarioActive ? 1 : 7)} className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface"><FileUp className="h-4 w-4" /> {scenarioActive ? "Replace demo with case data" : "Resolve evidence blockers"}</button>
           )}
           <StatusBanner status={sealStatus} tone="error" />
           <p className="mt-3 text-xs text-muted">
@@ -870,92 +924,120 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   );
 
   const stepContent = [renderStep1, renderStep2, renderStep3, renderStep4, renderStep5, renderStep6, renderStep7, renderStep8][currentStep - 1];
+  const activeStep = STEPS[currentStep - 1] ?? STEPS[0];
+  const workingFileName =
+    String(caseData.installation?.name?.value || "").trim() ||
+    String(caseData.exporterIdentity?.legalName?.value || "").trim() ||
+    "Working file";
 
   return (
-    <main className="min-h-screen bg-background px-4 py-8 pb-32 text-foreground md:px-8">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <header className="flex flex-col justify-between gap-4 border-b border-border pb-4 md:flex-row md:items-center">
-          <div>
-            <h1 className="text-2xl font-bold">Working file</h1>
-            <p className="text-sm text-muted">
-              ID: {caseData.caseId || "UNASSIGNED"} · User: {sessionUser.email || sessionUser.uid} · One factory · one year
+    <main className="min-h-screen bg-background px-4 py-4 pb-28 text-foreground md:px-8 md:py-6">
+      <div className="mx-auto max-w-7xl space-y-4">
+        <header className="flex flex-col justify-between gap-3 border-b border-border pb-4 sm:flex-row sm:items-center">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wider text-accent">
+              Step {currentStep} of 8
+            </p>
+            <h1 className="truncate text-2xl font-bold">{activeStep.label}</h1>
+            <p className="mt-1 text-sm text-muted">
+              Complete this section, then save and continue.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="inline-flex items-center justify-center gap-2 rounded border border-border bg-neutral-soft px-4 py-2 text-sm font-medium disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{" "}
-            {saving ? "Saving…" : "Save draft"}
-          </button>
-        </header>
-
-        <WorkingFileJourneyStrip
-          currentStep={currentStep}
-          completenessPercentage={readiness.completenessPercentage}
-          blockerCount={readiness.criticalBlockers.length}
-          releasesRemaining={releasesRemaining}
-          unlockablePacks={unlockablePacks}
-          caseId={caseData.caseId || ""}
-          canLock={readiness.isEligibleForSealing && usableEntitlements.length > 0}
-          onGoToStep={setCurrentStep}
-          onLock={() => void handleSeal()}
-        />
-
-        {scenarioActive && (
-          <aside className="flex flex-col justify-between gap-4 rounded-xl border-2 border-forest-light bg-forest-pale p-5 text-forest md:flex-row md:items-center">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em]">Illustrative scenario active</p>
-              <p className="mt-1 max-w-3xl text-sm leading-relaxed">
-                Every step is prefilled with a coherent steel-export example. Review the inputs, open the field guidance, and inspect the calculated scenario report in step 8. These values are not evidence and cannot be locked.
-              </p>
-            </div>
+          <div className="flex items-center gap-3">
+            <span className={`text-xs font-medium ${isDirty ? "text-status-warning" : "text-muted"}`}>
+              {saving ? "Saving…" : isDirty ? "Unsaved changes" : "Saved"}
+            </span>
             <button
               type="button"
-              onClick={handleStartBlankCase}
-              disabled={clearingScenario}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded border border-forest bg-surface-elevated px-4 py-2 text-sm font-semibold disabled:opacity-50"
+              onClick={() => void handleSave()}
+              disabled={saving || !isDirty}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded border border-border bg-surface px-4 py-2 text-sm font-medium disabled:opacity-50"
             >
-              {clearingScenario ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eraser className="h-4 w-4" />}{" "}
-              {clearingScenario ? "Removing…" : "Start with blank working file"}
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save
             </button>
-          </aside>
-        )}
-
-        <div className="rounded-lg border border-status-warning/30 bg-[color:var(--status-warning-soft)] p-4 text-xs text-status-warning leading-relaxed print:hidden flex gap-3 items-start">
-          <Shield className="w-4 h-4 text-status-warning shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <strong>Regulatory Disclaimer:</strong> This platform generates an exporter-prepared verification dossier to streamline independent audit preparation. It is <strong>NOT</strong> an official European Commission verification opinion and does not substitute for independent verification by an EU accredited body.
           </div>
-        </div>
+        </header>
 
         <StatusBanner status={saveStatus} tone={saveTone} />
 
-        <section className="py-2 md:py-4">{stepContent()}</section>
+        <div className="grid gap-5 lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-start">
+          <aside className="order-2 lg:order-1 lg:sticky lg:top-24">
+            <WorkingFileJourneyStrip
+              currentStep={currentStep}
+              completenessPercentage={readiness.completenessPercentage}
+              blockerCount={readiness.criticalBlockers.length}
+              hasPaidUnlock={usableEntitlements.length > 0}
+              caseId={caseData.caseId || ""}
+              canLock={readiness.isEligibleForSealing && usableEntitlements.length > 0}
+              onGoToStep={(step) => void handleStepChange(step)}
+              onLock={() => void handleSeal()}
+            />
+            <details className="mt-3 rounded-lg border border-border bg-surface p-3 text-xs text-muted">
+              <summary className="cursor-pointer font-semibold text-foreground">File details</summary>
+              <dl className="mt-3 space-y-2">
+                <div><dt className="font-semibold">File</dt><dd>{workingFileName}</dd></div>
+                <div><dt className="font-semibold">Scope</dt><dd>One installation · one reporting year</dd></div>
+                <div><dt className="font-semibold">File ID</dt><dd className="break-all font-mono text-[10px]">{caseData.caseId || "UNASSIGNED"}</dd></div>
+              </dl>
+            </details>
+          </aside>
+
+          <div className="order-1 min-w-0 space-y-4 lg:order-2">
+            {scenarioActive && (
+              <aside className="flex flex-col justify-between gap-3 rounded-xl border border-forest-light bg-forest-pale p-4 text-forest sm:flex-row sm:items-center">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em]">Illustrative scenario</p>
+                  <p className="mt-1 text-sm">Example values are visible for learning only and cannot be locked.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleStartBlankCase}
+                  disabled={clearingScenario}
+                  className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded border border-forest bg-surface-elevated px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                >
+                  {clearingScenario ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eraser className="h-4 w-4" />}
+                  {clearingScenario ? "Removing…" : "Start blank"}
+                </button>
+              </aside>
+            )}
+
+            <section aria-label={`Step ${currentStep}: ${activeStep.label}`} className="py-1">
+              {stepContent()}
+            </section>
+
+            <details className="rounded-lg border border-status-warning/30 bg-[color:var(--status-warning-soft)] p-4 text-xs leading-relaxed text-status-warning print:hidden">
+              <summary className="cursor-pointer font-semibold">Independent-verification boundary</summary>
+              <p className="mt-2">
+                CBAMValid generates an exporter-prepared verification dossier. It is not an official European Commission verification opinion and does not replace independent verification by an appropriately accredited body.
+              </p>
+            </details>
+          </div>
+        </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface p-4 shadow-[0_-4px_8px_rgba(0,0,0,0.08)]">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface px-3 py-3 shadow-[0_-4px_8px_rgba(0,0,0,0.08)]">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2">
           <button
             type="button"
-            onClick={() => setCurrentStep((step) => Math.max(1, step - 1))}
-            disabled={currentStep === 1}
-            className="inline-flex items-center gap-2 rounded border border-border px-4 py-2 disabled:opacity-40"
+            onClick={() => void handleStepChange(currentStep - 1)}
+            disabled={currentStep === 1 || saving}
+            className="inline-flex min-h-11 items-center gap-2 rounded border border-border px-3 py-2 text-sm disabled:opacity-40 sm:px-4"
           >
             <ArrowLeft className="h-4 w-4" /> Previous
           </button>
-          <span className="text-sm font-bold text-muted">
+          <span className="hidden text-sm font-bold text-muted sm:block">
             Step {currentStep} of 8 · {STEPS[currentStep - 1]?.label}
           </span>
           <button
             type="button"
-            onClick={() => setCurrentStep((step) => Math.min(8, step + 1))}
-            disabled={currentStep === 8}
-            className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-surface disabled:opacity-40"
+            onClick={() => currentStep === 8 ? void handleSave() : void handleStepChange(currentStep + 1)}
+            disabled={saving || (currentStep === 8 && !isDirty)}
+            className="inline-flex min-h-11 items-center gap-2 rounded bg-accent px-3 py-2 text-sm font-semibold text-surface disabled:opacity-40 sm:px-4"
           >
-            Next <ArrowRight className="h-4 w-4" />
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : currentStep === 8 ? <Save className="h-4 w-4" /> : null}
+            {currentStep === 8 ? "Save draft" : "Save & continue"}
+            {currentStep < 8 ? <ArrowRight className="h-4 w-4" /> : null}
           </button>
         </div>
       </div>

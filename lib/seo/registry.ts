@@ -58,9 +58,9 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     path: "/pricing",
     pageType: "pricing",
     indexability: "index",
-    title: "Pricing | USD 149 Exporter Verification Preparation Pack",
+    title: "Pricing | USD 449 Exporter Verification Preparation Pack",
     description:
-      "USD 149 one-time for one installation, one reporting year, and five sealed releases. Drafts are free. No subscription.",
+      "Draft free, then pay USD 449 once to lock and download one case-scoped working file. Same-file correction re-locks are included.",
     h1: "Prepare your CBAM case before you pay",
     canonicalPath: "/pricing",
     primaryIntent: "CBAMValid pricing",
@@ -608,7 +608,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     title: "Channel Partner Program | CBAMValid",
     description:
       "CBAMValid partner intake for verifier firms, consultancies, and trade associations. Logos published only after a signed referral agreement.",
-    h1: "Partner program — intake live",
+    h1: "Partner program",
     canonicalPath: "/partners",
     primaryIntent: "CBAMValid channel partners",
     audience: ["verifiers", "consultancies", "associations"],
@@ -650,7 +650,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     title: "Platform Architecture | CBAM First, Reusable Package Contract | CBAMValid",
     description:
       "CBAMValid category architecture: EU CBAM is the live door; the sealed package contract can accept other regimes later. No second regulated product is sold until opening conditions are met.",
-    h1: "Door = CBAM. Room is larger.",
+    h1: "CBAM-first platform architecture",
     canonicalPath: "/platform",
     primaryIntent: "CBAMValid platform architecture",
     audience: ["prospects", "partners", "investors"],
@@ -697,7 +697,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
   {
     path: "/cbam-methodology",
     pageType: "guide",
-    indexability: "index",
+    indexability: "noindex",
     title: "CBAM Methodology Overview | Rulesets and Calculation Trace",
     description:
       "Overview of CBAM methodology choices, ruleset versioning, and why sealed calculation traces must be reproducible.",
@@ -705,7 +705,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     canonicalPath: "/cbam-methodology",
     primaryIntent: "CBAM methodology",
     audience: ["technical preparers", "reviewers"],
-    sitemapEligible: true,
+    sitemapEligible: false,
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/methodology", "/cbam-embedded-emissions-calculation", "/product"],
     regulatorySourceIds: ["REG_2023_956", "IMPL_2025_2547"],

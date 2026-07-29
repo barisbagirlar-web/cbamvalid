@@ -71,6 +71,13 @@ walk(rootDir, (filePath) => {
   }
 
   for (const word of forbiddenTurkishSubstrings) {
+    if (word === "PLACEHOLDER") {
+      // Flag customer-facing placeholder markers, not identifiers such as FORBIDDEN_PLACEHOLDERS.
+      if (/"PLACEHOLDER"|'PLACEHOLDER'|`PLACEHOLDER`|\bPLACEHOLDER:/.test(content)) {
+        logError(relPath, `Contains forbidden Turkish terminology: "${word}"`);
+      }
+      continue;
+    }
     if (content.includes(word)) {
       logError(relPath, `Contains forbidden Turkish terminology: "${word}"`);
     }

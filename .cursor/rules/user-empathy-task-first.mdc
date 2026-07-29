@@ -1,0 +1,37 @@
+---
+description: Enforce user-empathy and task-first product decisions in every change
+alwaysApply: true
+---
+
+# User Empathy and Task-First Product Principle
+
+Before designing, changing, reviewing, or testing anything, answer:
+
+1. Who is the user at this moment?
+2. What single outcome are they trying to achieve?
+3. What do they need to see or do next?
+4. What creates delay, confusion, anxiety, or abandonment?
+5. Does the proposed change shorten the path to the outcome?
+
+## Binding Rules
+
+- Think from the user's workflow, not the system's internal structure.
+- Put the user's primary task and next action first; supporting status, metadata, explanations, and legal text must not obscure it.
+- The first useful screen should show the working area or primary result whenever possible.
+- Preserve context across navigation; never make users rediscover where they were or what to do next.
+- Use plain, action-oriented language. Every screen must make “what happens next?” obvious.
+- Minimize clicks, scrolling, repeated input, waiting, and unnecessary choices.
+- Show technical IDs, diagnostics, and internal state only when they help the user act; otherwise abbreviate, collapse, or move them to secondary detail.
+- Prevent mistakes before they happen. Explain blockers with a specific recovery action.
+- Respect users' time and money: never add ceremony before work, checkout, completion, or delivery.
+- Do not trade away security, tenant isolation, calculation integrity, evidence requirements, accessibility, or mandatory legal disclosure. Present required controls at the least disruptive point without weakening them.
+- Never assume empathy was achieved because the UI looks cleaner; verify the real user journey from entry to outcome.
+
+## Acceptance Check
+
+For every user-facing change, verify twice:
+
+1. **First-view check:** Can the user immediately identify and begin the primary task?
+2. **Journey check:** Can the user reach the intended outcome without avoidable confusion, repetition, or dead ends?
+
+If either answer is no or not proven, the work is not complete. Record the gap as `FAIL` or `NOT_PROVEN` and fix it before claiming completion.

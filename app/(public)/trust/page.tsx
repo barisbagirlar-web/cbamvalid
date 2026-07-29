@@ -17,9 +17,7 @@ const STATUS_LABEL: Record<EvidenceStatus, string> = {
   VERIFIED: "VERIFIED",
   SAMPLE: "SAMPLE",
   EMPTY_BY_DESIGN: "EMPTY BY DESIGN",
-  OWNER_ACTION: "OWNER ACTION",
   CODE_PROVEN: "CODE PROVEN",
-  EXTERNAL_BLOCKER: "EXTERNAL BLOCKER",
 };
 
 export default function TrustPage() {
@@ -41,35 +39,26 @@ export default function TrustPage() {
             <p className="lede">{TRUST_PUBLIC.lede}</p>
             <div className="hero-ctas">
               <Link className="btn btn-primary" href="/verifier-review">
-                Structure review surface
-              </Link>
-              <Link className="btn btn-ghost" href="/legal-notice">
-                Legal notice
-              </Link>
-              <Link className="btn btn-ghost" href="/security">
-                Security &amp; DPA
+                Inspect the structure review
               </Link>
             </div>
+            <p className="hero-secondary-link">
+              Supporting records: <Link href="/legal-notice">legal notice</Link>
+              {" · "}
+              <Link href="/security">security and data protection</Link>
+            </p>
           </div>
         </section>
 
         <section className="section">
           <div className="wrap" style={{ maxWidth: "920px" }}>
-            <div className="deliv-grid" style={{ marginBottom: "28px" }}>
+            <div style={{ marginBottom: "28px" }}>
               <div className="deliv-card">
                 <span className="fmt">REGISTRY</span>
-                <h3>{summary.total} claim slots</h3>
+                <h3>{summary.total} published evidence records</h3>
                 <p>
                   VERIFIED {summary.counts.VERIFIED} · CODE {summary.counts.CODE_PROVEN} · SAMPLE{" "}
                   {summary.counts.SAMPLE} · EMPTY {summary.counts.EMPTY_BY_DESIGN}
-                </p>
-              </div>
-              <div className="deliv-card">
-                <span className="fmt">OPEN GAPS</span>
-                <h3>{summary.blocking.length} blocking</h3>
-                <p>
-                  OWNER_ACTION {summary.counts.OWNER_ACTION} · EXTERNAL_BLOCKER{" "}
-                  {summary.counts.EXTERNAL_BLOCKER} — visible, not invented.
                 </p>
               </div>
             </div>
@@ -82,11 +71,6 @@ export default function TrustPage() {
                   </span>
                   <h3 style={{ marginBottom: "8px" }}>{item.title}</h3>
                   <p style={{ marginBottom: "8px" }}>{item.proof}</p>
-                  {item.ownerAction ? (
-                    <div className="notice" style={{ marginTop: "10px" }}>
-                      <b>Required:</b> {item.ownerAction}
-                    </div>
-                  ) : null}
                   {item.publicHref ? (
                     <p style={{ marginTop: "12px" }}>
                       <Link href={item.publicHref}>Open surface →</Link>

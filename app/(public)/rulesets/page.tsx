@@ -15,7 +15,7 @@ export default function RulesetsPage() {
       <section className="hero" style={{ paddingBottom: "40px" }}>
         <div className="wrap" style={{ maxWidth: "820px" }}>
           <AuthorityRail mode="compact" eyebrow="Authority · Version-pinned rules" />
-          <span className="eyebrow">R6 · Authority surface</span>
+          <span className="eyebrow">Published rulesets</span>
           <h1>
             Published rulesets
             <br />

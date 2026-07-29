@@ -778,22 +778,22 @@ export default function CbamLandingPage() {
                       />
                     ) : (
                       <Link
-                        href="/credits/buy"
+                        href={primaryWorkingFileId ? `/cases/${encodeURIComponent(primaryWorkingFileId)}?step=8` : "/cases/new"}
                         className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center justify-center gap-1.5 w-full shadow-sm"
                       >
-                        <ShoppingBag className="w-3.5 h-3.5" /> Buy Pack — {CANONICAL_PRICING.priceFormatted}
+                        <ShoppingBag className="w-3.5 h-3.5" /> {primaryWorkingFileId ? "Continue to payment step" : "Create a working file"}
                       </Link>
                     )}
                   </div>
                 )}
                 <div className="mt-6 border-t border-border pt-4 text-xs text-muted space-y-2">
                   <p>
-                    <strong>1 pack includes:</strong>
+                    <strong>One paid working file includes:</strong>
                   </p>
                   <ul className="list-disc list-inside space-y-1 pl-1">
                     <li>1 working file scope (operator · installation · year)</li>
                     <li>Unlimited drafts</li>
-                    <li>5 successful locks</li>
+                    <li>Same-file correction re-locks</li>
                     <li>Free re-download of locked packages</li>
                   </ul>
                 </div>

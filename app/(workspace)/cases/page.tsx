@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthProvider";
 import {
   formatCaseUpdatedDate,
   getCaseDisplayName,
+  getCaseReportingYear,
   getPrimaryCnCode,
 } from "@/lib/cbam/case-summary";
 import { getCases, type CbamCaseRecord } from "@/lib/functions/client";
@@ -36,7 +37,11 @@ function PaginationControls({
   const startItem = (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalItems);
 
-  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+  const pages = totalPages <= 7
+    ? Array.from({ length: totalPages }, (_, index) => index + 1)
+    : Array.from(new Set([1, currentPage - 1, currentPage, currentPage + 1, totalPages]))
+        .filter((page) => page >= 1 && page <= totalPages)
+        .sort((a, b) => a - b);
 
   return (
     <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border pt-4 text-xs">
@@ -205,23 +210,23 @@ export default function CasesPage() {
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight font-serif text-foreground">Working files</h1>
             <p className="text-muted text-sm mt-1">
-              Cases = editable working files for one installation and one reporting year. Locking creates a separate locked package.
+              Choose a file to continue. Each working file covers one installation and one reporting year.
             </p>
           </div>
           <Link
             href="/cases/new"
-            className="bg-accent hover:bg-accent-hover text-surface px-4 py-2 rounded-md font-semibold text-xs transition-colors flex items-center gap-1.5 shadow-sm"
+            className="flex min-h-11 items-center gap-1.5 rounded-md bg-accent px-4 py-2 text-xs font-semibold text-surface shadow-sm transition-colors hover:bg-accent-hover"
           >
-            <Plus className="w-3.5 h-3.5" /> Start New Case
+            <Plus className="w-3.5 h-3.5" /> Start working file
           </Link>
         </div>
 
         {cases.length === 0 ? (
           <div className="bg-surface border border-border border-dashed rounded-2xl p-12 text-center max-w-xl mx-auto shadow-sm">
             <Clock className="w-10 h-10 text-muted/65 mx-auto mb-4" />
-            <h2 className="text-xl font-bold mb-2">No Active Cases Found</h2>
+            <h2 className="text-xl font-bold mb-2">No working files yet</h2>
             <p className="text-muted text-sm mb-6 leading-relaxed">
-              Create your initial draft dossier to start calculating embedded emissions and mapping production routes under EU CBAM rules.
+              Start one working file for one installation and reporting year. You can draft for free.
             </p>
             <Link
               href="/cases/new"
@@ -233,7 +238,7 @@ export default function CasesPage() {
         ) : (
           <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold font-serif">Working files (Cases)</h3>
+              <h3 className="text-lg font-bold font-serif">Working files</h3>
               <span className="text-xs text-muted font-mono">{cases.length} Total</span>
             </div>
             <div className="space-y-4">
@@ -244,20 +249,20 @@ export default function CasesPage() {
                 >
                   <div>
                     <p className="font-semibold text-sm">{getCaseDisplayName(cbamCase.data)}</p>
-                    <p className="text-xs text-muted mt-1 font-mono">
-                      Case ID: {cbamCase.caseId} | CN Code: {getPrimaryCnCode(cbamCase.data)} | Updated: {formatCaseUpdatedDate(cbamCase.updatedAt)}
+                    <p className="text-xs text-muted mt-1">
+                      Reporting year: {getCaseReportingYear(cbamCase.data)} · CN code: {getPrimaryCnCode(cbamCase.data)} · Updated: {formatCaseUpdatedDate(cbamCase.updatedAt)}
                     </p>
                     <div className="mt-2 flex items-center gap-2">
                       <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-neutral-soft text-foreground border border-border">
-                        Draft mode
+                        Working file
                       </span>
                     </div>
                   </div>
                   <Link
                     href={`/cases/${cbamCase.caseId}`}
-                    className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center gap-1 self-end sm:self-auto"
+                    className="flex min-h-11 items-center gap-1 rounded-md bg-accent px-4 py-2 text-xs font-semibold text-surface transition-colors hover:bg-accent-hover self-end sm:self-auto"
                   >
-                    Resume Draft <ArrowRight className="w-3 h-3" />
+                    Continue <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>
               ))}
@@ -268,7 +273,7 @@ export default function CasesPage() {
               onPageChange={setCurrentPage}
               totalItems={cases.length}
               pageSize={ITEMS_PER_PAGE}
-              itemLabel="draft cases"
+              itemLabel="working files"
             />
           </div>
         )}

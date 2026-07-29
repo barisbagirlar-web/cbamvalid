@@ -193,16 +193,33 @@ export default function VerifyPageClient() {
           typeof result.issuedAt === "number"
             ? new Date(result.issuedAt).toUTCString()
             : result.issuedAt;
+        const isActive = state === "VALID";
+        const statusColor =
+          state === "REVOKED" ? "var(--err)" : state === "SUPERSEDED" ? "var(--warn)" : "var(--ok)";
+        const statusBackground =
+          state === "REVOKED"
+            ? "var(--err-soft)"
+            : state === "SUPERSEDED"
+              ? "var(--warn-soft)"
+              : "var(--ok-soft)";
+        const statusLabel =
+          state === "VALID" ? "ACTIVE" : state === "SUPERSEDED" ? "SUPERSEDED" : "REVOKED";
+        const statusTitle =
+          state === "VALID"
+            ? "Active seal integrity confirmed"
+            : state === "SUPERSEDED"
+              ? "Seal is authentic but no longer active"
+              : "Seal is authentic but revoked";
 
         return (
           <div
-            className="verify-result show success"
+            className={`verify-result show ${isActive ? "success" : state.toLowerCase()}`}
             style={{
               padding: "24px",
-              background: "var(--ok-soft)",
-              color: "var(--ok)",
+              background: statusBackground,
+              color: statusColor,
               borderRadius: "12px",
-              border: "1.5px solid var(--ok)",
+              border: `1.5px solid ${statusColor}`,
               marginTop: "24px",
               display: "flex",
               flexDirection: "column",
@@ -213,7 +230,7 @@ export default function VerifyPageClient() {
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                borderBottom: "1px solid var(--ok)",
+                borderBottom: `1px solid ${statusColor}`,
                 paddingBottom: "12px",
                 flexWrap: "wrap",
                 gap: "12px",
@@ -224,7 +241,7 @@ export default function VerifyPageClient() {
                   className="eyebrow"
                   style={{
                     display: "inline-block",
-                    background: "var(--ok)",
+                    background: statusColor,
                     color: "var(--card)",
                     borderColor: "transparent",
                     fontSize: "0.65rem",
@@ -232,10 +249,10 @@ export default function VerifyPageClient() {
                     marginBottom: "8px",
                   }}
                 >
-                  {state === "VALID" ? "AUTHENTIC SEAL" : state === "SUPERSEDED" ? "SUPERSEDED" : "REVOKED"}
+                  {statusLabel}
                 </span>
                 <h3 style={{ margin: 0, fontFamily: "var(--sans)", fontWeight: "bold" }}>
-                  Cryptographic Seal Verified
+                  {statusTitle}
                 </h3>
               </div>
               <span
@@ -388,9 +405,9 @@ export default function VerifyPageClient() {
                   lineHeight: "1.4",
                 }}
               >
-                <strong>Attention:</strong> This report has been replaced by a newer version.
-                Importers are recommended to request the latest active revision of the sealed
-                dossier.
+                This seal&apos;s cryptographic integrity matches the registered record, but this
+                version has been replaced. Do not treat it as the active release; request the latest
+                active revision.
               </div>
             )}
 
@@ -406,8 +423,9 @@ export default function VerifyPageClient() {
                   lineHeight: "1.4",
                 }}
               >
-                <strong>Warning:</strong> The exporter or CBAMValid authority has explicitly revoked
-                this document seal. It should not be used for compliance submissions.
+                This seal&apos;s cryptographic integrity matches the registered record, but its
+                release status is revoked. Do not use or rely on this release; contact the exporter
+                for an active replacement.
               </div>
             )}
           </div>

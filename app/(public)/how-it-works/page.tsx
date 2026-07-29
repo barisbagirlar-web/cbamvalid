@@ -21,7 +21,7 @@ export default function Page() {
     <main id="main">
       <section className="hero" style={{ paddingBottom: "40px" }}>
         <div className="wrap" style={{ textAlign: "center" }}>
-          <span className="eyebrow">T4.2 · Readiness kit</span>
+          <span className="eyebrow">Free readiness kit</span>
           <h1 style={{ maxWidth: "820px", marginLeft: "auto", marginRight: "auto" }}>
             From raw plant data to a sealed package — without email chaos
           </h1>
@@ -41,13 +41,10 @@ export default function Page() {
             <a className="btn btn-primary" href={PREFLIGHT_XLSX_HREF} download>
               Download pre-flight XLSX
             </a>
-            <a className="btn btn-ghost" href={PREFLIGHT_CSV_HREF} download>
-              Download CSV
-            </a>
-            <Link className="btn btn-ghost" href="/demo">
-              Book a demo
-            </Link>
           </div>
+          <p className="hero-secondary-link">
+            Prefer plain text? <a href={PREFLIGHT_CSV_HREF} download>Download the CSV version.</a>
+          </p>
         </div>
       </section>
 

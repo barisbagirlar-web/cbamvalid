@@ -19,7 +19,7 @@ export default function SecurityPage() {
     <main id="main">
       <section className="hero" style={{ paddingBottom: "40px" }}>
         <div className="wrap" style={{ maxWidth: "820px" }}>
-          <span className="eyebrow">R8 · Trust &amp; security surface</span>
+          <span className="eyebrow">Trust &amp; security</span>
           <h1>
             Security &amp; data protection
             <br />

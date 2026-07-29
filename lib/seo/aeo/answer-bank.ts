@@ -78,7 +78,7 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       },
     ],
     routes: ["/", "/pricing", "/how-it-works"],
-    relatedPaths: ["/pricing", "/credits/buy"],
+    relatedPaths: ["/pricing", "/how-it-works"],
     schemaEligible: true,
   },
   {
@@ -615,10 +615,10 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       "CRO VAT published",
       "fake logos",
       "proof chain",
-      "OWNER ACTION",
+      "evidence status",
     ],
     directAnswer:
-      "CBAMValid publishes a Trust Evidence Registry at /trust. Each marketing claim is tagged VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Legal identity is published: SectorCalc Corporation (CBAMValid), CRO 315881, VAT IE1857162AB, Dublin registered address, support phone, and DPO contact. /case-studies publishes anonymized illustrative scenarios — not named logos. SAMPLE documents are watermarked specimens — not certificates.",
+      "CBAMValid publishes a Trust Evidence Registry at /trust. Public claims link to published evidence, source-backed code, a watermarked sample, or an explicit non-claim. Legal identity is published in the legal notice. /case-studies uses anonymized illustrative scenarios — not named logos. Sample documents are specimens, not certificates.",
     empathyContext:
       "Procurement teams reverse-engineer claims. Invented identity destroys enterprise deals permanently.",
     evidence: [
@@ -630,7 +630,7 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       },
       {
         label: "Legal notice",
-        detail: "Full T1.3 identity block — CRO, VAT, address, phone, DPO",
+        detail: "Published identity block — CRO, VAT, address, phone, and DPO contact",
         href: "/legal-notice",
         evidenceStatus: "verified",
       },
@@ -821,10 +821,10 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
   },
   {
     id: "enterprise-platform-modules",
-    question: "Are R6–R9 Enterprise platform modules live to sell?",
-    aliases: ["R6 rulesets", "R7 buyer link", "R8 security SLA", "R9 platform"],
+    question: "Which Enterprise platform capabilities can buyers inspect?",
+    aliases: ["published rulesets", "buyer link", "security SLA", "platform architecture"],
     directAnswer:
-      "Yes. Published Rulesets (R6), Buyer Share Link (R7), Security/DPA/SLA (R8), and Platform architecture (R9) are live sellable surfaces. Additional regulatory categories beyond CBAM remain Enterprise SOW-only — CBAMValid does not sell half-products.",
+      "Buyers can inspect published rulesets, the buyer share-link integrity flow, security and procurement documents, and the platform architecture before a scoping call. Additional regulatory categories beyond CBAM remain Enterprise statement-of-work only.",
     empathyContext:
       "Enterprise buyers reject vaporware roadmaps. Modules must be inspectable before a scoping call.",
     evidence: [

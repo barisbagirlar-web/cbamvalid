@@ -72,6 +72,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 .wrap{max-width:var(--wrap);margin:0 auto;padding:0 28px}
 ::selection{background:var(--terra);color:var(--card)}
 
+.skip-link{
+  position:fixed;top:10px;left:10px;z-index:1000;
+  padding:10px 14px;border-radius:8px;background:var(--ink);color:var(--card);
+  transform:translateY(-160%);transition:transform .15s ease;
+}
+.skip-link:focus{transform:translateY(0)}
+:where(a,button,input,select,textarea,[tabindex]):focus-visible{
+  outline:3px solid var(--gold);outline-offset:3px;
+}
+
 /* ---------- Typography ---------- */
 h1,h2,h3{font-family:var(--serif);font-weight:560;line-height:1.14;letter-spacing:-.01em;color:var(--ink)}
 h1{font-size:clamp(2.5rem,5.2vw,4rem)}
@@ -175,6 +185,8 @@ h3{font-size:1.35rem}
 }
 .price-line span{color:var(--muted);font-weight:400}
 .hero-ctas{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:26px}
+.hero-secondary-link{margin:-12px 0 24px;color:var(--muted);font-size:.9rem}
+.hero-secondary-link a{color:var(--terra-dark);text-decoration:underline;text-underline-offset:3px}
 .hero-micro{display:flex;gap:22px;flex-wrap:wrap;font-family:var(--mono);font-size:.74rem;color:var(--muted)}
 .hero-micro li{display:flex;align-items:center;gap:7px}
 .hero-micro svg{color:var(--ok);flex:none}
@@ -683,6 +695,10 @@ h3{font-size:1.35rem}
 .ruleset-table td{padding:15px 20px;border-bottom:1px solid var(--line-soft)}
 .ruleset-table tr:last-child td{border:none}
 .ruleset-table .mono{font-size:.76rem;color:var(--terra-dark)}
+@media (max-width:720px){
+  .ruleset-table{display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .ruleset-table th,.ruleset-table td{min-width:180px}
+}
 
 /* ---------- Verify ---------- */
 .verify-box{max-width:620px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:44px;box-shadow:var(--shadow-md)}

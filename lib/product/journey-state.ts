@@ -113,10 +113,7 @@ export function resolveJourneyState(input: JourneyInput): JourneyView {
       headline: "Start with one working file",
       explanation: CUSTOMER_LANGUAGE.oneLineStory,
       primaryCta: { label: CUSTOMER_LANGUAGE.createFile, href: "/cases/new" },
-      secondaryCta: {
-        label: `${CASE_COMMERCIAL.paymentCtaLabel}`,
-        href: "/credits/buy",
-      },
+      secondaryCta: { label: "View sample package", href: "/sample-dossier" },
       packSummary,
     };
   }
@@ -173,18 +170,18 @@ export function resolveJourneyState(input: JourneyInput): JourneyView {
         ? "Downloads of prior locked packages stay free. Start a new working file for another factory or year, then pay when you lock that file."
         : CASE_COMMERCIAL.customerOneLiner,
       primaryCta: hasFile
-        ? {
-            label: CASE_COMMERCIAL.paymentCtaLabel,
-            href: input.primaryWorkingFileId
-              ? `/credits/buy?caseId=${encodeURIComponent(input.primaryWorkingFileId)}`
-              : "/credits/buy",
-          }
+        ? { label: CUSTOMER_LANGUAGE.continueFile, href: fileHref }
         : {
             label: CUSTOMER_LANGUAGE.createFile,
             href: "/cases/new",
           },
       secondaryCta: hasFile
-        ? { label: CUSTOMER_LANGUAGE.continueFile, href: fileHref }
+        ? {
+            label: CASE_COMMERCIAL.paymentCtaLabel,
+            href: input.primaryWorkingFileId
+              ? `/credits/buy?caseId=${encodeURIComponent(input.primaryWorkingFileId)}`
+              : fileHref,
+          }
         : undefined,
       packSummary,
     };

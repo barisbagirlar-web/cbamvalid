@@ -8,12 +8,12 @@ export default function PlatformPage() {
     <main id="main">
       <section className="hero" style={{ paddingBottom: "40px" }}>
         <div className="wrap" style={{ maxWidth: "820px" }}>
-          <AuthorityRail mode="compact" eyebrow="R9 · Enterprise platform" />
-          <span className="eyebrow">R9 · Category architecture · LIVE</span>
+          <AuthorityRail mode="compact" eyebrow="Enterprise platform" />
+          <span className="eyebrow">CBAM-first platform architecture</span>
           <h1>
-            Door = CBAM.
+            Built for CBAM today.
             <br />
-            <span className="serif-i">Enterprise expands the room.</span>
+            <span className="serif-i">Enterprise supports wider operating scope.</span>
           </h1>
           <p className="lede">
             CBAMValid is a sealed, evidence-linked, version-pinned compliance package architecture.
@@ -22,15 +22,13 @@ export default function PlatformPage() {
           </p>
           <div className="hero-ctas">
             <Link className="btn btn-primary" href="/enterprise">
-              Enterprise Exclusive
-            </Link>
-            <Link className="btn btn-ghost" href="/rulesets">
-              Published CBAM rulesets
-            </Link>
-            <Link className="btn btn-ghost" href="/product">
-              Product
+              Explore Enterprise
             </Link>
           </div>
+          <p className="hero-secondary-link">
+            See the <Link href="/rulesets">published CBAM rulesets</Link> or{" "}
+            <Link href="/product">self-serve product</Link>.
+          </p>
         </div>
       </section>
 
@@ -38,7 +36,7 @@ export default function PlatformPage() {
         <div className="wrap">
           <div className="deliv-grid">
             <div className="deliv-card">
-              <span className="fmt">LIVE</span>
+              <span className="fmt">AVAILABLE</span>
               <h3>EU CBAM definitive package</h3>
               <p>
                 Operator dossier, evidence lineage, QC gates, ruleset pin, integrity hashes, buyer
@@ -68,14 +66,14 @@ export default function PlatformPage() {
       <section className="section" style={{ background: "var(--paper-2)" }}>
         <div className="wrap">
           <div className="section-head center">
-            <span className="eyebrow">R6–R9 modules</span>
-            <h2>Platform modules are LIVE to sell</h2>
+            <span className="eyebrow">Platform capabilities</span>
+            <h2>Capabilities buyers can inspect</h2>
           </div>
           <div className="deliv-grid">
             {PLATFORM_MODULES_R6_R9.map((m) => (
               <Link key={m.id} href={m.href} className="deliv-card" style={{ textDecoration: "none", color: "inherit" }}>
                 <span className="fmt">
-                  {m.id} · {m.status}
+                  {m.status === "LIVE" ? "AVAILABLE" : m.status}
                 </span>
                 <h3>{m.title}</h3>
                 <p>{m.sellLine}</p>

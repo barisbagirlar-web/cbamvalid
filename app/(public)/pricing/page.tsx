@@ -5,32 +5,39 @@ import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 
 export const metadata = {
   title: "Pricing | CBAMValid",
-  description: "Prepare your CBAM case before you pay. Releases are consumed only after a dossier is successfully sealed.",
+  description:
+    "Draft free, then pay USD 449 once to lock and download one case-scoped working file. Same-file correction re-locks are included.",
 };
 
 export default function PricingPage() {
   return (
-    <div className="flex-1 bg-surface text-foreground">
+    <main id="main" className="flex-1 bg-surface text-foreground">
       <section className="pt-24 pb-16 px-6 md:px-12 lg:px-24 max-w-5xl mx-auto text-center">
         <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
           Prepare your CBAM case before you pay
         </h1>
         <p className="text-lg md:text-xl text-muted max-w-3xl mx-auto leading-relaxed mb-8">
-          Create, complete and review your case without charge. Releases are consumed only after a dossier is successfully sealed.
+          Create, complete and review one operator, one installation and one reporting year without
+          charge. Pay {CANONICAL_PRICING.priceFormatted} only when you are ready to lock and download
+          that working file.
         </p>
         <div className="flex justify-center">
           <Link 
-            href="/sample-dossier" 
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-strong bg-transparent px-5 py-3 font-medium text-foreground transition-colors hover:bg-neutral-soft"
+            href="/register?next=/cases/new"
+            prefetch={false}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent px-5 py-3 font-medium text-surface transition-colors hover:bg-accent-hover"
           >
-            View Sample Dossier Before Buying
+            Start a Free Draft
           </Link>
         </div>
+        <p className="mt-4 text-sm text-muted">
+          Want to inspect the output first? <Link className="underline" href="/sample-dossier">View the public sample dossier.</Link>
+        </p>
       </section>
 
       {/* Pricing Cards Section */}
-      <section className="px-6 md:px-12 lg:px-24 max-w-5xl mx-auto pb-24">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 justify-center items-stretch max-w-3xl mx-auto">
+      <section id="tiers" className="px-6 md:px-12 lg:px-24 max-w-5xl mx-auto pb-12 scroll-mt-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 justify-center items-stretch max-w-5xl mx-auto">
           {/* Main Premium Dossier Card */}
           <div className="relative flex flex-col rounded-2xl border border-border shadow-sm bg-surface p-8">
             <div className="mb-6">
@@ -53,7 +60,7 @@ export default function PricingPage() {
               </li>
               <li className="flex items-start gap-3">
                 <Check className="w-5 h-5 text-accent shrink-0 mt-0.5" />
-                <span className="text-sm text-foreground">{CANONICAL_PRICING.includedSealedReleases} Sealed releases included</span>
+                <span className="text-sm text-foreground">Same-file correction re-locks included</span>
               </li>
               <li className="flex items-start gap-3">
                 <Check className="w-5 h-5 text-accent shrink-0 mt-0.5" />
@@ -70,10 +77,11 @@ export default function PricingPage() {
             </ul>
             
             <Link 
-              href="/credits/buy" 
+              href="/register?next=/cases/new"
+              prefetch={false}
               className="w-full h-[44px] flex items-center justify-center rounded-md font-medium transition-colors bg-accent text-surface hover:bg-accent-hover"
             >
-              Get Preparation Pack
+              Start a Free Draft
             </Link>
           </div>
 
@@ -110,8 +118,78 @@ export default function PricingPage() {
             >              Start for Free
             </Link>
           </div>
+
+          <div className="relative flex flex-col rounded-2xl border border-border shadow-sm bg-surface p-8">
+            <div className="mb-6">
+              <h3 className="text-xl font-bold mb-2 text-foreground">Exporter Annual</h3>
+              <p className="text-muted text-sm">Annual plan for recurring exporter preparation work</p>
+            </div>
+            <div className="mb-6">
+              <span className="text-4xl font-bold font-serif">$2,400</span>
+              <span className="text-muted"> / year</span>
+            </div>
+            <ul className="mb-8 space-y-4 flex-1">
+              <li className="flex items-start gap-3">
+                <Check className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                <span className="text-sm text-foreground">For recurring exporter workflows</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <Check className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                <span className="text-sm text-foreground">Case scope remains explicit per working file</span>
+              </li>
+            </ul>
+            <Link
+              href="/contact?subject=Exporter%20Annual"
+              className="w-full h-[44px] flex items-center justify-center rounded-md font-medium transition-colors bg-surface border border-border text-foreground hover:bg-border/30"
+            >
+              Ask About Exporter Annual
+            </Link>
+          </div>
+
+          <div className="relative flex flex-col rounded-2xl border border-border shadow-sm bg-surface p-8">
+            <div className="mb-6">
+              <h3 className="text-xl font-bold mb-2 text-foreground">Enterprise</h3>
+              <p className="text-muted text-sm">Contracted scope for multi-site and procurement requirements</p>
+            </div>
+            <div className="mb-6">
+              <span className="text-4xl font-bold font-serif">From $12,000</span>
+              <span className="text-muted"> / year</span>
+            </div>
+            <ul className="mb-8 space-y-4 flex-1">
+              <li className="flex items-start gap-3">
+                <Check className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                <span className="text-sm text-foreground">SSO, SLA and holding scope available by contract</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <Check className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                <span className="text-sm text-foreground">Contact sales only</span>
+              </li>
+            </ul>
+            <Link
+              href="/enterprise"
+              className="w-full h-[44px] flex items-center justify-center rounded-md font-medium transition-colors bg-surface border border-border text-foreground hover:bg-border/30"
+            >
+              Explore Enterprise
+            </Link>
+          </div>
         </div>
       </section>
-    </div>
+
+      <section id="how-payment-works" className="px-6 md:px-12 lg:px-24 max-w-3xl mx-auto pb-24 scroll-mt-24">
+        <div className="rounded-2xl border border-border bg-surface p-8">
+          <h2 className="text-2xl font-bold mb-4">How payment works</h2>
+          <p className="text-muted leading-relaxed">
+            Payment is tied to one working file. A successful payment unlocks lock and download for
+            that file; same-file corrections can be re-locked without another payment. A new working
+            file requires a new payment. A blocked or failed lock consumes no charge, and re-downloads
+            are free.
+          </p>
+          <p className="mt-4 text-sm text-muted">
+            Exporter Annual is USD 2,400 per year. Enterprise starts at USD 12,000 per year and is
+            scoped through sales.
+          </p>
+        </div>
+      </section>
+    </main>
   );
 }

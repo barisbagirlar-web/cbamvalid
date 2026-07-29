@@ -508,7 +508,6 @@ const LABEL_BY_PATH: Record<string, string> = {
   "/cbam-non-eu-producer-guide": "Non-EU producer guide",
   "/cbam-exporter-evidence-requirements": "Exporter evidence requirements",
   "/cbam-cn-code-scope": "CN code scope guide",
-  "/credits/buy": "Buy Preparation Pack",
   "/about": "About",
   "/contact": "Contact",
   "/answers": "Answer bank",

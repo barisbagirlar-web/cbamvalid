@@ -7,7 +7,7 @@ export default function BuyerLinkPage() {
     <main id="main">
       <section className="hero" style={{ paddingBottom: "40px" }}>
         <div className="wrap" style={{ maxWidth: "820px" }}>
-          <span className="eyebrow">R7 / T4.1 · Buyer share link</span>
+          <span className="eyebrow">Buyer share link</span>
           <h1>
             One link for the buyer.
             <br />

@@ -2,12 +2,16 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { BrandLockup } from "@/components/brand/BrandLockup";
+import { getPreservedAuthHref } from "@/lib/auth/post-login-routing";
 
 export function AuthHeader() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const isLogin = pathname.startsWith("/login");
+  const destination = isLogin ? "/register" : "/login";
+  const authHref = getPreservedAuthHref(destination, searchParams.toString());
 
   return (
     <header data-testid="auth-header" className="w-full bg-surface border-b border-border shadow-sm">
@@ -25,8 +29,8 @@ export function AuthHeader() {
               <span className="hidden sm:block text-[15px] text-muted font-medium">
                 New to CBAMValid?
               </span>
-              <Link 
-                href="/register" 
+              <Link
+                href={authHref}
                 className="inline-flex h-[42px] md:h-[44px] items-center justify-center gap-2 rounded-md border border-border bg-transparent px-5 font-medium text-foreground transition-colors hover:bg-neutral-soft outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent"
               >
                 Create Account
@@ -37,8 +41,8 @@ export function AuthHeader() {
               <span className="hidden sm:block text-[15px] text-muted font-medium">
                 Already have an account?
               </span>
-              <Link 
-                href="/login" 
+              <Link
+                href={authHref}
                 className="inline-flex h-[42px] md:h-[44px] items-center justify-center gap-2 rounded-md border border-border bg-transparent px-5 font-medium text-foreground transition-colors hover:bg-neutral-soft outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent"
               >
                 Sign In

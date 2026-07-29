@@ -25,7 +25,10 @@ export default function NewCasePage() {
     if (loading || !user || requestInFlight.current) return;
 
     if (!creationRequestId.current) {
-      creationRequestId.current = crypto.randomUUID();
+      const storageKey = `cbam_new_case_request_${user.uid}`;
+      const storedRequestId = sessionStorage.getItem(storageKey);
+      creationRequestId.current = storedRequestId || crypto.randomUUID();
+      sessionStorage.setItem(storageKey, creationRequestId.current);
     }
 
     requestInFlight.current = true;
@@ -35,7 +38,8 @@ export default function NewCasePage() {
       try {
         const draft = createNewCaseDraft(user.uid);
         const newCaseId = await saveCase(draft, undefined, creationRequestId.current ?? undefined);
-        router.replace(`/cases/${newCaseId}`);
+        sessionStorage.removeItem(`cbam_new_case_request_${user.uid}`);
+        router.replace(`/cases/${newCaseId}?step=1`);
       } catch (creationError) {
         console.error("Failed to create and open a new case", creationError);
         requestInFlight.current = false;

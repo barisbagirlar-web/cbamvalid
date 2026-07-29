@@ -272,7 +272,7 @@ function validateClaimsAndSchema(): GateResult[] {
   if (FORBIDDEN_SOCIAL_PROOF.aggregateRating.evidenceStatus !== "unverified") {
     results.push(fail("G13", "AggregateRating must remain unverified"));
   }
-  if (PRICE_CLAIM.evidenceStatus !== "verified" || PRICE_CLAIM.value.currency !== "USD" || PRICE_CLAIM.value.amount !== "149") {
+  if (PRICE_CLAIM.evidenceStatus !== "verified" || PRICE_CLAIM.value.currency !== "USD" || PRICE_CLAIM.value.amount !== "449") {
     results.push(fail("G14", "Price claim SSOT mismatch"));
   }
 

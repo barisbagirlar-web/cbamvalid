@@ -1,30 +1,81 @@
-import { User } from "firebase/auth";
+import type { User } from "firebase/auth";
 
-export async function resolvePostLoginRoute(user: User): Promise<string> {
-  // 1. Wait for Firebase user and call getIdTokenResult(true)
+const ALLOWED_NEXT_PREFIXES = [
+  "/account",
+  "/admin",
+  "/cases",
+  "/cbam",
+  "/credits",
+  "/reports",
+] as const;
+
+function matchesPathPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+export function sanitizeInternalNextPath(candidate: string | null | undefined): string | null {
+  if (!candidate || !candidate.startsWith("/") || candidate.startsWith("//")) {
+    return null;
+  }
+
+  if (/[\u0000-\u001F\u007F\\]/.test(candidate)) {
+    return null;
+  }
+
+  try {
+    const base = new URL("https://cbamvalid.invalid");
+    const parsed = new URL(candidate, base);
+
+    if (parsed.origin !== base.origin) {
+      return null;
+    }
+
+    if (!ALLOWED_NEXT_PREFIXES.some((prefix) => matchesPathPrefix(parsed.pathname, prefix))) {
+      return null;
+    }
+
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return null;
+  }
+}
+
+export function getPreservedAuthHref(
+  destination: "/login" | "/register",
+  search: string,
+): string {
+  const nextPath = sanitizeInternalNextPath(new URLSearchParams(search).get("next"));
+  if (!nextPath) {
+    return destination;
+  }
+
+  return `${destination}?${new URLSearchParams({ next: nextPath }).toString()}`;
+}
+
+function readRequestedNextPath(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return new URLSearchParams(window.location.search).get("next");
+}
+
+export async function resolvePostLoginRoute(
+  user: User,
+  requestedNextPath: string | null = readRequestedNextPath(),
+): Promise<string> {
   const tokenResult = await user.getIdTokenResult(true);
   const claims = tokenResult.claims;
+  const nextPath = sanitizeInternalNextPath(requestedNextPath);
+  const isAdmin = claims.ownerAdmin === true || claims.admin === true;
 
-  // 2. Validate internal next route
-  const params = new URLSearchParams(window.location.search);
-  let nextRoute = params.get("next");
-
-  if (nextRoute) {
-    // Reject absolute external URLs, protocol-relative URLs beginning //, javascript URLs
-    if (
-      nextRoute.includes("://") ||
-      nextRoute.startsWith("//") ||
-      nextRoute.toLowerCase().startsWith("javascript:")
-    ) {
-      nextRoute = null; // invalid, fallback
-    }
+  if (isAdmin) {
+    return nextPath?.startsWith("/admin") ? nextPath : "/admin";
   }
 
-  // 3. Route logic
-  if (claims.ownerAdmin === true || claims.admin === true) {
-    return "/admin";
+  if (nextPath?.startsWith("/admin")) {
+    return "/cbam";
   }
 
-  // Normal user
-  return nextRoute || "/cbam";
+  return nextPath || "/cbam";
 }

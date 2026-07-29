@@ -517,7 +517,7 @@ export const VERIFICATION_PREPARATION_SECTIONS: readonly GuideSection[] = [
     id: "related",
     title: "Related CN and methodology",
     paragraphs: [
-      "See exporter evidence requirements for lineage rules, sample dossier for package shape, and product page for commercial entitlement (100 credits → 5 sealed releases).",
+      "See exporter evidence requirements for lineage rules, sample dossier for package shape, and product page for the USD 449 case-scoped pay-at-lock contract. Same-file correction re-locks are included; a new file requires a new payment.",
     ],
   },
   {
@@ -711,7 +711,7 @@ export const CERTIFICATE_PRICE_SECTIONS: readonly GuideSection[] = [
     id: "related",
     title: "Related methodology",
     paragraphs: [
-      "See `/cbam-2026-definitive-period` for timetable context and `/pricing` for CBAMValid product pricing (USD 149 pack) — product price is not a CBAM certificate price.",
+      "See `/cbam-2026-definitive-period` for timetable context and `/pricing` for CBAMValid product pricing (USD 449 per case-scoped working file at lock) — product price is not a CBAM certificate price.",
     ],
   },
   {

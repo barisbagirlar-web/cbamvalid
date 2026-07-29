@@ -24,7 +24,7 @@ describe("customer journey state machine", () => {
     expect(view.primaryCta.href).toBe("/account");
   });
 
-  it("C: unpaid file → pay-at-lock for that caseId", () => {
+  it("C: unpaid file → continue the work before case-scoped payment", () => {
     const view = resolveJourneyState({
       workingFileCount: 1,
       lockedPackageCount: 0,
@@ -33,8 +33,8 @@ describe("customer journey state machine", () => {
       primaryWorkingFileId: "case_1",
     });
     expect(view.state).toBe("READY_NO_PACK");
-    expect(view.primaryCta.href).toBe("/credits/buy?caseId=case_1");
-    expect(view.secondaryCta?.href).toBe("/cases/case_1");
+    expect(view.primaryCta.href).toBe("/cases/case_1");
+    expect(view.secondaryCta?.href).toBe("/credits/buy?caseId=case_1");
   });
 
   it("D: file + releases, never locked → ready to seal / continue", () => {
@@ -60,7 +60,7 @@ describe("customer journey state machine", () => {
     expect(view.state).toBe("SEALED_WITH_RELEASES");
   });
 
-  it("F: locked + unpaid remaining slots → pay for this file scope", () => {
+  it("F: locked + unpaid remaining slots → continue the file before payment", () => {
     const view = resolveJourneyState({
       workingFileCount: 1,
       lockedPackageCount: 5,
@@ -69,7 +69,8 @@ describe("customer journey state machine", () => {
       primaryWorkingFileId: "case_1",
     });
     expect(view.state).toBe("SEALED_NO_RELEASES");
-    expect(view.primaryCta.href).toBe("/credits/buy?caseId=case_1");
+    expect(view.primaryCta.href).toBe("/cases/case_1");
+    expect(view.secondaryCta?.href).toBe("/credits/buy?caseId=case_1");
   });
 
   it("G: locked + unlockable balance → activate", () => {

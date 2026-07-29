@@ -187,8 +187,6 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
   const calculation = report.calculation;
   const storageByFile = report.storage || {};
   
-  // Successful automated readiness state is OPERATOR_PREPARATION_COMPLETE in V5
-  const isV5 = report.dossierSchemaVersion === "CBAMVALID-DOSSIER-5.0";
   const ready =
     report.automatedReadiness === "READY_FOR_INDEPENDENT_VERIFICATION" ||
     report.automatedReadiness === "OPERATOR_PREPARATION_COMPLETE" ||
@@ -306,8 +304,8 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
           <div className="flex items-center justify-between border-b border-border/60 pb-4">
             <h2 className="font-serif text-xl font-bold">Report Summary</h2>
             <div className={`rounded-full px-3 py-1 text-xs font-bold flex items-center gap-1.5 ${ready ? "bg-accent-soft text-accent border border-accent/20" : "bg-[color:var(--status-blocked-soft)] text-status-blocked border border-status-blocked/30"}`}>
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              {isV5 ? "Automated preparation checks passed" : "Automated preparation checks passed"}
+              {ready ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
+              {ready ? "Automated preparation checks passed" : "Preparation checks did not pass"}
             </div>
           </div>
 
@@ -315,15 +313,17 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
             <div className="space-y-4">
               <div>
                 <p className="text-xs text-muted font-semibold uppercase tracking-wider">Installation Name</p>
-                <p className="text-sm font-semibold text-foreground mt-1">{report.installationName || "Fictional Installation"}</p>
+                <p className="text-sm font-semibold text-foreground mt-1">{report.installationName || "Unavailable in report summary"}</p>
               </div>
               <div>
                 <p className="text-xs text-muted font-semibold uppercase tracking-wider">Reporting Year & Period</p>
-                <p className="text-sm font-semibold text-foreground mt-1">Calendar Year {report.calculation.ruleset.substring(0, 4)}</p>
+                <p className="text-sm font-semibold text-foreground mt-1">Unavailable in report summary</p>
               </div>
               <div>
                 <p className="text-xs text-muted font-semibold uppercase tracking-wider">Automated Readiness</p>
-                <p className="text-sm font-semibold text-foreground mt-1">Ready for independent verifier review</p>
+                <p className="text-sm font-semibold text-foreground mt-1">
+                  {ready ? "Prepared for independent verifier review" : report.automatedReadiness.replaceAll("_", " ")}
+                </p>
                 <p className="text-[11px] text-muted">Independent verifier status: Not reviewed</p>
               </div>
               <div>
@@ -424,6 +424,8 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
           <button
             type="button"
             onClick={() => setShowAdvancedDownloads(!showAdvancedDownloads)}
+            aria-expanded={showAdvancedDownloads}
+            aria-controls="advanced-downloads-panel"
             className="w-full px-6 py-4 flex items-center justify-between font-serif font-bold text-lg hover:bg-neutral-soft/50 transition-colors"
           >
             <span>Advanced Downloads</span>
@@ -431,7 +433,7 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
           </button>
           
           {showAdvancedDownloads && (
-            <div className="px-6 pb-6 pt-2 border-t border-border/60 bg-background/30">
+            <div id="advanced-downloads-panel" className="px-6 pb-6 pt-2 border-t border-border/60 bg-background/30">
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 mt-4">
                 {DOWNLOADS.map((item) => {
                   const Icon = item.icon;
@@ -465,6 +467,8 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
           <button
             type="button"
             onClick={() => setShowIntegrityDetails(!showIntegrityDetails)}
+            aria-expanded={showIntegrityDetails}
+            aria-controls="integrity-details-panel"
             className="w-full px-6 py-4 flex items-center justify-between font-serif font-bold text-lg hover:bg-neutral-soft/50 transition-colors"
           >
             <span>Integrity and Technical Details</span>
@@ -472,7 +476,7 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
           </button>
           
           {showIntegrityDetails && (
-            <div className="px-6 pb-6 pt-2 border-t border-border/60 divide-y divide-border/60 text-sm">
+            <div id="integrity-details-panel" className="px-6 pb-6 pt-2 border-t border-border/60 divide-y divide-border/60 text-sm">
               {[
                 ["Package ID", formatPackageCode(report.packageCode)],
                 ["Technical Report ID", report.reportId],

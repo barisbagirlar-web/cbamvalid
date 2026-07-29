@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { CircleHelp, X } from "lucide-react";
 import { fieldHelpData, type FieldHelpKey } from "@/lib/cbam/field-help";
 
@@ -14,7 +14,14 @@ export function FieldHelp({ field, label }: FieldHelpProps) {
   const [open, setOpen] = useState(false);
   const dialogId = useId();
   const titleId = `${dialogId}-title`;
+  const openButton = useRef<HTMLButtonElement>(null);
+  const dialog = useRef<HTMLElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
+
+  const close = useCallback(() => {
+    setOpen(false);
+    window.setTimeout(() => openButton.current?.focus(), 0);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -22,19 +29,39 @@ export function FieldHelp({ field, label }: FieldHelpProps) {
     document.body.style.overflow = "hidden";
     closeButton.current?.focus();
 
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+    const handleDialogKeys = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        close();
+        return;
+      }
+      if (event.key !== "Tab" || !dialog.current) return;
+      const focusable = Array.from(
+        dialog.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
-    window.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("keydown", handleDialogKeys);
     return () => {
       document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("keydown", handleDialogKeys);
     };
-  }, [open]);
+  }, [close, open]);
 
   return (
     <>
       <button
+        ref={openButton}
         type="button"
         aria-label={`Open data-source help for ${label}`}
         aria-expanded={open}
@@ -49,10 +76,11 @@ export function FieldHelp({ field, label }: FieldHelpProps) {
         <div
           className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/45 p-4 sm:items-center"
           onMouseDown={(event) => {
-            if (event.currentTarget === event.target) setOpen(false);
+            if (event.currentTarget === event.target) close();
           }}
         >
           <section
+            ref={dialog}
             id={dialogId}
             role="dialog"
             aria-modal="true"
@@ -68,7 +96,7 @@ export function FieldHelp({ field, label }: FieldHelpProps) {
                 ref={closeButton}
                 type="button"
                 aria-label={`Close data-source help for ${label}`}
-                onClick={() => setOpen(false)}
+                onClick={close}
                 className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted transition hover:border-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <X aria-hidden="true" className="h-4 w-4" />

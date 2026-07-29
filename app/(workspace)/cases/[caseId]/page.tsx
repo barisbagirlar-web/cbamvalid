@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { use, useEffect, useState } from "react";
+import { Suspense, use, useEffect, useState } from "react";
 import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { useAuth } from "@/context/AuthProvider";
 import type { AuditReadyCase } from "@/lib/cbam/schema";
@@ -188,11 +188,23 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
           {entitlementWarning}
         </div>
       )}
-      <CaseWizardClient
-        sessionUser={{ uid: user.uid, email: user.email || "" }}
-        initialCase={initialCase}
-        availableEntitlements={availableEntitlements}
-      />
+      <Suspense
+        fallback={
+          <main className="min-h-screen bg-background px-6 py-16 text-foreground">
+            <section className="mx-auto flex max-w-xl flex-col items-center rounded-2xl border border-border bg-surface p-10 text-center shadow-sm" role="status" aria-live="polite">
+              <Loader2 className="h-8 w-8 animate-spin text-accent" aria-hidden="true" />
+              <h1 className="mt-5 font-serif text-2xl font-bold">Loading dossier workspace</h1>
+              <p className="mt-2 text-sm text-muted">Preparing the active working-file step.</p>
+            </section>
+          </main>
+        }
+      >
+        <CaseWizardClient
+          sessionUser={{ uid: user.uid, email: user.email || "" }}
+          initialCase={initialCase}
+          availableEntitlements={availableEntitlements}
+        />
+      </Suspense>
     </>
   );
 }

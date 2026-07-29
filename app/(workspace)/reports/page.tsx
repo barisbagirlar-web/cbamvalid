@@ -6,12 +6,14 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthProvider";
 import { getReports } from "@/lib/functions/client";
 import { formatPackageCode } from "@/lib/cbam/package-code";
-import { Lock, FileText } from "lucide-react";
+import { AlertCircle, FileText, Lock, RefreshCw } from "lucide-react";
 
 export default function ReportsPage() {
   const { user, loading } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [retryAttempt, setRetryAttempt] = useState(0);
 
   useEffect(() => {
     if (loading || !user) return;
@@ -19,11 +21,13 @@ export default function ReportsPage() {
     let cancelled = false;
     const fetchReports = async () => {
       setDataLoading(true);
+      setLoadError("");
       try {
         const res = await getReports();
         if (!cancelled && res) setReports(res || []);
       } catch (err) {
         console.error("Error fetching reports:", err);
+        if (!cancelled) setLoadError("Locked packages could not be loaded. Your packages have not been removed.");
       } finally {
         if (!cancelled) setDataLoading(false);
       }
@@ -33,7 +37,7 @@ export default function ReportsPage() {
     return () => {
       cancelled = true;
     };
-  }, [user, loading]);
+  }, [user, loading, retryAttempt]);
 
   if (loading || (user && dataLoading)) {
     return (
@@ -58,13 +62,33 @@ export default function ReportsPage() {
           </p>
         </div>
 
-        {reports.length === 0 ? (
+        {loadError ? (
+          <div role="alert" className="mx-auto max-w-xl rounded-xl border border-status-blocked/40 bg-[color:var(--status-blocked-soft)] p-6 text-status-blocked">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+              <div>
+                <h2 className="font-bold">We could not load your locked packages</h2>
+                <p className="mt-1 text-sm">{loadError}</p>
+                <button
+                  type="button"
+                  onClick={() => setRetryAttempt((attempt) => attempt + 1)}
+                  className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-surface"
+                >
+                  <RefreshCw className="h-4 w-4" /> Try again
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : reports.length === 0 ? (
           <div className="bg-surface border border-border border-dashed rounded-2xl p-12 text-center max-w-xl mx-auto shadow-sm">
             <Lock className="w-10 h-10 text-muted/65 mx-auto mb-4" />
-            <h2 className="text-xl font-bold mb-2">No locked packages (Reports) found</h2>
+            <h2 className="text-xl font-bold mb-2">No locked packages yet</h2>
             <p className="text-muted text-sm mb-6 leading-relaxed">
               Once you complete a draft case, verify all compliance rules, and apply a Preparation Pack seal, your immutable verifier ZIP downloads will appear here.
             </p>
+            <Link href="/cbam" className="inline-flex min-h-11 items-center justify-center rounded-md bg-accent px-5 py-2 text-sm font-semibold text-surface">
+              Continue a working file
+            </Link>
           </div>
         ) : (
           <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">

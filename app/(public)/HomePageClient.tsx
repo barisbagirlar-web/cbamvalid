@@ -43,9 +43,10 @@ export default function HomePageClient() {
         <p className="price-line">USD 449 per working file at lock. <span>No subscription. Drafts free. Same-file corrections included.</span></p>
         <div className="hero-ctas">
           <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">Start a Dossier <span className="arr">→</span></a>
-          <a className="btn btn-ghost btn-lg" href="/sample-dossier">View the Sample Dossier</a>
-          <a className="btn btn-navy btn-lg" href="/demo">Book a Demo</a>
         </div>
+        <p className="hero-secondary-link">
+          Not ready to start? <a href="/sample-dossier">Inspect the public sample dossier.</a>
+        </p>
         <ul className="hero-micro">
           <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Deterministic engine</li>
           <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Versioned EU rulesets</li>
@@ -236,7 +237,7 @@ export default function HomePageClient() {
       <div className="section-head center reveal">
         <span className="eyebrow">See CBAMValid in Action</span>
         <h2>Review the full evidence-linked workflow</h2>
-        <p>Completion, blockers, warnings and remaining releases — visible before you create your first case.</p>
+        <p>Completion, blockers, warnings and file-unlock status — visible before you create your first case.</p>
       </div>
       <div className="ui-mock reveal">
         <div className="ui-mock-bar"><i></i><i></i><i></i><span>cbamvalid.com — Case Readiness</span></div>
@@ -290,9 +291,6 @@ export default function HomePageClient() {
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>O3CI field-mapped structured data export</li>
           </ul>
           <a className="btn btn-primary" href="/pricing">See pay-at-lock pricing <span className="arr">→</span></a>
-          <a className="btn btn-ghost" href="/pricing#roi" style={{ marginTop: "10px" }}>
-            Open ROI exposure calculator <span className="arr">→</span>
-          </a>
         </div>
         <div className="price-card free">
           <h3>Free Drafts</h3>
@@ -323,8 +321,6 @@ export default function HomePageClient() {
         <a href="/demo">Book a demo</a>
         {" · "}
         <a href="/pricing#tiers">See all four tiers</a>
-        {" · "}
-        <a href="/pricing#roi">ROI calculator</a>
         {" · "}
         <a href="/trust">Trust registry</a>
         {" · "}

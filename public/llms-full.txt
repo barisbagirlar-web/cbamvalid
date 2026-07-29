@@ -5,7 +5,7 @@
 ## Product positioning
 
 - CBAMValid Exporter Verification Preparation Pack — Prepared for Independent Accredited Verification
-- Pricing: $149 per Exporter Verification Preparation Pack (one-time; no subscription; drafts free; 1 installation; 1 reporting year; 5 sealed releases).
+- Pricing: $449 per case-scoped working file at lock (one-time; no subscription; drafts free; 1 legal operator; 1 installation; 1 reporting year; same-file correction re-locks included; a new file requires a new payment).
 
 ## Independence boundary
 
@@ -32,6 +32,11 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - [Exporter Evidence Requirements](https://cbamvalid.com/cbam-exporter-evidence-requirements): CBAM exporter evidence requirements
 - [CBAM Guide for Non-EU Producers](https://cbamvalid.com/cbam-non-eu-producer-guide): CBAM non-EU producer guide
 - [CBAM CN Code Scope](https://cbamvalid.com/cbam-cn-code-scope): CBAM CN code list / scope
+- [Book a demo — self-serve is not the only door](https://cbamvalid.com/demo): CBAMValid demo booking
+- [Built for how verifiers actually work](https://cbamvalid.com/verifier-review): CBAMValid verifier structure review
+- [Published rulesets — named, dated, pinned](https://cbamvalid.com/rulesets): CBAMValid published ruleset registry
+- [One link for the buyer — integrity, not assurance](https://cbamvalid.com/buyer-link): CBAMValid buyer share link
+- [Field scenarios — anonymized on purpose](https://cbamvalid.com/case-studies): CBAMValid illustrative sector scenarios
 
 ## Key regulatory facts
 

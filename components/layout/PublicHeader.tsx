@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandMark } from "@/components/brand/BrandMark";
@@ -21,11 +21,26 @@ const MORE_NAV = AUTHORITY_MORE_NAV;
 export function PublicHeader() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const id = globalThis.setTimeout(() => setIsMobileMenuOpen(false), 0);
     return () => globalThis.clearTimeout(id);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMobileMenuOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [isMobileMenuOpen]);
 
   const isActive = (path: string) => (pathname === path ? "active" : "");
 
@@ -64,9 +79,6 @@ export function PublicHeader() {
           </nav>
 
           <div className="header-actions">
-            <Link href="/demo" className="btn btn-ghost header-demo">
-              Book a Demo
-            </Link>
             <Link href="/login" className="signin">
               Sign In
             </Link>
@@ -74,10 +86,12 @@ export function PublicHeader() {
               Start a Dossier
             </Link>
             <button
+              ref={menuButtonRef}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className={`nav-toggle ${isMobileMenuOpen ? "open" : ""}`}
-              aria-label="Toggle menu"
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={isMobileMenuOpen}
+              aria-controls="public-mobile-navigation"
               type="button"
             >
               <span></span>
@@ -89,8 +103,10 @@ export function PublicHeader() {
       </header>
 
       <nav
+        id="public-mobile-navigation"
         className={`mobile-nav ${isMobileMenuOpen ? "open" : ""}`}
         aria-label="Mobile navigation"
+        aria-hidden={!isMobileMenuOpen}
         style={{ display: isMobileMenuOpen ? "flex" : "none" }}
       >
         {[...PRIMARY_NAV, ...MORE_NAV].map((item) => (

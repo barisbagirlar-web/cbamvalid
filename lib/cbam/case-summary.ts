@@ -15,6 +15,10 @@ export function getPrimaryCnCode(caseData: AuditReadyCase): string {
   return displayValue(caseData.goods[0]?.cnCode) || "Pending";
 }
 
+export function getCaseReportingYear(caseData: AuditReadyCase): string {
+  return displayValue(caseData.reportingPeriod.year) || "Year not set";
+}
+
 export function formatCaseUpdatedDate(updatedAt: string): string {
   const timestamp = Date.parse(updatedAt);
   if (!Number.isFinite(timestamp)) return "Unknown";

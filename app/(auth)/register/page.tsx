@@ -1,9 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import {
   firebaseAuth as auth,
@@ -15,7 +12,6 @@ import { finalizeServerSession } from "@/lib/auth/finalize-server-session";
 import { Loader2 } from "lucide-react";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -78,9 +74,11 @@ export default function RegisterPage() {
 
       const route = await resolvePostLoginRoute(result.user);
       window.location.replace(route);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      const code = err?.code || "";
+      const code = typeof err === "object" && err !== null && "code" in err
+        ? String(err.code)
+        : "";
       if (code === "auth/popup-blocked") {
         setError("Sign-in popup was blocked by your browser. Please enable popups for this site.");
       } else if (code === "auth/popup-closed-by-user") {
@@ -92,7 +90,7 @@ export default function RegisterPage() {
       } else if (code === "auth/unauthorized-domain") {
         setError("This domain is not authorized for Google Sign-in in Firebase Console.");
       } else {
-        setError(err?.message || "Failed to start Google sign-in.");
+        setError(err instanceof Error && err.message ? err.message : "Failed to start Google sign-in.");
       }
       setLoading(false);
     }
@@ -101,31 +99,25 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-6 py-12 font-sans">
       <div className="w-full max-w-md animate-in fade-in">
-        <div className="mb-12 text-center flex flex-col items-center">
-          <Image
-            src="/cbam_logo.svg"
-            alt="CBAM Valid Logo"
-            width={196}
-            height={48}
-            priority
-            className="mb-4 h-8 w-auto object-contain"
-          />
-          <h1 className="font-serif text-3xl text-foreground mb-3 tracking-tight">New Account</h1>
-          <p className="text-sm font-mono text-muted">Create Corporate Profile</p>
+        <div className="mb-8 text-center">
+          <h1 className="font-serif text-3xl text-foreground mb-3 tracking-tight">Create your account</h1>
+          <p className="text-sm text-muted">Start a CBAMValid working file and prepare your dossier.</p>
         </div>
 
         <div className="bg-surface border border-border rounded-xl p-10 shadow-[var(--shadow-card)]">
           <form onSubmit={handleRegister} className="space-y-8">
             {error && (
-              <div className="p-3 border border-border bg-accent-soft text-accent text-xs font-mono text-center rounded-md animate-in shake">
+              <div role="alert" aria-live="assertive" className="p-3 border border-border bg-accent-soft text-accent text-sm text-center rounded-md animate-in shake">
                 {error}
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2">Corporate Email</label>
+              <label htmlFor="register-email" className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2">Email</label>
               <input
+                id="register-email"
                 type="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -136,9 +128,11 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2">Password</label>
+              <label htmlFor="register-password" className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2">Password</label>
               <input
+                id="register-password"
                 type="password"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -149,9 +143,11 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2">Confirm Password</label>
+              <label htmlFor="register-confirm-password" className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2">Confirm password</label>
               <input
+                id="register-confirm-password"
                 type="password"
+                autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
@@ -202,16 +198,6 @@ export default function RegisterPage() {
           </button>
         </div>
 
-        <div className="mt-8 text-center text-sm font-semibold">
-          <span className="text-muted">Already have an account? </span>
-          <button
-            type="button"
-            onClick={() => router.push("/login")}
-            className="text-muted hover:text-foreground transition-colors border-b border-transparent hover:border-foreground pb-0.5 cursor-pointer font-bold"
-          >
-            Sign In
-          </button>
-        </div>
       </div>
     </div>
   );

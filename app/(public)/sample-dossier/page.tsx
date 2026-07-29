@@ -29,16 +29,14 @@ export default function SampleDossierPage() {
             <a className="btn btn-primary" href={PUBLIC_SAMPLE_DOSSIER.downloads.pdf} download>
               Download PDF ({PUBLIC_SAMPLE_DOSSIER.pageCount} pages)
             </a>
-            <a className="btn btn-ghost" href={PUBLIC_SAMPLE_DOSSIER.downloads.json} download>
-              Download JSON
-            </a>
-            <a className="btn btn-ghost" href={PUBLIC_SAMPLE_DOSSIER.downloads.xlsx} download>
-              Download XLSX
-            </a>
-            <Link className="btn btn-ghost" href={verifyHref}>
-              Try it on /verify
-            </Link>
           </div>
+          <p className="hero-secondary-link">
+            Other formats: <a href={PUBLIC_SAMPLE_DOSSIER.downloads.json} download>JSON</a>
+            {" · "}
+            <a href={PUBLIC_SAMPLE_DOSSIER.downloads.xlsx} download>XLSX</a>
+            {" · "}
+            <Link href={verifyHref}>check the sample seal</Link>
+          </p>
         </div>
       </section>
 

@@ -1,9 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import {
   firebaseAuth as auth,
@@ -15,7 +12,6 @@ import { finalizeServerSession } from "@/lib/auth/finalize-server-session";
 import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -39,9 +35,11 @@ export default function LoginPage() {
 
       const route = await resolvePostLoginRoute(credential.user);
       window.location.replace(route);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err?.message || "Unable to start your session. Check your details and try again.");
+      setError(err instanceof Error && err.message
+        ? err.message
+        : "Unable to start your session. Check your details and try again.");
       setLoading(false);
     }
   };
@@ -63,9 +61,11 @@ export default function LoginPage() {
 
       const route = await resolvePostLoginRoute(result.user);
       window.location.replace(route);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      const code = err?.code || "";
+      const code = typeof err === "object" && err !== null && "code" in err
+        ? String(err.code)
+        : "";
       if (code === "auth/popup-blocked") {
         setError("Sign-in popup was blocked by your browser. Please enable popups for this site.");
       } else if (code === "auth/popup-closed-by-user") {
@@ -77,7 +77,7 @@ export default function LoginPage() {
       } else if (code === "auth/unauthorized-domain") {
         setError("This domain is not authorized for Google Sign-in in Firebase Console.");
       } else {
-        setError(err?.message || "Unable to start Google sign-in.");
+        setError(err instanceof Error && err.message ? err.message : "Unable to start Google sign-in.");
       }
       setLoading(false);
     }
@@ -86,33 +86,26 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-6 font-sans">
       <div className="w-full max-w-md animate-in fade-in">
-        {/* LOGO / HEADING */}
-        <div className="mb-12 text-center flex flex-col items-center">
-          <Image
-            src="/cbam_logo.svg"
-            alt="CBAM Valid Logo"
-            width={196}
-            height={48}
-            priority
-            className="mb-4 h-8 w-auto object-contain"
-          />
-          <h1 className="font-serif text-3xl text-foreground mb-3 tracking-tight">CBAM Portal</h1>
-          <p className="text-sm font-mono text-muted">Authorized Exporter Portal</p>
+        <div className="mb-8 text-center">
+          <h1 className="font-serif text-3xl text-foreground mb-3 tracking-tight">Sign in to continue</h1>
+          <p className="text-sm text-muted">Open your CBAMValid working files and packages.</p>
         </div>
 
         {/* FORM CARD */}
         <div className="bg-surface border border-border rounded-xl p-10 shadow-[var(--shadow-card)]">
           <form onSubmit={handleSubmit} className="space-y-8">
             {error && (
-              <div className="p-3 border border-border bg-accent-soft text-accent text-xs font-mono text-center rounded-md animate-in shake">
+              <div role="alert" aria-live="assertive" className="p-3 border border-border bg-accent-soft text-accent text-sm text-center rounded-md animate-in shake">
                 {error}
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2">Corporate Email</label>
+              <label htmlFor="login-email" className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2">Email</label>
               <input
+                id="login-email"
                 type="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -123,9 +116,11 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2">Password</label>
+              <label htmlFor="login-password" className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2">Password</label>
               <input
+                id="login-password"
                 type="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -145,7 +140,7 @@ export default function LoginPage() {
                   <Loader2 className="h-4 w-4 animate-spin" /> Verifying...
                 </>
               ) : (
-                "Sign In to Portal"
+                    "Sign In"
               )}
             </button>
           </form>
@@ -176,16 +171,6 @@ export default function LoginPage() {
           </button>
         </div>
 
-        {/* BOTTOM LINKS */}
-        <div className="mt-8 text-center text-sm font-semibold">
-          <button
-            type="button"
-            onClick={() => router.push("/register")}
-            className="text-muted hover:text-foreground transition-colors border-b border-transparent hover:border-foreground pb-0.5 cursor-pointer"
-          >
-            Create Account
-          </button>
-        </div>
       </div>
     </div>
   );

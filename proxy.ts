@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // Routes that require authentication (Workspace)
-const workspacePrefixes = ['/dashboard', '/cases', '/reports', '/cbam', '/admin'];
+const workspacePrefixes = [
+  '/account',
+  '/admin',
+  '/cases',
+  '/cbam',
+  '/credits',
+  '/dashboard',
+  '/reports',
+];
 
 // Routes that are only for unauthenticated users
 const authRoutes = ['/login', '/register'];
@@ -30,18 +38,18 @@ export function proxy(request: NextRequest) {
   );
   if (isWorkspaceRoute && !isAuthenticated) {
     const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('next', pathname);
+    loginUrl.searchParams.set('next', `${pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(loginUrl);
   }
 
   // 2. Auth Protection: Authenticated user accessing auth or root routes
   const isRedirectIfAuthRoute = redirectIfAuthRoutes.includes(pathname);
   if (isRedirectIfAuthRoute && isAuthenticated) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(new URL('/cbam', request.url));
   }
 
   const response = NextResponse.next();
-  if (isWorkspaceRoute || pathname.startsWith("/account") || pathname.startsWith("/api")) {
+  if (isWorkspaceRoute || pathname.startsWith("/api")) {
     response.headers.set("Cache-Control", "private, no-store, no-cache, must-revalidate");
   }
   

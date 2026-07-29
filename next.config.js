@@ -37,7 +37,21 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://paddle.com https://cdn.paddle.com https://sandbox-cdn.paddle.com https://www.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.paddle.com https://sandbox-cdn.paddle.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.paddle.com https://*.cloudfunctions.net http://127.0.0.1:5001 http://localhost:5001; img-src 'self' data: https:; frame-src 'self' https://*.paddle.com https://*.firebaseapp.com https://www.google.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
+            // Paddle overlay requires buy/sandbox-buy frames, CDN CSS, ProfitWell, and workers.
+            // www.gstatic.com style is allowed so browser Google Translate injection does not spam CSP errors.
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://www.google.com https://paddle.com https://cdn.paddle.com https://sandbox-cdn.paddle.com https://public.profitwell.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.paddle.com https://sandbox-cdn.paddle.com https://www.gstatic.com",
+              "font-src 'self' https://fonts.gstatic.com https://cdn.paddle.com https://sandbox-cdn.paddle.com data:",
+              "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.paddle.com https://checkout-service.paddle.com https://sandbox-checkout-service.paddle.com https://www2.profitwell.com https://*.cloudfunctions.net http://127.0.0.1:5001 http://localhost:5001",
+              "img-src 'self' data: https:",
+              "frame-src 'self' https://*.paddle.com https://buy.paddle.com https://sandbox-buy.paddle.com https://*.firebaseapp.com https://www.google.com",
+              "worker-src 'self' blob:",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "frame-ancestors 'none'",
+            ].join('; ')
           }
         ],
       },

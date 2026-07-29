@@ -18,7 +18,7 @@ import {
 import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 import { CASE_COMMERCIAL } from "@/lib/billing/case-commercial-contract";
 import { UnlockPreparationPackPanel } from "@/components/billing/UnlockPreparationPackPanel";
-import { User, Package, History, ShieldAlert, ArrowLeft, ShoppingBag } from "lucide-react";
+import { User, Package, History, ShieldAlert, ArrowLeft, FolderOpen } from "lucide-react";
 import Link from "next/link";
 
 type PurchaseRow = {
@@ -71,6 +71,11 @@ export default function AccountPage() {
   const [entitlements, setEntitlements] = useState<PreparationPackEntitlement[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [sectionErrors, setSectionErrors] = useState<Record<"ledger" | "purchases" | "entitlements", boolean>>({
+    ledger: false,
+    purchases: false,
+    entitlements: false,
+  });
 
   useEffect(() => {
     if (!user) return;
@@ -96,23 +101,26 @@ export default function AccountPage() {
 
       if (ledgerResult.status === "fulfilled") {
         setLedger((ledgerResult.value || []) as LedgerEntry[]);
+        setSectionErrors((errors) => ({ ...errors, ledger: false }));
       } else {
         console.error("Failed to load commercial ledger", ledgerResult.reason);
-        setLedger([]);
+        setSectionErrors((errors) => ({ ...errors, ledger: true }));
       }
 
       if (purchaseResult.status === "fulfilled") {
         setPurchases((purchaseResult.value || []) as PurchaseRow[]);
+        setSectionErrors((errors) => ({ ...errors, purchases: false }));
       } else {
         console.error("Failed to load purchase history", purchaseResult.reason);
-        setPurchases([]);
+        setSectionErrors((errors) => ({ ...errors, purchases: true }));
       }
 
       if (entitlementResult.status === "fulfilled") {
         setEntitlements(entitlementResult.value || []);
+        setSectionErrors((errors) => ({ ...errors, entitlements: false }));
       } else {
         console.error("Failed to load entitlements", entitlementResult.reason);
-        setEntitlements([]);
+        setSectionErrors((errors) => ({ ...errors, entitlements: true }));
       }
 
       setLoading(false);
@@ -143,23 +151,26 @@ export default function AccountPage() {
 
     if (ledgerResult.status === "fulfilled") {
       setLedger((ledgerResult.value || []) as LedgerEntry[]);
+      setSectionErrors((errors) => ({ ...errors, ledger: false }));
     } else {
       console.error("Failed to load commercial ledger", ledgerResult.reason);
-      setLedger([]);
+      setSectionErrors((errors) => ({ ...errors, ledger: true }));
     }
 
     if (purchaseResult.status === "fulfilled") {
       setPurchases((purchaseResult.value || []) as PurchaseRow[]);
+      setSectionErrors((errors) => ({ ...errors, purchases: false }));
     } else {
       console.error("Failed to load purchase history", purchaseResult.reason);
-      setPurchases([]);
+      setSectionErrors((errors) => ({ ...errors, purchases: true }));
     }
 
     if (entitlementResult.status === "fulfilled") {
       setEntitlements(entitlementResult.value || []);
+      setSectionErrors((errors) => ({ ...errors, entitlements: false }));
     } else {
       console.error("Failed to load entitlements", entitlementResult.reason);
-      setEntitlements([]);
+      setSectionErrors((errors) => ({ ...errors, entitlements: true }));
     }
   };
 
@@ -171,11 +182,9 @@ export default function AccountPage() {
   const profile = (overview?.profile || {}) as { displayName?: string };
   const availableCredits = Number(credits.availableCredits || 0);
   const activePackCount = entitlements.length;
-  const activeReleasesRemaining = entitlements.reduce(
-    (sum, entitlement) => sum + Number(entitlement.releasesRemaining || 0),
-    0
+  const hasActivePack = entitlements.some((entitlement) =>
+    ["AVAILABLE", "ACTIVE", "PURCHASED", "RESERVED"].includes(String(entitlement.status || "").toUpperCase())
   );
-  const hasActivePack = activeReleasesRemaining > 0;
   const unlockablePacks = packsUnlockableFromCredits(availableCredits);
   const unusedPackBalance = packsFromCredits(availableCredits);
   const paidPurchases = purchases.filter((p) => p.status === "PAID");
@@ -191,26 +200,16 @@ export default function AccountPage() {
         <div>
           <h1 className="font-serif text-3xl font-black mb-2 text-kil-text">Account</h1>
           <p className="text-kil-text/60 font-mono text-sm">
-            Payment status, Preparation Packs, and sealed releases — one place.
+            Payment history and paid working-file access in one place.
           </p>
         </div>
-        {hasActivePack ? (
-          <Link
-            href="/credits/buy"
-            className="inline-flex items-center justify-center gap-2 rounded-md border border-kil-text/20 bg-kil-surface px-4 py-2 text-sm font-semibold text-kil-text transition-colors hover:bg-kil-base"
-          >
-            <ShoppingBag className="h-4 w-4" aria-hidden="true" />
-            Buy another pack — {CANONICAL_PRICING.priceFormatted}
-          </Link>
-        ) : (
-          <Link
-            href="/credits/buy"
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-kil-accent px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90"
-          >
-            <ShoppingBag className="h-4 w-4" aria-hidden="true" />
-            Buy Preparation Pack — {CANONICAL_PRICING.priceFormatted}
-          </Link>
-        )}
+        <Link
+          href="/cbam"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-kil-accent px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90"
+        >
+          <FolderOpen className="h-4 w-4" aria-hidden="true" />
+          Open working files
+        </Link>
       </div>
 
       {loadError ? (
@@ -242,16 +241,21 @@ export default function AccountPage() {
         <p className="text-xs font-semibold uppercase tracking-wider text-kil-text/60 mb-1">
           Payment & pack status
         </p>
-        {hasActivePack ? (
+        {sectionErrors.entitlements ? (
+          <>
+            <p className="font-serif text-xl font-bold text-status-blocked">Paid access status unavailable</p>
+            <p className="mt-2 text-sm text-kil-text/70">
+              We could not verify paid working-file access. Your access has not been removed. Retry before starting another payment.
+            </p>
+          </>
+        ) : hasActivePack ? (
           <>
             <p className="font-serif text-xl font-bold text-kil-text">
-              Payment confirmed — {activeReleasesRemaining} sealed release
-              {activeReleasesRemaining === 1 ? "" : "s"} ready
+              Payment confirmed for {activePackCount} working file{activePackCount === 1 ? "" : "s"}
             </p>
             <p className="mt-2 text-sm text-kil-text/70">
-              Across {activePackCount} active Preparation Pack
-              {activePackCount === 1 ? "" : "s"}. Each successful lock uses one release.
-              Failed locks use none. You do not need to pay again to continue sealing.
+              Open the paid file to lock it or make corrections. Same-file correction re-locks and
+              re-downloads remain included.
             </p>
           </>
         ) : pendingPurchases.length > 0 ? (
@@ -259,7 +263,7 @@ export default function AccountPage() {
             <p className="font-serif text-xl font-bold text-kil-text">Payment pending confirmation</p>
             <p className="mt-2 text-sm text-kil-text/70">
               We see a checkout in progress. If your card was charged, wait a minute and refresh.
-              If sealed releases still do not appear, email info@cbamvalid.com with your order ID.
+              Do not pay again. If paid access still does not appear, email info@cbamvalid.com with your order ID.
             </p>
           </>
         ) : (
@@ -303,12 +307,10 @@ export default function AccountPage() {
             <h2 className="font-serif text-xl">Paid unlock status</h2>
           </div>
           <div className="text-2xl font-serif font-bold text-kil-accent">
-            {activePackCount > 0 ? "Ready to lock" : "No paid unlock"}
+            {sectionErrors.entitlements ? "Status unavailable" : activePackCount > 0 ? "Ready to lock" : "No paid unlock"}
           </div>
           <p className="text-xs text-kil-text/60 mt-2 leading-relaxed">
-            {CASE_COMMERCIAL.customerOneLiner} Active paid files: {activePackCount}. Internal reseal
-            capacity remaining across entitlements: {activeReleasesRemaining} (ceiling, not a marketed
-            meter).
+            {CASE_COMMERCIAL.customerOneLiner} Paid working files: {activePackCount}.
           </p>
           {unlockablePacks > 0 && !hasActivePack ? (
             <p className="mt-3 font-mono text-xs text-kil-text/70">
@@ -328,13 +330,17 @@ export default function AccountPage() {
         }}
       />
 
-      {activePackCount > 0 ? (
+      {sectionErrors.entitlements ? (
+        <div className="rounded-sm border border-status-blocked/30 bg-status-blocked/5 p-5 text-sm text-status-blocked" role="alert">
+          Paid working-file access could not be loaded. Retry above; do not start another checkout until this status is available.
+        </div>
+      ) : activePackCount > 0 ? (
         <div className="bg-kil-surface border border-kil-text/15 rounded-sm shadow-sm overflow-hidden">
           <div className="p-6 border-b border-kil-text/15 bg-kil-base">
             <h2 className="font-serif text-xl text-kil-text">Active paid unlocks</h2>
           </div>
-          <div className="p-6">
-            <table className="w-full text-left text-sm font-mono">
+          <div className="overflow-x-auto p-6">
+            <table className="w-full min-w-[36rem] text-left text-sm font-mono">
               <thead>
                 <tr className="text-kil-text/60 border-b border-kil-text/15">
                   <th className="pb-3">Unlock</th>
@@ -348,27 +354,20 @@ export default function AccountPage() {
                     (typeof entitlement.scopeCaseId === "string" && entitlement.scopeCaseId) ||
                     (typeof entitlement.caseId === "string" && entitlement.caseId) ||
                     "";
-                  const max = Number(
-                    entitlement.maxReleases || CASE_COMMERCIAL.maxReleasesPerPaidCase
-                  );
-                  const used = Number(entitlement.releasesCount || 0);
                   return (
                     <tr key={entitlement.entitlementId || `${entitlement.orderId}-${index}`}>
                       <td className="py-3">Unlock {index + 1}</td>
                       <td className="py-3">
                         {scopeId ? (
-                          <span className="block text-xs text-kil-text/70">Working file: {scopeId}</span>
+                          <Link href={`/cases/${encodeURIComponent(scopeId)}?step=8`} className="text-xs font-semibold text-kil-accent underline">
+                            Open paid working file
+                          </Link>
                         ) : (
                           <span className="block text-xs text-kil-text/50">Legacy unbound pack</span>
                         )}
-                        <span className="block text-[10px] text-kil-text/40">
-                          Seals used {used}/{max} (internal ceiling)
-                        </span>
                       </td>
                       <td className="py-3 text-right font-bold text-kil-accent">
-                        {Number(entitlement.releasesRemaining || 0) > 0
-                          ? "Corrections included"
-                          : "Exhausted"}
+                        Corrections included
                       </td>
                     </tr>
                   );
@@ -386,11 +385,15 @@ export default function AccountPage() {
             Card charges from checkout. Status is the source of truth for whether payment completed.
           </p>
         </div>
-        <div className="p-6">
-          {purchases.length === 0 ? (
+        <div className="overflow-x-auto p-6">
+          {sectionErrors.purchases ? (
+            <p className="text-sm text-status-blocked" role="alert">
+              Purchase history could not be loaded. Retry before assuming that a payment failed.
+            </p>
+          ) : purchases.length === 0 ? (
             <p className="text-sm font-mono text-kil-text/60">No purchases found.</p>
           ) : (
-            <table className="w-full text-left text-sm font-mono">
+            <table className="w-full min-w-[42rem] text-left text-sm font-mono">
               <thead>
                 <tr className="text-kil-text/60 border-b border-kil-text/15">
                   <th className="pb-3">Date</th>
@@ -444,11 +447,15 @@ export default function AccountPage() {
             Internal pack-balance movements (grants and activations). Card payments appear above.
           </p>
         </div>
-        <div className="p-6">
-          {ledger.length === 0 ? (
+        <div className="overflow-x-auto p-6">
+          {sectionErrors.ledger ? (
+            <p className="text-sm text-status-blocked" role="alert">
+              Legacy balance activity could not be loaded. Paid working-file access is shown separately above.
+            </p>
+          ) : ledger.length === 0 ? (
             <p className="text-sm font-mono text-kil-text/60">No pack balance activity found.</p>
           ) : (
-            <table className="w-full text-left text-sm font-mono">
+            <table className="w-full min-w-[36rem] text-left text-sm font-mono">
               <thead>
                 <tr className="text-kil-text/60 border-b border-kil-text/15">
                   <th className="pb-3">Date</th>
@@ -475,10 +482,10 @@ export default function AccountPage() {
         </div>
       </div>
 
-      <div className="border border-status-blocked/20 bg-status-blocked/5 rounded-sm p-6 flex items-start gap-4">
+      <div id="security" className="border border-status-blocked/20 bg-status-blocked/5 rounded-sm p-6 flex items-start gap-4">
         <ShieldAlert className="w-6 h-6 text-status-blocked shrink-0" />
         <div>
-          <h3 className="font-serif text-lg text-status-blocked mb-1">Danger Zone</h3>
+          <h3 className="font-serif text-lg text-status-blocked mb-1">Security & account closure</h3>
           <p className="text-xs text-kil-text/60 mb-4 max-w-lg">
             Requesting account closure will permanently delete your user profile and all associated data in accordance with GDPR. Commercial transaction records will be anonymized and retained for legal accounting purposes.
           </p>

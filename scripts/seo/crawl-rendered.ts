@@ -204,13 +204,12 @@ async function crawlSitemapUrl(path: string): Promise<Check[]> {
 
   // Price parity on money pages
   if (path === "/" || path === "/pricing" || path === "/product") {
-    const visiblePrice = page.html.includes(PRICE_CLAIM.value.formatted) || page.html.includes("149");
-    const schemaHasPrice = JSON.stringify(jsonLd).includes(`"price":"${PRICE_CLAIM.value.amount}"`)
-      || JSON.stringify(jsonLd).includes('"price":"149"');
+    const visiblePrice = page.html.includes(PRICE_CLAIM.value.formatted) || page.html.includes(PRICE_CLAIM.value.amount);
+    const schemaHasPrice = JSON.stringify(jsonLd).includes(`"price":"${PRICE_CLAIM.value.amount}"`);
     if (!visiblePrice) {
       checks.push(fail("RC11", `${path} visible price missing`));
     } else if (path !== "/" && !schemaHasPrice && jsonLd.length > 0) {
-      // homepage may use WebApplication; still check 149 somewhere in schema if present
+      // homepage may use WebApplication; still check canonical price somewhere in schema if present
       checks.push(pass("RC11", `${path} visible price present (schema optional)`));
     } else {
       checks.push(pass("RC11", `${path} price parity OK`));

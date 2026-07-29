@@ -77,10 +77,10 @@ export default function Page() {
                 <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">
                   Start a Dossier <span className="arr">→</span>
                 </a>
-                <a className="btn btn-ghost btn-lg" href="/sample-dossier">
-                  See a Sealed Sample
-                </a>
               </div>
+              <p className="hero-secondary-link">
+                Want to inspect the output first? <a href="/sample-dossier">Open the public sample.</a>
+              </p>
               <ul className="hero-micro">
                 <li>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">

@@ -39,7 +39,7 @@ export function buildLlmDocModel(): LlmDocModel {
       "CBAMValid (https://cbamvalid.com) is a verifier-preparation platform for non-EU producers, exporters, operators, importers, and CBAM reporting teams. It produces an operator-prepared dossier that reduces the work required for independent accredited verification.",
     productPositioning: assertVerifiedClaim(PRODUCT_POSITIONING_CLAIM, "PRODUCT_POSITIONING_CLAIM"),
     independence: assertVerifiedClaim(INDEPENDENCE_CLAIM, "INDEPENDENCE_CLAIM"),
-    pricingLine: `${price.formatted} per ${price.packName} (one-time; no subscription; drafts free; 1 installation; 1 reporting year; 5 sealed releases).`,
+    pricingLine: `${price.formatted} per case-scoped working file at lock (one-time; no subscription; drafts free; 1 legal operator; 1 installation; 1 reporting year; same-file correction re-locks included; a new file requires a new payment).`,
     supportEmail: assertVerifiedClaim(SUPPORT_EMAIL_CLAIM, "SUPPORT_EMAIL_CLAIM"),
     resources,
     regulatoryStatements: listVerifiedRegulatoryStatements(),

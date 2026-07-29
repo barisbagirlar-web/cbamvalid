@@ -149,7 +149,7 @@ export const CBAM_GLOSSARY: readonly GlossaryTerm[] = [
     name: "Exporter Verification Preparation Pack",
     aliases: ["Preparation Pack", "CBAMValid pack"],
     definition:
-      "CBAMValid commercial unit: one legal operator, one installation, one reporting year, unlock for one working file with drafts free and five successful sealed releases after pay-at-lock — prepared for independent accredited verification, not an accredited opinion.",
+      "CBAMValid commercial unit: one legal operator, one installation, one reporting year, and one case-scoped working file. Drafts are free; USD 449 unlocks lock and download, with same-file correction re-locks included. A new file requires a new payment.",
     relatedPaths: ["/pricing", "/product", "/how-it-works"],
   },
   {
