@@ -5,12 +5,10 @@ test.describe('Header Mutually Exclusive Rendering', () => {
   test('Public routes should render only the Public Header', async ({ page }) => {
     await page.goto('/');
     
-    // There should be exactly one header tag in the document
-    const headers = await page.locator('header').count();
-    expect(headers).toBe(1);
-
-    // It should be the public header
-    await expect(page.locator('header[data-testid="public-header"]').first()).toBeVisible();
+    // Content sections may use semantic <header>; exactly one route-level header shell is allowed.
+    await expect(page.locator('[data-testid="public-header"]')).toHaveCount(1);
+    await expect(page.locator('[data-testid="auth-header"], [data-testid="app-header"]')).toHaveCount(0);
+    await expect(page.locator('header[data-testid="public-header"]')).toBeVisible();
 
     // Verify it doesn't contain workspace elements
     await expect(page.locator('header').locator('text=Dashboard')).not.toBeVisible();
@@ -20,11 +18,9 @@ test.describe('Header Mutually Exclusive Rendering', () => {
   test('Auth routes should render only the Auth Header', async ({ page }) => {
     await page.goto('/login');
     
-    // There should be exactly one header tag in the document
-    const headers = await page.locator('header').count();
-    expect(headers).toBe(1);
-
-    // It should be the auth header
+    // Exactly one route-level auth shell; semantic headers inside content remain valid.
+    await expect(page.locator('[data-testid="auth-header"]')).toHaveCount(1);
+    await expect(page.locator('[data-testid="public-header"], [data-testid="app-header"]')).toHaveCount(0);
     await expect(page.locator('header[data-testid="auth-header"]')).toBeVisible();
 
     // Verify it doesn't contain workspace or public elements

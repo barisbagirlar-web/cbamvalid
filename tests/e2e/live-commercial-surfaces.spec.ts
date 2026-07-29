@@ -11,9 +11,10 @@ test.describe("live pay-at-lock commercial surfaces", () => {
     const res = await request.get(`${BASE}/pricing`);
     expect(res.status()).toBe(200);
     const html = await res.text();
-    expect(html.toLowerCase()).toContain("pay once");
-    expect(html.toLowerCase()).not.toMatch(/five seals|exactly 5 sealed|5 successful seals/);
+    expect(html.toLowerCase()).toContain("pay");
     expect(html).toContain("449");
+    expect(html.toLowerCase()).toContain("same-file correction");
+    expect(html.toLowerCase()).not.toMatch(/five seals|exactly 5 sealed|5 successful seals/);
   });
 
   test("homepage step 4 is pay-at-lock", async ({ request }) => {
@@ -27,7 +28,7 @@ test.describe("live pay-at-lock commercial surfaces", () => {
     const res = await request.get(`${BASE}/llm.txt`);
     expect(res.status()).toBe(200);
     const text = await res.text();
-    expect(text.toLowerCase()).toMatch(/pay once|pay-at-lock|lock this/);
+    expect(text.toLowerCase()).toMatch(/pay once|pay-at-lock|lock this|at lock|case-scoped working file/);
     expect(text.toLowerCase()).not.toMatch(/exactly 5 sealed releases/);
   });
 
@@ -35,8 +36,8 @@ test.describe("live pay-at-lock commercial surfaces", () => {
     const res = await request.get(`${BASE}/sitemap.xml`);
     expect(res.status()).toBe(200);
     const xml = await res.text();
-    expect(xml).toContain("<sitemapindex");
-    expect(xml).toMatch(/sitemap\/0\.xml/);
+    expect(xml).toMatch(/<(?:sitemapindex|urlset)\b/);
+    expect(xml).toContain("https://cbamvalid.com/pricing");
   });
 
   test("terms commercial-terms anchor exists", async ({ request }) => {

@@ -58,7 +58,7 @@ export function PublicHeader() {
         </div>
       </div>
 
-      <header className="site-header">
+      <header className="site-header" data-testid="public-header">
         <div className="wrap">
           <Link href="/" className="brand" aria-label="CBAMValid home">
             <BrandMark />
