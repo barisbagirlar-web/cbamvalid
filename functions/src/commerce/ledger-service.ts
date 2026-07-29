@@ -55,6 +55,10 @@ export function calculateEntryHash(entry: Omit<LedgerEntry, "entryHash">): strin
   return crypto.createHash("sha256").update(dataString).digest("hex");
 }
 
+export function ledgerEntryId(idempotencyKey: string): string {
+  return `led_${crypto.createHash("sha256").update(idempotencyKey).digest("hex")}`;
+}
+
 /**
  * Appends a new entry to the immutable commerce ledger within a transaction context
  */
@@ -67,20 +71,33 @@ export async function writeLedgerEntry(
   }
 ): Promise<LedgerEntry> {
   const ledgerCollection = adminDb.collection("commerce_ledger");
+  const entryId = ledgerEntryId(entryParams.idempotencyKey);
+  const entryRef = ledgerCollection.doc(entryId);
 
   let existingEntry = prefetched?.existingEntry;
   if (existingEntry === undefined) {
-    const existingQuery = await dbTransaction.get(
-      ledgerCollection.where("idempotencyKey", "==", entryParams.idempotencyKey).limit(1)
-    );
-    if (!existingQuery.empty) {
-      existingEntry = existingQuery.docs[0].data() as LedgerEntry;
+    const deterministicSnapshot = await dbTransaction.get(entryRef);
+    if (deterministicSnapshot.exists) {
+      existingEntry = deterministicSnapshot.data() as LedgerEntry;
     } else {
-      existingEntry = null;
+      const existingQuery = await dbTransaction.get(
+        ledgerCollection.where("idempotencyKey", "==", entryParams.idempotencyKey).limit(1)
+      );
+      existingEntry = existingQuery.empty
+        ? null
+        : existingQuery.docs[0].data() as LedgerEntry;
     }
   }
 
   if (existingEntry) {
+    if (
+      existingEntry.uid !== entryParams.uid ||
+      existingEntry.orderId !== entryParams.orderId ||
+      existingEntry.transactionId !== entryParams.transactionId ||
+      existingEntry.type !== entryParams.type
+    ) {
+      throw new Error(`LEDGER_IDEMPOTENCY_CONFLICT:${entryParams.idempotencyKey}`);
+    }
     return existingEntry;
   }
 
@@ -97,7 +114,6 @@ export async function writeLedgerEntry(
   }
 
   // 3. Construct the new entry
-  const entryId = ledgerCollection.doc().id;
   const createdAt = new Date().toISOString();
 
   const entryData: Omit<LedgerEntry, "entryHash"> = {
@@ -114,7 +130,7 @@ export async function writeLedgerEntry(
   };
 
   // 4. Save to firestore within the transactional context
-  dbTransaction.set(ledgerCollection.doc(entryId), finalEntry);
+  dbTransaction.set(entryRef, finalEntry);
 
   return finalEntry;
 }

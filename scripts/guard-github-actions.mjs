@@ -2,7 +2,18 @@ import fs from "node:fs";
 import path from "node:path";
 
 const workflowsDir = path.join(process.cwd(), ".github", "workflows");
+const packageJsonPath = path.join(process.cwd(), "package.json");
 const failures = [];
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+const packageScripts = packageJson.scripts ?? {};
+
+if (packageJson.engines?.node !== "22.x") {
+  failures.push("package.json: root engines.node must be pinned to 22.x");
+}
+const nvmrcPath = path.join(process.cwd(), ".nvmrc");
+if (!fs.existsSync(nvmrcPath) || fs.readFileSync(nvmrcPath, "utf8").trim() !== "22") {
+  failures.push(".nvmrc: root developer runtime must be pinned to Node 22");
+}
 
 if (!fs.existsSync(workflowsDir)) {
   console.error("GITHUB_ACTIONS_GUARD=FAIL");
@@ -58,6 +69,13 @@ for (const file of files) {
 
   if (/node-version:\s*["']?20["']?\s*$/m.test(content)) {
     failures.push(`${relativePath}: Node 20 is prohibited; production runtime is Node 22`);
+  }
+
+  for (const match of content.matchAll(/\bnpm\s+run\s+([A-Za-z0-9:._-]+)/g)) {
+    const scriptName = match[1];
+    if (!Object.prototype.hasOwnProperty.call(packageScripts, scriptName)) {
+      failures.push(`${relativePath}: npm script does not exist: ${scriptName}`);
+    }
   }
 }
 

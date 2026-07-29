@@ -11,6 +11,16 @@ export class OrderNotFoundError extends CommerceError {
   }
 }
 
+export class InvalidOrderTransitionError extends CommerceError {
+  constructor(current: string, target: string) {
+    super(
+      "INVALID_ORDER_TRANSITION",
+      `Order status cannot transition from ${current} to ${target}.`,
+      409
+    );
+  }
+}
+
 export class CaseOwnershipViolationError extends CommerceError {
   constructor(caseId: string) {
     super("CASE_OWNERSHIP_VIOLATION", `Session user is not the owner of case ${caseId}.`, 403);

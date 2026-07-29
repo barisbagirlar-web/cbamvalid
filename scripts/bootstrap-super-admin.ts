@@ -44,6 +44,10 @@ async function bootstrap() {
     // 1. Fetch user by email
     const userRecord = await auth.getUserByEmail(SUPER_ADMIN_EMAIL);
     console.log(`[BOOTSTRAP] Found user. UID: ${userRecord.uid}`);
+    const configuredOwnerUid = process.env.SUPER_ADMIN_UID?.trim();
+    if (configuredOwnerUid && configuredOwnerUid !== userRecord.uid) {
+      throw new Error("SUPER_ADMIN_UID does not match the canonical owner account.");
+    }
 
     // 2. Require emailVerified
     if (!userRecord.emailVerified) {
@@ -54,7 +58,8 @@ async function bootstrap() {
     const customClaims = {
       role: "super_admin",
       owner: true,
-      adminVersion: 1
+      ownerUid: userRecord.uid,
+      adminVersion: 2
     };
 
     if (!isDryRun) {
@@ -68,9 +73,10 @@ async function bootstrap() {
         email: userRecord.email,
         role: "super_admin",
         owner: true,
+        uid: userRecord.uid,
         createdAt: new Date().toISOString(),
         lastBootstrappedAt: new Date().toISOString(),
-        adminVersion: 1
+        adminVersion: 2
       }, { merge: true });
       console.log(`[BOOTSTRAP] Updated admin_identities in Firestore.`);
     }
@@ -80,8 +86,9 @@ async function bootstrap() {
     console.log(`SUPER_ADMIN_UID=${userRecord.uid}`);
     console.log(`Please add SUPER_ADMIN_UID to your secure server environment variables if not already present.`);
     
-  } catch (error: any) {
-    console.error(`[BOOTSTRAP] ERROR:`, error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown bootstrap failure";
+    console.error(`[BOOTSTRAP] ERROR:`, message);
     process.exit(1);
   }
 }

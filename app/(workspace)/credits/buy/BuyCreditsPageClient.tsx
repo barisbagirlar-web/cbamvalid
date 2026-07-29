@@ -60,15 +60,10 @@ export default function BuyCreditsPageClient() {
   useEffect(() => {
     if (user) {
       user.getIdTokenResult().then((tokenResult) => {
-        const role = tokenResult.claims.role;
-        const adminClaim = tokenResult.claims.admin === true;
-        const pilotClaim = tokenResult.claims.pilot === true;
         setIsAdmin(
-          adminClaim ||
-            pilotClaim ||
-            role === "admin" ||
-            role === "Owner" ||
-            role === "pilot"
+          tokenResult.claims.role === "super_admin" &&
+          tokenResult.claims.owner === true &&
+          tokenResult.claims.ownerUid === user.uid
         );
       }).catch(console.error);
     }

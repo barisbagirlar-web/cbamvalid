@@ -16,6 +16,6 @@ export async function finalizeServerSession(user: User): Promise<void> {
   }
 
   if (typeof window !== "undefined") {
-    (window as any).__sessionEstablished = true;
+    Object.assign(window, { __sessionEstablished: true });
   }
 }

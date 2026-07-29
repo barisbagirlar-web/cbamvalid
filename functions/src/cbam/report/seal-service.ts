@@ -25,6 +25,7 @@ import { assertSelfVerify } from "../../dossier/90-verify/selfVerify";
 import { evaluateEnterpriseChapters, type DossierTier } from "../../dossier/50-model/enterprise-chapters";
 import { buildChapterPayloadsFromDossier } from "../../dossier/50-model/chapter-payloads";
 import { assessUncertainty } from "../../dossier/40-readiness/uncertainty";
+import { assertCompleteArtifactCommit, isSealLeaseHeldByOther } from "./seal-activation";
 
 export type SealState =
   | "SEAL_REQUESTED"
@@ -164,12 +165,9 @@ async function acquireSealLease(params: {
         if (!reportSnapshot.exists) throw new Error("SEAL_REQUEST_COMPLETED_REPORT_MISSING");
         return { generatedAt: String(marker.generatedAt), completed: resultFromReport(reportSnapshot.data()) };
       }
-      if (
-        marker.status === "IN_PROGRESS" &&
-        marker.leaseOwner !== params.leaseOwner &&
-        typeof marker.leaseExpiresAt === "string" &&
-        new Date(marker.leaseExpiresAt).getTime() > now.getTime()
-      ) throw new Error("SEAL_REQUEST_IN_PROGRESS");
+      if (isSealLeaseHeldByOther(marker, params.leaseOwner, now)) {
+        throw new Error("SEAL_REQUEST_IN_PROGRESS");
+      }
       const generatedAt = String(marker.generatedAt || now.toISOString());
       transaction.update(markerRef, {
         status: "IN_PROGRESS",
@@ -243,6 +241,13 @@ async function loadEvidenceFiles(caseData: AuditReadyCase): Promise<EvidenceBina
   const bucket = getStorageBucket();
   const files: EvidenceBinary[] = [];
   for (const evidence of caseData.evidenceRegister) {
+    if (
+      evidence.malwareScanStatus !== "CLEAN" ||
+      evidence.reviewStatus !== "APPROVED" ||
+      evidence.supportStatus !== "SUPPORTED"
+    ) {
+      throw new Error(`EVIDENCE_NOT_CLEAN_APPROVED_SUPPORTED:${evidence.evidenceId}`);
+    }
     const prefix = `evidence/${caseData.ownerId}/${caseData.caseId}/${evidence.evidenceId}/`;
     if (!evidence.storagePath.startsWith(prefix)) throw new Error(`EVIDENCE_STORAGE_PATH_INVALID:${evidence.evidenceId}`);
     const object = bucket.file(evidence.storagePath);
@@ -609,26 +614,29 @@ export async function sealReport(params: {
 
     const basePath = `reports/${params.uid}/${identity.reportId}`;
     const commonMetadata = { reportId: identity.reportId, caseId: params.caseId, requestId: identity.requestId };
-    const storageEntries = await Promise.all([
-      commitImmutableArtifact({ path: `${basePath}/dossier.zip`, bytes: packageResult.zip, contentType: "application/zip", metadata: commonMetadata }),
-      commitImmutableArtifact({ path: `${basePath}/dossier.pdf`, bytes: packageResult.primaryPdf, contentType: "application/pdf", metadata: commonMetadata }),
-      commitImmutableArtifact({ path: `${basePath}/dossier.xlsx`, bytes: packageResult.workbook, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", metadata: commonMetadata }),
-      commitImmutableArtifact({ path: `${basePath}/manifest.json`, bytes: manifest.bytes, contentType: "application/json", metadata: commonMetadata }),
-      commitImmutableArtifact({ path: `${basePath}/manifest.sig`, bytes: packageResult.signatureBytes, contentType: "application/vnd.cbamvalid.kms-signature+json", metadata: commonMetadata }),
-      commitImmutableArtifact({ path: `${basePath}/case-snapshot.json`, bytes: frozenJson, contentType: "application/json", metadata: commonMetadata }),
-    ]);
+    const artifactCommits = [
+      { path: `${basePath}/dossier.zip`, bytes: packageResult.zip, contentType: "application/zip" },
+      { path: `${basePath}/dossier.pdf`, bytes: packageResult.primaryPdf, contentType: "application/pdf" },
+      { path: `${basePath}/manifest.json`, bytes: manifest.bytes, contentType: "application/json" },
+      { path: `${basePath}/manifest.sig`, bytes: packageResult.signatureBytes, contentType: "application/vnd.cbamvalid.kms-signature+json" },
+      { path: `${basePath}/case-snapshot.json`, bytes: frozenJson, contentType: "application/json" },
+    ];
+    const storageEntries = await Promise.all(artifactCommits.map((entry) =>
+      commitImmutableArtifact({ ...entry, metadata: commonMetadata })
+    ));
+    assertCompleteArtifactCommit(artifactCommits.map((entry) => entry.path), storageEntries);
     if (packageResult.zipHash !== storageEntries[0].sha256) {
       throw new Error("PACKAGE_RECEIPT_HASH_MISMATCH");
     }
     await setState(identity.reportId, "ARTIFACTS_COMMITTED", { packageHash: packageResult.zipHash });
 
-    const primaryDossier = artifacts.find(a => a.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
+    const primaryDossier = artifacts.find(a => a.path === "Operator Emissions Report.pdf");
     const operatorEmissionsReport = artifacts.find(a => a.path === "Operator Emissions Report.pdf");
-    const technicalCompilation = artifacts.find(a => a.path === "Complete Dossier Compilation.pdf");
+    const operatorSummaryReport = artifacts.find(a => a.path === "Operator Summary Emissions Report.pdf");
     
     const primaryDossierHash = primaryDossier ? sha256(primaryDossier.bytes) : "";
     const operatorEmissionsReportHash = operatorEmissionsReport ? sha256(operatorEmissionsReport.bytes) : "";
-    const technicalCompilationHash = technicalCompilation ? sha256(technicalCompilation.bytes) : "";
+    const operatorSummaryReportHash = operatorSummaryReport ? sha256(operatorSummaryReport.bytes) : "";
 
     const documentHash = signature.manifestHash; // redefined as manifestHash compatible with old schema
     const caseDocumentId = await resolveCaseDocumentId(params.caseId);
@@ -645,7 +653,7 @@ export async function sealReport(params: {
       packageHash: packageResult.zipHash,
       primaryDossierHash,
       operatorEmissionsReportHash,
-      technicalCompilationHash,
+      operatorSummaryReportHash,
       caseDataHash,
       calculationRootHash: calculation.calculationRootHash,
       status: "SEALED",
@@ -657,6 +665,7 @@ export async function sealReport(params: {
       kmsKeyVersion: signature.keyVersion,
       kmsAlgorithm: signature.algorithm,
       signatureBase64: signature.signatureBase64,
+      signaturePublicKeyPem: signature.publicKeyPem,
       storage: Object.fromEntries(storageEntries.map((entry) => [entry.path.split("/").at(-1) || entry.path, entry])),
       installationName: caseData.installation.name.value || "Sealed dossier",
     };
@@ -669,23 +678,23 @@ export async function sealReport(params: {
       const publicVerificationTokenHash = crypto.createHash("sha256").update(publicVerificationToken).digest("hex");
 
       const manifestObj = manifest.manifest;
-      const evidenceFiles = manifestObj.files.filter((f: { path: string }) => f.path.startsWith("Supporting_Evidence/"));
+      const evidenceFileCount = manifestObj.evidenceCount;
       
       const components = new Set<string>();
       manifestObj.files.forEach((f: { path: string }) => {
         const slash = f.path.indexOf("/");
         components.add(slash >= 0 ? `${f.path.slice(0, slash)}/` : f.path);
       });
-      const actualTopLevelComponentCount = components.size;
+      const actualTopLevelComponentCount = components.size + 1; // manifest is signed after final files are enumerated
 
       const packageMetadata = {
         schemaVersion: manifestObj.schemaVersion,
         requiredTopLevelComponentCount: REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5,
         actualTopLevelComponentCount,
         manifestFileCount: manifestObj.files.length,
-        evidenceFileCount: evidenceFiles.length,
-        primaryDossierFileName: "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf",
-        technicalCompilationFileName: "Complete Dossier Compilation.pdf",
+        evidenceFileCount,
+        primaryDossierFileName: "Operator Emissions Report.pdf",
+        operatorSummaryReportFileName: "Operator Summary Emissions Report.pdf",
         operatorEmissionsReportFileName: "Operator Emissions Report.pdf",
       };
 
@@ -743,11 +752,19 @@ export async function sealReport(params: {
           auth: params.auth,
         });
         for (const doc of prevReports.docs) {
-          if (doc.id !== identity.reportId) {
+          const previous = doc.data();
+          if (doc.id !== identity.reportId && previous.status === "SEALED") {
             transaction.update(doc.ref, {
               isCurrentRelease: false,
               publicVerificationState: "SUPERSEDED",
             });
+            if (typeof previous.documentHash === "string" && previous.documentHash) {
+              transaction.set(
+                adminDb.collection("document_seals").doc(previous.documentHash),
+                { commercialStatus: "SUPERSEDED", valid: true },
+                { merge: true }
+              );
+            }
           }
         }
       } else {

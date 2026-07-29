@@ -5,6 +5,7 @@ import {
   OFFICIAL_SOURCES,
   type OfficialSourceId,
 } from "./legal-sources";
+import { CALCULATION_CONTRACT } from "../../dossier/01-ruleset/calculation.rules";
 
 export const VERIFICATION_MATERIALITY_RATE = 0.05 as const;
 
@@ -59,10 +60,10 @@ export const RULESETS: Record<string, CbamRuleset> = {
     supersessionState: "SUPERSEDED",
   },
   "v3.0.0-DEFINITIVE": {
-    version: "3.0.0",
+    version: CALCULATION_CONTRACT.rulesetVersion,
     name: "CBAM Definitive Regime 2026",
     period: "DEFINITIVE",
-    activeFrom: "2026-01-01",
+    activeFrom: CALCULATION_CONTRACT.effectiveDate,
     baseRegulations: ["REG_2023_956", "REG_2025_2083"],
     implementingActs: ["IMPL_2025_2546", "IMPL_2025_2547", "IMPL_2025_2548"],
     delegatedActs: ["DEL_2025_2551"],

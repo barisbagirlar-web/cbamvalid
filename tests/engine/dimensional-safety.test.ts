@@ -23,8 +23,9 @@ describe("dimensional safety and decimal engine", () => {
 
     expect(result.totalDirectEmissions).toBe("150.55");
     expect(result.totalIndirectEmissions).toBe("25");
-    expect(result.totalEmbeddedEmissions).toBe("175.55");
+    // Iron and steel is Annex II direct-only for the priced result.
+    expect(result.totalEmbeddedEmissions).toBe("150.55");
     expect(result.productionVolume).toBe("100");
-    expect(result.specificEmbeddedEmissions).toBe("1.7555");
+    expect(result.specificEmbeddedEmissions).toBe("1.5055");
   });
 });

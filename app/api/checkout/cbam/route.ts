@@ -86,7 +86,7 @@ export async function POST(request: Request) {
     }
     const caseDoc = caseSnap.data() as Record<string, unknown>;
     const caseUid = String(caseDoc.uid || caseDoc.ownerId || "");
-    if (caseUid && caseUid !== decoded.uid) {
+    if (!caseUid || caseUid !== decoded.uid) {
       return apiFailure("CASE_OWNERSHIP_MISMATCH", "You do not own this working file.", 403);
     }
     const commercial = (caseDoc.commercial || {}) as Record<string, unknown>;
@@ -133,22 +133,35 @@ export async function POST(request: Request) {
     const now = new Date().toISOString();
 
     const orderRef = adminDb.collection("commerce_orders").doc(orderId);
-    await orderRef.set({
-      orderId,
-      uid: decoded.uid,
-      caseId,
-      productCode: canonicalProductCode,
-      canonicalProductCode,
-      paddlePriceId: priceId,
-      currency: "USD",
-      amountMinor: CANONICAL_PRICING.amountMinor,
-      status: "CHECKOUT_CREATED",
-      createdAt: now,
-      updatedAt: now,
-      catalogVersion: "v5",
-      correlationId,
-      checkoutMode: "items",
-      billingModel: "CASE_PAY_AT_LOCK",
+    await adminDb.runTransaction(async (transaction) => {
+      const freshCaseSnap = await transaction.get(adminDb.collection("cbam_cases").doc(caseId));
+      if (!freshCaseSnap.exists) throw new Error("CASE_NOT_FOUND");
+      const freshCase = freshCaseSnap.data() as Record<string, unknown>;
+      const freshOwner = String(freshCase.uid || freshCase.ownerId || "");
+      if (!freshOwner || freshOwner !== decoded.uid) {
+        throw new Error("CASE_OWNERSHIP_MISMATCH");
+      }
+      const freshCommercial = (freshCase.commercial || {}) as Record<string, unknown>;
+      if (String(freshCommercial.status || "").toUpperCase() === "PAID") {
+        throw new Error("CASE_ALREADY_PAID");
+      }
+      transaction.create(orderRef, {
+        orderId,
+        uid: decoded.uid,
+        caseId,
+        productCode: canonicalProductCode,
+        canonicalProductCode,
+        paddlePriceId: priceId,
+        currency: "USD",
+        amountMinor: CANONICAL_PRICING.amountMinor,
+        status: "CHECKOUT_CREATED",
+        createdAt: now,
+        updatedAt: now,
+        catalogVersion: "v5",
+        correlationId,
+        checkoutMode: "items",
+        billingModel: "CASE_PAY_AT_LOCK",
+      });
     });
 
     // Prefer server-created Paddle transaction when API key has transaction.write.
@@ -219,6 +232,19 @@ export async function POST(request: Request) {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[PADDLE CHECKOUT UNEXPECTED SERVER ERROR]:", message);
+    if (message === "CASE_NOT_FOUND") {
+      return apiFailure("CASE_NOT_FOUND", "Working file not found for checkout.", 404);
+    }
+    if (message === "CASE_OWNERSHIP_MISMATCH") {
+      return apiFailure("CASE_OWNERSHIP_MISMATCH", "You do not own this working file.", 403);
+    }
+    if (message === "CASE_ALREADY_PAID") {
+      return apiFailure(
+        "CASE_ALREADY_PAID",
+        "This working file is already paid. Return to the file and lock it — do not pay again.",
+        409
+      );
+    }
     return apiFailure("INTERNAL_SERVER_ERROR", "Checkout could not be started.", 500);
   }
 }

@@ -8,6 +8,7 @@ import {
 
 function userWithClaims(claims: Record<string, unknown>): User {
   return {
+    uid: "canonical-owner-uid",
     getIdTokenResult: vi.fn().mockResolvedValue({ claims }),
   } as unknown as User;
 }
@@ -52,10 +53,17 @@ describe("post-login routing", () => {
       .resolves.toBe("/cbam");
   });
 
-  it("sends admins only to the admin destination", async () => {
-    await expect(resolvePostLoginRoute(userWithClaims({ ownerAdmin: true }), "/account"))
+  it("sends only the UID-bound canonical owner to the admin destination", async () => {
+    const ownerClaims = {
+      role: "super_admin",
+      owner: true,
+      ownerUid: "canonical-owner-uid",
+    };
+    await expect(resolvePostLoginRoute(userWithClaims(ownerClaims), "/account"))
       .resolves.toBe("/admin");
-    await expect(resolvePostLoginRoute(userWithClaims({ admin: true }), "/admin/users"))
+    await expect(resolvePostLoginRoute(userWithClaims(ownerClaims), "/admin/users"))
       .resolves.toBe("/admin/users");
+    await expect(resolvePostLoginRoute(userWithClaims({ ownerAdmin: true }), "/admin/users"))
+      .resolves.toBe("/cbam");
   });
 });

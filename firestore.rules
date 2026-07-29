@@ -3,7 +3,20 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isSuperAdmin() {
-      return request.auth != null && (request.auth.token.admin == true || request.auth.token.ownerAdmin == true);
+      return request.auth != null
+        && request.auth.token.email == 'barisbagirlar@gmail.com'
+        && request.auth.token.email_verified == true
+        && request.auth.uid == request.auth.token.ownerUid
+        && request.auth.token.role == 'super_admin'
+        && request.auth.token.owner == true
+        && exists(/databases/$(database)/documents/admin_identities/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admin_identities/$(request.auth.uid)).data.email == 'barisbagirlar@gmail.com'
+        && get(/databases/$(database)/documents/admin_identities/$(request.auth.uid)).data.role == 'super_admin'
+        && get(/databases/$(database)/documents/admin_identities/$(request.auth.uid)).data.owner == true;
+    }
+
+    match /admin_identities/{ownerUid} {
+      allow read, write: if false;
     }
 
     match /users/{userId} {

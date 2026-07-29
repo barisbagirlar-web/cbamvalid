@@ -127,7 +127,10 @@ walk(rootDir, isSourceFile, (filePath) => {
   }
 
   // 8. Hardcoded admin email checks in auth/layout files
-  if (content.includes('barisbagirlar@gmail.com')) {
+  if (
+    content.includes('barisbagirlar@gmail.com') &&
+    relPath !== 'lib/auth/owner-contract.ts'
+  ) {
     logError(relPath, "Contains hardcoded admin email \"barisbagirlar@gmail.com\". Use Custom Claims instead.");
   }
 
@@ -236,6 +239,51 @@ if (fs.existsSync(path.join(rootDir, sessionRoutePath))) {
   }
   if (!content.includes('dynamic = "force-dynamic"') && !content.includes("dynamic = 'force-dynamic'")) {
     logError(sessionRoutePath, "Missing force-dynamic cache control declaration.");
+  }
+}
+
+const ownerContracts = [
+  'lib/auth/owner-contract.ts',
+  'functions/src/auth/owner-contract.ts',
+  'firestore.rules',
+];
+for (const ownerContract of ownerContracts) {
+  const absolutePath = path.join(rootDir, ownerContract);
+  if (!fs.existsSync(absolutePath)) {
+    logError(ownerContract, "Canonical owner authorization contract is missing.");
+    continue;
+  }
+  const content = fs.readFileSync(absolutePath, 'utf8');
+  for (const requiredText of [
+    'barisbagirlar@gmail.com',
+    'super_admin',
+    'owner',
+    'ownerUid',
+  ]) {
+    if (!content.includes(requiredText)) {
+      logError(ownerContract, `Missing canonical owner condition: ${requiredText}`);
+    }
+  }
+}
+
+const casesHandlerPath = path.join(rootDir, 'functions/src/handlers/cases.ts');
+if (
+  fs.existsSync(casesHandlerPath) &&
+  fs.readFileSync(casesHandlerPath, 'utf8').includes('isProductionSmokeIdentity')
+) {
+  logError('functions/src/handlers/cases.ts', "Production-smoke identity must not bypass owner authorization.");
+}
+
+for (const privilegedHandler of [
+  'functions/src/handlers/admin.ts',
+  'functions/src/handlers/cases.ts',
+  'functions/src/handlers/commerce.ts',
+]) {
+  const absolutePath = path.join(rootDir, privilegedHandler);
+  if (!fs.existsSync(absolutePath)) continue;
+  const content = fs.readFileSync(absolutePath, 'utf8');
+  if (/auth\.token\.(?:admin|ownerAdmin|pilot)\b/.test(content)) {
+    logError(privilegedHandler, "Legacy admin/pilot claims must not bypass canonical owner authorization.");
   }
 }
 

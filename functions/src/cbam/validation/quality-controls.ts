@@ -6,6 +6,7 @@ import {
 } from "../input-constraints";
 import { getActiveRuleset } from "../registry/rulesets";
 import { assessOrigin } from "../../dossier/01-ruleset/origin.rules";
+import { CALCULATION_CONTRACT } from "../../dossier/01-ruleset/calculation.rules";
 
 export type QualityControlStatus = "PASS" | "WARNING" | "BLOCKER" | "NOT_APPLICABLE";
 export interface QualityControlResult { ruleId: string; name: string; status: QualityControlStatus; message?: string; remediationCode?: string; }
@@ -134,8 +135,30 @@ export function runQualityControls(caseData: AuditReadyCase): QualityControlResu
   else if (duplicateHash || invalidEvidence) add("QC_10", "Evidence integrity", "BLOCKER", "Evidence has duplicate hashes, invalid ownership metadata, incomplete review or non-clean malware status.", "REM_REVIEW_EVIDENCE");
   else add("QC_10", "Evidence integrity", "PASS");
 
-  for (const record of caseData.carbonPriceRecords) {
-    if (!record.proofOfPaymentEvidenceId || !caseData.evidenceRegister.some((evidence) => evidence.evidenceId === record.proofOfPaymentEvidenceId && evidence.reviewStatus === "APPROVED" && evidence.malwareScanStatus === "CLEAN")) add(`QC_11_${record.id}`, "Carbon price proof", "BLOCKER", "Carbon-price reduction requires approved payment evidence.", "REM_LINK_CARBON_PRICE_EVIDENCE");
+  for (const [index, record] of caseData.carbonPriceRecords.entries()) {
+    const reduction = decimal(record.eligibleCertificateReduction);
+    const paymentEvidence = record.proofOfPaymentEvidenceId
+      ? caseData.evidenceRegister.find(
+          (evidence) => evidence.evidenceId === record.proofOfPaymentEvidenceId
+        )
+      : undefined;
+    const fullySupportedPaymentEvidence = Boolean(
+      paymentEvidence &&
+      paymentEvidence.reviewStatus === "APPROVED" &&
+      paymentEvidence.malwareScanStatus === "CLEAN" &&
+      paymentEvidence.supportStatus === "SUPPORTED"
+    );
+    if (reduction === null || reduction.isNegative()) {
+      add(`QC_11_${record.id}`, "Carbon price reduction", "BLOCKER", "Carbon-price reduction must be finite and non-negative.", "REM_CORRECT_CARBON_PRICE_REDUCTION");
+    } else if (reduction.isZero()) {
+      add(`QC_11_${record.id}`, "Carbon price reduction", "NOT_APPLICABLE");
+    } else if (!fullySupportedPaymentEvidence) {
+      add(`QC_11_${record.id}`, "Carbon price proof", "BLOCKER", "Carbon-price reduction requires approved, fully supported and malware-clean payment evidence.", "REM_LINK_CARBON_PRICE_EVIDENCE");
+    } else if (CALCULATION_CONTRACT.carbonPricePolicy.status !== "PROVEN") {
+      add(`QC_11_${record.id}`, "Carbon price regulatory policy", "BLOCKER", CALCULATION_CONTRACT.carbonPricePolicy.reason, "REM_WAIT_FOR_VERIFIED_CARBON_PRICE_POLICY");
+    } else {
+      add(`QC_11_${record.id}`, `Carbon price record ${index + 1}`, "PASS");
+    }
   }
   if (caseData.carbonPriceRecords.length === 0) add("QC_11", "Carbon price records", "NOT_APPLICABLE");
 

@@ -121,7 +121,7 @@ export function createVerifierGradeCase(): AuditReadyCase {
         paymentPeriod: "2026",
         legislationReference: "Test fixture Art.9 carbon price record for dossier engine tests",
         proofOfPaymentEvidenceId: FIXTURE_EVIDENCE_ID,
-        eligibleCertificateReduction: "10",
+        eligibleCertificateReduction: "0",
       },
     ],
     evidenceRegister: [

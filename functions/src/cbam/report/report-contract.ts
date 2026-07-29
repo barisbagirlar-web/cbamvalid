@@ -49,7 +49,7 @@ const PackageMetadataSchema = z.object({
   manifestFileCount: z.number(),
   evidenceFileCount: z.number(),
   primaryDossierFileName: z.string(),
-  technicalCompilationFileName: z.string(),
+  operatorSummaryReportFileName: z.string(),
   operatorEmissionsReportFileName: z.string(),
 });
 

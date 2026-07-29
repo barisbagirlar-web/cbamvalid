@@ -87,10 +87,15 @@ requireText(browserSchema, "caseId: CaseIdSchema.optional()", "Browser case ID s
 requireText(functionsSchema, "caseId: CaseIdSchema.optional()", "Functions case ID schema");
 requireText(functionsSchema, "canonicalUnit: z.string().optional()", "Functions canonical unit compatibility");
 
-requireText(client, "AuditReadyCaseSchema.parse(result.data.case)", "Client workspace response validation");
-requireText(client, "createCaseSaveRequest(data, caseId, requestId)", "Idempotent save request");
+requireText(client, "AuditReadyCaseSchema.parse(raw)", "Client workspace response validation");
+requireText(client, "parseCaseWorkspace(result.data.case)", "Client workspace response parsing");
+requireText(client, "createCaseSaveRequest(data, caseId, requestId, expectedRevision)", "Revision-aware save request");
 requireText(saveContract, "AMBIGUOUS_CASE_SAVE_REQUEST", "Create/edit payload separation");
 requireText(saveContract, "CASE_CREATION_REQUEST_ID_REQUIRED", "Mandatory create request ID");
+requireText(saveContract, "CASE_REVISION_REQUIRED", "Mandatory edit revision");
+requireText(caseHandler, "expectedRevision: z.number().int().nonnegative().optional()", "Callable revision validation");
+requireText(repository, "current.revision !== expectedRevision", "Atomic stale-write rejection");
+requireText(repository, "CASE_REVISION_CONFLICT", "Observable revision conflict");
 
 requireText(newCasePage, "creationRequestId.current", "Stable creation request ID");
 requireText(newCasePage, "requestInFlight.current", "Single-flight creation");
@@ -118,6 +123,9 @@ requireText(fieldHelp, "Close data-source help", "Visible close control contract
 requireText(caseWizard, "What the Preparation Pack actually delivers", "Paid package value disclosure");
 requireText(caseWizard, "How to fix:", "Readiness remediation guidance");
 requireText(caseWizard, "Resolve evidence blockers", "Actionable blocked sealing state");
+requireText(caseWizard, "cbam_case_recovery_", "Device-local draft recovery");
+requireText(caseWizard, 'window.addEventListener("beforeunload"', "Unsaved unload warning");
+requireText(caseWizard, 'window.addEventListener("popstate"', "Unsaved SPA history warning");
 
 requireText(caseSummary, "caseData.installation.name", "Canonical installation summary path");
 requireText(caseSummary, "caseData.goods[0]?.cnCode", "Canonical CN-code summary path");

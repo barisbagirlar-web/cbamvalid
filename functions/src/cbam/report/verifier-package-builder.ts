@@ -318,7 +318,7 @@ function buildPdfArtifacts(params: {
       },
     };
 
-    return [
+    const v5Artifacts = [
       pdfFile("Product Scope Assessment.pdf", "Product Scope Assessment", "Controlled scope, parties, reporting period and goods population", [
         { heading: "Controlled identity", table: identityTable(model) },
         { heading: "Goods population", table: goodsTable(model) },
@@ -402,6 +402,33 @@ function buildPdfArtifacts(params: {
         { heading: "Calculation Annex - Engine identity", table: { headers: ["Control", "Value"], widths: [48, 132], rows: [["Ruleset", calculation.ruleset], ["Engine version", calculation.engineVersion], ["Calculation root hash", calculation.calculationRootHash], ["Allocation share total", calculation.allocationShareTotal], ["Allocation reconciliation delta", calculation.allocationReconciliationDelta]] } },
         { heading: "Calculation Annex - Formula trace", table: { headers: ["Formula", "Output", "Unit", "Calculation hash", "Warnings / assumptions"], widths: [43, 22, 20, 55, 40], rows: calculation.trace.map((item) => [item.formulaId, item.outputValue, item.outputUnit, item.calculationHash, [...item.warnings, ...item.assumptions].join("; ") || "None"] ) } },
         { heading: "Calculation Annex - Per-good reconciliation", table: goodsTable(model) },
+      ]),
+    ];
+    const premiumDossier = v5Artifacts.find(
+      (item) => item.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf"
+    );
+    return [
+      ...v5Artifacts
+        .filter((item) =>
+          item.path !== "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf" &&
+          item.path !== "Complete Dossier Compilation.pdf"
+        )
+        .map((item) =>
+          item.path === "Operator Emissions Report.pdf" && premiumDossier
+            ? { ...item, bytes: premiumDossier.bytes }
+            : item
+        ),
+      pdfFile("Operator Summary Emissions Report.pdf", "Operator Summary Emissions Report", "Concise operator-prepared emissions summary for independent verification preparation", [
+        { heading: "Operator and installation", table: identityTable(model) },
+        { heading: "Emissions summary", table: { headers: ["Metric", "Value", "Unit"], widths: [90, 45, 45], rows: [["Total direct emissions", model.totals.totalDirectEmissions, "tCO2e"], ["Total indirect emissions", model.totals.totalIndirectEmissions, "tCO2e"], ["Total embedded emissions", model.totals.totalEmbeddedEmissions, "tCO2e"], ["Production", model.totals.productionVolume, "t"], ["Specific embedded emissions", model.totals.aggregateSpecificEmbeddedEmissions, "tCO2e/t"]] } },
+        { heading: "Preparation status", callout: { label: "Automated readiness", value: model.automatedReadiness } },
+        { heading: "Boundary", callout: { label: "No verification opinion", value: model.disclaimer } },
+      ]),
+      pdfFile("Verification Readiness Assessment.pdf", "Verification Readiness Assessment", "Actionable blockers and evidence status before independent verification", [
+        { heading: "Readiness conclusion", callout: { label: "Automated status", value: `${model.automatedReadiness}. Resolve every blocker before sealing.` } },
+        { heading: "Quality controls and next fixes", table: qualityTable(model) },
+        { heading: "Evidence coverage", table: { headers: ["Measure", "Result"], widths: [90, 90], rows: [["Registered evidence", model.evidenceSummary.totalEvidenceFiles], ["Approved and clean evidence", model.evidenceSummary.approvedCleanEvidenceFiles], ["Coverage rate", `${model.evidenceSummary.coverageRate}%`], ["Open blockers", model.qualitySummary.blockers]] } },
+        { heading: "Independent-verifier boundary", callout: { label: "Status", value: "NOT_REVIEWED — an independent accredited verifier must perform and document the verification." } },
       ]),
     ];
   }
@@ -562,8 +589,10 @@ export async function buildUnsignedVerifierArtifacts(params: {
     productCode: params.assessmentContext?.productCode,
     releaseContractVersion: params.assessmentContext?.releaseContractVersion,
   });
-  const workbook = await buildVerifierWorkbook({ ...params, model });
-
+  const isV5 =
+    params.assessmentContext?.productCode === "pack_premium_dossier_v5" ||
+    params.assessmentContext?.releaseContractVersion === 5;
+  const workbook = isV5 ? null : await buildVerifierWorkbook({ ...params, model });
   const artifacts = [
     ...buildPdfArtifacts({ ...params, model }),
     ...buildCsvArtifacts({ ...params, model }),
@@ -571,7 +600,7 @@ export async function buildUnsignedVerifierArtifacts(params: {
     ...(params.calcGraph
       ? [
           artifact(
-            "Calculation Graph.json",
+            isV5 ? "Supporting_Evidence/Calculation Graph.json" : "Calculation Graph.json",
             Buffer.from(
               JSON.stringify({
                 rootHash: params.calcGraph.rootHash,
@@ -593,7 +622,9 @@ export async function buildUnsignedVerifierArtifacts(params: {
           ),
         ]
       : []),
-    artifact("Verifier Workspace.xlsx", workbook, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+    ...(workbook
+      ? [artifact("Verifier Workspace.xlsx", workbook, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
+      : []),
     artifact("Supporting_Evidence/README.txt", Buffer.from(`CBAMValid immutable evidence copies\r\nPackage ID: ${params.packageCode}\r\nReport: ${params.reportId}\r\nCase: ${params.caseData.caseId}\r\nEvidence count: ${params.evidenceFiles.length}\r\nEach binary is verified against Evidence Register.csv and Data Integrity Manifest.json.\r\n`, "utf8"), "text/plain"),
     artifact("Supporting_Evidence/verify/cli.js", loadVerifyCliBytes(), "application/javascript"),
     artifact(
@@ -644,7 +675,7 @@ export function buildDataIntegrityManifest(params: {
     legalSourceRegistryHash: DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT,
     componentContract: {
       requiredTopLevelComponents: isV5 ? REQUIRED_TOP_LEVEL_COMPONENTS_V5 : REQUIRED_TOP_LEVEL_COMPONENTS,
-      requiredCount: isV5 ? 25 : 27,
+      requiredCount: isV5 ? REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5 : REQUIRED_TOP_LEVEL_COMPONENTS.length,
     },
     files: params.artifacts
       .filter((item) => item.path !== "Data Integrity Manifest.json" && item.path !== "Manifest Signature.sig")
@@ -652,7 +683,7 @@ export function buildDataIntegrityManifest(params: {
       .sort((left, right) => left.path.localeCompare(right.path)),
     evidenceCount: params.evidenceCount,
     signatureScope: "EXACT_UTF8_BYTES_OF_THIS_MANIFEST",
-    ...(isV5 ? { manifestExclusions: ["Data Integrity Manifest.json", "Manifest Signature.sig"] } : {}),
+    ...(isV5 ? { manifestExclusions: ["Data Integrity Manifest.json", "Supporting_Evidence/Manifest Signature.sig"] } : {}),
   };
   return { manifest, bytes: Buffer.from(canonical(manifest), "utf8") };
 }
@@ -676,17 +707,21 @@ export async function finalizeVerifierPackage(params: {
   const signatureBuffer = Buffer.from(canonical(params.signature), "utf8");
   if (!crypto.verify("sha256", params.manifestBytes, params.signature.publicKeyPem, Buffer.from(params.signature.signatureBase64, "base64"))) throw new Error("PACKAGE_SIGNATURE_VERIFICATION_FAILED");
 
+  const manifest = JSON.parse(params.manifestBytes.toString("utf8")) as DataIntegrityManifest;
+  const isV5 = manifest.schemaVersion === "CBAMVALID-DOSSIER-5.0";
   const allArtifacts = [
     ...params.artifacts,
     artifact("Data Integrity Manifest.json", params.manifestBytes, "application/json"),
-    artifact("Manifest Signature.sig", signatureBuffer, "application/vnd.cbamvalid.kms-signature+json"),
+    artifact(
+      isV5 ? "Supporting_Evidence/Manifest Signature.sig" : "Manifest Signature.sig",
+      signatureBuffer,
+      "application/vnd.cbamvalid.kms-signature+json"
+    ),
   ];
-  const manifest = JSON.parse(params.manifestBytes.toString("utf8")) as DataIntegrityManifest;
-  const isV5 = manifest.schemaVersion === "CBAMVALID-DOSSIER-5.0";
 
   const topLevel = topLevelComponents(allArtifacts.map((item) => item.path));
   const expected = isV5 ? [...REQUIRED_TOP_LEVEL_COMPONENTS_V5].sort() : [...REQUIRED_TOP_LEVEL_COMPONENTS].sort();
-  const targetCount = isV5 ? 25 : 27;
+  const targetCount = expected.length;
 
   if (topLevel.length !== targetCount || canonical(topLevel) !== canonical(expected)) {
     throw new Error("PACKAGE_COMPONENT_CONTRACT_FAILED");
@@ -694,7 +729,6 @@ export async function finalizeVerifierPackage(params: {
 
   // DISTINCT_REQUIRED_ARTIFACT_HASH_GUARD: Ensure distinct PDFs have distinct hashes
   const pdfArtifacts = allArtifacts.filter(a => a.path.endsWith(".pdf") && a.path !== "Complete Dossier Compilation.pdf");
-  pdfArtifacts.forEach(a => console.log("PDF_HASH_CHECK:", a.path, hash(a.bytes)));
   const hashes = pdfArtifacts.map(a => hash(a.bytes));
   const uniqueHashes = new Set(hashes);
   if (uniqueHashes.size !== hashes.length) {
@@ -716,9 +750,10 @@ export async function finalizeVerifierPackage(params: {
   }
 
   if (isV5) {
-    const hasDossier = manifest.files.some(f => f.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
     const hasReport = manifest.files.some(f => f.path === "Operator Emissions Report.pdf");
-    if (!hasDossier || !hasReport) {
+    const hasSummary = manifest.files.some(f => f.path === "Operator Summary Emissions Report.pdf");
+    const hasReadiness = manifest.files.some(f => f.path === "Verification Readiness Assessment.pdf");
+    if (!hasReport || !hasSummary || !hasReadiness) {
       throw new Error("PACKAGE_MANIFEST_PRIMARY_PDF_MISSING");
     }
   }
@@ -727,21 +762,18 @@ export async function finalizeVerifierPackage(params: {
     const entry = reopened.file(file.path);
     if (!entry) throw new Error(`PACKAGE_MANIFEST_FILE_MISSING:${file.path}`);
     const bytes = await entry.async("nodebuffer");
-    if (file.path.endsWith(".pdf")) {
-      continue;
-    }
     if (bytes.byteLength !== file.sizeBytes) throw new Error(`PACKAGE_REOPEN_SIZE_MISMATCH:${file.path}`);
     if (hash(bytes) !== file.sha256) throw new Error(`PACKAGE_REOPEN_HASH_MISMATCH:${file.path}`);
   }
   const reopenedManifest = await reopened.file("Data Integrity Manifest.json")?.async("nodebuffer");
-  const reopenedSignature = await reopened.file("Manifest Signature.sig")?.async("nodebuffer");
+  const reopenedSignature = await reopened.file(isV5 ? "Supporting_Evidence/Manifest Signature.sig" : "Manifest Signature.sig")?.async("nodebuffer");
   if (!reopenedManifest || !reopenedSignature || !reopenedManifest.equals(params.manifestBytes) || !reopenedSignature.equals(signatureBuffer)) throw new Error("PACKAGE_REOPEN_TRUST_COMPONENT_MISMATCH");
   if (!crypto.verify("sha256", reopenedManifest, params.signature.publicKeyPem, Buffer.from(params.signature.signatureBase64, "base64"))) throw new Error("PACKAGE_REOPEN_SIGNATURE_INVALID");
 
-  const primaryPdfPath = isV5 ? "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf" : "Operator Emissions Report.pdf";
+  const primaryPdfPath = "Operator Emissions Report.pdf";
   const primaryPdf = allArtifacts.find((item) => item.path === primaryPdfPath)?.bytes;
-  const workbook = allArtifacts.find((item) => item.path === "Verifier Workspace.xlsx")?.bytes;
-  if (!primaryPdf || !workbook || primaryPdf.byteLength < 5000 || workbook.byteLength < 5000) throw new Error("PACKAGE_PRIMARY_ARTIFACT_MISSING_OR_TRIVIAL");
+  if (!primaryPdf || primaryPdf.byteLength < 5000) throw new Error("PACKAGE_PRIMARY_ARTIFACT_MISSING_OR_TRIVIAL");
+  const workbook = allArtifacts.find((item) => item.path === "Verifier Workspace.xlsx")?.bytes ?? Buffer.alloc(0);
   return { zip: buffer, zipHash: hash(buffer), primaryPdf, workbook, signatureBytes: signatureBuffer };
 }
 

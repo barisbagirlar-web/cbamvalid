@@ -8,7 +8,6 @@ import {
   Download,
   FileArchive,
   FileJson,
-  FileSpreadsheet,
   FileText,
   Fingerprint,
   KeyRound,
@@ -31,7 +30,6 @@ const DOWNLOADS: Array<{
   icon: typeof Download;
 }> = [
   { format: "pdf", label: "Main dossier PDF", description: "Primary Verification Readiness & Evidence Assurance PDF", icon: FileText },
-  { format: "xlsx", label: "Verifier spreadsheet", description: "Controlled verifier workspace spreadsheet", icon: FileSpreadsheet },
   { format: "manifest", label: "Integrity manifest", description: "Canonical file hashes and package contract", icon: FileJson },
   { format: "signature", label: "KMS signature record", description: "Asymmetric KMS cryptographic signature", icon: KeyRound },
   { format: "snapshot", label: "Immutable case snapshot", description: "Exact sealed case database snapshot", icon: Fingerprint },
@@ -263,15 +261,15 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-muted">
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-3.5 w-3.5 text-accent shrink-0" />
-                Main dossier PDF (Verification Readiness & Evidence Assurance)
+                Operator Emissions Report PDF
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-3.5 w-3.5 text-accent shrink-0" />
-                Technical compilation (Complete Dossier Compilation PDF)
+                Operator Summary Emissions Report PDF
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-3.5 w-3.5 text-accent shrink-0" />
-                Verifier spreadsheet (Verifier Workspace Excel)
+                Verification Readiness Assessment PDF
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-3.5 w-3.5 text-accent shrink-0" />
@@ -437,7 +435,7 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 mt-4">
                 {DOWNLOADS.map((item) => {
                   const Icon = item.icon;
-                  const fileKey = item.format === "pdf" ? "Product Scope Assessment.pdf" : item.format === "xlsx" ? "Verifier Workspace.xlsx" : item.format === "manifest" ? "Data Integrity Manifest.json" : item.format === "signature" ? "Manifest Signature.sig" : "Calculation Trace.json";
+                  const fileKey = item.format === "pdf" ? "dossier.pdf" : item.format === "manifest" ? "manifest.json" : item.format === "signature" ? "manifest.sig" : "case-snapshot.json";
                   const storage = storageByFile[fileKey];
                   return (
                     <button

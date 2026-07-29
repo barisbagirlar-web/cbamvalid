@@ -1,10 +1,12 @@
 import { initializeApp, getApps, getApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
 
 // Initialize Firebase Admin SDK
 // You must have GOOGLE_APPLICATION_CREDENTIALS set or be authenticated via firebase CLI
 const app = getApps().length === 0 ? initializeApp() : getApp();
 const auth = getAuth(app);
+const db = getFirestore(app);
 
 const TARGET_EMAIL = "barisbagirlar@gmail.com";
 
@@ -23,16 +25,22 @@ async function bootstrapOwnerAdmin() {
       process.exit(1);
     }
 
-    // Preserve existing claims and add admin and ownerAdmin
-    const currentClaims = userRecord.customClaims || {};
     const newClaims = {
-      ...currentClaims,
-      admin: true,
-      ownerAdmin: true,
+      role: "super_admin",
+      owner: true,
+      ownerUid: userRecord.uid,
+      adminVersion: 2,
     };
 
-    console.log(`[BOOTSTRAP] Assigning admin and ownerAdmin claims to uid: ${userRecord.uid}`);
+    console.log(`[BOOTSTRAP] Assigning canonical owner claims to uid: ${userRecord.uid}`);
     await auth.setCustomUserClaims(userRecord.uid, newClaims);
+    await db.collection("admin_identities").doc(userRecord.uid).set({
+      email: TARGET_EMAIL,
+      role: "super_admin",
+      owner: true,
+      adminVersion: 2,
+      lastBootstrappedAt: new Date().toISOString(),
+    }, { merge: true });
 
     console.log(`[BOOTSTRAP] [SUCCESS] Claims assigned successfully.`);
     console.log(`uid: ${userRecord.uid}`);
@@ -40,8 +48,9 @@ async function bootstrapOwnerAdmin() {
     console.log(`claim assignment status: OK`);
     
     process.exit(0);
-  } catch (error: any) {
-    console.error(`[BOOTSTRAP] [ERROR] ${error.message}`);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown bootstrap failure";
+    console.error(`[BOOTSTRAP] [ERROR] ${message}`);
     process.exit(1);
   }
 }

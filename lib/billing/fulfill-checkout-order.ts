@@ -49,13 +49,16 @@ function readGrandTotalMinor(txn: PaddleTransaction): number {
     txn.details?.totals?.grandTotal ||
     txn.details?.totals?.grand_total ||
     txn.totals?.grandTotal ||
-    txn.totals?.grand_total ||
-    0;
-  return Math.round(Number(raw));
+    txn.totals?.grand_total;
+  return raw === undefined ? Number.NaN : Number(raw);
 }
 
 function readItemPriceId(item: NonNullable<PaddleTransaction["items"]>[number]): string {
   return String(item.priceId || item.price_id || item.price?.id || "");
+}
+
+function deterministicId(prefix: "led" | "ent", identity: string): string {
+  return `${prefix}_${crypto.createHash("sha256").update(identity).digest("hex")}`;
 }
 
 async function fetchPaddleTransaction(transactionId: string): Promise<PaddleTransaction> {
@@ -101,17 +104,20 @@ export async function fulfillCheckoutOrder(params: {
     throw new Error("ORDER_OWNERSHIP_MISMATCH");
   }
 
-  if (order.status === "ENTITLED" || order.status === "PAID") {
+  if (order.status === "ENTITLED") {
     const existingEntitlement = await adminDb
       .collection("entitlements")
       .where("orderId", "==", orderId)
       .where("uid", "==", uid)
       .limit(1)
       .get();
+    if (existingEntitlement.empty) {
+      throw new Error("ENTITLED_ORDER_MISSING_ENTITLEMENT");
+    }
     return {
       orderId,
       transactionId: String(order.paddleTransactionId || transactionId),
-      entitlementId: existingEntitlement.empty ? "" : existingEntitlement.docs[0].id,
+      entitlementId: existingEntitlement.docs[0].id,
       alreadyFulfilled: true,
     };
   }
@@ -137,12 +143,18 @@ export async function fulfillCheckoutOrder(params: {
   }
 
   const currency = readCurrency(txn);
-  if (currency && currency !== order.currency) {
+  if (!currency || currency !== order.currency) {
     throw new Error("CURRENCY_MISMATCH");
   }
 
   const amountMinor = readGrandTotalMinor(txn);
-  if (amountMinor > 0 && amountMinor !== Number(order.amountMinor)) {
+  const expectedAmountMinor = Number(order.amountMinor);
+  if (
+    !Number.isFinite(amountMinor) ||
+    !Number.isInteger(amountMinor) ||
+    expectedAmountMinor !== CASE_COMMERCIAL.amountMinor ||
+    amountMinor !== expectedAmountMinor
+  ) {
     throw new Error("AMOUNT_MISMATCH");
   }
 
@@ -161,30 +173,36 @@ export async function fulfillCheckoutOrder(params: {
     throw new Error("CASE_ID_REQUIRED_FOR_FULFILLMENT");
   }
 
-  const entitlementId = await adminDb.runTransaction(async (dbTx) => {
-    const freshOrder = await dbTx.get(orderRef);
-    const fresh = freshOrder.data() || {};
-    if (fresh.status === "ENTITLED" || fresh.status === "PAID") {
-      return "";
-    }
+  const entitlementId = deterministicId("ent", `${orderId}\u0000${productCode}`);
+  const paymentIdempotency = `payment:${transactionId}`;
+  const entitlementIdempotency = `entitlement:${transactionId}:${productCode}`;
+  const paymentLedgerRef = adminDb
+    .collection("commerce_ledger")
+    .doc(deterministicId("led", paymentIdempotency));
+  const entitlementLedgerRef = adminDb
+    .collection("commerce_ledger")
+    .doc(deterministicId("led", entitlementIdempotency));
+  const entitlementRef = adminDb.collection("entitlements").doc(entitlementId);
 
-    const paymentIdempotency = `payment:${transactionId}`;
-    const paymentQuery = await dbTx.get(
-      adminDb.collection("commerce_ledger").where("idempotencyKey", "==", paymentIdempotency).limit(1)
-    );
-    if (!paymentQuery.empty) {
-      dbTx.update(orderRef, {
-        status: "ENTITLED",
-        paddleTransactionId: transactionId,
-        updatedAt: new Date().toISOString(),
-      });
-      return "";
+  const fulfillment = await adminDb.runTransaction(async (dbTx) => {
+    const [freshOrder, paymentLedgerSnap, entitlementSnap, entitlementLedgerSnap] =
+      await Promise.all([
+        dbTx.get(orderRef),
+        dbTx.get(paymentLedgerRef),
+        dbTx.get(entitlementRef),
+        dbTx.get(entitlementLedgerRef),
+      ]);
+    const fresh = freshOrder.data() || {};
+    if (!freshOrder.exists) throw new Error("ORDER_NOT_FOUND");
+    if (fresh.uid !== uid) throw new Error("ORDER_OWNERSHIP_MISMATCH");
+    if (fresh.status === "ENTITLED") {
+      if (!entitlementSnap.exists) throw new Error("ENTITLED_ORDER_MISSING_ENTITLEMENT");
+      return { entitlementId: entitlementRef.id, alreadyFulfilled: true };
     }
 
     const now = new Date().toISOString();
-    const ledgerRef = adminDb.collection("commerce_ledger").doc();
     const ledgerPayload = {
-      entryId: ledgerRef.id,
+      entryId: paymentLedgerRef.id,
       uid,
       orderId,
       transactionId,
@@ -196,11 +214,10 @@ export async function fulfillCheckoutOrder(params: {
       createdAt: now,
       idempotencyKey: paymentIdempotency,
       previousEntryHash: "",
-      entryHash: crypto.createHash("sha256").update(`${paymentIdempotency}:${ledgerRef.id}`).digest("hex"),
+      entryHash: crypto.createHash("sha256").update(`${paymentIdempotency}:${paymentLedgerRef.id}`).digest("hex"),
     };
-    dbTx.set(ledgerRef, ledgerPayload);
+    if (!paymentLedgerSnap.exists) dbTx.set(paymentLedgerRef, ledgerPayload);
 
-    const entitlementRef = adminDb.collection("entitlements").doc();
     const entitlementPayload = {
       entitlementId: entitlementRef.id,
       uid,
@@ -216,10 +233,21 @@ export async function fulfillCheckoutOrder(params: {
       releasesCount: 0,
       releasesList: [],
     };
-    dbTx.set(entitlementRef, entitlementPayload);
+    if (entitlementSnap.exists) {
+      const existing = entitlementSnap.data() || {};
+      if (
+        existing.uid !== uid ||
+        existing.orderId !== orderId ||
+        existing.productCode !== productCode ||
+        existing.scopeCaseId !== scopeCaseId
+      ) {
+        throw new Error("ENTITLEMENT_IDENTITY_CONFLICT");
+      }
+    } else {
+      dbTx.set(entitlementRef, entitlementPayload);
+    }
 
-    const entitlementLedgerRef = adminDb.collection("commerce_ledger").doc();
-    dbTx.set(entitlementLedgerRef, {
+    if (!entitlementLedgerSnap.exists) dbTx.set(entitlementLedgerRef, {
       entryId: entitlementLedgerRef.id,
       uid,
       orderId,
@@ -228,11 +256,11 @@ export async function fulfillCheckoutOrder(params: {
       type: "ENTITLEMENT_ISSUED",
       quantity: MAX_RELEASES_PER_PAID_CASE,
       createdAt: now,
-      idempotencyKey: `entitlement:${transactionId}:${productCode}`,
+      idempotencyKey: entitlementIdempotency,
       previousEntryHash: ledgerPayload.entryHash,
       entryHash: crypto
         .createHash("sha256")
-        .update(`entitlement:${transactionId}:${productCode}:${entitlementLedgerRef.id}`)
+        .update(`${entitlementIdempotency}:${entitlementLedgerRef.id}`)
         .digest("hex"),
     });
 
@@ -259,13 +287,13 @@ export async function fulfillCheckoutOrder(params: {
       { merge: true }
     );
 
-    return entitlementRef.id;
+    return { entitlementId: entitlementRef.id, alreadyFulfilled: false };
   });
 
   return {
     orderId,
     transactionId,
-    entitlementId,
-    alreadyFulfilled: !entitlementId,
+    entitlementId: fulfillment.entitlementId,
+    alreadyFulfilled: fulfillment.alreadyFulfilled,
   };
 }

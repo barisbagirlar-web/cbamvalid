@@ -1,4 +1,4 @@
-import { deleteObject, ref, uploadBytes } from "firebase/storage";
+import { ref, uploadBytes } from "firebase/storage";
 import { firebaseStorage } from "@/lib/firebase/client";
 import type { EvidenceRecord } from "@/lib/cbam/schema";
 import { isCaseId } from "@/lib/cbam/case-id";
@@ -81,7 +81,7 @@ export async function uploadEvidenceFile(params: {
     uploader: uid,
     reviewStatus: "PENDING",
     supportStatus: "PENDING",
-    malwareScanStatus: "CLEAN",
+    malwareScanStatus: "PENDING",
     confidentiality: params.confidentiality ?? "CONFIDENTIAL",
     linkedInputs: [params.linkedInput.trim()],
     linkedCalculations: [],
@@ -90,7 +90,12 @@ export async function uploadEvidenceFile(params: {
   return {
     record,
     rollback: async () => {
-      await deleteObject(storageReference);
+      const { deleteEvidence } = await import("@/lib/functions/client");
+      await deleteEvidence({
+        caseId: params.caseId,
+        evidenceId,
+        reason: "Upload registration failed; remove orphaned object.",
+      });
     },
   };
 }

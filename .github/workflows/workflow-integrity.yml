@@ -5,6 +5,8 @@ on:
     paths:
       - ".github/workflows/**"
       - "scripts/guard-github-actions.mjs"
+      - "package.json"
+      - ".nvmrc"
   push:
     branches:
       - main
@@ -12,6 +14,8 @@ on:
     paths:
       - ".github/workflows/**"
       - "scripts/guard-github-actions.mjs"
+      - "package.json"
+      - ".nvmrc"
   workflow_dispatch:
 
 permissions:

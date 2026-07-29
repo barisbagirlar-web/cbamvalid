@@ -53,7 +53,9 @@ export async function POST(request: Request) {
         message.startsWith("PRICE_ID_MISMATCH") ||
         message.startsWith("AMOUNT_MISMATCH") ||
         message.startsWith("CURRENCY_MISMATCH") ||
-        message.startsWith("QUANTITY_MISMATCH")
+        message.startsWith("QUANTITY_MISMATCH") ||
+        message === "TRANSACTION_HAS_NO_ITEMS" ||
+        message === "CASE_ID_REQUIRED_FOR_FULFILLMENT"
       ) {
         return apiFailure("FULFILLMENT_REJECTED", "Payment could not be verified for this order.", 403);
       }

@@ -67,7 +67,10 @@ export async function resolvePostLoginRoute(
   const tokenResult = await user.getIdTokenResult(true);
   const claims = tokenResult.claims;
   const nextPath = sanitizeInternalNextPath(requestedNextPath);
-  const isAdmin = claims.ownerAdmin === true || claims.admin === true;
+  const isAdmin =
+    claims.role === "super_admin" &&
+    claims.owner === true &&
+    claims.ownerUid === user.uid;
 
   if (isAdmin) {
     return nextPath?.startsWith("/admin") ? nextPath : "/admin";

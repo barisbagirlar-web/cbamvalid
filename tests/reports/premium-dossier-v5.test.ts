@@ -244,7 +244,7 @@ describe("premium-dossier-v5 deliverables", () => {
 
     const manifest = JSON.parse(manifestResult.bytes.toString("utf8")) as DataIntegrityManifest;
     expect(manifest.schemaVersion).toBe("CBAMVALID-DOSSIER-5.0");
-    expect(manifest.componentContract.requiredCount).toBe(25);
+    expect(manifest.componentContract.requiredCount).toBe(23);
 
     const finalized = await finalizeVerifierPackage({
       artifacts,
@@ -263,13 +263,14 @@ describe("premium-dossier-v5 deliverables", () => {
     expect(primaryPdf).toBeDefined();
     const pdf = await pdfText(primaryPdf!.bytes);
     expect(pdf.text).toContain("CBAMValid");
-    expect(pdf.text).toContain("Operator-Prepared Emissions Statement");
+    expect(pdf.text).toContain("Verification Readiness & Evidence Assurance Dossier");
 
-    const premiumPdf = artifacts.find((item) => item.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
-    expect(premiumPdf).toBeDefined();
-    const pdfPremium = await pdfText(premiumPdf!.bytes);
-    expect(pdfPremium.text).toContain("CBAMValid");
-    expect(pdfPremium.text).toContain("Verification Readiness & Evidence Assurance Dossier");
+    expect(artifacts.find((item) => item.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf")).toBeUndefined();
+    const readinessPdf = artifacts.find((item) => item.path === "Verification Readiness Assessment.pdf");
+    expect(readinessPdf).toBeDefined();
+    const readinessText = await pdfText(readinessPdf!.bytes);
+    expect(readinessText.text).toContain("Verification Readiness Assessment");
+    expect(readinessText.text).toContain("Resolve every blocker before sealing");
   }, 30_000);
 
   it("exports the sample-v5 dossier to artifacts/sample-v5", async () => {
@@ -355,6 +356,8 @@ describe("premium-dossier-v5 deliverables", () => {
 
     const zip = await JSZip.loadAsync(finalized.zip);
     const outputDir = path.join(process.cwd(), "artifacts", "sample-v5");
+    fs.rmSync(path.join(outputDir, "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf"), { force: true });
+    fs.rmSync(path.join(outputDir, "Complete Dossier Compilation.pdf"), { force: true });
     fs.mkdirSync(outputDir, { recursive: true });
     
     for (const [relativePath, file] of Object.entries(zip.files)) {
@@ -373,7 +376,8 @@ describe("premium-dossier-v5 deliverables", () => {
     
     // Check that files exist in outputDir
     expect(fs.existsSync(path.join(outputDir, "Operator Emissions Report.pdf"))).toBe(true);
-    expect(fs.existsSync(path.join(outputDir, "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf"))).toBe(true);
+    expect(fs.existsSync(path.join(outputDir, "Operator Summary Emissions Report.pdf"))).toBe(true);
+    expect(fs.existsSync(path.join(outputDir, "Verification Readiness Assessment.pdf"))).toBe(true);
     expect(fs.existsSync(path.join(outputDir, "Data Integrity Manifest.json"))).toBe(true);
   }, 30_000);
 
@@ -518,7 +522,7 @@ describe("premium-dossier-v5 deliverables", () => {
 
   it("verifies PDF visual geometry and ensures all 30 sections, IDs and labels are present without silent truncation", async () => {
     const outputDir = path.join(process.cwd(), "artifacts", "sample-v5");
-    const primaryPdfPath = path.join(outputDir, "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
+    const primaryPdfPath = path.join(outputDir, "Operator Emissions Report.pdf");
     expect(fs.existsSync(primaryPdfPath)).toBe(true);
 
     const pdfBytes = fs.readFileSync(primaryPdfPath);
@@ -539,6 +543,8 @@ describe("premium-dossier-v5 deliverables", () => {
     expect(text).not.toContain("2023/1776");
     expect(text).toContain("2025/2547");
     expect(text).toContain(`${REQUIRED_TOP_LEVEL_COMPONENTS_V5.length} controlled`);
+    expect(text).not.toContain("Sealed Package Hash");
+    expect(text).not.toContain("Sealed Package SHA-256 Hash");
     expect(text).toContain("NOT_READY");
     expect(text).toContain("ANNEX II");
     expect(text).not.toContain("FIPS 140-2 Level 3 KMS Sealed Hash");

@@ -33,8 +33,6 @@ export const REQUIRED_TOP_LEVEL_COMPONENTS = [
 ] as const;
 
 export const REQUIRED_TOP_LEVEL_COMPONENTS_V5 = [
-  "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf",
-  "Complete Dossier Compilation.pdf",
   "Product Scope Assessment.pdf",
   "CN Code Reasoning.pdf",
   "Required Data Checklist.pdf",
@@ -50,13 +48,13 @@ export const REQUIRED_TOP_LEVEL_COMPONENTS_V5 = [
   "Methodology Decision Log.pdf",
   "Embedded Emissions Calculation Annex.pdf",
   "Operator Emissions Report.pdf",
+  "Operator Summary Emissions Report.pdf",
+  "Verification Readiness Assessment.pdf",
   "Misstatement and Non-Conformity Register.csv",
   "Corrective Action Log.csv",
   "O3CI Field Mapping.csv",
   "Calculation Trace.json",
-  "Verifier Workspace.xlsx",
   "Data Integrity Manifest.json",
-  "Manifest Signature.sig",
   "Supporting_Evidence/",
 ] as const;
 

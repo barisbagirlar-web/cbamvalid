@@ -130,12 +130,12 @@ const requiredComponents = requiredStart >= 0 && requiredEnd >= requiredStart
   ? componentMatches.slice(requiredStart, requiredEnd + 1)
   : [];
 if (requiredComponents.length !== 27) failures.push(`Verifier package must define exactly 27 top-level components; found ${requiredComponents.length}`);
-const v5Start = componentMatches.indexOf("CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
+const v5Start = componentMatches.indexOf("Product Scope Assessment.pdf", requiredEnd + 1);
 const v5End = componentMatches.lastIndexOf("Supporting_Evidence/");
 const v5Components = v5Start >= 0 && v5End >= v5Start
   ? componentMatches.slice(v5Start, v5End + 1)
   : [];
-if (v5Components.length !== 25) failures.push(`V5 package must define exactly 25 top-level components; found ${v5Components.length}`);
+if (v5Components.length !== 23) failures.push(`V5 package must define exactly 23 top-level components; found ${v5Components.length}`);
 requireText(packageBuilder, 'schemaVersion: "CBAMVALID-DOSSIER-4.0"', "Manifest schema v4");
 requireText(packageBuilder, "legalSourceRegistryHash", "Manifest regulatory fingerprint");
 requireText(packageBuilder, "PACKAGE_REOPEN_HASH_MISMATCH", "ZIP read-back hash validation");
@@ -184,5 +184,6 @@ console.log("PROFESSIONAL_PDF_CONTRACT=PASS");
 console.log("PROFESSIONAL_REPORT_VISUALS=PASS");
 console.log("VERIFIER_XLSX_CONTRACT=PASS");
 console.log("PACKAGE_27_COMPONENT_CONTRACT=PASS");
+console.log("PACKAGE_V5_23_COMPONENT_CONTRACT=PASS");
 console.log("SEALED_REPORT_TYPED_BOUNDARY=PASS");
 console.log("INDEPENDENT_VERIFIER_BOUNDARY=PASS");

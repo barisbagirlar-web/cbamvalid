@@ -1,6 +1,6 @@
 import admin from "firebase-admin";
 import { adminDb } from "../firebase-admin";
-import { OrderNotFoundError } from "./commerce-errors";
+import { InvalidOrderTransitionError, OrderNotFoundError } from "./commerce-errors";
 import { validateIdentifier } from "../firestore-validator";
 
 export interface CommerceOrder {
@@ -81,7 +81,8 @@ export async function transitionOrderStatus(
   dbTransaction: admin.firestore.Transaction,
   orderId: string,
   newStatus: CommerceOrder["status"],
-  metadata?: Partial<CommerceOrder>
+  metadata?: Partial<CommerceOrder>,
+  prefetchedOrder?: CommerceOrder,
 ): Promise<CommerceOrder> {
   validateIdentifier("orderId", orderId);
   if (metadata?.paddleTransactionId) {
@@ -89,19 +90,20 @@ export async function transitionOrderStatus(
   }
   
   const orderRef = adminDb.collection("commerce_orders").doc(orderId);
-  const snapshot: any = await dbTransaction.get(orderRef as any);
-
-  if (!snapshot.exists) {
-    throw new OrderNotFoundError(orderId);
+  let order = prefetchedOrder;
+  if (!order) {
+    const snapshot = await dbTransaction.get(orderRef);
+    if (!snapshot.exists) {
+      throw new OrderNotFoundError(orderId);
+    }
+    order = snapshot.data() as CommerceOrder;
   }
-
-  const order = snapshot.data() as CommerceOrder;
   const now = new Date().toISOString();
 
   // Validate state machine monotonicity (prevent invalid transitions)
   const isTransitionValid = validateStateTransition(order.status, newStatus);
   if (!isTransitionValid) {
-    console.warn(`[ORDER-STATE] Warning: Attempted questionable state transition from ${order.status} to ${newStatus}. Transition registered.`);
+    throw new InvalidOrderTransitionError(order.status, newStatus);
   }
 
   const updatedOrder: Partial<CommerceOrder> = {
@@ -122,13 +124,13 @@ function validateStateTransition(current: CommerceOrder["status"], target: Comme
 
   const validTransitions: Record<CommerceOrder["status"], CommerceOrder["status"][]> = {
     DRAFT: ["CHECKOUT_CREATED"],
-    CHECKOUT_CREATED: ["PAYMENT_PENDING", "PAID", "PAYMENT_FAILED", "PAYMENT_CANCELED"],
-    PAYMENT_PENDING: ["PAID", "PAYMENT_FAILED", "PAYMENT_CANCELED"],
+    CHECKOUT_CREATED: ["PAYMENT_PENDING", "PAID", "ENTITLED", "PAYMENT_FAILED", "PAYMENT_CANCELED"],
+    PAYMENT_PENDING: ["PAID", "ENTITLED", "PAYMENT_FAILED", "PAYMENT_CANCELED"],
     PAID: ["ENTITLED", "REFUNDED_UNUSED"],
-    ENTITLED: ["REPORT_RESERVED", "REFUNDED_UNUSED"],
-    REPORT_RESERVED: ["REPORT_CALCULATED", "ENTITLED", "REFUNDED_UNUSED"],
-    REPORT_CALCULATED: ["REPORT_SEALED"],
-    REPORT_SEALED: ["DELIVERED"],
+    ENTITLED: ["REPORT_RESERVED", "REFUNDED_UNUSED", "REFUNDED_AFTER_DELIVERY"],
+    REPORT_RESERVED: ["REPORT_CALCULATED", "ENTITLED", "REFUNDED_UNUSED", "REFUNDED_AFTER_DELIVERY"],
+    REPORT_CALCULATED: ["REPORT_SEALED", "REFUNDED_AFTER_DELIVERY"],
+    REPORT_SEALED: ["DELIVERED", "REFUNDED_AFTER_DELIVERY"],
     DELIVERED: ["REFUNDED_AFTER_DELIVERY"],
     PAYMENT_FAILED: ["CHECKOUT_CREATED"],
     PAYMENT_CANCELED: ["CHECKOUT_CREATED"],

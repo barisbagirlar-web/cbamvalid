@@ -360,6 +360,11 @@ function assertValidEnvironment() {
     "ADMIN_ADC_RUNTIME_CONFIRMED",
     false
   );
+  const canonicalOwnerUid = process.env.SUPER_ADMIN_UID?.trim() || "";
+
+  if (isProduction && !canonicalOwnerUid) {
+    addError("SUPER_ADMIN_UID is required for fail-closed canonical owner authorization.");
+  }
 
   if (!hasB64 && !useADC) {
     addError(

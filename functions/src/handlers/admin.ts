@@ -1,15 +1,7 @@
 import { createCallable } from "../wrapper";
 import { z } from "zod";
-import { HttpsError } from "firebase-functions/v2/https";
 import { adminDb } from "../firebase-admin";
-
-async function requireAdmin(auth: { token?: Record<string, unknown> }): Promise<void> {
-  if (auth.token?.admin === true || auth.token?.ownerAdmin === true) {
-    return;
-  }
-  // Production-smoke UID must NEVER satisfy requireAdmin (no general admin capability).
-  throw new HttpsError("permission-denied", "Requires administrator privileges.");
-}
+import { requireCanonicalOwner } from "../auth/owner-contract";
 
 export const listAllUsers = createCallable({
   schema: z.object({
@@ -17,7 +9,7 @@ export const listAllUsers = createCallable({
     pageToken: z.string().optional()
   }).optional()
 }, async (data, { auth }) => {
-  await requireAdmin(auth);
+  requireCanonicalOwner(auth);
 
   const query = adminDb.collection("users").orderBy("email").limit(data?.limit || 100);
   
@@ -49,7 +41,7 @@ export const listAllTransactions = createCallable({
     limit: z.number().max(500).nullish().transform(v => v ?? 100)
   }).optional()
 }, async (data, { auth }) => {
-  await requireAdmin(auth);
+  requireCanonicalOwner(auth);
   const { toCustomerPurchaseRecord } = await import("../commerce/purchase-history");
   const limitCount = data?.limit || 100;
 
@@ -84,7 +76,7 @@ export const adminSetUserTokens = createCallable({
     tokensToSet: z.number()
   })
 }, async ({ targetUserId, tokensToSet }, { auth }) => {
-  await requireAdmin(auth);
+  requireCanonicalOwner(auth);
 
   const creditRef = adminDb.collection("users").doc(targetUserId).collection("creditSummary").doc("current");
   const ledgerRef = adminDb.collection("users").doc(targetUserId).collection("creditLedger").doc();

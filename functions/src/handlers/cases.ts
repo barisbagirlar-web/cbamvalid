@@ -5,6 +5,7 @@ import {
   archiveCase,
   createCase,
   deleteCase,
+  deleteCaseEvidence,
   getCase,
   getCasesForUser,
   recordEvidenceMalwareScan,
@@ -14,9 +15,7 @@ import {
 import { toCaseWorkspaceView } from "../cbam/storage/case-contract";
 import { AuditReadyCaseSchema, type AuditReadyCase } from "../cbam/schema";
 import { CaseIdSchema } from "../cbam/case-id";
-import {
-  isProductionSmokeIdentity,
-} from "../auth/production-smoke-identity";
+import { requireCanonicalOwner } from "../auth/owner-contract";
 
 const CreationRequestIdSchema = z.string().uuid();
 
@@ -82,26 +81,6 @@ function resolveCreationRequestId(
   return parsed.data;
 }
 
-/**
- * Malware-scan recording: real admins OR narrowly scoped production-smoke identity.
- * Smoke identity does not unlock listAllUsers / adminSetUserTokens / other admin callables.
- * requireAdmin remains unbypassable elsewhere — smoke UID never satisfies full admin.
- */
-async function requireAdminOrProductionSmoke(
-  auth: { uid: string; token: Record<string, unknown> }
-): Promise<void> {
-  if (auth.token.admin === true || auth.token.ownerAdmin === true) {
-    return;
-  }
-  if (await isProductionSmokeIdentity(auth)) {
-    return;
-  }
-  throw new HttpsError(
-    "permission-denied",
-    "Requires administrator privileges or production-smoke identity."
-  );
-}
-
 function translateEvidenceError(error: unknown): never {
   const message = error instanceof Error ? error.message : "EVIDENCE_OPERATION_FAILED";
   if (message === "CASE_NOT_FOUND" || message === "EVIDENCE_NOT_FOUND") {
@@ -127,10 +106,11 @@ export const saveCbamCase = createCallable(
     schema: z.object({
       caseId: CaseIdSchema.optional(),
       requestId: CreationRequestIdSchema.optional(),
+      expectedRevision: z.number().int().nonnegative().optional(),
       data: z.unknown(),
     }),
   },
-  async ({ caseId, requestId, data }, { auth }) => {
+  async ({ caseId, requestId, expectedRevision, data }, { auth }) => {
     if (caseId && requestId) {
       throw new HttpsError(
         "invalid-argument",
@@ -139,10 +119,16 @@ export const saveCbamCase = createCallable(
     }
 
     if (!caseId) {
+      if (expectedRevision !== undefined) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Creation requests must not include an expected revision."
+        );
+      }
       const parsedData = parseCaseData(data, auth.uid);
       const creationRequestId = resolveCreationRequestId(requestId, parsedData);
       const newCase = await createCase(auth.uid, parsedData, creationRequestId);
-      return { caseId: newCase.caseId, status: "success" };
+      return { caseId: newCase.caseId, revision: newCase.revision, status: "success" };
     }
 
     const existing = await getCase(caseId);
@@ -153,9 +139,22 @@ export const saveCbamCase = createCallable(
       throw new HttpsError("failed-precondition", "Only a draft case can be edited.");
     }
 
+    if (expectedRevision === undefined) {
+      throw new HttpsError("invalid-argument", "Expected revision is required.");
+    }
     const parsedData = parseCaseData(data, auth.uid, caseId);
-    await updateCase(caseId, auth.uid, parsedData);
-    return { caseId, status: "success" };
+    try {
+      const updated = await updateCase(caseId, auth.uid, parsedData, expectedRevision);
+      return { caseId, revision: updated.revision, status: "success" };
+    } catch (error) {
+      if (error instanceof Error && error.message === "CASE_REVISION_CONFLICT") {
+        throw new HttpsError(
+          "aborted",
+          "This working file was updated in another tab. Your local recovery copy was preserved."
+        );
+      }
+      throw error;
+    }
   }
 );
 
@@ -205,12 +204,30 @@ export const recordCbamEvidenceScan = createCallable(
     }),
   },
   async (data, { auth }) => {
-    await requireAdminOrProductionSmoke(auth);
+    requireCanonicalOwner(auth);
     try {
       const updated = await recordEvidenceMalwareScan({
         ...data,
         actorUid: auth.uid,
       });
+      return { case: toCaseWorkspaceView(updated), status: "success" };
+    } catch (error) {
+      translateEvidenceError(error);
+    }
+  }
+);
+
+export const deleteCbamEvidence = createCallable(
+  {
+    schema: z.object({
+      caseId: CaseIdSchema,
+      evidenceId: z.string().uuid(),
+      reason: z.string().trim().min(5).max(500),
+    }),
+  },
+  async (data, { auth }) => {
+    try {
+      const updated = await deleteCaseEvidence({ ...data, uid: auth.uid });
       return { case: toCaseWorkspaceView(updated), status: "success" };
     } catch (error) {
       translateEvidenceError(error);
@@ -241,7 +258,12 @@ export const renameCbamCase = createCallable(
         name: { ...existing.data.installation.name, value: newName },
       },
     };
-    await updateCase(caseId, auth.uid, parseCaseData(updatedData, auth.uid, caseId));
+    await updateCase(
+      caseId,
+      auth.uid,
+      parseCaseData(updatedData, auth.uid, caseId),
+      existing.revision
+    );
     return { success: true };
   }
 );

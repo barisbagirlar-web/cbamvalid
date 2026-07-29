@@ -72,11 +72,20 @@ describe("new case runtime contract", () => {
     expect(() => createCaseSaveRequest(draft)).toThrow("CASE_CREATION_REQUEST_ID_REQUIRED");
 
     const editData = { ...draft, caseId: "case_FirestoreAutoId123" };
-    const editRequest = createCaseSaveRequest(editData, "case_FirestoreAutoId123");
+    const editRequest = createCaseSaveRequest(
+      editData,
+      "case_FirestoreAutoId123",
+      undefined,
+      0
+    );
     expect(editRequest).toEqual({
       caseId: "case_FirestoreAutoId123",
+      expectedRevision: 0,
       data: editData,
     });
+    expect(() =>
+      createCaseSaveRequest(editData, "case_FirestoreAutoId123")
+    ).toThrow("CASE_REVISION_REQUIRED");
     expect(() =>
       createCaseSaveRequest(draft, "case_FirestoreAutoId123", REQUEST_ID)
     ).toThrow("AMBIGUOUS_CASE_SAVE_REQUEST");

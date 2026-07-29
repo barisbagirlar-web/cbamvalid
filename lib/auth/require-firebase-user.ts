@@ -15,10 +15,15 @@ export async function requireFirebaseUser(req: NextRequest) {
   try {
     const decodedToken = await adminAuth.verifyIdToken(token);
     return decodedToken;
-  } catch (error: any) {
-    if (error.code?.startsWith("auth/")) {
-      throw { status: 401, message: "Unauthorized: " + error.message };
+  } catch (error: unknown) {
+    const code =
+      typeof error === "object" && error !== null && "code" in error
+        ? String(error.code)
+        : "";
+    const message = error instanceof Error ? error.message : "Token verification failed.";
+    if (code.startsWith("auth/")) {
+      throw { status: 401, message: "Unauthorized: " + message };
     }
-    throw { status: 500, message: "Internal authentication failure: " + error.message };
+    throw { status: 500, message: "Internal authentication failure: " + message };
   }
 }

@@ -34,6 +34,7 @@ firebase-adminsdk*.json
 service-account*.json
 
 # Local test artifacts
+tests/e2e/.auth/
 test-out.pdf
 test-page-*.png
 test-page-0.png

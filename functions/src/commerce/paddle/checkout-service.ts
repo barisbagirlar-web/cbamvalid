@@ -21,6 +21,10 @@ export async function createCheckout(
   const { caseId } = metadata;
 
   const canonicalProductCode = "pack_premium_dossier_v5";
+  if (productCode !== canonicalProductCode && productCode !== "CBAM_EXPORTER_FINAL_REPORT") {
+    throw new Error("INVALID_PRODUCT_CODE");
+  }
+  if (!caseId) throw new Error("CASE_ID_REQUIRED");
 
   const product = PRODUCT_CATALOG[canonicalProductCode];
   if (!product || !product.active) {
@@ -35,7 +39,15 @@ export async function createCheckout(
 
   const correlationId = crypto.randomUUID();
 
-  const result = await adminDb.runTransaction(async (dbTransaction: any) => {
+  const result = await adminDb.runTransaction(async (dbTransaction) => {
+    const caseRef = adminDb.collection("cbam_cases").doc(caseId);
+    const caseSnapshot = await dbTransaction.get(caseRef);
+    if (!caseSnapshot.exists) throw new Error("CASE_NOT_FOUND");
+    const caseData = caseSnapshot.data() || {};
+    const caseOwnerId = String(caseData.uid || caseData.ownerId || "");
+    if (!caseOwnerId || caseOwnerId !== uid) {
+      throw new Error("CASE_OWNERSHIP_MISMATCH");
+    }
     const order = await createOrder(dbTransaction, {
       uid: uid,
       caseId: caseId,

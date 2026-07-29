@@ -24,7 +24,10 @@ export function AppHeader() {
   const [availableUses, setAvailableUses] = useState<number>(0);
   const [activePackCount, setActivePackCount] = useState<number>(0);
 
-  const isAdmin = claims?.admin === true || claims?.ownerAdmin === true;
+  const isAdmin =
+    claims?.role === "super_admin" &&
+    claims?.owner === true &&
+    claims?.ownerUid === user?.uid;
 
   // Live credit balance (display only). Pack/seal capacity comes from entitlements.
   useEffect(() => {

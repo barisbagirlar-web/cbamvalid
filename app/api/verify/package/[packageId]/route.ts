@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiFailure } from "@/lib/http/api-response";
-import { adminDb } from "@/lib/firebase/admin";
+import { adminDb, getAdminStorageBucket } from "@/lib/firebase/admin";
+import { verifyPublicPackageSignature } from "@/lib/verify/package-signature";
 
 export const dynamic = "force-dynamic";
 
@@ -19,26 +20,69 @@ export async function GET(
       return apiFailure("INVALID_FORMAT", "packageId required", 400);
     }
 
-    let data: Record<string, unknown> | undefined;
-    const sealed = await adminDb.collection("sealed_reports").doc(id).get();
-    if (sealed.exists) data = sealed.data() as Record<string, unknown>;
-    else {
-      const report = await adminDb.collection("reports").doc(id).get();
-      if (!report.exists) {
+    let reportDocument = await adminDb.collection("cbam_reports").doc(id).get();
+    if (!reportDocument.exists) {
+      const byPackageCode = await adminDb.collection("cbam_reports")
+        .where("packageCode", "==", id)
+        .limit(2)
+        .get();
+      if (byPackageCode.empty) {
         return apiFailure("NOT_FOUND", "No sealed package found for packageId", 404);
       }
-      data = report.data() as Record<string, unknown>;
+      if (byPackageCode.docs.length !== 1) {
+        return apiFailure("PACKAGE_ID_COLLISION", "Package identifier is not unique", 409);
+      }
+      reportDocument = byPackageCode.docs[0];
     }
 
-    const row = data || {};
+    const row = reportDocument.data() as Record<string, unknown>;
+    const reportId = String(row.reportId || reportDocument.id);
+    const storage = row.storage && typeof row.storage === "object"
+      ? row.storage as Record<string, { path?: unknown; sha256?: unknown; sizeBytes?: unknown }>
+      : {};
+    const manifestEntry = storage["manifest.json"];
+    const signatureEntry = storage["manifest.sig"];
+    let signatureValid = false;
+    if (manifestEntry && signatureEntry) {
+      const manifestPath = String(manifestEntry.path || "");
+      const signaturePath = String(signatureEntry.path || "");
+      const expectedPrefix = `reports/${String(row.uid || "")}/${reportId}/`;
+      if (manifestPath.startsWith(expectedPrefix) && signaturePath.startsWith(expectedPrefix)) {
+        const [[manifestBytes], [signatureBytes]] = await Promise.all([
+          getAdminStorageBucket().file(manifestPath).download(),
+          getAdminStorageBucket().file(signaturePath).download(),
+        ]);
+        signatureValid = verifyPublicPackageSignature({
+          reportId,
+          reportManifestHash: String(row.manifestHash || ""),
+          manifestBytes,
+          manifestIndex: {
+            sha256: String(manifestEntry.sha256 || ""),
+            sizeBytes: Number(manifestEntry.sizeBytes),
+          },
+          signatureBytes,
+          signatureIndex: {
+            sha256: String(signatureEntry.sha256 || ""),
+            sizeBytes: Number(signatureEntry.sizeBytes),
+          },
+        });
+      }
+    }
+    const publicState = row.publicVerificationState === "REVOKED" || row.revoked === true || row.status === "REVOKED"
+      ? "REVOKED"
+      : row.publicVerificationState === "SUPERSEDED" || row.isCurrentRelease === false
+        ? "SUPERSEDED"
+        : "ACTIVE";
     return apiSuccess({
-      packageId: id,
-      signatureValid: Boolean(row.manifestHash && row.signatureBase64),
+      packageId: String(row.packageCode || id),
+      reportId,
+      releaseVersion: Number(row.releaseVersion || 0),
+      signatureValid,
       signingKeyFingerprint: (row.kmsKeyVersion as string) || null,
       sealTimestamp: (row.createdAt as string) || (row.updatedAt as string) || null,
       tsaTokenStatus: (row.tsaStatus as string) || "ABSENT",
-      revocationState: row.revoked === true ? "REVOKED" : "ACTIVE",
-      publicVerificationState: "ACTIVE",
+      revocationState: publicState,
+      publicVerificationState: publicState,
       publicVerificationUrl: `https://cbamvalid.com/verify/package/${id}`,
       disclaimer:
         "Integrity and seal metadata only. Not an accredited verification opinion.",

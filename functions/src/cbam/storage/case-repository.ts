@@ -62,6 +62,12 @@ function parseStoredCase(data: unknown, documentId: string): CbamCaseRecord {
     status: source.status ?? "DRAFT",
     latestReleaseId: source.latestReleaseId,
     latestReleaseVersion: source.latestReleaseVersion,
+    revision:
+      typeof source.revision === "number" &&
+      Number.isSafeInteger(source.revision) &&
+      source.revision >= 0
+        ? source.revision
+        : 0,
     createdAt,
     updatedAt,
   };
@@ -102,7 +108,7 @@ function sanitizeCaseData(submittedData: unknown, existingData?: AuditReadyCase)
         ...evidence,
         reviewStatus: "PENDING" as const,
         supportStatus: "PENDING" as const,
-        malwareScanStatus: "CLEAN" as const,
+        malwareScanStatus: "PENDING" as const,
         reviewerNotes: undefined,
       };
     }
@@ -206,13 +212,52 @@ async function persistTrustedCaseData(
   resolved: ResolvedCaseDocument,
   caseData: AuditReadyCase
 ): Promise<CbamCaseRecord> {
-  const updatedAt = new Date().toISOString();
-  const parsed = AuditReadyCaseSchema.parse(caseData);
-  await adminDb.collection("cbam_cases").doc(resolved.documentId).update({
-    data: parsed,
-    updatedAt,
+  const caseRef = adminDb.collection("cbam_cases").doc(resolved.documentId);
+  return adminDb.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(caseRef);
+    if (!snapshot.exists) throw new Error("CASE_NOT_FOUND");
+    const current = parseStoredCase(snapshot.data(), snapshot.id);
+    if (current.revision !== resolved.record.revision) {
+      throw new Error("CASE_REVISION_CONFLICT");
+    }
+    const updatedAt = new Date().toISOString();
+    const parsed = AuditReadyCaseSchema.parse(caseData);
+    const revision = current.revision + 1;
+    transaction.update(caseRef, { data: parsed, updatedAt, revision });
+    return { ...current, data: parsed, updatedAt, revision };
   });
-  return { ...resolved.record, data: parsed, updatedAt };
+}
+
+async function persistEvidenceDeletionAudit(params: {
+  resolved: ResolvedCaseDocument;
+  actor: string;
+  evidenceId: string;
+  action: "EVIDENCE_DELETED" | "EVIDENCE_ORPHAN_UPLOAD_DELETED";
+  metadata: Record<string, unknown>;
+}): Promise<CbamCaseRecord> {
+  const caseRef = adminDb.collection("cbam_cases").doc(params.resolved.documentId);
+  return adminDb.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(caseRef);
+    if (!snapshot.exists) throw new Error("CASE_NOT_FOUND");
+    const current = parseStoredCase(snapshot.data(), snapshot.id);
+    if (current.uid !== params.actor) throw new CaseOwnershipViolationError(current.caseId);
+    if (current.status !== "DRAFT") throw new Error("CASE_NOT_EDITABLE");
+    const nextData = appendAuditEvent(
+      {
+        ...current.data,
+        evidenceRegister: current.data.evidenceRegister.filter(
+          (record) => record.evidenceId !== params.evidenceId
+        ),
+      },
+      params.actor,
+      params.action,
+      params.metadata
+    );
+    const updatedAt = new Date().toISOString();
+    const revision = current.revision + 1;
+    transaction.update(caseRef, { data: nextData, updatedAt, revision });
+    return { ...current, data: nextData, updatedAt, revision };
+  });
 }
 
 export async function getCase(caseId: string): Promise<CbamCaseRecord | null> {
@@ -280,18 +325,39 @@ export async function createCase(
   });
 }
 
-export async function updateCase(caseId: string, uid: string, data: unknown): Promise<CbamCaseRecord> {
+export async function updateCase(
+  caseId: string,
+  uid: string,
+  data: unknown,
+  expectedRevision: number
+): Promise<CbamCaseRecord> {
   validateIdentifier("uid", uid);
   const resolved = await resolveCaseDocument(caseId);
   if (!resolved) throw new Error("CASE_NOT_FOUND");
   if (resolved.record.uid !== uid) throw new CaseOwnershipViolationError(caseId);
   if (resolved.record.status !== "DRAFT") throw new Error("CASE_NOT_EDITABLE");
+  if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0) {
+    throw new Error("CASE_REVISION_REQUIRED");
+  }
 
-  const sanitizedData = sanitizeCaseData(
-    { ...(data as Record<string, unknown>), caseId: resolved.record.caseId, ownerId: uid },
-    resolved.record.data
-  );
-  return persistTrustedCaseData(resolved, sanitizedData);
+  const caseRef = adminDb.collection("cbam_cases").doc(resolved.documentId);
+  return adminDb.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(caseRef);
+    if (!snapshot.exists) throw new Error("CASE_NOT_FOUND");
+    const current = parseStoredCase(snapshot.data(), snapshot.id);
+    if (current.uid !== uid) throw new CaseOwnershipViolationError(caseId);
+    if (current.status !== "DRAFT") throw new Error("CASE_NOT_EDITABLE");
+    if (current.revision !== expectedRevision) throw new Error("CASE_REVISION_CONFLICT");
+
+    const sanitizedData = sanitizeCaseData(
+      { ...(data as Record<string, unknown>), caseId: current.caseId, ownerId: uid },
+      current.data
+    );
+    const updatedAt = new Date().toISOString();
+    const revision = current.revision + 1;
+    transaction.update(caseRef, { data: sanitizedData, updatedAt, revision });
+    return { ...current, data: sanitizedData, updatedAt, revision };
+  });
 }
 
 export async function reviewCaseEvidence(params: {
@@ -382,6 +448,88 @@ export async function recordEvidenceMalwareScan(params: {
     }
   );
   return persistTrustedCaseData(resolved, nextData);
+}
+
+export async function deleteCaseEvidence(params: {
+  caseId: string;
+  uid: string;
+  evidenceId: string;
+  reason: string;
+}): Promise<CbamCaseRecord> {
+  const resolved = await resolveCaseDocument(params.caseId);
+  if (!resolved) throw new Error("CASE_NOT_FOUND");
+  if (resolved.record.uid !== params.uid) throw new CaseOwnershipViolationError(params.caseId);
+  if (resolved.record.status !== "DRAFT") throw new Error("CASE_NOT_EDITABLE");
+  const evidence = resolved.record.data.evidenceRegister.find(
+    (record) => record.evidenceId === params.evidenceId
+  );
+  if (!evidence) {
+    const prefix = `evidence/${params.uid}/${resolved.record.caseId}/${params.evidenceId}/`;
+    const [objects] = await getStorageBucket().getFiles({ prefix, autoPaginate: false, maxResults: 2 });
+    if (objects.length === 0) throw new Error("EVIDENCE_NOT_FOUND");
+    if (objects.length !== 1 || !objects[0].name.startsWith(prefix)) {
+      throw new Error("EVIDENCE_ORPHAN_UPLOAD_AMBIGUOUS");
+    }
+    const [metadata] = await objects[0].getMetadata();
+    const custom = metadata.metadata ?? {};
+    if (
+      custom.ownerId !== params.uid ||
+      custom.caseId !== resolved.record.caseId ||
+      custom.evidenceId !== params.evidenceId
+    ) throw new Error("EVIDENCE_STORAGE_METADATA_MISMATCH");
+    const generation = Number(metadata.generation);
+    if (!Number.isSafeInteger(generation) || generation <= 0) {
+      throw new Error("EVIDENCE_STORAGE_GENERATION_INVALID");
+    }
+    await objects[0].delete({ ifGenerationMatch: generation });
+    return persistEvidenceDeletionAudit({
+      resolved,
+      actor: params.uid,
+      evidenceId: params.evidenceId,
+      action: "EVIDENCE_ORPHAN_UPLOAD_DELETED",
+      metadata: {
+        evidenceId: params.evidenceId,
+        storagePath: objects[0].name,
+        fileHash: custom.sha256 ?? null,
+        reason: params.reason.trim(),
+      },
+    });
+  }
+  const object = getStorageBucket().file(evidence.storagePath);
+  const [exists] = await object.exists();
+  if (!exists) {
+    return persistEvidenceDeletionAudit({
+      resolved,
+      actor: params.uid,
+      evidenceId: params.evidenceId,
+      action: "EVIDENCE_DELETED",
+      metadata: {
+        evidenceId: params.evidenceId,
+        storagePath: evidence.storagePath,
+        fileHash: evidence.fileHash,
+        reason: `${params.reason.trim()} (storage object was already absent)`,
+      },
+    });
+  }
+  await verifyEvidenceObject(resolved.record.caseId, params.uid, evidence);
+  const [metadata] = await object.getMetadata();
+  const generation = Number(metadata.generation);
+  if (!Number.isSafeInteger(generation) || generation <= 0) {
+    throw new Error("EVIDENCE_STORAGE_GENERATION_INVALID");
+  }
+  await object.delete({ ifGenerationMatch: generation });
+  return persistEvidenceDeletionAudit({
+    resolved,
+    actor: params.uid,
+    evidenceId: params.evidenceId,
+    action: "EVIDENCE_DELETED",
+    metadata: {
+      evidenceId: params.evidenceId,
+      storagePath: evidence.storagePath,
+      fileHash: evidence.fileHash,
+      reason: params.reason.trim(),
+    },
+  });
 }
 
 export async function archiveCase(caseId: string, uid: string): Promise<void> {

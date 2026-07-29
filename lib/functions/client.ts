@@ -29,6 +29,7 @@ export type CbamCaseRecord = {
   uid: string;
   status: string;
   data: AuditReadyCase;
+  revision: number;
   createdAt: string;
   updatedAt: string;
   latestReleaseId?: string;
@@ -43,6 +44,16 @@ export type PreparationPackEntitlement = {
   releasesCount?: number;
   releasesRemaining?: number;
   [key: string]: unknown;
+};
+
+export type CaseWorkspace = AuditReadyCase & {
+  revision: number;
+  updatedAt?: string;
+};
+
+export type CaseSaveResult = {
+  caseId: string;
+  revision: number;
 };
 
 export type SealResponse = {
@@ -82,8 +93,9 @@ export const getCbamCaseCallable = httpsCallable<{ caseId: string }, { case: unk
 export const saveCbamCaseCallable = httpsCallable<{
   caseId?: string;
   requestId?: string;
+  expectedRevision?: number;
   data: AuditReadyCase;
-}, { caseId: string }>(firebaseFunctions, "saveCbamCase");
+}, CaseSaveResult>(firebaseFunctions, "saveCbamCase");
 export const reviewCbamEvidenceCallable = httpsCallable<{
   caseId: string;
   evidenceId: string;
@@ -97,6 +109,11 @@ export const recordCbamEvidenceScanCallable = httpsCallable<{
   status: "CLEAN" | "INFECTED";
   scannerReference: string;
 }, { case: unknown }>(firebaseFunctions, "recordCbamEvidenceScan");
+export const deleteCbamEvidenceCallable = httpsCallable<{
+  caseId: string;
+  evidenceId: string;
+  reason: string;
+}, { case: unknown }>(firebaseFunctions, "deleteCbamEvidence");
 export const renameCbamCaseCallable = httpsCallable<{ caseId: string; newName: string }, { success: boolean }>(firebaseFunctions, "renameCbamCase");
 export const archiveCbamCaseCallable = httpsCallable<{ caseId: string }, { success: boolean }>(firebaseFunctions, "archiveCbamCase");
 export const deleteCbamCaseCallable = httpsCallable<{ caseId: string }, { success: boolean }>(firebaseFunctions, "deleteCbamCase");
@@ -144,23 +161,40 @@ export const requestAccountClosureCallable = httpsCallable<void, UnknownRecord>(
 export const listAllUsersCallable = httpsCallable<{ limit?: number; pageToken?: string }, { users: UnknownRecord[] }>(firebaseFunctions, "listAllUsers");
 export const listAllTransactionsCallable = httpsCallable<{ limit?: number }, { transactions: UnknownRecord[] }>(firebaseFunctions, "listAllTransactions");
 
+function parseCaseWorkspace(rawCase: unknown): CaseWorkspace {
+  const raw = rawCase as Record<string, unknown>;
+  const parsed = AuditReadyCaseSchema.parse(raw);
+  const revision = raw.revision;
+  if (!Number.isSafeInteger(revision) || (revision as number) < 0) {
+    throw new Error("CASE_REVISION_MISSING");
+  }
+  return {
+    ...parsed,
+    revision: revision as number,
+    ...(typeof raw.updatedAt === "string" ? { updatedAt: raw.updatedAt } : {}),
+  };
+}
+
 export async function getCases(): Promise<CbamCaseRecord[]> {
   const result = await getCbamCasesCallable();
   return result.data.cases;
 }
 
-export async function getCase(caseId: string): Promise<AuditReadyCase> {
+export async function getCase(caseId: string): Promise<CaseWorkspace> {
   const result = await getCbamCaseCallable({ caseId });
-  return AuditReadyCaseSchema.parse(result.data.case);
+  return parseCaseWorkspace(result.data.case);
 }
 
 export async function saveCase(
   data: AuditReadyCase,
   caseId?: string,
-  requestId?: string
-): Promise<string> {
-  const result = await saveCbamCaseCallable(createCaseSaveRequest(data, caseId, requestId));
-  return result.data.caseId;
+  requestId?: string,
+  expectedRevision?: number
+): Promise<CaseSaveResult> {
+  const result = await saveCbamCaseCallable(
+    createCaseSaveRequest(data, caseId, requestId, expectedRevision)
+  );
+  return result.data;
 }
 
 export async function reviewEvidence(params: {
@@ -169,9 +203,9 @@ export async function reviewEvidence(params: {
   decision: "APPROVED" | "REJECTED";
   supportStatus: EvidenceSupportStatus;
   reviewerNotes: string;
-}): Promise<AuditReadyCase> {
+}): Promise<CaseWorkspace> {
   const result = await reviewCbamEvidenceCallable(params);
-  return AuditReadyCaseSchema.parse(result.data.case);
+  return parseCaseWorkspace(result.data.case);
 }
 
 export async function recordEvidenceScan(params: {
@@ -179,9 +213,18 @@ export async function recordEvidenceScan(params: {
   evidenceId: string;
   status: "CLEAN" | "INFECTED";
   scannerReference: string;
-}): Promise<AuditReadyCase> {
+}): Promise<CaseWorkspace> {
   const result = await recordCbamEvidenceScanCallable(params);
-  return AuditReadyCaseSchema.parse(result.data.case);
+  return parseCaseWorkspace(result.data.case);
+}
+
+export async function deleteEvidence(params: {
+  caseId: string;
+  evidenceId: string;
+  reason: string;
+}): Promise<CaseWorkspace> {
+  const result = await deleteCbamEvidenceCallable(params);
+  return parseCaseWorkspace(result.data.case);
 }
 
 export async function renameCase(caseId: string, newName: string): Promise<boolean> {

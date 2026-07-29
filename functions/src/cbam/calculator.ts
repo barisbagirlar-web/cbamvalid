@@ -9,13 +9,22 @@ import { getSectorRule } from "../dossier/01-ruleset/sectors.rules";
 import { computePricedSeeFromStrings } from "../dossier/20-kernel/allocation";
 import { nodeId } from "../dossier/00-schema/ids";
 import { assessOrigin } from "../dossier/01-ruleset/origin.rules";
+import {
+  ALLOCATION_TOLERANCE as CANONICAL_ALLOCATION_TOLERANCE,
+  CALCULATION_CONTRACT,
+  EMISSIONS_RECONCILIATION_TOLERANCE,
+  allocationReconciliationDelta as calculateAllocationReconciliationDelta,
+  expectedPricedAllocation,
+  toCanonicalTonnes,
+  type ProductionMassUnit,
+} from "../dossier/01-ruleset/calculation.rules";
 
 Decimal.set({ precision: 34, rounding: Decimal.ROUND_HALF_UP });
 
-export const CALCULATION_RULESET = "EU-CBAM-DEFINITIVE-2026";
-export const CALCULATION_ENGINE_VERSION = "3.0.0";
-export const CALCULATION_SOURCE = "Regulation (EU) 2023/956, Annex IV; active definitive-period implementing rules";
-export const ALLOCATION_TOLERANCE = new Decimal("0.000001");
+export const CALCULATION_RULESET = CALCULATION_CONTRACT.rulesetIdentity;
+export const CALCULATION_ENGINE_VERSION = CALCULATION_CONTRACT.engineVersion;
+export const CALCULATION_SOURCE = CALCULATION_CONTRACT.source;
+export const ALLOCATION_TOLERANCE = CANONICAL_ALLOCATION_TOLERANCE;
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 
@@ -66,8 +75,9 @@ function requireUnit(datum: InputDatum, field: string, accepted: string[], fallb
 }
 
 function tonnes(value: Decimal, datum: InputDatum, field: string): { value: Decimal; conversion?: Record<string, unknown> } {
-  const unit = requireUnit(datum, field, ["t", "kg", "metric_tonne"], "t");
-  if (unit === "kg") return { value: value.dividedBy(1000), conversion: { fromUnit: "kg", toUnit: "t", divisor: "1000" } };
+  const unit = requireUnit(datum, field, ["t", "kg", "metric_tonne"], "t") as ProductionMassUnit;
+  const normalized = toCanonicalTonnes(value, unit);
+  if (unit === "kg") return { value: normalized, conversion: { fromUnit: "kg", toUnit: "t", divisor: "1000" } };
   return { value, conversion: unit === "metric_tonne" ? { fromUnit: "metric_tonne", toUnit: "t", factor: "1" } : undefined };
 }
 
@@ -88,7 +98,7 @@ function traceNode(params: {
     formulaVersion: CALCULATION_RULESET,
     officialSource: CALCULATION_SOURCE,
     sourceVersion: "definitive period",
-    effectiveDate: "2026-01-01",
+    effectiveDate: CALCULATION_CONTRACT.effectiveDate,
     inputs: normalizedInputs,
     conversions: params.conversions,
     intermediateCalculations: params.intermediateCalculations,
@@ -104,7 +114,7 @@ function traceNode(params: {
     formulaVersion: CALCULATION_RULESET,
     officialSource: CALCULATION_SOURCE,
     sourceVersion: "definitive period",
-    effectiveDate: "2026-01-01",
+    effectiveDate: CALCULATION_CONTRACT.effectiveDate,
     inputs: normalizedInputs,
     conversions: params.conversions,
     intermediateCalculations: params.intermediateCalculations,
@@ -262,7 +272,7 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
 
   const allocationShares = resolveAllocationShares(caseData);
   const allocationShareTotal = allocationShares.reduce((total, share) => total.plus(share), new Decimal(0));
-  const allocationReconciliationDelta = allocationShareTotal.minus(1).abs();
+  const allocationShareDelta = allocationShareTotal.minus(1).abs();
   const goods = productionRecords.map((record, index): GoodCalculationResult => {
     const share = allocationShares[index];
     const rule = getSectorRule(record.good.sector);
@@ -347,9 +357,27 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
     assumptions: ["Priced total applies sector Annex II direct-only rules where applicable."],
   }));
 
-  const allocatedTotal = totalPriced;
-  if (allocatedTotal.minus(totalPriced).abs().gt("0.000000000001")) throw new Error(`CALCULATION_ALLOCATED_EMISSIONS_NOT_RECONCILED:${allocatedTotal.toString()}`);
-  trace.push(traceNode({ formulaId: "CBAM_GOODS_ALLOCATION_RECONCILIATION", inputs: { allocationShares: goods.map((good) => good.allocationShare), allocatedEmbeddedEmissions: goods.map((good) => good.allocatedEmbeddedEmissions), totalEmbeddedEmissionsPriced: totalPriced.toString(), totalEmbeddedEmissionsDisclosed: totalDisclosed.toString() }, outputValue: allocatedTotal.minus(totalPriced).abs(), outputUnit: "tCO2e", assumptions: caseData.goods.length === 1 ? ["A single good receives 100% of installation emissions."] : [] }));
+  const reconciliationAllocations = goods.map((good) => ({
+    share: new Decimal(good.allocationShare),
+    indirectPriced: good.indirectPriced,
+    actualAllocated: new Decimal(good.allocatedEmbeddedEmissions),
+  }));
+  const independentlyExpectedPricedEmissions = expectedPricedAllocation({
+    totalDirect,
+    totalIndirect,
+    allocations: reconciliationAllocations,
+  });
+  const emissionsReconciliationDelta = calculateAllocationReconciliationDelta({
+    totalDirect,
+    totalIndirect,
+    allocations: reconciliationAllocations,
+  });
+  if (emissionsReconciliationDelta.gt(EMISSIONS_RECONCILIATION_TOLERANCE)) {
+    throw new Error(
+      `CALCULATION_ALLOCATED_EMISSIONS_NOT_RECONCILED:${emissionsReconciliationDelta.toString()}`
+    );
+  }
+  trace.push(traceNode({ formulaId: "CBAM_GOODS_ALLOCATION_RECONCILIATION", inputs: { allocationShares: goods.map((good) => good.allocationShare), allocatedEmbeddedEmissions: goods.map((good) => good.allocatedEmbeddedEmissions), independentlyExpectedPricedEmissions: independentlyExpectedPricedEmissions.toString(), totalEmbeddedEmissionsPriced: totalPriced.toString(), totalEmbeddedEmissionsDisclosed: totalDisclosed.toString() }, outputValue: emissionsReconciliationDelta, outputUnit: "tCO2e", assumptions: caseData.goods.length === 1 ? ["A single good receives 100% of installation emissions."] : [] }));
 
   const aggregateSpecific = totalPriced.dividedBy(productionVolume).toDecimalPlaces(6, Decimal.ROUND_HALF_UP);
   trace.push(traceNode({ formulaId: "CBAM_AGGREGATE_SPECIFIC_EMBEDDED_EMISSIONS", inputs: { totalEmbeddedEmissionsPriced: totalPriced.toString(), aggregateProductionVolume: productionVolume.toString() }, outputValue: aggregateSpecific, outputUnit: "tCO2e/t", rounding: { decimalPlaces: 6, mode: "ROUND_HALF_UP", stage: "aggregate diagnostic only" }, assumptions: ["The aggregate intensity is a portfolio diagnostic; reportable values are the per-good intensities."] }));
@@ -357,11 +385,32 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
   const eligibleCertificateReduction = caseData.carbonPriceRecords.reduce((total, record, index) => {
     const value = decimalOptional(record.eligibleCertificateReduction, `carbonPriceRecords.${index}.eligibleCertificateReduction`);
     if (value.isNegative()) throw new Error("CALCULATION_NEGATIVE_CARBON_PRICE_REDUCTION");
+    if (value.isZero()) return total;
+    const paymentEvidence = record.proofOfPaymentEvidenceId
+      ? caseData.evidenceRegister.find(
+          (evidence) => evidence.evidenceId === record.proofOfPaymentEvidenceId
+        )
+      : undefined;
+    if (
+      !paymentEvidence ||
+      paymentEvidence.reviewStatus !== "APPROVED" ||
+      paymentEvidence.malwareScanStatus !== "CLEAN" ||
+      paymentEvidence.supportStatus !== "SUPPORTED"
+    ) {
+      throw new Error(
+        `CALCULATION_CARBON_PRICE_EVIDENCE_NOT_FULLY_SUPPORTED:${index}`
+      );
+    }
+    if (CALCULATION_CONTRACT.carbonPricePolicy.status !== "PROVEN") {
+      throw new Error(
+        `CALCULATION_CARBON_PRICE_POLICY_NOT_PROVEN:${CALCULATION_CONTRACT.carbonPricePolicy.reason}`
+      );
+    }
     return total.plus(value);
   }, new Decimal(0));
   trace.push(traceNode({ formulaId: "CBAM_CARBON_PRICE_REDUCTION_RECORD_TOTAL", inputs: { records: caseData.carbonPriceRecords.map((record) => ({ id: record.id, eligibleCertificateReduction: String(record.eligibleCertificateReduction), currency: record.currency })) }, outputValue: eligibleCertificateReduction, outputUnit: "certificate-equivalent", assumptions: caseData.carbonPriceRecords.length > 0 ? ["Recognition remains subject to documentary evidence and applicable CBAM rules."] : [] }));
 
-  const calculationRootHash = hashObject({ ruleset: CALCULATION_RULESET, engineVersion: CALCULATION_ENGINE_VERSION, trace: trace.map((item) => item.calculationHash), totals: { installationDirect: directEmissions.toString(), electricityIndirect: indirectEmissions.toString(), precursorDirect: precursorDirect.toString(), precursorIndirect: precursorIndirect.toString(), totalDirect: totalDirect.toString(), totalIndirect: totalIndirect.toString(), totalPrecursor: totalPrecursor.toString(), totalEmbeddedDisclosed: totalDisclosed.toString(), totalEmbeddedPriced: totalPriced.toString(), productionVolume: productionVolume.toString(), aggregateSpecific: aggregateSpecific.toString(), eligibleCertificateReduction: eligibleCertificateReduction.toString(), allocationShareTotal: allocationShareTotal.toString(), allocationReconciliationDelta: allocationReconciliationDelta.toString() }, goods });
+  const calculationRootHash = hashObject({ ruleset: CALCULATION_RULESET, engineVersion: CALCULATION_ENGINE_VERSION, trace: trace.map((item) => item.calculationHash), totals: { installationDirect: directEmissions.toString(), electricityIndirect: indirectEmissions.toString(), precursorDirect: precursorDirect.toString(), precursorIndirect: precursorIndirect.toString(), totalDirect: totalDirect.toString(), totalIndirect: totalIndirect.toString(), totalPrecursor: totalPrecursor.toString(), totalEmbeddedDisclosed: totalDisclosed.toString(), totalEmbeddedPriced: totalPriced.toString(), productionVolume: productionVolume.toString(), aggregateSpecific: aggregateSpecific.toString(), eligibleCertificateReduction: eligibleCertificateReduction.toString(), allocationShareTotal: allocationShareTotal.toString(), allocationShareDelta: allocationShareDelta.toString(), allocationReconciliationDelta: emissionsReconciliationDelta.toString() }, goods });
 
-  return { trace, goods, perGoodResults: goods, installationDirectEmissions: directEmissions.toString(), electricityIndirectEmissions: indirectEmissions.toString(), precursorDirectEmissions: precursorDirect.toString(), precursorIndirectEmissions: precursorIndirect.toString(), totalDirectEmissions: totalDirect.toString(), totalIndirectEmissions: totalIndirect.toString(), totalPrecursorEmissions: totalPrecursor.toString(), totalEmbeddedEmissions: totalPriced.toString(), productionVolume: productionVolume.toString(), specificEmbeddedEmissions: aggregateSpecific.toString(), eligibleCertificateReduction: eligibleCertificateReduction.toString(), allocationShareTotal: allocationShareTotal.toString(), allocationReconciliationDelta: allocationReconciliationDelta.toString(), calculationRootHash, ruleset: CALCULATION_RULESET, engineVersion: CALCULATION_ENGINE_VERSION };
+  return { trace, goods, perGoodResults: goods, installationDirectEmissions: directEmissions.toString(), electricityIndirectEmissions: indirectEmissions.toString(), precursorDirectEmissions: precursorDirect.toString(), precursorIndirectEmissions: precursorIndirect.toString(), totalDirectEmissions: totalDirect.toString(), totalIndirectEmissions: totalIndirect.toString(), totalPrecursorEmissions: totalPrecursor.toString(), totalEmbeddedEmissions: totalPriced.toString(), productionVolume: productionVolume.toString(), specificEmbeddedEmissions: aggregateSpecific.toString(), eligibleCertificateReduction: eligibleCertificateReduction.toString(), allocationShareTotal: allocationShareTotal.toString(), allocationReconciliationDelta: emissionsReconciliationDelta.toString(), calculationRootHash, ruleset: CALCULATION_RULESET, engineVersion: CALCULATION_ENGINE_VERSION };
 }

@@ -45,15 +45,18 @@ import {
 } from "@/lib/cbam/schema";
 import { uploadEvidenceFile } from "@/lib/cbam/evidence-upload";
 import {
+  deleteEvidence,
   reviewEvidence,
+  getCase,
   saveCase,
   sealReport,
+  type CaseWorkspace,
   type PreparationPackEntitlement,
 } from "@/lib/functions/client";
 
 interface CaseWizardClientProps {
   sessionUser: { uid: string; email: string };
-  initialCase: AuditReadyCase;
+  initialCase: CaseWorkspace;
   availableEntitlements: PreparationPackEntitlement[];
 }
 
@@ -167,7 +170,10 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const router = useRouter();
   const searchParams = useSearchParams();
   const sealRequestId = useRef<string | null>(null);
-  const [savedSnapshot, setSavedSnapshot] = useState(() => JSON.stringify(initialCase));
+  const initialData = useMemo(() => AuditReadyCaseSchema.parse(initialCase), [initialCase]);
+  const revisionRef = useRef(initialCase.revision);
+  const [revision, setRevision] = useState(initialCase.revision);
+  const [savedSnapshot, setSavedSnapshot] = useState(() => JSON.stringify(initialData));
   const [caseData, setCaseData] = useState<AuditReadyCase>(() => AuditReadyCaseSchema.parse(initialCase));
   const entitlements = availableEntitlements;
   const [saving, setSaving] = useState(false);
@@ -185,6 +191,12 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const [evidenceLinkedInput, setEvidenceLinkedInput] = useState("directEmissions");
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [correctionReason, setCorrectionReason] = useState("");
+  const [recoveryDraft, setRecoveryDraft] = useState<{
+    data: AuditReadyCase;
+    baseRevision: number;
+    savedAt: string;
+  } | null>(null);
+  const [conflictDetected, setConflictDetected] = useState(false);
 
   const currentStep = useMemo(() => {
     if (searchParams.get("purchase") === "success") return 8;
@@ -194,6 +206,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       : 1;
   }, [searchParams]);
   const isDirty = JSON.stringify(caseData) !== savedSnapshot;
+  const recoveryKey = `cbam_case_recovery_${sessionUser.uid}_${caseData.caseId || "unassigned"}`;
 
   useEffect(() => {
     const warnUnsaved = (event: BeforeUnloadEvent) => {
@@ -203,6 +216,78 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     window.addEventListener("beforeunload", warnUnsaved);
     return () => window.removeEventListener("beforeunload", warnUnsaved);
   }, [isDirty]);
+
+  useEffect(() => {
+    const guardedUrl = window.location.href;
+    const warnSpaNavigation = (event: MouseEvent) => {
+      if (!isDirty || event.defaultPrevented || event.button !== 0) return;
+      const target = event.target as Element | null;
+      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
+      if (!anchor || anchor.target === "_blank" || anchor.origin !== window.location.origin) return;
+      if (!window.confirm("You have unsaved changes. Leave this working file anyway?")) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+    const warnHistoryNavigation = () => {
+      if (!isDirty) return;
+      if (window.confirm("You have unsaved changes. Leave this working file anyway?")) return;
+      window.history.pushState(window.history.state, "", guardedUrl);
+    };
+    document.addEventListener("click", warnSpaNavigation, true);
+    window.addEventListener("popstate", warnHistoryNavigation);
+    return () => {
+      document.removeEventListener("click", warnSpaNavigation, true);
+      window.removeEventListener("popstate", warnHistoryNavigation);
+    };
+  }, [isDirty]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(recoveryKey);
+      if (!raw) return;
+      const candidate = JSON.parse(raw) as {
+        data?: unknown;
+        baseRevision?: unknown;
+        savedAt?: unknown;
+      };
+      const parsed = AuditReadyCaseSchema.safeParse(candidate.data);
+      if (
+        parsed.success &&
+        parsed.data.ownerId === sessionUser.uid &&
+        parsed.data.caseId === caseData.caseId &&
+        Number.isSafeInteger(candidate.baseRevision) &&
+        typeof candidate.savedAt === "string" &&
+        JSON.stringify(parsed.data) !== savedSnapshot
+      ) {
+        queueMicrotask(() => {
+          setRecoveryDraft({
+            data: parsed.data,
+            baseRevision: candidate.baseRevision as number,
+            savedAt: candidate.savedAt as string,
+          });
+        });
+      }
+    } catch (error) {
+      console.warn("Local recovery copy could not be read", error);
+    }
+  }, [caseData.caseId, recoveryKey, savedSnapshot, sessionUser.uid]);
+
+  useEffect(() => {
+    if (!isDirty) return;
+    const timeout = window.setTimeout(() => {
+      try {
+        localStorage.setItem(recoveryKey, JSON.stringify({
+          data: caseData,
+          baseRevision: revisionRef.current,
+          savedAt: new Date().toISOString(),
+        }));
+      } catch (error) {
+        console.warn("Local recovery copy could not be saved", error);
+      }
+    }, 750);
+    return () => window.clearTimeout(timeout);
+  }, [caseData, isDirty, recoveryKey]);
 
   const readiness = useMemo(() => assessCaseReadiness(caseData), [caseData]);
   const scenarioActive = useMemo(() => isIllustrativeScenarioActive(caseData), [caseData]);
@@ -294,10 +379,20 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     }
     
     const parsed = AuditReadyCaseSchema.parse(cloned);
-    await saveCase(parsed, parsed.caseId);
+    const saved = await saveCase(
+      parsed,
+      parsed.caseId,
+      undefined,
+      revisionRef.current
+    );
+    revisionRef.current = saved.revision;
+    setRevision(saved.revision);
     const snapshot = JSON.stringify(parsed);
     setSavedSnapshot(snapshot);
     setCaseData(parsed);
+    setConflictDetected(false);
+    setRecoveryDraft(null);
+    localStorage.removeItem(recoveryKey);
   };
 
   const handleSave = async (): Promise<boolean> => {
@@ -311,8 +406,72 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     } catch (error) {
       console.error("Draft save failed", error);
       setSaveTone("error");
-      setSaveStatus(`Could not save. ${errorMessage(error)} Try again before leaving this file.`);
+      const message = errorMessage(error);
+      const conflict =
+        message.toLowerCase().includes("another tab") ||
+        message.includes("CASE_REVISION_CONFLICT") ||
+        message.includes("aborted");
+      setConflictDetected(conflict);
+      if (conflict) {
+        const recovery = {
+          data: caseData,
+          baseRevision: revisionRef.current,
+          savedAt: new Date().toISOString(),
+        };
+        setRecoveryDraft(recovery);
+        localStorage.setItem(recoveryKey, JSON.stringify(recovery));
+      }
+      setSaveStatus(conflict
+        ? "A newer version was saved elsewhere. Your unsaved recovery copy is safe on this device."
+        : `Could not save. ${message} Try again before leaving this file.`);
       return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const restoreRecoveryDraft = () => {
+    if (!recoveryDraft || recoveryDraft.baseRevision !== revisionRef.current) return;
+    setCaseData(recoveryDraft.data);
+    setRecoveryDraft(null);
+    setSaveTone("neutral");
+    setSaveStatus("Recovered your unsaved changes. Review them, then save.");
+  };
+
+  const discardRecoveryDraft = () => {
+    localStorage.removeItem(recoveryKey);
+    setRecoveryDraft(null);
+  };
+
+  const downloadRecoveryDraft = () => {
+    if (!recoveryDraft) return;
+    const blob = new Blob([JSON.stringify(recoveryDraft.data, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${caseData.caseId || "working-file"}-unsaved-recovery.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const loadLatestVersion = async () => {
+    if (!caseData.caseId) return;
+    setSaving(true);
+    try {
+      const latest = await getCase(caseData.caseId);
+      const parsed = AuditReadyCaseSchema.parse(latest);
+      revisionRef.current = latest.revision;
+      setRevision(latest.revision);
+      setCaseData(parsed);
+      setSavedSnapshot(JSON.stringify(parsed));
+      setConflictDetected(false);
+      setSaveTone("success");
+      setSaveStatus("Loaded the latest saved version. Your older recovery copy remains available for download.");
+    } catch (error) {
+      setSaveTone("error");
+      setSaveStatus(`Could not load the latest version. ${errorMessage(error)}`);
     } finally {
       setSaving(false);
     }
@@ -505,10 +664,38 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         supportStatus,
         reviewerNotes: reviewNotes[evidenceId] || "Internal dossier review completed.",
       });
-      setCaseData(updated);
+      const parsed = AuditReadyCaseSchema.parse(updated);
+      revisionRef.current = updated.revision;
+      setRevision(updated.revision);
+      setCaseData(parsed);
+      setSavedSnapshot(JSON.stringify(parsed));
+      localStorage.removeItem(recoveryKey);
       setEvidenceStatus(`Evidence ${decision.toLowerCase()} by the server-controlled review workflow.`);
     } catch (error) {
       console.error("Evidence review failed", error);
+      setEvidenceStatus(errorMessage(error));
+    }
+  };
+
+  const handleEvidenceDelete = async (evidenceId: string) => {
+    if (!caseData.caseId) return;
+    if (!window.confirm("Delete this evidence file and remove it from the draft? This cannot be undone.")) return;
+    setEvidenceStatus("");
+    try {
+      const updated = await deleteEvidence({
+        caseId: caseData.caseId,
+        evidenceId,
+        reason: "Removed by the working file owner before sealing.",
+      });
+      const parsed = AuditReadyCaseSchema.parse(updated);
+      revisionRef.current = updated.revision;
+      setRevision(updated.revision);
+      setCaseData(parsed);
+      setSavedSnapshot(JSON.stringify(parsed));
+      localStorage.removeItem(recoveryKey);
+      setEvidenceStatus("Evidence deleted by the audited server workflow.");
+    } catch (error) {
+      console.error("Evidence deletion failed", error);
       setEvidenceStatus(errorMessage(error));
     }
   };
@@ -740,7 +927,36 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         <div className="md:col-span-2"><FieldLabel helpKey="evidenceLinkedInput">Linked input</FieldLabel><select aria-label="Evidence linked input" value={evidenceLinkedInput} onChange={(event) => setEvidenceLinkedInput(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm">{EVIDENCE_LINK_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}{caseData.goods.flatMap((_, index) => [[`goods.${index}.cnCode`, `Good ${index + 1} CN code`], [`goods.${index}.productionVolume`, `Good ${index + 1} production`], [`goods.${index}.allocationShare`, `Good ${index + 1} allocation`]]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}{caseData.precursors.flatMap((_, index) => [[`precursors.${index}.quantity`, `Precursor ${index + 1} quantity`], [`precursors.${index}.directEmissions`, `Precursor ${index + 1} direct emissions`], [`precursors.${index}.indirectEmissions`, `Precursor ${index + 1} indirect emissions`]]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.evidenceLinkedInput.source}</p></div>
       </div><button type="button" onClick={handleEvidenceUpload} disabled={uploading} className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-sm font-semibold text-surface disabled:opacity-50">{uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />} Upload and register evidence</button><StatusBanner status={evidenceStatus} tone={evidenceStatus.toLowerCase().includes("failed") || evidenceStatus.includes("EVIDENCE_") ? "error" : "warning"} /></div>
 
-      <div className="space-y-3">{caseData.evidenceRegister.map((evidence) => <div key={evidence.evidenceId} className="rounded-xl border border-border bg-surface p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{evidence.fileName}</p><p className="text-xs text-muted">{evidence.documentType} · {evidence.sizeBytes} bytes · {evidence.reviewStatus}/{evidence.supportStatus}/{evidence.malwareScanStatus}</p><p className="mt-1 break-all font-mono text-[10px] text-muted">SHA-256 {evidence.fileHash}</p></div></div><div className="mt-3"><FieldLabel helpKey="evidenceReviewNotes">Internal review note</FieldLabel><div className="flex flex-col gap-2 md:flex-row"><input aria-label={`Review notes for ${evidence.fileName}`} value={reviewNotes[evidence.evidenceId] || ""} onChange={(event) => setReviewNotes((previous) => ({ ...previous, [evidence.evidenceId]: event.target.value }))} placeholder="Internal review note" className="flex-1 rounded border border-border bg-background p-2 text-sm" /><button type="button" disabled={evidence.malwareScanStatus !== "CLEAN"} onClick={() => handleEvidenceReview(evidence.evidenceId, "APPROVED")} className="min-h-11 rounded bg-status-pass px-3 py-2 text-xs font-semibold text-surface-elevated disabled:opacity-40">Approve</button><button type="button" onClick={() => handleEvidenceReview(evidence.evidenceId, "REJECTED")} className="min-h-11 rounded bg-status-blocked px-3 py-2 text-xs font-semibold text-surface-elevated">Reject</button></div></div>{evidence.malwareScanStatus !== "CLEAN" && <div className="mt-3 rounded border border-status-warning/30 bg-[color:var(--status-warning-soft)] p-3 text-xs text-status-warning"><p>{evidence.malwareScanStatus === "PENDING" ? "Security scan is still pending. Refresh this working file later; do not upload the same document again." : "This document cannot be approved in its current scan state. Upload a clean replacement or ask support to review the scan result."}</p><a href="mailto:info@cbamvalid.com" className="mt-2 inline-flex min-h-11 items-center font-semibold underline">Contact support</a></div>}</div>)}</div>
+      <div className="space-y-3">
+        {caseData.evidenceRegister.map((evidence) => (
+          <div key={evidence.evidenceId} className="rounded-xl border border-border bg-surface p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold">{evidence.fileName}</p>
+                <p className="text-xs text-muted">{evidence.documentType} · {evidence.sizeBytes} bytes · {evidence.reviewStatus}/{evidence.supportStatus}/{evidence.malwareScanStatus}</p>
+                <p className="mt-1 break-all font-mono text-[10px] text-muted">SHA-256 {evidence.fileHash}</p>
+              </div>
+              <button type="button" onClick={() => void handleEvidenceDelete(evidence.evidenceId)} className="inline-flex min-h-11 items-center gap-2 text-xs font-semibold text-status-blocked">
+                <Trash2 className="h-4 w-4" /> Delete evidence
+              </button>
+            </div>
+            <div className="mt-3">
+              <FieldLabel helpKey="evidenceReviewNotes">Internal review note</FieldLabel>
+              <div className="flex flex-col gap-2 md:flex-row">
+                <input aria-label={`Review notes for ${evidence.fileName}`} value={reviewNotes[evidence.evidenceId] || ""} onChange={(event) => setReviewNotes((previous) => ({ ...previous, [evidence.evidenceId]: event.target.value }))} placeholder="Internal review note" className="flex-1 rounded border border-border bg-background p-2 text-sm" />
+                <button type="button" disabled={evidence.malwareScanStatus !== "CLEAN"} onClick={() => handleEvidenceReview(evidence.evidenceId, "APPROVED")} className="min-h-11 rounded bg-status-pass px-3 py-2 text-xs font-semibold text-surface-elevated disabled:opacity-40">Approve</button>
+                <button type="button" onClick={() => handleEvidenceReview(evidence.evidenceId, "REJECTED")} className="min-h-11 rounded bg-status-blocked px-3 py-2 text-xs font-semibold text-surface-elevated">Reject</button>
+              </div>
+            </div>
+            {evidence.malwareScanStatus !== "CLEAN" && (
+              <div className="mt-3 rounded border border-status-warning/30 bg-[color:var(--status-warning-soft)] p-3 text-xs text-status-warning">
+                <p>{evidence.malwareScanStatus === "PENDING" ? "Security scan is still pending. Refresh this working file later; do not upload the same document again." : "This document cannot be approved in its current scan state. Upload a clean replacement or ask support to review the scan result."}</p>
+                <a href="mailto:info@cbamvalid.com" className="mt-2 inline-flex min-h-11 items-center font-semibold underline">Contact support</a>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 
@@ -960,6 +1176,46 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         </header>
 
         <StatusBanner status={saveStatus} tone={saveTone} />
+        {recoveryDraft && (
+          <section
+            role="alert"
+            className="rounded-lg border border-status-warning/40 bg-[color:var(--status-warning-soft)] p-4 text-sm text-status-warning"
+          >
+            <h2 className="font-bold">
+              {recoveryDraft.baseRevision === revision
+                ? "Unsaved changes can be recovered"
+                : "An older unsaved recovery copy is available"}
+            </h2>
+            <p className="mt-1">
+              Saved locally {new Date(recoveryDraft.savedAt).toLocaleString()}.
+              {recoveryDraft.baseRevision === revision
+                ? " Restore it to continue where you stopped."
+                : " It cannot overwrite the newer server version automatically. Download it before loading the latest version if you need to compare changes."}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {recoveryDraft.baseRevision === revision && (
+                <button type="button" onClick={restoreRecoveryDraft} className="rounded bg-accent px-3 py-2 font-semibold text-surface">
+                  Restore unsaved changes
+                </button>
+              )}
+              <button type="button" onClick={downloadRecoveryDraft} className="rounded border border-current px-3 py-2 font-semibold">
+                Download recovery copy
+              </button>
+              <button type="button" onClick={discardRecoveryDraft} className="rounded px-3 py-2 font-semibold underline">
+                Discard recovery copy
+              </button>
+            </div>
+          </section>
+        )}
+        {conflictDetected && (
+          <section role="alert" className="rounded-lg border border-status-blocked/40 bg-[color:var(--status-blocked-soft)] p-4 text-sm text-status-blocked">
+            <h2 className="font-bold">This tab is out of date</h2>
+            <p className="mt-1">Download your recovery copy if needed, then load the latest server version. Nothing was overwritten.</p>
+            <button type="button" onClick={() => void loadLatestVersion()} disabled={saving} className="mt-3 rounded bg-accent px-3 py-2 font-semibold text-surface disabled:opacity-50">
+              Load latest version
+            </button>
+          </section>
+        )}
 
         <div className="grid gap-5 lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-start">
           <aside className="order-2 lg:order-1 lg:sticky lg:top-24">
@@ -979,6 +1235,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
                 <div><dt className="font-semibold">File</dt><dd>{workingFileName}</dd></div>
                 <div><dt className="font-semibold">Scope</dt><dd>One installation · one reporting year</dd></div>
                 <div><dt className="font-semibold">File ID</dt><dd className="break-all font-mono text-[10px]">{caseData.caseId || "UNASSIGNED"}</dd></div>
+                <div><dt className="font-semibold">Revision</dt><dd>{revision}</dd></div>
               </dl>
             </details>
           </aside>

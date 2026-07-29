@@ -3,6 +3,7 @@ import { createCallable } from "../wrapper";
 import { z } from "zod";
 import { HttpsError } from "firebase-functions/v2/https";
 import { adminDb } from "../firebase-admin";
+import { isCanonicalOwner } from "../auth/owner-contract";
 
 const MAX_RELEASES_PER_PACK = 5;
 
@@ -52,7 +53,7 @@ export const createCheckoutSession = createCallable(
     // 0. IMMEDIATE COMMERCIAL CONTAINMENT: Check publicPaidLaunchEnabled flag
     const configDoc = await adminDb.collection("system").doc("config").get();
     const publicPaidLaunchEnabled = configDoc.exists ? configDoc.data()?.publicPaidLaunchEnabled === true : false;
-    const isPrivileged = auth.token.role === "admin" || auth.token.admin === true || auth.token.role === "pilot" || auth.token.pilot === true || auth.token.role === "Owner";
+    const isPrivileged = isCanonicalOwner(auth);
     if (!publicPaidLaunchEnabled && !isPrivileged) {
       throw new HttpsError("failed-precondition", "Purchasing is temporarily unavailable while final launch checks are completed.");
     }

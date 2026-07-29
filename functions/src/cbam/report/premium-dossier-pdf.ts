@@ -17,8 +17,6 @@ const CALCULATION_LEGAL_CITATION = `${OFFICIAL_SOURCES.IMPL_2025_2547.title} (CE
 const COMPONENT_COUNT_V5 = REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5;
 
 const COMPONENT_ANNEX_DESCRIPTIONS: Record<string, [string, string]> = {
-  "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf": ["PDF", "Primary executive & verifier readiness dossier"],
-  "Complete Dossier Compilation.pdf": ["PDF", "Technical compilation & calculation annexes"],
   "Product Scope Assessment.pdf": ["PDF", "System boundary & sectoral scope register"],
   "CN Code Reasoning.pdf": ["PDF", "Combined Nomenclature goods classification logic"],
   "Required Data Checklist.pdf": ["PDF", "Mandatory input data completeness ledger"],
@@ -34,14 +32,14 @@ const COMPONENT_ANNEX_DESCRIPTIONS: Record<string, [string, string]> = {
   "Methodology Decision Log.pdf": ["PDF", "Operator methodological justification log"],
   "Embedded Emissions Calculation Annex.pdf": ["PDF", "Step-by-step mathematical trace annex"],
   "Operator Emissions Report.pdf": ["PDF", "Official operator statement & declaration"],
+  "Operator Summary Emissions Report.pdf": ["PDF", "Concise operator emissions summary"],
+  "Verification Readiness Assessment.pdf": ["PDF", "Actionable readiness blockers and verifier handover status"],
   "Misstatement and Non-Conformity Register.csv": ["CSV", "Quality controls & findings register"],
   "Corrective Action Log.csv": ["CSV", "Remediation action tracking ledger"],
   "O3CI Field Mapping.csv": ["CSV", "Registry export data field crosswalk"],
   "Calculation Trace.json": ["JSON", "Machine-readable cryptographic node hash tree"],
-  "Verifier Workspace.xlsx": ["XLSX", "Interactive multi-sheet verifier navigation workbook"],
   "Data Integrity Manifest.json": ["JSON", "Cryptographic package manifest & hash index"],
-  "Manifest Signature.sig": ["SIG", "KMS detached signature over the integrity manifest"],
-  "Supporting_Evidence/": ["DIR", "Tenant-bound source evidence binaries"],
+  "Supporting_Evidence/": ["DIR", "Tenant-bound source evidence binaries and detached manifest signature"],
 };
 
 const PAGE_WIDTH = 210;
@@ -448,10 +446,9 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   doc.text(`Case Snapshot SHA-256 Hash: ${model.caseDataHash || "NOT_AVAILABLE"}`, MARGIN + 6, 196);
   doc.text(`Calculation Root Hash: ${model.calculationRootHash || "NOT_AVAILABLE"}`, MARGIN + 6, 201);
   doc.text(`Manifest SHA-256 Hash: ${model.manifestSummary?.manifestHash || "NOT_AVAILABLE"}`, MARGIN + 6, 206);
-  doc.text(`Sealed Package Hash: ${model.manifestSummary?.packageHash || "NOT_AVAILABLE"}`, MARGIN + 6, 211);
-  doc.text(`KMS Key Version: ${model.manifestSummary?.kmsKeyVersion || "NOT_AVAILABLE"}`, MARGIN + 6, 216);
-  doc.text(`KMS Signature Prefix: ${model.manifestSummary?.signatureBase64 ? model.manifestSummary.signatureBase64.substring(0, 32) + "..." : "NOT_AVAILABLE"}`, MARGIN + 6, 221);
-  doc.text(integrityManifestWording(componentCount), MARGIN + 6, 226);
+  doc.text(`KMS Key Version: ${model.manifestSummary?.kmsKeyVersion || "NOT_AVAILABLE"}`, MARGIN + 6, 211);
+  doc.text(`KMS Signature Prefix: ${model.manifestSummary?.signatureBase64 ? model.manifestSummary.signatureBase64.substring(0, 32) + "..." : "NOT_AVAILABLE"}`, MARGIN + 6, 216);
+  doc.text(integrityManifestWording(componentCount), MARGIN + 6, 221);
 
   // Cover Legal Boundary statement
   doc.setFont("helvetica", "normal");
@@ -905,7 +902,6 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   beginSection(27, "Package Manifest and Digital Integrity", 35);
 
   const manifestHashValue = model.manifestSummary?.manifestHash || "NOT_AVAILABLE";
-  const packageHashValue = model.manifestSummary?.packageHash || "NOT_AVAILABLE";
   const signatureBase64 = model.manifestSummary?.signatureBase64 || "NOT_AVAILABLE";
   const kmsKeyVersion = model.manifestSummary?.kmsKeyVersion || "NOT_AVAILABLE";
   const kmsAlgorithm = model.manifestSummary?.kmsAlgorithm || "NOT_AVAILABLE";
@@ -916,7 +912,6 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
       ["Case Snapshot SHA-256 Hash", model.caseDataHash || "NOT_AVAILABLE"],
       ["Calculation Root Hash", model.calculationRootHash || "NOT_AVAILABLE"],
       ["Manifest SHA-256 Hash", manifestHashValue],
-      ["Sealed Package SHA-256 Hash", packageHashValue],
       ["KMS Key Version Reference", kmsKeyVersion],
       ["KMS Signature Algorithm", kmsAlgorithm],
       ["KMS Signature Base64", signatureBase64 !== "NOT_AVAILABLE" ? signatureBase64.substring(0, 48) + "..." : "NOT_AVAILABLE"],

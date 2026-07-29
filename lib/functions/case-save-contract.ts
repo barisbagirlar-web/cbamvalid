@@ -7,12 +7,14 @@ export type CaseSaveRequest = {
   data: AuditReadyCase;
   caseId?: string;
   requestId?: string;
+  expectedRevision?: number;
 };
 
 export function createCaseSaveRequest(
   data: AuditReadyCase,
   caseId?: string,
-  requestId?: string
+  requestId?: string,
+  expectedRevision?: number
 ): CaseSaveRequest {
   if (caseId !== undefined && requestId !== undefined) {
     throw new Error("AMBIGUOUS_CASE_SAVE_REQUEST");
@@ -21,9 +23,17 @@ export function createCaseSaveRequest(
   if (caseId !== undefined) {
     const normalizedCaseId = caseId.trim();
     if (!isCaseId(normalizedCaseId)) throw new Error("INVALID_CASE_ID");
-    return { caseId: normalizedCaseId, data };
+    if (
+      expectedRevision === undefined ||
+      !Number.isSafeInteger(expectedRevision) ||
+      expectedRevision < 0
+    ) {
+      throw new Error("CASE_REVISION_REQUIRED");
+    }
+    return { caseId: normalizedCaseId, expectedRevision, data };
   }
 
+  if (expectedRevision !== undefined) throw new Error("CREATION_REVISION_NOT_ALLOWED");
   const normalizedRequestId = requestId?.trim() ?? "";
   if (!UUID_PATTERN.test(normalizedRequestId)) {
     throw new Error("CASE_CREATION_REQUEST_ID_REQUIRED");

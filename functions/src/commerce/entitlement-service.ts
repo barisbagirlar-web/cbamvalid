@@ -1,4 +1,5 @@
 import admin from "firebase-admin";
+import crypto from "crypto";
 // dbTransaction context validation matching comment
 import { adminDb } from "../firebase-admin";
 import { DoubleSpendViolationError, EntitlementUnavailableError } from "./commerce-errors";
@@ -10,6 +11,11 @@ import { CASE_COMMERCIAL_SERVER } from "./case-commercial-contract";
 const DEFAULT_MAX_RELEASES = 5;
 /** Case-scoped pay-at-lock: unlimited corrections on the paid file (storage ceiling). */
 const CASE_SCOPED_MAX_RELEASES = CASE_COMMERCIAL_SERVER.maxReleasesPerPaidCase;
+
+export function entitlementIdForOrder(orderId: string, productCode: string): string {
+  const digest = crypto.createHash("sha256").update(`${orderId}\u0000${productCode}`).digest("hex");
+  return `ent_${digest}`;
+}
 
 export interface Entitlement {
   entitlementId: string;
@@ -95,21 +101,45 @@ export async function createEntitlement(
     scopeCaseId?: string;
     billingModel?: string;
     maxReleases?: number;
-  }
+  },
+  prefetched?: {
+    existingEntitlement?: Entitlement | null;
+    existingLedgerEntry?: import("./ledger-service").LedgerEntry | null;
+    previousEntryHash?: string;
+  },
 ): Promise<Entitlement> {
   validateIdentifier("uid", params.uid);
   validateIdentifier("orderId", params.orderId);
   validateIdentifier("transactionId", params.transactionId);
   if (params.scopeCaseId) validateIdentifier("caseId", params.scopeCaseId);
 
-  const entitlementRef = adminDb.collection("entitlements").doc();
+  const entitlementId = entitlementIdForOrder(params.orderId, params.productCode);
+  const entitlementRef = adminDb.collection("entitlements").doc(entitlementId);
+  let existing = prefetched?.existingEntitlement;
+  if (existing === undefined) {
+    const existingSnapshot = await transaction.get(entitlementRef);
+    existing = existingSnapshot.exists
+      ? normalizeEntitlement(existingSnapshot.data(), entitlementRef.id)
+      : null;
+  }
+  if (existing) {
+    if (
+      existing.uid !== params.uid ||
+      existing.orderId !== params.orderId ||
+      existing.productCode !== params.productCode ||
+      existing.scopeCaseId !== params.scopeCaseId
+    ) {
+      throw new EntitlementUnavailableError(`ENTITLEMENT_IDENTITY_CONFLICT:${entitlementId}`);
+    }
+    return existing;
+  }
   const now = new Date().toISOString();
   const caseScoped = Boolean(params.scopeCaseId);
   const maxReleases = caseScoped
     ? Number(params.maxReleases || CASE_SCOPED_MAX_RELEASES)
     : Number(params.maxReleases || DEFAULT_MAX_RELEASES);
   const entitlement: Entitlement = {
-    entitlementId: entitlementRef.id,
+    entitlementId,
     uid: params.uid,
     orderId: params.orderId,
     productCode: params.productCode,
@@ -134,6 +164,9 @@ export async function createEntitlement(
     type: "ENTITLEMENT_ISSUED",
     quantity: params.quantity,
     idempotencyKey: `entitlement:${params.transactionId}:${params.productCode}`,
+  }, {
+    existingEntry: prefetched?.existingLedgerEntry,
+    previousEntryHash: prefetched?.previousEntryHash,
   });
   transaction.set(entitlementRef, entitlementPayload);
   return entitlement;

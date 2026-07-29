@@ -3,15 +3,26 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 // Mock server-only in Vitest environment
 vi.mock("server-only", () => ({}));
 
-const { verifySessionCookie, createSessionCookie, verifyIdToken, mockCookiesSet, mockCookiesGet, mockCollection } = vi.hoisted(() => {
+const {
+  verifySessionCookie,
+  createSessionCookie,
+  verifyIdToken,
+  mockCookiesSet,
+  mockCookiesGet,
+  mockCollection,
+  mockCaseOwnerUid,
+} = vi.hoisted(() => {
+  const mockCaseOwnerUid = { value: "user-123" };
   const mockGet = vi.fn().mockImplementation(async () => {
-    // Default: system config + case docs exist. Omit uid so ownership check is not
-    // falsely mismatched across different authenticated test UIDs.
+    // system/config and owned cases share this mock. Checkout fail-closed ownership
+    // requires an explicit case owner that matches the authenticated UID.
     return {
       exists: true,
       data: () => ({
         publicPaidLaunchEnabled: true,
         commercial: { status: "UNPAID" },
+        uid: mockCaseOwnerUid.value,
+        ownerId: mockCaseOwnerUid.value,
       }),
     };
   });
@@ -42,6 +53,7 @@ const { verifySessionCookie, createSessionCookie, verifyIdToken, mockCookiesSet,
     mockCookiesSet: vi.fn(),
     mockCookiesGet: vi.fn(),
     mockCollection: mockCollectionFn,
+    mockCaseOwnerUid,
   };
 });
 
@@ -55,6 +67,24 @@ vi.mock("@/lib/firebase/admin", () => {
     },
     adminDb: {
       collection: mockCollection,
+      runTransaction: vi.fn(async (callback: (tx: {
+        get: (ref: unknown) => Promise<{ exists: boolean; data: () => Record<string, unknown> }>;
+        create: (ref: unknown, data: unknown) => void;
+      }) => Promise<unknown>) => {
+        const tx = {
+          get: async () => ({
+            exists: true,
+            data: () => ({
+              publicPaidLaunchEnabled: true,
+              commercial: { status: "UNPAID" },
+              uid: mockCaseOwnerUid.value,
+              ownerId: mockCaseOwnerUid.value,
+            }),
+          }),
+          create: vi.fn(),
+        };
+        return callback(tx);
+      }),
     },
   };
 });
@@ -76,6 +106,7 @@ import { POST as checkoutPost } from "@/app/api/checkout/cbam/route";
 describe("Production Security & Foundation Audits", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCaseOwnerUid.value = "user-123";
   });
 
   it("1. Firebase ID token cannot be used directly as session cookie", async () => {
@@ -258,6 +289,7 @@ describe("Production Security & Foundation Audits", () => {
     process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN = "test_client_token";
     process.env.NEXT_PUBLIC_PADDLE_PRICE_ID = "pri_testprice";
 
+    mockCaseOwnerUid.value = "user-bearer";
     mockCookiesGet.mockReturnValue(null);
     verifyIdToken.mockResolvedValueOnce({ uid: "user-bearer", email: "bearer@cbamvalid.com" });
     global.fetch = vi.fn().mockResolvedValueOnce(
@@ -291,12 +323,20 @@ describe("Production Security & Foundation Audits", () => {
   });
 
   it("9. duplicate Paddle webhook creates zero duplicate credit", async () => {
-    // Verify our logic in webhook processor rejects duplicate idempotencyKey
+    // Deterministic ledger IDs: first doc get must return the existing entry.
     const { writeLedgerEntry } = await import("../../functions/src/commerce/ledger-service");
+    const existingEntry = {
+      entryHash: "existing-hash",
+      uid: "user-123",
+      orderId: "order-123",
+      transactionId: "txn-123",
+      type: "PAYMENT_CAPTURED",
+      idempotencyKey: "dup-key",
+    };
     const mockTransaction = {
       get: vi.fn().mockResolvedValueOnce({
-        empty: false,
-        docs: [{ data: () => ({ entryHash: "existing-hash" }) }],
+        exists: true,
+        data: () => existingEntry,
       }),
       set: vi.fn(),
     };
@@ -311,7 +351,7 @@ describe("Production Security & Foundation Audits", () => {
       idempotencyKey: "dup-key",
     });
 
-    expect(entry).toBeDefined();
+    expect(entry).toEqual(existingEntry);
     expect(mockTransaction.set).not.toHaveBeenCalled(); // No set means no credit generated!
   });
 
@@ -327,27 +367,30 @@ describe("Production Security & Foundation Audits", () => {
 
   it("11. End-to-end sandbox payment webhook lifecycle with idempotency", async () => {
     const { processWebhookEvent } = await import("../../functions/src/commerce/webhook-processor");
-    
-    // We mock firestore runTransaction and get/set calls
+
+    const orderRecord = {
+      uid: "test-user-uid",
+      orderId: "ord_test_123",
+      caseId: "case_test_fulfill_001",
+      status: "CHECKOUT_CREATED",
+      canonicalProductCode: "pack_premium_dossier_v5",
+      paddlePriceId: "pri_testprice",
+      currency: "USD",
+      amountMinor: 44900,
+    };
+
+    // Promise.all prefetch order: order, payment ledger, entitlement ledger, entitlement, latest ledger.
     const mockDbTransaction = {
       get: vi.fn()
-        // 1. First writeLedgerEntry call checks existing idempotency key -> empty snapshot
-        .mockResolvedValueOnce({ empty: true })
-        // 2. First writeLedgerEntry fetch latest ledger entry -> empty snapshot
-        .mockResolvedValueOnce({ empty: true })
-        // 3. transitionOrderStatus fetches order (PAID transition) -> active order document
-        .mockResolvedValueOnce({ exists: true, data: () => ({ status: "PENDING" }) })
-        // 4. createEntitlement writeLedgerEntry checks existing key -> empty snapshot
-        .mockResolvedValueOnce({ empty: true })
-        // 5. createEntitlement writeLedgerEntry fetch latest entry -> empty snapshot
-        .mockResolvedValueOnce({ empty: true })
-        // 6. transitionOrderStatus fetches order (ENTITLED transition) -> active order document
-        .mockResolvedValueOnce({ exists: true, data: () => ({ status: "PAID" }) }),
+        .mockResolvedValueOnce({ exists: true, data: () => orderRecord })
+        .mockResolvedValueOnce({ exists: false })
+        .mockResolvedValueOnce({ exists: false })
+        .mockResolvedValueOnce({ exists: false })
+        .mockResolvedValueOnce({ empty: true, docs: [] }),
       set: vi.fn(),
       update: vi.fn(),
     };
 
-    // Mock adminDb runTransaction to run our mockDbTransaction callback
     const { adminDb } = await import("../../functions/src/firebase-admin");
     adminDb.runTransaction = vi.fn().mockImplementation(async (callback) => {
       return await callback(mockDbTransaction);
@@ -355,15 +398,7 @@ describe("Production Security & Foundation Audits", () => {
 
     const mockOrderGet = vi.fn().mockResolvedValue({
       exists: true,
-      data: () => ({
-        uid: "test-user-uid",
-        orderId: "ord_test_123",
-        caseId: "case_test_fulfill_001",
-        canonicalProductCode: "pack_premium_dossier_v5",
-        paddlePriceId: "pri_testprice",
-        currency: "USD",
-        amountMinor: 44900,
-      })
+      data: () => orderRecord,
     });
 
     const mockOrderDoc = vi.fn().mockReturnValue({
@@ -389,7 +424,7 @@ describe("Production Security & Foundation Audits", () => {
       return {
         ...colObj,
         doc: vi.fn().mockReturnValue({
-          get: vi.fn().mockResolvedValue({ exists: false })
+          get: vi.fn().mockResolvedValue({ exists: false }),
         }),
       };
     });
@@ -408,20 +443,20 @@ describe("Production Security & Foundation Audits", () => {
           {
             priceId: "pri_testprice",
             quantity: 1,
-          }
+          },
         ],
         details: {
           totals: {
             grandTotal: 44900,
-          }
-        }
-      }
+          },
+        },
+      },
     };
 
     await processWebhookEvent(event);
 
     // Assert ledger, entitlement, and case commercial PAID merge writes.
     expect(mockDbTransaction.set).toHaveBeenCalledTimes(4); // 2 ledger + entitlement + case commercial
-    expect(mockDbTransaction.update).toHaveBeenCalledTimes(2); // Order transition to PAID + transition to ENTITLED
+    expect(mockDbTransaction.update).toHaveBeenCalledTimes(1); // single ENTITLED transition after fulfillment
   });
 });

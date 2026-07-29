@@ -1,18 +1,25 @@
 import { Decimal } from "decimal.js";
-import { AuditReadyCase, CalculationTraceNode } from "./schema";
+import { AuditReadyCase, CalculationTraceNode, InputDatum } from "./schema";
 import {
   GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH,
   GRID_EMISSION_FACTOR_SCALE_ERROR,
 } from "./input-constraints";
 import { getSectorRule } from "../dossier/01-ruleset/sectors.rules";
 import { computePricedSeeFromStrings } from "../dossier/20-kernel/allocation";
+import {
+  ALLOCATION_TOLERANCE,
+  CALCULATION_CONTRACT,
+  EMISSIONS_RECONCILIATION_TOLERANCE,
+  allocationReconciliationDelta,
+  toCanonicalTonnes,
+  type ProductionMassUnit,
+} from "../dossier/01-ruleset/calculation.rules";
 
-Decimal.set({ precision: 28, rounding: Decimal.ROUND_HALF_UP });
+Decimal.set({ precision: 34, rounding: Decimal.ROUND_HALF_UP });
 
-export const PREVIEW_RULESET = "EU-CBAM-DEFINITIVE-2026";
-export const PREVIEW_ENGINE_VERSION = "3.0.0-preview";
-export const PREVIEW_SOURCE = "Regulation (EU) 2023/956, Annex IV; preview only";
-const ALLOCATION_TOLERANCE = new Decimal("0.000001");
+export const PREVIEW_RULESET = CALCULATION_CONTRACT.rulesetIdentity;
+export const PREVIEW_ENGINE_VERSION = CALCULATION_CONTRACT.engineVersion;
+export const PREVIEW_SOURCE = `${CALCULATION_CONTRACT.source}; browser preview`;
 
 type JsonLike = null | boolean | number | string | JsonLike[] | { [key: string]: JsonLike };
 
@@ -53,6 +60,22 @@ function decimal(value: unknown, field: string): Decimal | null {
   }
 }
 
+function unitOf(datum: InputDatum, fallback: string): string {
+  return datum.canonicalUnit || datum.unit || datum.rawUnit || fallback;
+}
+
+function productionTonnes(
+  value: Decimal,
+  datum: InputDatum,
+  field: string
+): Decimal {
+  const unit = unitOf(datum, "t");
+  if (!["t", "kg", "metric_tonne"].includes(unit)) {
+    throw new Error(`CALCULATION_UNIT_UNSUPPORTED:${field}:${unit}`);
+  }
+  return toCanonicalTonnes(value, unit as ProductionMassUnit);
+}
+
 function node(params: {
   formulaId: string;
   inputs: Record<string, unknown>;
@@ -77,7 +100,7 @@ function node(params: {
     formulaVersion: PREVIEW_RULESET,
     officialSource: PREVIEW_SOURCE,
     sourceVersion: "definitive period preview",
-    effectiveDate: "2026-01-01",
+    effectiveDate: CALCULATION_CONTRACT.effectiveDate,
     inputs: normalizedInputs,
     roundingApplied: params.roundingApplied,
     assumptions: [],
@@ -127,7 +150,13 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
 
   const productionRecords = caseData.goods.map((good, index) => ({
     good,
-    production: decimal(good.productionVolume.value, `goods.${index}.productionVolume`),
+    production: (() => {
+      const field = `goods.${index}.productionVolume`;
+      const value = decimal(good.productionVolume.value, field);
+      return value === null
+        ? null
+        : productionTonnes(value, good.productionVolume, field);
+    })(),
   }));
   const productionComplete = productionRecords.every((record) => record.production !== null && record.production.gt(0));
   const production = productionComplete
@@ -192,10 +221,10 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
   const allocationShareTotal = sharesComplete
     ? (shares as Decimal[]).reduce((total, share) => total.plus(share), new Decimal(0))
     : null;
-  const allocationReconciliationDelta = allocationShareTotal === null
+  const allocationShareDelta = allocationShareTotal === null
     ? null
     : allocationShareTotal.minus(1).abs();
-  const allocationReady = allocationReconciliationDelta !== null && allocationReconciliationDelta.lte(ALLOCATION_TOLERANCE);
+  const allocationReady = allocationShareDelta !== null && allocationShareDelta.lte(ALLOCATION_TOLERANCE);
 
   const goods: GoodCalculationPreview[] = [];
   let totalPriced: Decimal | null = null;
@@ -238,6 +267,28 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
     });
   }
 
+  const emissionsReconciliationDelta =
+    totalDirect !== null && totalIndirect !== null && goods.length > 0
+      ? allocationReconciliationDelta({
+          totalDirect,
+          totalIndirect,
+          allocations: goods.map((good, index) => ({
+            share: new Decimal(good.allocationShare),
+            indirectPriced: getSectorRule(productionRecords[index].good.sector)
+              .indirectPriced,
+            actualAllocated: new Decimal(good.allocatedEmbeddedEmissions),
+          })),
+        })
+      : null;
+  if (
+    emissionsReconciliationDelta !== null &&
+    emissionsReconciliationDelta.gt(EMISSIONS_RECONCILIATION_TOLERANCE)
+  ) {
+    throw new Error(
+      `CALCULATION_ALLOCATED_EMISSIONS_NOT_RECONCILED:${emissionsReconciliationDelta.toString()}`
+    );
+  }
+
   const aggregateSpecific = totalPriced !== null && production !== null
     ? totalPriced.dividedBy(production).toDecimalPlaces(6, Decimal.ROUND_HALF_UP)
     : null;
@@ -256,6 +307,6 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
     productionVolume: production?.toString() ?? "NOT_CALCULATED",
     specificEmbeddedEmissions: aggregateSpecific?.toString() ?? "NOT_CALCULATED",
     allocationShareTotal: allocationShareTotal?.toString() ?? "NOT_CALCULATED",
-    allocationReconciliationDelta: allocationReconciliationDelta?.toString() ?? "NOT_CALCULATED",
+    allocationReconciliationDelta: emissionsReconciliationDelta?.toString() ?? "NOT_CALCULATED",
   };
 }

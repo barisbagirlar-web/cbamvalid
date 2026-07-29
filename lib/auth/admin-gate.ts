@@ -2,6 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { adminAuth, DecodedIdToken } from "@/lib/firebase/admin";
+import { requireCanonicalOwnerClaims } from "@/lib/auth/owner-contract";
 
 export async function requireSuperAdmin(): Promise<DecodedIdToken> {
   const cookieStore = await cookies();
@@ -14,16 +15,14 @@ export async function requireSuperAdmin(): Promise<DecodedIdToken> {
   try {
     const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
 
-    if (
-      !decodedClaims.email_verified ||
-      decodedClaims.role !== "super_admin" ||
-      decodedClaims.owner !== true
-    ) {
+    try {
+      requireCanonicalOwnerClaims(decodedClaims);
+    } catch {
       redirect("/dashboard");
     }
 
     return decodedClaims;
-  } catch (error) {
+  } catch {
     // If the session cookie is invalid or expired
     redirect("/login?next=/admin");
   }

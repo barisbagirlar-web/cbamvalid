@@ -4,11 +4,11 @@ import Link from "next/link";
 import { Suspense, use, useEffect, useState } from "react";
 import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { useAuth } from "@/context/AuthProvider";
-import type { AuditReadyCase } from "@/lib/cbam/schema";
 import { isCaseId } from "@/lib/cbam/case-id";
 import {
   getCase,
   getEntitlements,
+  type CaseWorkspace,
   type PreparationPackEntitlement,
 } from "@/lib/functions/client";
 import CaseWizardClient from "./CaseWizardClient";
@@ -22,7 +22,7 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
   const { caseId } = use(params);
   const validCaseId = isCaseId(caseId);
   const { user, loading } = useAuth();
-  const [initialCase, setInitialCase] = useState<AuditReadyCase | null>(null);
+  const [initialCase, setInitialCase] = useState<CaseWorkspace | null>(null);
   const [availableEntitlements, setAvailableEntitlements] = useState<PreparationPackEntitlement[]>([]);
   const [dataLoading, setDataLoading] = useState(validCaseId);
   const [error, setError] = useState("");
@@ -33,17 +33,13 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
     ? ""
     : "The case link is malformed. Open the dossier again from Cases.";
 
-  // Load from cache on mount
+  // Entitlement cache is advisory. Case data always waits for the authoritative
+  // server revision so a stale browser cache cannot become the editing baseline.
   useEffect(() => {
     if (!user || !validCaseId) return;
     try {
-      const cachedCase = localStorage.getItem(`cbam_case_cache_${caseId}`);
       const cachedEntitlements = localStorage.getItem(`cbam_entitlements_cache_${user.uid}`);
       setTimeout(() => {
-        if (cachedCase) {
-          setInitialCase(JSON.parse(cachedCase));
-          setDataLoading(false);
-        }
         if (cachedEntitlements) {
           setAvailableEntitlements(JSON.parse(cachedEntitlements));
         }
@@ -51,7 +47,7 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
     } catch (e) {
       console.warn("Failed to load case cache:", e);
     }
-  }, [user, caseId, validCaseId]);
+  }, [user, validCaseId]);
 
   useEffect(() => {
     if (loading || !user || !validCaseId) return;

@@ -37,9 +37,9 @@ export default function NewCasePage() {
     const createAndOpenCase = async () => {
       try {
         const draft = createNewCaseDraft(user.uid);
-        const newCaseId = await saveCase(draft, undefined, creationRequestId.current ?? undefined);
+        const created = await saveCase(draft, undefined, creationRequestId.current ?? undefined);
         sessionStorage.removeItem(`cbam_new_case_request_${user.uid}`);
-        router.replace(`/cases/${newCaseId}?step=1`);
+        router.replace(`/cases/${created.caseId}?step=1`);
       } catch (creationError) {
         console.error("Failed to create and open a new case", creationError);
         requestInFlight.current = false;

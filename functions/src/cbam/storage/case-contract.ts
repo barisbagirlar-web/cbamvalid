@@ -10,6 +10,7 @@ export interface CbamCaseRecord {
   status: CaseRecordStatus;
   latestReleaseId?: string;
   latestReleaseVersion?: number;
+  revision: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -20,6 +21,7 @@ export type CaseWorkspaceView = AuditReadyCase & {
   recordStatus: CaseRecordStatus;
   createdAt: string;
   updatedAt: string;
+  revision: number;
 };
 
 export function buildCaseRecord(params: {
@@ -40,6 +42,7 @@ export function buildCaseRecord(params: {
     uid: params.uid,
     data: parsedData,
     status: "DRAFT",
+    revision: 0,
     createdAt: params.timestamp,
     updatedAt: params.timestamp,
   };
@@ -59,5 +62,6 @@ export function toCaseWorkspaceView(record: CbamCaseRecord): CaseWorkspaceView {
     recordStatus: record.status,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
+    revision: record.revision,
   };
 }

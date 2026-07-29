@@ -4,7 +4,6 @@ import { PACKAGE_CODE_PATTERN } from "./package-code";
 export const ReportDownloadFormatSchema = z.enum([
   "zip",
   "pdf",
-  "xlsx",
   "manifest",
   "signature",
   "snapshot",
@@ -59,7 +58,7 @@ export const PackageMetadataSchema = z.object({
   manifestFileCount: z.number(),
   evidenceFileCount: z.number(),
   primaryDossierFileName: z.string(),
-  technicalCompilationFileName: z.string(),
+  operatorSummaryReportFileName: z.string(),
   operatorEmissionsReportFileName: z.string(),
 });
 
@@ -136,7 +135,7 @@ export function parseSealedReportView(value: unknown): SealedReportView {
   );
 
   const manifestCount = packageMetadata?.actualTopLevelComponentCount;
-  const defaultCount = isV5 ? 25 : 27;
+  const defaultCount = isV5 ? 23 : 27;
 
   return SealedReportViewSchema.parse({
     ...raw,

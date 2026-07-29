@@ -1,8 +1,8 @@
 import type { firestore } from "firebase-admin";
 import { adminDb } from "../firebase-admin";
-import { transitionOrderStatus } from "./order-service";
-import { createEntitlement } from "./entitlement-service";
-import { writeLedgerEntry } from "./ledger-service";
+import { transitionOrderStatus, type CommerceOrder } from "./order-service";
+import { createEntitlement, entitlementIdForOrder, type Entitlement } from "./entitlement-service";
+import { ledgerEntryId, writeLedgerEntry, type LedgerEntry } from "./ledger-service";
 import { processRefund } from "./refund-service";
 import { PRODUCT_CATALOG } from "./catalog";
 import { CASE_COMMERCIAL_SERVER } from "./case-commercial-contract";
@@ -78,41 +78,35 @@ async function handleTransactionCompleted(
   const orderId = typeof customData.orderId === "string" ? customData.orderId : undefined;
 
   if (!transactionId) {
-    console.error(`[PADDLE-PROCESSOR] Missing transaction id on completed event.`);
-    return;
+    throw new Error("TRANSACTION_ID_REQUIRED");
   }
 
   if (status !== "completed") {
-    console.log(`[PADDLE-PROCESSOR] Transaction ${transactionId} status is ${status}. Skipping fulfillment.`);
-    return;
+    throw new Error(`TRANSACTION_NOT_COMPLETED:${status || "missing"}`);
   }
 
   if (!orderId) {
-    console.error(`[PADDLE-PROCESSOR] Missing orderId in transaction completed customData:`, customData);
-    return;
+    throw new Error("ORDER_ID_REQUIRED");
   }
 
   // Load the order server-side
   const orderDoc = await adminDb.collection("commerce_orders").doc(orderId).get();
   if (!orderDoc.exists) {
-    console.error(`[PADDLE-PROCESSOR] Order ${orderId} not found in database.`);
-    return;
+    throw new Error(`ORDER_NOT_FOUND:${orderId}`);
   }
   const order = orderDoc.data() as CommerceOrderRecord;
 
   const productCode = order.canonicalProductCode || "pack_premium_dossier_v5";
   const catalogProduct = PRODUCT_CATALOG[productCode];
   if (!catalogProduct) {
-    console.error(`[PADDLE-PROCESSOR] Product code ${productCode} not found in server catalog.`);
-    return;
+    throw new Error(`PRODUCT_NOT_FOUND:${productCode}`);
   }
 
   // Verify Paddle price ID
   const priceId = order.paddlePriceId;
   const items = transaction.items || [];
   if (items.length === 0) {
-    console.error(`[PADDLE-PROCESSOR] Transaction has no items.`);
-    return;
+    throw new Error("TRANSACTION_HAS_NO_ITEMS");
   }
 
   const matchesPrice = items.some((item) => {
@@ -121,40 +115,71 @@ async function handleTransactionCompleted(
   });
 
   if (!matchesPrice) {
-    console.error(`[PADDLE-PROCESSOR] Price ID mismatch. Expected ${priceId}, items:`, items);
-    return;
+    throw new Error(`PRICE_ID_MISMATCH:${priceId || "missing"}`);
   }
 
   // Verify currency
   const currency = transaction.currencyCode || "";
   if (currency !== order.currency) {
-    console.error(`[PADDLE-PROCESSOR] Currency mismatch: expected ${order.currency}, got ${currency}`);
-    return;
+    throw new Error(`CURRENCY_MISMATCH:${order.currency || "missing"}:${currency || "missing"}`);
   }
 
   // Verify amount
-  const transactionAmount = Math.round(
-    Number(transaction.details?.totals?.grandTotal || transaction.totals?.grandTotal || 0)
-  );
-  if (transactionAmount !== order.amountMinor) {
-    console.error(`[PADDLE-PROCESSOR] Amount mismatch: expected ${order.amountMinor}, got ${transactionAmount}`);
-    return;
+  const rawTransactionAmount =
+    transaction.details?.totals?.grandTotal ?? transaction.totals?.grandTotal;
+  const transactionAmount = Number(rawTransactionAmount);
+  if (
+    rawTransactionAmount === undefined ||
+    !Number.isFinite(transactionAmount) ||
+    !Number.isInteger(transactionAmount) ||
+    transactionAmount !== order.amountMinor
+  ) {
+    throw new Error(`AMOUNT_MISMATCH:${order.amountMinor}:${String(rawTransactionAmount)}`);
   }
 
   // Verify quantity
   const purchasedQuantity = items.reduce((acc, item) => acc + (item.quantity || 1), 0);
   if (purchasedQuantity !== 1) {
-    console.error(`[PADDLE-PROCESSOR] Quantity mismatch: expected 1, got ${purchasedQuantity}`);
-    return;
+    throw new Error(`QUANTITY_MISMATCH:1:${purchasedQuantity}`);
   }
 
   const uid = order.uid;
   const totalEntitlementsToGrant = catalogProduct.entitlementQuantity * purchasedQuantity;
+  const scopeCaseId =
+    typeof order.caseId === "string" && order.caseId.trim() ? order.caseId.trim() : "";
+  if (!scopeCaseId) {
+    throw new Error("CASE_ID_REQUIRED_FOR_FULFILLMENT");
+  }
 
   // Execute atomic transactional updates
   await adminDb.runTransaction(async (dbTransaction: firestore.Transaction) => {
+    const orderRef = adminDb.collection("commerce_orders").doc(orderId);
+    const paymentKey = `payment:${transactionId}`;
+    const entitlementKey = `entitlement:${transactionId}:${productCode}`;
+    const entitlementId = entitlementIdForOrder(orderId, productCode);
+    const paymentRef = adminDb.collection("commerce_ledger").doc(ledgerEntryId(paymentKey));
+    const entitlementLedgerRef = adminDb.collection("commerce_ledger").doc(ledgerEntryId(entitlementKey));
+    const entitlementRef = adminDb.collection("entitlements").doc(entitlementId);
+    const latestLedgerQuery = adminDb.collection("commerce_ledger").orderBy("createdAt", "desc").limit(1);
+    const [freshOrderSnap, paymentSnap, entitlementLedgerSnap, entitlementSnap, latestLedgerSnap] =
+      await Promise.all([
+        dbTransaction.get(orderRef),
+        dbTransaction.get(paymentRef),
+        dbTransaction.get(entitlementLedgerRef),
+        dbTransaction.get(entitlementRef),
+        dbTransaction.get(latestLedgerQuery),
+      ]);
+    if (!freshOrderSnap.exists) throw new Error(`ORDER_NOT_FOUND:${orderId}`);
+    const freshOrder = freshOrderSnap.data() as CommerceOrder;
+    if (freshOrder.uid !== uid || freshOrder.caseId !== scopeCaseId) {
+      throw new Error("ORDER_SCOPE_CHANGED_DURING_FULFILLMENT");
+    }
+    const previousEntryHash = latestLedgerSnap.empty
+      ? ""
+      : String((latestLedgerSnap.docs[0].data() as LedgerEntry).entryHash || "");
+
     // 1. Log payment captured entry in the ledger with idempotency verification
-    await writeLedgerEntry(dbTransaction, {
+    const paymentEntry = await writeLedgerEntry(dbTransaction, {
       uid,
       orderId,
       transactionId,
@@ -163,20 +188,13 @@ async function handleTransactionCompleted(
       quantity: purchasedQuantity,
       currency,
       amountMinor: order.amountMinor,
-      idempotencyKey: `payment:${transactionId}`,
+      idempotencyKey: paymentKey,
+    }, {
+      existingEntry: paymentSnap.exists ? paymentSnap.data() as LedgerEntry : null,
+      previousEntryHash,
     });
 
-    // 2. Transition order state to PAID
-    await transitionOrderStatus(dbTransaction, orderId, "PAID", {
-      paddleTransactionId: transactionId,
-    });
-
-    // 3. Issue entitlement document and write entitlement ledger entry
-    const scopeCaseId = typeof order.caseId === "string" && order.caseId.trim() ? order.caseId.trim() : undefined;
-    if (!scopeCaseId) {
-      throw new Error("CASE_ID_REQUIRED_FOR_FULFILLMENT");
-    }
-
+    // 2. Issue exactly one deterministic entitlement for this order.
     await createEntitlement(dbTransaction, {
       uid,
       orderId,
@@ -187,6 +205,14 @@ async function handleTransactionCompleted(
       scopeCaseId,
       billingModel: "CASE_PAY_AT_LOCK",
       maxReleases: CASE_COMMERCIAL_SERVER.maxReleasesPerPaidCase,
+    }, {
+      existingEntitlement: entitlementSnap.exists
+        ? { entitlementId: entitlementSnap.id, ...entitlementSnap.data() } as Entitlement
+        : null,
+      existingLedgerEntry: entitlementLedgerSnap.exists
+        ? entitlementLedgerSnap.data() as LedgerEntry
+        : null,
+      previousEntryHash: paymentEntry.entryHash,
     });
 
     const caseRef = adminDb.collection("cbam_cases").doc(scopeCaseId);
@@ -205,8 +231,14 @@ async function handleTransactionCompleted(
       { merge: true }
     );
 
-    // 4. Transition order state to ENTITLED
-    await transitionOrderStatus(dbTransaction, orderId, "ENTITLED");
+    // 3. Publish ENTITLED only after the entitlement write is queued.
+    await transitionOrderStatus(
+      dbTransaction,
+      orderId,
+      "ENTITLED",
+      { paddleTransactionId: transactionId },
+      freshOrder
+    );
   });
 
   // 5. Exactly-once purchase analytics (persistent Firestore idempotency; outside
@@ -247,8 +279,7 @@ async function handleAdjustmentUpdated(eventId: string, adjustment: PaddleAdjust
   }
 
   if (!transactionId) {
-    console.error(`[PADDLE-PROCESSOR] Adjustment ${adjustmentId} missing transactionId.`);
-    return;
+    throw new Error(`ADJUSTMENT_TRANSACTION_ID_REQUIRED:${adjustmentId || eventId}`);
   }
 
   const orderQuery = await adminDb
@@ -258,8 +289,7 @@ async function handleAdjustmentUpdated(eventId: string, adjustment: PaddleAdjust
     .get();
 
   if (orderQuery.empty) {
-    console.error(`[PADDLE-PROCESSOR] Mapped order for transaction ${transactionId} not found.`);
-    return;
+    throw new Error(`REFUND_ORDER_NOT_FOUND:${transactionId}`);
   }
 
   const order = orderQuery.docs[0].data() as CommerceOrderRecord & { orderId: string };

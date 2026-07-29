@@ -2,7 +2,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createNewCaseDraft } from "@/lib/cbam/new-case";
 
 type StoredDocument = Record<string, unknown>;
-type DocumentRef = { collectionName: string; id: string };
+type DocumentSnapshot = {
+  id: string;
+  exists: boolean;
+  data(): StoredDocument | undefined;
+};
+type DocumentRef = {
+  collectionName: string;
+  id: string;
+  get(): Promise<DocumentSnapshot>;
+};
 
 const fakeFirestore = vi.hoisted(() => {
   const collections = new Map<string, Map<string, StoredDocument>>();
@@ -29,11 +38,18 @@ const fakeFirestore = vi.hoisted(() => {
     collection(name: string) {
       return {
         doc(id: string): DocumentRef {
-          return { collectionName: name, id };
+          const ref = {
+            collectionName: name,
+            id,
+            async get() {
+              return snapshot(ref);
+            },
+          };
+          return ref;
         },
         where(field: string, operator: string, expected: unknown) {
           if (operator !== "==") throw new Error("FAKE_FIRESTORE_OPERATOR_UNSUPPORTED");
-          return {
+          const query = {
             async get() {
               const docs = [...collectionStore(name).entries()]
                 .filter(([, value]) => value[field] === expected)
@@ -43,7 +59,11 @@ const fakeFirestore = vi.hoisted(() => {
                 }));
               return { docs };
             },
+            limit() {
+              return query;
+            },
           };
+          return query;
         },
       };
     },
@@ -51,15 +71,20 @@ const fakeFirestore = vi.hoisted(() => {
       callback: (transaction: {
         get(ref: DocumentRef): Promise<ReturnType<typeof snapshot>>;
         create(ref: DocumentRef, data: StoredDocument): void;
+        update(ref: DocumentRef, data: StoredDocument): void;
       }) => Promise<T>
     ): Promise<T> {
       const pendingCreates: Array<{ ref: DocumentRef; data: StoredDocument }> = [];
+      const pendingUpdates: Array<{ ref: DocumentRef; data: StoredDocument }> = [];
       const transaction = {
         async get(ref: DocumentRef) {
           return snapshot(ref);
         },
         create(ref: DocumentRef, data: StoredDocument) {
           pendingCreates.push({ ref, data: structuredClone(data) });
+        },
+        update(ref: DocumentRef, data: StoredDocument) {
+          pendingUpdates.push({ ref, data: structuredClone(data) });
         },
       };
 
@@ -68,6 +93,12 @@ const fakeFirestore = vi.hoisted(() => {
         const store = collectionStore(ref.collectionName);
         if (store.has(ref.id)) throw new Error("FAKE_FIRESTORE_CREATE_CONFLICT");
         store.set(ref.id, structuredClone(data));
+      }
+      for (const { ref, data } of pendingUpdates) {
+        const store = collectionStore(ref.collectionName);
+        const current = store.get(ref.id);
+        if (!current) throw new Error("FAKE_FIRESTORE_UPDATE_MISSING");
+        store.set(ref.id, { ...current, ...structuredClone(data) });
       }
       return result;
     },
@@ -94,6 +125,7 @@ vi.mock("../../functions/src/firebase-admin", () => ({
 import {
   createCase,
   getCasesForUser,
+  updateCase,
 } from "../../functions/src/cbam/storage/case-repository";
 
 const OWNER_ID = "repository_idempotency_user";
@@ -132,6 +164,24 @@ describe("case repository idempotency", () => {
     expect(second.caseId).not.toBe(first.caseId);
     expect(fakeFirestore.size("cbam_cases")).toBe(2);
     expect(fakeFirestore.size("case_creation_requests")).toBe(2);
+  });
+
+  it("rejects a stale revision without overwriting the newer draft", async () => {
+    const created = await createCase(OWNER_ID, draft(), REQUEST_ID);
+    const firstEdit = structuredClone(created.data);
+    firstEdit.exporterIdentity.legalName.value = "First tab";
+    const saved = await updateCase(created.caseId, OWNER_ID, firstEdit, 0);
+
+    const staleEdit = structuredClone(created.data);
+    staleEdit.exporterIdentity.legalName.value = "Stale tab";
+    await expect(
+      updateCase(created.caseId, OWNER_ID, staleEdit, 0)
+    ).rejects.toThrow("CASE_REVISION_CONFLICT");
+
+    expect(saved.revision).toBe(1);
+    const records = await getCasesForUser(OWNER_ID);
+    expect(records[0].data.exporterIdentity.legalName.value).toBe("First tab");
+    expect(records[0].revision).toBe(1);
   });
 
   it("adapts recognized legacy cases and isolates an unsupported record from the dashboard list", async () => {
