@@ -159,17 +159,18 @@ describe("new case calculation safety", () => {
     const baseResult = performDossierCalculations(base);
     expect(baseResult.totalDirectEmissions).toBe("10");
     expect(baseResult.totalIndirectEmissions).toBe("10");
-    expect(baseResult.totalEmbeddedEmissions).toBe("20");
+    // Annex II iron & steel: CBAM-priced embedded emissions are direct-only.
+    expect(baseResult.totalEmbeddedEmissions).toBe("10");
     expect(baseResult.productionVolume).toBe("100");
-    expect(baseResult.specificEmbeddedEmissions).toBe("0.2");
-    expect(baseResult.goods[0]?.allocatedEmbeddedEmissions).toBe("20");
-    expect(baseResult.goods[0]?.specificEmbeddedEmissions).toBe("0.2");
+    expect(baseResult.specificEmbeddedEmissions).toBe("0.1");
+    expect(baseResult.goods[0]?.allocatedEmbeddedEmissions).toBe("10");
+    expect(baseResult.goods[0]?.specificEmbeddedEmissions).toBe("0.1");
 
     const increased = structuredClone(base);
     increased.directEmissions.value = "20";
     const increasedResult = performDossierCalculations(increased);
-    expect(increasedResult.totalEmbeddedEmissions).toBe("30");
-    expect(increasedResult.specificEmbeddedEmissions).toBe("0.3");
+    expect(increasedResult.totalEmbeddedEmissions).toBe("20");
+    expect(increasedResult.specificEmbeddedEmissions).toBe("0.2");
     expect(Number(increasedResult.totalEmbeddedEmissions)).toBeGreaterThan(
       Number(baseResult.totalEmbeddedEmissions)
     );
@@ -178,7 +179,7 @@ describe("new case calculation safety", () => {
     );
   });
 
-  it("preserves total emissions and fails closed only for division by zero", () => {
+  it("preserves component totals and fails closed only for division by zero", () => {
     const draft = blankDraft();
     draft.goods = [{
       cnCode: { ...createEmptyInput(), value: "72081000" },
@@ -191,7 +192,10 @@ describe("new case calculation safety", () => {
     draft.gridEmissionFactor = { ...createEmptyInput("tCO2e/MWh"), value: "0" };
 
     const result = performDossierCalculations(draft);
-    expect(result.totalEmbeddedEmissions).toBe("10");
+    // Component totals remain available; priced/allocated totals require positive production.
+    expect(result.totalDirectEmissions).toBe("10");
+    expect(result.totalIndirectEmissions).toBe("0");
+    expect(result.totalEmbeddedEmissions).toBe("NOT_CALCULATED");
     expect(result.productionVolume).toBe("NOT_CALCULATED");
     expect(result.specificEmbeddedEmissions).toBe("NOT_CALCULATED");
     expect(result.goods).toEqual([]);
@@ -215,9 +219,10 @@ describe("default illustrative scenario", () => {
     expect(result.totalDirectEmissions).toBe("770");
     expect(result.totalIndirectEmissions).toBe("387.24");
     expect(result.totalPrecursorEmissions).toBe("168");
-    expect(result.totalEmbeddedEmissions).toBe("1157.24");
+    // Annex II iron & steel: disclosed indirect remains visible; priced embedded is direct-only.
+    expect(result.totalEmbeddedEmissions).toBe("770");
     expect(result.productionVolume).toBe("1000");
-    expect(result.specificEmbeddedEmissions).toBe("1.15724");
+    expect(result.specificEmbeddedEmissions).toBe("0.77");
     expect(result.allocationShareTotal).toBe("1");
     expect(result.allocationReconciliationDelta).toBe("0");
     expect(result.goods).toHaveLength(2);

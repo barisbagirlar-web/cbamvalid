@@ -931,7 +931,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     "Working file";
 
   return (
-    <main className="min-h-screen bg-background px-4 py-4 pb-28 text-foreground md:px-8 md:py-6">
+    <div className="min-h-screen bg-background px-4 py-4 pb-28 text-foreground md:px-8 md:py-6">
       <div className="mx-auto max-w-7xl space-y-4">
         <header className="flex flex-col justify-between gap-3 border-b border-border pb-4 sm:flex-row sm:items-center">
           <div className="min-w-0">
@@ -1041,6 +1041,6 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           </button>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
