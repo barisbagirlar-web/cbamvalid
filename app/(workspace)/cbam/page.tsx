@@ -535,7 +535,7 @@ export default function CbamLandingPage() {
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="font-mono text-accent font-bold">4.</span>
-                      <span>Lock &amp; download. You get up to five locked packages for corrections.</span>
+                      <span>Lock &amp; download. Same-file correction re-locks are included.</span>
                     </li>
                   </ol>
                 </div>

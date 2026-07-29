@@ -55,6 +55,7 @@ const bannedCopy = [
   [/\$149\b/i, "obsolete $149 price"],
   [/\b100 credits\b/i, "legacy credit quantity"],
   [/\b(?:five|5) sealed releases\b/i, "legacy release allowance"],
+  [/\b(?:up to )?(?:five|5) locked packages\b/i, "legacy locked-package allowance"],
   [/\breleases left\b/i, "internal release meter"],
   [/\bfictional installation\b/i, "fabricated report fallback"],
 ];
