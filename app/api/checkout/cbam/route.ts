@@ -3,8 +3,6 @@ import { requireFirebaseSession, AuthError } from "@/lib/auth/require-firebase-s
 import { getCreditPackageBySlug } from "@/lib/billing/catalog";
 import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 import { getPaddleConfig } from "@/lib/billing/paddle-config.server";
-import { AuditReadyCaseSchema } from "@/lib/cbam/schema";
-import { assessReadiness } from "@/lib/cbam/validation/readiness-score";
 import { apiSuccess, apiFailure } from "@/lib/http/api-response";
 import { adminDb } from "@/lib/firebase/admin";
 
@@ -112,39 +110,6 @@ export async function POST(request: Request) {
       return apiFailure(
         "CASE_ALREADY_PAID",
         "This working file is already paid. Return to the file and lock it — do not pay again.",
-        409
-      );
-    }
-
-    // Payment and sealing must use the same canonical V5 decision engine.
-    // This prevents charging a user for a case that the server will immediately refuse to seal.
-    const parsedCase = AuditReadyCaseSchema.safeParse(caseDoc.data);
-    if (!parsedCase.success) {
-      console.error("[PADDLE CHECKOUT CASE VALIDATION ERROR]:", parsedCase.error.flatten());
-      return apiFailure(
-        "CASE_DATA_INVALID",
-        "This working file is structurally invalid. Repair and save it before payment.",
-        422
-      );
-    }
-    const readiness = assessReadiness({
-      caseData: parsedCase.data,
-      isDraft: false,
-      assessmentTimestamp: new Date().toISOString(),
-    });
-    if (!readiness.canSeal) {
-      const reasonCodes = readiness.decisionReasonCodes.slice(0, 4).join(", ");
-      console.warn("[PADDLE CHECKOUT V5 READINESS BLOCK]:", {
-        uid: decoded.uid,
-        caseId,
-        operatorStatus: readiness.operatorStatus,
-        criticalBlockerCount: readiness.criticalBlockerCount,
-        missingMaterialEvidenceCount: readiness.missingMaterialEvidenceCount,
-        decisionReasonCodes: readiness.decisionReasonCodes,
-      });
-      return apiFailure(
-        "CASE_NOT_READY_FOR_PAYMENT",
-        `Resolve the V5 sealing blockers before payment${reasonCodes ? `: ${reasonCodes}` : "."}`,
         409
       );
     }
