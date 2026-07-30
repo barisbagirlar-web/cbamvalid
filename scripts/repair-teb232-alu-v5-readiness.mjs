@@ -276,6 +276,39 @@ async function main() {
   data.evidenceRegister = Array.isArray(data.evidenceRegister) ? data.evidenceRegister : [];
   for (const item of docs) mergeEvidence(data.evidenceRegister, item.record);
 
+  // ── Cleanup legacy evidence links ────────────────────────────────────────────
+  // The legacy evidence record 000000000101 was seeded with linkedInputs
+  // covering 4+ requirement classes (LEGAL_IDENTITY, EORI, CN_CLASSIFICATION,
+  // SUPPLEMENTARY_NOTE), triggering the SINGLE_SOURCE_CONCENTRATION gate
+  // (MAX_REQUIREMENT_CLASSES_PER_DOC=3).
+  //
+  // We remove the paths that are now served by dedicated evidence from this
+  // specific overloaded record only. Other legacy records that rely solely on
+  // these paths (e.g. goods CN codes) keep their links.
+  const LEGACY_OVERLOADED_EVIDENCE = new Set([
+    "b3111111-1111-4111-8111-000000000101",
+  ]);
+  const PATHS_NOW_DEDICATED = new Set([
+    "importerIdentity.legalName",
+    "exporterIdentity.legalName",
+    "exporterIdentity.address",
+    "installation.name",
+    "installation.country",
+    "installation.productionRoute",
+    "reportingPeriod.year",
+  ]);
+  for (const record of data.evidenceRegister) {
+    if (!LEGACY_OVERLOADED_EVIDENCE.has(record.evidenceId)) continue;
+    if (!Array.isArray(record.linkedInputs)) continue;
+    // Keep non-dedicated paths plus at least 1 dedicated path to satisfy
+    // schema minimum (>=1 items). Only remove surplus dedicated paths.
+    const dedicated = record.linkedInputs.filter((p) => PATHS_NOW_DEDICATED.has(p));
+    const other = record.linkedInputs.filter((p) => !PATHS_NOW_DEDICATED.has(p));
+    // Keep all non-dedicated + exactly 1 dedicated path if others exist
+    record.linkedInputs = [...other, ...(dedicated.length > 0 ? [dedicated[0]] : [])];
+    if (record.linkedInputs.length < 1) record.linkedInputs = [...other];
+  }
+
   const datumLinks = [
     ["importerIdentity.legalName", IDS.identity],
     ["exporterIdentity.legalName", IDS.identity],
