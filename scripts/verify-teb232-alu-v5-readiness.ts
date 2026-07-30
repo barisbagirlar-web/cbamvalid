@@ -1,7 +1,14 @@
 #!/usr/bin/env npx tsx
 /**
- * Canonical V5 preflight for the exact teb232 ALU synthetic test case.
- * Read-only: Firestore/Storage are never mutated.
+ * Canonical V5 preflight using SERVER-SIDE SSOT imports (functions/src/cbam/*).
+ *
+ * The live seal function at functions/src/cbam/report/seal-service.ts uses:
+ *   functions/src/cbam/schema
+ *   functions/src/cbam/validation/readiness-score
+ *   functions/src/cbam/validation/evidence-sufficiency
+ *   functions/src/cbam/validation/findings-engine
+ *
+ * Old preflight at lib/cbam/* is stale — this script MUST match the server path exactly.
  *
  * Usage:
  *   npx tsx scripts/verify-teb232-alu-v5-readiness.ts
@@ -10,10 +17,10 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import admin from "firebase-admin";
-import { AuditReadyCaseSchema } from "../lib/cbam/schema";
-import { assessReadiness } from "../lib/cbam/validation/readiness-score";
-import { runEvidenceSufficiency } from "../lib/cbam/validation/evidence-sufficiency";
-import { generateFindingsAndActions } from "../lib/cbam/validation/findings-engine";
+import { AuditReadyCaseSchema } from "../functions/src/cbam/schema";
+import { assessReadiness } from "../functions/src/cbam/validation/readiness-score";
+import { runEvidenceSufficiency } from "../functions/src/cbam/validation/evidence-sufficiency";
+import { generateFindingsAndActions } from "../functions/src/cbam/validation/findings-engine";
 
 const EMAIL = "teb232@gmail.com";
 const UID = "r3Sv0U5YqEcLLylbw5ndwK1Zg652";
@@ -37,7 +44,9 @@ function sha256(value: Buffer): string {
 
 async function main(): Promise<void> {
   const env = loadEnvLocal();
-  const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+  const bucketName =
+    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
+    env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
   if (!bucketName) throw new Error("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET_MISSING");
 
   if (!admin.apps.length) {
@@ -48,22 +57,68 @@ async function main(): Promise<void> {
     });
   }
 
+  // ── 1. Verify identity ──────────────────────────────────────────────
   const user = await admin.auth().getUserByEmail(EMAIL);
   if (user.uid !== UID) throw new Error(`UID_MISMATCH:${user.uid}`);
 
+  // ── 2. Read live Firestore record ───────────────────────────────────
   const snapshot = await admin.firestore().collection("cbam_cases").doc(CASE_ID).get();
   if (!snapshot.exists) throw new Error("CASE_NOT_FOUND");
-  const record = snapshot.data() || {};
-  if (String(record.uid || "") !== UID || String(record.status || "") !== "DRAFT") {
+  const firestoreRecord = snapshot.data() || {};
+  if (String(firestoreRecord.uid || "") !== UID || String(firestoreRecord.status || "") !== "DRAFT") {
     throw new Error("CASE_IDENTITY_OR_STATUS_INVALID");
   }
 
-  const caseData = AuditReadyCaseSchema.parse(record.data);
+  // Helper to flatten Firestore Timestamps for JSON
+  const flattenTimestamps = (obj: unknown): unknown => {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj === "object" && "toDate" in (obj as Record<string, unknown>) && typeof (obj as Record<string, unknown>).toDate === "function") {
+      return (obj as { toDate(): Date }).toDate().toISOString();
+    }
+    if (Array.isArray(obj)) return obj.map(flattenTimestamps);
+    if (typeof obj === "object") {
+      const result: Record<string, unknown> = {};
+      for (const [key, val] of Object.entries(obj as Record<string, unknown>)) {
+        result[key] = flattenTimestamps(val);
+      }
+      return result;
+    }
+    return obj;
+  };
+
+  const rawRecord = flattenTimestamps(firestoreRecord) as Record<string, unknown>;
+
+  // Print raw record metadata (no sensitive data)
+  console.log("=== RAW FIRESTORE RECORD (top-level keys) ===");
+  const meta: Record<string, unknown> = {};
+  for (const key of ["projectId", "caseId", "status", "updatedAt", "installationName",
+    "evidenceCount", "operatorStatus", "criticalBlockerCount",
+    "missingMaterialEvidenceCount", "decisionReasonCodes"]) {
+    meta[key] = rawRecord[key] ?? "NOT_IN_RECORD";
+  }
+  console.log(JSON.stringify(meta, null, 2));
+
+  // Print the data subdocument shape
+  const dataDoc = rawRecord.data as Record<string, unknown> | undefined;
+  if (dataDoc) {
+    console.log("\n=== data subdocument keys ===");
+    console.log(JSON.stringify(Object.keys(dataDoc), null, 2));
+    console.log("\ninstallation:", JSON.stringify(dataDoc.installation, null, 2));
+    console.log("\nreportingPeriod:", JSON.stringify(dataDoc.reportingPeriod, null, 2));
+    console.log("\nevidenceRegister count:", (dataDoc.evidenceRegister as unknown[])?.length ?? 0);
+    console.log("\ngoods count:", (dataDoc.goods as unknown[])?.length ?? 0);
+  }
+
+  // ── 3. Parse with server-side schema ────────────────────────────────
+  const caseData = AuditReadyCaseSchema.parse(dataDoc);
   const assessmentTimestamp = new Date().toISOString();
+
+  // ── 4. Run server-side V5 gates (exactly as seal-service.ts does) ───
   const assessment = assessReadiness({ caseData, isDraft: false, assessmentTimestamp });
   const sufficiency = runEvidenceSufficiency(caseData, assessmentTimestamp);
   const { findings } = generateFindingsAndActions(caseData, assessmentTimestamp);
 
+  // ── 5. Storage evidence integrity (bytes + hash) ────────────────────
   const storageFailures: Array<Record<string, unknown>> = [];
   const bucket = admin.storage().bucket(bucketName);
   for (const evidence of caseData.evidenceRegister) {
@@ -95,24 +150,35 @@ async function main(): Promise<void> {
     }
   }
 
-  const blockingSufficiency = sufficiency.filter((row) => row.blocksSealing && row.state !== "SUPPORTED");
+  // ── 6. Compute exact seal gate condition ────────────────────────────
+  // Mirror seal-service.ts line 537:
+  //   readinessV5.operatorStatus === "NOT_READY" ||
+  //   readinessV5.criticalBlockerCount > 0 ||
+  //   readinessV5.missingMaterialEvidenceCount > 0
+  const sealBlockedByV5 =
+    assessment.operatorStatus === "NOT_READY" ||
+    assessment.criticalBlockerCount > 0 ||
+    assessment.missingMaterialEvidenceCount > 0;
+
+  const blockingSufficiency = sufficiency.filter(
+    (row) => row.blocksSealing && row.state !== "SUPPORTED"
+  );
   const openBlockingFindings = findings.filter(
-    (finding) => finding.status === "OPEN" && (finding.blocksSealing || finding.blocksOperatorReadiness)
+    (finding) =>
+      finding.status === "OPEN" &&
+      (finding.blocksSealing || finding.blocksOperatorReadiness)
   );
 
-  const passed =
-    assessment.operatorStatus === "OPERATOR_PREPARATION_COMPLETE" &&
-    assessment.recommendedDecision === "READY_FOR_ACCREDITED_VERIFIER_ENGAGEMENT" &&
-    assessment.criticalBlockerCount === 0 &&
-    assessment.missingMaterialEvidenceCount === 0 &&
-    blockingSufficiency.length === 0 &&
-    openBlockingFindings.length === 0 &&
-    storageFailures.length === 0;
-
   const output = {
-    result: passed ? "V5_PREFLIGHT_PASS" : "V5_PREFLIGHT_FAIL",
-    assessmentTimestamp,
+    result: sealBlockedByV5 ? "SERVER_V5_PREFLIGHT_FAIL" : "SERVER_V5_PREFLIGHT_PASS",
+    projectId: "cbam-desk",
     caseId: CASE_ID,
+    assessmentTimestamp,
+    firestoreRecord: {
+      status: rawRecord.status,
+      updatedAt: rawRecord.updatedAt,
+      dataDocKeys: dataDoc ? Object.keys(dataDoc) : "NO_DATA",
+    },
     installationName: caseData.installation.name.value,
     evidenceCount: caseData.evidenceRegister.length,
     operatorStatus: assessment.operatorStatus,
@@ -122,6 +188,8 @@ async function main(): Promise<void> {
     criticalBlockerCount: assessment.criticalBlockerCount,
     missingMaterialEvidenceCount: assessment.missingMaterialEvidenceCount,
     decisionReasonCodes: assessment.decisionReasonCodes,
+    canSeal: assessment.canSeal,
+    // ── Unsupportedsufficiency rows (matches seal-service details) ──
     blockingSufficiency: blockingSufficiency.map((row) => ({
       requirementId: row.requirementId,
       inputPath: row.inputPath,
@@ -129,24 +197,55 @@ async function main(): Promise<void> {
       reasonCodes: row.reasonCodes,
       evidenceIds: row.evidenceIds,
     })),
+    // ── Open findings (matches seal-service details) ──
     openBlockingFindings: openBlockingFindings.map((finding) => ({
       findingId: finding.findingId,
       ruleId: finding.ruleId,
       severity: finding.severity,
+      category: finding.category,
       title: finding.title,
       description: finding.description,
+      status: finding.status,
+      blocksSealing: finding.blocksSealing,
     })),
     storageFailures,
+    // ── Dimension-level detail ──
+    dimensions: assessment.dimensions.map((d) => ({
+      dimensionId: d.dimensionId,
+      rawScore: d.rawScore,
+      weightedScore: d.weightedScore,
+      assessmentState: d.assessmentState,
+      passedRequirementCount: d.passedRequirementCount,
+      applicableRequirementCount: d.applicableRequirementCount,
+      blockerFindingIds: d.blockerFindingIds,
+      materialFindingIds: d.materialFindingIds,
+    })),
   };
 
+  console.log("\n=== V5 READINESS PREFLIGHT ===");
   console.log(JSON.stringify(output, null, 2));
-  if (!passed) process.exitCode = 1;
+
+  if (sealBlockedByV5) {
+    console.log("\n⛔ SEAL BLOCKED BY V5 READINESS GATES");
+    console.log("operatorStatus:", assessment.operatorStatus);
+    console.log("criticalBlockerCount:", assessment.criticalBlockerCount);
+    console.log("missingMaterialEvidenceCount:", assessment.missingMaterialEvidenceCount);
+    console.log("decisionReasonCodes:", assessment.decisionReasonCodes);
+    process.exitCode = 1;
+  } else {
+    console.log("\n✅ SERVER_V5_PREFLIGHT_PASS — seal gates are clear");
+  }
 }
 
 void main().catch((error) => {
-  console.error(JSON.stringify({
-    result: "V5_PREFLIGHT_ERROR",
-    code: error instanceof Error ? error.message : String(error),
-  }, null, 2));
+  console.error(JSON.stringify(
+    {
+      result: "SERVER_V5_PREFLIGHT_ERROR",
+      code: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    },
+    null,
+    2
+  ));
   process.exitCode = 1;
 });

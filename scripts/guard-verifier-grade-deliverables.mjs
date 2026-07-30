@@ -135,11 +135,11 @@ const v5End = componentMatches.lastIndexOf("Supporting_Evidence/");
 const v5Components = v5Start >= 0 && v5End >= v5Start
   ? componentMatches.slice(v5Start, v5End + 1)
   : [];
-if (v5Components.length !== 25) failures.push(`V5 package must define exactly 25 top-level components; found ${v5Components.length}`);
+if (v5Components.length !== 26) failures.push(`V5 package must define exactly 26 top-level components; found ${v5Components.length}`);
 requireText(packageBuilder, 'schemaVersion: "CBAMVALID-DOSSIER-4.0"', "Manifest schema v4");
 requireText(packageBuilder, "legalSourceRegistryHash", "Manifest regulatory fingerprint");
-requireText(packageBuilder, "PACKAGE_REOPEN_HASH_MISMATCH", "ZIP read-back hash validation");
-requireText(packageBuilder, "PACKAGE_REOPEN_SIGNATURE_INVALID", "ZIP signature read-back validation");
+requireText(packageBuilder, "PACKAGE_ZIP_HASH_MISMATCH", "ZIP read-back hash validation");
+requireText(packageBuilder, "PACKAGE_ZIP_SIGNATURE_VERIFICATION_FAILED", "ZIP signature read-back validation");
 requireText(packageBuilder, "PACKAGE_PRIMARY_ARTIFACT_MISSING_OR_TRIVIAL", "Non-trivial primary artifacts");
 requireText(packageBuilder, "REQUIRED_TOP_LEVEL_COMPONENTS_V5", "V5 component contract re-export");
 requireText(packageBuilder, "./package-components", "Package component SSOT import");

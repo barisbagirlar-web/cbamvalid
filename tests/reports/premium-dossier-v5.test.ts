@@ -7,8 +7,8 @@ import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import { AuditReadyCaseSchema } from "../../functions/src/cbam/schema";
 import { performDossierCalculations } from "../../functions/src/cbam/calculator";
 import { runQualityControls } from "../../functions/src/cbam/validation/quality-controls";
+import { REQUIRED_TOP_LEVEL_COMPONENTS_V5, REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5 } from "../../functions/src/cbam/report/package-components";
 import {
-  REQUIRED_TOP_LEVEL_COMPONENTS_V5,
   buildDataIntegrityManifest,
   buildUnsignedVerifierArtifacts,
   finalizeVerifierPackage,
@@ -97,6 +97,31 @@ function createSignature(manifestBytes: Buffer): KmsSignatureResult {
   };
 }
 
+function buildTestCalcGraph(rootHash: string): {
+  rootHash: string;
+  nodes: ReadonlyArray<{
+    id: string; label: string; formula: string;
+    legalBasis: readonly string[]; inputNodes: readonly string[];
+    inputPaths: readonly { path: string }[];
+    value: { toString(): string }; unit: string; hash: string;
+  }>;
+} {
+  const node = (id: string, label: string, formula: string, value: string, unit: string, inputs: string[], basis: string[]) => ({
+    id, label, formula, legalBasis: basis, inputNodes: inputs,
+    inputPaths: inputs.map((i) => ({ path: i })),
+    value: { toString: () => value }, unit, hash: "",
+  });
+  const nodes = [
+    node("CBAM_CALC_ROOT", "Embedded Emissions", "COMBINE", "120", "tCO2e", ["CBAM_DIRECT_80", "CBAM_INDIRECT_40"], ["IR 2025/2547"]),
+    node("CBAM_DIRECT_80", "Direct Emissions", "SUM", "80", "tCO2e", ["CBAM_DIRECT_INSTALL_80"], ["IR 2025/2547"]),
+    node("CBAM_DIRECT_INSTALL_80", "Installation Direct", "DIRECT_MEASURE", "80", "tCO2e", [], ["IR 2025/2547"]),
+    node("CBAM_INDIRECT_40", "Electricity Indirect", "GRID_FACTOR*CONSUMPTION", "40", "tCO2e", ["CBAM_GRID_0.4", "CBAM_CONSUMPTION_100"], ["IR 2025/2547"]),
+    node("CBAM_GRID_0.4", "Grid Emission Factor", "FACTOR", "0.4", "tCO2e/MWh", [], ["IR 2025/2547"]),
+    node("CBAM_CONSUMPTION_100", "Electricity Consumption", "MEASURE", "100", "MWh", [], ["IR 2025/2547"]),
+  ];
+  return { rootHash, nodes };
+}
+
 describe("premium-dossier-v5 deliverables", () => {
   it("derives V5 specific readiness scores, findings, and checks hard gates", () => {
     const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
@@ -168,7 +193,7 @@ describe("premium-dossier-v5 deliverables", () => {
     );
   });
 
-  it("seals and reopens the exact 23-component V5 package", async () => {
+  it("seals and reopens the exact V5 package", async () => {
     const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
     caseData.evidenceRegister[0].linkedInputs.push(
       "exporterIdentity.legalName",
@@ -208,6 +233,7 @@ describe("premium-dossier-v5 deliverables", () => {
     caseData.evidenceRegister.forEach(e => { e.reportingPeriod = "2026 ANNUAL"; });
     const controls = runQualityControls(caseData);
     const calculation = performDossierCalculations(caseData);
+    const calcGraph = buildTestCalcGraph(calculation.calculationRootHash);
     
     const artifacts = await buildUnsignedVerifierArtifacts({
       caseData,
@@ -218,6 +244,7 @@ describe("premium-dossier-v5 deliverables", () => {
       releaseVersion: 5,
       generatedAt: FIXTURE_GENERATED_AT,
       evidenceFiles: createVerifierEvidenceFiles(),
+      calcGraph,
       assessmentContext: {
         generatedAt: FIXTURE_GENERATED_AT,
         assessmentTimestamp: FIXTURE_GENERATED_AT,
@@ -244,7 +271,7 @@ describe("premium-dossier-v5 deliverables", () => {
 
     const manifest = JSON.parse(manifestResult.bytes.toString("utf8")) as DataIntegrityManifest;
     expect(manifest.schemaVersion).toBe("CBAMVALID-DOSSIER-5.0");
-    expect(manifest.componentContract.requiredCount).toBe(25);
+    expect(manifest.componentContract.requiredCount).toBe(REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5);
 
     const finalized = await finalizeVerifierPackage({
       artifacts,
@@ -312,6 +339,7 @@ describe("premium-dossier-v5 deliverables", () => {
     caseData.evidenceRegister.forEach(e => { e.reportingPeriod = "2026 ANNUAL"; });
     const controls = runQualityControls(caseData);
     const calculation = performDossierCalculations(caseData);
+    const calcGraph = buildTestCalcGraph(calculation.calculationRootHash);
     
     const artifacts = await buildUnsignedVerifierArtifacts({
       caseData,
@@ -322,6 +350,7 @@ describe("premium-dossier-v5 deliverables", () => {
       releaseVersion: 5,
       generatedAt: FIXTURE_GENERATED_AT,
       evidenceFiles: createVerifierEvidenceFiles(),
+      calcGraph,
       assessmentContext: {
         generatedAt: FIXTURE_GENERATED_AT,
         assessmentTimestamp: FIXTURE_GENERATED_AT,
@@ -548,4 +577,265 @@ describe("premium-dossier-v5 deliverables", () => {
 
     console.log(`Verified PDF Geometry successfully. Total pages: ${pages}`);
   });
+
+  // ---- Patch 9: Regression Tests ----
+  it("Test A — Exact V5 contract: topLevelCount=26, no missing/extra, Calc Graph present", async () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    const controls = runQualityControls(caseData);
+    const calculation = performDossierCalculations(caseData);
+    const calcGraph = buildTestCalcGraph(calculation.calculationRootHash);
+    const artifacts = await buildUnsignedVerifierArtifacts({
+      caseData, controls, calculation,
+      reportId: FIXTURE_REPORT_ID, packageCode: FIXTURE_PACKAGE_CODE,
+      releaseVersion: 5, generatedAt: FIXTURE_GENERATED_AT,
+      evidenceFiles: createVerifierEvidenceFiles(),
+      calcGraph,
+      assessmentContext: {
+        generatedAt: FIXTURE_GENERATED_AT, assessmentTimestamp: FIXTURE_GENERATED_AT,
+        reportId: FIXTURE_REPORT_ID, packageCode: FIXTURE_PACKAGE_CODE,
+        releaseVersion: 5, rulesetVersion: "test",
+        productCode: "pack_premium_dossier_v5", releaseContractVersion: 5,
+      },
+    });
+    const manifestResult = buildDataIntegrityManifest({
+      artifacts, caseData, calculation,
+      reportId: FIXTURE_REPORT_ID, releaseVersion: 5,
+      generatedAt: FIXTURE_GENERATED_AT, evidenceCount: 4,
+      productCode: "pack_premium_dossier_v5", releaseContractVersion: 5,
+    });
+    const manifest = JSON.parse(manifestResult.bytes.toString("utf8")) as DataIntegrityManifest;
+    expect(REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5).toBe(26);
+    expect(manifest.componentContract.requiredCount).toBe(26);
+    const expectedComponents = [...REQUIRED_TOP_LEVEL_COMPONENTS_V5].sort();
+    expect(expectedComponents).toContain("Calculation Graph.json");
+    expect(manifest.componentContract.requiredTopLevelComponents).toEqual(REQUIRED_TOP_LEVEL_COMPONENTS_V5);
+
+    const finalized = await finalizeVerifierPackage({
+      artifacts, manifestBytes: manifestResult.bytes,
+      signature: createSignature(manifestResult.bytes),
+      generatedAt: FIXTURE_GENERATED_AT,
+    });
+    expect(finalized.zipHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(finalized.primaryPdf.byteLength).toBeGreaterThan(5000);
+  }, 30_000);
+
+  it("Test B — Manifest integrity: sha256, sizeBytes, mediaType match every artifact", async () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    const controls = runQualityControls(caseData);
+    const calculation = performDossierCalculations(caseData);
+    const calcGraph = buildTestCalcGraph(calculation.calculationRootHash);
+    const artifacts = await buildUnsignedVerifierArtifacts({
+      caseData, controls, calculation,
+      reportId: FIXTURE_REPORT_ID, packageCode: FIXTURE_PACKAGE_CODE,
+      releaseVersion: 5, generatedAt: FIXTURE_GENERATED_AT,
+      evidenceFiles: createVerifierEvidenceFiles(),
+      calcGraph,
+      assessmentContext: {
+        generatedAt: FIXTURE_GENERATED_AT, assessmentTimestamp: FIXTURE_GENERATED_AT,
+        reportId: FIXTURE_REPORT_ID, packageCode: FIXTURE_PACKAGE_CODE,
+        releaseVersion: 5, rulesetVersion: "test",
+        productCode: "pack_premium_dossier_v5", releaseContractVersion: 5,
+      },
+    });
+    const manifestResult = buildDataIntegrityManifest({
+      artifacts, caseData, calculation,
+      reportId: FIXTURE_REPORT_ID, releaseVersion: 5,
+      generatedAt: FIXTURE_GENERATED_AT, evidenceCount: 4,
+      productCode: "pack_premium_dossier_v5", releaseContractVersion: 5,
+    });
+    const manifest = JSON.parse(manifestResult.bytes.toString("utf8")) as DataIntegrityManifest;
+    const allArtifactMap = new Map(artifacts.map(a => [a.path, a]));
+    for (const file of manifest.files) {
+      const artifact = allArtifactMap.get(file.path);
+      expect(artifact).toBeDefined();
+      const actualHash = crypto.createHash("sha256").update(artifact!.bytes).digest("hex");
+      expect(actualHash).toBe(file.sha256);
+      expect(artifact!.bytes.byteLength).toBe(file.sizeBytes);
+      expect(artifact!.mediaType).toBe(file.mediaType);
+    }
+  }, 30_000);
+
+  it("Test C — ZIP reopen: exact top-level set, all manifest hashes, manifest signature, calc graph recompute PASS", async () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    const controls = runQualityControls(caseData);
+    const calculation = performDossierCalculations(caseData);
+    const calcGraph = buildTestCalcGraph(calculation.calculationRootHash);
+    const artifacts = await buildUnsignedVerifierArtifacts({
+      caseData, controls, calculation,
+      reportId: FIXTURE_REPORT_ID, packageCode: FIXTURE_PACKAGE_CODE,
+      releaseVersion: 5, generatedAt: FIXTURE_GENERATED_AT,
+      evidenceFiles: createVerifierEvidenceFiles(),
+      calcGraph,
+      assessmentContext: {
+        generatedAt: FIXTURE_GENERATED_AT, assessmentTimestamp: FIXTURE_GENERATED_AT,
+        reportId: FIXTURE_REPORT_ID, packageCode: FIXTURE_PACKAGE_CODE,
+        releaseVersion: 5, rulesetVersion: "test",
+        productCode: "pack_premium_dossier_v5", releaseContractVersion: 5,
+      },
+    });
+    const manifestResult = buildDataIntegrityManifest({
+      artifacts, caseData, calculation,
+      reportId: FIXTURE_REPORT_ID, releaseVersion: 5,
+      generatedAt: FIXTURE_GENERATED_AT, evidenceCount: 4,
+      productCode: "pack_premium_dossier_v5", releaseContractVersion: 5,
+    });
+    const finalized = await finalizeVerifierPackage({
+      artifacts, manifestBytes: manifestResult.bytes,
+      signature: createSignature(manifestResult.bytes),
+      generatedAt: FIXTURE_GENERATED_AT,
+    });
+    const zip = await JSZip.loadAsync(finalized.zip);
+    const reopenedTopLevel = [...new Set(Object.keys(zip.files).filter(p => !zip.files[p].dir || p === "Supporting_Evidence/").map(p => { const s = p.indexOf("/"); return s >= 0 ? p.slice(0, s)+"/" : p; }))].sort();
+    expect(reopenedTopLevel).toEqual([...REQUIRED_TOP_LEVEL_COMPONENTS_V5].sort());
+    const manifestFromZip = JSON.parse(await zip.file("Data Integrity Manifest.json")!.async("string"));
+    for (const file of manifestFromZip.files) {
+      const entry = zip.file(file.path);
+      expect(entry).toBeDefined();
+      const bytes = await entry!.async("nodebuffer");
+      const actualHash = crypto.createHash("sha256").update(bytes).digest("hex");
+      expect(actualHash).toBe(file.sha256);
+    }
+    const calcGraphFromZip = JSON.parse(await zip.file("Calculation Graph.json")!.async("string"));
+    expect(calcGraphFromZip.rootHash).toBe(calcGraph.rootHash);
+    expect(calcGraphFromZip.nodes).toHaveLength(6);
+    expect(calcGraphFromZip.nodes[0].id).toBe("CBAM_CALC_ROOT");
+  }, 30_000);
+
+  it("Test D — PDF modification attack: alter PDF bytes after manifest, expect MANIFEST_ARTIFACT_CONTRACT_FAILED", async () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    const controls = runQualityControls(caseData);
+    const calculation = performDossierCalculations(caseData);
+    const calcGraph = buildTestCalcGraph(calculation.calculationRootHash);
+    const artifacts = await buildUnsignedVerifierArtifacts({
+      caseData, controls, calculation,
+      reportId: FIXTURE_REPORT_ID, packageCode: FIXTURE_PACKAGE_CODE,
+      releaseVersion: 5, generatedAt: FIXTURE_GENERATED_AT,
+      evidenceFiles: createVerifierEvidenceFiles(),
+      calcGraph,
+      assessmentContext: {
+        generatedAt: FIXTURE_GENERATED_AT, assessmentTimestamp: FIXTURE_GENERATED_AT,
+        reportId: FIXTURE_REPORT_ID, packageCode: FIXTURE_PACKAGE_CODE,
+        releaseVersion: 5, rulesetVersion: "test",
+        productCode: "pack_premium_dossier_v5", releaseContractVersion: 5,
+      },
+    });
+    const manifestResult = buildDataIntegrityManifest({
+      artifacts, caseData, calculation,
+      reportId: FIXTURE_REPORT_ID, releaseVersion: 5,
+      generatedAt: FIXTURE_GENERATED_AT, evidenceCount: 4,
+      productCode: "pack_premium_dossier_v5", releaseContractVersion: 5,
+    });
+    const tamperedArtifacts = artifacts.map(a =>
+      a.path === "Operator Emissions Report.pdf"
+        ? { ...a, bytes: Buffer.concat([a.bytes, Buffer.from("TAMPER", "utf8")]) }
+        : a
+    );
+    await expect(finalizeVerifierPackage({
+      artifacts: tamperedArtifacts,
+      manifestBytes: manifestResult.bytes,
+      signature: createSignature(manifestResult.bytes),
+      generatedAt: FIXTURE_GENERATED_AT,
+    })).rejects.toThrow("PACKAGE_MANIFEST_ARTIFACT_CONTRACT_FAILED");
+  }, 30_000);
+
+  it("Test E — Extra component: add unlisted top-level file, expect COMPONENT_CONTRACT_FAILED with extraComponents", async () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    const controls = runQualityControls(caseData);
+    const calculation = performDossierCalculations(caseData);
+    const calcGraph = buildTestCalcGraph(calculation.calculationRootHash);
+    const artifacts = await buildUnsignedVerifierArtifacts({
+      caseData, controls, calculation,
+      reportId: FIXTURE_REPORT_ID, packageCode: FIXTURE_PACKAGE_CODE,
+      releaseVersion: 5, generatedAt: FIXTURE_GENERATED_AT,
+      evidenceFiles: createVerifierEvidenceFiles(),
+      calcGraph,
+      assessmentContext: {
+        generatedAt: FIXTURE_GENERATED_AT, assessmentTimestamp: FIXTURE_GENERATED_AT,
+        reportId: FIXTURE_REPORT_ID, packageCode: FIXTURE_PACKAGE_CODE,
+        releaseVersion: 5, rulesetVersion: "test",
+        productCode: "pack_premium_dossier_v5", releaseContractVersion: 5,
+      },
+    });
+    const manifestResult = buildDataIntegrityManifest({
+      artifacts, caseData, calculation,
+      reportId: FIXTURE_REPORT_ID, releaseVersion: 5,
+      generatedAt: FIXTURE_GENERATED_AT, evidenceCount: 4,
+      productCode: "pack_premium_dossier_v5", releaseContractVersion: 5,
+    });
+    const contaminated = [...artifacts, {
+      path: "Extra_Unauthorized_File.csv",
+      bytes: Buffer.from("extra", "utf8"),
+      mediaType: "text/csv",
+    }];
+    await expect(finalizeVerifierPackage({
+      artifacts: contaminated,
+      manifestBytes: manifestResult.bytes,
+      signature: createSignature(manifestResult.bytes),
+      generatedAt: FIXTURE_GENERATED_AT,
+    })).rejects.toThrow(/PACKAGE_COMPONENT_CONTRACT_FAILED.*extraComponents.*Extra_Unauthorized_File/);
+  }, 30_000);
+
+  it("Test F — Missing graph: V5 flow without calcGraph, expect COMPONENT_CONTRACT_FAILED missing=Calc Graph", async () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    const controls = runQualityControls(caseData);
+    const calculation = performDossierCalculations(caseData);
+    const artifacts = await buildUnsignedVerifierArtifacts({
+      caseData, controls, calculation,
+      reportId: FIXTURE_REPORT_ID, packageCode: FIXTURE_PACKAGE_CODE,
+      releaseVersion: 5, generatedAt: FIXTURE_GENERATED_AT,
+      evidenceFiles: createVerifierEvidenceFiles(),
+      // no calcGraph
+      assessmentContext: {
+        generatedAt: FIXTURE_GENERATED_AT, assessmentTimestamp: FIXTURE_GENERATED_AT,
+        reportId: FIXTURE_REPORT_ID, packageCode: FIXTURE_PACKAGE_CODE,
+        releaseVersion: 5, rulesetVersion: "test",
+        productCode: "pack_premium_dossier_v5", releaseContractVersion: 5,
+      },
+    });
+    const manifestResult = buildDataIntegrityManifest({
+      artifacts, caseData, calculation,
+      reportId: FIXTURE_REPORT_ID, releaseVersion: 5,
+      generatedAt: FIXTURE_GENERATED_AT, evidenceCount: 4,
+      productCode: "pack_premium_dossier_v5", releaseContractVersion: 5,
+    });
+    await expect(finalizeVerifierPackage({
+      artifacts,
+      manifestBytes: manifestResult.bytes,
+      signature: createSignature(manifestResult.bytes),
+      generatedAt: FIXTURE_GENERATED_AT,
+    })).rejects.toThrow(/PACKAGE_COMPONENT_CONTRACT_FAILED.*Calculation Graph.json/);
+  }, 30_000);
+
+  it("Test G — Signature tampering: modify manifest bytes after signing, expect SIGNATURE_VERIFICATION_FAILED", async () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    const controls = runQualityControls(caseData);
+    const calculation = performDossierCalculations(caseData);
+    const calcGraph = buildTestCalcGraph(calculation.calculationRootHash);
+    const artifacts = await buildUnsignedVerifierArtifacts({
+      caseData, controls, calculation,
+      reportId: FIXTURE_REPORT_ID, packageCode: FIXTURE_PACKAGE_CODE,
+      releaseVersion: 5, generatedAt: FIXTURE_GENERATED_AT,
+      evidenceFiles: createVerifierEvidenceFiles(),
+      calcGraph,
+      assessmentContext: {
+        generatedAt: FIXTURE_GENERATED_AT, assessmentTimestamp: FIXTURE_GENERATED_AT,
+        reportId: FIXTURE_REPORT_ID, packageCode: FIXTURE_PACKAGE_CODE,
+        releaseVersion: 5, rulesetVersion: "test",
+        productCode: "pack_premium_dossier_v5", releaseContractVersion: 5,
+      },
+    });
+    const manifestResult = buildDataIntegrityManifest({
+      artifacts, caseData, calculation,
+      reportId: FIXTURE_REPORT_ID, releaseVersion: 5,
+      generatedAt: FIXTURE_GENERATED_AT, evidenceCount: 4,
+      productCode: "pack_premium_dossier_v5", releaseContractVersion: 5,
+    });
+    const tamperedBytes = Buffer.concat([manifestResult.bytes, Buffer.from("TAMPER", "utf8")]);
+    await expect(finalizeVerifierPackage({
+      artifacts,
+      manifestBytes: tamperedBytes,
+      signature: createSignature(manifestResult.bytes),
+      generatedAt: FIXTURE_GENERATED_AT,
+    })).rejects.toThrow("PACKAGE_MANIFEST_SIGNATURE_HASH_MISMATCH");
+  }, 30_000);
 });

@@ -447,10 +447,10 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   doc.setTextColor(80, 90, 105);
   doc.text(`Case Snapshot SHA-256 Hash: ${model.caseDataHash || "NOT_AVAILABLE"}`, MARGIN + 6, 196);
   doc.text(`Calculation Root Hash: ${model.calculationRootHash || "NOT_AVAILABLE"}`, MARGIN + 6, 201);
-  doc.text(`Manifest SHA-256 Hash: ${model.manifestSummary?.manifestHash || "NOT_AVAILABLE"}`, MARGIN + 6, 206);
-  doc.text(`Sealed Package Hash: ${model.manifestSummary?.packageHash || "NOT_AVAILABLE"}`, MARGIN + 6, 211);
+  doc.text(`Manifest integrity: See Data Integrity Manifest.json`, MARGIN + 6, 206);
+  doc.text(`Detached signature: See Manifest Signature.sig`, MARGIN + 6, 211);
   doc.text(`KMS Key Version: ${model.manifestSummary?.kmsKeyVersion || "NOT_AVAILABLE"}`, MARGIN + 6, 216);
-  doc.text(`KMS Signature Prefix: ${model.manifestSummary?.signatureBase64 ? model.manifestSummary.signatureBase64.substring(0, 32) + "..." : "NOT_AVAILABLE"}`, MARGIN + 6, 221);
+  doc.text(`Package receipt hash: Available in the CBAMValid release record`, MARGIN + 6, 221);
   doc.text(integrityManifestWording(componentCount), MARGIN + 6, 226);
 
   // Cover Legal Boundary statement
@@ -904,9 +904,6 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   // Section 27: Package Manifest and Digital Integrity
   beginSection(27, "Package Manifest and Digital Integrity", 35);
 
-  const manifestHashValue = model.manifestSummary?.manifestHash || "NOT_AVAILABLE";
-  const packageHashValue = model.manifestSummary?.packageHash || "NOT_AVAILABLE";
-  const signatureBase64 = model.manifestSummary?.signatureBase64 || "NOT_AVAILABLE";
   const kmsKeyVersion = model.manifestSummary?.kmsKeyVersion || "NOT_AVAILABLE";
   const kmsAlgorithm = model.manifestSummary?.kmsAlgorithm || "NOT_AVAILABLE";
 
@@ -915,11 +912,11 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     [
       ["Case Snapshot SHA-256 Hash", model.caseDataHash || "NOT_AVAILABLE"],
       ["Calculation Root Hash", model.calculationRootHash || "NOT_AVAILABLE"],
-      ["Manifest SHA-256 Hash", manifestHashValue],
-      ["Sealed Package SHA-256 Hash", packageHashValue],
+      ["Manifest SHA-256 Hash", "See Data Integrity Manifest.json"],
+      ["Sealed Package SHA-256 Hash", "Available in the CBAMValid release record"],
       ["KMS Key Version Reference", kmsKeyVersion],
       ["KMS Signature Algorithm", kmsAlgorithm],
-      ["KMS Signature Base64", signatureBase64 !== "NOT_AVAILABLE" ? signatureBase64.substring(0, 48) + "..." : "NOT_AVAILABLE"],
+      ["KMS Signature", "See Manifest Signature.sig"],
       ["Schema Specification", model.schemaVersion],
       ["Digital Signature ID", model.reportId],
       ["Cryptographic Security Class", cryptoClaims.securityClassLabel],
