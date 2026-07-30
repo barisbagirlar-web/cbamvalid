@@ -533,7 +533,7 @@ export async function sealReport(params: {
 
     if (isV5) {
       const { assessReadiness } = await import("../validation/readiness-score");
-      const readinessV5 = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: assessmentContext.assessmentTimestamp });
+      const readinessV5 = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: assessmentContext.assessmentTimestamp, sealMode: "PRODUCTION" });
       if (readinessV5.operatorStatus === "NOT_READY" || readinessV5.criticalBlockerCount > 0 || readinessV5.missingMaterialEvidenceCount > 0) {
         const { runEvidenceSufficiency } = await import("../validation/evidence-sufficiency");
         const { generateFindingsAndActions } = await import("../validation/findings-engine");
@@ -664,7 +664,7 @@ export async function sealReport(params: {
     let publicVerificationToken: string | undefined;
     if (isV5) {
       const { assessReadiness } = await import("../validation/readiness-score");
-      const readinessV5 = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: lease.generatedAt });
+      const readinessV5 = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: lease.generatedAt, sealMode: "PRODUCTION" });
       publicVerificationToken = crypto.randomBytes(32).toString("hex");
       const publicVerificationTokenHash = crypto.createHash("sha256").update(publicVerificationToken).digest("hex");
 

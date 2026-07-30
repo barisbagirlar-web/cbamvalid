@@ -83,7 +83,7 @@ function assessVirtualRequirements(
   }
 }
 
-export function getReportingPeriodAssessment(caseData: AuditReadyCase, assessmentTimestamp?: string): ReportingPeriodAssessment {
+export function getReportingPeriodAssessment(caseData: AuditReadyCase, assessmentTimestamp?: string, sealMode: "PRODUCTION" | "PREVIEW" = "PREVIEW"): ReportingPeriodAssessment {
   const yearVal = String(caseData.reportingPeriod.year.value || "");
   const quarterVal = String(caseData.reportingPeriod.quarter.value || "").toUpperCase().trim();
   const year = Number(yearVal) || 0;
@@ -191,8 +191,10 @@ export function getReportingPeriodAssessment(caseData: AuditReadyCase, assessmen
 
   const now = assessmentTimestamp ? new Date(assessmentTimestamp) : new Date();
   const isSmokeTest =
-    String(caseData.installation?.name?.value || "").includes("smoke_test") ||
-    String(caseData.caseId || "").includes("smoke_test");
+    sealMode === "PRODUCTION"
+      ? false  // Production seals must never bypass period gates
+      : String(caseData.installation?.name?.value || "").includes("smoke_test") ||
+        String(caseData.caseId || "").includes("smoke_test");
   let futurePeriodBlocked = false;
   if (endDate && !isSmokeTest) {
     const periodEndDate = new Date(endDate);
@@ -242,8 +244,9 @@ export function assessReadiness(params: {
   caseData: AuditReadyCase;
   isDraft: boolean;
   assessmentTimestamp?: string;
+  sealMode?: "PRODUCTION" | "PREVIEW";
 }): ReadinessAssessment {
-  const { caseData, isDraft, assessmentTimestamp } = params;
+  const { caseData, isDraft, assessmentTimestamp, sealMode } = params;
 
   // 1. Run validation engines
   const sufficiency = runEvidenceSufficiency(caseData, assessmentTimestamp);
@@ -390,7 +393,7 @@ export function assessReadiness(params: {
   const missingMaterialEvidenceCount = sufficiency.filter(r => r.blocksSealing && r.state !== "SUPPORTED").length;
   const unresolvedCalculationExceptionCount = findings.filter(f => f.category === "CALCULATION_EXCEPTION" && f.status === "OPEN").length;
 
-  const period = getReportingPeriodAssessment(caseData, assessmentTimestamp);
+  const period = getReportingPeriodAssessment(caseData, assessmentTimestamp, sealMode);
   const hasCriticalBlocker = criticalBlockerCount > 0 || !period.definitiveAnnualEligible;
   const hasUnsupportedMaterialEvidence = missingMaterialEvidenceCount > 0;
   const hasIntegrityFailure = findings.some(f => f.category === "EVIDENCE_INTEGRITY" && f.status === "OPEN");
