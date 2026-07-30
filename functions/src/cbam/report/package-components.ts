@@ -54,6 +54,7 @@ export const REQUIRED_TOP_LEVEL_COMPONENTS_V5 = [
   "Corrective Action Log.csv",
   "O3CI Field Mapping.csv",
   "Calculation Trace.json",
+  "Calculation Graph.json",
   "Verifier Workspace.xlsx",
   "Data Integrity Manifest.json",
   "Manifest Signature.sig",

@@ -42,6 +42,7 @@ import {
   REQUIRED_TOP_LEVEL_COMPONENTS,
   REQUIRED_TOP_LEVEL_COMPONENTS_V5,
   REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5,
+  REQUIRED_TOP_LEVEL_COMPONENT_COUNT,
 } from "./package-components";
 
 export {
@@ -644,7 +645,7 @@ export function buildDataIntegrityManifest(params: {
     legalSourceRegistryHash: DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT,
     componentContract: {
       requiredTopLevelComponents: isV5 ? REQUIRED_TOP_LEVEL_COMPONENTS_V5 : REQUIRED_TOP_LEVEL_COMPONENTS,
-      requiredCount: isV5 ? 25 : 27,
+      requiredCount: isV5 ? REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5 : REQUIRED_TOP_LEVEL_COMPONENT_COUNT,
     },
     files: params.artifacts
       .filter((item) => item.path !== "Data Integrity Manifest.json" && item.path !== "Manifest Signature.sig")
@@ -672,9 +673,19 @@ export async function finalizeVerifierPackage(params: {
   signature: KmsSignatureResult;
   generatedAt: string;
 }): Promise<{ zip: Buffer; zipHash: string; primaryPdf: Buffer; workbook: Buffer; signatureBytes: Buffer }> {
-  if (hash(params.manifestBytes) !== params.signature.manifestHash) throw new Error("PACKAGE_MANIFEST_SIGNATURE_HASH_MISMATCH");
+  if (hash(params.manifestBytes) !== params.signature.manifestHash) {
+    throw new Error("PACKAGE_MANIFEST_SIGNATURE_HASH_MISMATCH");
+  }
   const signatureBuffer = Buffer.from(canonical(params.signature), "utf8");
-  if (!crypto.verify("sha256", params.manifestBytes, params.signature.publicKeyPem, Buffer.from(params.signature.signatureBase64, "base64"))) throw new Error("PACKAGE_SIGNATURE_VERIFICATION_FAILED");
+  const signatureOk = crypto.verify(
+    "sha256",
+    params.manifestBytes,
+    params.signature.publicKeyPem,
+    Buffer.from(params.signature.signatureBase64, "base64")
+  );
+  if (!signatureOk) {
+    throw new Error("PACKAGE_SIGNATURE_VERIFICATION_FAILED");
+  }
 
   const allArtifacts = [
     ...params.artifacts,
@@ -684,64 +695,173 @@ export async function finalizeVerifierPackage(params: {
   const manifest = JSON.parse(params.manifestBytes.toString("utf8")) as DataIntegrityManifest;
   const isV5 = manifest.schemaVersion === "CBAMVALID-DOSSIER-5.0";
 
+  // ---- Patch 5: Strengthened component contract diagnostics ----
   const topLevel = topLevelComponents(allArtifacts.map((item) => item.path));
-  const expected = isV5 ? [...REQUIRED_TOP_LEVEL_COMPONENTS_V5].sort() : [...REQUIRED_TOP_LEVEL_COMPONENTS].sort();
-  const targetCount = isV5 ? 25 : 27;
+  const expected: string[] = isV5
+    ? [...REQUIRED_TOP_LEVEL_COMPONENTS_V5].sort()
+    : [...REQUIRED_TOP_LEVEL_COMPONENTS].sort();
+  const missingComponents = expected.filter((component) => !topLevel.includes(component));
+  const extraComponents = topLevel.filter((component) => !expected.includes(component));
+  if (missingComponents.length > 0 || extraComponents.length > 0) {
+    throw new Error(
+      `PACKAGE_COMPONENT_CONTRACT_FAILED:${JSON.stringify({
+        expectedCount: expected.length,
+        actualCount: topLevel.length,
+        missingComponents,
+        extraComponents,
+      })}`
+    );
+  }
 
-  if (topLevel.length !== targetCount || canonical(topLevel) !== canonical(expected)) {
-    throw new Error("PACKAGE_COMPONENT_CONTRACT_FAILED");
+  // ---- Patch 4: Manifest-artifact contract verification ----
+  const manifestPaths = new Set(manifest.files.map((file) => file.path));
+  const artifactPaths = new Set(allArtifacts.map((item) => item.path));
+  // Manifest intentionally excludes itself and the signature
+  const manifestExcluded = new Set(["Data Integrity Manifest.json", "Manifest Signature.sig"]);
+  const missingArtifacts: string[] = [];
+  const unmanifestedArtifacts: string[] = [];
+  const hashMismatches: string[] = [];
+  const sizeMismatches: string[] = [];
+  const mediaTypeMismatches: string[] = [];
+
+  for (const path of artifactPaths) {
+    if (manifestExcluded.has(path)) continue;
+    if (!manifestPaths.has(path)) {
+      missingArtifacts.push(path);
+    }
+  }
+  for (const path of manifestPaths) {
+    if (manifestExcluded.has(path)) continue;
+    if (!artifactPaths.has(path)) {
+      unmanifestedArtifacts.push(path);
+    }
+  }
+
+  for (const fileEntry of manifest.files) {
+    if (manifestExcluded.has(fileEntry.path)) continue;
+    const actualArtifact = allArtifacts.find((a) => a.path === (fileEntry.path as string));
+    if (!actualArtifact) {
+      missingArtifacts.push(fileEntry.path);
+      continue;
+    }
+    const actualHash = hash(actualArtifact.bytes);
+    if (actualHash !== fileEntry.sha256) hashMismatches.push(fileEntry.path);
+    if (actualArtifact.bytes.byteLength !== fileEntry.sizeBytes) sizeMismatches.push(fileEntry.path);
+    if (actualArtifact.mediaType !== fileEntry.mediaType) mediaTypeMismatches.push(fileEntry.path);
+  }
+
+  if (
+    missingArtifacts.length > 0 ||
+    unmanifestedArtifacts.length > 0 ||
+    hashMismatches.length > 0 ||
+    sizeMismatches.length > 0 ||
+    mediaTypeMismatches.length > 0
+  ) {
+    throw new Error(
+      `PACKAGE_MANIFEST_ARTIFACT_CONTRACT_FAILED:${JSON.stringify({
+        missingArtifacts,
+        unmanifestedArtifacts,
+        hashMismatches,
+        sizeMismatches,
+        mediaTypeMismatches,
+      })}`
+    );
   }
 
   // DISTINCT_REQUIRED_ARTIFACT_HASH_GUARD: Ensure distinct PDFs have distinct hashes
   const pdfArtifacts = allArtifacts.filter(a => a.path.endsWith(".pdf") && a.path !== "Complete Dossier Compilation.pdf");
-  pdfArtifacts.forEach(a => console.log("PDF_HASH_CHECK:", a.path, hash(a.bytes)));
   const hashes = pdfArtifacts.map(a => hash(a.bytes));
   const uniqueHashes = new Set(hashes);
   if (uniqueHashes.size !== hashes.length) {
     throw new Error("DISTINCT_REQUIRED_ARTIFACT_HASH_GUARD: Semantic PDF documents cannot have duplicate hashes.");
   }
 
+  // ---- Create ZIP ----
   const zip = new JSZip();
   const date = new Date(params.generatedAt);
   zip.folder("Supporting_Evidence");
   for (const item of allArtifacts) zip.file(item.path, item.bytes, { date, createFolders: true });
   const buffer = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE", compressionOptions: { level: 9 }, platform: "UNIX" });
 
+  // ---- Patch 6: ZIP reopen and full byte verification ----
   const reopened = await JSZip.loadAsync(buffer, { checkCRC32: true });
-  const reopenedTopLevel = topLevelComponents(Object.keys(reopened.files).filter((path) => !reopened.files[path].dir || path === "Supporting_Evidence/"));
-  if (canonical(reopenedTopLevel) !== canonical(expected)) throw new Error("PACKAGE_COMPONENT_CONTRACT_FAILED");
-  
-  if (manifest.schemaVersion !== (isV5 ? "CBAMVALID-DOSSIER-5.0" : "CBAMVALID-DOSSIER-4.0") || manifest.legalSourceRegistryHash !== DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT) {
-    throw new Error("PACKAGE_MANIFEST_REGULATORY_PROVENANCE_INVALID");
+  const reopenedTopLevel = topLevelComponents(
+    Object.keys(reopened.files).filter(
+      (path) => !reopened.files[path].dir || path === "Supporting_Evidence/"
+    )
+  );
+  if (canonical(reopenedTopLevel) !== canonical(expected)) {
+    throw new Error(
+      `PACKAGE_COMPONENT_CONTRACT_FAILED:${JSON.stringify({
+        expectedCount: expected.length,
+        actualCount: reopenedTopLevel.length,
+        missingComponents: expected.filter((c) => !reopenedTopLevel.includes(c)),
+        extraComponents: reopenedTopLevel.filter((c) => !expected.includes(c as unknown as string)),
+      })}`
+    );
   }
 
-  if (isV5) {
-    const hasDossier = manifest.files.some(f => f.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
-    const hasReport = manifest.files.some(f => f.path === "Operator Emissions Report.pdf");
-    if (!hasDossier || !hasReport) {
-      throw new Error("PACKAGE_MANIFEST_PRIMARY_PDF_MISSING");
-    }
-  }
-
+  // Verify every manifest file against ZIP bytes (including PDFs)
   for (const file of manifest.files) {
     const entry = reopened.file(file.path);
-    if (!entry) throw new Error(`PACKAGE_MANIFEST_FILE_MISSING:${file.path}`);
+    if (!entry) throw new Error(`PACKAGE_ZIP_MANIFEST_FILE_MISSING:${file.path}`);
     const bytes = await entry.async("nodebuffer");
-    if (file.path.endsWith(".pdf")) {
-      continue;
-    }
-    if (bytes.byteLength !== file.sizeBytes) throw new Error(`PACKAGE_REOPEN_SIZE_MISMATCH:${file.path}`);
-    if (hash(bytes) !== file.sha256) throw new Error(`PACKAGE_REOPEN_HASH_MISMATCH:${file.path}`);
+    if (bytes.byteLength !== file.sizeBytes) throw new Error(`PACKAGE_ZIP_SIZE_MISMATCH:${file.path}`);
+    if (hash(bytes) !== file.sha256) throw new Error(`PACKAGE_ZIP_HASH_MISMATCH:${file.path}`);
   }
+
+  // Verify manifest + signature trust components
   const reopenedManifest = await reopened.file("Data Integrity Manifest.json")?.async("nodebuffer");
   const reopenedSignature = await reopened.file("Manifest Signature.sig")?.async("nodebuffer");
-  if (!reopenedManifest || !reopenedSignature || !reopenedManifest.equals(params.manifestBytes) || !reopenedSignature.equals(signatureBuffer)) throw new Error("PACKAGE_REOPEN_TRUST_COMPONENT_MISMATCH");
-  if (!crypto.verify("sha256", reopenedManifest, params.signature.publicKeyPem, Buffer.from(params.signature.signatureBase64, "base64"))) throw new Error("PACKAGE_REOPEN_SIGNATURE_INVALID");
+  if (!reopenedManifest || !reopenedSignature) {
+    throw new Error("PACKAGE_ZIP_TRUST_COMPONENT_MISSING");
+  }
+  if (!reopenedManifest.equals(params.manifestBytes)) {
+    throw new Error("PACKAGE_ZIP_MANIFEST_CONTENT_MISMATCH");
+  }
+  if (!reopenedSignature.equals(signatureBuffer)) {
+    throw new Error("PACKAGE_ZIP_SIGNATURE_CONTENT_MISMATCH");
+  }
+
+  // Verify critical V5 components exist in ZIP
+  if (isV5) {
+    const criticalPaths = [
+      "Data Integrity Manifest.json",
+      "Manifest Signature.sig",
+      "Calculation Graph.json",
+      "Calculation Trace.json",
+      "Verifier Workspace.xlsx",
+    ];
+    for (const criticalPath of criticalPaths) {
+      if (!reopened.file(criticalPath)) {
+        throw new Error(`PACKAGE_ZIP_CRITICAL_COMPONENT_MISSING:${criticalPath}`);
+      }
+    }
+    // Supporting_Evidence/ directory check
+    if (!reopened.file("Supporting_Evidence/README.txt")) {
+      throw new Error("PACKAGE_ZIP_SUPPORTING_EVIDENCE_MISSING");
+    }
+  }
+
+  // Final signature verification against reopened manifest
+  if (!crypto.verify("sha256", reopenedManifest, params.signature.publicKeyPem, Buffer.from(params.signature.signatureBase64, "base64"))) {
+    throw new Error("PACKAGE_ZIP_SIGNATURE_VERIFICATION_FAILED");
+  }
+
+  // Regulatory provenance check
+  if (
+    manifest.schemaVersion !== (isV5 ? "CBAMVALID-DOSSIER-5.0" : "CBAMVALID-DOSSIER-4.0") ||
+    manifest.legalSourceRegistryHash !== DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT
+  ) {
+    throw new Error("PACKAGE_MANIFEST_REGULATORY_PROVENANCE_INVALID");
+  }
 
   const primaryPdfPath = isV5 ? "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf" : "Operator Emissions Report.pdf";
   const primaryPdf = allArtifacts.find((item) => item.path === primaryPdfPath)?.bytes;
   const workbook = allArtifacts.find((item) => item.path === "Verifier Workspace.xlsx")?.bytes;
-  if (!primaryPdf || !workbook || primaryPdf.byteLength < 5000 || workbook.byteLength < 5000) throw new Error("PACKAGE_PRIMARY_ARTIFACT_MISSING_OR_TRIVIAL");
+  if (!primaryPdf || !workbook || primaryPdf.byteLength < 5000 || workbook.byteLength < 5000) {
+    throw new Error("PACKAGE_PRIMARY_ARTIFACT_MISSING_OR_TRIVIAL");
+  }
   return { zip: buffer, zipHash: hash(buffer), primaryPdf, workbook, signatureBytes: signatureBuffer };
 }
 

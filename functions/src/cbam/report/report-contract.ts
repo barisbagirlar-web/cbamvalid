@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { VERIFICATION_MATERIALITY_RATE } from "../registry/rulesets";
 import { PackageCodeSchema, resolvePackageCode } from "./package-code";
+import { REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5, REQUIRED_TOP_LEVEL_COMPONENT_COUNT } from "./package-components";
 
 const HashSchema = z.string().regex(/^[a-f0-9]{64}$/i);
 const ReportIdSchema = z.string().regex(/^report_[a-f0-9]{64}$/);
@@ -121,7 +122,7 @@ export function toSealedReportView(value: unknown): SealedReportView {
     raw.dossierSchemaVersion === "CBAMVALID-DOSSIER-5.0";
 
   const manifestCount = report.packageMetadata?.actualTopLevelComponentCount;
-  const defaultCount = isV5 ? 25 : 27;
+  const defaultCount = isV5 ? REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5 : REQUIRED_TOP_LEVEL_COMPONENT_COUNT;
   const storedStatus = typeof raw.operatorReadinessStatus === "string" ? raw.operatorReadinessStatus : undefined;
   const automatedReadiness = storedStatus === "OPERATOR_PREPARATION_COMPLETE" ||
     storedStatus === "INCOMPLETE_ASSESSMENT" ||
