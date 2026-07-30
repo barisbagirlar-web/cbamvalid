@@ -1,0 +1,109 @@
+================================================================================
+CBAMValid DOSSIER 10/10 RELEASE — ISSUE LEDGER
+================================================================================
+Created: 2026-07-31T22:45Z
+Branch: fix/live-v5-gate-diagnosis-20260731
+Previous commit: ea6a2ce (V5 package contract fix)
+PR #79: OPEN, MERGEABLE (base: main)
+================================================================================
+
+ID    | Phase | File/Route                  | Issue                        | Root Cause                        | Sev   | Status
+------|-------|-----------------------------|------------------------------|-----------------------------------|-------|---------
+IL-01 | FAZ0  | (operations)                | PR #79 unmerged, function    | Hotfix code done, not deployed    | HIGH  | OPEN
+     |       |                             | sealCbamReport not deployed  |                                   |       |         
+IL-02 | FAZ0  | (operations)                | Live acceptance test on      | Function not yet deployed         | HIGH  | OPEN  
+     |       |                             | teb232@gmail.com not done    |                                   |       |         
+IL-03 | FAZ1  | functions/src/cbam/registry/| Regulation records lack      | No structured legal-source        | HIGH  | OPEN
+     |       | legal-sources.ts             | structured fields: articles, | registry with full metadata       |       |         
+     |       |                             | annexes, scope, contentHash  |                                   |       |         
+IL-04 | FAZ1  | scripts/guard-report-claims | Missing guard script for     | Not implemented                   | HIGH  | OPEN
+     |       | .mjs                         | "EU approved", "accredited", |                                   |       |         
+     |       |                             | etc. claims                  |                                   |       |         
+IL-05 | FAZ2  | functions/src/cbam/schema.ts| Missing operator fields:     | Schema not at template level      | HIGH  | OPEN
+     |       |                             | registration number,         |                                   |       |         
+     |       |                             | contact, declarations, etc.  |                                   |       |         
+IL-06 | FAZ2  | functions/src/cbam/schema.ts| Missing installation fields: | Schema not at template level      | HIGH  | OPEN
+     |       |                             | UN/LOCODE, lat/lng, diagram, |                                   |       |         
+     |       |                             | monitoring plan ID/version   |                                   |       |         
+IL-07 | FAZ2  | functions/src/cbam/schema.ts| Missing verifier reserved    | Schema not at template level      | MED   | OPEN
+     |       |                             | fields: accreditation,       |                                   |       |         
+     |       |                             | team, site visit, opinion    |                                   |       |         
+IL-08 | FAZ3  | functions/src/cbam/         | smoke_test in production     | Test fixture leaks into production | HIGH  | OPEN
+     |       | validation/readiness-score.ts| installation name bypasses   | data                              |       |         
+     |       |                             | period gate                  |                                   |       |         
+IL-09 | FAZ3  | functions/src/cbam/schema.ts| No future period guard for   | Missing FND-PERIOD-FUTURE-END-DATE | HIGH  | OPEN
+     |       |                             | production seal              | enforcement in seal path          |       |         
+IL-10 | FAZ3  | functions/src/cbam/report/  | Production reports may       | Missing content filter for         | MED   | OPEN
+     |       | premium-dossier-pdf.ts       | contain "smoke_test",        | test labels in production         |       |         
+     |       |                             | "STRESS", "synthetic"        |                                   |       |         
+IL-11 | FAZ4  | functions/src/cbam/         | Emissions not shown with     | Current calculation model doesn't | HIGH  | OPEN
+     |       | calculator.ts                | A-H segregation:             | segregate as A-H                  |       |         
+     |       |                             | installation direct,         |                                   |       |         
+     |       |                             | precursor direct, total      |                                   |       |         
+     |       |                             | direct, electricity indirect,|                                   |       |         
+     |       |                             | precursor indirect, total    |                                   |       |         
+     |       |                             | indirect, cert-relevant,     |                                   |       |         
+     |       |                             | informational total          |                                   |       |         
+IL-12 | FAZ4  | functions/src/cbam/         | Calculation IDs may contain  | Node ID generation allows generic  | HIGH  | OPEN
+     |       | calculation/*                | "CBAM_GOOD_" prefix without  | node IDs                           |       |         
+     |       |                             | good index                   |                                   |       |         
+IL-13 | FAZ4  | functions/src/dossier/      | Build blocker not enforced   | Self-verify guards may not catch   | MED   | OPEN
+     |       | 90-verify/selfVerify.ts      | for null/undefined/duplicate | all invalid node IDs              |       |         
+     |       |                             | node IDs                     |                                   |       |         
+IL-14 | FAZ5  | functions/src/cbam/         | No evidence quality score    | Missing A-E classification system  | HIGH  | OPEN
+     |       | validation/evidence-         | (A-E classification)         |                                   |       |         
+     |       | sufficiency.ts               |                              |                                   |       |         
+IL-15 | FAZ5  | functions/src/cbam/schema.ts| installation.systemBoundaries| Field without evidenceId can't     | MED   | OPEN
+     |       |                             | has no evidenceId            | be SUPPORTED                       |       |         
+IL-16 | FAZ6  | functions/src/              | Risk register module missing | Not yet implemented                | MED   | OPEN
+     |       | dossier/40-readiness/        | (inherent, control,          |                                   |       |         
+     |       |                             | detection)                   |                                   |       |         
+IL-17 | FAZ6  | functions/src/cbam/         | Materiality per-good not     | Only aggregate materiality exists   | MED   | OPEN
+     |       | registry/rulesets.ts         | stored with full metadata   |                                   |       |         
+IL-18 | FAZ6  | functions/src/              | Sampling population/rationale| Not yet implemented                | MED   | OPEN
+     |       | dossier/50-model/            | module missing               |                                   |       |         
+IL-19 | FAZ7  | functions/src/dossier/      | Single 100/100 instead of    | Scoreboard not split into 4        | HIGH  | OPEN
+     |       | 60-render/pdf/scoreboard.ts  | 4 independent indicators     | independent indicators             |       |         
+IL-20 | FAZ7  | functions/src/dossier/      | Verifier-reserved fields     | Score calculation includes zero     | MED   | OPEN
+     |       | 40-readiness/score.ts        | count as zero, not excluded  | for unfilled verifier fields       |       |         
+IL-21 | FAZ8  | functions/src/cbam/report/  | Current sections < 31        | Current architecture has ~27-30,   | HIGH  | OPEN
+     |       | premium-dossier-pdf.ts       |                              | missing Risk, Materiality, Sampling|       |         
+IL-22 | FAZ8  | premium-dossier-pdf.ts       | Missing visual charts:       | PDF generation doesn't include     | MED   | OPEN
+     |       |                             | process flow, boundary       | visual diagrams (only tables)      |       |         
+     |       |                             | diagram, risk heat matrix    |                                   |       |         
+IL-23 | FAZ9  | functions/src/cbam/report/  | PDF font embedding,          | Professional PDF may use standard  | MED   | OPEN
+     |       | professional-pdf.ts          | bookmarks/outline, clickable | fonts without embedding            |       |         
+     |       |                             | TOC, orphan row prevention   |                                   |       |         
+IL-24 | FAZ10 | functions/src/cbam/report/  | Placeholder values (NOT_     | Seal pipeline may leave fields     | HIGH  | CLOSED
+     |       | premium-dossier-pdf.ts       | AVAILABLE, UNAVAILABLE)      | unfilled before PDF render         |       | (PATCH8)
+     |       |                             | banned in sealed release     |                                   |       |         
+IL-25 | FAZ10 | functions/src/cbam/report/  | Public verification page     | Not yet implemented                | MED   | OPEN
+     |       | seal-service.ts              | may expose customer data     |                                   |       |         
+IL-26 | FAZ11 | functions/src/cbam/report/  | XLSX missing sheets: Risk,   | Current XLSX has ~14-16 sheets     | MED   | OPEN
+     |       | xlsx-builder.ts              | Materiality, Sampling,       | instead of required ~29            |       |         
+     |       |                             | Verifier Team, Site Visits,  |                                   |       |         
+     |       |                             | Verifier Opinion, etc.       |                                   |       |         
+IL-27 | FAZ12 | functions/src/cbam/registry/| Registry template mapping    | Not yet implemented                | HIGH  | OPEN
+     |       | verification-template-       | dataset may be incomplete    |                                   |       |         
+     |       | 2025-2546.ts                 | vs. full Registry fields     |                                   |       |         
+IL-28 | FAZ13 | functions/src/              | E-01..E-16 chapter contract  | Premium chapters may have          | HIGH  | OPEN
+     |       | dossier/50-model/enterprise- | not enforced                | DATA_GAP without documentation     |       |         
+     |       | chapters.ts                  |                              |                                   |       |         
+IL-29 | FAZ14 | tests/dossier/               | 30 mandatory test scenarios  | Current test matrix is incomplete  | HIGH  | OPEN
+     |       |                             | not all covered              |                                   |       |         
+IL-30 | FAZ15 | tests/reports/              | PDF render QA (blank page,   | Not yet implemented                | MED   | OPEN
+     |       | premium-dossier-v5.test.ts   | overflow, clipped text)      |                                   |       |         
+IL-31 | FAZ16 | (external)                  | External CBAM verifier       | Not yet engaged                    | MED   | OPEN
+     |       |                             | review not done              |                                   |       |         
+IL-32 | FAZ1  | lib/cbam (various)          | Validation drift:            | Parallel lib/cbam and              | HIGH  | OPEN
+     |       | vs functions/src/cbam/       | lib/cbam has separate schema,| functions/src/cbam with drift      |       |         
+     |       |                             | validation, calculation      |                                   |       |         
+IL-33 | FAZ4  | functions/src/cbam/         | Unit dimensional safety:     | Missing dimension consistency      | HIGH  | OPEN
+     |       | calculation/*                | no explicit unit tracking    | enforcement across calculation     |       |         
+     |       |                             | on intermediate results      |                                   |       |         
+IL-34 | FAZ4  | functions/src/cbam/         | Allocation reconciliation    | Decimal.js may not be consistently  | MED   | OPEN
+     |       | calculation/calculation-     | may not enforce full         | used in all intermediate steps     |       |         
+     |       | engine.ts                    | precision guarantee          |                                   |       |         
+================================================================================
+OPEN: 33 items | CLOSED: 1 item | IN PROGRESS: 0 | BLOCKED: 0
+================================================================================

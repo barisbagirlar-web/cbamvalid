@@ -74,7 +74,7 @@ for (const sourceId of [
   "DEL_2025_2551",
 ]) requireText(rootLegal, sourceId, "Verified definitive legal source");
 
-requireText(rootLegal, "7e17ddb14e300758d5125606820b4ba7e5322c2ee20dd079efe63825990c71bf", "Legal-source registry fingerprint");
+requireText(rootLegal, "e6a3338b06245293e69e291c4604861aefc6497021406d94e1d735f9baa46666", "Legal-source registry fingerprint");
 requireText(rootRulesets, "VERIFICATION_MATERIALITY_RATE = 0.05", "Five-percent materiality contract");
 requireText(rootRulesets, "verificationTemplateRequired: true", "Electronic verification template requirement");
 requireText(rootSectors, 'legalStatus: "PROPOSAL_ONLY"', "Proposal-only downstream scope");
