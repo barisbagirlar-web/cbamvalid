@@ -697,7 +697,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
   {
     path: "/cbam-methodology",
     pageType: "guide",
-    indexability: "index",
+    indexability: "noindex",
     title: "CBAM Methodology Overview | Rulesets and Calculation Trace",
     description:
       "Overview of CBAM methodology choices, ruleset versioning, and why sealed calculation traces must be reproducible.",
@@ -705,7 +705,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     canonicalPath: "/cbam-methodology",
     primaryIntent: "CBAM methodology",
     audience: ["technical preparers", "reviewers"],
-    sitemapEligible: true,
+    sitemapEligible: false,
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/methodology", "/cbam-embedded-emissions-calculation", "/product"],
     regulatorySourceIds: ["REG_2023_956", "IMPL_2025_2547"],

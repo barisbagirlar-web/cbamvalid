@@ -8,6 +8,7 @@ import {
 import { isCbamCovered } from "../../lib/seo/cbam-scope-rules";
 import { buildCanonicalUrl, resolveCanonicalPath } from "../../lib/seo/canonical";
 import { FORBIDDEN_SOCIAL_PROOF, PRICE_CLAIM, collectVerifiedCommercialScalars } from "../../lib/seo/claims";
+import { CANONICAL_PRICING } from "../../lib/billing/pricing-config";
 import { generateProductOfferSchema, generateWebApplicationSchema } from "../../lib/seo/schema";
 import {
   SEO_REGULATORY_FACTS,
@@ -272,7 +273,15 @@ function validateClaimsAndSchema(): GateResult[] {
   if (FORBIDDEN_SOCIAL_PROOF.aggregateRating.evidenceStatus !== "unverified") {
     results.push(fail("G13", "AggregateRating must remain unverified"));
   }
-  if (PRICE_CLAIM.evidenceStatus !== "verified" || PRICE_CLAIM.value.currency !== "USD" || PRICE_CLAIM.value.amount !== "149") {
+  const scalars = collectVerifiedCommercialScalars();
+  const amountMinorMatches = CANONICAL_PRICING.amountMinor === Math.round(Number(scalars.priceAmount) * 100);
+  if (
+    PRICE_CLAIM.evidenceStatus !== "verified" ||
+    PRICE_CLAIM.value.currency !== "USD" ||
+    PRICE_CLAIM.value.amount !== scalars.priceAmount ||
+    PRICE_CLAIM.value.amount !== CANONICAL_PRICING.displayPrice ||
+    !amountMinorMatches
+  ) {
     results.push(fail("G14", "Price claim SSOT mismatch"));
   }
 
@@ -290,7 +299,6 @@ function validateClaimsAndSchema(): GateResult[] {
 
   const product = JSON.stringify(generateProductOfferSchema());
   const webapp = JSON.stringify(generateWebApplicationSchema("test"));
-  const scalars = collectVerifiedCommercialScalars();
   if (!product.includes(`"price":"${scalars.priceAmount}"`) || !product.includes(`"priceCurrency":"${scalars.priceCurrency}"`)) {
     results.push(fail("G14", "Product schema price parity failed"));
   }
