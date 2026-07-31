@@ -98,11 +98,11 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   };
 
   const drawParagraph = (text: string) => {
-    const lines = doc.splitTextToSize(asText(text), CONTENT_WIDTH) as string[];
-    ensure(lines.length * 4.5 + 2);
     doc.setTextColor(43, 51, 64);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8.5);
+    const lines = doc.splitTextToSize(asText(text), CONTENT_WIDTH) as string[];
+    ensure(lines.length * 4.5 + 2);
     doc.text(lines, MARGIN, y);
     y += lines.length * 4.5 + 2;
   };

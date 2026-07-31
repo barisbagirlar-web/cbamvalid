@@ -85,7 +85,8 @@
     "gate:dimension-backing": "vitest run src/dossier/40-readiness/backing.spec.ts",
     "gate:dossier-all": "node scripts/gates/run-all.mjs",
     "gate:crypto-claims": "node scripts/gates/crypto-claims.mjs",
-    "gate:no-render-math": "node scripts/gates/no-render-math.mjs"
+    "gate:no-render-math": "node scripts/gates/no-render-math.mjs",
+    "render:qa": "npx tsx scripts/render-qa/analyze-render-qa.ts \"artifacts/sample-v5/CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf\" --out artifacts/render-qa"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -106,11 +107,12 @@
     "react-dom": "19.2.4",
     "react-hook-form": "^7.81.0",
     "server-only": "^0.0.1",
-    "xmlbuilder2": "^4.0.3",
     "sharp": "^0.35.3",
+    "xmlbuilder2": "^4.0.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@napi-rs/canvas": "^1.0.2",
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
