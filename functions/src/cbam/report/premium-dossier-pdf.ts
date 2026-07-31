@@ -1134,9 +1134,25 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
         expertJudgement: string;
         verifierStatus: string;
       }>;
-      samplingPopulation?: string;
+      samplingPopulation?: Array<{
+        populationDomain: string;
+        populationSize: number;
+        sampleSize: number;
+        selectionMethod: string;
+        selectedItemIds: readonly string[];
+        rationale: string;
+        state: string;
+      }>;
       samplingRationale?: string;
-      sampleSelection?: Array<{ sampleId: string; rationale: string }>;
+      sampleSelection?: Array<{
+        populationDomain: string;
+        populationSize: number;
+        sampleSize: number;
+        selectionMethod: string;
+        selectedItemIds: readonly string[];
+        rationale: string;
+        state: string;
+      }>;
     } | null;
     const materiality = prep?.materialityWorkpapers ?? [];
     drawParagraph(
@@ -1156,9 +1172,22 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
         : [["—", "—", "—", "—", "—", "NO_WORKPAPER"]],
       [20, 25, 30, 30, 30, 40]
     );
-    if (prep?.samplingPopulation || prep?.samplingRationale) {
-      drawCallout("Sampling Population", prep.samplingPopulation ?? "NOT_ASSESSED");
-      drawCallout("Sampling Rationale", prep.samplingRationale ?? "NOT_ASSESSED");
+    const population = prep?.samplingPopulation ?? [];
+    if (prep?.samplingRationale || population.length > 0) {
+      drawCallout("Sampling Rationale", prep?.samplingRationale ?? "Operator-proposed sampling for verifier planning; verifier confirms, amends or replaces during planning.");
+      if (population.length > 0) {
+        drawTable(
+          ["Population Domain", "Population Size", "Sample Size", "Selection Method", "State"],
+          population.map((row) => [
+            row.populationDomain,
+            String(row.populationSize),
+            String(row.sampleSize),
+            row.selectionMethod,
+            formatEnum(row.state),
+          ]),
+          [50, 25, 25, 55, 35]
+        );
+      }
     }
   }
 
