@@ -414,9 +414,19 @@ export const PremiumDossierViewModelV2Schema = PremiumDossierViewModelSchema.ext
       externalVerifierTotal: z.number().int().optional(),
       scoreboardClaim: z.string().optional(),
       premiumChapterContract: z.enum(["COMPLETE", "GAP", "NOT_ASSESSED"]).optional(),
+      premiumNameVisible: z.boolean().optional(),
       productTierLabel: z.string().optional(),
     })
     .optional(),
+  premiumChapters: z
+    .array(z.object({
+      chapterId: z.string(),
+      title: z.string(),
+      status: z.enum(["APPLICABLE_COMPLETE", "APPLICABLE_DATA_GAP", "NOT_APPLICABLE_WITH_LEGAL_BASIS", "VERIFIER_RESERVED"]),
+      basis: z.string(),
+    }))
+    .optional(),
+  premiumNameVisible: z.boolean().optional(),
   monitoringPlan: z
     .array(z.object({
       requirementId: z.string(),

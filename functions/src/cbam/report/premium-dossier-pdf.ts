@@ -591,7 +591,11 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   writeCoverDetail("Case ID", model.caseId);
   writeCoverDetail(
     "Product Delivery Tier",
-    sb?.productTierLabel ?? (model.productCode === "pack_premium_dossier_v5" ? "Premium Dossier Pack" : model.productCode)
+    sb?.premiumNameVisible === true
+      ? sb?.productTierLabel ?? "Premium Dossier"
+      : sb?.premiumNameVisible === false
+        ? "CBAMValid Pack"
+        : sb?.productTierLabel ?? (model.productCode === "pack_premium_dossier_v5" ? "Premium Dossier Pack" : model.productCode)
   );
   writeCoverDetail("Dossier Release Iteration", `Iteration ${model.releaseVersion}`);
   if (model.versionStamp) {
@@ -840,25 +844,43 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     }
   }
 
-  // Enterprise / Exclusive chapter readiness (Part D)
+  // Enterprise / Exclusive chapter readiness (Part D / FAZ 13 premium contract)
   beginSection(31, "Enterprise Chapter Completeness", 40);
   {
-    const chapterEval = evaluateEnterpriseChapters({
-      tier: "STANDARD",
-      providedByChapterId: {},
-    });
-    drawParagraph(
-      "Standard test packages apply WP-00..14 engine controls. Premium/Enterprise/Exclusive chapters are gated by content contracts and are marked NOT_APPLICABLE on the Standard tier. Missing required fields on higher tiers render as DATA GAP — never placeholder prose."
-    );
-    drawTable(
-      ["Chapter", "Required", "Status"],
-      chapterEval.evaluations.map((e) => [
-        `${e.id} ${e.title}`,
-        e.required ? "YES" : "NO",
-        e.outcome.status,
-      ]),
-      [90, 25, 35]
-    );
+    const premiumChapters = model.premiumChapters ?? [];
+    if (premiumChapters.length > 0) {
+      drawParagraph(
+        "Premium chapters E-01..E-16 are evaluated against the premium component contract. Each chapter uses exactly one status: APPLICABLE_COMPLETE, APPLICABLE_DATA_GAP, NOT_APPLICABLE_WITH_LEGAL_BASIS or VERIFIER_RESERVED. Premium product naming is suppressed until all applicable chapters render without a DATA GAP."
+      );
+      drawTable(
+        ["Chapter", "Status", "Basis"],
+        premiumChapters.map((entry) => [entry.chapterId ? `${entry.chapterId} ${entry.title}` : entry.title, entry.status, entry.basis]),
+        [70, 45, 70]
+      );
+      const gaps = premiumChapters.filter((entry) => entry.status === "APPLICABLE_DATA_GAP");
+      if (gaps.length > 0) {
+        drawCallout("PREMIUM CONTRACT GAP", `${gaps.length} applicable premium chapter(s) have a DATA GAP: ${gaps.map((entry) => entry.chapterId).join(", ")}`);
+      } else if (model.premiumNameVisible === false) {
+        drawCallout("PREMIUM CONTRACT GAP", "Premium chapters are collectively not applicable; the premium product name is suppressed.");
+      }
+    } else {
+      drawParagraph(
+        "Standard test packages apply WP-00..14 engine controls. Premium/Enterprise/Exclusive chapters are gated by content contracts and are marked NOT_APPLICABLE on the Standard tier. Missing required fields on higher tiers render as DATA GAP — never placeholder prose."
+      );
+      const chapterEval = evaluateEnterpriseChapters({
+        tier: "STANDARD",
+        providedByChapterId: {},
+      });
+      drawTable(
+        ["Chapter", "Required", "Status"],
+        chapterEval.evaluations.map((e) => [
+          `${e.id} ${e.title}`,
+          e.required ? "YES" : "NO",
+          e.outcome.status,
+        ]),
+        [90, 25, 35]
+      );
+    }
   }
 
   // Section 11: Production Processes and Functional Units

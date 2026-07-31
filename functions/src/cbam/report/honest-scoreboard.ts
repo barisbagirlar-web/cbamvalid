@@ -40,6 +40,7 @@ export interface HonestScoreboard {
   externalVerifierTotal: number;
   scoreboardClaim: string;
   premiumChapterContract: PremiumChapterContractState;
+  premiumNameVisible: boolean;
   productTierLabel: string;
 }
 
@@ -138,9 +139,10 @@ export function buildHonestScoreboard(params: {
   sufficiency: readonly EvidenceSufficiencyRow[];
   packageIntegrity: PackageIntegrityState;
   premiumChapterContract: PremiumChapterContractState;
+  premiumNameVisible?: boolean;
   productTierLabel: string;
 }): HonestScoreboard {
-  const { caseData, dossierScores, sufficiency, packageIntegrity, premiumChapterContract, productTierLabel } = params;
+  const { caseData, dossierScores, sufficiency, packageIntegrity, premiumChapterContract, premiumNameVisible, productTierLabel } = params;
 
   const operatorPreparationScore = dossierScores.operatorReadiness;
   const evidence = computeEvidenceAssuranceScore(sufficiency);
@@ -164,6 +166,7 @@ export function buildHonestScoreboard(params: {
     externalVerifierTotal: verifier.total,
     scoreboardClaim: buildClaim(operatorPreparationScore, verifier.completed, verifier.total),
     premiumChapterContract,
+    premiumNameVisible: premiumNameVisible ?? premiumChapterContract === "COMPLETE",
     productTierLabel,
   };
 }

@@ -35,6 +35,7 @@ function loadVerifyCliBytes(): Buffer {
 import { runEvidenceSufficiency } from "../validation/evidence-sufficiency";
 import { buildVerificationCrosswalk } from "../registry/verification-template-2025-2546";
 import { buildRegistryTemplateMapping } from "../registry/registry-template-mapping";
+import { evaluatePremiumChapterContract } from "./premium-chapter-contract";
 import { generateFindingsAndActions } from "../validation/findings-engine";
 import { assessReadiness, getReportingPeriodAssessment } from "../validation/readiness-score";
 import { buildPremiumDossierPdf } from "./premium-dossier-pdf";
@@ -251,6 +252,7 @@ function buildPdfArtifacts(params: {
     const { findings, correctiveActions } = generateFindingsAndActions(caseData, timestamp);
     const readiness = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: timestamp });
     const periodAssessment = getReportingPeriodAssessment(caseData, timestamp);
+    const premiumContractResult = evaluatePremiumChapterContract({ caseData, calculation: params.calculation, model });
     const dossierModel: PremiumDossierViewModelV2 = {
       schemaVersion: "CBAMVALID-DOSSIER-5.0",
       productCode: "pack_premium_dossier_v5",
@@ -329,6 +331,8 @@ function buildPdfArtifacts(params: {
         evidenceIds: [...entry.evidenceIds],
         validationErrors: [...entry.validationErrors],
       })),
+      premiumChapters: premiumContractResult.evaluations.map((entry) => ({ ...entry })),
+      premiumNameVisible: premiumContractResult.premiumNameVisible,
       verifierPreparation: model.verifierPreparation,
     };
 

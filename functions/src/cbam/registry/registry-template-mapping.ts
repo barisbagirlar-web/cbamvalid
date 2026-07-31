@@ -155,7 +155,7 @@ export function buildRegistryTemplateMapping(caseData: AuditReadyCase, assessmen
   }
 
   fields.push(
-    field("REG-ALLOC-METHOD", "Allocation", legalBasis.allocation, "methodologyDecisions.allocationMethod", caseData.methodologyDecisions.find((item) => item.topic.includes("llocat"))?.selectedMethod ?? "", "OPERATOR", evidenceIdsFor("REQ-GOOD-ALLOC-0"), [])
+    field("REG-ALLOC-METHOD", "Allocation", legalBasis.allocation, "methodologyDecisions.allocationMethod", caseData.methodologyDecisions.find((item) => item.topic.toLowerCase().includes("llocat"))?.selectedMethod ?? "", "OPERATOR", evidenceIdsFor("REQ-GOOD-ALLOC-0"), [])
   );
 
   if (caseData.carbonPriceRecords.length === 0) {

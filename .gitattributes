@@ -1,0 +1,4 @@
+# Generated sample-package fixtures carry CRLF line endings (RFC 4180 CSV rows and
+# zip-packaged text records). Treat CR at end-of-line as intended content so
+# `git diff --check` does not flag regenerated fixture lines.
+artifacts/sample-v5/** whitespace=cr-at-eol
