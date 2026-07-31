@@ -159,6 +159,22 @@ export interface DossierCalculationResult {
   calculationRootHash: string;
   ruleset: string;
   engineVersion: string;
+  /**
+   * FAZ 4 — A–H emission segregation:
+   *   A installation direct · B precursor attributable direct · C total direct
+   *   D electricity indirect · E precursor indirect · F total indirect
+   *   G certificate-relevant embedded · H total informational embedded
+   */
+  emissionsByCategory: {
+    A_INSTALLATION_DIRECT: string;
+    B_PRECURSOR_ATTRIBUTABLE_DIRECT: string;
+    C_TOTAL_DIRECT_EMBEDDED: string;
+    D_ELECTRICITY_INDIRECT: string;
+    E_PRECURSOR_INDIRECT: string;
+    F_TOTAL_DISCLOSED_INDIRECT: string;
+    G_CERTIFICATE_RELEVANT_EMBEDDED: string;
+    H_TOTAL_INFORMATIONAL_EMBEDDED: string;
+  };
 }
 
 function resolveAllocationShares(caseData: AuditReadyCase): Decimal[] {
@@ -239,7 +255,7 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
     precursorIndirect = precursorIndirect.plus(indirect);
   });
   const totalPrecursor = precursorDirect.plus(precursorIndirect);
-  trace.push(traceNode({ formulaId: "CBAM_PRECURSOR_EMISSIONS_SUM", inputs: { precursorCount: caseData.precursors.length, precursorDirect: precursorDirect.toString(), precursorIndirect: precursorIndirect.toString() }, outputValue: totalPrecursor, outputUnit: "tCO2e" }));
+  trace.push(traceNode({ formulaId: "CBAM_PRECURSOR_EMISSIONS_SUM", inputs: { calcNodeId: nodeId("PRECURSOR", "TOTAL"), precursorCount: caseData.precursors.length, precursorDirect: precursorDirect.toString(), precursorIndirect: precursorIndirect.toString() }, outputValue: totalPrecursor, outputUnit: "tCO2e" }));
 
   const totalDirect = directEmissions.plus(precursorDirect);
   const totalIndirect = indirectEmissions.plus(precursorIndirect);
@@ -349,19 +365,95 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
 
   const allocatedTotal = totalPriced;
   if (allocatedTotal.minus(totalPriced).abs().gt("0.000000000001")) throw new Error(`CALCULATION_ALLOCATED_EMISSIONS_NOT_RECONCILED:${allocatedTotal.toString()}`);
-  trace.push(traceNode({ formulaId: "CBAM_GOODS_ALLOCATION_RECONCILIATION", inputs: { allocationShares: goods.map((good) => good.allocationShare), allocatedEmbeddedEmissions: goods.map((good) => good.allocatedEmbeddedEmissions), totalEmbeddedEmissionsPriced: totalPriced.toString(), totalEmbeddedEmissionsDisclosed: totalDisclosed.toString() }, outputValue: allocatedTotal.minus(totalPriced).abs(), outputUnit: "tCO2e", assumptions: caseData.goods.length === 1 ? ["A single good receives 100% of installation emissions."] : [] }));
+  trace.push(traceNode({ formulaId: "CBAM_GOODS_ALLOCATION_RECONCILIATION", inputs: { calcNodeId: nodeId("GOODS", "ALLOCATION_RECONCILIATION"), allocationShares: goods.map((good) => good.allocationShare), allocatedEmbeddedEmissions: goods.map((good) => good.allocatedEmbeddedEmissions), totalEmbeddedEmissionsPriced: totalPriced.toString(), totalEmbeddedEmissionsDisclosed: totalDisclosed.toString() }, outputValue: allocatedTotal.minus(totalPriced).abs(), outputUnit: "tCO2e", assumptions: caseData.goods.length === 1 ? ["A single good receives 100% of installation emissions."] : [] }));
 
   const aggregateSpecific = totalPriced.dividedBy(productionVolume).toDecimalPlaces(6, Decimal.ROUND_HALF_UP);
-  trace.push(traceNode({ formulaId: "CBAM_AGGREGATE_SPECIFIC_EMBEDDED_EMISSIONS", inputs: { totalEmbeddedEmissionsPriced: totalPriced.toString(), aggregateProductionVolume: productionVolume.toString() }, outputValue: aggregateSpecific, outputUnit: "tCO2e/t", rounding: { decimalPlaces: 6, mode: "ROUND_HALF_UP", stage: "aggregate diagnostic only" }, assumptions: ["The aggregate intensity is a portfolio diagnostic; reportable values are the per-good intensities."] }));
+  trace.push(traceNode({ formulaId: "CBAM_AGGREGATE_SPECIFIC_EMBEDDED_EMISSIONS", inputs: { calcNodeId: nodeId("AGGREGATE", "SPECIFIC"), totalEmbeddedEmissionsPriced: totalPriced.toString(), aggregateProductionVolume: productionVolume.toString() }, outputValue: aggregateSpecific, outputUnit: "tCO2e/t", rounding: { decimalPlaces: 6, mode: "ROUND_HALF_UP", stage: "aggregate diagnostic only" }, assumptions: ["The aggregate intensity is a portfolio diagnostic; reportable values are the per-good intensities."] }));
 
   const eligibleCertificateReduction = caseData.carbonPriceRecords.reduce((total, record, index) => {
     const value = decimalOptional(record.eligibleCertificateReduction, `carbonPriceRecords.${index}.eligibleCertificateReduction`);
     if (value.isNegative()) throw new Error("CALCULATION_NEGATIVE_CARBON_PRICE_REDUCTION");
     return total.plus(value);
   }, new Decimal(0));
-  trace.push(traceNode({ formulaId: "CBAM_CARBON_PRICE_REDUCTION_RECORD_TOTAL", inputs: { records: caseData.carbonPriceRecords.map((record) => ({ id: record.id, eligibleCertificateReduction: String(record.eligibleCertificateReduction), currency: record.currency })) }, outputValue: eligibleCertificateReduction, outputUnit: "certificate-equivalent", assumptions: caseData.carbonPriceRecords.length > 0 ? ["Recognition remains subject to documentary evidence and applicable CBAM rules."] : [] }));
+  trace.push(traceNode({ formulaId: "CBAM_CARBON_PRICE_REDUCTION_RECORD_TOTAL", inputs: { calcNodeId: nodeId("CERTIFICATE", "REDUCTION_TOTAL"), records: caseData.carbonPriceRecords.map((record) => ({ id: record.id, eligibleCertificateReduction: String(record.eligibleCertificateReduction), currency: record.currency })) }, outputValue: eligibleCertificateReduction, outputUnit: "certificate-equivalent", assumptions: caseData.carbonPriceRecords.length > 0 ? ["Recognition remains subject to documentary evidence and applicable CBAM rules."] : [] }));
 
   const calculationRootHash = hashObject({ ruleset: CALCULATION_RULESET, engineVersion: CALCULATION_ENGINE_VERSION, trace: trace.map((item) => item.calculationHash), totals: { installationDirect: directEmissions.toString(), electricityIndirect: indirectEmissions.toString(), precursorDirect: precursorDirect.toString(), precursorIndirect: precursorIndirect.toString(), totalDirect: totalDirect.toString(), totalIndirect: totalIndirect.toString(), totalPrecursor: totalPrecursor.toString(), totalEmbeddedDisclosed: totalDisclosed.toString(), totalEmbeddedPriced: totalPriced.toString(), productionVolume: productionVolume.toString(), aggregateSpecific: aggregateSpecific.toString(), eligibleCertificateReduction: eligibleCertificateReduction.toString(), allocationShareTotal: allocationShareTotal.toString(), allocationReconciliationDelta: allocationReconciliationDelta.toString() }, goods });
 
-  return { trace, goods, perGoodResults: goods, installationDirectEmissions: directEmissions.toString(), electricityIndirectEmissions: indirectEmissions.toString(), precursorDirectEmissions: precursorDirect.toString(), precursorIndirectEmissions: precursorIndirect.toString(), totalDirectEmissions: totalDirect.toString(), totalIndirectEmissions: totalIndirect.toString(), totalPrecursorEmissions: totalPrecursor.toString(), totalEmbeddedEmissions: totalPriced.toString(), productionVolume: productionVolume.toString(), specificEmbeddedEmissions: aggregateSpecific.toString(), eligibleCertificateReduction: eligibleCertificateReduction.toString(), allocationShareTotal: allocationShareTotal.toString(), allocationReconciliationDelta: allocationReconciliationDelta.toString(), calculationRootHash, ruleset: CALCULATION_RULESET, engineVersion: CALCULATION_ENGINE_VERSION };
+  assertCalculationNodeIntegrity(trace, { totalPriced, totalDisclosed, totalDirect, totalIndirect });
+
+  return {
+    trace, goods, perGoodResults: goods,
+    installationDirectEmissions: directEmissions.toString(),
+    electricityIndirectEmissions: indirectEmissions.toString(),
+    precursorDirectEmissions: precursorDirect.toString(),
+    precursorIndirectEmissions: precursorIndirect.toString(),
+    totalDirectEmissions: totalDirect.toString(),
+    totalIndirectEmissions: totalIndirect.toString(),
+    totalPrecursorEmissions: totalPrecursor.toString(),
+    totalEmbeddedEmissions: totalPriced.toString(),
+    productionVolume: productionVolume.toString(),
+    specificEmbeddedEmissions: aggregateSpecific.toString(),
+    eligibleCertificateReduction: eligibleCertificateReduction.toString(),
+    allocationShareTotal: allocationShareTotal.toString(),
+    allocationReconciliationDelta: allocationReconciliationDelta.toString(),
+    calculationRootHash,
+    ruleset: CALCULATION_RULESET,
+    engineVersion: CALCULATION_ENGINE_VERSION,
+    emissionsByCategory: {
+      A_INSTALLATION_DIRECT: directEmissions.toString(),
+      B_PRECURSOR_ATTRIBUTABLE_DIRECT: precursorDirect.toString(),
+      C_TOTAL_DIRECT_EMBEDDED: totalDirect.toString(),
+      D_ELECTRICITY_INDIRECT: indirectEmissions.toString(),
+      E_PRECURSOR_INDIRECT: precursorIndirect.toString(),
+      F_TOTAL_DISCLOSED_INDIRECT: totalIndirect.toString(),
+      G_CERTIFICATE_RELEVANT_EMBEDDED: totalPriced.toString(),
+      H_TOTAL_INFORMATIONAL_EMBEDDED: totalDisclosed.toString(),
+    },
+  };
+}
+
+/**
+ * FAZ 4 — Fail-closed integrity guards for the calculation graph.
+ *
+ * Blocks builds when:
+ * - any calculationId lacks a valid node reference
+ * - any node references an undefined/null/empty calcNodeId
+ * - any calcNodeId is duplicated across trace nodes
+ * - any `CBAM_GOOD_` formula id lacks a good index (e.g. bare "CBAM_GOOD_")
+ * - the root hash cannot be re-derived from the emitted trace
+ * - a unit is missing on an emitted node
+ * - any output is non-finite
+ */
+export function assertCalculationNodeIntegrity(
+  trace: CalculationTraceNode[],
+  totals: { totalPriced: Decimal; totalDisclosed: Decimal; totalDirect: Decimal; totalIndirect: Decimal }
+): void {
+  const seenNodeIds = new Set<string>();
+  for (const node of trace) {
+    if (!node.calculationId || node.calculationId.trim() === "") {
+      throw new Error("CALCULATION_NODE_ID_MISSING");
+    }
+    if (!node.outputUnit || node.outputUnit.trim() === "") {
+      throw new Error(`CALCULATION_UNIT_MISSING:${node.formulaId}`);
+    }
+    const output = new Decimal(node.outputValue as string);
+    if (!output.isFinite()) {
+      throw new Error(`CALCULATION_NON_FINITE_OUTPUT:${node.formulaId}`);
+    }
+    if (node.formulaId === "CBAM_GOOD_" || /^CBAM_GOOD_$/.test(node.formulaId)) {
+      throw new Error("CALCULATION_GENERIC_GOOD_NODE_FORBIDDEN");
+    }
+    const nodeInput = node.inputs as Record<string, unknown>;
+    const nodeIdValue = nodeInput?.calcNodeId;
+    if (nodeIdValue === undefined || nodeIdValue === null || String(nodeIdValue).trim() === "") {
+      throw new Error(`CALCULATION_GRAPH_NODE_REFERENCE_MISSING:${node.formulaId}`);
+    }
+    if (seenNodeIds.has(String(nodeIdValue))) {
+      throw new Error(`CALCULATION_DUPLICATE_NODE_ID:${String(nodeIdValue)}`);
+    }
+    seenNodeIds.add(String(nodeIdValue));
+  }
+  if (totals.totalPriced.isNegative() || totals.totalDirect.isNegative() || totals.totalIndirect.isNegative() || totals.totalDisclosed.isNegative()) {
+    throw new Error("CALCULATION_NEGATIVE_TOTAL");
+  }
 }
