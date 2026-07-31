@@ -6,6 +6,7 @@ import { getDefinitiveLegalSources, type LegalSourceRecord } from "../registry/l
 import { getActiveRuleset, VERIFICATION_MATERIALITY_RATE } from "../registry/rulesets";
 import { assertSectorSealable, type CbamSector, type SectorConfig } from "../sectors/sector-adapter";
 import { buildVerifierPreparationModel, type VerifierPreparationModel } from "../../dossier/40-readiness/risk-assurance";
+import { buildRegistryTemplateMapping, type RegistryTemplateFieldMapping } from "../registry/registry-template-mapping";
 
 function cleanSmokeText(val: string): string {
   if (!val) return "";
@@ -113,6 +114,7 @@ export interface VerifierPackageModel {
   calculationTraceCount: number;
   calculationRootHash: string;
   verifierPreparation: VerifierPreparationModel | null;
+  registryTemplateMapping: readonly RegistryTemplateFieldMapping[];
 }
 
 function decimal(value: string, field: string): Decimal {
@@ -252,6 +254,7 @@ export function buildVerifierPackageModel(params: {
     caseData: params.caseData,
     calculation: params.calculation,
   });
+  const registryTemplateMapping = buildRegistryTemplateMapping(params.caseData);
 
   return {
     reportId: params.reportId,
@@ -311,5 +314,6 @@ export function buildVerifierPackageModel(params: {
     calculationTraceCount: params.calculation.trace.length,
     calculationRootHash: params.calculation.calculationRootHash,
     verifierPreparation,
+    registryTemplateMapping,
   };
 }

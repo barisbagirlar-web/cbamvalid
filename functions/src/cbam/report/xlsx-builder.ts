@@ -453,6 +453,21 @@ function buildSheets(params: {
       ],
     },
     {
+      name: "Registry Mapping",
+      widths: [26, 20, 40, 44, 40, 34, 22, 44, 60],
+      freezeRows: 1,
+      autoFilter: `A1:I${Math.max(2, model.registryTemplateMapping.length + 1)}`,
+      landscape: true,
+      rows: [
+        header(["Registry field ID", "Section", "Legal basis", "Source path", "Value", "Owner", "Status", "Evidence IDs", "Validation errors"]),
+        ...model.registryTemplateMapping.map((entry) => [
+          c(entry.registryFieldId), c(entry.section), c(entry.legalBasis), c(entry.sourcePath), c(entry.value),
+          c(entry.owner), c(entry.status, statusStyle(entry.status === "COMPLETE_OPERATOR" ? "PASS" : entry.status === "PENDING_VERIFIER" ? "WARNING" : entry.status === "MISSING_OPERATOR" ? "BLOCKER" : "DOCUMENTED")),
+          c(entry.evidenceIds.join(" | ")), c(entry.validationErrors.join(" | ")),
+        ]),
+      ],
+    },
+    {
       name: "Verifier Team",
       widths: [42, 78, 42, 52],
       freezeRows: 1,

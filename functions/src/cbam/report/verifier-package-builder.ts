@@ -34,6 +34,7 @@ function loadVerifyCliBytes(): Buffer {
 // V5 engines imports
 import { runEvidenceSufficiency } from "../validation/evidence-sufficiency";
 import { buildVerificationCrosswalk } from "../registry/verification-template-2025-2546";
+import { buildRegistryTemplateMapping } from "../registry/registry-template-mapping";
 import { generateFindingsAndActions } from "../validation/findings-engine";
 import { assessReadiness, getReportingPeriodAssessment } from "../validation/readiness-score";
 import { buildPremiumDossierPdf } from "./premium-dossier-pdf";
@@ -323,6 +324,11 @@ function buildPdfArtifacts(params: {
       },
       honestScoreboard: params.honestScoreboard,
       monitoringPlan: model.monitoringPlan,
+      registryTemplateMapping: buildRegistryTemplateMapping(caseData).map((entry) => ({
+        ...entry,
+        evidenceIds: [...entry.evidenceIds],
+        validationErrors: [...entry.validationErrors],
+      })),
       verifierPreparation: model.verifierPreparation,
     };
 

@@ -1211,6 +1211,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     ]),
     [22, 35, 75, 28, 28]
   );
+  drawParagraph("The full field-level mapping is provided as the 'Registry Verification Template Mapping Dataset' (Verifier Workspace.xlsx — Registry Mapping sheet; JSON dossier model). The European Commission has not published an official machine-readable Registry submission schema, so this dataset is a field-mapped structured export — not an 'Official Registry XML' submission and not a guarantee of Registry acceptance.");
 
   // Section 26: Verifier Handover Checklist
   beginSection(26, "Verifier Handover Checklist", 35);

@@ -425,6 +425,19 @@ export const PremiumDossierViewModelV2Schema = PremiumDossierViewModelSchema.ext
       evidence: z.string(),
     }))
     .optional(),
+  registryTemplateMapping: z
+    .array(z.object({
+      registryFieldId: z.string(),
+      section: z.string(),
+      legalBasis: z.string(),
+      sourcePath: z.string(),
+      value: z.string(),
+      status: z.enum(["COMPLETE_OPERATOR", "PENDING_VERIFIER", "MISSING_OPERATOR", "NOT_APPLICABLE_WITH_BASIS"]),
+      owner: z.enum(["OPERATOR", "CBAMVALID_SYSTEM", "INDEPENDENT_VERIFIER"]),
+      evidenceIds: z.array(z.string()),
+      validationErrors: z.array(z.string()),
+    }))
+    .optional(),
   verifierPreparation: z.any().optional(),
   versionStamp: z
     .object({

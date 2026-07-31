@@ -249,7 +249,15 @@ describe("FAZ 11 verifier workspace XLSX contract", () => {
     const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
     const controls = runQualityControls(caseData);
     const calculation = performDossierCalculations(caseData);
-    const model = buildVerifierPackageModel({ caseData, calculation, controls });
+    const model = buildVerifierPackageModel({
+      caseData,
+      calculation,
+      controls,
+      reportId: FIXTURE_REPORT_ID,
+      packageCode: FIXTURE_PACKAGE_CODE,
+      releaseVersion: 1,
+      generatedAt: FIXTURE_GENERATED_AT,
+    });
     const workbook = await buildVerifierWorkbook({
       caseData,
       calculation,
@@ -305,7 +313,15 @@ describe("FAZ 11 verifier workspace XLSX contract", () => {
     const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
     const controls = runQualityControls(caseData);
     const calculation = performDossierCalculations(caseData);
-    const model = buildVerifierPackageModel({ caseData, calculation, controls });
+    const model = buildVerifierPackageModel({
+      caseData,
+      calculation,
+      controls,
+      reportId: FIXTURE_REPORT_ID,
+      packageCode: FIXTURE_PACKAGE_CODE,
+      releaseVersion: 1,
+      generatedAt: FIXTURE_GENERATED_AT,
+    });
     const workbook = await buildVerifierWorkbook({
       caseData,
       calculation,
