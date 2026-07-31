@@ -84,6 +84,8 @@ export const FindingSchema = z.object({
 export type Finding = z.infer<typeof FindingSchema>;
 
 export const EvidenceSupportStateSchema = z.enum([
+  "SUPPORTED_BY_EVIDENCE",
+  "SUPPORTED_BY_ACCEPTED_METHODOLOGY_DECISION",
   "SUPPORTED",
   "PARTIALLY_SUPPORTED",
   "MISSING",
@@ -96,6 +98,16 @@ export const EvidenceSupportStateSchema = z.enum([
   "NOT_APPLICABLE",
 ]);
 export type EvidenceSupportState = z.infer<typeof EvidenceSupportStateSchema>;
+
+/**
+ * FAZ 5 — Evidence quality grade (A-E):
+ *   A Primary independently issued · B Primary operator-controlled
+ *   C Supplier declaration with controls · D Secondary or estimated
+ *   E Unsupported.
+ * Material requirements graded D/E block a 100/100 evidence score.
+ */
+export const EvidenceQualityGradeSchema = z.enum(["A", "B", "C", "D", "E"]);
+export type EvidenceQualityGrade = z.infer<typeof EvidenceQualityGradeSchema>;
 
 export const MaterialInputRequirementSchema = z.object({
   requirementId: z.string().min(1),
@@ -159,6 +171,13 @@ export const EvidenceSufficiencyRowSchema = z.object({
   requiredPeriodEnd: z.string().nullable().optional(),
   coveragePercent: z.string().nullable().optional(),
   coverageAssessment: EvidenceCoverageAssessmentSchema.nullable().optional(),
+  supportBasis: z
+    .enum(["SUPPORTED_BY_EVIDENCE", "SUPPORTED_BY_ACCEPTED_METHODOLOGY_DECISION"])
+    .nullable()
+    .optional(),
+  evidenceQualityGrade: EvidenceQualityGradeSchema.nullable().optional(),
+  methodologyDecisionId: z.string().nullable().optional(),
+  materialQualityGateBlocked: z.boolean().optional(),
 });
 export type EvidenceSufficiencyRow = z.infer<typeof EvidenceSufficiencyRowSchema>;
 

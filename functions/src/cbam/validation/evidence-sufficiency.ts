@@ -1,5 +1,5 @@
-import type { AuditReadyCase } from "../schema";
-import type { EvidenceSufficiencyRow, EvidenceCoverageAssessment } from "../report/premium-dossier-schema";
+import type { AuditReadyCase, EvidenceRecord } from "../schema";
+import type { EvidenceSufficiencyRow, EvidenceCoverageAssessment, EvidenceQualityGrade } from "../report/premium-dossier-schema";
 import { deriveMaterialRequirements } from "./material-input-registry";
 import {
   type EvidenceClass,
@@ -8,6 +8,57 @@ import {
   assessSingleSourceConcentration,
   assessEvidenceDiversity,
 } from "../../dossier/30-evidence/evidence-classes";
+
+/**
+ * FAZ 5 — Supported-state predicate.
+ * A requirement row is treated as met only when it is backed by admissible
+ * evidence or by an accepted methodology decision record.
+ */
+export function isEvidenceSupportedState(state: EvidenceSufficiencyRow["state"]): boolean {
+  return state === "SUPPORTED_BY_EVIDENCE" || state === "SUPPORTED_BY_ACCEPTED_METHODOLOGY_DECISION" || state === "SUPPORTED";
+}
+
+const INDEPENDENT_ISSUER_MARKERS = [
+  "accredited",
+  "laborator",
+  "authority",
+  "inspectorate",
+  "notary",
+  "certification body",
+  "verification body",
+  "utility",
+  "grid operator",
+  "chamber",
+  "registry",
+  "independent",
+];
+const SUPPLIER_MARKER = "supplier";
+const OPERATOR_MARKERS = ["operator", "plant", "site", "internal", "self"];
+
+/**
+ * FAZ 5 — Evidence quality grade (A-E) derived deterministically from the
+ * evidence record issuer and document type. A = primary independently issued,
+ * B = primary operator-controlled, C = supplier declaration with controls,
+ * D = secondary or estimated, E = unsupported.
+ */
+export function gradeEvidenceRecord(record: EvidenceRecord): EvidenceQualityGrade {
+  const issuer = record.issuer.toLowerCase();
+  const docType = record.documentType.toLowerCase();
+  if (record.supportStatus === "UNSUPPORTED" || record.supportStatus === "PENDING") return "E";
+  if (record.reviewStatus !== "APPROVED") return "E";
+  if (docType.includes("estimate") || docType.includes("estimation") || docType.includes("assumption")) return "D";
+  if (INDEPENDENT_ISSUER_MARKERS.some((marker) => issuer.includes(marker))) return "A";
+  if (SUPPLIER_MARKER.split(" ").some((marker) => issuer.includes(marker))) return "C";
+  if (OPERATOR_MARKERS.some((marker) => issuer.includes(marker))) return "B";
+  return "D";
+}
+
+const QUALITY_GRADE_RANK: Record<EvidenceQualityGrade, number> = { A: 5, B: 4, C: 3, D: 2, E: 1 };
+
+function bestQualityGrade(grades: EvidenceQualityGrade[]): EvidenceQualityGrade {
+  if (grades.length === 0) return "E";
+  return grades.reduce((best, grade) => (QUALITY_GRADE_RANK[grade] > QUALITY_GRADE_RANK[best] ? grade : best));
+}
 
 function parsePeriodDates(periodStr: unknown): { start: string; end: string } | null {
   if (typeof periodStr !== "string") return null;
@@ -67,6 +118,8 @@ const STATE_SEVERITY: Record<string, number> = {
   PARTIALLY_SUPPORTED: 4,
   OUT_OF_PERIOD: 3,
   SUPPORTED: 1,
+  SUPPORTED_BY_EVIDENCE: 1,
+  SUPPORTED_BY_ACCEPTED_METHODOLOGY_DECISION: 1,
 };
 
 function calculateIntervalUnionCoverage(
@@ -240,17 +293,43 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
 
     if (linkedEvidenceIds.size === 0) {
       if (req.minimumEvidenceCount === 0) {
-        rows.push({
-          requirementId: req.requirementId,
-          inputPath: req.inputPath,
-          evidenceIds: [],
-          state: "SUPPORTED",
-          coverageNumerator: "1.0",
-          coverageDenominator: "1.0",
-          blocksOperatorReadiness: false,
-          blocksSealing: false,
-          reasonCodes: ["PASS"],
-        });
+        // Only an accepted, fully-argued methodology decision can satisfy a
+        // zero-evidence requirement; otherwise the row is not supported.
+        const acceptedDecision = caseData.methodologyDecisions.find(
+          (decision) =>
+            decision.reviewStatus === "ACCEPTED" &&
+            (decision.topic.includes(req.inputPath) ||
+              decision.topic.includes(req.requirementId) ||
+              decision.topic.includes(req.displayName))
+        );
+        if (acceptedDecision) {
+          rows.push({
+            requirementId: req.requirementId,
+            inputPath: req.inputPath,
+            evidenceIds: acceptedDecision.evidenceIds,
+            state: "SUPPORTED_BY_ACCEPTED_METHODOLOGY_DECISION",
+            coverageNumerator: "1.0",
+            coverageDenominator: "1.0",
+            blocksOperatorReadiness: false,
+            blocksSealing: false,
+            reasonCodes: ["ACCEPTED_METHODOLOGY_DECISION"],
+            supportBasis: "SUPPORTED_BY_ACCEPTED_METHODOLOGY_DECISION",
+            evidenceQualityGrade: "C",
+            methodologyDecisionId: acceptedDecision.decisionId,
+          });
+        } else {
+          rows.push({
+            requirementId: req.requirementId,
+            inputPath: req.inputPath,
+            evidenceIds: [],
+            state: "MISSING",
+            coverageNumerator: "0.0",
+            coverageDenominator: "1.0",
+            blocksOperatorReadiness: isMaterial,
+            blocksSealing: isMaterial,
+            reasonCodes: ["ACCEPTED_METHODOLOGY_DECISION_MISSING"],
+          });
+        }
       } else {
         rows.push({
           requirementId: req.requirementId,
@@ -275,9 +354,10 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
     const reqMs = new Date(requiredPeriodEnd).getTime() - new Date(requiredPeriodStart).getTime() + 24 * 60 * 60 * 1000;
     const requiredDays = Math.ceil(reqMs / (24 * 60 * 60 * 1000));
 
-    let worstState: EvidenceSufficiencyRow["state"] = "SUPPORTED";
+    let worstState: EvidenceSufficiencyRow["state"] = "SUPPORTED_BY_EVIDENCE";
     const allReasonCodes = new Set<string>();
     const validIntervalsForUnion: Array<{ id: string; start: string; end: string }> = [];
+    const validGrades: EvidenceQualityGrade[] = [];
 
     for (const evidenceId of linkedEvidenceIds) {
       const record = caseData.evidenceRegister.find((r) => r.evidenceId === evidenceId);
@@ -287,7 +367,7 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
         continue;
       }
 
-      let recordState: EvidenceSufficiencyRow["state"] = "SUPPORTED";
+      let recordState: EvidenceSufficiencyRow["state"] = "SUPPORTED_BY_EVIDENCE";
       const recordReasons: string[] = [];
 
       // Check tenant/case isolation path
@@ -355,13 +435,14 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
       }
 
       // If this record had any invalidation, update worstState
-      if (recordState !== "SUPPORTED") {
+      if (recordState !== "SUPPORTED_BY_EVIDENCE") {
         if (STATE_SEVERITY[recordState] > STATE_SEVERITY[worstState]) {
           worstState = recordState;
         }
         recordReasons.forEach(r => allReasonCodes.add(r));
       } else if (evStart && evEnd) {
         validIntervalsForUnion.push({ id: evidenceId, start: evStart, end: evEnd });
+        validGrades.push(gradeEvidenceRecord(record));
       }
     }
 
@@ -374,7 +455,7 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
     );
 
     // If all individual records were valid but union doesn't cover 100.00%, row state becomes OUT_OF_PERIOD
-    if (worstState === "SUPPORTED" && req.reportingPeriodRequired && !coverageAssessment.complete) {
+    if (isEvidenceSupportedState(worstState) && req.reportingPeriodRequired && !coverageAssessment.complete) {
       worstState = "OUT_OF_PERIOD";
       allReasonCodes.add("EVIDENCE_ANNUAL_COVERAGE_INCOMPLETE");
     }
@@ -390,9 +471,19 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
       }
     }
 
-    const blocksSealing = isMaterial && worstState !== "SUPPORTED";
-    const blocksOperatorReadiness = isMaterial && worstState !== "SUPPORTED";
+    const isSupported = isEvidenceSupportedState(worstState);
 
+    const qualityGrade = bestQualityGrade(validGrades);
+    // Material inputs grounded only in D/E quality evidence cannot reach a
+    // 100/100 evidence score — downgrade the row so the gate fails closed.
+    const materialQualityGateBlocked =
+      isMaterial && isSupported && (qualityGrade === "D" || qualityGrade === "E");
+    if (materialQualityGateBlocked) {
+      worstState = "PARTIALLY_SUPPORTED";
+      allReasonCodes.add("MATERIAL_EVIDENCE_QUALITY_D_OR_E");
+    }
+
+    const supportedAfterGate = isEvidenceSupportedState(worstState);
     rows.push({
       requirementId: req.requirementId,
       inputPath: req.inputPath,
@@ -400,8 +491,8 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
       state: worstState,
       coverageNumerator: coverageAssessment.coveredDays.toString(),
       coverageDenominator: requiredDays.toString(),
-      blocksOperatorReadiness,
-      blocksSealing,
+      blocksOperatorReadiness: isMaterial && !supportedAfterGate,
+      blocksSealing: isMaterial && !supportedAfterGate,
       reasonCodes: allReasonCodes.size > 0 ? Array.from(allReasonCodes) : ["PASS"],
       evidencePeriodStart: validIntervalsForUnion[0]?.start || null,
       evidencePeriodEnd: validIntervalsForUnion[0]?.end || null,
@@ -410,6 +501,12 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
       requiredPeriodEnd,
       coveragePercent: coverageAssessment.coveragePercent,
       coverageAssessment,
+      supportBasis: supportedAfterGate
+        ? "SUPPORTED_BY_EVIDENCE"
+        : null,
+      evidenceQualityGrade: qualityGrade,
+      methodologyDecisionId: null,
+      materialQualityGateBlocked,
     });
   }
 
@@ -428,10 +525,11 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
   if (concentrationFinding) {
     for (const row of rows) {
       if (!row.evidenceIds.some((evidenceId) => concentratedIds.includes(evidenceId))) continue;
-      if (row.state === "SUPPORTED") row.state = "PARTIALLY_SUPPORTED";
+      if (isEvidenceSupportedState(row.state)) row.state = "PARTIALLY_SUPPORTED";
       if (!row.reasonCodes.includes("SINGLE_SOURCE_CONCENTRATION")) {
         row.reasonCodes = [...row.reasonCodes.filter((code) => code !== "PASS"), "SINGLE_SOURCE_CONCENTRATION"];
       }
+      row.supportBasis = null;
       const req = requirements.find((item) => item.requirementId === row.requirementId);
       const isMat = req?.requirementLevel === "MATERIAL_REQUIRED" || req?.requirementLevel === "REQUIRED";
       if (isMat) {
@@ -448,10 +546,11 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
       const req = requirements.find((item) => item.requirementId === row.requirementId);
       const isMat = req?.requirementLevel === "MATERIAL_REQUIRED" || req?.requirementLevel === "REQUIRED";
       if (!isMat) continue;
-      if (row.state === "SUPPORTED") row.state = "PARTIALLY_SUPPORTED";
+      if (isEvidenceSupportedState(row.state)) row.state = "PARTIALLY_SUPPORTED";
       if (!row.reasonCodes.includes("EVIDENCE_DIVERSITY_INSUFFICIENT")) {
         row.reasonCodes = [...row.reasonCodes.filter((code) => code !== "PASS"), "EVIDENCE_DIVERSITY_INSUFFICIENT"];
       }
+      row.supportBasis = null;
       row.blocksSealing = true;
       row.blocksOperatorReadiness = true;
     }

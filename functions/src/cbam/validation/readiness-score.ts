@@ -1,7 +1,7 @@
 import { Decimal } from "decimal.js";
 import type { AuditReadyCase } from "../schema";
 import type { ReadinessAssessment, ReadinessDimension, ReadinessDimensionId, OperatorReadinessStatus, ReportingPeriodAssessment } from "../report/premium-dossier-schema";
-import { runEvidenceSufficiency } from "./evidence-sufficiency";
+import { runEvidenceSufficiency, isEvidenceSupportedState } from "./evidence-sufficiency";
 import { generateFindingsAndActions } from "./findings-engine";
 import { runQualityControls } from "./quality-controls";
 
@@ -340,7 +340,7 @@ export function assessReadiness(params: {
     const blockerFindingIds = dimFindings.filter(f => f.blocksOperatorReadiness || f.blocksSealing).map(f => f.findingId);
     const materialFindingIds = dimFindings.filter(f => f.severity === "MATERIAL" || f.severity === "CRITICAL").map(f => f.findingId);
 
-    const passedSufficiency = dimSufficiency.filter(row => row.state === "SUPPORTED").length;
+    const passedSufficiency = dimSufficiency.filter(row => isEvidenceSupportedState(row.state)).length;
     const passedVirtual = virtualReqs.filter((r) => r.passed).length;
     const passedCount = passedSufficiency + passedVirtual;
     const applicableCount = dimSufficiency.length + virtualReqs.length;
@@ -390,7 +390,7 @@ export function assessReadiness(params: {
   const criticalBlockerCount = findings.filter(f => (f.severity === "CRITICAL" || f.severity === "CRITICAL_BLOCKER") && f.status === "OPEN").length;
   const materialFindingCount = findings.filter(f => f.severity === "MATERIAL" && f.status === "OPEN").length;
   const openFindingCount = findings.filter(f => f.status === "OPEN").length;
-  const missingMaterialEvidenceCount = sufficiency.filter(r => r.blocksSealing && r.state !== "SUPPORTED").length;
+  const missingMaterialEvidenceCount = sufficiency.filter(r => r.blocksSealing && !isEvidenceSupportedState(r.state)).length;
   const unresolvedCalculationExceptionCount = findings.filter(f => f.category === "CALCULATION_EXCEPTION" && f.status === "OPEN").length;
 
   const period = getReportingPeriodAssessment(caseData, assessmentTimestamp, sealMode);

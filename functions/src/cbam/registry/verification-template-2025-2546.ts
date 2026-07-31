@@ -1,6 +1,6 @@
 import type { AuditReadyCase } from "../schema";
 import type { VerificationRequirementCrosswalkRow } from "../report/premium-dossier-schema";
-import { runEvidenceSufficiency } from "../validation/evidence-sufficiency";
+import { runEvidenceSufficiency, isEvidenceSupportedState } from "../validation/evidence-sufficiency";
 
 export function buildVerificationCrosswalk(caseData: AuditReadyCase): VerificationRequirementCrosswalkRow[] {
   const sufficiency = runEvidenceSufficiency(caseData);
@@ -9,7 +9,7 @@ export function buildVerificationCrosswalk(caseData: AuditReadyCase): Verificati
   const getStatusFromSufficiency = (reqId: string): { status: VerificationRequirementCrosswalkRow["status"]; evidenceIds: string[] } => {
     const row = sufficiency.find(r => r.requirementId === reqId);
     if (!row) return { status: "MISSING", evidenceIds: [] };
-    if (row.state === "SUPPORTED") return { status: "COMPLETE", evidenceIds: row.evidenceIds };
+    if (isEvidenceSupportedState(row.state)) return { status: "COMPLETE", evidenceIds: row.evidenceIds };
     if (row.state === "PARTIALLY_SUPPORTED") return { status: "PARTIAL", evidenceIds: row.evidenceIds };
     return { status: "MISSING", evidenceIds: row.evidenceIds };
   };

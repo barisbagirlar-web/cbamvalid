@@ -535,7 +535,7 @@ export async function sealReport(params: {
       const { assessReadiness } = await import("../validation/readiness-score");
       const readinessV5 = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: assessmentContext.assessmentTimestamp, sealMode: "PRODUCTION" });
       if (readinessV5.operatorStatus === "NOT_READY" || readinessV5.criticalBlockerCount > 0 || readinessV5.missingMaterialEvidenceCount > 0) {
-        const { runEvidenceSufficiency } = await import("../validation/evidence-sufficiency");
+        const { runEvidenceSufficiency, isEvidenceSupportedState } = await import("../validation/evidence-sufficiency");
         const { generateFindingsAndActions } = await import("../validation/findings-engine");
         const sufficiency = runEvidenceSufficiency(caseData, assessmentContext.assessmentTimestamp);
         const { findings } = generateFindingsAndActions(caseData, assessmentContext.assessmentTimestamp);
@@ -548,7 +548,7 @@ export async function sealReport(params: {
           missingMaterialEvidenceCount: readinessV5.missingMaterialEvidenceCount,
           decisionReasonCodes: readinessV5.decisionReasonCodes,
           findings: findings.filter((f) => f.status === "OPEN"),
-          sufficiency: sufficiency.filter((r) => r.state !== "SUPPORTED")
+          sufficiency: sufficiency.filter((r) => !isEvidenceSupportedState(r.state))
         };
         throw err;
       }
