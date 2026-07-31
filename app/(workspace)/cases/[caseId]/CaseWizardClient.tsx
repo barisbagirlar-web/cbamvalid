@@ -29,6 +29,18 @@ import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 import { assessCaseReadiness } from "@/lib/cbam/validation/readiness-assessor";
 import { performDossierCalculations } from "@/lib/cbam/calculator";
 import { fieldHelpData, type FieldHelpKey } from "@/lib/cbam/field-help";
+import { gradeEvidenceRecord } from "@/lib/cbam/evidence-quality";
+import {
+  buildEvidenceLinkOptions,
+  getUnblockedStepRange,
+  summarizeWizardCompletion,
+  validateWizardStep,
+  WIZARD_STEP_HEADERS,
+  wizardStepTotalFields,
+  type WizardStepIssue,
+  type WizardStepperState,
+  type WizardStepValidation,
+} from "@/lib/cbam/wizard-validation";
 import { GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH } from "@/lib/cbam/input-constraints";
 import {
   ILLUSTRATIVE_SCENARIO_ID,
@@ -81,18 +93,11 @@ const SECTORS = [
 
 const SOURCE_TYPES = ["PRIMARY", "SECONDARY", "DEFAULT", "ESTIMATED", "REGULATORY"] as const;
 
-const EVIDENCE_LINK_OPTIONS = [
-  ["importerIdentity.eoriNumber", "Importer EORI"],
-  ["directEmissions", "Direct emissions"],
-  ["electricityConsumed", "Electricity consumed"],
-  ["gridEmissionFactor", "Grid emission factor"],
-] as const;
-
 const SEALED_PACKAGE_HIGHLIGHTS = [
   { title: "11 professional PDFs", detail: "Executive report, monitoring plan, calculation annex, readiness assessment and methodology records", icon: FileCheck2 },
   { title: "Verifier workspace", detail: "Controlled XLSX with 14+ worksheets, filters, validations, source links and verifier sign-off", icon: FileCode2 },
   { title: "Evidence assurance", detail: "Immutable evidence copies, field links, issuer/date metadata, malware status and SHA-256 register", icon: Shield },
-  { title: "Signed trust chain", detail: "27-component ZIP, canonical manifest, KMS asymmetric signature and immutable release hashes", icon: LockKeyhole },
+  { title: "Signed trust chain", detail: "26-component controlled verifier package, canonical manifest, KMS asymmetric signature and immutable release hashes", icon: LockKeyhole },
 ] as const;
 
 function numeric(value: string | number | null | undefined): number {
@@ -165,6 +170,35 @@ function StatusBanner({ status, tone = "neutral" }: { status: string; tone?: "ne
   return <div role="status" className={`rounded-lg border px-4 py-3 text-sm ${classes}`}>{status}</div>;
 }
 
+const STEP_STATE_STYLES: Record<WizardStepperState, string> = {
+  NOT_STARTED: "border-border bg-neutral-soft text-muted",
+  IN_PROGRESS: "border-border bg-neutral-soft text-foreground",
+  NEEDS_ATTENTION: "border-status-blocked/40 bg-[color:var(--status-blocked-soft)] text-status-blocked",
+  NEEDS_EVIDENCE: "border-status-warning/40 bg-[color:var(--status-warning-soft)] text-status-warning",
+  COMPLETE: "border-forest-light bg-forest-pale text-forest",
+};
+
+function StepStateBadge({ state }: { state: WizardStepperState }) {
+  return (
+    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${STEP_STATE_STYLES[state]}`} aria-label={`Step state: ${state.replaceAll("_", " ")}`}>
+      {state.replaceAll("_", " ")}
+    </span>
+  );
+}
+
+function FieldError({ issue }: { issue?: WizardStepIssue }) {
+  if (!issue) return null;
+  const short =
+    issue.kind === "EVIDENCE"
+      ? `Evidence required for ${issue.label}. Upload and link the source document.`
+      : `Enter a value for ${issue.label}.`;
+  return (
+    <p role="alert" className="mt-1.5 text-xs font-semibold text-status-blocked">
+      {short}
+    </p>
+  );
+}
+
 export default function CaseWizardClient({ sessionUser, initialCase, availableEntitlements }: CaseWizardClientProps) {
   const router = useRouter();
   const sealRequestId = useRef<string | null>(null);
@@ -184,7 +218,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const [evidenceDocumentType, setEvidenceDocumentType] = useState("PRODUCTION_RECORD");
   const [evidenceIssuer, setEvidenceIssuer] = useState("");
   const [evidenceIssueDate, setEvidenceIssueDate] = useState("");
-  const [evidenceLinkedInput, setEvidenceLinkedInput] = useState("directEmissions");
+  const [evidenceLinkedInput, setEvidenceLinkedInput] = useState("");
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [correctionReason, setCorrectionReason] = useState("");
 
@@ -213,6 +247,72 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       return { result: null, error: errorMessage(error) };
     }
   }, [caseData]);
+
+  // FAZ P0 — per-step validation and stepper states (unconditional Next removed).
+  const stepValidations = useMemo(() => {
+    const map: Record<number, WizardStepValidation> = {};
+    for (let step = 1; step <= 8; step += 1) {
+      map[step] = validateWizardStep(step, caseData);
+    }
+    return map;
+  }, [caseData]);
+
+  const stepStates = useMemo(() => {
+    const map: Record<number, WizardStepperState> = {};
+    for (let step = 1; step <= 8; step += 1) {
+      map[step] = stepValidations[step].state;
+    }
+    return map;
+  }, [stepValidations]);
+
+  const currentStepValidation = stepValidations[currentStep];
+
+  const linkOptions = useMemo(() => buildEvidenceLinkOptions(caseData), [caseData]);
+
+  const fieldIssue = (path: string): WizardStepIssue | undefined =>
+    currentStepValidation?.issues.find((issue) => issue.fieldPath === path);
+
+  const inputClass = (path: string, extra = ""): string => {
+    const issue = fieldIssue(path);
+    const base = issue
+      ? "w-full rounded border-2 border-status-blocked bg-background p-2 text-sm"
+      : "w-full rounded border border-border bg-background p-2 text-sm";
+    return `${base} ${extra}`.trim();
+  };
+
+  const focusField = (path: string) => {
+    const element = document.querySelector<HTMLElement>(`[data-field-path="${path}"]`);
+    if (!element) return;
+    element.scrollIntoView({ behavior: "smooth", block: "center" });
+    const control = element.querySelector("input, textarea, select");
+    if (control instanceof HTMLElement) control.focus();
+  };
+
+  const goToNext = () => {
+    const validation = stepValidations[currentStep];
+    if (!validation.valid) {
+      const first = validation.issues[0];
+      if (first) focusField(first.fieldPath);
+      return;
+    }
+    setCurrentStep((step) => Math.min(8, step + 1));
+  };
+
+  const goToStep = (step: number) => {
+    // Backward navigation is always allowed; forward navigation validates first.
+    if (step < currentStep) {
+      setCurrentStep(step);
+      return;
+    }
+    for (let target = currentStep; target < step; target += 1) {
+      if (!stepValidations[target].valid) {
+        const first = stepValidations[target].issues[0];
+        if (first) focusField(first.fieldPath);
+        return;
+      }
+    }
+    setCurrentStep(step);
+  };
 
   const currentReleasesCount = useMemo(() => {
     const entitlement = entitlements.find(
@@ -418,11 +518,13 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         {
           decisionId: crypto.randomUUID(),
           topic,
-          selectedMethod: topic === "PRECURSOR_SCOPE" ? "No applicable precursors identified" : "Documented operator method",
+          selectedMethod: topic === "PRECURSOR_SCOPE" ? "No applicable precursors identified" : topic === "SYSTEM_BOUNDARY" ? "System boundary per installation monitoring plan and process map" : "Documented operator method",
           reason: "Operator assessment recorded for independent verifier challenge.",
           legalOrTechnicalBasis: "Regulation (EU) 2023/956, Annex IV and active definitive-period ruleset.",
           evidenceIds: [],
-          reviewStatus: "ACCEPTED",
+          // FAZ P0 — a user-created decision is never ACCEPTED. ACCEPTED is
+          // granted only by the server-controlled review workflow.
+          reviewStatus: "REVIEW_REQUIRED",
           rulesetVersion: "EU-CBAM-DEFINITIVE-2026",
         },
       ],
@@ -574,9 +676,10 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           const parts = path.split(".");
           const datum = parts.reduce<unknown>((value, part) => (value as Record<string, unknown>)[part], caseData) as InputDatum;
           return (
-            <div key={path}>
+            <div key={path} data-field-path={path}>
               <FieldLabel helpKey={helpKey as FieldHelpKey}>{label}</FieldLabel>
-              <input aria-label={label} type={type} value={datumValue(datum.value)} onChange={(event) => updateDatum(path, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" />
+              <input aria-label={label} aria-invalid={Boolean(fieldIssue(path))} type={type} value={datumValue(datum.value)} onChange={(event) => updateDatum(path, { value: event.target.value })} className={inputClass(path)} />
+              <FieldError issue={fieldIssue(path)} />
               <p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData[helpKey as FieldHelpKey]?.source}</p>
             </div>
           );
@@ -594,12 +697,12 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       {caseData.goods.length === 0 && <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted">No goods declared.</div>}
       {caseData.goods.map((good, index) => (
         <div key={`good-${index}`} className="grid gap-4 rounded-xl border border-border bg-surface p-5 md:grid-cols-2">
-          <div><FieldLabel helpKey="cnCode">CN code</FieldLabel><input aria-label={`Good ${index + 1} CN code`} inputMode="numeric" value={datumValue(good.cnCode.value)} onChange={(event) => updateDatum(`goods.${index}.cnCode`, { value: event.target.value.replace(/\D/g, "").slice(0, 8) })} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.cnCode.source}</p></div>
+          <div data-field-path={`goods.${index}.cnCode`}><FieldLabel helpKey="cnCode">CN code</FieldLabel><input aria-label={`Good ${index + 1} CN code`} aria-invalid={Boolean(fieldIssue(`goods.${index}.cnCode`))} inputMode="numeric" value={datumValue(good.cnCode.value)} onChange={(event) => updateDatum(`goods.${index}.cnCode`, { value: event.target.value.replace(/\D/g, "").slice(0, 8) })} className={inputClass(`goods.${index}.cnCode`)} /><FieldError issue={fieldIssue(`goods.${index}.cnCode`)} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.cnCode.source}</p></div>
           <div><FieldLabel helpKey="cbamSector">CBAM sector</FieldLabel><select aria-label={`Good ${index + 1} sector`} value={good.sector} onChange={(event) => updatePlain(`goods.${index}.sector`, event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm">{SECTORS.map((sector) => <option key={sector} value={sector}>{sector.replaceAll("_", " ")}</option>)}</select><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.cbamSector.source}</p></div>
-          <div><FieldLabel helpKey="productionQuantity">Production quantity</FieldLabel><DecimalInput ariaLabel={`Good ${index + 1} production quantity`} min="0" value={datumValue(good.productionVolume.value)} onValueChange={(value) => updateDatum(`goods.${index}.productionVolume`, { value })} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.productionQuantity.source}</p></div>
+          <div data-field-path={`goods.${index}.productionVolume`}><FieldLabel helpKey="productionQuantity">Production quantity</FieldLabel><DecimalInput ariaLabel={`Good ${index + 1} production quantity`} min="0" className={inputClass(`goods.${index}.productionVolume`)} value={datumValue(good.productionVolume.value)} onValueChange={(value) => updateDatum(`goods.${index}.productionVolume`, { value })} /><FieldError issue={fieldIssue(`goods.${index}.productionVolume`)} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.productionQuantity.source}</p></div>
           <div><FieldLabel helpKey="productionUnit">Production unit</FieldLabel><select aria-label={`Good ${index + 1} production unit`} value={good.productionVolume.canonicalUnit || "t"} onChange={(event) => updateDatum(`goods.${index}.productionVolume`, { canonicalUnit: event.target.value as UnitCode })} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="t">tonnes</option><option value="kg">kilograms</option></select><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.productionUnit.source}</p></div>
           <div><FieldLabel helpKey="shipmentDescription">Shipment / product description</FieldLabel><input aria-label={`Good ${index + 1} shipment description`} value={datumValue(good.shipmentRecords.value)} onChange={(event) => updateDatum(`goods.${index}.shipmentRecords`, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.shipmentDescription.source}</p></div>
-          {caseData.goods.length > 1 && <div><FieldLabel helpKey="allocationShare">Allocation share (0–1)</FieldLabel><DecimalInput ariaLabel={`Good ${index + 1} allocation share`} min="0" max="1" value={datumValue(good.allocationShare?.value ?? null)} onValueChange={(value) => updateDatum(`goods.${index}.allocationShare`, { value, canonicalUnit: "fraction" })} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.allocationShare.source}</p></div>}
+          {caseData.goods.length > 1 && <div data-field-path={`goods.${index}.allocationShare`}><FieldLabel helpKey="allocationShare">Allocation share (0–1)</FieldLabel><DecimalInput ariaLabel={`Good ${index + 1} allocation share`} min="0" max="1" className={inputClass(`goods.${index}.allocationShare`)} value={datumValue(good.allocationShare?.value ?? null)} onValueChange={(value) => updateDatum(`goods.${index}.allocationShare`, { value, canonicalUnit: "fraction" })} /><FieldError issue={fieldIssue(`goods.${index}.allocationShare`)} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.allocationShare.source}</p></div>}
           <button type="button" onClick={() => removeGood(index)} className="inline-flex items-center gap-2 text-sm text-status-blocked md:col-span-2"><Trash2 className="h-4 w-4" /> Remove good</button>
         </div>
       ))}
@@ -613,10 +716,17 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         <p className="mt-1 text-sm text-muted">Specify the manufacturing facility details, geographic location, production technology route, and write a system-boundary statement.</p>
       </div>
       <div className="grid gap-4 rounded-xl border border-border bg-surface p-6 md:grid-cols-2">
-        <div><FieldLabel helpKey="installationName">Installation name</FieldLabel><input aria-label="Installation name" value={datumValue(caseData.installation.name.value)} onChange={(event) => updateDatum("installation.name", { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.installationName.source}</p></div>
-        <div><FieldLabel helpKey="installationCountry">Installation country</FieldLabel><input aria-label="Installation country" value={datumValue(caseData.installation.country.value)} onChange={(event) => updateDatum("installation.country", { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.installationCountry.source}</p></div>
-        <div><FieldLabel helpKey="productionRoute">Production route</FieldLabel><input aria-label="Production route" value={datumValue(caseData.installation.productionRoute.value)} onChange={(event) => updateDatum("installation.productionRoute", { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.productionRoute.source}</p></div>
-        <div className="md:col-span-2"><FieldLabel helpKey="systemBoundary">System-boundary statement</FieldLabel><textarea aria-label="System-boundary statement" value={caseData.installation.systemBoundaries || ""} onChange={(event) => updatePlain("installation.systemBoundaries", event.target.value)} rows={5} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.systemBoundary.source}</p></div>
+        <div data-field-path="installation.name"><FieldLabel helpKey="installationName">Installation name</FieldLabel><input aria-label="Installation name" aria-invalid={Boolean(fieldIssue("installation.name"))} value={datumValue(caseData.installation.name.value)} onChange={(event) => updateDatum("installation.name", { value: event.target.value })} className={inputClass("installation.name")} /><FieldError issue={fieldIssue("installation.name")} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.installationName.source}</p></div>
+        <div data-field-path="installation.country"><FieldLabel helpKey="installationCountry">Installation country</FieldLabel><input aria-label="Installation country" aria-invalid={Boolean(fieldIssue("installation.country"))} value={datumValue(caseData.installation.country.value)} onChange={(event) => updateDatum("installation.country", { value: event.target.value })} className={inputClass("installation.country")} /><FieldError issue={fieldIssue("installation.country")} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.installationCountry.source}</p></div>
+        <div data-field-path="installation.productionRoute"><FieldLabel helpKey="productionRoute">Production route</FieldLabel><input aria-label="Production route" aria-invalid={Boolean(fieldIssue("installation.productionRoute"))} value={datumValue(caseData.installation.productionRoute.value)} onChange={(event) => updateDatum("installation.productionRoute", { value: event.target.value })} className={inputClass("installation.productionRoute")} /><FieldError issue={fieldIssue("installation.productionRoute")} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.productionRoute.source}</p></div>
+        <div><FieldLabel helpKey="installationName">Monitoring plan ID</FieldLabel><input aria-label="Monitoring plan ID" value={datumValue(caseData.installation.monitoringPlanId?.value ?? null)} onChange={(event) => updateDatum("installation.monitoringPlanId", { value: event.target.value })} className={inputClass("installation.monitoringPlanId")} /><p className="mt-1 text-[11px] text-muted leading-normal">Identifier and version of the monitoring plan applied for this reporting period.</p></div>
+        <div className="md:col-span-2" data-field-path="installation.systemBoundaries"><FieldLabel helpKey="systemBoundary">System-boundary statement</FieldLabel><textarea aria-label="System-boundary statement" aria-invalid={Boolean(fieldIssue("installation.systemBoundaries"))} value={caseData.installation.systemBoundaries || ""} onChange={(event) => updatePlain("installation.systemBoundaries", event.target.value)} rows={5} className={inputClass("installation.systemBoundaries")} /><FieldError issue={fieldIssue("installation.systemBoundaries")} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.systemBoundary.source}</p></div>
+      </div>
+      <div className="rounded-xl border border-border bg-surface p-5">
+        <h3 className="font-bold">System-boundary support</h3>
+        <p className="mt-1 text-xs text-muted">The boundary statement is only supported once it is backed by approved evidence (monitoring plan, installation permit/scope, process map or controlled statement) or by a server-reviewed accepted methodology decision.</p>
+        <button type="button" onClick={() => addMethodologyDecision("SYSTEM_BOUNDARY")} className="mt-3 rounded border border-border bg-neutral-soft px-4 py-2 text-sm font-semibold">Record system-boundary methodology decision</button>
+        {caseData.methodologyDecisions.filter((decision) => decision.topic === "SYSTEM_BOUNDARY").map((decision) => <div key={decision.decisionId} className="mt-3 rounded border border-border bg-neutral-soft p-3 text-sm"><strong>{decision.topic}</strong><p>{decision.selectedMethod}</p><p className="text-xs text-muted">{decision.reviewStatus} · {decision.rulesetVersion}{decision.reviewStatus === "ACCEPTED" ? ` · approved by ${decision.approverName || "server review"}` : " · awaiting server review — ACCEPTED is granted only by an internal reviewer"}</p></div>)}
       </div>
     </div>
   );
@@ -630,7 +740,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     const datum = caseData[path];
     const isGridFactor = path === "gridEmissionFactor";
     return <div className="grid gap-4 rounded-xl border border-border bg-surface p-6 md:grid-cols-3">
-      <div><FieldLabel helpKey={helpKey}>{label}</FieldLabel><DecimalInput ariaLabel={label} min="0" max={isGridFactor ? GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH : undefined} placeholder={isGridFactor ? "0.4344" : undefined} value={datumValue(datum.value)} onValueChange={(value) => updateDatum(path, { value })} />{isGridFactor && Number(datum.value) > Number(GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH) && <p role="alert" className="mt-2 text-xs font-semibold text-status-blocked">Value exceeds 5 tCO2e/MWh. Check the source unit and decimal separator before continuing.</p>}<p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData[helpKey]?.source}</p></div>
+      <div data-field-path={path}><FieldLabel helpKey={helpKey}>{label}</FieldLabel><DecimalInput ariaLabel={label} min="0" max={isGridFactor ? GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH : undefined} className={inputClass(path)} placeholder={isGridFactor ? "0.4344" : undefined} value={datumValue(datum.value)} onValueChange={(value) => updateDatum(path, { value })} /><FieldError issue={fieldIssue(path)} />{isGridFactor && Number(datum.value) > Number(GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH) && <p role="alert" className="mt-2 text-xs font-semibold text-status-blocked">Value exceeds 5 tCO2e/MWh. Check the source unit and decimal separator before continuing.</p>}<p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData[helpKey]?.source}</p></div>
       <div><FieldLabel helpKey="emissionsUnit">Unit</FieldLabel><select aria-label={`${label} unit`} value={datum.canonicalUnit || unit} onChange={(event) => updateDatum(path, { canonicalUnit: event.target.value as UnitCode })} className="w-full rounded border border-border bg-background p-2 text-sm"><option value={unit}>{unit}</option></select><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.emissionsUnit.source}</p></div>
       <div><FieldLabel helpKey="sourceType">Source type</FieldLabel><select aria-label={`${label} source type`} value={datum.sourceType} onChange={(event) => updateDatum(path, { sourceType: event.target.value as InputDatum["sourceType"] })} className="w-full rounded border border-border bg-background p-2 text-sm">{SOURCE_TYPES.map((source) => <option key={source} value={source}>{source}</option>)}</select><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.sourceType.source}</p></div>
     </div>;
@@ -689,14 +799,14 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           </button>
         </div>
       </div>
-      {caseData.precursors.length === 0 && <button type="button" onClick={() => addMethodologyDecision("PRECURSOR_SCOPE")} className="rounded border border-border bg-surface px-4 py-3 text-sm">Record accepted no-precursor scope decision</button>}
+      {caseData.precursors.length === 0 && <button type="button" onClick={() => addMethodologyDecision("PRECURSOR_SCOPE")} className="rounded border border-border bg-surface px-4 py-3 text-sm">Record no-precursor scope decision (server review required before it becomes accepted)</button>}
       {caseData.precursors.map((precursor, index) => <div key={`precursor-${index}`} className="grid gap-4 rounded-xl border border-border bg-surface p-5 md:grid-cols-2">
-        {[["name", "Precursor name", "precursorName"], ["countryOfOrigin", "Country of origin", "precursorCountry"]].map(([field, label, helpKey]) => <div key={field}><FieldLabel helpKey={helpKey as FieldHelpKey}>{label}</FieldLabel><input aria-label={`Precursor ${index + 1} ${label}`} value={datumValue(precursor[field as "name" | "countryOfOrigin"].value)} onChange={(event) => updateDatum(`precursors.${index}.${field}`, { value: event.target.value })} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData[helpKey as FieldHelpKey]?.source}</p></div>)}
-        {[["quantity", "Quantity", "t", "precursorQuantity"], ["directEmissions", "Direct emissions", "tCO2e", "precursorDirectEmissions"], ["indirectEmissions", "Indirect emissions", "tCO2e", "precursorIndirectEmissions"]].map(([field, label, unit, helpKey]) => <div key={field}><FieldLabel helpKey={helpKey as FieldHelpKey}>{label} ({unit})</FieldLabel><DecimalInput ariaLabel={`Precursor ${index + 1} ${label}`} min="0" value={datumValue(precursor[field as "quantity" | "directEmissions" | "indirectEmissions"].value)} onValueChange={(value) => updateDatum(`precursors.${index}.${field}`, { value, canonicalUnit: unit as UnitCode })} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData[helpKey as FieldHelpKey]?.source}</p></div>)}
+        {[["name", "Precursor name", "precursorName"], ["countryOfOrigin", "Country of origin", "precursorCountry"]].map(([field, label, helpKey]) => <div key={field} data-field-path={`precursors.${index}.${field}`}><FieldLabel helpKey={helpKey as FieldHelpKey}>{label}</FieldLabel><input aria-label={`Precursor ${index + 1} ${label}`} aria-invalid={Boolean(fieldIssue(`precursors.${index}.${field}`))} value={datumValue(precursor[field as "name" | "countryOfOrigin"].value)} onChange={(event) => updateDatum(`precursors.${index}.${field}`, { value: event.target.value })} className={inputClass(`precursors.${index}.${field}`)} /><FieldError issue={fieldIssue(`precursors.${index}.${field}`)} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData[helpKey as FieldHelpKey]?.source}</p></div>)}
+        {[["quantity", "Quantity", "t", "precursorQuantity"], ["directEmissions", "Direct emissions", "tCO2e", "precursorDirectEmissions"], ["indirectEmissions", "Indirect emissions", "tCO2e", "precursorIndirectEmissions"]].map(([field, label, unit, helpKey]) => <div key={field} data-field-path={`precursors.${index}.${field}`}><FieldLabel helpKey={helpKey as FieldHelpKey}>{label} ({unit})</FieldLabel><DecimalInput ariaLabel={`Precursor ${index + 1} ${label}`} min="0" className={inputClass(`precursors.${index}.${field}`)} value={datumValue(precursor[field as "quantity" | "directEmissions" | "indirectEmissions"].value)} onValueChange={(value) => updateDatum(`precursors.${index}.${field}`, { value, canonicalUnit: unit as UnitCode })} /><FieldError issue={fieldIssue(`precursors.${index}.${field}`)} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData[helpKey as FieldHelpKey]?.source}</p></div>)}
         <button type="button" onClick={() => setCaseData((previous) => ({ ...previous, precursors: previous.precursors.filter((_, itemIndex) => itemIndex !== index) }))} className="inline-flex items-center gap-2 text-sm text-status-blocked md:col-span-2"><Trash2 className="h-4 w-4" /> Remove precursor</button>
       </div>)}
-      {caseData.goods.length > 1 && <button type="button" onClick={() => addMethodologyDecision("GOODS_EMISSIONS_ALLOCATION")} className="rounded border border-border bg-surface px-4 py-3 text-sm">Record accepted allocation methodology</button>}
-      <div className="space-y-2">{caseData.methodologyDecisions.map((decision) => <div key={decision.decisionId} className="rounded border border-border bg-neutral-soft p-3 text-sm"><strong>{decision.topic}</strong><p>{decision.selectedMethod}</p><p className="text-xs text-muted">{decision.reviewStatus} · {decision.rulesetVersion}</p></div>)}</div>
+      {caseData.goods.length > 1 && <button type="button" onClick={() => addMethodologyDecision("GOODS_EMISSIONS_ALLOCATION")} className="rounded border border-border bg-surface px-4 py-3 text-sm">Record allocation methodology (server review required before it becomes accepted)</button>}
+      <div className="space-y-2">{caseData.methodologyDecisions.map((decision) => <div key={decision.decisionId} className="rounded border border-border bg-neutral-soft p-3 text-sm"><strong>{decision.topic}</strong><p>{decision.selectedMethod}</p><p className="text-xs text-muted">{decision.reviewStatus} · {decision.rulesetVersion}{decision.reviewStatus === "ACCEPTED" ? ` · approved by ${decision.approverName || "server review"}` : " · ACCEPTED is granted only by an internal reviewer"}</p></div>)}</div>
     </div>
   );
 
@@ -724,10 +834,10 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         <div><FieldLabel helpKey="evidenceDocumentType">Document type</FieldLabel><input aria-label="Evidence document type" value={evidenceDocumentType} onChange={(event) => setEvidenceDocumentType(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.evidenceDocumentType.source}</p></div>
         <div><FieldLabel helpKey="evidenceIssuer">Issuer</FieldLabel><input aria-label="Evidence issuer" value={evidenceIssuer} onChange={(event) => setEvidenceIssuer(event.target.value)} placeholder="Example: electricity supplier or installation operator" className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.evidenceIssuer.source}</p></div>
         <div><FieldLabel helpKey="evidenceIssueDate">Issue date</FieldLabel><input aria-label="Evidence issue date" type="date" value={evidenceIssueDate} onChange={(event) => setEvidenceIssueDate(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.evidenceIssueDate.source}</p></div>
-        <div className="md:col-span-2"><FieldLabel helpKey="evidenceLinkedInput">Linked input</FieldLabel><select aria-label="Evidence linked input" value={evidenceLinkedInput} onChange={(event) => setEvidenceLinkedInput(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm">{EVIDENCE_LINK_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}{caseData.goods.flatMap((_, index) => [[`goods.${index}.cnCode`, `Good ${index + 1} CN code`], [`goods.${index}.productionVolume`, `Good ${index + 1} production`], [`goods.${index}.allocationShare`, `Good ${index + 1} allocation`]]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}{caseData.precursors.flatMap((_, index) => [[`precursors.${index}.quantity`, `Precursor ${index + 1} quantity`], [`precursors.${index}.directEmissions`, `Precursor ${index + 1} direct emissions`], [`precursors.${index}.indirectEmissions`, `Precursor ${index + 1} indirect emissions`]]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.evidenceLinkedInput.source}</p></div>
+        <div className="md:col-span-2"><FieldLabel helpKey="evidenceLinkedInput">Linked input</FieldLabel><select aria-label="Evidence linked input" value={evidenceLinkedInput} onChange={(event) => setEvidenceLinkedInput(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="" disabled>Select the input this document supports…</option>{linkOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>{(() => { const selected = linkOptions.find((option) => option.value === evidenceLinkedInput); if (!selected) return null; return <div className="mt-2 rounded border border-border bg-neutral-soft p-3 text-xs leading-relaxed text-muted"><strong>Accepted evidence:</strong> {selected.acceptedEvidenceTypes.join(", ") || "Source document"}<br /><strong>Preferred issuers:</strong> {selected.preferredIssuerCategories.join(", ") || "Any"}<br />{selected.required ? <span className="text-status-warning">This input requires at least one internally approved evidence record before sealing.</span> : <span>Optional support document.</span>}</div>; })()}<p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.evidenceLinkedInput.source}</p></div>
       </div><button type="button" onClick={handleEvidenceUpload} disabled={uploading} className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-sm font-semibold text-surface disabled:opacity-50">{uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />} Upload and register evidence</button><StatusBanner status={evidenceStatus} tone={evidenceStatus.toLowerCase().includes("failed") || evidenceStatus.includes("EVIDENCE_") ? "error" : "warning"} /></div>
 
-      <div className="space-y-3">{caseData.evidenceRegister.map((evidence) => <div key={evidence.evidenceId} className="rounded-xl border border-border bg-surface p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{evidence.fileName}</p><p className="text-xs text-muted">{evidence.documentType} · {evidence.sizeBytes} bytes · {evidence.reviewStatus}/{evidence.supportStatus}/{evidence.malwareScanStatus}</p><p className="mt-1 break-all font-mono text-[10px] text-muted">SHA-256 {evidence.fileHash}</p></div></div><div className="mt-3"><FieldLabel helpKey="evidenceReviewNotes">Internal review note</FieldLabel><div className="flex flex-col gap-2 md:flex-row"><input aria-label={`Review notes for ${evidence.fileName}`} value={reviewNotes[evidence.evidenceId] || ""} onChange={(event) => setReviewNotes((previous) => ({ ...previous, [evidence.evidenceId]: event.target.value }))} placeholder="Internal review note" className="flex-1 rounded border border-border bg-background p-2 text-sm" /><button type="button" disabled={evidence.malwareScanStatus !== "CLEAN"} onClick={() => handleEvidenceReview(evidence.evidenceId, "APPROVED")} className="rounded bg-status-pass px-3 py-2 text-xs font-semibold text-surface-elevated disabled:opacity-40">Approve</button><button type="button" onClick={() => handleEvidenceReview(evidence.evidenceId, "REJECTED")} className="rounded bg-status-blocked px-3 py-2 text-xs font-semibold text-surface-elevated">Reject</button></div></div>{evidence.malwareScanStatus !== "CLEAN" && <p className="mt-2 text-xs text-status-warning">Approval is disabled until an administrator records an external malware scan as CLEAN.</p>}</div>)}</div>
+      <div className="space-y-3">{caseData.evidenceRegister.map((evidence) => <div key={evidence.evidenceId} className="rounded-xl border border-border bg-surface p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{evidence.fileName}</p><p className="text-xs text-muted">{evidence.documentType} · {evidence.sizeBytes} bytes · {evidence.reviewStatus === "PENDING" ? "PENDING_REVIEW" : evidence.reviewStatus}/{evidence.supportStatus}/{evidence.malwareScanStatus}</p><p className="mt-1 text-xs text-muted">Linked inputs: {evidence.linkedInputs.length > 0 ? evidence.linkedInputs.join(", ") : "none"}</p><p className="mt-1 text-xs text-muted">Quality grade (derived from structured issuer metadata, not issuer wording): <strong>{gradeEvidenceRecord(evidence)}</strong>{evidence.qualityAssessedBy ? ` · assessed by ${evidence.qualityAssessedBy}` : ""}</p><p className="mt-1 break-all font-mono text-[10px] text-muted">SHA-256 {evidence.fileHash}</p></div></div><div className="mt-3"><FieldLabel helpKey="evidenceReviewNotes">Internal review note</FieldLabel><div className="flex flex-col gap-2 md:flex-row"><input aria-label={`Review notes for ${evidence.fileName}`} value={reviewNotes[evidence.evidenceId] || ""} onChange={(event) => setReviewNotes((previous) => ({ ...previous, [evidence.evidenceId]: event.target.value }))} placeholder="Internal review note" className="flex-1 rounded border border-border bg-background p-2 text-sm" /><button type="button" disabled={evidence.malwareScanStatus !== "CLEAN"} onClick={() => handleEvidenceReview(evidence.evidenceId, "APPROVED")} className="rounded bg-status-pass px-3 py-2 text-xs font-semibold text-surface-elevated disabled:opacity-40">Request approval</button><button type="button" onClick={() => handleEvidenceReview(evidence.evidenceId, "REJECTED")} className="rounded bg-status-blocked px-3 py-2 text-xs font-semibold text-surface-elevated">Reject</button></div></div><div className="mt-2 grid gap-2 md:grid-cols-2"><select aria-label={`Link ${evidence.fileName} to an additional input`} value="" onChange={(event) => { const value = event.target.value; if (!value) return; setCaseData((previous) => ({ ...previous, evidenceRegister: previous.evidenceRegister.map((record) => record.evidenceId === evidence.evidenceId && !record.linkedInputs.includes(value) ? { ...record, linkedInputs: [...record.linkedInputs, value] } : record) })); }} className="w-full rounded border border-border bg-background p-2 text-xs"><option value="">Link to additional input…</option>{linkOptions.filter((option) => !evidence.linkedInputs.includes(option.value)).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>{evidence.malwareScanStatus !== "CLEAN" && <p className="mt-2 text-xs text-status-warning">Approval is disabled until an administrator records an external malware scan as CLEAN.</p>}<p className="mt-2 text-[11px] text-muted">Approval and quality grades are assigned by the internal review workflow only. The uploading user cannot self-approve a document or assign A/B/C/D/E grades.</p></div>)}</div>
     </div>
   );
 
@@ -780,7 +890,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
             <h3 className="mt-1 flex items-center gap-2 text-xl font-bold"><PackageCheck className="h-6 w-6" /> What the Preparation Pack actually delivers</h3>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-dark-text/80">The blue scenario above is a free workflow demonstration. A paid release is created only from case-specific data after every preparation control passes and produces a verifier-facing, immutable package.</p>
           </div>
-          <span className="shrink-0 rounded-full border border-border-strong px-3 py-1 text-xs font-semibold">27 controlled components</span>
+          <span className="shrink-0 rounded-full border border-border-strong px-3 py-1 text-xs font-semibold">26 controlled components</span>
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {SEALED_PACKAGE_HIGHLIGHTS.map((item) => {
@@ -900,9 +1010,54 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           unlockablePacks={unlockablePacks}
           caseId={caseData.caseId || ""}
           canLock={readiness.isEligibleForSealing && usableEntitlements.length > 0}
-          onGoToStep={setCurrentStep}
+          onGoToStep={goToStep}
           onLock={() => void handleSeal()}
         />
+
+        <nav aria-label="Wizard step progress" className="flex flex-wrap gap-1.5">
+          {Array.from({ length: 8 }, (_, index) => index + 1).map((step) => {
+            const validation = stepValidations[step];
+            const state = stepStates[step];
+            return (
+              <button
+                key={step}
+                type="button"
+                onClick={() => goToStep(step)}
+                aria-current={step === currentStep ? "step" : undefined}
+                aria-label={`Step ${step}: ${WIZARD_STEP_HEADERS[step].shortTitle} (${state.replaceAll("_", " ")})`}
+                className={`rounded-lg border px-2.5 py-1.5 text-xs font-bold ${step === currentStep ? "border-accent bg-accent text-surface" : STEP_STATE_STYLES[state]}`}
+              >
+                {step}
+                <span className="ml-1.5 hidden text-[10px] font-semibold normal-case sm:inline">{WIZARD_STEP_HEADERS[step].shortTitle}</span>
+                {validation && (validation.missingFieldCount > 0 || validation.missingEvidenceCount > 0) && <span className="ml-1 text-[10px]">· {validation.missingFieldCount + validation.missingEvidenceCount}</span>}
+              </button>
+            );
+          })}
+        </nav>
+
+        <section aria-label={`Step ${currentStep} progress summary`} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-neutral-soft px-4 py-2.5 text-sm">
+          <span className="font-bold">Step {currentStep} — {WIZARD_STEP_HEADERS[currentStep].shortTitle}</span>
+          {wizardStepTotalFields(currentStep) > 0 ? <span className="text-muted">{currentStepValidation.completedFieldCount}/{wizardStepTotalFields(currentStep)} complete</span> : <span className="text-muted">{readiness.isEligibleForSealing ? "Ready to seal" : "Review readiness below"}</span>}
+          {currentStep === 8 && (() => { const overall = summarizeWizardCompletion(caseData); return <span className="text-muted">· overall {overall.completedFields} complete · {overall.missingFields} field(s) · {overall.missingEvidence} document(s)</span>; })()}
+          {currentStepValidation.missingFieldCount > 0 && <span className="font-semibold text-status-blocked">· {currentStepValidation.missingFieldCount} required field(s) missing</span>}
+          {currentStepValidation.missingEvidenceCount > 0 && <span className="font-semibold text-status-warning">· {currentStepValidation.missingEvidenceCount} document(s) required</span>}
+          <StepStateBadge state={stepStates[currentStep]} />
+          {currentStep >= getUnblockedStepRange().hardBlockStartStep && currentStepValidation.missingEvidenceCount > 0 && <span className="text-status-blocked">· Evidence required before this step can be passed.</span>}
+        </section>
+
+        {!currentStepValidation.valid && (
+          <div role="alert" aria-label="Step validation errors" className="rounded-lg border border-status-blocked/40 bg-[color:var(--status-blocked-soft)] p-4 text-status-blocked">
+            <h2 className="flex items-center gap-2 font-bold"><AlertTriangle className="h-5 w-5" /> Complete the required fields before continuing</h2>
+            <ul className="mt-2 space-y-1.5 text-sm">
+              {currentStepValidation.issues.map((issue) => (
+                <li key={`${issue.fieldPath}-${issue.kind}`} className="flex flex-wrap items-start gap-2">
+                  <button type="button" onClick={() => focusField(issue.fieldPath)} className="font-semibold underline underline-offset-2">{issue.label}</button>
+                  <span>{issue.message}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {scenarioActive && (
           <aside className="flex flex-col justify-between gap-4 rounded-xl border-2 border-forest-light bg-forest-pale p-5 text-forest md:flex-row md:items-center">
@@ -951,7 +1106,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           </span>
           <button
             type="button"
-            onClick={() => setCurrentStep((step) => Math.min(8, step + 1))}
+            onClick={goToNext}
             disabled={currentStep === 8}
             className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-surface disabled:opacity-40"
           >

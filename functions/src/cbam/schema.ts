@@ -34,6 +34,33 @@ export const EvidenceSupportStatusSchema = z.enum([
   "NOT_REQUIRED",
 ]);
 
+export const EvidenceIssuerCategorySchema = z.enum([
+  "GOVERNMENT_AUTHORITY",
+  "CUSTOMS_AUTHORITY",
+  "NATIONAL_REGISTRY",
+  "GRID_OPERATOR",
+  "REGULATED_UTILITY",
+  "ACCREDITED_LAB",
+  "ACCREDITED_VERIFICATION_BODY",
+  "INDEPENDENT_AUDITOR",
+  "OPERATOR_CONTROLLED",
+  "SUPPLIER",
+  "SECONDARY_SOURCE",
+]);
+export type EvidenceIssuerCategory = z.infer<typeof EvidenceIssuerCategorySchema>;
+
+export const EvidenceDocumentAuthoritySchema = z.enum([
+  "OFFICIAL",
+  "INDEPENDENT",
+  "OPERATOR",
+  "SUPPLIER",
+  "SECONDARY",
+]);
+export type EvidenceDocumentAuthority = z.infer<typeof EvidenceDocumentAuthoritySchema>;
+
+export const EvidenceRecordQualityGradeSchema = z.enum(["A", "B", "C", "D", "E", "PENDING"]);
+export type EvidenceRecordQualityGrade = z.infer<typeof EvidenceRecordQualityGradeSchema>;
+
 export const EvidenceRecordSchema = z.object({
   evidenceId: z.string().uuid(),
   documentType: z.string().trim().min(1).max(120),
@@ -57,6 +84,17 @@ export const EvidenceRecordSchema = z.object({
   reviewerNotes: z.string().trim().min(5).max(2000).optional(),
   evidencePeriodStart: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   evidencePeriodEnd: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  // FAZ P0 — Structured evidence quality. Quality is never derived from the
+  // issuer free-text; it must come from issuerCategory/documentAuthority and,
+  // for server-reviewed records, an explicit server-assessed grade.
+  issuerCategory: EvidenceIssuerCategorySchema.nullable().optional(),
+  documentAuthority: EvidenceDocumentAuthoritySchema.nullable().optional(),
+  qualityGrade: EvidenceRecordQualityGradeSchema.nullable().optional(),
+  qualityAssessmentBasis: z.string().trim().max(400).optional(),
+  qualityAssessedBy: z.string().trim().max(200).optional(),
+  qualityAssessedAt: z.string().datetime().optional(),
+  officialReference: z.string().trim().max(240).optional(),
+  accreditationReference: z.string().trim().max(240).optional(),
 });
 
 export type EvidenceRecord = z.infer<typeof EvidenceRecordSchema>;
@@ -138,17 +176,48 @@ export const GapRecordSchema = z.object({
 
 export type GapRecord = z.infer<typeof GapRecordSchema>;
 
-export const MethodologyDecisionSchema = z.object({
-  decisionId: z.string().uuid(),
-  topic: z.string().trim().min(1),
-  selectedMethod: z.string().trim().min(1),
-  reason: z.string().trim().min(1),
-  legalOrTechnicalBasis: z.string().trim().min(1),
-  evidenceIds: z.array(z.string().uuid()),
-  rejectedAlternativeReason: z.string().optional(),
-  reviewStatus: z.enum(["PENDING", "ACCEPTED", "REVIEW_REQUIRED"]),
-  rulesetVersion: z.string().min(1),
-});
+export const MethodologyDecisionSchema = z
+  .object({
+    decisionId: z.string().uuid(),
+    topic: z.string().trim().min(1),
+    selectedMethod: z.string().trim().min(1),
+    reason: z.string().trim().min(1),
+    legalOrTechnicalBasis: z.string().trim().min(1),
+    evidenceIds: z.array(z.string().uuid()),
+    rejectedAlternativeReason: z.string().optional(),
+    reviewStatus: z.enum(["PENDING", "ACCEPTED", "REVIEW_REQUIRED"]),
+    rulesetVersion: z.string().min(1),
+    approverName: z.string().trim().min(1).optional(),
+    approverRole: z.string().trim().min(1).optional(),
+    approvedAt: z.string().datetime().optional(),
+  })
+  .superRefine((decision, context) => {
+    // ACCEPTED is a server-controlled review outcome only. A record that
+    // claims acceptance must carry full approval provenance; client-created
+    // records default to REVIEW_REQUIRED and therefore never reach this path.
+    if (decision.reviewStatus !== "ACCEPTED") return;
+    if (!decision.approverName?.trim()) {
+      context.addIssue({
+        code: "custom",
+        path: ["approverName"],
+        message: "An accepted methodology decision requires approverName.",
+      });
+    }
+    if (!decision.approverRole?.trim()) {
+      context.addIssue({
+        code: "custom",
+        path: ["approverRole"],
+        message: "An accepted methodology decision requires approverRole.",
+      });
+    }
+    if (!decision.approvedAt) {
+      context.addIssue({
+        code: "custom",
+        path: ["approvedAt"],
+        message: "An accepted methodology decision requires approvedAt.",
+      });
+    }
+  });
 
 export type MethodologyDecision = z.infer<typeof MethodologyDecisionSchema>;
 
@@ -186,6 +255,44 @@ export const VerifierReservedFieldsSchema = z.object({
   finalOpinion: z.enum(["NO_OPINION", "FAIR_PRESENTATION", "QUALIFIED", "ADVERSE", "WITHDRAWN"]).optional(),
   signature: z.string().trim().min(1).optional(),
   certificateReference: z.string().trim().min(1).optional(),
+  // FAZ P0 — Operator preparation inputs handed to the independent verifier:
+  // risk registers, per-good materiality workpapers and the sampling plan.
+  // These are operator-entered preparation records, never verifier conclusions.
+  preparationInputs: z
+    .object({
+      riskRegister: z
+        .array(
+          z.object({
+            riskId: z.string().trim().min(1),
+            riskCategory: z.enum(["INHERENT", "CONTROL", "DETECTION"]),
+            description: z.string().trim().min(1),
+            likelihood: z.enum(["LOW", "MEDIUM", "HIGH"]),
+            impact: z.enum(["LOW", "MEDIUM", "HIGH"]),
+            mitigation: z.string().trim().optional(),
+          })
+        )
+        .optional(),
+      materialityWorkpapers: z
+        .array(
+          z.object({
+            goodIndex: z.number().int().nonnegative(),
+            cnCode: z.string().trim().min(1),
+            basis: z.enum(["REGULATORY", "CALCULATION", "EXPERT_JUDGEMENT"]),
+            materialityRate: z.number().min(0).max(1),
+            verifierStatus: z.string().trim().min(1),
+          })
+        )
+        .optional(),
+      samplingPlan: z
+        .object({
+          population: z.string().trim().min(1),
+          rationale: z.string().trim().min(1),
+          sampleSelection: z.string().trim().min(1),
+          sampleSize: z.number().int().nonnegative(),
+        })
+        .optional(),
+    })
+    .optional(),
 });
 
 export type VerifierReservedFields = z.infer<typeof VerifierReservedFieldsSchema>;

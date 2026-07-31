@@ -106,7 +106,7 @@ export type EvidenceSupportState = z.infer<typeof EvidenceSupportStateSchema>;
  *   E Unsupported.
  * Material requirements graded D/E block a 100/100 evidence score.
  */
-export const EvidenceQualityGradeSchema = z.enum(["A", "B", "C", "D", "E"]);
+export const EvidenceQualityGradeSchema = z.enum(["A", "B", "C", "D", "E", "PENDING"]);
 export type EvidenceQualityGrade = z.infer<typeof EvidenceQualityGradeSchema>;
 
 export const MaterialInputRequirementSchema = z.object({

@@ -177,12 +177,62 @@ describe("FAZ 13 — premium tier chapter contract", () => {
           internalReviewer: "Internal reviewer",
           reviewStatus: "ACCEPTED",
           rulesetVersion: "CBAM-RULESET-2025-1",
+          approverName: "Internal reviewer",
+          approverRole: "INTERNAL_REVIEWER",
+          approvedAt: "2026-03-01T10:00:00.000Z",
         },
       ],
     });
     const { calculation, model } = buildModel(caseData);
     const e09 = derivePremiumChapterEvaluations({ caseData, calculation, model }).find((entry) => entry.chapterId === "E-09");
     expect(e09?.status).toBe(PremiumChapterStatus.NOT_APPLICABLE_WITH_LEGAL_BASIS);
+  });
+
+  it("marks E-09 NOT_APPLICABLE for an accepted precursor-scope-none decision regardless of its wording", () => {
+    // Regression for FERTILISER_TR: the decision's selectedMethod may be phrased
+    // in natural operator language ("No separate precursor goods are declared...")
+    // rather than containing the literal token "precursor". The evaluator must
+    // rely on the ACCEPTED decision record itself, never on free-text scanning.
+    const base = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    const caseData = AuditReadyCaseSchema.parse({
+      ...base,
+      precursors: [],
+      methodologyDecisions: [
+        {
+          decisionId: "44444444-4444-4444-8444-444444444444",
+          topic: "PRECURSOR_SCOPE",
+          selectedMethod: "No separate precursor goods are declared; natural gas enters as feedstock inside the boundary",
+          reason: "Natural gas feedstock is converted inside the installation and no listed precursor material crosses the boundary",
+          legalOrTechnicalBasis: "Regulation (EU) 2023/956 Article 3(32) precursor definition; Annex IV",
+          evidenceIds: [],
+          assumptions: ["Feedstock conversion is part of the installation's own production route"],
+          rejectedAlternative: "Declaring natural gas as a precursor",
+          reasonForRejection: "Natural gas is not a listed precursor good under Annex I of Regulation (EU) 2023/956",
+          responsiblePerson: "Preparer",
+          internalReviewer: "Internal reviewer",
+          reviewStatus: "ACCEPTED",
+          rulesetVersion: "CBAM-RULESET-2025-1",
+          approverName: "Internal reviewer",
+          approverRole: "INTERNAL_REVIEWER",
+          approvedAt: "2026-03-01T10:00:00.000Z",
+        },
+      ],
+    });
+    const { calculation, model } = buildModel(caseData);
+    const e09 = derivePremiumChapterEvaluations({ caseData, calculation, model }).find((entry) => entry.chapterId === "E-09");
+    expect(e09?.status).toBe(PremiumChapterStatus.NOT_APPLICABLE_WITH_LEGAL_BASIS);
+  });
+
+  it("keeps E-09 a DATA GAP when no accepted precursor-scope decision exists", () => {
+    const base = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    const caseData = AuditReadyCaseSchema.parse({
+      ...base,
+      precursors: [],
+      methodologyDecisions: [],
+    });
+    const { calculation, model } = buildModel(caseData);
+    const e09 = derivePremiumChapterEvaluations({ caseData, calculation, model }).find((entry) => entry.chapterId === "E-09");
+    expect(e09?.status).toBe(PremiumChapterStatus.APPLICABLE_DATA_GAP);
   });
 
   it("marks E-14 NOT_APPLICABLE_WITH_LEGAL_BASIS for a single-good case", () => {
