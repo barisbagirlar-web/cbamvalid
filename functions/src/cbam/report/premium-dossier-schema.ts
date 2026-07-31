@@ -417,6 +417,15 @@ export const PremiumDossierViewModelV2Schema = PremiumDossierViewModelSchema.ext
       productTierLabel: z.string().optional(),
     })
     .optional(),
+  monitoringPlan: z
+    .array(z.object({
+      requirementId: z.string(),
+      requirement: z.string(),
+      status: z.string(),
+      evidence: z.string(),
+    }))
+    .optional(),
+  verifierPreparation: z.any().optional(),
   versionStamp: z
     .object({
       product: z.string(),

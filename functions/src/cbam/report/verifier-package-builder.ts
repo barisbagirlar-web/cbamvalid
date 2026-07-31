@@ -320,6 +320,8 @@ function buildPdfArtifacts(params: {
         publicVerificationState: "ACTIVE",
       },
       honestScoreboard: params.honestScoreboard,
+      monitoringPlan: model.monitoringPlan,
+      verifierPreparation: model.verifierPreparation,
     };
 
     return [

@@ -578,6 +578,37 @@ describe("premium-dossier-v5 deliverables", () => {
     console.log(`Verified PDF Geometry successfully. Total pages: ${pages}`);
   });
 
+  it("FAZ 8 — renders the canonical report architecture sections and data-driven visuals", async () => {
+    const outputDir = path.join(process.cwd(), "artifacts", "sample-v5");
+    const primaryPdfPath = path.join(outputDir, "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
+    expect(fs.existsSync(primaryPdfPath)).toBe(true);
+
+    const { text } = await pdfText(fs.readFileSync(primaryPdfPath));
+
+    // FAZ 8 content sections (added on top of the 30-section core)
+    expect(text).toContain("32. Monitoring Plan Conformance");
+    expect(text).toContain("33. Source Streams and Emission Sources");
+    expect(text).toContain("34. Metering and Instrumentation");
+    expect(text).toContain("35. Calculation Methodology");
+    expect(text).toContain("36. Risk Assessment");
+    expect(text).toContain("37. Materiality and Sampling Plan");
+    expect(text).toContain("38. Data Visualisation Annex");
+
+    // Data-driven visuals must be present
+    expect(text).toContain("A-H emission segregation");
+    expect(text).toContain("Per-good specific embedded emissions");
+    expect(text).toContain("Evidence coverage by material requirement");
+    expect(text).toContain("Risk heat matrix");
+    expect(text).toContain("Allocation reconciliation");
+    expect(text).toContain("INCLUDED PROCESSES");
+    expect(text).toContain("EXCLUDED PROCESSES");
+
+    // Risk registers and materiality wording from FAZ 6 modules
+    expect(text).toContain("INHERENT");
+    expect(text).toContain("DETECTION");
+    expect(text).toContain("PROVISIONAL_FOR_VERIFIER_PLANNING");
+  });
+
   // ---- Patch 9: Regression Tests ----
   it("Test A — Exact V5 contract: topLevelCount=26, no missing/extra, Calc Graph present", async () => {
     const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());

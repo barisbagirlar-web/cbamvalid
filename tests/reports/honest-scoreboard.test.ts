@@ -41,7 +41,6 @@ function materialRow(
     requiredPeriodStart: "2026-01-01",
     requiredPeriodEnd: "2026-12-31",
     coveragePercent: "100.00",
-    coverageAssessment: "SUFFICIENT",
     supportBasis: "SUPPORTED_BY_EVIDENCE",
     evidenceQualityGrade: "A",
     ...overrides,
@@ -149,7 +148,7 @@ describe("FAZ 7 — honest scoreboard", () => {
       finalOpinion: "FAIR_PRESENTATION",
       signature: "signed",
       certificateReference: "CERT-2026-001",
-    };
+    } as const;
     expect(countExternalVerifierCompletion(almostComplete).completed).toBe(7);
 
     const missingCertificate = { ...almostComplete, certificateReference: undefined };
