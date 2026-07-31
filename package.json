@@ -54,6 +54,7 @@
     "guard:visual-system": "node scripts/guard-visual-system.mjs",
     "test:e2e:commercial": "playwright test tests/e2e/auth",
     "test:e2e:visual": "playwright test tests/e2e/visual.spec.ts",
+    "test:e2e:critical": "playwright test tests/e2e/critical-flows.spec.ts",
     "reconcile:paddle": "node scripts/guard-commercial-architecture.mjs --reconcile",
     "audit:ledger": "node scripts/guard-commercial-architecture.mjs --audit",
     "test:golden": "vitest run tests/cbam-engine tests/engine/dimensional-safety.test.ts tests/reports/sample-report.test.ts",
