@@ -11,7 +11,13 @@
  * Old preflight at lib/cbam/* is stale — this script MUST match the server path exactly.
  *
  * Usage:
- *   npx tsx scripts/verify-teb232-alu-v5-readiness.ts
+ *   Release / acceptance mode (default — a NOT_READY case exits 1):
+ *     npx tsx scripts/verify-teb232-alu-v5-readiness.ts
+ *
+ *   Diagnostic expected-block mode (exit 0 ONLY when the case is blocked AND
+ *   the actual seal-blocker IDs exactly match EXPECTED_BLOCKER_IDS):
+ *     EXPECT_BLOCKED=1 EXPECTED_BLOCKER_IDS=FND-...-a1,FND-...-b2 \
+ *       npx tsx scripts/verify-teb232-alu-v5-readiness.ts
  */
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
@@ -21,10 +27,23 @@ import { AuditReadyCaseSchema } from "../functions/src/cbam/schema";
 import { assessReadiness } from "../functions/src/cbam/validation/readiness-score";
 import { runEvidenceSufficiency } from "../functions/src/cbam/validation/evidence-sufficiency";
 import { generateFindingsAndActions } from "../functions/src/cbam/validation/findings-engine";
+import {
+  decidePreflightExit,
+  parseExpectedBlockerIds,
+  resolvePreflightMode,
+} from "./preflight-semantics";
 
 const EMAIL = "teb232@gmail.com";
 const UID = "r3Sv0U5YqEcLLylbw5ndwK1Zg652";
 const CASE_ID = "case_73bdb993585bfb8744908fc7bf57fb60ab7a0a81c4116f12bc662a674b03eacd";
+
+// ── Preflight mode ───────────────────────────────────────────────────────────
+// Release (default): NOT_READY must exit 1 so CI cannot mistake a blocked case
+// for a passing release gate.
+// Diagnostic expected-block: explicit EXPECT_BLOCKED=1 with EXPECTED_BLOCKER_IDS
+// — exits 0 only on an exact blocker-ID match with no unexpected blockers.
+const PREFLIGHT_MODE = resolvePreflightMode(process.env);
+const EXPECTED_BLOCKER_IDS = parseExpectedBlockerIds(process.env.EXPECTED_BLOCKER_IDS);
 
 function loadEnvLocal(): Record<string, string> {
   const path = resolve(process.cwd(), ".env.local");
@@ -225,16 +244,48 @@ async function main(): Promise<void> {
   console.log("\n=== V5 READINESS PREFLIGHT ===");
   console.log(JSON.stringify(output, null, 2));
 
-  if (sealBlockedByV5) {
-    console.log("\n⛔ SEAL BLOCKED BY V5 READINESS GATES");
+  // Seal-blocker set for diagnostic matching: findings that are OPEN and
+  // explicitly block sealing (same predicate the seal service enforces).
+  const actualBlockerIds = [...new Set(
+    openBlockingFindings
+      .filter((finding) => finding.blocksSealing)
+      .map((finding) => finding.findingId)
+  )].sort();
+
+  console.log(`\nPREFLIGHT_MODE=${PREFLIGHT_MODE}`);
+
+  const exitDecision = decidePreflightExit({
+    mode: PREFLIGHT_MODE,
+    sealBlockedByV5,
+    actualBlockerIds,
+    expectedBlockerIds: EXPECTED_BLOCKER_IDS,
+  });
+
+  console.log(`PREFLIGHT_RESULT=${exitDecision.result}`);
+  console.log(`ACTUAL_BLOCKER_IDS=${actualBlockerIds.join(",")}`);
+  console.log(`EXPECTED_BLOCKER_IDS=${EXPECTED_BLOCKER_IDS.join(",")}`);
+  console.log(`MISSING_BLOCKER_IDS=${exitDecision.missing.join(",")}`);
+  console.log(`UNEXPECTED_BLOCKER_IDS=${exitDecision.unexpected.join(",")}`);
+
+  if (exitDecision.result === "RELEASE_ACCEPTANCE_CASE_NOT_READY") {
+    console.log("⛔ SEAL BLOCKED BY V5 READINESS GATES");
     console.log("operatorStatus:", assessment.operatorStatus);
     console.log("criticalBlockerCount:", assessment.criticalBlockerCount);
     console.log("missingMaterialEvidenceCount:", assessment.missingMaterialEvidenceCount);
     console.log("decisionReasonCodes:", assessment.decisionReasonCodes);
-    process.exitCode = 1;
-  } else {
+  } else if (exitDecision.result === "RELEASE_ACCEPTANCE_CASE_READY") {
     console.log("\n✅ SERVER_V5_PREFLIGHT_PASS — seal gates are clear");
+  } else if (exitDecision.result === "DIAGNOSTIC_EXPECTED_BLOCK_MATCHED") {
+    console.log("✅ Diagnostic expected-block confirmed: blocker IDs exactly matched.");
+  } else if (exitDecision.result === "DIAGNOSTIC_EXPECTED_BLOCK_ACTUAL_PASS") {
+    console.error("Expected a blocked case for diagnostics but the V5 seal gates are clear.");
+  } else if (exitDecision.result === "DIAGNOSTIC_EXPECTED_BLOCKER_IDS_REQUIRED") {
+    console.error("EXPECT_BLOCKED=1 requires EXPECTED_BLOCKER_IDS to be set (comma-separated).");
+  } else {
+    console.error("Diagnostic blocker-ID mismatch — refusing to report success.");
   }
+
+  process.exitCode = exitDecision.exitCode;
 }
 
 void main().catch((error) => {
