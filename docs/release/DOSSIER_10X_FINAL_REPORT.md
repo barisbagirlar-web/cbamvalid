@@ -72,11 +72,41 @@ EXPECT_BLOCKED=1 + EXPECTED_BLOCKER_IDS=… → DIAGNOSTIC_EXPECTED_BLOCK_MATCHE
 ## Honest status
 
 ```
+LOCAL_CI_GATE=PASS
+GITHUB_CI_GATE=PASS
+FINAL_COMMITS_PUSHED=YES
+PR_OPENED=YES
+MERGE_READY=NO (owner decision pending)
+DEPLOY_READY=NO
+```
+
+GitHub Actions (PR #80, head `7311fcd`): all 8 checks green —
+
+```
+regression-test=PASS (typecheck + full vitest + Next build + live critical-flow E2E)
+Typecheck, tests and production build=PASS
+property-tests=PASS
+Trivy repository gate=PASS
+Trivy=PASS
+Production dependency audit=PASS
+Classify release risk and required evidence=PASS
+actionlint and policy guard=PASS
+```
+
+Two pre-existing `main` CI defects were fixed on this branch so the gate could
+close: the Regression Guard referenced a never-declared `test:e2e:critical`
+script (now wired to `critical-flows.spec.ts`) and installed only Chromium while
+the config also runs WebKit. A stale `tests/engine/dimensional-safety.test.ts`
+asserting the pre-FAZ-4 semantic for `totalEmbeddedEmissions` was realigned to
+the A–H model (G = certificate-relevant priced; H = informational) that both the
+lib preview and server SSOT engine implement.
+
+```
 REPORT_STATUS=CONDITIONALLY_READY_FOR_PR
 LOCAL_IMPLEMENTATION=SUBSTANTIALLY_COMPLETE
-REMOTE_VERIFICATION=NOT_STARTED   (this PR is the first remote CI run)
+REMOTE_VERIFICATION=COMPLETE (PR #80, all checks PASS)
 CURRENT_RELEASE_DECISION=NO_GO
-CURRENT_PR_DECISION=GO_AFTER_PUSH
+CURRENT_PR_DECISION=GO
 ```
 
 **Not production-ready and explicitly NOT claimed:** live deployment, browser
