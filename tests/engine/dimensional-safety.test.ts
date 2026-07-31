@@ -21,10 +21,17 @@ describe("dimensional safety and decimal engine", () => {
 
     const result = performDossierCalculations(caseData);
 
-    expect(result.totalDirectEmissions).toBe("150.55");
-    expect(result.totalIndirectEmissions).toBe("25");
-    expect(result.totalEmbeddedEmissions).toBe("175.55");
+    expect(result.totalDirectEmissions).toBe("150.55"); // C — total direct
+    expect(result.totalIndirectEmissions).toBe("25"); // F — total indirect
+    expect(result.emissionsByCategory.C_TOTAL_DIRECT_EMBEDDED).toBe("150.55");
+    expect(result.emissionsByCategory.F_TOTAL_DISCLOSED_INDIRECT).toBe("25");
+    expect(result.emissionsByCategory.H_TOTAL_INFORMATIONAL_EMBEDDED).toBe("175.55"); // C + F
+    // FAZ 4 G/H segregation: `totalEmbeddedEmissions` is the certificate-relevant
+    // priced total (G). The fixture sector is Annex II (iron & steel), so indirect
+    // is disclosed but not priced — G excludes it. See golden-dossier-matrix.
+    expect(result.emissionsByCategory.G_CERTIFICATE_RELEVANT_EMBEDDED).toBe("150.55");
+    expect(result.totalEmbeddedEmissions).toBe("150.55");
     expect(result.productionVolume).toBe("100");
-    expect(result.specificEmbeddedEmissions).toBe("1.7555");
+    expect(result.specificEmbeddedEmissions).toBe("1.5055"); // G / volume
   });
 });
