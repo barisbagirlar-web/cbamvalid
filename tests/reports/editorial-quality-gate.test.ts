@@ -14,6 +14,7 @@ import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import { FOUR_DOSSIER_KEYS } from "../fixtures/four-dossiers";
 import {
   buildDossierSealedPackage,
+  dossierPackageCode,
   type DossierSealedPackage,
 } from "../fixtures/four-dossier-package";
 
@@ -93,6 +94,26 @@ describe("editorial quality gate", () => {
       // evidence watermark which lives in evidence PDFs, not this report).
       expect(text).not.toContain("STRESS TEST");
       expect(text).not.toContain("SYNTHETIC TEST EVIDENCE");
+
+      // Package identity is concrete (ISS-05): the allocated package code
+      // appears on the cover and no "assigned at seal" or "—" stand-in is used.
+      const packageCode = dossierPackageCode(key);
+      expect(text).toContain(packageCode);
+      expect(text).not.toContain("ASSIGNED_AT_SEAL");
+      expect(text).not.toContain("Package ID: —");
+      expect(text).not.toContain("Package ID:—");
+
+      // Metering consistency (ISS-06): the report lists the calibration
+      // certificate and never claims a calibration DATA GAP when E-03 is
+      // complete. The METER_CALIBRATION_CERTIFICATE document type must be
+      // recognised by Section 34.
+      expect(text).not.toContain("No approved calibration certificates found");
+
+      // Premium contract closure (ISS-04): no premium chapter gap and no E-09
+      // precursor-scope DATA GAP in any of the four sealed reports — including
+      // FERTILISER_TR whose decision is worded in natural operator language.
+      expect(text).not.toContain("PREMIUM CONTRACT GAP");
+      expect(text).not.toContain("precursor scope decision required but not accepted");
     }, 45_000);
   }
 });

@@ -4,6 +4,7 @@ import { reserveEntitlement, consumeEntitlement, releaseEntitlementReservation }
 import { AuditReadyCaseSchema, type AuditReadyCase } from "../schema";
 import { performDossierCalculations } from "../calculator";
 import { runQualityControls } from "../validation/quality-controls";
+import { deriveInstrumentation } from "./instrumentation-derivation";
 import { runEvidenceSufficiency } from "../validation/evidence-sufficiency";
 import { assessCaseReadiness } from "../validation/readiness-assessor";
 import { getActiveRuleset } from "../registry/rulesets";
@@ -418,48 +419,10 @@ export async function sealReport(params: {
     });
     const evidenceIds = (caseData.evidenceRegister || []).map((e) => String(e.evidenceId));
     const primaryEvidenceId = evidenceIds[0] || "";
-    const calibrationEvidenceId =
-      String(
-        (caseData.evidenceRegister || []).find((e) => e.documentType === "CALIBRATION_CERTIFICATE")
-          ?.evidenceId || ""
-      ) || evidenceIds[evidenceIds.length - 1] || primaryEvidenceId;
-    // Test-complete instrumentation: mirrors operator-filled meters/streams required for WP-06 / E-02..E-04.
-    const sourceStreams = [
-      {
-        name: "Process fuel / combustion stream",
-        category: "MAJOR",
-        instrumentId: "TEST-METER-FUEL-001",
-        calibrationEvidenceId,
-        calibrationDate: "2026-01-15",
-        calibrationValidityEnd: "2027-01-14",
-        maximumPermissibleUncertaintyPercent: "1.5",
-        achievedUncertaintyPercent: "1.2",
-        appliedTier: "2",
-      },
-      {
-        name: "Electricity import meter",
-        category: "MAJOR",
-        instrumentId: "TEST-METER-EL-001",
-        calibrationEvidenceId,
-        calibrationDate: "2026-01-15",
-        calibrationValidityEnd: "2027-01-14",
-        maximumPermissibleUncertaintyPercent: "1.5",
-        achievedUncertaintyPercent: "1.0",
-        appliedTier: "2",
-      },
-    ];
-    const meters = [
-      {
-        id: "TEST-METER-FUEL-001",
-        calibrationValidity: "2027-01-14",
-        evidenceId: calibrationEvidenceId,
-      },
-      {
-        id: "TEST-METER-EL-001",
-        calibrationValidity: "2027-01-14",
-        evidenceId: calibrationEvidenceId,
-      },
-    ];
+    // Honest instrumentation derivation — the dossier must never fabricate
+    // meter identifiers or uncertainty values (see instrumentation-derivation).
+    const instrumentation = deriveInstrumentation(caseData);
+    const { sourceStreams, meters, emissionSources } = instrumentation;
     const uncertainty = assessUncertainty({
       sourceStreamCount: sourceStreams.length,
       streamsWithInstrument: sourceStreams.filter((s) => Boolean(s.instrumentId)).length,
@@ -525,10 +488,7 @@ export async function sealReport(params: {
         installationCountry: String(caseData.installation?.country?.value || ""),
         sector: caseData.goods[0]?.sector,
         sourceStreams,
-        emissionSources: [
-          { name: "Blast furnace / process stack", gas: "CO2" },
-          { name: "Combustion units", gas: "CO2" },
-        ],
+        emissionSources,
         meters,
         verifierPreparation,
       }),

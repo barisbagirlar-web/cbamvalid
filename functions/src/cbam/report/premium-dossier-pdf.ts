@@ -959,7 +959,10 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   beginSection(34, "Metering and Instrumentation", 35);
   {
     const calibrationEvidence = caseData.evidenceRegister.filter(
-      (item) => item.documentType === "CALIBRATION_CERTIFICATE" && item.reviewStatus === "APPROVED"
+      (item) =>
+        String(item.documentType || "").toUpperCase().includes("CALIBRATION") &&
+        item.reviewStatus === "APPROVED" &&
+        item.supportStatus === "SUPPORTED"
     );
     if (calibrationEvidence.length > 0) {
       drawTable(

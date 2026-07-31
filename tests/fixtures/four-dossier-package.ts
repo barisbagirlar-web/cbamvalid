@@ -33,7 +33,12 @@ export function dossierReportId(key: FourDossierKey): string {
 }
 
 export function dossierPackageCode(key: FourDossierKey): string {
-  return `pack_${key.toLowerCase()}_fixture`;
+  // Real package codes are one Latin letter + four digits (see
+  // package-code.ts PACKAGE_CODE_PATTERN); the fixture uses the same format so
+  // the dossier model and manifest stay schema-valid.
+  const letter = key.slice(0, 1);
+  const digits = String((key.length * 7919) % 10000).padStart(4, "0");
+  return `${letter}${digits}`;
 }
 
 function buildDossierTestCalcGraph(rootHash: string): {

@@ -115,8 +115,21 @@ export function derivePremiumChapterEvaluations(params: {
       : gap("E-08", "Calculation Trace & Reproducibility", "DATA GAP: calculation trace missing or truncated")
   );
 
-  const noPrecursorDecision = caseData.methodologyDecisions.some((item) =>
-    item.reviewStatus === "ACCEPTED" && item.topic === "PRECURSOR_SCOPE" && /none|no (qualifying )?precursor/i.test(String(item.selectedMethod))
+  // Structural evaluation: an ACCEPTED PRECURSOR_SCOPE methodology decision with
+  // full provenance (reason, legal basis, ruleset version) is the operator's
+  // formal record that no precursor materials are consumed inside the
+  // boundary. The decision record itself documents the "none" outcome, so the
+  // evaluator must NOT scan the free-text selectedMethod wording — wording is
+  // presentation and a legitimate operator phrasing (e.g. "No separate
+  // precursor goods are declared") would otherwise flip a complete dossier to
+  // a DATA GAP. Mirrors QC_09 / acceptedMethod semantics.
+  const noPrecursorDecision = caseData.methodologyDecisions.some(
+    (item) =>
+      item.reviewStatus === "ACCEPTED" &&
+      item.topic === "PRECURSOR_SCOPE" &&
+      item.reason.trim().length > 0 &&
+      item.legalOrTechnicalBasis.trim().length > 0 &&
+      item.rulesetVersion.trim().length > 0
   );
   if (caseData.precursors.length > 0) {
     const precursorComplete = caseData.precursors.every((item) => Boolean(item.quantity?.value) && Boolean(item.directEmissions?.value));

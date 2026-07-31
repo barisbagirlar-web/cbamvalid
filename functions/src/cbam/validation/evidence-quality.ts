@@ -60,6 +60,8 @@ const INDEPENDENT_AUTHORITY_CATEGORIES = new Set<string>([
   "INDEPENDENT_AUDITOR",
 ]);
 
+const VALID_QUALITY_GRADES = new Set<string>(["A", "B", "C", "D", "E", "PENDING"]);
+
 export function assessEvidenceQuality(input: EvidenceQualityInput): EvidenceQualityAssessment {
   const reviewStatus = String(input.reviewStatus || "PENDING").toUpperCase();
   const supportStatus = String(input.supportStatus || "PENDING").toUpperCase();
@@ -93,17 +95,31 @@ export function assessEvidenceQuality(input: EvidenceQualityInput): EvidenceQual
     };
   }
 
-  // A server-assessed explicit grade with assessment provenance wins.
+  // A server-assessed explicit grade with assessment provenance wins, but only
+  // when the grade is one of the defined values; an out-of-enum string is a
+  // caller defect and must never leak into the report, so it falls through to
+  // the structural grading instead.
   if (
     input.qualityGrade &&
-    input.qualityGrade !== "PENDING" &&
+    VALID_QUALITY_GRADES.has(String(input.qualityGrade).toUpperCase()) &&
+    String(input.qualityGrade).toUpperCase() !== "PENDING" &&
     input.qualityAssessedBy &&
     input.qualityAssessedAt
   ) {
     return {
-      grade: input.qualityGrade as EvidenceQualityGrade,
+      grade: String(input.qualityGrade).toUpperCase() as EvidenceQualityGrade,
       basis: "SERVER_ASSESSED_EXPLICIT_GRADE",
       reasons: ["SERVER_ASSESSED_GRADE"],
+    };
+  }
+
+  // A record categorised as a secondary source can never out-grade D,
+  // regardless of the declared document authority.
+  if (issuerCategory === "SECONDARY_SOURCE") {
+    return {
+      grade: "D",
+      basis: "SECONDARY_SOURCE",
+      reasons: ["SECONDARY_SOURCE"],
     };
   }
 

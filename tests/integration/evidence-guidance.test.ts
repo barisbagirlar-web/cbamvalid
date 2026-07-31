@@ -18,6 +18,8 @@ import {
   FIELD_GUIDANCE,
   type FieldGuidanceRecord,
 } from "@/lib/cbam/field-guidance";
+import { deriveMaterialRequirements } from "@/lib/cbam/validation/material-input-registry";
+import { createFourDossierCase } from "../fixtures/four-dossiers";
 
 const REQUIRED_KEYS: (keyof FieldGuidanceRecord)[] = [
   "fieldPath",
@@ -43,6 +45,11 @@ const SPECIAL_PATHS = [
   "gridEmissionFactor",
   "reportingPeriod.year",
   "installation.systemBoundaries",
+  "exporterIdentity.address",
+  "precursors.*.name",
+  "precursors.*.quantity",
+  "precursors.*.directEmissions",
+  "precursors.*.indirectEmissions",
 ];
 
 describe("field guidance registry", () => {
@@ -70,6 +77,46 @@ describe("field guidance registry", () => {
       const record = getFieldGuidance(path);
       expect(record, `missing guidance for ${path}`).toBeDefined();
     }
+  });
+
+  it("covers every material-requirement input path with a guidance record (SSOT)", () => {
+    // The material-input registry is the source of truth for what the wizard
+    // and the evidence-sufficiency engine demand. Every one of those paths must
+    // resolve to a guidance record, otherwise the wizard would show empty
+    // accepted-evidence hints and generic messages for required fields.
+    for (const key of ["STEEL_IN", "CEMENT_EG", "ALU_CN", "FERTILISER_TR"] as const) {
+      const caseData = createFourDossierCase(key);
+      const requirements = deriveMaterialRequirements(caseData);
+      for (const requirement of requirements) {
+        const resolved = getFieldGuidanceForPath(requirement.inputPath);
+        expect(
+          resolved,
+          `${key}: no guidance record for material requirement ${requirement.requirementId} (${requirement.inputPath})`
+        ).toBeDefined();
+        // Guidance records for requirement paths must carry the evidence
+        // acceptance data the link options expose.
+        expect(resolved!.acceptedEvidenceTypes.length, `${requirement.inputPath} empty acceptedEvidenceTypes`).toBeGreaterThan(0);
+        expect(resolved!.preferredIssuerCategories.length, `${requirement.inputPath} empty preferredIssuerCategories`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("provides specific precursor guidance that instance paths resolve", () => {
+    const name = getFieldGuidanceForPath("precursors.0.name");
+    expect(name).toBeDefined();
+    expect(name!.fieldPath).toBe("precursors.*.name");
+    expect(name!.acceptedEvidenceTypes.length).toBeGreaterThan(0);
+    const quantity = getFieldGuidanceForPath("precursors.0.quantity");
+    expect(quantity).toBeDefined();
+    expect(quantity!.acceptedEvidenceTypes.join(" ")).toMatch(/BILL_OF_MATERIALS|MASS_BALANCE|RECONCILIATION/i);
+  });
+
+  it("provides operator-address guidance", () => {
+    const address = getFieldGuidance("exporterIdentity.address");
+    expect(address).toBeDefined();
+    expect(address!.acceptedEvidenceTypes).toContain("COMMERCIAL_REGISTRY_EXTRACT");
+    expect(address!.blockingLevel).toBe("REQUIRED");
+    expect(address!.whyRequired.length).toBeGreaterThan(0);
   });
 
   it("guides EORI to customs-authority documents", () => {

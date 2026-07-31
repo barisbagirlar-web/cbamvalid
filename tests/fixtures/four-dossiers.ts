@@ -844,6 +844,7 @@ function aluCnDossier(): AuditReadyCase {
     reviewerNotes: "Primary aluminium production reconciles potline metal output, inventory and dispatch.",
     linkedInputs: [
       "goods.0.productionVolume",
+      "goods.0.allocationShare",
       "installation.productionRoute",
       "installation.unloCode",
       "installation.latitude",
@@ -887,6 +888,7 @@ function aluCnDossier(): AuditReadyCase {
         cnCode: datum("76011010", { evidenceId: EV_CUSTOMS }),
         sector: "ALUMINIUM",
         productionVolume: datum("600000", { canonicalUnit: "t", evidenceId: EV_PRODUCTION, reportingPeriod: "2026 ANNUAL" }),
+        allocationShare: datum("1", { canonicalUnit: "fraction", evidenceId: EV_PRODUCTION, reportingPeriod: "2026 ANNUAL" }),
         shipmentRecords: datum("Unwrought primary aluminium, 2026 annual production", { evidenceId: EV_PRODUCTION }),
       },
     ],
@@ -951,6 +953,14 @@ function aluCnDossier(): AuditReadyCase {
         "Bauxite mining and alumina refining are outside the smelter boundary; precursor alumina enters as a declared precursor.",
         "Regulation (EU) 2023/956 Annex IV; monitoring-plan requirements.",
         [EV_BOUNDARY]
+      ),
+      acceptedDecision(
+        "62000000-0000-4000-8000-000000000003",
+        "GOODS_EMISSIONS_ALLOCATION",
+        "Single declared good receives the full installation allocation (100% mass share)",
+        "The smelter produces a single CN-coded good in the reporting period; the production ledger confirms the full-share allocation and reconciliation to 1.00.",
+        "Commission Implementing Regulation (EU) 2025/2547 allocation provisions; supported by the reconciled production ledger.",
+        [EV_PRODUCTION]
       ),
     ],
     verifierReserved: preparationInputs([

@@ -112,6 +112,90 @@ describe("structured evidence quality grading", () => {
     ).toBe("D");
   });
 
+  it("grades secondary-category documents as D even when the authority label says OPERATOR or SUPPLIER", () => {
+    // Brittle-grading regression: a record whose issuerCategory is
+    // SECONDARY_SOURCE must never be promoted to B/C by a flattering
+    // documentAuthority label. The structural category caps the grade at D.
+    expect(
+      gradeEvidenceRecord({
+        ...base,
+        issuerCategory: "SECONDARY_SOURCE",
+        documentAuthority: "OPERATOR",
+      })
+    ).toBe("D");
+    expect(
+      gradeEvidenceRecord({
+        ...base,
+        issuerCategory: "SECONDARY_SOURCE",
+        documentAuthority: "SUPPLIER",
+      })
+    ).toBe("D");
+    expect(
+      gradeEvidenceRecord({
+        ...base,
+        issuerCategory: "SECONDARY_SOURCE",
+        documentAuthority: "INDEPENDENT",
+      })
+    ).toBe("D");
+    expect(serverGradeEvidenceRecord({
+      ...base,
+      issuerCategory: "SECONDARY_SOURCE",
+      documentAuthority: "OPERATOR",
+    })).toBe("D");
+    expect(serverGradeEvidenceRecord({
+      ...base,
+      issuerCategory: "SECONDARY_SOURCE",
+      documentAuthority: "SUPPLIER",
+    })).toBe("D");
+  });
+
+  it("ignores an out-of-enum explicit qualityGrade instead of leaking it into the report", () => {
+    const assessment = assessEvidenceQuality({
+      ...base,
+      issuerCategory: "GOVERNMENT_AUTHORITY",
+      documentAuthority: "OFFICIAL",
+      qualityGrade: "Z",
+      qualityAssessedBy: "reviewer@cbamvalid.com",
+      qualityAssessedAt: "2026-07-31T10:00:00.000Z",
+    });
+    // Z is not a valid grade: the grader must fall through to structural
+    // grading (A) rather than propagate an invented grade.
+    expect(assessment.grade).toBe("A");
+    expect(assessment.basis).toBe("OFFICIAL_AUTHORITY_DOCUMENT");
+
+    const server = serverAssessEvidenceQuality({
+      ...base,
+      issuerCategory: "GOVERNMENT_AUTHORITY",
+      documentAuthority: "OFFICIAL",
+      qualityGrade: "INVALID",
+      qualityAssessedBy: "reviewer@cbamvalid.com",
+      qualityAssessedAt: "2026-07-31T10:00:00.000Z",
+    });
+    expect(server.grade).toBe("A");
+  });
+
+  it("honours a valid server-assessed explicit grade only with provenance", () => {
+    expect(
+      gradeEvidenceRecord({
+        ...base,
+        issuerCategory: "OPERATOR_CONTROLLED",
+        documentAuthority: "OPERATOR",
+        qualityGrade: "C",
+        qualityAssessedBy: "reviewer@cbamvalid.com",
+        qualityAssessedAt: "2026-07-31T10:00:00.000Z",
+      })
+    ).toBe("C");
+    // Without provenance the explicit grade is ignored.
+    expect(
+      gradeEvidenceRecord({
+        ...base,
+        issuerCategory: "OPERATOR_CONTROLLED",
+        documentAuthority: "OPERATOR",
+        qualityGrade: "A",
+      })
+    ).toBe("B");
+  });
+
   it("grades unsupported, rejected or malware-uncleared records as E", () => {
     expect(
       gradeEvidenceRecord({

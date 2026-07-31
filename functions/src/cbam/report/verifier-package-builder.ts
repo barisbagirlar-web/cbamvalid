@@ -210,6 +210,7 @@ function buildPdfArtifacts(params: {
   calculation: DossierCalculationResult;
   controls: QualityControlResult[];
   reportId: string;
+  packageCode: string;
   releaseVersion: number;
   generatedAt: string;
   model: VerifierPackageModel;
@@ -260,6 +261,7 @@ function buildPdfArtifacts(params: {
       dossierSchemaVersion: "CBAMVALID-DOSSIER-5.0",
       reportingPeriodAssessment: periodAssessment,
       reportId: params.reportId,
+      packageCode: params.packageCode,
       caseId: params.caseData.caseId || "",
       releaseVersion: params.releaseVersion,
       generatedAt: params.generatedAt,
