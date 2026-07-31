@@ -17,9 +17,16 @@ import { describe, expect, it } from "vitest";
 import type { AuditReadyCase } from "@/lib/cbam/schema";
 import {
   buildEvidenceLinkOptions,
+  clampWizardStep,
+  evaluateSealAttempt,
+  firstDataIssuePath,
   getUnblockedStepRange,
   HARD_BLOCK_START_STEP,
+  parseStepFromQuery,
+  shouldBlockNext,
+  summarizeStep8Actions,
   summarizeWizardCompletion,
+  translateSealError,
   validateWizardStep,
   WIZARD_STEP_HEADERS,
   wizardStepTotalFields,
@@ -347,5 +354,224 @@ describe("wizard step validation", () => {
     const allocOption = options.find((o) => o.value === "goods.1.allocationShare");
     expect(allocOption).toBeDefined();
     expect(allocOption!.required).toBe(true);
+  });
+});
+
+/**
+ * FAZ P0 UX (2026-08-01) — final-review wizard regression suite.
+ *
+ * The wizard must never force Step 8 back to Step 7. Navigation and sealing
+ * are decoupled: the user may open any step (including the final review),
+ * but the seal gate stays fail-closed. These tests cover the pure decision
+ * helpers; the DOM interactions (blocker panel, scroll, step buttons) are
+ * covered by tests/e2e/critical-flows.spec.ts.
+ */
+describe("wizard final-review UX (never force Step 8 back to 7)", () => {
+  /** Fully evidence-linked, seal-ready case (mirrors the existing fixture). */
+  function readyCase(): AuditReadyCase {
+    const complete = baseCase();
+    linkEvidence(complete, EV_EORI, "importerIdentity.eoriNumber", "EORI_REGISTRATION_RECORD");
+    linkEvidence(complete, EV_EORI, "importerIdentity.legalName", "COMMERCIAL_REGISTRY_EXTRACT");
+    linkEvidence(complete, EV_EORI, "exporterIdentity.legalName", "COMMERCIAL_REGISTRY_EXTRACT");
+    linkEvidence(complete, EV_EORI, "exporterIdentity.address", "COMMERCIAL_REGISTRY_EXTRACT");
+    linkEvidence(complete, EV_EORI, "reportingPeriod.year", "SIGNED_PERIOD_CLOSURE_SHEET");
+    linkEvidence(complete, EV_EORI, "installation.name", "MONITORING_PLAN");
+    linkEvidence(complete, EV_EORI, "installation.country", "MONITORING_PLAN");
+    linkEvidence(complete, EV_EORI, "installation.productionRoute", "MONITORING_PLAN");
+    linkEvidence(complete, EV_BOUNDARY, "installation.systemBoundaries", "MONITORING_PLAN");
+    linkEvidence(complete, EV_CN, "goods.0.cnCode", "CUSTOMS_DECLARATION");
+    linkEvidence(complete, EV_VOL, "goods.0.productionVolume", "SIGNED_PRODUCTION_LEDGER");
+    linkEvidence(complete, EV_VOL, "directEmissions", "DIRECT_EMISSIONS_CALCULATION_WORKBOOK");
+    linkEvidence(complete, EV_VOL, "electricityConsumed", "ELECTRICITY_METER_RECORD");
+    linkEvidence(complete, EV_VOL, "gridEmissionFactor", "OFFICIAL_GRID_OPERATOR_PUBLICATION");
+    return complete;
+  }
+
+  /** Seal-ready case with one material evidence gap removed. */
+  function blockedCase(): AuditReadyCase {
+    const blocked = readyCase();
+    blocked.evidenceRegister = blocked.evidenceRegister.filter(
+      (record) => !record.linkedInputs.includes("goods.0.productionVolume")
+    );
+    return blocked;
+  }
+
+  // A. Step 8 + readiness false → "Review remaining actions" keeps the step
+  //    and reveals the blocker panel; Step 7 is never forced.
+  it("A. returns REVEAL_BLOCKERS (stay on Step 8) when readiness is false", () => {
+    const decision = evaluateSealAttempt({
+      isEligibleForSealing: false,
+      correctionRequired: false,
+      correctionReason: "",
+      entitlementId: "ent_123",
+    });
+
+    expect(decision.allowed).toBe(false);
+    expect(decision.kind).toBe("REVEAL_BLOCKERS");
+    // The failed seal never produces an entitlement id to consume.
+    expect("entitlementId" in decision).toBe(false);
+
+    const step8 = validateWizardStep(8, blockedCase());
+    expect(step8.valid).toBe(false);
+    expect(step8.evidenceIssues.length).toBeGreaterThan(0);
+
+    // The blocker panel content is categorized and carries the step to fix.
+    const actions = summarizeStep8Actions(blockedCase());
+    expect(actions.length).toBeGreaterThan(0);
+    const uploadItem = actions.find((item) => item.category === "Documents to upload");
+    expect(uploadItem).toBeDefined();
+    expect(uploadItem!.step).toBeGreaterThanOrEqual(1);
+    expect(uploadItem!.step).toBeLessThanOrEqual(8);
+  });
+
+  // B. handleSeal readiness false → no seal, no entitlement consumption,
+  //    step preserved (the decision object carries no entitlement id).
+  it("B. a blocked seal can never consume an entitlement", () => {
+    const decision = evaluateSealAttempt({
+      isEligibleForSealing: false,
+      correctionRequired: true,
+      correctionReason: "A long enough correction reason",
+      entitlementId: "ent_123",
+    });
+    expect(decision.allowed).toBe(false);
+    expect(decision.kind).toBe("REVEAL_BLOCKERS");
+    expect("entitlementId" in decision).toBe(false);
+
+    // Even with an entitlement present, readiness gates first and fails closed.
+    const gated = evaluateSealAttempt({
+      isEligibleForSealing: false,
+      correctionRequired: false,
+      correctionReason: "",
+      entitlementId: "ent_123",
+    });
+    expect(gated.kind).toBe("REVEAL_BLOCKERS");
+
+    // PROCEED only fires when readiness, correction reason and entitlement pass.
+    const proceed = evaluateSealAttempt({
+      isEligibleForSealing: true,
+      correctionRequired: false,
+      correctionReason: "",
+      entitlementId: "ent_123",
+    });
+    expect(proceed.allowed).toBe(true);
+    expect(proceed.kind).toBe("PROCEED");
+    if (proceed.kind === "PROCEED") {
+      expect(proceed.entitlementId).toBe("ent_123");
+    } else {
+      throw new Error("Expected a PROCEED seal decision.");
+    }
+  });
+
+  // C. Server seal error → step preserved, user-facing message + technical code.
+  it("C. translates seal errors into user language with a separate technical code", () => {
+    const sealedMissing = translateSealError(new Error("SEALED_REPORT_ID_MISSING"));
+    expect(sealedMissing.userMessage).toMatch(/no extra charge/i);
+    expect(sealedMissing.technicalCode).toContain("SEALED_REPORT_ID_MISSING");
+
+    const entitlement = translateSealError(new Error("ENTITLEMENT_REQUIRED"));
+    expect(entitlement.userMessage).toMatch(/unpaid/i);
+    expect(entitlement.technicalCode).toContain("ENTITLEMENT_REQUIRED");
+
+    const blocker = translateSealError(new Error("SEAL_GATE_BLOCKED_QC_OPEN"));
+    expect(blocker.userMessage).toMatch(/nothing was charged/i);
+    expect(blocker.technicalCode).toContain("SEAL_GATE_BLOCKED");
+
+    const session = translateSealError(new Error("UNAUTHENTICATED"));
+    expect(session.userMessage).toMatch(/session expired/i);
+
+    const permission = translateSealError(new Error("PERMISSION_DENIED"));
+    expect(permission.userMessage).toMatch(/not available for your account/i);
+
+    const fallback = translateSealError(new Error("INTERNAL"));
+    expect(fallback.userMessage).toMatch(/draft is safe/i);
+    expect(fallback.technicalCode).toBe("INTERNAL");
+  });
+
+  // D. User-selected remediation → the action list tells the user which step
+  //    to fix, and navigation only happens when the user clicks it.
+  it("D. categorizes remaining actions with the step to fix and a fixable path", () => {
+    const caseData = baseCase();
+    caseData.goods[0]!.productionVolume = datum(null);
+
+    const actions = summarizeStep8Actions(caseData, {
+      allocationShareTotal: "0.95",
+      allocationReconciliationDelta: "0.02",
+    });
+
+    const info = actions.find((item) => item.category === "Required information");
+    expect(info).toBeDefined();
+    expect(info!.fieldPath).toBe("goods.0.productionVolume");
+    expect(info!.step).toBe(2);
+    expect(info!.why.length).toBeGreaterThan(0);
+    expect(info!.acceptedDocuments.length).toBeGreaterThan(0);
+
+    const allocation = actions.find((item) => item.category === "Calculation inconsistencies");
+    expect(allocation).toBeDefined();
+    expect(allocation!.step).toBe(2);
+
+    // clampWizardStep is a pure clamp: it can only move within 1..8 and never
+    // encodes any readiness decision (step 8 stays reachable).
+    expect(clampWizardStep(3)).toBe(3);
+    expect(clampWizardStep(8)).toBe(8);
+    expect(clampWizardStep(9)).toBe(8);
+    expect(clampWizardStep(0)).toBe(1);
+    expect(clampWizardStep(Number.NaN)).toBe(1);
+  });
+
+  // E. URL query sync → ?step=N survives a refresh and out-of-range values
+  //    fall back to step 1.
+  it("E. parses ?step=N for refresh persistence", () => {
+    expect(parseStepFromQuery("8")).toBe(8);
+    expect(parseStepFromQuery(["8"])).toBe(8);
+    expect(parseStepFromQuery("3")).toBe(3);
+    expect(parseStepFromQuery("0")).toBe(1);
+    expect(parseStepFromQuery("99")).toBe(8);
+    expect(parseStepFromQuery("abc")).toBe(1);
+    expect(parseStepFromQuery(null)).toBe(1);
+    expect(parseStepFromQuery(undefined)).toBe(1);
+  });
+
+  // F. Evidence gaps never block preview, never bypass the gate.
+  it("F. Step 8 preview stays open with missing evidence while the seal gate holds", () => {
+    const blocked = blockedCase();
+
+    // The final review is still computable and reports NEEDS_EVIDENCE.
+    const step8 = validateWizardStep(8, blocked);
+    expect(step8.state).toBe("NEEDS_EVIDENCE");
+    expect(step8.valid).toBe(false);
+
+    // Next is NOT blocked by evidence alone — only missing data blocks Next.
+    expect(shouldBlockNext(step8)).toBe(false);
+    expect(firstDataIssuePath(step8)).toBeUndefined();
+
+    // The seal gate cannot be bypassed by being on Step 8.
+    const decision = evaluateSealAttempt({
+      isEligibleForSealing: step8.valid,
+      correctionRequired: false,
+      correctionReason: "",
+      entitlementId: "ent_123",
+    });
+    expect(decision.allowed).toBe(false);
+    expect(decision.kind).toBe("REVEAL_BLOCKERS");
+  });
+
+  it("F2. Next is blocked only by missing data, and the first issue is focusable", () => {
+    const caseData = baseCase();
+    caseData.importerIdentity.eoriNumber = datum("");
+    caseData.reportingPeriod.year = datum(null);
+
+    const step1 = validateWizardStep(1, caseData);
+    expect(shouldBlockNext(step1)).toBe(true);
+    expect(firstDataIssuePath(step1)).toBe("importerIdentity.eoriNumber");
+  });
+
+  it("F3. an approved evidence-backed case unlocks the seal decision", () => {
+    const decision = evaluateSealAttempt({
+      isEligibleForSealing: true,
+      correctionRequired: false,
+      correctionReason: "",
+      entitlementId: "ent_123",
+    });
+    expect(decision).toEqual({ allowed: true, kind: "PROCEED", entitlementId: "ent_123" });
   });
 });

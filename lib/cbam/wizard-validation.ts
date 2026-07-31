@@ -388,6 +388,254 @@ export function summarizeWizardCompletion(caseData: AuditReadyCase): {
 }
 
 /**
+ * FAZ UX (2026-08-01) — final-review navigation policy.
+ *
+ * Navigation and sealing are deliberately decoupled:
+ *   - NAVIGATION_ALLOWED=true — the user may open any step (including the
+ *     final review) at any time. goToStep() only clamps the range.
+ *   - SEAL_ALLOWED=readiness.isEligibleForSealing — unchanged and fail-closed.
+ * Next is blocked only by missing DATA so the user can always reach the
+ * evidence-upload and final-review screens; missing evidence is surfaced as
+ * NEEDS_EVIDENCE but never silently skipped and never redirects step 8 back.
+ */
+
+export function clampWizardStep(step: number): number {
+  if (!Number.isFinite(step)) return 1;
+  return Math.min(WIZARD_STEP_COUNT, Math.max(1, Math.round(step)));
+}
+
+/**
+ * Read the ?step=N query value. Out-of-range and malformed values fall back
+ * to step 1 so a broken URL can never open an unknown screen.
+ */
+export function parseStepFromQuery(value: string | string[] | null | undefined): number {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const parsed = raw === undefined || raw === null ? Number.NaN : Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) ? clampWizardStep(parsed) : 1;
+}
+
+/** Next is blocked only by missing required DATA; evidence gaps never block. */
+export function shouldBlockNext(validation: WizardStepValidation): boolean {
+  return validation.dataIssues.length > 0;
+}
+
+/** First data path that needs attention, for inline focus. */
+export function firstDataIssuePath(validation: WizardStepValidation): string | undefined {
+  return validation.dataIssues[0]?.fieldPath;
+}
+
+export type SealAttemptDecision =
+  | { allowed: true; kind: "PROCEED"; entitlementId: string }
+  | { allowed: false; kind: "REVEAL_BLOCKERS" }
+  | { allowed: false; kind: "CORRECTION_REASON_REQUIRED" }
+  | { allowed: false; kind: "ENTITLEMENT_REQUIRED" };
+
+export interface SealAttemptInput {
+  isEligibleForSealing: boolean;
+  correctionRequired: boolean;
+  correctionReason: string;
+  entitlementId?: string;
+}
+
+/**
+ * Pure seal-attempt gate. It never navigates, never mutates the ledger and
+ * never touches payment; it only returns a decision for the UI to render.
+ * The "not eligible" branch is REVEAL_BLOCKERS (stay on step 8, open the
+ * blocker panel) — step 7 is never forced.
+ */
+export function evaluateSealAttempt(input: SealAttemptInput): SealAttemptDecision {
+  if (!input.isEligibleForSealing) return { allowed: false, kind: "REVEAL_BLOCKERS" };
+  if (
+    input.correctionRequired &&
+    (!input.correctionReason || input.correctionReason.trim().length < 10)
+  ) {
+    return { allowed: false, kind: "CORRECTION_REASON_REQUIRED" };
+  }
+  if (!input.entitlementId) return { allowed: false, kind: "ENTITLEMENT_REQUIRED" };
+  return { allowed: true, kind: "PROCEED", entitlementId: input.entitlementId };
+}
+
+export interface SealErrorTranslation {
+  userMessage: string;
+  technicalCode: string;
+}
+
+/**
+ * Map a seal failure to user-facing language with the raw technical code kept
+ * separate in a small technical area. Failures never consume an entitlement.
+ */
+export function translateSealError(error: unknown): SealErrorTranslation {
+  const technicalCode =
+    error instanceof Error && error.message.trim() ? error.message : String(error || "UNKNOWN_SEAL_ERROR");
+  if (technicalCode.includes("SEALED_REPORT_ID_MISSING")) {
+    return {
+      userMessage:
+        "The package was sealed, but its report identifier could not be read. Reload the case and open Locked packages — no extra charge was made.",
+      technicalCode,
+    };
+  }
+  if (/ENTITLEMENT|UNPAID|unpaid/i.test(technicalCode)) {
+    return {
+      userMessage: "This file is unpaid. Pay once to lock this working file before generating the package.",
+      technicalCode,
+    };
+  }
+  if (/BLOCKER|QC_|READINESS|blocked/i.test(technicalCode)) {
+    return {
+      userMessage: "The seal gate is still blocked by unresolved quality controls. Your draft is safe and nothing was charged.",
+      technicalCode,
+    };
+  }
+  if (/UNAUTHENTICATED|SESSION/i.test(technicalCode)) {
+    return { userMessage: "Your session expired. Sign in again and retry the lock.", technicalCode };
+  }
+  if (/PERMISSION_DENIED|FORBIDDEN|NOT_FOUND/i.test(technicalCode)) {
+    return {
+      userMessage: "This case is not available for your account. Reload the case list and reopen the working file.",
+      technicalCode,
+    };
+  }
+  return {
+    userMessage:
+      "Sealing could not be completed. Your draft is safe and nothing was charged. Review the remaining actions and retry.",
+    technicalCode,
+  };
+}
+
+export type Step8ActionCategory =
+  | "Required information"
+  | "Documents to upload"
+  | "Documents awaiting review"
+  | "Methodology decisions awaiting approval"
+  | "Calculation inconsistencies";
+
+export interface Step8ActionItem {
+  category: Step8ActionCategory;
+  fieldLabel: string;
+  why: string;
+  acceptedDocuments: string;
+  step: number;
+  fieldPath: string;
+}
+
+export interface Step8CalculationSummary {
+  allocationShareTotal?: string | null;
+  allocationReconciliationDelta?: string | null;
+  error?: string;
+}
+
+function parseCalcValue(value: string | null | undefined): number | undefined {
+  if (value === null || value === undefined || value === "") return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+/**
+ * Step 8 final-review action list, categorized so the user can see exactly
+ * what is missing, why, which document is accepted and which step to fix it
+ * in. The user chooses the step — this never redirects by itself.
+ */
+export function summarizeStep8Actions(
+  caseData: AuditReadyCase,
+  calculation?: Step8CalculationSummary | null
+): Step8ActionItem[] {
+  const items: Step8ActionItem[] = [];
+
+  const push = (
+    category: Step8ActionCategory,
+    fieldLabel: string,
+    why: string,
+    acceptedDocuments: string,
+    step: number,
+    fieldPath: string
+  ) => {
+    items.push({ category, fieldLabel, why, acceptedDocuments, step, fieldPath });
+  };
+
+  for (let step = 1; step <= 8; step += 1) {
+    const validation = validateWizardStep(step, caseData);
+    for (const issue of validation.dataIssues) {
+      const guidance = getFieldGuidanceForPath(issue.fieldPath);
+      push(
+        "Required information",
+        issue.label,
+        issue.message,
+        guidance ? guidance.acceptedEvidenceTypes.join(", ") || "Source document" : "Source document",
+        step,
+        issue.fieldPath
+      );
+    }
+    for (const issue of validation.evidenceIssues) {
+      const guidance = getFieldGuidanceForPath(issue.fieldPath);
+      push(
+        "Documents to upload",
+        issue.label,
+        issue.message,
+        guidance ? guidance.acceptedEvidenceTypes.join(", ") || "Source document" : "Source document",
+        step,
+        issue.fieldPath
+      );
+    }
+  }
+
+  for (const record of caseData.evidenceRegister) {
+    const ready =
+      record.reviewStatus === "APPROVED" &&
+      record.supportStatus === "SUPPORTED" &&
+      record.malwareScanStatus === "CLEAN";
+    if (ready) continue;
+    const why =
+      record.malwareScanStatus !== "CLEAN"
+        ? "Uploaded and linked, but blocked on the external malware scan."
+        : record.reviewStatus === "PENDING"
+          ? "Uploaded and linked, awaiting the internal review workflow."
+          : `Internal review is ${record.reviewStatus}.`;
+    push("Documents awaiting review", record.fileName, why, record.documentType, 7, `evidenceRegister.${record.evidenceId}`);
+  }
+
+  for (const decision of caseData.methodologyDecisions) {
+    if (decision.reviewStatus === "ACCEPTED") continue;
+    const step = decision.topic.includes("SYSTEM_BOUNDARY") ? 3 : 6;
+    push(
+      "Methodology decisions awaiting approval",
+      decision.topic,
+      `Review status is ${decision.reviewStatus}; ACCEPTED is granted only by the server-controlled internal review workflow.`,
+      "Monitoring plan, process map or operator declaration supporting the selected method",
+      step,
+      `methodologyDecisions.${decision.decisionId}`
+    );
+  }
+
+  if (calculation?.error) {
+    push("Calculation inconsistencies", "Dossier calculation", calculation.error, "Calculation trace and allocation workbook", 2, "calculationTrace");
+  }
+  const allocationTotal = parseCalcValue(calculation?.allocationShareTotal);
+  if (allocationTotal !== undefined && Math.abs(allocationTotal - 1) > 0.000001) {
+    push(
+      "Calculation inconsistencies",
+      "Allocation shares",
+      `Allocation shares total ${String(calculation?.allocationShareTotal)}; they must reconcile to exactly 1.`,
+      "Allocation workbook and production ledger",
+      2,
+      "goods"
+    );
+  }
+  const reconciliationDelta = parseCalcValue(calculation?.allocationReconciliationDelta);
+  if (reconciliationDelta !== undefined && reconciliationDelta > 0.000001) {
+    push(
+      "Calculation inconsistencies",
+      "Allocation reconciliation",
+      `Allocated emissions do not reconcile to the installation totals (delta ${String(calculation?.allocationReconciliationDelta)}).`,
+      "Allocation workbook, production ledger and emissions reconciliation",
+      2,
+      "goods"
+    );
+  }
+
+  return items;
+}
+
+/**
  * Dynamic evidence link options generated from the case's real material
  * requirement records (replaces the legacy static EVIDENCE_LINK_OPTIONS).
  */

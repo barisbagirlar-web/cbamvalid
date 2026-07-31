@@ -15,6 +15,7 @@ export type WorkingFileJourneyStripProps = {
   caseId: string;
   onGoToStep: (step: number) => void;
   onLock?: () => void;
+  onRevealBlockers?: () => void;
 };
 
 export function WorkingFileJourneyStrip({
@@ -26,6 +27,7 @@ export function WorkingFileJourneyStrip({
   caseId,
   onGoToStep,
   onLock,
+  onRevealBlockers,
 }: WorkingFileJourneyStripProps) {
   const step = WORKFLOW_STEPS_PLAIN.find((item) => item.num === currentStep) ?? WORKFLOW_STEPS_PLAIN[0];
   const nextStep = WORKFLOW_STEPS_PLAIN.find((item) => item.num === currentStep + 1);
@@ -36,8 +38,10 @@ export function WorkingFileJourneyStrip({
 
   if (currentStep === 8) {
     if (blockerCount > 0) {
-      nextLabel = `Fix ${blockerCount} blocker${blockerCount === 1 ? "" : "s"} before lock`;
-      nextAction = null;
+      // FAZ UX — step 8 stays open; the user reviews the blockers in place
+      // instead of being pushed back to step 7.
+      nextLabel = `Review ${blockerCount} blocker${blockerCount === 1 ? "" : "s"}`;
+      nextAction = onRevealBlockers ?? null;
     } else if (releasesRemaining <= 0) {
       nextLabel = `Pay ${CANONICAL_PRICING.priceFormatted} to lock this file`;
       nextHref = `/credits/buy?caseId=${encodeURIComponent(caseId)}`;
