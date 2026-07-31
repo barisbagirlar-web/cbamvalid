@@ -4,6 +4,10 @@ import type { DossierCalculationResult } from "../calculator";
 import type { QualityControlResult } from "../validation/quality-controls";
 import { buildVerifierPackageModel, type VerifierPackageModel } from "./verifier-model";
 import type { VerifierPreparationModel } from "../../dossier/40-readiness/risk-assurance";
+import { generateFindingsAndActions } from "../validation/findings-engine";
+import { buildVerificationCrosswalk } from "../registry/verification-template-2025-2546";
+import type { SealAssessmentContext } from "./premium-dossier-schema";
+import { REQUIRED_TOP_LEVEL_COMPONENTS_V5 } from "./package-components";
 
 export type WorkbookCellValue = string | number | boolean | null | undefined;
 
@@ -81,11 +85,21 @@ function buildSheets(params: {
   releaseVersion: number;
   generatedAt: string;
   model: VerifierPackageModel;
+  assessmentContext?: SealAssessmentContext;
 }): Sheet[] {
-  const { caseData, calculation, controls, reportId, releaseVersion, generatedAt, model } = params;
+  const { caseData, calculation, controls, reportId, releaseVersion, generatedAt, model, assessmentContext } = params;
   const qcLastRow = Math.max(2, controls.length + 1);
   const evidenceLastRow = Math.max(2, caseData.evidenceRegister.length + 1);
   const monitoringLastRow = Math.max(2, model.monitoringPlan.length + 1);
+  const { findings, correctiveActions: actions } = generateFindingsAndActions(caseData);
+  const crosswalkRows = buildVerificationCrosswalk(caseData);
+  const evidenceMatrixRows = caseData.evidenceRegister.flatMap((item) =>
+    item.linkedInputs.length > 0
+      ? item.linkedInputs.map((input) => [c(item.evidenceId), c(input), c(item.fileHash), c(item.reviewStatus, statusStyle(item.reviewStatus)), c(item.supportStatus, statusStyle(item.supportStatus))])
+      : [[c(item.evidenceId), c("—"), c(item.fileHash), c(item.reviewStatus, statusStyle(item.reviewStatus)), c(item.supportStatus, statusStyle(item.supportStatus))]]
+  );
+  const verifierReserved = caseData.verifierReserved;
+  const priorReleases = assessmentContext?.previousReleases ?? [];
 
   return [
     {
@@ -102,11 +116,11 @@ function buildSheets(params: {
         [c("Calculation root hash", 4), c(model.calculationRootHash), c("Source registry hash", 4), c(model.ruleset.sourceHash)],
         [c("Quality controls", 4), c("Calculated below"), c("Package boundary", 4), c("Sealed operator preparation")],
         [c("Passed", 4), f('COUNTIF(QUALITY_CONTROLS!C:C,"PASS")', model.qualitySummary.passed), c("Blockers", 4), f('COUNTIF(QUALITY_CONTROLS!C:C,"BLOCKER")', model.qualitySummary.blockers)],
-        [c("Warnings", 4), f('COUNTIF(QUALITY_CONTROLS!C:C,"WARNING")', model.qualitySummary.warnings), c("Monitoring-plan gaps", 4), f('COUNTIF(MONITORING_PLAN!C:C,"GAP")', model.monitoringPlan.filter((item) => item.status === "GAP").length)],
-        [c("Evidence files", 4), f("COUNTA(EVIDENCE!A2:A1048576)", model.evidenceSummary.totalEvidenceFiles), c("Approved clean evidence", 4), c(model.evidenceSummary.approvedCleanEvidenceFiles, 8)],
+        [c("Warnings", 4), f('COUNTIF(QUALITY_CONTROLS!C:C,"WARNING")', model.qualitySummary.warnings), c("Monitoring-plan gaps", 4), f("COUNTIF('Monitoring Plan'!C:C,\"GAP\")", model.monitoringPlan.filter((item) => item.status === "GAP").length)],
+        [c("Evidence files", 4), f("COUNTA('Evidence Register'!A2:A1048576)", model.evidenceSummary.totalEvidenceFiles), c("Approved clean evidence", 4), c(model.evidenceSummary.approvedCleanEvidenceFiles, 8)],
         [c("Evidence coverage", 4), c(`${model.evidenceSummary.coverageRate}%`), c("Duplicate hashes", 4), c(model.evidenceSummary.duplicateHashCount, model.evidenceSummary.duplicateHashCount === 0 ? 5 : 7)],
         [c("Package boundary", 4), c(model.disclaimer)],
-        [c("Instructions", 4), c("Review QUALITY_CONTROLS, MONITORING_PLAN, EVIDENCE, METHODS and CALCULATION_TRACE. Record independent conclusions only in VERIFIER_SIGN_OFF. Do not overwrite sealed source data.")],
+        [c("Instructions", 4), c("Review QUALITY_CONTROLS, 'Monitoring Plan', 'Evidence Register', 'Evidence Matrix', METHODS and 'Calculations'. Record independent conclusions only in VERIFIER_SIGN_OFF. Sealed sheets are protected; editable cells are limited to verifier input fields.")],
       ],
     },
     {
@@ -129,7 +143,7 @@ function buildSheets(params: {
       statusColumn: "D",
     },
     {
-      name: "GOODS",
+      name: "Goods",
       widths: [9, 16, 24, 16, 12, 15, 20, 20, 17, 20, 40, 35],
       freezeRows: 1,
       autoFilter: `A1:L${Math.max(2, model.goods.length + 1)}`,
@@ -145,19 +159,20 @@ function buildSheets(params: {
       ],
     },
     {
-      name: "EMISSIONS_SUMMARY",
+      name: "Executive Summary",
       widths: [42, 24, 20, 70],
       freezeRows: 1,
       autoFilter: "A1:D13",
       rows: [
         header(["Metric", "Value", "Unit", "Control identity"]),
-        [c("Installation direct emissions"), c(Number(model.totals.installationDirectEmissions), 8), c("tCO2e"), c("CBAM_TOTAL_EMBEDDED_EMISSIONS")],
-        [c("Electricity indirect emissions"), c(Number(model.totals.electricityIndirectEmissions), 8), c("tCO2e"), c("CBAM_INDIRECT_EMISSIONS")],
-        [c("Precursor direct emissions"), c(Number(model.totals.precursorDirectEmissions), 8), c("tCO2e"), c("CBAM_PRECURSOR_EMISSIONS_SUM")],
-        [c("Precursor indirect emissions"), c(Number(model.totals.precursorIndirectEmissions), 8), c("tCO2e"), c("CBAM_PRECURSOR_EMISSIONS_SUM")],
-        [c("Total direct emissions"), c(Number(model.totals.totalDirectEmissions), 8), c("tCO2e"), c("Direct + precursor direct")],
-        [c("Total indirect emissions"), c(Number(model.totals.totalIndirectEmissions), 8), c("tCO2e"), c("Electricity + precursor indirect")],
-        [c("Total embedded emissions"), c(Number(model.totals.totalEmbeddedEmissions), 8), c("tCO2e"), c("Direct + indirect")],
+        [c("Installation direct emissions (A)"), c(Number(model.totals.installationDirectEmissions), 8), c("tCO2e"), c("CBAM_TOTAL_EMBEDDED_EMISSIONS")],
+        [c("Precursor direct emissions (B)"), c(Number(model.totals.precursorDirectEmissions), 8), c("tCO2e"), c("CBAM_PRECURSOR_EMISSIONS_SUM")],
+        [c("Total direct embedded emissions (C)"), c(Number(model.totals.totalDirectEmissions), 8), c("tCO2e"), c("Direct + precursor direct")],
+        [c("Electricity indirect emissions (D)"), c(Number(model.totals.electricityIndirectEmissions), 8), c("tCO2e"), c("CBAM_INDIRECT_EMISSIONS")],
+        [c("Precursor indirect emissions (E)"), c(Number(model.totals.precursorIndirectEmissions), 8), c("tCO2e"), c("CBAM_PRECURSOR_EMISSIONS_SUM")],
+        [c("Total disclosed indirect emissions (F)"), c(Number(model.totals.totalIndirectEmissions), 8), c("tCO2e"), c("Electricity + precursor indirect")],
+        [c("Certificate-relevant embedded emissions (G)"), c(Number(model.totals.totalEmbeddedEmissions), 8), c("tCO2e"), c("Annex II aware priced total")],
+        [c("Total informational embedded emissions (H)"), c(Number(calculation.emissionsByCategory?.H_TOTAL_INFORMATIONAL_EMBEDDED ?? model.totals.totalEmbeddedEmissions), 8), c("tCO2e"), c("C + F disclosed total")],
         [c("Production volume"), c(Number(model.totals.productionVolume), 8), c("t"), c("Sum of good production")],
         [c("Aggregate specific embedded emissions"), c(Number(model.totals.aggregateSpecificEmbeddedEmissions), 8), c("tCO2e/t"), c("Aggregate diagnostic")],
         [c("Allocation share total"), c(Number(model.totals.allocationShareTotal), 8), c("fraction"), c("Expected 1")],
@@ -166,7 +181,7 @@ function buildSheets(params: {
       ],
     },
     {
-      name: "INPUTS",
+      name: "Activity Data",
       widths: [34, 20, 18, 20, 40, 30, 25],
       freezeRows: 1,
       autoFilter: "A1:G4",
@@ -178,7 +193,7 @@ function buildSheets(params: {
       ],
     },
     {
-      name: "PRECURSORS",
+      name: "Precursors",
       widths: [9, 28, 18, 18, 14, 18, 18, 38],
       freezeRows: 1,
       autoFilter: `A1:H${Math.max(2, caseData.precursors.length + 1)}`,
@@ -188,7 +203,7 @@ function buildSheets(params: {
       ],
     },
     {
-      name: "EVIDENCE",
+      name: "Evidence Register",
       widths: [38, 30, 45, 28, 16, 68, 14, 17, 20, 16, 48],
       freezeRows: 1,
       autoFilter: `A1:K${evidenceLastRow}`,
@@ -212,7 +227,7 @@ function buildSheets(params: {
       ],
     },
     {
-      name: "MONITORING_PLAN",
+      name: "Monitoring Plan",
       widths: [15, 76, 18, 90],
       freezeRows: 1,
       autoFilter: `A1:D${monitoringLastRow}`,
@@ -236,7 +251,7 @@ function buildSheets(params: {
       ],
     },
     {
-      name: "CALCULATION_TRACE",
+      name: "Calculations",
       widths: [40, 42, 22, 18, 68, 58],
       freezeRows: 1,
       autoFilter: `A1:F${Math.max(2, calculation.trace.length + 1)}`,
@@ -266,6 +281,252 @@ function buildSheets(params: {
       rows: [
         header(["Source ID", "CELEX", "Title", "Official EUR-Lex", "Applies from", "Status", "Methodology scope"]),
         ...model.legalSources.map((item) => [c(item.id), c(item.celexId), c(item.title), c(item.eliUri, 9, item.eliUri), c(item.appliesFrom), c(item.legalStatus, 5), c(item.methodologyScope.join(" | "))]),
+      ],
+    },
+    {
+      name: "Operator",
+      widths: [42, 78, 30, 44],
+      freezeRows: 1,
+      rows: [
+        header(["Field", "Declared value", "Source / evidence", "Status"]),
+        [c("Legal name"), c(caseData.exporterIdentity.legalName.value), c(caseData.exporterIdentity.legalName.evidenceId), c(caseData.exporterIdentity.legalName.value ? "DOCUMENTED" : "GAP", statusStyle(caseData.exporterIdentity.legalName.value ? "DOCUMENTED" : "GAP"))],
+        [c("Registration number"), c(caseData.exporterIdentity.registrationNumber?.value), c(caseData.exporterIdentity.registrationNumber?.evidenceId), c(caseData.exporterIdentity.registrationNumber?.value ? "DOCUMENTED" : "GAP", statusStyle(caseData.exporterIdentity.registrationNumber?.value ? "DOCUMENTED" : "GAP"))],
+        [c("Full address (English)"), c(caseData.exporterIdentity.address?.value), c(caseData.exporterIdentity.address?.evidenceId), c(caseData.exporterIdentity.address?.value ? "DOCUMENTED" : "GAP", statusStyle(caseData.exporterIdentity.address?.value ? "DOCUMENTED" : "GAP"))],
+        [c("Country"), c(caseData.exporterIdentity.exporterCountry?.value), c(caseData.exporterIdentity.exporterCountry?.evidenceId), c(caseData.exporterIdentity.exporterCountry?.value ? "DOCUMENTED" : "GAP", statusStyle(caseData.exporterIdentity.exporterCountry?.value ? "DOCUMENTED" : "GAP"))],
+        [c("Contact person"), c(caseData.exporterIdentity.contactPerson?.value), c(""), c("")],
+        [c("Role / title"), c(caseData.exporterIdentity.contactRole?.value), c(""), c("")],
+        [c("Contact email"), c(caseData.exporterIdentity.contactEmail?.value), c(""), c("")],
+        [c("Operator declaration"), c(caseData.exporterIdentity.operatorDeclaration?.value), c(""), c("")],
+        [c("Preparer sign-off"), c(caseData.exporterIdentity.preparerSignOff?.value), c(""), c("")],
+        [c("Internal reviewer sign-off"), c(caseData.exporterIdentity.internalReviewerSignOff?.value), c(""), c("")],
+      ],
+    },
+    {
+      name: "Installation",
+      widths: [42, 78, 30, 44],
+      freezeRows: 1,
+      rows: [
+        header(["Field", "Declared value", "Source / evidence", "Status"]),
+        [c("Installation name"), c(caseData.installation.name.value), c(caseData.installation.name.evidenceId), c(caseData.installation.name.value ? "DOCUMENTED" : "GAP", statusStyle(caseData.installation.name.value ? "DOCUMENTED" : "GAP"))],
+        [c("CBAM Registry installation ID"), c(caseData.installation.registryInstallationId?.value), c(caseData.installation.registryInstallationId?.evidenceId), c(caseData.installation.registryInstallationId?.value ? "DOCUMENTED" : "GAP", statusStyle(caseData.installation.registryInstallationId?.value ? "DOCUMENTED" : "GAP"))],
+        [c("UN/LOCODE"), c(caseData.installation.unloCode?.value), c(caseData.installation.unloCode?.evidenceId), c("")],
+        [c("Full address (English)"), c(caseData.installation.address?.value), c(caseData.installation.address?.evidenceId), c("")],
+        [c("Latitude"), c(caseData.installation.latitude?.value), c(""), c("")],
+        [c("Longitude"), c(caseData.installation.longitude?.value), c(""), c("")],
+        [c("Country"), c(caseData.installation.country.value), c(caseData.installation.country.evidenceId), c(caseData.installation.country.value ? "DOCUMENTED" : "GAP", statusStyle(caseData.installation.country.value ? "DOCUMENTED" : "GAP"))],
+        [c("Production route"), c(caseData.installation.productionRoute.value), c(caseData.installation.productionRoute.evidenceId), c(caseData.installation.productionRoute.value ? "DOCUMENTED" : "GAP", statusStyle(caseData.installation.productionRoute.value ? "DOCUMENTED" : "GAP"))],
+        [c("System boundary"), c(caseData.installation.systemBoundaries), c(""), c(caseData.installation.systemBoundaries ? "DOCUMENTED" : "GAP", statusStyle(caseData.installation.systemBoundaries ? "DOCUMENTED" : "GAP"))],
+        [c("Excluded processes"), c(caseData.installation.excludedProcesses), c(""), c("")],
+        [c("Functional units"), c(caseData.installation.functionalUnits), c(""), c("")],
+        [c("Installation diagram evidence"), c(caseData.installation.installationDiagramEvidenceId), c(""), c("")],
+        [c("Monitoring plan ID"), c(caseData.installation.monitoringPlanId?.value), c(""), c("")],
+        [c("Monitoring plan version"), c(caseData.installation.monitoringPlanVersion?.value), c(""), c("")],
+        [c("Monitoring plan effective date"), c(caseData.installation.monitoringPlanEffectiveDate?.value), c(""), c("")],
+      ],
+    },
+    {
+      name: "Source Streams",
+      widths: [40, 22, 20, 22, 40, 34],
+      freezeRows: 1,
+      autoFilter: "A1:F4",
+      rows: [
+        header(["Source stream", "Activity value", "Unit", "Data source", "Evidence ID", "Measurement method"]),
+        [c("Direct emissions (installation scope)"), c(caseData.directEmissions.value), c(caseData.directEmissions.canonicalUnit), c(caseData.directEmissions.sourceType), c(caseData.directEmissions.evidenceId), c(caseData.directEmissions.measurementMethod)],
+        [c("Electricity consumed"), c(caseData.electricityConsumed.value), c(caseData.electricityConsumed.canonicalUnit), c(caseData.electricityConsumed.sourceType), c(caseData.electricityConsumed.evidenceId), c(caseData.electricityConsumed.measurementMethod)],
+        [c("Grid emission factor"), c(caseData.gridEmissionFactor.value), c(caseData.gridEmissionFactor.canonicalUnit), c(caseData.gridEmissionFactor.sourceType), c(caseData.gridEmissionFactor.evidenceId), c(caseData.gridEmissionFactor.measurementMethod)],
+        ...caseData.precursors.map((item, index) => [c(`Precursor ${index + 1} — ${item.name.value}`), c(item.quantity.value), c(item.quantity.canonicalUnit), c(item.quantity.sourceType), c(item.quantity.evidenceId), c(item.quantity.measurementMethod)]),
+      ],
+    },
+    {
+      name: "Emission Sources",
+      widths: [46, 22, 20, 22, 40, 34],
+      freezeRows: 1,
+      rows: [
+        header(["Emission source", "Activity value", "Unit", "Data source", "Evidence ID", "Measurement method"]),
+        [c("Installation direct emissions scope"), c(caseData.directEmissions.value), c(caseData.directEmissions.canonicalUnit), c(caseData.directEmissions.sourceType), c(caseData.directEmissions.evidenceId), c(caseData.directEmissions.measurementMethod)],
+        [c("Electricity consumption (indirect)"), c(caseData.electricityConsumed.value), c(caseData.electricityConsumed.canonicalUnit), c(caseData.electricityConsumed.sourceType), c(caseData.electricityConsumed.evidenceId), c(caseData.electricityConsumed.measurementMethod)],
+        [c("Precursor embedded emissions"), c(caseData.precursors.length ? "DECLARED" : "NONE DECLARED"), c("tCO2e"), c("Register"), c(caseData.precursors.map((p) => p.directEmissions.evidenceId).join(" | ")), c("")],
+      ],
+    },
+    {
+      name: "Meters",
+      widths: [38, 44, 30, 20, 18, 16, 48],
+      freezeRows: 1,
+      autoFilter: `A1:G${Math.max(2, caseData.evidenceRegister.length + 1)}`,
+      rows: [
+        header(["Evidence ID", "Document", "Meter scope", "Approved", "Malware", "Bytes", "SHA-256"]),
+        ...caseData.evidenceRegister.map((item) => [
+          c(item.evidenceId), c(item.fileName),
+          c(item.linkedInputs[0] || "installation scope"),
+          c(item.reviewStatus, statusStyle(item.reviewStatus)), c(item.malwareScanStatus, statusStyle(item.malwareScanStatus)),
+          c(item.sizeBytes, 8), c(String(item.fileHash).slice(0, 16)),
+        ]),
+      ],
+    },
+    {
+      name: "Allocation",
+      widths: [10, 16, 24, 18, 24, 24, 40],
+      freezeRows: 1,
+      autoFilter: `A1:G${Math.max(2, model.goods.length + 3)}`,
+      rows: [
+        header(["Good", "CN code", "Sector", "Share", "Allocated tCO2e", "Specific tCO2e/t", "Reconciliation"]),
+        ...model.goods.map((good) => [
+          c(good.goodIndex, 8), c(good.cnCode), c(good.sector), c(Number(good.allocationShare), 8),
+          c(Number(good.allocatedEmbeddedEmissions), 8), c(Number(good.specificEmbeddedEmissions), 8),
+          c("PART_OF_SUM", 5),
+        ]),
+        [c("Total", 4), c(""), c(""), f('SUM(D2:D' + (model.goods.length + 1) + ')', Number(model.totals.allocationShareTotal)), f('SUM(E2:E' + (model.goods.length + 1) + ')', Number(model.totals.totalEmbeddedEmissions)), c(""), c("RECONCILED", 5)],
+        [c("Reconciliation delta", 4), c(""), c(""), c(""), c(Number(model.totals.allocationReconciliationDelta), 8), c(""), c(model.totals.allocationReconciliationDelta === "0" ? "ZERO_DELTA_PASS" : "REVIEW", 5)],
+      ],
+    },
+    {
+      name: "Evidence Matrix",
+      widths: [38, 48, 68, 18, 20],
+      freezeRows: 1,
+      autoFilter: `A1:E${Math.max(2, evidenceMatrixRows.length + 1)}`,
+      landscape: true,
+      rows: [
+        header(["Evidence ID", "Linked input field", "SHA-256", "Review", "Support"]),
+        ...evidenceMatrixRows,
+      ],
+    },
+    {
+      name: "Misstatements",
+      widths: [40, 16, 30, 56, 70, 50],
+      freezeRows: 1,
+      autoFilter: `A1:F${Math.max(2, findings.length + 1)}`,
+      landscape: true,
+      rows: [
+        header(["Finding ID", "Severity", "Category", "Title", "Description", "Impact"]),
+        ...findings.filter((finding) =>
+          ["ALLOCATION_EXCEPTION", "PRECURSOR_EXCEPTION", "CALCULATION_EXCEPTION", "RECONCILIATION_EXCEPTION", "UNIT_MISMATCH", "PERIOD_MISMATCH", "INPUT_PLAUSIBILITY", "EVIDENCE_INTEGRITY", "REPORTING_PERIOD"].includes(finding.category)
+        ).map((finding) => [
+          c(finding.findingId), c(finding.severity, statusStyle(finding.severity === "CRITICAL_BLOCKER" || finding.severity === "CRITICAL" || finding.severity === "MATERIAL" ? "BLOCKER" : "WARNING")), c(finding.category),
+          c(finding.title), c(finding.description), c(finding.impactStatement),
+        ]),
+      ],
+    },
+    {
+      name: "Non-Conformities",
+      widths: [40, 16, 30, 56, 70, 50],
+      freezeRows: 1,
+      autoFilter: `A1:F${Math.max(2, findings.length + 1)}`,
+      landscape: true,
+      rows: [
+        header(["Finding ID", "Severity", "Category", "Title", "Description", "Basis"]),
+        ...findings.filter((finding) =>
+          ["IDENTITY_GAP", "SCOPE_GAP", "METHODOLOGY_GAP", "EVIDENCE_GAP", "DATA_QUALITY", "UNCERTAINTY", "LEGAL_SOURCE", "PACKAGE_INTEGRITY", "EXTERNAL_VERIFIER_PENDING"].includes(finding.category)
+        ).map((finding) => [
+          c(finding.findingId), c(finding.severity, statusStyle(finding.severity === "CRITICAL_BLOCKER" || finding.severity === "CRITICAL" || finding.severity === "MATERIAL" ? "BLOCKER" : "WARNING")), c(finding.category),
+          c(finding.title), c(finding.description), c(finding.regulatoryOrTechnicalBasis),
+        ]),
+      ],
+    },
+    {
+      name: "Corrective Actions",
+      widths: [46, 40, 12, 78, 26, 22, 60],
+      freezeRows: 1,
+      autoFilter: `A1:G${Math.max(2, actions.length + 1)}`,
+      landscape: true,
+      rows: [
+        header(["Action ID", "Finding ID", "Priority", "Required action", "Role", "State", "Closure condition"]),
+        ...actions.map((action) => [
+          c(action.actionId), c(action.findingId), c(action.priority, action.priority === "P0" ? 7 : 6), c(action.requiredAction),
+          c(action.responsibleRole), c(action.state, statusStyle(action.state === "CLOSED" ? "PASS" : action.state === "OPEN" ? "BLOCKER" : "WARNING")),
+          c(action.closureCondition),
+        ]),
+      ],
+    },
+    {
+      name: "Registry Crosswalk",
+      widths: [20, 22, 24, 60, 24, 48, 26, 46],
+      freezeRows: 1,
+      autoFilter: `A1:H${Math.max(2, crosswalkRows.length + 1)}`,
+      landscape: true,
+      rows: [
+        header(["Requirement", "Legal source", "Legal location", "Requirement text", "Owner", "Input paths", "Status", "Reason"]),
+        ...crosswalkRows.map((row) => [
+          c(row.requirementId), c(row.legalSourceId), c(row.legalLocation), c(row.requirementText),
+          c(row.owner), c(row.inputPaths.join(" | ")), c(row.status, statusStyle(row.status === "COMPLETE" ? "PASS" : row.status === "PARTIAL" ? "WARNING" : "GAP")),
+          c(row.reasonCodes.join(" | ")),
+        ]),
+      ],
+    },
+    {
+      name: "Verifier Team",
+      widths: [42, 78, 42, 52],
+      freezeRows: 1,
+      rows: [
+        header(["Team attribute", "Value", "Field", "Verifier-reserved"]),
+        [c("Verifier legal name"), c(verifierReserved?.verifierLegalName), c("verifierReserved.verifierLegalName"), c(verifierReserved?.verifierLegalName ? "PENDING_EXTERNAL_VERIFIER" : "PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Verifier address"), c(verifierReserved?.verifierAddress), c("verifierReserved.verifierAddress"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Accreditation number"), c(verifierReserved?.accreditationNumber), c("verifierReserved.accreditationNumber"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("National accreditation body"), c(verifierReserved?.nationalAccreditationBody), c("verifierReserved.nationalAccreditationBody"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Accreditation country"), c(verifierReserved?.accreditationCountry), c("verifierReserved.accreditationCountry"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Accreditation expiry"), c(verifierReserved?.accreditationExpiry), c("verifierReserved.accreditationExpiry"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Accreditation scope"), c(verifierReserved?.accreditationScope), c("verifierReserved.accreditationScope"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Team leader"), c(verifierReserved?.teamLeader), c("verifierReserved.teamLeader"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("CBAM lead auditor"), c(verifierReserved?.cbamLeadAuditor), c("verifierReserved.cbamLeadAuditor"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Auditors"), c(verifierReserved?.auditors?.join(", ")), c("verifierReserved.auditors"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Technical experts"), c(verifierReserved?.technicalExperts?.join(", ")), c("verifierReserved.technicalExperts"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Independent reviewer"), c(verifierReserved?.independentReviewer), c("verifierReserved.independentReviewer"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+      ],
+    },
+    {
+      name: "Site Visits",
+      widths: [42, 78, 42, 52],
+      freezeRows: 1,
+      rows: [
+        header(["Site-visit attribute", "Value", "Field", "Verifier-reserved"]),
+        [c("Site visit type"), c(verifierReserved?.siteVisitType ?? "NOT_ASSIGNED"), c("verifierReserved.siteVisitType"), c(verifierReserved?.siteVisitType && verifierReserved.siteVisitType !== "NOT_ASSIGNED" ? "PENDING_EXTERNAL_VERIFIER" : "PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Site visit dates"), c(verifierReserved?.siteVisitDates), c("verifierReserved.siteVisitDates"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Days on-site"), c(verifierReserved?.daysOnSite, 8), c("verifierReserved.daysOnSite"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Virtual visit justification"), c(verifierReserved?.virtualVisitJustification), c("verifierReserved.virtualVisitJustification"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Waiver justification"), c(verifierReserved?.waiverJustification), c("verifierReserved.waiverJustification"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Verification objectives"), c(verifierReserved?.verificationObjectives), c("verifierReserved.verificationObjectives"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Verification scope"), c(verifierReserved?.verificationScope), c("verifierReserved.verificationScope"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Criteria"), c(verifierReserved?.criteria), c("verifierReserved.criteria"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+      ],
+    },
+    {
+      name: "Verifier Opinion",
+      widths: [42, 78, 42, 52],
+      freezeRows: 1,
+      rows: [
+        header(["Opinion attribute", "Value", "Field", "Verifier-reserved"]),
+        [c("Final opinion"), c(verifierReserved?.finalOpinion ?? "NO_OPINION"), c("verifierReserved.finalOpinion"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Signature"), c(verifierReserved?.signature), c("verifierReserved.signature"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Certificate reference"), c(verifierReserved?.certificateReference), c("verifierReserved.certificateReference"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Materiality level per good"), c(JSON.stringify(verifierReserved?.materialityLevelPerGood ?? {})), c("verifierReserved.materialityLevelPerGood"), c("PENDING_EXTERNAL_VERIFIER", 6)],
+        [c("Boundary notice", 4), c("Opinion fields are reserved for the independent accredited verifier. CBAMValid never asserts them.")],
+      ],
+    },
+    {
+      name: "Version Delta",
+      widths: [12, 42, 40, 56, 30, 26],
+      freezeRows: 1,
+      autoFilter: `A1:F${Math.max(2, priorReleases.length + 2)}`,
+      rows: [
+        header(["Version", "Sealed at", "Report ID", "Release reason / changes", "Author", "Status"]),
+        [c(`V${releaseVersion}`, 4), c(generatedAt), c(reportId), c("This release (sealed artifact)"), c("OPERATOR_ADMIN"), c("ACTIVE_RELEASE", 5)],
+        ...priorReleases.map((release) => [
+          c(`V${release.version}`, 4), c(release.sealedAt), c(release.reportId),
+          c(release.correctionReason || "Dossier release."), c("OPERATOR_ADMIN"), c("SUPERSEDED", 6),
+        ]),
+      ],
+    },
+    {
+      name: "Manifest Index",
+      widths: [110, 16, 80],
+      freezeRows: 1,
+      autoFilter: `A1:C${REQUIRED_TOP_LEVEL_COMPONENTS_V5.length + 1}`,
+      rows: [
+        header(["Component path", "Type", "Sealed-package role"]),
+        ...REQUIRED_TOP_LEVEL_COMPONENTS_V5.map((component) => {
+          const type = component.endsWith(".pdf") ? "PDF" : component.endsWith(".csv") ? "CSV" : component.endsWith(".json") ? "JSON" : component.endsWith(".xlsx") ? "XLSX" : component.endsWith(".sig") ? "SIG" : component.endsWith("/") ? "DIR" : "FILE";
+          const role = component === "Data Integrity Manifest.json" ? "Manifest of hashes; sealed by the KMS signature" : component === "Manifest Signature.sig" ? "Detached KMS signature over the manifest" : component === "Calculation Graph.json" ? "Calculation graph nodes with hashes and root hash" : component === "Calculation Trace.json" ? "Calculation node trace with per-node hashes" : component === "Verifier Workspace.xlsx" ? "Interactive verifier navigation workbook" : "Controlled component covered by the manifest";
+          return [c(component), c(type), c(role)];
+        }),
       ],
     },
     ...riskMaterialitySamplingSheets(model.verifierPreparation),
@@ -310,7 +571,7 @@ function riskMaterialitySamplingSheets(
     ...(preparation?.detectionRiskAssessment ?? []),
   ];
   const riskSheet: Sheet = {
-    name: "RISK_REGISTER",
+    name: "Risk Register",
     widths: [13, 16, 20, 58, 14, 12, 12, 56, 16],
     freezeRows: 1,
     autoFilter: `A1:I${Math.max(2, registers.length + 1)}`,
@@ -331,7 +592,7 @@ function riskMaterialitySamplingSheets(
 
   const workpapers = preparation?.materialityWorkpapers ?? [];
   const materialitySheet: Sheet = {
-    name: "MATERIALITY",
+    name: "Materiality",
     widths: [10, 14, 20, 18, 22, 60, 70, 80, 38],
     freezeRows: 1,
     autoFilter: `A1:I${Math.max(2, workpapers.length + 1)}`,
@@ -352,7 +613,7 @@ function riskMaterialitySamplingSheets(
 
   const sampling = preparation?.samplingPopulation ?? [];
   const samplingSheet: Sheet = {
-    name: "SAMPLING_PLAN",
+    name: "Sampling Plan",
     widths: [22, 16, 14, 60, 30, 90],
     freezeRows: 1,
     autoFilter: `A1:F${Math.max(2, sampling.length + 1)}`,
@@ -408,7 +669,7 @@ function sheetXml(sheet: Sheet): { xml: string; relationships?: string } {
   const validations = sheet.validationRanges?.length ? `<dataValidations count="${sheet.validationRanges.length}">${sheet.validationRanges.map((item) => `<dataValidation type="list" allowBlank="0" showInputMessage="1" showErrorMessage="1" errorStyle="stop" sqref="${item.range}" promptTitle="Controlled value" prompt="${xml(item.prompt)}" errorTitle="Invalid controlled value" error="Select a value from the approved list."><formula1>&quot;${xml(item.values.join(","))}&quot;</formula1></dataValidation>`).join("")}</dataValidations>` : "";
 
   const result = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews><sheetView workbookViewId="0">${pane}</sheetView></sheetViews><sheetFormatPr defaultRowHeight="17"/><cols>${columns}</cols><sheetData>${rows}</sheetData>${autoFilter}${conditionalFormatting}${validations}${hyperlinkXml}<printOptions horizontalCentered="0" verticalCentered="0"/><pageMargins left="0.25" right="0.25" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup orientation="${sheet.landscape ? "landscape" : "portrait"}" fitToWidth="1" fitToHeight="0" paperSize="9"/></worksheet>`;
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews><sheetView workbookViewId="0">${pane}</sheetView></sheetViews><sheetFormatPr defaultRowHeight="17"/><cols>${columns}</cols><sheetData>${rows}</sheetData>${autoFilter}<sheetProtection sheet="1" objects="1" scenarios="1" selectLockedCells="1" selectUnlockedCells="1" formatCells="0" formatColumns="0" formatRows="0" insertColumns="0" insertRows="0" insertHyperlinks="0" deleteColumns="0" deleteRows="0" sort="0" autoFilter="0" pivotTables="0"/>${conditionalFormatting}${validations}${hyperlinkXml}<printOptions horizontalCentered="0" verticalCentered="0"/><pageMargins left="0.25" right="0.25" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup orientation="${sheet.landscape ? "landscape" : "portrait"}" fitToWidth="1" fitToHeight="0" paperSize="9"/></worksheet>`;
   const relationships = hyperlinks.length > 0 ? `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${hyperlinks.map((item) => `<Relationship Id="${item.relationshipId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${xml(item.target)}" TargetMode="External"/>`).join("")}</Relationships>` : undefined;
   return { xml: result, relationships };
 }
@@ -427,6 +688,7 @@ export async function buildVerifierWorkbook(params: {
   releaseVersion: number;
   generatedAt: string;
   model?: VerifierPackageModel;
+  assessmentContext?: SealAssessmentContext;
 }): Promise<Buffer> {
   const model = params.model || buildVerifierPackageModel(params);
   const sheets = buildSheets({ ...params, model }).map((sheet) => ({ ...sheet, name: safeSheetName(sheet.name) }));

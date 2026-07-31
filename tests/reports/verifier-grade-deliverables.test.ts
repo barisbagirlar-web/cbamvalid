@@ -13,6 +13,7 @@ import {
   type DataIntegrityManifest,
 } from "../../functions/src/cbam/report/verifier-package-builder";
 import { buildVerifierPackageModel } from "../../functions/src/cbam/report/verifier-model";
+import { buildVerifierWorkbook } from "../../functions/src/cbam/report/xlsx-builder";
 import { DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT } from "../../functions/src/cbam/registry/legal-sources";
 import type { KmsSignatureResult } from "../../functions/src/cbam/report/kms-signature";
 import {
@@ -210,5 +211,121 @@ describe("verifier-grade deliverables", () => {
     expect(await archive.file("Manifest Signature.sig")!.async("string")).toContain("RSA_SIGN_PKCS1_2048_SHA256");
     expect(finalized.primaryPdf.byteLength).toBeGreaterThan(5000);
     expect(finalized.workbook.byteLength).toBeGreaterThan(5000);
+  }, 30_000);
+});
+
+describe("FAZ 11 verifier workspace XLSX contract", () => {
+  const FAZ11_SHEETS = [
+    "README",
+    "Executive Summary",
+    "Operator",
+    "Installation",
+    "Goods",
+    "Monitoring Plan",
+    "Source Streams",
+    "Emission Sources",
+    "Meters",
+    "Activity Data",
+    "Precursors",
+    "Allocation",
+    "Calculations",
+    "Evidence Register",
+    "Evidence Matrix",
+    "Risk Register",
+    "Materiality",
+    "Sampling Plan",
+    "Misstatements",
+    "Non-Conformities",
+    "Corrective Actions",
+    "Registry Crosswalk",
+    "Verifier Team",
+    "Site Visits",
+    "Verifier Opinion",
+    "Version Delta",
+    "Manifest Index",
+  ];
+
+  it("contains all 27 mandated sheets from the canonical dataset", async () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    const controls = runQualityControls(caseData);
+    const calculation = performDossierCalculations(caseData);
+    const model = buildVerifierPackageModel({ caseData, calculation, controls });
+    const workbook = await buildVerifierWorkbook({
+      caseData,
+      calculation,
+      controls,
+      model,
+      reportId: FIXTURE_REPORT_ID,
+      packageCode: FIXTURE_PACKAGE_CODE,
+      releaseVersion: 1,
+      generatedAt: FIXTURE_GENERATED_AT,
+    });
+    const xlsx = await JSZip.loadAsync(workbook, { checkCRC32: true });
+    const workbookXml = await xlsx.file("xl/workbook.xml")!.async("string");
+    for (const name of FAZ11_SHEETS) {
+      expect(workbookXml).toContain(`name="${name}"`);
+    }
+    expect(workbookXml).not.toContain("EMISSIONS_SUMMARY");
+    expect(workbookXml).not.toContain("CALCULATION_TRACE");
+    const sheetCount = workbookXml.match(/<sheet /g)?.length ?? 0;
+    expect(sheetCount).toBeGreaterThanOrEqual(FAZ11_SHEETS.length);
+  }, 30_000);
+
+  it("locks formulas, marks input cells, and contains no macros or hidden data", async () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    const controls = runQualityControls(caseData);
+    const calculation = performDossierCalculations(caseData);
+    const workbook = await buildVerifierWorkbook({
+      caseData,
+      calculation,
+      controls,
+      reportId: FIXTURE_REPORT_ID,
+      packageCode: FIXTURE_PACKAGE_CODE,
+      releaseVersion: 1,
+      generatedAt: FIXTURE_GENERATED_AT,
+    });
+    const xlsx = await JSZip.loadAsync(workbook, { checkCRC32: true });
+    const allSheetXml = (await Promise.all(
+      Object.keys(xlsx.files)
+        .filter((path) => /^xl\/worksheets\/sheet\d+\.xml$/.test(path))
+        .map((path) => xlsx.file(path)!.async("string"))
+    )).join("\n");
+    const contentTypes = await xlsx.file("[Content_Types].xml")!.async("string");
+    const styles = await xlsx.file("xl/styles.xml")!.async("string");
+    expect(allSheetXml).toContain("<sheetProtection");
+    expect(allSheetXml).toContain('<pane');
+    expect(styles).toContain('<protection locked="0"');
+    expect(allSheetXml).toContain('s="10"');
+    expect(contentTypes).not.toContain("vbaProject");
+    expect(contentTypes).not.toContain("application/vnd.ms-excel");
+    expect(xlsx.file("xl/vbaProject.bin")).toBeNull();
+  }, 30_000);
+
+  it("renders the A-H segregation, allocation reconciliation and manifest index from the same dataset as the PDF/JSON", async () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    const controls = runQualityControls(caseData);
+    const calculation = performDossierCalculations(caseData);
+    const model = buildVerifierPackageModel({ caseData, calculation, controls });
+    const workbook = await buildVerifierWorkbook({
+      caseData,
+      calculation,
+      controls,
+      model,
+      reportId: FIXTURE_REPORT_ID,
+      packageCode: FIXTURE_PACKAGE_CODE,
+      releaseVersion: 1,
+      generatedAt: FIXTURE_GENERATED_AT,
+    });
+    const xlsx = await JSZip.loadAsync(workbook, { checkCRC32: true });
+    const workbookXml = await xlsx.file("xl/workbook.xml")!.async("string");
+    const sheetFiles = Object.keys(xlsx.files).filter((path) => /^xl\/worksheets\/sheet\d+\.xml$/.test(path));
+    const allSheetXml = (await Promise.all(sheetFiles.map((path) => xlsx.file(path)!.async("string")))).join("\n");
+    expect(allSheetXml).toContain("Installation direct emissions (A)");
+    expect(allSheetXml).toContain("Certificate-relevant embedded emissions (G)");
+    expect(allSheetXml).toContain("Total informational embedded emissions (H)");
+    expect(allSheetXml).toContain("Allocation reconciliation delta");
+    expect(allSheetXml).toContain(String(calculation.emissionsByCategory?.H_TOTAL_INFORMATIONAL_EMBEDDED));
+    expect(allSheetXml).toContain("Data Integrity Manifest.json");
+    expect(workbookXml).toContain("Manifest Index");
   }, 30_000);
 });
