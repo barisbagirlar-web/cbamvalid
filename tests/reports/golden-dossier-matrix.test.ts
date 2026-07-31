@@ -117,7 +117,7 @@ import {
   releaseEntitlementReservation,
   consumeEntitlement,
 } from "../../functions/src/commerce/entitlement-service";
-import type { KmsSignatureResult } from "../../functions/src/cbam/report/kms-signature";
+import { createSignature } from "../fixtures/kms-test-signer";
 import {
   FIXTURE_GENERATED_AT,
   FIXTURE_REPORT_ID,
@@ -1060,22 +1060,4 @@ function buildTestCalcGraph(rootHash: string): {
     node("CBAM_CONSUMPTION_100", "Electricity Consumption", "MEASURE", "100", "MWh", [], ["IR 2025/2547"]),
   ];
   return { rootHash, nodes };
-}
-
-function createSignature(manifestBytes: Buffer): KmsSignatureResult {
-  const { privateKey, publicKey } = crypto.generateKeyPairSync("rsa", {
-    modulusLength: 2048,
-    publicKeyEncoding: { type: "spki", format: "pem" },
-    privateKeyEncoding: { type: "pkcs8", format: "pem" },
-  });
-  const manifestHash = crypto.createHash("sha256").update(manifestBytes).digest("hex");
-  const signature = crypto.sign("sha256", manifestBytes, privateKey);
-  return {
-    keyVersion: "projects/test/locations/europe-west1/keyRings/cbam/cryptoKeys/manifest/cryptoKeyVersions/1",
-    algorithm: "RSA_SIGN_PKCS1_2048_SHA256",
-    manifestHash,
-    signatureBase64: signature.toString("base64"),
-    publicKeyPem: publicKey,
-    protectionLevel: "SOFTWARE",
-  };
 }

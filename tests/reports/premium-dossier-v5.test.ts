@@ -14,7 +14,6 @@ import {
   finalizeVerifierPackage,
   type DataIntegrityManifest,
 } from "../../functions/src/cbam/report/verifier-package-builder";
-import type { KmsSignatureResult } from "../../functions/src/cbam/report/kms-signature";
 import {
   FIXTURE_GENERATED_AT,
   FIXTURE_REPORT_ID,
@@ -24,6 +23,7 @@ import {
 } from "../fixtures/verifier-grade-case";
 import { assessReadiness, getReportingPeriodAssessment } from "../../functions/src/cbam/validation/readiness-score";
 import { generateFindingsAndActions } from "../../functions/src/cbam/validation/findings-engine";
+import { createSignature } from "../fixtures/kms-test-signer";
 
 async function verifyPdfGeometry(pdfBytes: Buffer) {
   const document = await pdfjsLib.getDocument({
@@ -79,24 +79,6 @@ function topLevel(paths: string[]): string[] {
   }))].sort();
 }
 
-function createSignature(manifestBytes: Buffer): KmsSignatureResult {
-  const { privateKey, publicKey } = crypto.generateKeyPairSync("rsa", {
-    modulusLength: 2048,
-    publicKeyEncoding: { type: "spki", format: "pem" },
-    privateKeyEncoding: { type: "pkcs8", format: "pem" },
-  });
-  const manifestHash = crypto.createHash("sha256").update(manifestBytes).digest("hex");
-  const signature = crypto.sign("sha256", manifestBytes, privateKey);
-  return {
-    keyVersion: "projects/test/locations/europe-west1/keyRings/cbam/cryptoKeys/manifest/cryptoKeyVersions/1",
-    algorithm: "RSA_SIGN_PKCS1_2048_SHA256",
-    manifestHash,
-    signatureBase64: signature.toString("base64"),
-    publicKeyPem: publicKey,
-    protectionLevel: "SOFTWARE",
-  };
-}
-
 function buildTestCalcGraph(rootHash: string): {
   rootHash: string;
   nodes: ReadonlyArray<{
@@ -120,6 +102,88 @@ function buildTestCalcGraph(rootHash: string): {
     node("CBAM_CONSUMPTION_100", "Electricity Consumption", "MEASURE", "100", "MWh", [], ["IR 2025/2547"]),
   ];
   return { rootHash, nodes };
+}
+
+async function buildSampleSealedPackage() {
+  const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+  caseData.evidenceRegister[0].linkedInputs.push(
+    "exporterIdentity.legalName",
+    "exporterIdentity.address",
+    "importerIdentity.legalName",
+    "importerIdentity.eoriNumber",
+    "installation.name",
+    "installation.country",
+    "installation.productionRoute",
+    "reportingPeriod.year",
+    "reportingPeriod.quarter",
+    "goods.0.cnCode",
+    "goods.0.allocationShare",
+    "goods.1.cnCode",
+    "goods.1.allocationShare"
+  );
+  const firstEvId = caseData.evidenceRegister[0].evidenceId;
+  caseData.importerIdentity.legalName.evidenceId = firstEvId;
+  caseData.importerIdentity.eoriNumber.evidenceId = firstEvId;
+  caseData.importerIdentity.address!.evidenceId = firstEvId;
+  caseData.exporterIdentity.legalName.evidenceId = firstEvId;
+  caseData.exporterIdentity.address!.evidenceId = firstEvId;
+  caseData.installation.name.evidenceId = firstEvId;
+  caseData.installation.country.evidenceId = firstEvId;
+  caseData.installation.productionRoute.evidenceId = firstEvId;
+  caseData.reportingPeriod.year.evidenceId = firstEvId;
+  caseData.reportingPeriod.quarter.evidenceId = firstEvId;
+  caseData.goods[0]!.cnCode.evidenceId = firstEvId;
+  caseData.goods[0]!.allocationShare!.evidenceId = firstEvId;
+  caseData.goods[1]!.cnCode.evidenceId = firstEvId;
+  caseData.goods[1]!.allocationShare!.evidenceId = firstEvId;
+
+  caseData.reportingPeriod.quarter.value = "ANNUAL";
+  caseData.reportingPeriod.startDate = { value: "2026-01-01", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
+  caseData.reportingPeriod.endDate = { value: "2026-12-31", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
+  caseData.evidenceRegister.forEach((e) => { e.reportingPeriod = "2026 ANNUAL"; });
+
+  const controls = runQualityControls(caseData);
+  const calculation = performDossierCalculations(caseData);
+  const calcGraph = buildTestCalcGraph(calculation.calculationRootHash);
+  const artifacts = await buildUnsignedVerifierArtifacts({
+    caseData,
+    controls,
+    calculation,
+    reportId: FIXTURE_REPORT_ID,
+    packageCode: FIXTURE_PACKAGE_CODE,
+    releaseVersion: 5,
+    generatedAt: FIXTURE_GENERATED_AT,
+    evidenceFiles: createVerifierEvidenceFiles(),
+    calcGraph,
+    assessmentContext: {
+      generatedAt: FIXTURE_GENERATED_AT,
+      assessmentTimestamp: FIXTURE_GENERATED_AT,
+      reportId: FIXTURE_REPORT_ID,
+      packageCode: FIXTURE_PACKAGE_CODE,
+      releaseVersion: 5,
+      rulesetVersion: "test",
+      productCode: "pack_premium_dossier_v5",
+      releaseContractVersion: 5,
+    },
+  });
+  const manifestResult = buildDataIntegrityManifest({
+    artifacts,
+    caseData,
+    calculation,
+    reportId: FIXTURE_REPORT_ID,
+    releaseVersion: 5,
+    generatedAt: FIXTURE_GENERATED_AT,
+    evidenceCount: 4,
+    productCode: "pack_premium_dossier_v5",
+    releaseContractVersion: 5,
+  });
+  const finalized = await finalizeVerifierPackage({
+    artifacts,
+    manifestBytes: manifestResult.bytes,
+    signature: createSignature(manifestResult.bytes),
+    generatedAt: FIXTURE_GENERATED_AT,
+  });
+  return { artifacts, manifestResult, finalized };
 }
 
 describe("premium-dossier-v5 deliverables", () => {
@@ -960,4 +1024,17 @@ describe("premium-dossier-v5 deliverables", () => {
       expect(manifestJson).not.toContain(pattern);
     }
   }, 30_000);
+
+  it("is byte-deterministic across repeated sealed package builds", async () => {
+    const sha256 = (bytes: Buffer) => crypto.createHash("sha256").update(bytes).digest("hex");
+    const first = await buildSampleSealedPackage();
+    const second = await buildSampleSealedPackage();
+
+    expect(first.artifacts.length).toBe(second.artifacts.length);
+    for (let i = 0; i < first.artifacts.length; i++) {
+      expect(sha256(first.artifacts[i]!.bytes)).toBe(sha256(second.artifacts[i]!.bytes));
+    }
+    expect(sha256(first.manifestResult.bytes)).toBe(sha256(second.manifestResult.bytes));
+    expect(sha256(first.finalized.zip)).toBe(sha256(second.finalized.zip));
+  }, 60_000);
 });

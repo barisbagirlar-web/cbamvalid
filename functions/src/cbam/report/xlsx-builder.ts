@@ -726,6 +726,13 @@ export async function buildVerifierWorkbook(params: {
     if (built.relationships) zip.file(`xl/worksheets/_rels/sheet${index + 1}.xml.rels`, built.relationships, fileOptions);
   });
 
+  // JSZip auto-creates folder entries with a fresh timestamp even when a fixed
+  // `date` fileOption is supplied. Pin every directory entry so regenerated
+  // workbooks are byte-identical (deterministic release bytes).
+  for (const entry of Object.values(zip.files)) {
+    if (entry.dir) entry.date = date;
+  }
+
   const buffer = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE", compressionOptions: { level: 9 }, platform: "UNIX" });
   const validation = await JSZip.loadAsync(buffer, { checkCRC32: true });
   const required = ["[Content_Types].xml", "_rels/.rels", "xl/workbook.xml", "xl/styles.xml", ...sheets.map((_, index) => `xl/worksheets/sheet${index + 1}.xml`)];

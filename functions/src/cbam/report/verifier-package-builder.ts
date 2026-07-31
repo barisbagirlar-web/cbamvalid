@@ -581,6 +581,7 @@ export async function buildUnsignedVerifierArtifacts(params: {
     ...params,
     productCode: params.assessmentContext?.productCode,
     releaseContractVersion: params.assessmentContext?.releaseContractVersion,
+    assessmentTimestamp: params.assessmentContext?.assessmentTimestamp ?? params.generatedAt,
   });
   const workbook = await buildVerifierWorkbook({ ...params, model });
 
@@ -800,6 +801,12 @@ export async function finalizeVerifierPackage(params: {
   const date = new Date(params.generatedAt);
   zip.folder("Supporting_Evidence");
   for (const item of allArtifacts) zip.file(item.path, item.bytes, { date, createFolders: true });
+  // JSZip auto-creates folder entries with a fresh timestamp even when a fixed
+  // `date` fileOption is supplied. Pin every directory entry so the sealed ZIP
+  // is byte-deterministic for a given generatedAt.
+  for (const entry of Object.values(zip.files)) {
+    if (entry.dir) entry.date = date;
+  }
   const buffer = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE", compressionOptions: { level: 9 }, platform: "UNIX" });
 
   // ---- Patch 6: ZIP reopen and full byte verification ----

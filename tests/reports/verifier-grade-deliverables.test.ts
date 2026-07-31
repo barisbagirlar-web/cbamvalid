@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
@@ -15,7 +14,7 @@ import {
 import { buildVerifierPackageModel } from "../../functions/src/cbam/report/verifier-model";
 import { buildVerifierWorkbook } from "../../functions/src/cbam/report/xlsx-builder";
 import { DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT } from "../../functions/src/cbam/registry/legal-sources";
-import type { KmsSignatureResult } from "../../functions/src/cbam/report/kms-signature";
+import { createSignature } from "../fixtures/kms-test-signer";
 import {
   FIXTURE_GENERATED_AT,
   FIXTURE_REPORT_ID,
@@ -44,24 +43,6 @@ function topLevel(paths: string[]): string[] {
     const slash = path.indexOf("/");
     return slash >= 0 ? `${path.slice(0, slash)}/` : path;
   }))].sort();
-}
-
-function createSignature(manifestBytes: Buffer): KmsSignatureResult {
-  const { privateKey, publicKey } = crypto.generateKeyPairSync("rsa", {
-    modulusLength: 2048,
-    publicKeyEncoding: { type: "spki", format: "pem" },
-    privateKeyEncoding: { type: "pkcs8", format: "pem" },
-  });
-  const manifestHash = crypto.createHash("sha256").update(manifestBytes).digest("hex");
-  const signature = crypto.sign("sha256", manifestBytes, privateKey);
-  return {
-    keyVersion: "projects/test/locations/europe-west1/keyRings/cbam/cryptoKeys/manifest/cryptoKeyVersions/1",
-    algorithm: "RSA_SIGN_PKCS1_2048_SHA256",
-    manifestHash,
-    signatureBase64: signature.toString("base64"),
-    publicKeyPem: publicKey,
-    protectionLevel: "SOFTWARE",
-  };
 }
 
 describe("verifier-grade deliverables", () => {

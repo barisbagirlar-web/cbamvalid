@@ -237,6 +237,7 @@ export function buildVerifierPackageModel(params: {
   packageCode: string;
   releaseVersion: number;
   generatedAt: string;
+  assessmentTimestamp?: string;
   productCode?: string;
   releaseContractVersion?: 5;
 }): VerifierPackageModel {
@@ -253,6 +254,7 @@ export function buildVerifierPackageModel(params: {
   const verifierPreparation = buildVerifierPreparationModel({
     caseData: params.caseData,
     calculation: params.calculation,
+    assessmentTimestamp: params.assessmentTimestamp ?? params.generatedAt,
   });
   const registryTemplateMapping = buildRegistryTemplateMapping(params.caseData);
 

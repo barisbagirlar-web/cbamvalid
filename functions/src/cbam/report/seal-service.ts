@@ -488,7 +488,7 @@ export async function sealReport(params: {
     assertSelfVerify(dossierModel);
     const tsa = bindRfc3161Timestamp({ tsrBytes: null });
     const calculation = performDossierCalculations(caseData);
-    const verifierPreparation = buildVerifierPreparationModel({ caseData, calculation });
+    const verifierPreparation = buildVerifierPreparationModel({ caseData, calculation, assessmentTimestamp: lease.generatedAt });
     const verifierPackageModel = buildVerifierPackageModel({
       caseData,
       calculation,
@@ -497,6 +497,7 @@ export async function sealReport(params: {
       packageCode,
       releaseVersion,
       generatedAt: lease.generatedAt,
+      assessmentTimestamp: lease.generatedAt,
     });
     const premiumContract = evaluatePremiumChapterContract({ caseData, calculation, model: verifierPackageModel });
 
