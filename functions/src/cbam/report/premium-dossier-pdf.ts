@@ -38,6 +38,7 @@ const COMPONENT_ANNEX_DESCRIPTIONS: Record<string, [string, string]> = {
   "Corrective Action Log.csv": ["CSV", "Remediation action tracking ledger"],
   "O3CI Field Mapping.csv": ["CSV", "Registry export data field crosswalk"],
   "Calculation Trace.json": ["JSON", "Machine-readable cryptographic node hash tree"],
+  "Calculation Graph.json": ["JSON", "Machine-readable calculation graph with node hashes and root hash"],
   "Verifier Workspace.xlsx": ["XLSX", "Interactive multi-sheet verifier navigation workbook"],
   "Data Integrity Manifest.json": ["JSON", "Cryptographic package manifest & hash index"],
   "Manifest Signature.sig": ["SIG", "KMS detached signature over the integrity manifest"],
@@ -150,6 +151,35 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     y += totalHeight + 3;
   };
 
+  // FAZ 9: controlled wrapping — unbroken UUID / requirement-ID tokens are
+  // broken at hyphen boundaries (and only then) so they never overflow cells.
+  const breakLongTokens = (value: string, maxWidth: number): string => {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.8);
+    const text = String(value ?? "").trim();
+    if (!text) return "—";
+    return text
+      .split(/\s+/)
+      .map((token) => {
+        if (doc.getTextWidth(token) <= maxWidth) return token;
+        const parts = token.split("-");
+        const rebuilt: string[] = [];
+        let current = "";
+        for (const part of parts) {
+          const candidate = current ? `${current}-${part}` : part;
+          if (doc.getTextWidth(candidate) <= maxWidth) {
+            current = candidate;
+          } else {
+            if (current) rebuilt.push(current);
+            current = part;
+          }
+        }
+        if (current) rebuilt.push(current);
+        return rebuilt.length > 1 ? rebuilt.join(" ") : token;
+      })
+      .join(" ");
+  };
+
   const drawTable = (headers: string[], rows: unknown[][], widths?: number[]) => {
     if (headers.length === 0) return;
     const colWidths = widths && widths.length === headers.length
@@ -183,7 +213,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     
     rows.forEach((row, rowIndex) => {
       let cellLines = headers.map((_, colIndex) =>
-        doc.splitTextToSize(asText(row[colIndex]), colWidths[colIndex] - 4) as string[]
+        doc.splitTextToSize(breakLongTokens(asText(row[colIndex]), colWidths[colIndex] - 4), colWidths[colIndex] - 4) as string[]
       );
 
       while (cellLines.some(lines => lines.length > 0)) {
@@ -1373,52 +1403,67 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   doc.setFontSize(7.2);
   doc.setTextColor(44, 62, 80);
 
+  const tocEntries: Array<[number, string]> = [
+    [2, "Document Control"],
+    [3, "Legal and Product Boundary"],
+    [4, "Table of Contents"],
+    [5, "Executive Decision Board"],
+    [6, "Readiness Score and Hard Gates"],
+    [7, "Operator and Installation Identity"],
+    [8, "Reporting Period Assessment"],
+    [9, "Goods and CN Classification"],
+    [10, "Installation and System Boundary"],
+    [11, "Production Processes and Functional Units"],
+    [32, "Monitoring Plan Conformance"],
+    [33, "Source Streams and Emission Sources"],
+    [34, "Metering and Instrumentation"],
+    [12, "Material Input Register"],
+    [13, "Evidence Sufficiency Matrix"],
+    [14, "Evidence Register"],
+    [15, "Data Lineage Matrix"],
+    [16, "Direct Emissions"],
+    [17, "Indirect Emissions"],
+    [18, "Precursors"],
+    [19, "Allocation and Per-good Results"],
+    [20, "Calculation Integrity and Reconciliation"],
+    [35, "Calculation Methodology"],
+    [36, "Risk Assessment"],
+    [37, "Materiality and Sampling Plan"],
+    [21, "Data Quality, Uncertainty, and Missing Data"],
+    [22, "Methodology Decision Register"],
+    [23, "Findings Register"],
+    [24, "Corrective Action Plan"],
+    [25, "EU Verification Template Crosswalk"],
+    [26, "Verifier Handover Checklist"],
+    [27, "Package Manifest and Digital Integrity"],
+    [28, "Version Comparison"],
+    [29, "Sign-off and Limitations"],
+    [30, "Technical Annex Index"],
+    [38, "Data Visualisation Annex"],
+  ];
+
   const writeTocRow = (num: number, title: string) => {
     const page = sectionPages[num] || 3;
     doc.setFont("helvetica", "bold");
-    doc.text(`${num}.`, MARGIN, y);
+    doc.textWithLink(`${num}.`, MARGIN, y, { pageNumber: page });
     doc.setFont("helvetica", "normal");
-    doc.text(title, MARGIN + 8, y);
-    doc.text(String(page), PAGE_WIDTH - MARGIN, y, { align: "right" });
+    doc.textWithLink(title, MARGIN + 8, y, { pageNumber: page });
+    doc.textWithLink(String(page), PAGE_WIDTH - MARGIN, y, { pageNumber: page, align: "right" });
     y += 5.2;
   };
 
-  writeTocRow(2, "Document Control");
-  writeTocRow(3, "Legal and Product Boundary");
-  writeTocRow(4, "Table of Contents");
-  writeTocRow(5, "Executive Decision Board");
-  writeTocRow(6, "Readiness Score and Hard Gates");
-  writeTocRow(7, "Operator and Installation Identity");
-  writeTocRow(8, "Reporting Period Assessment");
-  writeTocRow(9, "Goods and CN Classification");
-  writeTocRow(10, "Installation and System Boundary");
-  writeTocRow(11, "Production Processes and Functional Units");
-  writeTocRow(32, "Monitoring Plan Conformance");
-  writeTocRow(33, "Source Streams and Emission Sources");
-  writeTocRow(34, "Metering and Instrumentation");
-  writeTocRow(12, "Material Input Register");
-  writeTocRow(13, "Evidence Sufficiency Matrix");
-  writeTocRow(14, "Evidence Register");
-  writeTocRow(15, "Data Lineage Matrix");
-  writeTocRow(16, "Direct Emissions");
-  writeTocRow(17, "Indirect Emissions");
-  writeTocRow(18, "Precursors");
-  writeTocRow(19, "Allocation and Per-good Results");
-  writeTocRow(20, "Calculation Integrity and Reconciliation");
-  writeTocRow(35, "Calculation Methodology");
-  writeTocRow(36, "Risk Assessment");
-  writeTocRow(37, "Materiality and Sampling Plan");
-  writeTocRow(21, "Data Quality, Uncertainty, and Missing Data");
-  writeTocRow(22, "Methodology Decision Register");
-  writeTocRow(23, "Findings Register");
-  writeTocRow(24, "Corrective Action Plan");
-  writeTocRow(25, "EU Verification Template Crosswalk");
-  writeTocRow(26, "Verifier Handover Checklist");
-  writeTocRow(27, "Package Manifest and Digital Integrity");
-  writeTocRow(28, "Version Comparison");
-  writeTocRow(29, "Sign-off and Limitations");
-  writeTocRow(30, "Technical Annex Index");
-  writeTocRow(38, "Data Visualisation Annex");
+  for (const [num, title] of tocEntries) {
+    writeTocRow(num, title);
+  }
+
+  // ==========================================
+  // FOURTH PASS: PDF OUTLINE / BOOKMARKS
+  // ==========================================
+  const outlineRoot = doc.outline.add(null, model.documentTitle, { pageNumber: 1 });
+  doc.outline.add(outlineRoot, "Cover and Release Identity", { pageNumber: 1 });
+  for (const [num, title] of tocEntries) {
+    doc.outline.add(outlineRoot, `${num}. ${title}`, { pageNumber: sectionPages[num] || 3 });
+  }
 
   // ==========================================
   // THIRD PASS: RUNNING HEADERS & FOOTERS
@@ -1462,6 +1507,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     doc.setTextColor(90, 99, 112);
     doc.text(
       footerOneLine({
+        reportId: model.reportId,
         packageCode: model.packageCode || "PKG",
         releaseIteration: model.releaseVersion,
         page: pNum,

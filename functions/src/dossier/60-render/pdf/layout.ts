@@ -13,12 +13,14 @@ export function shortUuid(id: string): string {
 }
 
 export function footerOneLine(params: {
+  reportId?: string;
   packageCode: string;
   releaseIteration: number;
   page: number;
   pageCount: number;
 }): string {
-  return `CBAMValid · ${params.packageCode} · Release ${params.releaseIteration} · Page ${params.page} of ${params.pageCount} · CONFIDENTIAL`;
+  const report = params.reportId ? ` · Report ${params.reportId}` : "";
+  return `CBAMValid · ${params.packageCode} · Release ${params.releaseIteration}${report} · Page ${params.page} of ${params.pageCount} · CONFIDENTIAL`;
 }
 
 export function formatIdCell(id: string): { display: string; css: string } {

@@ -609,6 +609,33 @@ describe("premium-dossier-v5 deliverables", () => {
     expect(text).toContain("PROVISIONAL_FOR_VERIFIER_PLANNING");
   });
 
+  it("FAZ 9 — PDF carries outline/bookmarks, clickable TOC links, page numbers and no PDF/A claim", async () => {
+    const outputDir = path.join(process.cwd(), "artifacts", "sample-v5");
+    const primaryPdfPath = path.join(outputDir, "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
+    expect(fs.existsSync(primaryPdfPath)).toBe(true);
+
+    const pdfBytes = fs.readFileSync(primaryPdfPath);
+    const ascii = pdfBytes.toString("latin1");
+
+    // PDF outline/bookmark structure must exist
+    expect(ascii).toMatch(/\/Outlines\s+\d+\s+\d+\s+R/);
+    expect(ascii).toMatch(/\/Count\s+\d+/);
+    // Clickable internal links (annotations) must exist
+    expect(ascii).toMatch(/\/Annots\s*\[/);
+    expect(ascii).toMatch(/\/Subtype\s*\/Link/);
+    // No PDF/A conformance label may be emitted without veraPDF proof
+    expect(ascii.toLowerCase()).not.toContain("/pdfa/");
+    expect(ascii.toLowerCase()).not.toContain("pdf/a");
+
+    const { text, pages } = await pdfText(pdfBytes);
+    // Real page numbers (N of M) rendered in the running footer
+    expect(text).toMatch(/Page 3 of\s+\d+/);
+    // report ID is carried in the running footer
+    expect(text).toMatch(new RegExp(`Report\\s+${FIXTURE_REPORT_ID}`));
+    expect(text).toContain("CONFIDENTIAL");
+    expect(pages).toBeGreaterThanOrEqual(5);
+  });
+
   // ---- Patch 9: Regression Tests ----
   it("Test A — Exact V5 contract: topLevelCount=26, no missing/extra, Calc Graph present", async () => {
     const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
