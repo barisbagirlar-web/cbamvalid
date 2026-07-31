@@ -213,6 +213,7 @@ function buildPdfArtifacts(params: {
   model: VerifierPackageModel;
   assessmentContext?: SealAssessmentContext;
   honestScoreboard?: HonestScoreboard;
+  publicVerificationUrl?: string | null;
 }): PackageArtifact[] {
   const { caseData, calculation, reportId, releaseVersion, generatedAt, model, assessmentContext } = params;
   const pdfFile = (path: string, title: string, subtitle: string, sections: PdfSection[]) =>
@@ -317,7 +318,8 @@ function buildPdfArtifacts(params: {
         kmsKeyVersion: "",
         kmsAlgorithm: "",
         signatureBase64: "",
-        publicVerificationState: "ACTIVE",
+        publicVerificationState: params.publicVerificationUrl?.trim() ? "ACTIVE" : "UNAVAILABLE",
+        publicVerificationUrl: params.publicVerificationUrl?.trim() || null,
       },
       honestScoreboard: params.honestScoreboard,
       monitoringPlan: model.monitoringPlan,
@@ -563,6 +565,7 @@ export async function buildUnsignedVerifierArtifacts(params: {
       hash: string;
     }>;
   };
+  publicVerificationUrl?: string | null;
 }): Promise<PackageArtifact[]> {
   const model = buildVerifierPackageModel({
     ...params,
@@ -572,7 +575,7 @@ export async function buildUnsignedVerifierArtifacts(params: {
   const workbook = await buildVerifierWorkbook({ ...params, model });
 
   const artifacts = [
-    ...buildPdfArtifacts({ ...params, model }),
+    ...buildPdfArtifacts({ ...params, model, publicVerificationUrl: params.publicVerificationUrl }),
     ...buildCsvArtifacts({ ...params, model }),
     artifact("Calculation Trace.json", Buffer.from(canonical({ reportId: params.reportId, packageCode: params.packageCode, caseId: params.caseData.caseId, generatedAt: params.generatedAt, verifierModel: model, calculation: params.calculation }), "utf8"), "application/json"),
     ...(params.calcGraph

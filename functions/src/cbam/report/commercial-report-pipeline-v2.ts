@@ -57,6 +57,7 @@ export class CommercialReportPipelineV2 {
       evidenceFiles: params.evidenceFiles,
       calcGraph: params.calcGraph,
       honestScoreboard: params.honestScoreboard,
+      publicVerificationUrl: params.publicVerificationUrl,
       assessmentContext: {
         generatedAt: params.generatedAt,
         assessmentTimestamp: params.generatedAt,

@@ -3,22 +3,12 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
-type VerifyPayload = {
-  packageId: string;
-  signatureValid: boolean;
-  signingKeyFingerprint: string | null;
-  sealTimestamp: string | null;
-  tsaTokenStatus: string;
-  revocationState: string;
-  publicVerificationState: string;
-  publicVerificationUrl: string;
-  disclaimer: string;
-};
+import type { PublicVerificationPayload } from "@/lib/verify/public-verification";
 
 export default function VerifyPackageClientPage() {
   const params = useParams<{ packageId: string }>();
   const packageId = params?.packageId;
-  const [data, setData] = useState<VerifyPayload | null>(null);
+  const [data, setData] = useState<PublicVerificationPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,6 +32,24 @@ export default function VerifyPackageClientPage() {
     };
   }, [packageId]);
 
+  const rows: Array<[string, string]> = data
+    ? [
+        ["Package ID", data.packageId],
+        ["Report ID", data.reportId || "—"],
+        ["Status", data.status],
+        ["Release version", data.releaseVersion ? `v${data.releaseVersion}` : "—"],
+        ["Generated at", data.generatedAt || "—"],
+        ["Manifest SHA-256", data.manifestHash || "—"],
+        ["Package SHA-256", data.packageHash || "—"],
+        ["KMS key version", data.kmsKeyVersion || "—"],
+        ["KMS signature algorithm", data.kmsAlgorithm || "—"],
+        ["Signature verification", data.signatureVerificationState],
+        ["Component count", data.componentCount ? String(data.componentCount) : "—"],
+        ["Current release", data.isCurrentRelease ? "Yes" : "No"],
+        ["Public verification state", data.publicVerificationState],
+      ]
+    : [];
+
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
       <h1 className="text-3xl font-semibold tracking-tight text-ink">Package verification</h1>
@@ -49,30 +57,12 @@ export default function VerifyPackageClientPage() {
       {error ? <p className="mt-6 text-status-blocked">{error}</p> : null}
       {data ? (
         <dl className="mt-8 grid gap-3 text-sm">
-          <div>
-            <dt className="text-muted">Signature valid</dt>
-            <dd>{String(data.signatureValid)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted">Signing key</dt>
-            <dd className="mono">{data.signingKeyFingerprint || "NOT_AVAILABLE"}</dd>
-          </div>
-          <div>
-            <dt className="text-muted">Seal timestamp</dt>
-            <dd>{data.sealTimestamp || "NOT_AVAILABLE"}</dd>
-          </div>
-          <div>
-            <dt className="text-muted">TSA token</dt>
-            <dd>{data.tsaTokenStatus}</dd>
-          </div>
-          <div>
-            <dt className="text-muted">Revocation</dt>
-            <dd>{data.revocationState}</dd>
-          </div>
-          <div>
-            <dt className="text-muted">Public state</dt>
-            <dd>{data.publicVerificationState}</dd>
-          </div>
+          {rows.map(([term, value]) => (
+            <div key={term} className="flex flex-col gap-0.5 border-b border-muted/30 pb-2">
+              <dt className="text-muted">{term}</dt>
+              <dd className="font-mono text-[13px] text-ink">{value}</dd>
+            </div>
+          ))}
           <p className="mt-4 text-xs text-muted">{data.disclaimer}</p>
         </dl>
       ) : !error ? (

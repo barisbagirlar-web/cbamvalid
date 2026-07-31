@@ -10,7 +10,6 @@ import { buildCryptoClaims, integrityManifestWording } from "../../dossier/70-se
 import { applicableActStack } from "../../dossier/01-ruleset/regulations.registry";
 import { releaseHistoryNarrative } from "../../dossier/50-model/version-stamp";
 import { ANNEX_II_EXCLUSION_NOTE, getSectorRule } from "../../dossier/01-ruleset/sectors.rules";
-import { footerOneLine } from "../../dossier/60-render/pdf/layout";
 import { evaluateEnterpriseChapters } from "../../dossier/50-model/enterprise-chapters";
 
 const CALCULATION_LEGAL_CITATION = `${OFFICIAL_SOURCES.IMPL_2025_2547.title} (CELEX ${OFFICIAL_SOURCES.IMPL_2025_2547.celexId})`;
@@ -587,7 +586,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     doc.text(val, MARGIN + 48, cy);
     cy += 6.0;
   };
-  writeCoverDetail("Package ID", model.packageCode || "NOT_AVAILABLE");
+  writeCoverDetail("Package ID", model.packageCode || "Assigned at seal — see release record");
   writeCoverDetail("Technical Report ID", model.reportId);
   writeCoverDetail("Case ID", model.caseId);
   writeCoverDetail(
@@ -629,11 +628,11 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6.8);
   doc.setTextColor(80, 90, 105);
-  doc.text(`Case Snapshot SHA-256 Hash: ${model.caseDataHash || "NOT_AVAILABLE"}`, MARGIN + 6, 196);
-  doc.text(`Calculation Root Hash: ${model.calculationRootHash || "NOT_AVAILABLE"}`, MARGIN + 6, 201);
+  doc.text(`Case Snapshot SHA-256 Hash: ${model.caseDataHash || "See Data Integrity Manifest.json"}`, MARGIN + 6, 196);
+  doc.text(`Calculation Root Hash: ${model.calculationRootHash || "See Data Integrity Manifest.json"}`, MARGIN + 6, 201);
   doc.text(`Manifest integrity: See Data Integrity Manifest.json`, MARGIN + 6, 206);
   doc.text(`Detached signature: See Manifest Signature.sig`, MARGIN + 6, 211);
-  doc.text(`KMS Key Version: ${model.manifestSummary?.kmsKeyVersion || "NOT_AVAILABLE"}`, MARGIN + 6, 216);
+  doc.text(`KMS Key Version: ${model.manifestSummary?.kmsKeyVersion || "See Data Integrity Manifest.json"}`, MARGIN + 6, 216);
   doc.text(`Package receipt hash: Available in the CBAMValid release record`, MARGIN + 6, 221);
   doc.text(integrityManifestWording(componentCount), MARGIN + 6, 226);
 
@@ -1234,14 +1233,20 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   // Section 27: Package Manifest and Digital Integrity
   beginSection(27, "Package Manifest and Digital Integrity", 35);
 
-  const kmsKeyVersion = model.manifestSummary?.kmsKeyVersion || "NOT_AVAILABLE";
-  const kmsAlgorithm = model.manifestSummary?.kmsAlgorithm || "NOT_AVAILABLE";
+  // FAZ 10 — values not yet available at render time are shown as deferred
+  // references to the manifest or the release record, never as placeholders.
+  const kmsKeyVersion = model.manifestSummary?.kmsKeyVersion || "See Data Integrity Manifest.json";
+  const kmsAlgorithm = model.manifestSummary?.kmsAlgorithm || "See Data Integrity Manifest.json";
+  const publicVerificationState =
+    cryptoClaims.publicVerificationState === "ACTIVE"
+      ? "ACTIVE"
+      : "ACTIVATED_ON_SEAL_PUBLICATION — see release record";
 
   drawTable(
     ["Integrity Parameter", "Registered Value"],
     [
-      ["Case Snapshot SHA-256 Hash", model.caseDataHash || "NOT_AVAILABLE"],
-      ["Calculation Root Hash", model.calculationRootHash || "NOT_AVAILABLE"],
+      ["Case Snapshot SHA-256 Hash", model.caseDataHash || "See Data Integrity Manifest.json"],
+      ["Calculation Root Hash", model.calculationRootHash || "See Data Integrity Manifest.json"],
       ["Manifest SHA-256 Hash", "See Data Integrity Manifest.json"],
       ["Sealed Package SHA-256 Hash", "Available in the CBAMValid release record"],
       ["KMS Key Version Reference", kmsKeyVersion],
@@ -1250,10 +1255,10 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
       ["Schema Specification", model.schemaVersion],
       ["Digital Signature ID", model.reportId],
       ["Cryptographic Security Class", cryptoClaims.securityClassLabel],
-      ["Public Verification State", cryptoClaims.publicVerificationState],
+      ["Public Verification State", publicVerificationState],
       ...(cryptoClaims.publicVerificationUrl
         ? [["Public Verification URL", cryptoClaims.publicVerificationUrl] as [string, string]]
-        : [["Public Verification URL", "NOT_PUBLISHED"] as [string, string]]),
+        : [["Public Verification URL", "Published in the CBAMValid release record after sealing"] as [string, string]]),
     ],
     [65, 115]
   );
@@ -1301,8 +1306,8 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     ["Sign-off Role", "Name & Title", "Signature Status", "Sign-off Date"],
     [
       ["Operator Author / Preparer", "NOT_PROVIDED", "OPERATOR_PREPARED", model.generatedAt.slice(0, 10)],
-      ["Internal Environmental Reviewer", "NOT_PROVIDED", "REVIEW_REQUIRED", "NOT_AVAILABLE"],
-      ["Independent Accredited Verifier", "NOT_AVAILABLE", "VERIFIER_COMPLETION_REQUIRED", "NOT_AVAILABLE"]
+      ["Internal Environmental Reviewer", "NOT_PROVIDED", "REVIEW_REQUIRED", "PENDING_EXTERNAL_VERIFIER"],
+      ["Independent Accredited Verifier", "PENDING_EXTERNAL_VERIFIER", "VERIFIER_COMPLETION_REQUIRED", "PENDING_EXTERNAL_VERIFIER"]
     ],
     [50, 50, 50, 30]
   );
@@ -1506,16 +1511,13 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     doc.setFontSize(6.5);
     doc.setTextColor(90, 99, 112);
     doc.text(
-      footerOneLine({
-        reportId: model.reportId,
-        packageCode: model.packageCode || "PKG",
-        releaseIteration: model.releaseVersion,
-        page: pNum,
-        pageCount,
-      }),
+      `CBAMValid · ${model.packageCode || "ASSIGNED_AT_SEAL"} · Release ${model.releaseVersion} · Page ${pNum} of ${pageCount} · CONFIDENTIAL`,
       MARGIN,
       288
     );
+    if (model.reportId) {
+      doc.text(`Report ${model.reportId}`, MARGIN, 291.5);
+    }
   }
 
   return Buffer.from(doc.output("arraybuffer"));

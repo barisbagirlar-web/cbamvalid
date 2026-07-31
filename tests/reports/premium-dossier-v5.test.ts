@@ -628,8 +628,9 @@ describe("premium-dossier-v5 deliverables", () => {
     expect(ascii.toLowerCase()).not.toContain("pdf/a");
 
     const { text, pages } = await pdfText(pdfBytes);
-    // Real page numbers (N of M) rendered in the running footer
-    expect(text).toMatch(/Page 3 of\s+\d+/);
+    // Real page numbers (N of M) rendered in the running footer.
+    // Extracted glyph spacing varies with font kerning, so accept flexible gaps.
+    expect(text).toMatch(/Page\s+3\s+of\s+\d+/);
     // report ID is carried in the running footer
     expect(text).toMatch(new RegExp(`Report\\s+${FIXTURE_REPORT_ID}`));
     expect(text).toContain("CONFIDENTIAL");
@@ -895,5 +896,68 @@ describe("premium-dossier-v5 deliverables", () => {
       signature: createSignature(manifestResult.bytes),
       generatedAt: FIXTURE_GENERATED_AT,
     })).rejects.toThrow("PACKAGE_MANIFEST_SIGNATURE_HASH_MISMATCH");
+  }, 30_000);
+
+  it("FAZ 10 — sealed release never renders crypto placeholders (NOT_AVAILABLE / UNAVAILABLE)", async () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    const controls = runQualityControls(caseData);
+    const calculation = performDossierCalculations(caseData);
+    const calcGraph = buildTestCalcGraph(calculation.calculationRootHash);
+
+    const publicVerificationUrl = `https://cbamvalid.com/verify/package/${FIXTURE_REPORT_ID}`;
+    const artifacts = await buildUnsignedVerifierArtifacts({
+      caseData, controls, calculation,
+      reportId: FIXTURE_REPORT_ID, packageCode: FIXTURE_PACKAGE_CODE,
+      releaseVersion: 5, generatedAt: FIXTURE_GENERATED_AT,
+      evidenceFiles: createVerifierEvidenceFiles(),
+      calcGraph,
+      publicVerificationUrl,
+      assessmentContext: {
+        generatedAt: FIXTURE_GENERATED_AT, assessmentTimestamp: FIXTURE_GENERATED_AT,
+        reportId: FIXTURE_REPORT_ID, packageCode: FIXTURE_PACKAGE_CODE,
+        releaseVersion: 5, rulesetVersion: "test",
+        productCode: "pack_premium_dossier_v5", releaseContractVersion: 5,
+      },
+    });
+
+    const manifestResult = buildDataIntegrityManifest({
+      artifacts, caseData, calculation,
+      reportId: FIXTURE_REPORT_ID, releaseVersion: 5,
+      generatedAt: FIXTURE_GENERATED_AT, evidenceCount: 4,
+      productCode: "pack_premium_dossier_v5", releaseContractVersion: 5,
+    });
+    const finalized = await finalizeVerifierPackage({
+      artifacts,
+      manifestBytes: manifestResult.bytes,
+      signature: createSignature(manifestResult.bytes),
+      generatedAt: FIXTURE_GENERATED_AT,
+    });
+
+    const forbiddenPatterns = [
+      "Package ID: NOT_AVAILABLE",
+      "KMS Key Version: NOT_AVAILABLE",
+      "Public Verification State UNAVAILABLE",
+      "Manifest Hash: NOT_AVAILABLE",
+      "Public Verification URL NOT_PUBLISHED",
+    ];
+
+    const premiumPdf = artifacts.find((item) => item.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
+    expect(premiumPdf).toBeDefined();
+    const { text: premiumText } = await pdfText(premiumPdf!.bytes);
+    for (const pattern of forbiddenPatterns) {
+      expect(premiumText).not.toContain(pattern);
+    }
+    // The published verification URL is referenced once the seal is live.
+    expect(premiumText).toContain("cbamvalid.com/verify/package");
+    // Unresolved crypto values point at the manifest / release record.
+    expect(premiumText).toContain("See Data Integrity Manifest.json");
+
+    // The ZIP read-back must not contain any placeholder text either.
+    const zip = await JSZip.loadAsync(finalized.zip);
+    const manifestFromZip = JSON.parse(await zip.file("Data Integrity Manifest.json")!.async("string"));
+    const manifestJson = JSON.stringify(manifestFromZip);
+    for (const pattern of ["NOT_AVAILABLE", "UNAVAILABLE"]) {
+      expect(manifestJson).not.toContain(pattern);
+    }
   }, 30_000);
 });
