@@ -407,6 +407,14 @@ export const PremiumDossierViewModelV2Schema = PremiumDossierViewModelSchema.ext
       dossierCompleteness: z.number(),
       status: z.string(),
       formula: z.string(),
+      operatorPreparationScore: z.number().optional(),
+      evidenceAssuranceScore: z.number().optional(),
+      packageIntegrity: z.enum(["PASS", "FAIL", "NOT_ASSESSED"]).optional(),
+      externalVerifierCompleted: z.number().int().optional(),
+      externalVerifierTotal: z.number().int().optional(),
+      scoreboardClaim: z.string().optional(),
+      premiumChapterContract: z.enum(["COMPLETE", "GAP", "NOT_ASSESSED"]).optional(),
+      productTierLabel: z.string().optional(),
     })
     .optional(),
   versionStamp: z

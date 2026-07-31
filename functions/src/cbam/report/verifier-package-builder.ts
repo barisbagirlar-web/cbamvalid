@@ -38,6 +38,7 @@ import { generateFindingsAndActions } from "../validation/findings-engine";
 import { assessReadiness, getReportingPeriodAssessment } from "../validation/readiness-score";
 import { buildPremiumDossierPdf } from "./premium-dossier-pdf";
 import type { PremiumDossierViewModel, PremiumDossierViewModelV2, SealAssessmentContext } from "./premium-dossier-schema";
+import type { HonestScoreboard } from "./honest-scoreboard";
 import {
   REQUIRED_TOP_LEVEL_COMPONENTS,
   REQUIRED_TOP_LEVEL_COMPONENTS_V5,
@@ -211,6 +212,7 @@ function buildPdfArtifacts(params: {
   generatedAt: string;
   model: VerifierPackageModel;
   assessmentContext?: SealAssessmentContext;
+  honestScoreboard?: HonestScoreboard;
 }): PackageArtifact[] {
   const { caseData, calculation, reportId, releaseVersion, generatedAt, model, assessmentContext } = params;
   const pdfFile = (path: string, title: string, subtitle: string, sections: PdfSection[]) =>
@@ -317,6 +319,7 @@ function buildPdfArtifacts(params: {
         signatureBase64: "",
         publicVerificationState: "ACTIVE",
       },
+      honestScoreboard: params.honestScoreboard,
     };
 
     return [
@@ -543,6 +546,7 @@ export async function buildUnsignedVerifierArtifacts(params: {
   generatedAt: string;
   evidenceFiles: EvidenceBinary[];
   assessmentContext?: SealAssessmentContext;
+  honestScoreboard?: HonestScoreboard;
   calcGraph?: {
     rootHash: string;
     nodes: ReadonlyArray<{

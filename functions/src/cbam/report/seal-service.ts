@@ -4,6 +4,7 @@ import { reserveEntitlement, consumeEntitlement, releaseEntitlementReservation }
 import { AuditReadyCaseSchema, type AuditReadyCase } from "../schema";
 import { performDossierCalculations } from "../calculator";
 import { runQualityControls } from "../validation/quality-controls";
+import { runEvidenceSufficiency } from "../validation/evidence-sufficiency";
 import { assessCaseReadiness } from "../validation/readiness-assessor";
 import { getActiveRuleset } from "../registry/rulesets";
 import { assertKmsSigningConfigured, signManifestWithKms } from "./kms-signature";
@@ -26,6 +27,7 @@ import { evaluateEnterpriseChapters, type DossierTier } from "../../dossier/50-m
 import { buildChapterPayloadsFromDossier } from "../../dossier/50-model/chapter-payloads";
 import { assessUncertainty } from "../../dossier/40-readiness/uncertainty";
 import { buildVerifierPreparationModel } from "../../dossier/40-readiness/risk-assurance";
+import { buildHonestScoreboard } from "./honest-scoreboard";
 
 export type SealState =
   | "SEAL_REQUESTED"
@@ -573,7 +575,25 @@ export async function sealReport(params: {
 
     await setState(identity.reportId, "CALCULATION_COMPLETE", { calculationRootHash: calculation.calculationRootHash });
     const evidenceFiles = await loadEvidenceFiles(caseData);
-    const { artifacts, manifestBytes, signature, packageResult } = await CommercialReportPipelineV2.executeSealingPipeline({
+    const productTierLabel =
+      chapterEval.blockingGaps.length === 0
+        ? tier === "EXCLUSIVE"
+          ? "Exclusive Dossier"
+          : tier === "ENTERPRISE"
+            ? "Enterprise Dossier"
+            : tier === "PREMIUM"
+              ? "Premium Dossier"
+              : "CBAMValid Pack"
+        : `CBAMValid Pack (${chapterEval.blockingGaps.length} premium chapter gap(s))`;
+    const scoreboard = buildHonestScoreboard({
+      caseData,
+      dossierScores: dossierModel.scores,
+      sufficiency: runEvidenceSufficiency(caseData, assessmentContext.assessmentTimestamp),
+      packageIntegrity: "PASS",
+      premiumChapterContract: chapterEval.blockingGaps.length === 0 ? "COMPLETE" : "GAP",
+      productTierLabel,
+    });
+    const { artifacts, manifestBytes, signature, packageResult, scoreboard: sealedScoreboard } = await CommercialReportPipelineV2.executeSealingPipeline({
       caseData,
       calculation,
       controls,
@@ -585,14 +605,7 @@ export async function sealReport(params: {
       productCode: entitlement.productCode,
       releaseContractVersion: isV5 ? 5 : 4,
       calcGraph: dossierModel.calcGraph,
-      honestScoreboard: {
-        operatorReadiness: dossierModel.scores.operatorReadiness,
-        verifierReservedCount: dossierModel.scores.verifierReservedCount,
-        verifierReservedTotal: dossierModel.scores.verifierReservedTotal,
-        dossierCompleteness: dossierModel.scores.dossierCompleteness,
-        status: dossierModel.scores.status,
-        formula: dossierModel.scores.formula,
-      },
+      honestScoreboard: scoreboard,
       versionStamp: {
         product: dossierModel.versions.product,
         schema: dossierModel.versions.schema,
@@ -708,6 +721,7 @@ export async function sealReport(params: {
         publicVerificationState: "ACTIVE",
         isCurrentRelease: true,
         packageMetadata,
+        scoreboard: sealedScoreboard ?? scoreboard,
       });
     } else {
       Object.assign(reportRecord, {

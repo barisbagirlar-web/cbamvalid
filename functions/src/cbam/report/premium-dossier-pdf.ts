@@ -370,25 +370,37 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   doc.setFontSize(10.5);
   doc.text(isReady ? "OPERATOR_PREPARATION_COMPLETE" : "REMEDIATION REQUIRED", MARGIN + 5, 92);
 
-  // Score Box on Cover — three honest figures when present (WP-08); never a lone vanity number
+  // Score Box on Cover — four independent honest indicators (FAZ 7).
+  // Never a single overall 100/100; verifier-reserved work is never added to
+  // the operator score, and "all checks passed" is forbidden while pending.
+  const sb = model.honestScoreboard;
   doc.setFillColor(34, 50, 75);
-  doc.roundedRect(MARGIN + 93, 76, 42, 24, 1.5, 1.5, "F");
+  doc.roundedRect(MARGIN + 88, 76, 47, 32, 1.5, 1.5, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.5);
-  if (model.honestScoreboard) {
-    doc.text("OPERATOR READINESS", MARGIN + 95, 81);
+  doc.setFontSize(5.6);
+  if (sb) {
+    doc.text("OPERATOR PREPARATION", MARGIN + 91, 81);
     doc.setTextColor(201, 154, 73);
-    doc.setFontSize(11);
-    doc.text(`${model.honestScoreboard.operatorReadiness}`, MARGIN + 98, 88);
+    doc.setFontSize(8.2);
+    doc.text(`${sb.operatorPreparationScore} / 100`, MARGIN + 91, 87);
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(5.5);
-    doc.text(`Completeness ${model.honestScoreboard.dossierCompleteness}`, MARGIN + 95, 94);
-  } else {
-    doc.text("DIAGNOSTIC SCORE", MARGIN + 98, 83);
-    doc.setFontSize(12.5);
+    doc.setFontSize(5.6);
+    doc.text("EVIDENCE ASSURANCE", MARGIN + 91, 92.5);
     doc.setTextColor(201, 154, 73);
-    doc.text(`${model.readiness.score} / 100`, MARGIN + 98, 92);
+    doc.setFontSize(8.2);
+    doc.text(`${sb.evidenceAssuranceScore} / 100`, MARGIN + 91, 98.5);
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(5.6);
+    doc.text("PACKAGE INTEGRITY", MARGIN + 91, 103.5);
+    doc.setTextColor(sb.packageIntegrity === "PASS" ? 109 : 214, sb.packageIntegrity === "PASS" ? 211 : 69, sb.packageIntegrity === "PASS" ? 128 : 69);
+    doc.setFontSize(7.6);
+    doc.text(sb.packageIntegrity ?? "NOT_ASSESSED", MARGIN + 91, 108);
+  } else {
+    doc.text("DIAGNOSTIC SCORE", MARGIN + 91, 83);
+    doc.setFontSize(11);
+    doc.setTextColor(201, 154, 73);
+    doc.text(`${model.readiness.score} / 100`, MARGIN + 91, 92);
   }
 
   // Cover Page Bottom Details
@@ -410,7 +422,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   writeCoverDetail("Case ID", model.caseId);
   writeCoverDetail(
     "Product Delivery Tier",
-    model.productCode === "pack_premium_dossier_v5" ? "Premium Dossier Pack" : model.productCode
+    sb?.productTierLabel ?? (model.productCode === "pack_premium_dossier_v5" ? "Premium Dossier Pack" : model.productCode)
   );
   writeCoverDetail("Dossier Release Iteration", `Iteration ${model.releaseVersion}`);
   if (model.versionStamp) {
@@ -423,13 +435,15 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   writeCoverDetail("Operator Name", model.identity.exporterOperator);
   writeCoverDetail("Installation Name", model.identity.installation);
   writeCoverDetail("Regulatory Basis", applicableActStack().map((entry) => entry.short).join("; "));
-  if (model.honestScoreboard) {
+  if (sb) {
+    const externalCompleted = sb.externalVerifierCompleted ?? 0;
+    const externalTotal = sb.externalVerifierTotal ?? 0;
     writeCoverDetail(
-      "Verifier-reserved",
-      `${model.honestScoreboard.verifierReservedCount} of ${model.honestScoreboard.verifierReservedTotal}`
+      "External verifier completion",
+      `${externalCompleted === 0 ? "PENDING — " : ""}${externalCompleted} of ${externalTotal}`
     );
-    writeCoverDetail("Dossier completeness", String(model.honestScoreboard.dossierCompleteness));
-    writeCoverDetail("Score status", model.honestScoreboard.status);
+    writeCoverDetail("Scoreboard claim", sb.scoreboardClaim ?? "NOT_ASSESSED");
+    writeCoverDetail("Premium chapter contract", sb.premiumChapterContract ?? "NOT_ASSESSED");
   }
 
   // Secure Cryptographic Trust Stamp Card
