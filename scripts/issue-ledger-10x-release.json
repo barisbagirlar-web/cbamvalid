@@ -1,7 +1,7 @@
 ================================================================================
 CBAMValid DOSSIER 10/10 RELEASE — ISSUE LEDGER
 ================================================================================
-Updated: 2026-07-31T14:15Z (preflight exit-semantics closure pass)
+Updated: 2026-07-31T14:35Z (remote CI closure pass)
 Branch: feat/dossier-10x-release-20260731
 Commits: 2841c32 (FAZ1), 8327a77 (FAZ2), 4e81806 (FAZ3), e4b9f6f (FAZ4),
          a76802d (FAZ5), 34cd0a5 (FAZ6), 2b5f9c4 (FAZ7), 21bb9e9 (FAZ8),
@@ -9,7 +9,9 @@ Commits: 2841c32 (FAZ1), 8327a77 (FAZ2), 4e81806 (FAZ3), e4b9f6f (FAZ4),
          fc039ba (FAZ13), 67a9e21 (FAZ14), 2baa56b (FAZ15), f4fca97 (FAZ16),
          c64e7f7 (SEO fixes), c6a12dd (compliance guard fix),
          8d3d52c (byte-deterministic package), 84a42f1 (DER test key),
-         cf69c5c (explicit preflight exit semantics)
+         cf69c5c (preflight exit semantics), 78508b6 (IL-40 ledger),
+         156b2e2 (final report), 1a7dd00 (A-H test alignment),
+         8280cc4 (test:e2e:critical script), e940231 (webkit in CI)
 ================================================================================
 
 ID    | Phase | File/Route                  | Issue                        | Root Cause                        | Sev   | Status
@@ -93,6 +95,15 @@ IL-40 | FAZ0  | verify-teb232-alu-v5-       | Release-mode preflight exit  | Scr
      |       | semantics.ts (new)          | diagnostic expected-block    | exit as 0. Diagnostic expected-    |       |  NOT_READY; EXPECT_BLOCKED=1
      |       |                             | mode did not exist           | block mode did not exist           |       |  requires exact blocker-ID
      |       |                             |                              |                                   |       |  match; 10 regression tests)
+IL-41 | FAZ14 | tests/engine/dimensional-    | GitHub regression workflow   | Test asserted pre-FAZ4 semantics   | MED   | CLOSED
+     |       | safety.test.ts               | failed (1 test) while local  | (totalEmbedded = direct+indirect)  |       | (asserts G/H segregation:
+     |       |                             | ci:gate was green            | but engine (lib+server SSOT) maps  |       |  totalEmbeddedEmissions=G,
+     |       |                             |                              | totalEmbeddedEmissions to the      |       |  H asserted explicitly;
+     |       |                             |                              | certificate-relevant priced total  |       |  pre-existing on main)
+IL-42 | CI    | package.json + regression.yml| Regression Guard E2E step   | workflow called npm run test:e2e:  | HIGH  | CLOSED
+     |       |                             | failed ("Missing script")    | critical which never existed in    |       | (added test:e2e:critical
+     |       |                             | then webkit browser missing  | package.json; webkit project was   |       |  script + chromium webkit
+     |       |                             |                              | not installed by the workflow      |       |  install; pre-existing on main)
 ================================================================================
-CLOSED: 37 | OPEN: 1 (IL-02, owner browser + complete case data) | BLOCKED: 1 (IL-31, external human review) | IN PROGRESS: 0
+CLOSED: 39 | OPEN: 1 (IL-02, owner browser + complete case data) | BLOCKED: 1 (IL-31, external human review) | IN PROGRESS: 0
 ================================================================================
