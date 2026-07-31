@@ -1,13 +1,14 @@
 ================================================================================
 CBAMValid DOSSIER 10/10 RELEASE — ISSUE LEDGER
 ================================================================================
-Updated: 2026-07-31T12:00Z (final closure pass)
+Updated: 2026-07-31T14:00Z (determinism closure pass)
 Branch: feat/dossier-10x-release-20260731
 Commits: 2841c32 (FAZ1), 8327a77 (FAZ2), 4e81806 (FAZ3), e4b9f6f (FAZ4),
          a76802d (FAZ5), 34cd0a5 (FAZ6), 2b5f9c4 (FAZ7), 21bb9e9 (FAZ8),
          fe08bc1 (FAZ9), 3f9e2c1 (FAZ10), fc2a03d (FAZ11), 0c8fb55 (FAZ12),
          fc039ba (FAZ13), 67a9e21 (FAZ14), 2baa56b (FAZ15), f4fca97 (FAZ16),
-         c64e7f7 (SEO fixes), c6a12dd (compliance guard fix)
+         c64e7f7 (SEO fixes), c6a12dd (compliance guard fix),
+         8d3d52c (byte-deterministic package), 84a42f1 (DER test key)
 ================================================================================
 
 ID    | Phase | File/Route                  | Issue                        | Root Cause                        | Sev   | Status
@@ -82,6 +83,10 @@ IL-37 | SEO   | lib/seo/registry.ts          | /cbam-methodology orphan +   | Re
 IL-38 | FAZ16 | guard-premium-dossier-       | Compliance scan flagged      | Blanket substring ban hit         | MED   | CLOSED
      |       | release.mjs + compliance     | required disclaimers and     | canonical positioning +           |       | (affirmative-claim patterns;
      |       | guard.test.ts                | canonical positioning        | fail-closed disclaimers           |       |  positive/negative controls)
+IL-39 | FAZ10 | verifier-package-builder.ts | dossier.zip not byte-        | createSignature used a fresh      | MED   | CLOSED
+     |       | + xlsx-builder.ts + tests/   | deterministic across runs    | RSA key per call + JSZip folder   |       | (fixed DER test key;
+     |       | reports/* + kms-test-signer | (signature bytes + ZIP tail  | entries got live timestamps       |       |  pinned folder dates;
+     |       |                             |  changed every build)        |                                   |       |  byte-determinism regression)
 ================================================================================
-CLOSED: 35 | OPEN: 1 (IL-02, owner browser + complete case data) | BLOCKED: 1 (IL-31, external human review) | IN PROGRESS: 0
+CLOSED: 36 | OPEN: 1 (IL-02, owner browser + complete case data) | BLOCKED: 1 (IL-31, external human review) | IN PROGRESS: 0
 ================================================================================
