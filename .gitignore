@@ -42,6 +42,7 @@ test_sips.png
 test-raster.ts
 CBAMValid_English_A_to_Z_Walkthrough.mp4.png
 create-admin-routes.sh
+artifacts/render-qa/
 
 # Local SEO lab CWV scratch (baseline lives in docs/seo/)
 .seo-cwv/

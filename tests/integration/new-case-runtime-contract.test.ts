@@ -159,17 +159,21 @@ describe("new case calculation safety", () => {
     const baseResult = performDossierCalculations(base);
     expect(baseResult.totalDirectEmissions).toBe("10");
     expect(baseResult.totalIndirectEmissions).toBe("10");
-    expect(baseResult.totalEmbeddedEmissions).toBe("20");
+    // Iron & steel is an Annex II good (Regulation (EU) 2023/956 Annex II):
+    // only direct emissions are taken into account for CBAM certificates.
+    expect(baseResult.totalEmbeddedEmissions).toBe("10");
+    expect(baseResult.emissionsByCategory.G_CERTIFICATE_RELEVANT_EMBEDDED).toBe("10");
+    expect(baseResult.emissionsByCategory.H_TOTAL_INFORMATIONAL_EMBEDDED).toBe("20");
     expect(baseResult.productionVolume).toBe("100");
-    expect(baseResult.specificEmbeddedEmissions).toBe("0.2");
-    expect(baseResult.goods[0]?.allocatedEmbeddedEmissions).toBe("20");
-    expect(baseResult.goods[0]?.specificEmbeddedEmissions).toBe("0.2");
+    expect(baseResult.specificEmbeddedEmissions).toBe("0.1");
+    expect(baseResult.goods[0]?.allocatedEmbeddedEmissions).toBe("10");
+    expect(baseResult.goods[0]?.specificEmbeddedEmissions).toBe("0.1");
 
     const increased = structuredClone(base);
     increased.directEmissions.value = "20";
     const increasedResult = performDossierCalculations(increased);
-    expect(increasedResult.totalEmbeddedEmissions).toBe("30");
-    expect(increasedResult.specificEmbeddedEmissions).toBe("0.3");
+    expect(increasedResult.totalEmbeddedEmissions).toBe("20");
+    expect(increasedResult.specificEmbeddedEmissions).toBe("0.2");
     expect(Number(increasedResult.totalEmbeddedEmissions)).toBeGreaterThan(
       Number(baseResult.totalEmbeddedEmissions)
     );
@@ -178,7 +182,7 @@ describe("new case calculation safety", () => {
     );
   });
 
-  it("preserves total emissions and fails closed only for division by zero", () => {
+  it("preserves informational totals and fails closed for per-good allocation when production is zero", () => {
     const draft = blankDraft();
     draft.goods = [{
       cnCode: { ...createEmptyInput(), value: "72081000" },
@@ -191,7 +195,12 @@ describe("new case calculation safety", () => {
     draft.gridEmissionFactor = { ...createEmptyInput("tCO2e/MWh"), value: "0" };
 
     const result = performDossierCalculations(draft);
-    expect(result.totalEmbeddedEmissions).toBe("10");
+    // Zero production blocks per-good allocation (fail closed), so the
+    // certificate-relevant total cannot be derived.
+    expect(result.totalEmbeddedEmissions).toBe("NOT_CALCULATED");
+    expect(result.emissionsByCategory.G_CERTIFICATE_RELEVANT_EMBEDDED).toBe("NOT_CALCULATED");
+    // The informational (disclosed) total remains computable and honest.
+    expect(result.emissionsByCategory.H_TOTAL_INFORMATIONAL_EMBEDDED).toBe("10");
     expect(result.productionVolume).toBe("NOT_CALCULATED");
     expect(result.specificEmbeddedEmissions).toBe("NOT_CALCULATED");
     expect(result.goods).toEqual([]);
@@ -215,9 +224,13 @@ describe("default illustrative scenario", () => {
     expect(result.totalDirectEmissions).toBe("770");
     expect(result.totalIndirectEmissions).toBe("387.24");
     expect(result.totalPrecursorEmissions).toBe("168");
-    expect(result.totalEmbeddedEmissions).toBe("1157.24");
+    // Both goods are Annex II sectors, so the certificate-relevant total (G)
+    // excludes indirect; the informational total (H) includes it.
+    expect(result.totalEmbeddedEmissions).toBe("770");
+    expect(result.emissionsByCategory.G_CERTIFICATE_RELEVANT_EMBEDDED).toBe("770");
+    expect(result.emissionsByCategory.H_TOTAL_INFORMATIONAL_EMBEDDED).toBe("1157.24");
     expect(result.productionVolume).toBe("1000");
-    expect(result.specificEmbeddedEmissions).toBe("1.15724");
+    expect(result.specificEmbeddedEmissions).toBe("0.77");
     expect(result.allocationShareTotal).toBe("1");
     expect(result.allocationReconciliationDelta).toBe("0");
     expect(result.goods).toHaveLength(2);

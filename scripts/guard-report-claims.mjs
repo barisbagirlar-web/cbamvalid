@@ -16,6 +16,12 @@ function logError(file, message) {
 const forbiddenClaims = [
   "CBAM certified",
   "EU certified",
+  "pdf/a compliant",
+  "pdf/a-1",
+  "pdf/a-2",
+  "pdf/a-3",
+  "pdf/a archival",
+  "pdf/a conformance",
   "officially approved",
   "guaranteed compliant",
   "verified emissions",
@@ -56,7 +62,9 @@ function walk(dir, callback) {
         file !== '.git' &&
         file !== '.firebase' &&
         file !== 'scripts' &&
-        file !== 'tests'
+        file !== 'tests' &&
+        file !== 'build' &&
+        file !== '.next'
       ) {
         walk(fullPath, callback);
       }
@@ -74,6 +82,11 @@ walk(rootDir, (filePath) => {
 
   // Skip guard scripts themselves
   if (relPath.startsWith('scripts/')) return;
+
+  // The claims detector lives inside the legal-source registry (functions/src
+  // and lib). Its forbidden-phrase array is detection logic, not a claim, so
+  // it is excluded from the scan.
+  if (/legal-sources\.(ts|js)$/.test(relPath)) return;
 
   for (const claim of forbiddenClaims) {
     if (content.toLowerCase().includes(claim.toLowerCase())) {

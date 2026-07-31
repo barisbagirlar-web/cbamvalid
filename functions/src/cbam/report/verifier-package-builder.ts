@@ -34,10 +34,13 @@ function loadVerifyCliBytes(): Buffer {
 // V5 engines imports
 import { runEvidenceSufficiency } from "../validation/evidence-sufficiency";
 import { buildVerificationCrosswalk } from "../registry/verification-template-2025-2546";
+import { buildRegistryTemplateMapping } from "../registry/registry-template-mapping";
+import { evaluatePremiumChapterContract } from "./premium-chapter-contract";
 import { generateFindingsAndActions } from "../validation/findings-engine";
 import { assessReadiness, getReportingPeriodAssessment } from "../validation/readiness-score";
 import { buildPremiumDossierPdf } from "./premium-dossier-pdf";
 import type { PremiumDossierViewModel, PremiumDossierViewModelV2, SealAssessmentContext } from "./premium-dossier-schema";
+import type { HonestScoreboard } from "./honest-scoreboard";
 import {
   REQUIRED_TOP_LEVEL_COMPONENTS,
   REQUIRED_TOP_LEVEL_COMPONENTS_V5,
@@ -211,6 +214,8 @@ function buildPdfArtifacts(params: {
   generatedAt: string;
   model: VerifierPackageModel;
   assessmentContext?: SealAssessmentContext;
+  honestScoreboard?: HonestScoreboard;
+  publicVerificationUrl?: string | null;
 }): PackageArtifact[] {
   const { caseData, calculation, reportId, releaseVersion, generatedAt, model, assessmentContext } = params;
   const pdfFile = (path: string, title: string, subtitle: string, sections: PdfSection[]) =>
@@ -247,6 +252,7 @@ function buildPdfArtifacts(params: {
     const { findings, correctiveActions } = generateFindingsAndActions(caseData, timestamp);
     const readiness = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: timestamp });
     const periodAssessment = getReportingPeriodAssessment(caseData, timestamp);
+    const premiumContractResult = evaluatePremiumChapterContract({ caseData, calculation: params.calculation, model });
     const dossierModel: PremiumDossierViewModelV2 = {
       schemaVersion: "CBAMVALID-DOSSIER-5.0",
       productCode: "pack_premium_dossier_v5",
@@ -315,8 +321,19 @@ function buildPdfArtifacts(params: {
         kmsKeyVersion: "",
         kmsAlgorithm: "",
         signatureBase64: "",
-        publicVerificationState: "ACTIVE",
+        publicVerificationState: params.publicVerificationUrl?.trim() ? "ACTIVE" : "UNAVAILABLE",
+        publicVerificationUrl: params.publicVerificationUrl?.trim() || null,
       },
+      honestScoreboard: params.honestScoreboard,
+      monitoringPlan: model.monitoringPlan,
+      registryTemplateMapping: buildRegistryTemplateMapping(caseData).map((entry) => ({
+        ...entry,
+        evidenceIds: [...entry.evidenceIds],
+        validationErrors: [...entry.validationErrors],
+      })),
+      premiumChapters: premiumContractResult.evaluations.map((entry) => ({ ...entry })),
+      premiumNameVisible: premiumContractResult.premiumNameVisible,
+      verifierPreparation: model.verifierPreparation,
     };
 
     return [
@@ -543,6 +560,7 @@ export async function buildUnsignedVerifierArtifacts(params: {
   generatedAt: string;
   evidenceFiles: EvidenceBinary[];
   assessmentContext?: SealAssessmentContext;
+  honestScoreboard?: HonestScoreboard;
   calcGraph?: {
     rootHash: string;
     nodes: ReadonlyArray<{
@@ -557,16 +575,18 @@ export async function buildUnsignedVerifierArtifacts(params: {
       hash: string;
     }>;
   };
+  publicVerificationUrl?: string | null;
 }): Promise<PackageArtifact[]> {
   const model = buildVerifierPackageModel({
     ...params,
     productCode: params.assessmentContext?.productCode,
     releaseContractVersion: params.assessmentContext?.releaseContractVersion,
+    assessmentTimestamp: params.assessmentContext?.assessmentTimestamp ?? params.generatedAt,
   });
   const workbook = await buildVerifierWorkbook({ ...params, model });
 
   const artifacts = [
-    ...buildPdfArtifacts({ ...params, model }),
+    ...buildPdfArtifacts({ ...params, model, publicVerificationUrl: params.publicVerificationUrl }),
     ...buildCsvArtifacts({ ...params, model }),
     artifact("Calculation Trace.json", Buffer.from(canonical({ reportId: params.reportId, packageCode: params.packageCode, caseId: params.caseData.caseId, generatedAt: params.generatedAt, verifierModel: model, calculation: params.calculation }), "utf8"), "application/json"),
     ...(params.calcGraph
@@ -781,6 +801,12 @@ export async function finalizeVerifierPackage(params: {
   const date = new Date(params.generatedAt);
   zip.folder("Supporting_Evidence");
   for (const item of allArtifacts) zip.file(item.path, item.bytes, { date, createFolders: true });
+  // JSZip auto-creates folder entries with a fresh timestamp even when a fixed
+  // `date` fileOption is supplied. Pin every directory entry so the sealed ZIP
+  // is byte-deterministic for a given generatedAt.
+  for (const entry of Object.values(zip.files)) {
+    if (entry.dir) entry.date = date;
+  }
   const buffer = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE", compressionOptions: { level: 9 }, platform: "UNIX" });
 
   // ---- Patch 6: ZIP reopen and full byte verification ----

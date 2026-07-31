@@ -161,6 +161,35 @@ export const CaseStatusSchema = z.enum([
   "REVOKED",
 ]);
 
+export const VerifierReservedFieldsSchema = z.object({
+  verifierLegalName: z.string().trim().min(1).optional(),
+  verifierAddress: z.string().trim().min(1).optional(),
+  accreditationNumber: z.string().trim().min(1).optional(),
+  nationalAccreditationBody: z.string().trim().min(1).optional(),
+  accreditationCountry: z.string().trim().min(1).optional(),
+  accreditationExpiry: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  accreditationScope: z.string().trim().min(1).optional(),
+  teamLeader: z.string().trim().min(1).optional(),
+  cbamLeadAuditor: z.string().trim().min(1).optional(),
+  auditors: z.array(z.string().trim().min(1)).optional(),
+  technicalExperts: z.array(z.string().trim().min(1)).optional(),
+  independentReviewer: z.string().trim().min(1).optional(),
+  siteVisitType: z.enum(["PHYSICAL", "VIRTUAL", "WAIVED", "NOT_ASSIGNED"]).optional(),
+  siteVisitDates: z.string().trim().min(1).optional(),
+  daysOnSite: z.number().int().nonnegative().optional(),
+  virtualVisitJustification: z.string().trim().min(1).optional(),
+  waiverJustification: z.string().trim().min(1).optional(),
+  verificationObjectives: z.string().trim().min(1).optional(),
+  verificationScope: z.string().trim().min(1).optional(),
+  criteria: z.string().trim().min(1).optional(),
+  materialityLevelPerGood: z.record(z.string(), z.number().min(0).max(1)).optional(),
+  finalOpinion: z.enum(["NO_OPINION", "FAIR_PRESENTATION", "QUALIFIED", "ADVERSE", "WITHDRAWN"]).optional(),
+  signature: z.string().trim().min(1).optional(),
+  certificateReference: z.string().trim().min(1).optional(),
+});
+
+export type VerifierReservedFields = z.infer<typeof VerifierReservedFieldsSchema>;
+
 export const AuditReadyCaseSchema = z.object({
   caseId: CaseIdSchema.optional(),
   status: CaseStatusSchema.default("DRAFT"),
@@ -174,6 +203,14 @@ export const AuditReadyCaseSchema = z.object({
   exporterIdentity: z.object({
     legalName: InputDatumSchema,
     address: InputDatumSchema.nullable().optional(),
+    registrationNumber: InputDatumSchema.optional(),
+    contactPerson: InputDatumSchema.optional(),
+    contactRole: InputDatumSchema.optional(),
+    contactEmail: InputDatumSchema.optional(),
+    exporterCountry: InputDatumSchema.optional(),
+    operatorDeclaration: InputDatumSchema.optional(),
+    preparerSignOff: InputDatumSchema.optional(),
+    internalReviewerSignOff: InputDatumSchema.optional(),
   }),
   reportingPeriod: z.object({
     year: InputDatumSchema,
@@ -190,10 +227,20 @@ export const AuditReadyCaseSchema = z.object({
   })).default([]),
   installation: z.object({
     name: InputDatumSchema,
+    registryInstallationId: InputDatumSchema.optional(),
     unloCode: InputDatumSchema.nullable().optional(),
+    address: InputDatumSchema.optional(),
+    latitude: InputDatumSchema.optional(),
+    longitude: InputDatumSchema.optional(),
     country: InputDatumSchema,
     productionRoute: InputDatumSchema,
     systemBoundaries: z.string().nullable().optional(),
+    excludedProcesses: z.string().nullable().optional(),
+    functionalUnits: z.string().nullable().optional(),
+    installationDiagramEvidenceId: z.string().uuid().optional(),
+    monitoringPlanId: InputDatumSchema.optional(),
+    monitoringPlanVersion: InputDatumSchema.optional(),
+    monitoringPlanEffectiveDate: InputDatumSchema.optional(),
   }),
   directEmissions: InputDatumSchema,
   electricityConsumed: InputDatumSchema,
@@ -210,6 +257,7 @@ export const AuditReadyCaseSchema = z.object({
   calculationTrace: z.array(CalculationTraceNodeSchema).default([]),
   gapAssessment: z.array(GapRecordSchema).default([]),
   methodologyDecisions: z.array(MethodologyDecisionSchema).default([]),
+  verifierReserved: VerifierReservedFieldsSchema.optional(),
   operatorSignOffs: z
     .array(
       z.object({

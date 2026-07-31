@@ -113,6 +113,24 @@ export type DossierCalculationPreview = {
   specificEmbeddedEmissions: string;
   allocationShareTotal: string;
   allocationReconciliationDelta: string;
+  /**
+   * FAZ 4 — A–H emission segregation (mirrors the server-side engine):
+   *   A installation direct · B precursor attributable direct · C total direct
+   *   D electricity indirect · E precursor indirect · F total indirect
+   *   G certificate-relevant embedded · H total informational embedded
+   * For Annex II goods (iron & steel, aluminium, hydrogen) only direct
+   * emissions are taken into account for certificates: G excludes indirect.
+   */
+  emissionsByCategory: {
+    A_INSTALLATION_DIRECT: string;
+    B_PRECURSOR_ATTRIBUTABLE_DIRECT: string;
+    C_TOTAL_DIRECT_EMBEDDED: string;
+    D_ELECTRICITY_INDIRECT: string;
+    E_PRECURSOR_INDIRECT: string;
+    F_TOTAL_DISCLOSED_INDIRECT: string;
+    G_CERTIFICATE_RELEVANT_EMBEDDED: string;
+    H_TOTAL_INFORMATIONAL_EMBEDDED: string;
+  };
 };
 
 export function performDossierCalculations(caseData: AuditReadyCase): DossierCalculationPreview {
@@ -257,5 +275,15 @@ export function performDossierCalculations(caseData: AuditReadyCase): DossierCal
     specificEmbeddedEmissions: aggregateSpecific?.toString() ?? "NOT_CALCULATED",
     allocationShareTotal: allocationShareTotal?.toString() ?? "NOT_CALCULATED",
     allocationReconciliationDelta: allocationReconciliationDelta?.toString() ?? "NOT_CALCULATED",
+    emissionsByCategory: {
+      A_INSTALLATION_DIRECT: direct?.toString() ?? "NOT_CALCULATED",
+      B_PRECURSOR_ATTRIBUTABLE_DIRECT: precursorComplete ? precursorDirect.toString() : "NOT_CALCULATED",
+      C_TOTAL_DIRECT_EMBEDDED: totalDirect?.toString() ?? "NOT_CALCULATED",
+      D_ELECTRICITY_INDIRECT: indirect?.toString() ?? "NOT_CALCULATED",
+      E_PRECURSOR_INDIRECT: precursorComplete ? precursorIndirect.toString() : "NOT_CALCULATED",
+      F_TOTAL_DISCLOSED_INDIRECT: totalIndirect?.toString() ?? "NOT_CALCULATED",
+      G_CERTIFICATE_RELEVANT_EMBEDDED: totalPriced?.toString() ?? "NOT_CALCULATED",
+      H_TOTAL_INFORMATIONAL_EMBEDDED: totalDisclosed?.toString() ?? "NOT_CALCULATED",
+    },
   };
 }

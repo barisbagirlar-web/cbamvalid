@@ -14,7 +14,6 @@ import {
   finalizeVerifierPackage,
   type DataIntegrityManifest,
 } from "../../functions/src/cbam/report/verifier-package-builder";
-import type { KmsSignatureResult } from "../../functions/src/cbam/report/kms-signature";
 import {
   FIXTURE_GENERATED_AT,
   FIXTURE_REPORT_ID,
@@ -24,6 +23,7 @@ import {
 } from "../fixtures/verifier-grade-case";
 import { assessReadiness, getReportingPeriodAssessment } from "../../functions/src/cbam/validation/readiness-score";
 import { generateFindingsAndActions } from "../../functions/src/cbam/validation/findings-engine";
+import { createSignature } from "../fixtures/kms-test-signer";
 
 async function verifyPdfGeometry(pdfBytes: Buffer) {
   const document = await pdfjsLib.getDocument({
@@ -79,24 +79,6 @@ function topLevel(paths: string[]): string[] {
   }))].sort();
 }
 
-function createSignature(manifestBytes: Buffer): KmsSignatureResult {
-  const { privateKey, publicKey } = crypto.generateKeyPairSync("rsa", {
-    modulusLength: 2048,
-    publicKeyEncoding: { type: "spki", format: "pem" },
-    privateKeyEncoding: { type: "pkcs8", format: "pem" },
-  });
-  const manifestHash = crypto.createHash("sha256").update(manifestBytes).digest("hex");
-  const signature = crypto.sign("sha256", manifestBytes, privateKey);
-  return {
-    keyVersion: "projects/test/locations/europe-west1/keyRings/cbam/cryptoKeys/manifest/cryptoKeyVersions/1",
-    algorithm: "RSA_SIGN_PKCS1_2048_SHA256",
-    manifestHash,
-    signatureBase64: signature.toString("base64"),
-    publicKeyPem: publicKey,
-    protectionLevel: "SOFTWARE",
-  };
-}
-
 function buildTestCalcGraph(rootHash: string): {
   rootHash: string;
   nodes: ReadonlyArray<{
@@ -120,6 +102,88 @@ function buildTestCalcGraph(rootHash: string): {
     node("CBAM_CONSUMPTION_100", "Electricity Consumption", "MEASURE", "100", "MWh", [], ["IR 2025/2547"]),
   ];
   return { rootHash, nodes };
+}
+
+async function buildSampleSealedPackage() {
+  const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+  caseData.evidenceRegister[0].linkedInputs.push(
+    "exporterIdentity.legalName",
+    "exporterIdentity.address",
+    "importerIdentity.legalName",
+    "importerIdentity.eoriNumber",
+    "installation.name",
+    "installation.country",
+    "installation.productionRoute",
+    "reportingPeriod.year",
+    "reportingPeriod.quarter",
+    "goods.0.cnCode",
+    "goods.0.allocationShare",
+    "goods.1.cnCode",
+    "goods.1.allocationShare"
+  );
+  const firstEvId = caseData.evidenceRegister[0].evidenceId;
+  caseData.importerIdentity.legalName.evidenceId = firstEvId;
+  caseData.importerIdentity.eoriNumber.evidenceId = firstEvId;
+  caseData.importerIdentity.address!.evidenceId = firstEvId;
+  caseData.exporterIdentity.legalName.evidenceId = firstEvId;
+  caseData.exporterIdentity.address!.evidenceId = firstEvId;
+  caseData.installation.name.evidenceId = firstEvId;
+  caseData.installation.country.evidenceId = firstEvId;
+  caseData.installation.productionRoute.evidenceId = firstEvId;
+  caseData.reportingPeriod.year.evidenceId = firstEvId;
+  caseData.reportingPeriod.quarter.evidenceId = firstEvId;
+  caseData.goods[0]!.cnCode.evidenceId = firstEvId;
+  caseData.goods[0]!.allocationShare!.evidenceId = firstEvId;
+  caseData.goods[1]!.cnCode.evidenceId = firstEvId;
+  caseData.goods[1]!.allocationShare!.evidenceId = firstEvId;
+
+  caseData.reportingPeriod.quarter.value = "ANNUAL";
+  caseData.reportingPeriod.startDate = { value: "2026-01-01", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
+  caseData.reportingPeriod.endDate = { value: "2026-12-31", sourceType: "PRIMARY", confidenceStatus: "HIGH_VERIFIED", documentReference: "Ref", measurementMethod: "Method", responsiblePerson: "Person" };
+  caseData.evidenceRegister.forEach((e) => { e.reportingPeriod = "2026 ANNUAL"; });
+
+  const controls = runQualityControls(caseData);
+  const calculation = performDossierCalculations(caseData);
+  const calcGraph = buildTestCalcGraph(calculation.calculationRootHash);
+  const artifacts = await buildUnsignedVerifierArtifacts({
+    caseData,
+    controls,
+    calculation,
+    reportId: FIXTURE_REPORT_ID,
+    packageCode: FIXTURE_PACKAGE_CODE,
+    releaseVersion: 5,
+    generatedAt: FIXTURE_GENERATED_AT,
+    evidenceFiles: createVerifierEvidenceFiles(),
+    calcGraph,
+    assessmentContext: {
+      generatedAt: FIXTURE_GENERATED_AT,
+      assessmentTimestamp: FIXTURE_GENERATED_AT,
+      reportId: FIXTURE_REPORT_ID,
+      packageCode: FIXTURE_PACKAGE_CODE,
+      releaseVersion: 5,
+      rulesetVersion: "test",
+      productCode: "pack_premium_dossier_v5",
+      releaseContractVersion: 5,
+    },
+  });
+  const manifestResult = buildDataIntegrityManifest({
+    artifacts,
+    caseData,
+    calculation,
+    reportId: FIXTURE_REPORT_ID,
+    releaseVersion: 5,
+    generatedAt: FIXTURE_GENERATED_AT,
+    evidenceCount: 4,
+    productCode: "pack_premium_dossier_v5",
+    releaseContractVersion: 5,
+  });
+  const finalized = await finalizeVerifierPackage({
+    artifacts,
+    manifestBytes: manifestResult.bytes,
+    signature: createSignature(manifestResult.bytes),
+    generatedAt: FIXTURE_GENERATED_AT,
+  });
+  return { artifacts, manifestResult, finalized };
 }
 
 describe("premium-dossier-v5 deliverables", () => {
@@ -578,6 +642,65 @@ describe("premium-dossier-v5 deliverables", () => {
     console.log(`Verified PDF Geometry successfully. Total pages: ${pages}`);
   });
 
+  it("FAZ 8 — renders the canonical report architecture sections and data-driven visuals", async () => {
+    const outputDir = path.join(process.cwd(), "artifacts", "sample-v5");
+    const primaryPdfPath = path.join(outputDir, "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
+    expect(fs.existsSync(primaryPdfPath)).toBe(true);
+
+    const { text } = await pdfText(fs.readFileSync(primaryPdfPath));
+
+    // FAZ 8 content sections (added on top of the 30-section core)
+    expect(text).toContain("32. Monitoring Plan Conformance");
+    expect(text).toContain("33. Source Streams and Emission Sources");
+    expect(text).toContain("34. Metering and Instrumentation");
+    expect(text).toContain("35. Calculation Methodology");
+    expect(text).toContain("36. Risk Assessment");
+    expect(text).toContain("37. Materiality and Sampling Plan");
+    expect(text).toContain("38. Data Visualisation Annex");
+
+    // Data-driven visuals must be present
+    expect(text).toContain("A-H emission segregation");
+    expect(text).toContain("Per-good specific embedded emissions");
+    expect(text).toContain("Evidence coverage by material requirement");
+    expect(text).toContain("Risk heat matrix");
+    expect(text).toContain("Allocation reconciliation");
+    expect(text).toContain("INCLUDED PROCESSES");
+    expect(text).toContain("EXCLUDED PROCESSES");
+
+    // Risk registers and materiality wording from FAZ 6 modules
+    expect(text).toContain("INHERENT");
+    expect(text).toContain("DETECTION");
+    expect(text).toContain("PROVISIONAL_FOR_VERIFIER_PLANNING");
+  });
+
+  it("FAZ 9 — PDF carries outline/bookmarks, clickable TOC links, page numbers and no PDF/A claim", async () => {
+    const outputDir = path.join(process.cwd(), "artifacts", "sample-v5");
+    const primaryPdfPath = path.join(outputDir, "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
+    expect(fs.existsSync(primaryPdfPath)).toBe(true);
+
+    const pdfBytes = fs.readFileSync(primaryPdfPath);
+    const ascii = pdfBytes.toString("latin1");
+
+    // PDF outline/bookmark structure must exist
+    expect(ascii).toMatch(/\/Outlines\s+\d+\s+\d+\s+R/);
+    expect(ascii).toMatch(/\/Count\s+\d+/);
+    // Clickable internal links (annotations) must exist
+    expect(ascii).toMatch(/\/Annots\s*\[/);
+    expect(ascii).toMatch(/\/Subtype\s*\/Link/);
+    // No PDF/A conformance label may be emitted without veraPDF proof
+    expect(ascii.toLowerCase()).not.toContain("/pdfa/");
+    expect(ascii.toLowerCase()).not.toContain("pdf/a");
+
+    const { text, pages } = await pdfText(pdfBytes);
+    // Real page numbers (N of M) rendered in the running footer.
+    // Extracted glyph spacing varies with font kerning, so accept flexible gaps.
+    expect(text).toMatch(/Page\s+3\s+of\s+\d+/);
+    // report ID is carried in the running footer
+    expect(text).toMatch(new RegExp(`Report\\s+${FIXTURE_REPORT_ID}`));
+    expect(text).toContain("CONFIDENTIAL");
+    expect(pages).toBeGreaterThanOrEqual(5);
+  });
+
   // ---- Patch 9: Regression Tests ----
   it("Test A — Exact V5 contract: topLevelCount=26, no missing/extra, Calc Graph present", async () => {
     const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
@@ -838,4 +961,80 @@ describe("premium-dossier-v5 deliverables", () => {
       generatedAt: FIXTURE_GENERATED_AT,
     })).rejects.toThrow("PACKAGE_MANIFEST_SIGNATURE_HASH_MISMATCH");
   }, 30_000);
+
+  it("FAZ 10 — sealed release never renders crypto placeholders (NOT_AVAILABLE / UNAVAILABLE)", async () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    const controls = runQualityControls(caseData);
+    const calculation = performDossierCalculations(caseData);
+    const calcGraph = buildTestCalcGraph(calculation.calculationRootHash);
+
+    const publicVerificationUrl = `https://cbamvalid.com/verify/package/${FIXTURE_REPORT_ID}`;
+    const artifacts = await buildUnsignedVerifierArtifacts({
+      caseData, controls, calculation,
+      reportId: FIXTURE_REPORT_ID, packageCode: FIXTURE_PACKAGE_CODE,
+      releaseVersion: 5, generatedAt: FIXTURE_GENERATED_AT,
+      evidenceFiles: createVerifierEvidenceFiles(),
+      calcGraph,
+      publicVerificationUrl,
+      assessmentContext: {
+        generatedAt: FIXTURE_GENERATED_AT, assessmentTimestamp: FIXTURE_GENERATED_AT,
+        reportId: FIXTURE_REPORT_ID, packageCode: FIXTURE_PACKAGE_CODE,
+        releaseVersion: 5, rulesetVersion: "test",
+        productCode: "pack_premium_dossier_v5", releaseContractVersion: 5,
+      },
+    });
+
+    const manifestResult = buildDataIntegrityManifest({
+      artifacts, caseData, calculation,
+      reportId: FIXTURE_REPORT_ID, releaseVersion: 5,
+      generatedAt: FIXTURE_GENERATED_AT, evidenceCount: 4,
+      productCode: "pack_premium_dossier_v5", releaseContractVersion: 5,
+    });
+    const finalized = await finalizeVerifierPackage({
+      artifacts,
+      manifestBytes: manifestResult.bytes,
+      signature: createSignature(manifestResult.bytes),
+      generatedAt: FIXTURE_GENERATED_AT,
+    });
+
+    const forbiddenPatterns = [
+      "Package ID: NOT_AVAILABLE",
+      "KMS Key Version: NOT_AVAILABLE",
+      "Public Verification State UNAVAILABLE",
+      "Manifest Hash: NOT_AVAILABLE",
+      "Public Verification URL NOT_PUBLISHED",
+    ];
+
+    const premiumPdf = artifacts.find((item) => item.path === "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
+    expect(premiumPdf).toBeDefined();
+    const { text: premiumText } = await pdfText(premiumPdf!.bytes);
+    for (const pattern of forbiddenPatterns) {
+      expect(premiumText).not.toContain(pattern);
+    }
+    // The published verification URL is referenced once the seal is live.
+    expect(premiumText).toContain("cbamvalid.com/verify/package");
+    // Unresolved crypto values point at the manifest / release record.
+    expect(premiumText).toContain("See Data Integrity Manifest.json");
+
+    // The ZIP read-back must not contain any placeholder text either.
+    const zip = await JSZip.loadAsync(finalized.zip);
+    const manifestFromZip = JSON.parse(await zip.file("Data Integrity Manifest.json")!.async("string"));
+    const manifestJson = JSON.stringify(manifestFromZip);
+    for (const pattern of ["NOT_AVAILABLE", "UNAVAILABLE"]) {
+      expect(manifestJson).not.toContain(pattern);
+    }
+  }, 30_000);
+
+  it("is byte-deterministic across repeated sealed package builds", async () => {
+    const sha256 = (bytes: Buffer) => crypto.createHash("sha256").update(bytes).digest("hex");
+    const first = await buildSampleSealedPackage();
+    const second = await buildSampleSealedPackage();
+
+    expect(first.artifacts.length).toBe(second.artifacts.length);
+    for (let i = 0; i < first.artifacts.length; i++) {
+      expect(sha256(first.artifacts[i]!.bytes)).toBe(sha256(second.artifacts[i]!.bytes));
+    }
+    expect(sha256(first.manifestResult.bytes)).toBe(sha256(second.manifestResult.bytes));
+    expect(sha256(first.finalized.zip)).toBe(sha256(second.finalized.zip));
+  }, 60_000);
 });

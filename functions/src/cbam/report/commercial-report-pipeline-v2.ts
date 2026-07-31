@@ -8,6 +8,7 @@ import {
   type EvidenceBinary,
 } from "./verifier-package-builder";
 import type { KmsSignatureResult } from "./kms-signature";
+import type { HonestScoreboard } from "./honest-scoreboard";
 
 export class CommercialReportPipelineV2 {
   public static async executeSealingPipeline(params: {
@@ -36,14 +37,7 @@ export class CommercialReportPipelineV2 {
         hash: string;
       }>;
     };
-    honestScoreboard?: {
-      operatorReadiness: number;
-      verifierReservedCount: number;
-      verifierReservedTotal: number;
-      dossierCompleteness: number;
-      status: string;
-      formula: string;
-    };
+    honestScoreboard?: HonestScoreboard;
     versionStamp?: { product: string; schema: string; rulesetId: string; releaseIteration: number };
     publicVerificationUrl?: string | null;
   }) {
@@ -62,6 +56,8 @@ export class CommercialReportPipelineV2 {
       generatedAt: params.generatedAt,
       evidenceFiles: params.evidenceFiles,
       calcGraph: params.calcGraph,
+      honestScoreboard: params.honestScoreboard,
+      publicVerificationUrl: params.publicVerificationUrl,
       assessmentContext: {
         generatedAt: params.generatedAt,
         assessmentTimestamp: params.generatedAt,
@@ -93,6 +89,8 @@ export class CommercialReportPipelineV2 {
     const signature = await params.signManifest(manifestResult.bytes);
 
     // --- Finalize (verify manifest/artifact contract, create ZIP, verify ZIP, verify signature) ---
+    // If any integrity check fails, finalizeVerifierPackage throws and the seal aborts,
+    // so a resolved package implies manifest hashes + KMS signature + ZIP readback PASS.
     const finalPackage = await finalizeVerifierPackage({
       artifacts: unsignedArtifacts,
       manifestBytes: manifestResult.bytes,
@@ -100,11 +98,16 @@ export class CommercialReportPipelineV2 {
       generatedAt: params.generatedAt,
     });
 
+    const sealedScoreboard = params.honestScoreboard
+      ? { ...params.honestScoreboard, packageIntegrity: "PASS" as const }
+      : undefined;
+
     return {
       artifacts: unsignedArtifacts,
       manifestBytes: manifestResult.bytes,
       signature,
       packageResult: finalPackage,
+      scoreboard: sealedScoreboard,
     };
   }
 }

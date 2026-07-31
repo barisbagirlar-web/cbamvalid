@@ -4,6 +4,7 @@ import { reserveEntitlement, consumeEntitlement, releaseEntitlementReservation }
 import { AuditReadyCaseSchema, type AuditReadyCase } from "../schema";
 import { performDossierCalculations } from "../calculator";
 import { runQualityControls } from "../validation/quality-controls";
+import { runEvidenceSufficiency } from "../validation/evidence-sufficiency";
 import { assessCaseReadiness } from "../validation/readiness-assessor";
 import { getActiveRuleset } from "../registry/rulesets";
 import { assertKmsSigningConfigured, signManifestWithKms } from "./kms-signature";
@@ -25,6 +26,10 @@ import { assertSelfVerify } from "../../dossier/90-verify/selfVerify";
 import { evaluateEnterpriseChapters, type DossierTier } from "../../dossier/50-model/enterprise-chapters";
 import { buildChapterPayloadsFromDossier } from "../../dossier/50-model/chapter-payloads";
 import { assessUncertainty } from "../../dossier/40-readiness/uncertainty";
+import { buildVerifierPreparationModel } from "../../dossier/40-readiness/risk-assurance";
+import { buildVerifierPackageModel } from "./verifier-model";
+import { evaluatePremiumChapterContract } from "./premium-chapter-contract";
+import { buildHonestScoreboard } from "./honest-scoreboard";
 
 export type SealState =
   | "SEAL_REQUESTED"
@@ -482,6 +487,19 @@ export async function sealReport(params: {
     assertSealDossierPreconditions(dossierModel);
     assertSelfVerify(dossierModel);
     const tsa = bindRfc3161Timestamp({ tsrBytes: null });
+    const calculation = performDossierCalculations(caseData);
+    const verifierPreparation = buildVerifierPreparationModel({ caseData, calculation, assessmentTimestamp: lease.generatedAt });
+    const verifierPackageModel = buildVerifierPackageModel({
+      caseData,
+      calculation,
+      controls,
+      reportId: identity.reportId,
+      packageCode,
+      releaseVersion,
+      generatedAt: lease.generatedAt,
+      assessmentTimestamp: lease.generatedAt,
+    });
+    const premiumContract = evaluatePremiumChapterContract({ caseData, calculation, model: verifierPackageModel });
 
     const tier: DossierTier =
       String(entitlement.productCode || "").includes("exclusive")
@@ -512,6 +530,7 @@ export async function sealReport(params: {
           { name: "Combustion units", gas: "CO2" },
         ],
         meters,
+        verifierPreparation,
       }),
     });
     if (chapterEval.blockingGaps.length > 0) {
@@ -533,9 +552,9 @@ export async function sealReport(params: {
 
     if (isV5) {
       const { assessReadiness } = await import("../validation/readiness-score");
-      const readinessV5 = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: assessmentContext.assessmentTimestamp });
+      const readinessV5 = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: assessmentContext.assessmentTimestamp, sealMode: "PRODUCTION" });
       if (readinessV5.operatorStatus === "NOT_READY" || readinessV5.criticalBlockerCount > 0 || readinessV5.missingMaterialEvidenceCount > 0) {
-        const { runEvidenceSufficiency } = await import("../validation/evidence-sufficiency");
+        const { runEvidenceSufficiency, isEvidenceSupportedState } = await import("../validation/evidence-sufficiency");
         const { generateFindingsAndActions } = await import("../validation/findings-engine");
         const sufficiency = runEvidenceSufficiency(caseData, assessmentContext.assessmentTimestamp);
         const { findings } = generateFindingsAndActions(caseData, assessmentContext.assessmentTimestamp);
@@ -548,7 +567,7 @@ export async function sealReport(params: {
           missingMaterialEvidenceCount: readinessV5.missingMaterialEvidenceCount,
           decisionReasonCodes: readinessV5.decisionReasonCodes,
           findings: findings.filter((f) => f.status === "OPEN"),
-          sufficiency: sufficiency.filter((r) => r.state !== "SUPPORTED")
+          sufficiency: sufficiency.filter((r) => !isEvidenceSupportedState(r.state))
         };
         throw err;
       }
@@ -567,10 +586,33 @@ export async function sealReport(params: {
     if (sha256(frozenJson) !== caseDataHash) throw new Error("CASE_DATA_FREEZE_HASH_MISMATCH");
     await setState(identity.reportId, "DATA_FROZEN", { caseDataHash });
 
-    const calculation = performDossierCalculations(caseData);
     await setState(identity.reportId, "CALCULATION_COMPLETE", { calculationRootHash: calculation.calculationRootHash });
     const evidenceFiles = await loadEvidenceFiles(caseData);
-    const { artifacts, manifestBytes, signature, packageResult } = await CommercialReportPipelineV2.executeSealingPipeline({
+    const isPremiumProduct = tier === "PREMIUM";
+    const productTierLabel = isPremiumProduct
+      ? premiumContract.premiumNameVisible
+        ? "Premium Dossier"
+        : `CBAMValid Pack (${premiumContract.dataGapCount} premium chapter gap(s))`
+      : chapterEval.blockingGaps.length === 0
+        ? tier === "EXCLUSIVE"
+          ? "Exclusive Dossier"
+          : tier === "ENTERPRISE"
+            ? "Enterprise Dossier"
+            : "CBAMValid Pack"
+        : `CBAMValid Pack (${chapterEval.blockingGaps.length} premium chapter gap(s))`;
+    const premiumChapterContractState = isPremiumProduct
+      ? premiumContract.contractState
+      : chapterEval.blockingGaps.length === 0 ? "COMPLETE" : "GAP";
+    const scoreboard = buildHonestScoreboard({
+      caseData,
+      dossierScores: dossierModel.scores,
+      sufficiency: runEvidenceSufficiency(caseData, assessmentContext.assessmentTimestamp),
+      packageIntegrity: "PASS",
+      premiumChapterContract: premiumChapterContractState,
+      premiumNameVisible: isPremiumProduct ? premiumContract.premiumNameVisible : undefined,
+      productTierLabel,
+    });
+    const { artifacts, manifestBytes, signature, packageResult, scoreboard: sealedScoreboard } = await CommercialReportPipelineV2.executeSealingPipeline({
       caseData,
       calculation,
       controls,
@@ -582,14 +624,7 @@ export async function sealReport(params: {
       productCode: entitlement.productCode,
       releaseContractVersion: isV5 ? 5 : 4,
       calcGraph: dossierModel.calcGraph,
-      honestScoreboard: {
-        operatorReadiness: dossierModel.scores.operatorReadiness,
-        verifierReservedCount: dossierModel.scores.verifierReservedCount,
-        verifierReservedTotal: dossierModel.scores.verifierReservedTotal,
-        dossierCompleteness: dossierModel.scores.dossierCompleteness,
-        status: dossierModel.scores.status,
-        formula: dossierModel.scores.formula,
-      },
+      honestScoreboard: scoreboard,
       versionStamp: {
         product: dossierModel.versions.product,
         schema: dossierModel.versions.schema,
@@ -664,7 +699,7 @@ export async function sealReport(params: {
     let publicVerificationToken: string | undefined;
     if (isV5) {
       const { assessReadiness } = await import("../validation/readiness-score");
-      const readinessV5 = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: lease.generatedAt });
+      const readinessV5 = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: lease.generatedAt, sealMode: "PRODUCTION" });
       publicVerificationToken = crypto.randomBytes(32).toString("hex");
       const publicVerificationTokenHash = crypto.createHash("sha256").update(publicVerificationToken).digest("hex");
 
@@ -705,6 +740,7 @@ export async function sealReport(params: {
         publicVerificationState: "ACTIVE",
         isCurrentRelease: true,
         packageMetadata,
+        scoreboard: sealedScoreboard ?? scoreboard,
       });
     } else {
       Object.assign(reportRecord, {

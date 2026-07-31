@@ -84,6 +84,8 @@ export const FindingSchema = z.object({
 export type Finding = z.infer<typeof FindingSchema>;
 
 export const EvidenceSupportStateSchema = z.enum([
+  "SUPPORTED_BY_EVIDENCE",
+  "SUPPORTED_BY_ACCEPTED_METHODOLOGY_DECISION",
   "SUPPORTED",
   "PARTIALLY_SUPPORTED",
   "MISSING",
@@ -96,6 +98,16 @@ export const EvidenceSupportStateSchema = z.enum([
   "NOT_APPLICABLE",
 ]);
 export type EvidenceSupportState = z.infer<typeof EvidenceSupportStateSchema>;
+
+/**
+ * FAZ 5 — Evidence quality grade (A-E):
+ *   A Primary independently issued · B Primary operator-controlled
+ *   C Supplier declaration with controls · D Secondary or estimated
+ *   E Unsupported.
+ * Material requirements graded D/E block a 100/100 evidence score.
+ */
+export const EvidenceQualityGradeSchema = z.enum(["A", "B", "C", "D", "E"]);
+export type EvidenceQualityGrade = z.infer<typeof EvidenceQualityGradeSchema>;
 
 export const MaterialInputRequirementSchema = z.object({
   requirementId: z.string().min(1),
@@ -159,6 +171,13 @@ export const EvidenceSufficiencyRowSchema = z.object({
   requiredPeriodEnd: z.string().nullable().optional(),
   coveragePercent: z.string().nullable().optional(),
   coverageAssessment: EvidenceCoverageAssessmentSchema.nullable().optional(),
+  supportBasis: z
+    .enum(["SUPPORTED_BY_EVIDENCE", "SUPPORTED_BY_ACCEPTED_METHODOLOGY_DECISION"])
+    .nullable()
+    .optional(),
+  evidenceQualityGrade: EvidenceQualityGradeSchema.nullable().optional(),
+  methodologyDecisionId: z.string().nullable().optional(),
+  materialQualityGateBlocked: z.boolean().optional(),
 });
 export type EvidenceSufficiencyRow = z.infer<typeof EvidenceSufficiencyRowSchema>;
 
@@ -388,8 +407,48 @@ export const PremiumDossierViewModelV2Schema = PremiumDossierViewModelSchema.ext
       dossierCompleteness: z.number(),
       status: z.string(),
       formula: z.string(),
+      operatorPreparationScore: z.number().optional(),
+      evidenceAssuranceScore: z.number().optional(),
+      packageIntegrity: z.enum(["PASS", "FAIL", "NOT_ASSESSED"]).optional(),
+      externalVerifierCompleted: z.number().int().optional(),
+      externalVerifierTotal: z.number().int().optional(),
+      scoreboardClaim: z.string().optional(),
+      premiumChapterContract: z.enum(["COMPLETE", "GAP", "NOT_ASSESSED"]).optional(),
+      premiumNameVisible: z.boolean().optional(),
+      productTierLabel: z.string().optional(),
     })
     .optional(),
+  premiumChapters: z
+    .array(z.object({
+      chapterId: z.string(),
+      title: z.string(),
+      status: z.enum(["APPLICABLE_COMPLETE", "APPLICABLE_DATA_GAP", "NOT_APPLICABLE_WITH_LEGAL_BASIS", "VERIFIER_RESERVED"]),
+      basis: z.string(),
+    }))
+    .optional(),
+  premiumNameVisible: z.boolean().optional(),
+  monitoringPlan: z
+    .array(z.object({
+      requirementId: z.string(),
+      requirement: z.string(),
+      status: z.string(),
+      evidence: z.string(),
+    }))
+    .optional(),
+  registryTemplateMapping: z
+    .array(z.object({
+      registryFieldId: z.string(),
+      section: z.string(),
+      legalBasis: z.string(),
+      sourcePath: z.string(),
+      value: z.string(),
+      status: z.enum(["COMPLETE_OPERATOR", "PENDING_VERIFIER", "MISSING_OPERATOR", "NOT_APPLICABLE_WITH_BASIS"]),
+      owner: z.enum(["OPERATOR", "CBAMVALID_SYSTEM", "INDEPENDENT_VERIFIER"]),
+      evidenceIds: z.array(z.string()),
+      validationErrors: z.array(z.string()),
+    }))
+    .optional(),
+  verifierPreparation: z.any().optional(),
   versionStamp: z
     .object({
       product: z.string(),

@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import type { AuditReadyCase } from "../schema";
 import type { Finding, CorrectiveAction } from "../report/premium-dossier-schema";
 import { runQualityControls } from "./quality-controls";
-import { runEvidenceSufficiency } from "./evidence-sufficiency";
+import { runEvidenceSufficiency, isEvidenceSupportedState } from "./evidence-sufficiency";
 import { getReportingPeriodAssessment } from "./readiness-score";
 
 function stableHashPrefix(subject: string): string {
@@ -76,7 +76,7 @@ export function generateFindingsAndActions(caseData: AuditReadyCase, assessmentT
   // 2. Process Evidence Sufficiency Gaps
   const sufficiencies = runEvidenceSufficiency(caseData, assessmentTimestamp);
   for (const row of sufficiencies) {
-    if (row.state === "SUPPORTED") {
+    if (isEvidenceSupportedState(row.state)) {
       continue;
     }
 

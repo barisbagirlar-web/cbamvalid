@@ -4,6 +4,7 @@
  */
 import type { DossierModel } from "../00-schema/dossier-model.schema";
 import { FORBIDDEN_PLACEHOLDERS } from "../40-readiness/content-contracts";
+import type { VerifierPreparationModel } from "../40-readiness/risk-assurance";
 
 export interface CaseChapterSource {
   readonly systemBoundary?: string | null;
@@ -17,6 +18,7 @@ export interface CaseChapterSource {
   readonly goodsCount?: number;
   readonly installationCountry?: string;
   readonly sector?: string;
+  readonly verifierPreparation?: VerifierPreparationModel;
 }
 
 function recordsOrEmpty(items: readonly unknown[] | undefined): unknown[] {
@@ -120,30 +122,47 @@ export function buildChapterPayloadsFromDossier(
     records: carbon.length ? carbon : [{ id: "carbon-none" }],
   };
 
+  const preparation = source.verifierPreparation;
+  const controlMatrix = preparation?.dataFlowControlMatrix ?? [];
+  const inherent = preparation?.inherentRiskRegister ?? [];
+  const control = preparation?.controlRiskRegister ?? [];
+  const detection = preparation?.detectionRiskAssessment ?? [];
   payloads["E-10"] = {
-    dataFlowMap: source.evidenceCount
-      ? `evidenceRegister=${source.evidenceCount}; goods=${source.goodsCount || 0}`
+    dataFlowMap: controlMatrix.length > 0
+      ? `Data-flow control matrix: ${controlMatrix.length} control point(s) — ${controlMatrix.map((row) => row.controlPoint).join(", ")}`
       : "",
-    controlActivities: source.evidenceCount ? "Evidence review + QC gate + seal precondition" : "",
-    riskAssessment: source.evidenceCount ? "Material misstatement risk screened by QC + evidence sufficiency" : "",
-    records: source.evidenceCount ? [{ id: "ctrl-1" }] : [],
+    controlActivities: control.length > 0
+      ? `Control-risk register: ${control.length} domain(s) assessed (${control.filter((r) => r.combined === "HIGH").length} HIGH, ${control.filter((r) => r.combined === "MODERATE").length} MODERATE, ${control.filter((r) => r.combined === "LOW").length} LOW)`
+      : "",
+    riskAssessment: inherent.length > 0 && detection.length > 0
+      ? `Inherent risk ${inherent.filter((r) => r.combined === "HIGH").length} HIGH / ${inherent.filter((r) => r.combined === "MODERATE").length} MODERATE / ${inherent.filter((r) => r.combined === "LOW").length} LOW; residual detection risk ${detection.filter((r) => r.combined === "HIGH").length} HIGH / ${detection.filter((r) => r.combined === "MODERATE").length} MODERATE / ${detection.filter((r) => r.combined === "LOW").length} LOW`
+      : "",
+    records: inherent.length > 0 ? [{ id: "risk-1", registerCount: inherent.length }] : [],
   };
 
+  const population = preparation?.samplingPopulation ?? [];
+  const selection = preparation?.sampleSelection ?? [];
   payloads["E-11"] = {
-    populationDefinition: source.goodsCount
-      ? `Goods population size=${source.goodsCount}; evidence population=${source.evidenceCount || 0}`
+    populationDefinition: population.length > 0
+      ? `Sampling population per domain: ${population.map((entry) => `${entry.populationDomain}=${entry.populationSize}`).join("; ")}`
       : "",
-    samplingPlan: source.goodsCount
-      ? "Verifier sampling plan placeholder for population defined above — operator-prepared definition only."
+    samplingPlan: selection.length > 0
+      ? `Operator-proposed sample sizes per domain: ${selection.map((entry) => `${entry.populationDomain}=${entry.sampleSize} (${entry.selectionMethod})`).join("; ")}. ${preparation?.samplingRationale ?? ""}`
       : "",
-    records: source.goodsCount ? [{ id: "sample-1" }] : [],
+    records: selection.length > 0 ? selection.map((entry) => ({ id: `sample-${entry.populationDomain}` })) : [],
   };
 
+  const workpapers = preparation?.materialityWorkpapers ?? [];
   payloads["E-12"] = {
-    materialityRate: "5",
-    misstatementEnvelope:
-      "Per-good quantitative materiality reference of 5% of specific embedded emissions for verifier planning (operator-prepared Exclusive test envelope).",
-    records: [{ id: "mat-1", ratePercent: "5" }],
+    materialityRate: workpapers.length > 0
+      ? `PROVISIONAL_FOR_VERIFIER_PLANNING — per-good planning materiality threshold = specific embedded emissions × documented planning threshold rate`
+      : "",
+    misstatementEnvelope: workpapers.length > 0
+      ? `Per-good planning materiality workpapers: ${workpapers.map((wp) => `${wp.cnCode}=${wp.threshold} tCO2e/t (${wp.planningThresholdRate}% planning rate, status ${wp.verifierStatus})`).join("; ")}. ${workpapers[0]?.expertJudgement ?? ""}`
+      : "",
+    records: workpapers.length > 0
+      ? workpapers.map((wp) => ({ id: `mat-${wp.goodIndex}`, cnCode: wp.cnCode, planningThresholdRate: wp.planningThresholdRate, verifierStatus: wp.verifierStatus }))
+      : [],
   };
 
   payloads["E-13"] = {

@@ -5,6 +5,8 @@ import type { QualityControlResult } from "../validation/quality-controls";
 import { getDefinitiveLegalSources, type LegalSourceRecord } from "../registry/legal-sources";
 import { getActiveRuleset, VERIFICATION_MATERIALITY_RATE } from "../registry/rulesets";
 import { assertSectorSealable, type CbamSector, type SectorConfig } from "../sectors/sector-adapter";
+import { buildVerifierPreparationModel, type VerifierPreparationModel } from "../../dossier/40-readiness/risk-assurance";
+import { buildRegistryTemplateMapping, type RegistryTemplateFieldMapping } from "../registry/registry-template-mapping";
 
 function cleanSmokeText(val: string): string {
   if (!val) return "";
@@ -28,6 +30,7 @@ export interface VerifierGoodRow {
   specificEmbeddedEmissions: string;
   materialityRate: string;
   materialityThresholdSpecific: string;
+  materialityVerifierStatus: string;
   traceCalculationId: string;
 }
 
@@ -110,6 +113,8 @@ export interface VerifierPackageModel {
   acceptedMethodologyDecisionCount: number;
   calculationTraceCount: number;
   calculationRootHash: string;
+  verifierPreparation: VerifierPreparationModel | null;
+  registryTemplateMapping: readonly RegistryTemplateFieldMapping[];
 }
 
 function decimal(value: string, field: string): Decimal {
@@ -171,7 +176,7 @@ function evidenceSummary(caseData: AuditReadyCase): EvidenceCoverageSummary {
   };
 }
 
-function goodRow(good: GoodCalculationResult): VerifierGoodRow {
+function goodRow(good: GoodCalculationResult, verifierApprovedShares: Readonly<Record<string, number>>): VerifierGoodRow {
   const specific = decimal(good.specificEmbeddedEmissions, `goods.${good.goodIndex}.specificEmbeddedEmissions`);
   const threshold = specific.times(VERIFICATION_MATERIALITY_RATE).toDecimalPlaces(6, Decimal.ROUND_HALF_UP);
   return {
@@ -185,6 +190,10 @@ function goodRow(good: GoodCalculationResult): VerifierGoodRow {
     specificEmbeddedEmissions: good.specificEmbeddedEmissions,
     materialityRate: new Decimal(VERIFICATION_MATERIALITY_RATE).times(100).toString(),
     materialityThresholdSpecific: threshold.toString(),
+    materialityVerifierStatus:
+      verifierApprovedShares[String(good.goodIndex)] !== undefined
+        ? "VERIFIER_APPROVED"
+        : "PROVISIONAL_FOR_VERIFIER_PLANNING",
     traceCalculationId: good.traceCalculationId,
   };
 }
@@ -203,7 +212,7 @@ function monitoringPlan(caseData: AuditReadyCase, calculation: DossierCalculatio
     ["MP-08", "Goods allocation method and reconciliation", decimal(calculation.allocationReconciliationDelta, "allocationReconciliationDelta").lte("0.000001"), `Allocation delta ${calculation.allocationReconciliationDelta}`],
     ["MP-09", "Precursor scope and embedded emissions treatment", caseData.precursors.length > 0 || acceptedMethodology.some((item) => item.topic === "PRECURSOR_SCOPE"), caseData.precursors.length > 0 ? `${caseData.precursors.length} precursor(s)` : "Accepted no-precursor decision"],
     ["MP-10", "Methodology deviations, estimates and technical justifications", acceptedMethodology.length === caseData.methodologyDecisions.length, `${acceptedMethodology.length}/${caseData.methodologyDecisions.length} methodology decision(s) accepted`],
-    ["MP-11", "Per-good materiality assessment", calculation.goods.length > 0, `${VERIFICATION_MATERIALITY_RATE * 100}% per-good specific-emissions threshold`],
+    ["MP-11", "Per-good materiality assessment", calculation.goods.length > 0, `${VERIFICATION_MATERIALITY_RATE * 100}% per-good specific-emissions threshold (PROVISIONAL_FOR_VERIFIER_PLANNING)`],
     ["MP-12", "Evidence integrity and immutable calculation provenance", approvedEvidence.length > 0 && /^[a-f0-9]{64}$/i.test(calculation.calculationRootHash), `Calculation root ${calculation.calculationRootHash}`],
   ];
 
@@ -228,6 +237,7 @@ export function buildVerifierPackageModel(params: {
   packageCode: string;
   releaseVersion: number;
   generatedAt: string;
+  assessmentTimestamp?: string;
   productCode?: string;
   releaseContractVersion?: 5;
 }): VerifierPackageModel {
@@ -241,6 +251,12 @@ export function buildVerifierPackageModel(params: {
     summary.blockers === 0 && planGaps === 0
       ? "READY_FOR_INDEPENDENT_VERIFICATION"
       : "BLOCKED_BEFORE_INDEPENDENT_VERIFICATION";
+  const verifierPreparation = buildVerifierPreparationModel({
+    caseData: params.caseData,
+    calculation: params.calculation,
+    assessmentTimestamp: params.assessmentTimestamp ?? params.generatedAt,
+  });
+  const registryTemplateMapping = buildRegistryTemplateMapping(params.caseData);
 
   return {
     reportId: params.reportId,
@@ -286,7 +302,9 @@ export function buildVerifierPackageModel(params: {
       allocationReconciliationDelta: params.calculation.allocationReconciliationDelta,
       eligibleCertificateReduction: params.calculation.eligibleCertificateReduction,
     },
-    goods: params.calculation.goods.map(goodRow),
+    goods: params.calculation.goods.map((good) =>
+      goodRow(good, params.caseData.verifierReserved?.materialityLevelPerGood ?? {})
+    ),
     qualitySummary: summary,
     qualityControls: params.controls,
     evidenceSummary: evidenceSummary(params.caseData),
@@ -297,5 +315,7 @@ export function buildVerifierPackageModel(params: {
     acceptedMethodologyDecisionCount: params.caseData.methodologyDecisions.filter((item) => item.reviewStatus === "ACCEPTED").length,
     calculationTraceCount: params.calculation.trace.length,
     calculationRootHash: params.calculation.calculationRootHash,
+    verifierPreparation,
+    registryTemplateMapping,
   };
 }

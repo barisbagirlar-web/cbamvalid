@@ -7,20 +7,45 @@ console.log("=== STARTING PREMIUM DOSSIER RELEASE GUARD ===");
 function runCommand(command) {
   console.log(`Running: ${command}`);
   try {
-    const output = execSync(command, { stdio: "inherit" });
+    execSync(command, { stdio: "inherit" });
     return true;
-  } catch (error) {
+  } catch {
     console.error(`Command failed: ${command}`);
     return false;
   }
 }
 
 // 1. Compliance Claim check
+// Prohibits *affirmative* claims of performing accredited verification or EU
+// compliance. The bare phrase "accredited verification" is the canonical
+// positioning ("Prepared for Independent Accredited Verification") and appears
+// in the mandatory fail-closed disclaimers ("Not an accredited verification
+// opinion"), so the scan targets affirmative capability claims only.
 const PROHIBITED_CLAIMS = [
-  "eu certified",
-  "accredited verification",
+  // Affirmative accredited-verification capability claims.
+  "provides accredited verification",
+  "provide accredited verification",
+  "performs accredited verification",
+  "perform accredited verification",
+  "offers accredited verification",
+  "offer accredited verification",
+  "we are an accredited verifier",
+  "we're an accredited verifier",
+  "our accredited verification",
+  "accredited verification service",
+  "accredited verification provider",
+  // Affirmative EU-compliance claims.
+  "we are eu certified",
+  "we're eu certified",
+  "eu certified company",
+  "eu certified software",
+  "eu certified service",
+  "eu certified platform",
+  "eu certified product",
+  "eu certified tool",
+  "eu certified solution",
   "official eu submission",
-  "guaranteed compliance"
+  "guaranteed compliance",
 ];
 
 function getAllFiles(dirPath, arrayOfFiles = []) {
