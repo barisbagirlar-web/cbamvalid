@@ -3,6 +3,7 @@ import type { AuditReadyCase } from "../schema";
 import type { DossierCalculationResult } from "../calculator";
 import type { QualityControlResult } from "../validation/quality-controls";
 import { buildVerifierPackageModel, type VerifierPackageModel } from "./verifier-model";
+import type { VerifierPreparationModel } from "../../dossier/40-readiness/risk-assurance";
 
 export type WorkbookCellValue = string | number | boolean | null | undefined;
 
@@ -96,7 +97,7 @@ function buildSheets(params: {
         [c("Document classification", 4), c(model.documentClassification), c("Release", 4), c(releaseVersion, 8)],
         [c("Package ID", 4), c(model.packageCode), c("Generated", 4), c(generatedAt)],
         [c("Technical Report ID", 4), c(reportId), c("Case ID", 4), c(model.caseId)],
-        [c("Ruleset", 4), c(`${model.ruleset.version} · ${model.ruleset.name}`), c("Materiality rate", 4), c(`${model.ruleset.materialityRate}% per good`)],
+        [c("Ruleset", 4), c(`${model.ruleset.version} · ${model.ruleset.name}`), c("Materiality rate", 4), c(`${model.ruleset.materialityRate}% per good — PROVISIONAL_FOR_VERIFIER_PLANNING`)],
         [c("Automated readiness", 4), c(model.automatedReadiness, statusStyle(model.automatedReadiness)), c("Independent verifier status", 4), c(model.independentVerifierStatus, 6)],
         [c("Calculation root hash", 4), c(model.calculationRootHash), c("Source registry hash", 4), c(model.ruleset.sourceHash)],
         [c("Quality controls", 4), c("Calculated below"), c("Package boundary", 4), c("Sealed operator preparation")],
@@ -129,16 +130,17 @@ function buildSheets(params: {
     },
     {
       name: "GOODS",
-      widths: [9, 16, 24, 16, 12, 15, 20, 20, 17, 20, 35],
+      widths: [9, 16, 24, 16, 12, 15, 20, 20, 17, 20, 40, 35],
       freezeRows: 1,
-      autoFilter: `A1:K${Math.max(2, model.goods.length + 1)}`,
+      autoFilter: `A1:L${Math.max(2, model.goods.length + 1)}`,
       landscape: true,
       rows: [
-        header(["Index", "CN code", "Sector", "Production", "Unit", "Allocation share", "Allocated tCO2e", "Specific tCO2e/t", "Materiality %", "Materiality tCO2e/t", "Trace ID"]),
+        header(["Index", "CN code", "Sector", "Production", "Unit", "Allocation share", "Allocated tCO2e", "Specific tCO2e/t", "Materiality %", "Materiality tCO2e/t", "Materiality status", "Trace ID"]),
         ...model.goods.map((good) => [
           c(good.goodIndex, 8), c(good.cnCode), c(good.sector), c(Number(good.productionVolume), 8), c(good.productionUnit),
           c(Number(good.allocationShare), 8), c(Number(good.allocatedEmbeddedEmissions), 8), c(Number(good.specificEmbeddedEmissions), 8),
-          c(Number(good.materialityRate), 8), c(Number(good.materialityThresholdSpecific), 8), c(good.traceCalculationId),
+          c(Number(good.materialityRate), 8), c(Number(good.materialityThresholdSpecific), 8),
+          c(good.materialityVerifierStatus, good.materialityVerifierStatus === "VERIFIER_APPROVED" ? 5 : 6), c(good.traceCalculationId),
         ]),
       ],
     },
@@ -266,6 +268,7 @@ function buildSheets(params: {
         ...model.legalSources.map((item) => [c(item.id), c(item.celexId), c(item.title), c(item.eliUri, 9, item.eliUri), c(item.appliesFrom), c(item.legalStatus, 5), c(item.methodologyScope.join(" | "))]),
       ],
     },
+    ...riskMaterialitySamplingSheets(model.verifierPreparation),
     {
       name: "VERIFIER_SIGN_OFF",
       widths: [42, 70, 42, 68],
@@ -282,13 +285,92 @@ function buildSheets(params: {
         [c("Lead verifier", 4), c("", 10), c("Accreditation number", 4), c("", 10)],
         [c("Review start date", 4), c("", 10), c("Review completion date", 4), c("", 10)],
         [c("Physical / virtual site visit", 4), c("", 10), c("Site visit date", 4), c("", 10)],
-        [c("Materiality rate", 4), c(`${model.ruleset.materialityRate}% per good`), c("Reasonable assurance", 4), c("NOT_ASSESSED", 10)],
+        [c("Materiality rate", 4), c(`${model.ruleset.materialityRate}% per good (PROVISIONAL_FOR_VERIFIER_PLANNING)`), c("Reasonable assurance", 4), c("NOT_ASSESSED", 10)],
         [c("Independent opinion", 4), c("NO_OPINION", 10), c("Findings closure", 4), c("OPEN", 10)],
         [c("Verifier conclusion", 4), c("", 10), c("Verifier signature reference", 4), c("", 10)],
         [c("Boundary notice", 4), c("CBAMValid does not populate or assert verifier-controlled fields. Completion requires an independent accredited verifier.")],
       ],
     },
   ];
+}
+
+function riskStyle(level: string): number {
+  if (level === "HIGH") return 7;
+  if (level === "MODERATE") return 6;
+  if (level === "LOW") return 5;
+  return 1;
+}
+
+function riskMaterialitySamplingSheets(
+  preparation: VerifierPreparationModel | null
+): Sheet[] {
+  const registers = [
+    ...(preparation?.inherentRiskRegister ?? []),
+    ...(preparation?.controlRiskRegister ?? []),
+    ...(preparation?.detectionRiskAssessment ?? []),
+  ];
+  const riskSheet: Sheet = {
+    name: "RISK_REGISTER",
+    widths: [13, 16, 20, 58, 14, 12, 12, 56, 16],
+    freezeRows: 1,
+    autoFilter: `A1:I${Math.max(2, registers.length + 1)}`,
+    statusColumn: "I",
+    landscape: true,
+    rows: [
+      header(["Register", "Risk ID", "Data domain", "Risk description", "Likelihood", "Impact", "Combined", "Mitigating control", "State"]),
+      ...registers.map((entry) => [
+        c(entry.register), c(entry.riskId), c(entry.affectedDataDomain), c(entry.riskDescription),
+        c(entry.likelihood, riskStyle(entry.likelihood)), c(entry.impact, riskStyle(entry.impact)),
+        c(entry.combined, riskStyle(entry.combined)), c(entry.mitigatingControl), c(entry.assessmentState),
+      ]),
+      ...(registers.length === 0
+        ? [[c("NOT_ASSESSED"), c("IR-NONE"), c("ALL"), c("No risk register derived — operator data not yet assessed", 7), c("NOT_ASSESSED"), c("NOT_ASSESSED"), c("NOT_ASSESSED"), c(""), c("NOT_ASSESSED")]]
+        : []),
+    ],
+  };
+
+  const workpapers = preparation?.materialityWorkpapers ?? [];
+  const materialitySheet: Sheet = {
+    name: "MATERIALITY",
+    widths: [10, 14, 20, 18, 22, 60, 70, 80, 38],
+    freezeRows: 1,
+    autoFilter: `A1:I${Math.max(2, workpapers.length + 1)}`,
+    statusColumn: "I",
+    landscape: true,
+    rows: [
+      header(["Good", "CN code", "Specific tCO2e/t", "Planning rate %", "Threshold tCO2e/t", "Regulatory basis", "Calculation basis", "Expert judgement", "Verifier status"]),
+      ...workpapers.map((wp) => [
+        c(wp.goodIndex, 8), c(wp.cnCode), c(Number(wp.specificEmbeddedEmissions), 8), c(Number(wp.planningThresholdRate), 8), c(Number(wp.threshold), 8),
+        c(wp.regulatoryBasis), c(wp.calculationBasis), c(wp.expertJudgement),
+        c(wp.verifierStatus, wp.verifierStatus === "VERIFIER_APPROVED" ? 5 : 6),
+      ]),
+      ...(workpapers.length === 0
+        ? [[c("—"), c("—"), c("—"), c("—"), c("—"), c("Per-good materiality requires completed specific embedded emissions calculation"), c("—"), c("—"), c("NOT_ASSESSED", 10)]]
+        : []),
+    ],
+  };
+
+  const sampling = preparation?.samplingPopulation ?? [];
+  const samplingSheet: Sheet = {
+    name: "SAMPLING_PLAN",
+    widths: [22, 16, 14, 60, 30, 90],
+    freezeRows: 1,
+    autoFilter: `A1:F${Math.max(2, sampling.length + 1)}`,
+    statusColumn: "E",
+    landscape: true,
+    rows: [
+      header(["Population domain", "Population", "Sample", "Selection method", "State", "Rationale"]),
+      ...sampling.map((entry) => [
+        c(entry.populationDomain), c(entry.populationSize, 8), c(entry.sampleSize, 8),
+        c(entry.selectionMethod), c(entry.state, statusStyle(entry.state === "OPERATOR_PROPOSED" ? "PASS" : "GAP")), c(entry.rationale),
+      ]),
+      ...(sampling.length === 0
+        ? [[c("ALL"), c(0, 8), c(0, 8), c("NOT_ASSESSED"), c("NOT_ASSESSED", 10), c("Sampling plan requires declared goods and evidence population")]]
+        : []),
+    ],
+  };
+
+  return [riskSheet, materialitySheet, samplingSheet];
 }
 
 function cellXml(cell: Cell, reference: string): string {

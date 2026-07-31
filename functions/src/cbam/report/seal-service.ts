@@ -25,6 +25,7 @@ import { assertSelfVerify } from "../../dossier/90-verify/selfVerify";
 import { evaluateEnterpriseChapters, type DossierTier } from "../../dossier/50-model/enterprise-chapters";
 import { buildChapterPayloadsFromDossier } from "../../dossier/50-model/chapter-payloads";
 import { assessUncertainty } from "../../dossier/40-readiness/uncertainty";
+import { buildVerifierPreparationModel } from "../../dossier/40-readiness/risk-assurance";
 
 export type SealState =
   | "SEAL_REQUESTED"
@@ -482,6 +483,8 @@ export async function sealReport(params: {
     assertSealDossierPreconditions(dossierModel);
     assertSelfVerify(dossierModel);
     const tsa = bindRfc3161Timestamp({ tsrBytes: null });
+    const calculation = performDossierCalculations(caseData);
+    const verifierPreparation = buildVerifierPreparationModel({ caseData, calculation });
 
     const tier: DossierTier =
       String(entitlement.productCode || "").includes("exclusive")
@@ -512,6 +515,7 @@ export async function sealReport(params: {
           { name: "Combustion units", gas: "CO2" },
         ],
         meters,
+        verifierPreparation,
       }),
     });
     if (chapterEval.blockingGaps.length > 0) {
@@ -567,7 +571,6 @@ export async function sealReport(params: {
     if (sha256(frozenJson) !== caseDataHash) throw new Error("CASE_DATA_FREEZE_HASH_MISMATCH");
     await setState(identity.reportId, "DATA_FROZEN", { caseDataHash });
 
-    const calculation = performDossierCalculations(caseData);
     await setState(identity.reportId, "CALCULATION_COMPLETE", { calculationRootHash: calculation.calculationRootHash });
     const evidenceFiles = await loadEvidenceFiles(caseData);
     const { artifacts, manifestBytes, signature, packageResult } = await CommercialReportPipelineV2.executeSealingPipeline({
