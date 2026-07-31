@@ -16,7 +16,11 @@ import {
   parseCaseCreationMarker,
   type CaseCreationMarker,
 } from "./case-creation-idempotency";
-import { adaptLegacyCaseData } from "./legacy-case-adapter";
+import { adaptLegacyCaseData, isRecognizedLegacyCaseData } from "./legacy-case-adapter";
+import {
+  adaptPriorAuditReadyCaseData,
+  isRecognizedPriorNestedCaseData,
+} from "./prior-case-adapter";
 import { assessEvidenceQuality } from "../validation/evidence-quality";
 
 export type CbamCase = CbamCaseRecord;
@@ -38,23 +42,53 @@ function parseStoredCase(data: unknown, documentId: string): CbamCaseRecord {
   const caseId = createCanonicalCaseId(
     typeof source.caseId === "string" && source.caseId.trim() ? source.caseId : documentId
   );
+  const createdAt = typeof source.createdAt === "string" ? source.createdAt : new Date(0).toISOString();
+  const updatedAt = typeof source.updatedAt === "string" ? source.updatedAt : new Date(0).toISOString();
+
   const currentDataResult = AuditReadyCaseSchema.safeParse({
     ...(source.data as Record<string, unknown>),
     caseId,
     ownerId: uid,
   });
-  const createdAt = typeof source.createdAt === "string" ? source.createdAt : new Date(0).toISOString();
-  const updatedAt = typeof source.updatedAt === "string" ? source.updatedAt : new Date(0).toISOString();
-  const parsedData = currentDataResult.success
-    ? currentDataResult.data
-    : adaptLegacyCaseData({
+
+  let parsedData: AuditReadyCase | null;
+  if (currentDataResult.success) {
+    parsedData = currentDataResult.data;
+  } else {
+    const schemaIssuePaths = currentDataResult.error.issues
+      .map((issue) => issue.path.join("."))
+      .filter(Boolean);
+    const schemaIssueCodes = currentDataResult.error.issues.map((issue) => issue.code);
+
+    parsedData =
+      adaptPriorAuditReadyCaseData({
+        rawData: source.data,
+        caseId,
+        uid,
+        createdAt,
+        updatedAt,
+      }) ??
+      adaptLegacyCaseData({
         rawData: source.data,
         caseId,
         uid,
         createdAt,
         updatedAt,
       });
-  if (!parsedData) throw new Error("CASE_RECORD_UNSUPPORTED_SCHEMA");
+
+    if (!parsedData) {
+      // Safe compatibility diagnostic — never log PII or raw case data.
+      console.error("event=CASE_SCHEMA_COMPATIBILITY_FAILED", {
+        documentId,
+        caseId,
+        schemaIssuePaths,
+        schemaIssueCodes,
+        priorAdapterRecognized: isRecognizedPriorNestedCaseData(source.data),
+        flatLegacyAdapterRecognized: isRecognizedLegacyCaseData(source.data),
+      });
+      throw new Error("CASE_RECORD_UNSUPPORTED_SCHEMA");
+    }
+  }
 
   return {
     caseId,

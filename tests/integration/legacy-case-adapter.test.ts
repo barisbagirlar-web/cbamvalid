@@ -4,6 +4,10 @@ import {
   adaptLegacyCaseData,
   isRecognizedLegacyCaseData,
 } from "../../functions/src/cbam/storage/legacy-case-adapter";
+import {
+  adaptPriorAuditReadyCaseData,
+  isRecognizedPriorNestedCaseData,
+} from "../../functions/src/cbam/storage/prior-case-adapter";
 
 const LEGACY_CASE = {
   exporterName: "Legacy Steel Exporter Ltd.",
@@ -72,5 +76,23 @@ describe("legacy CBAM case compatibility", () => {
       createdAt: "invalid",
       updatedAt: "invalid",
     })).toBeNull();
+  });
+
+  it("never intercepts flat V1 drafts that belong to the legacy adapter", () => {
+    expect(isRecognizedPriorNestedCaseData(LEGACY_CASE)).toBe(false);
+    expect(adaptPriorAuditReadyCaseData({
+      rawData: LEGACY_CASE,
+      caseId: "case_legacySteel123",
+      uid: "legacy_user_123",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-07-16T10:00:00.000Z",
+    })).toBeNull();
+    expect(adaptLegacyCaseData({
+      rawData: LEGACY_CASE,
+      caseId: "case_legacySteel123",
+      uid: "legacy_user_123",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-07-16T10:00:00.000Z",
+    })).not.toBeNull();
   });
 });

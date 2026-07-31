@@ -22,6 +22,25 @@ import {
 
 const CreationRequestIdSchema = z.string().uuid();
 
+/**
+ * FAZ P0 hotfix — a stored record that no compatibility adapter can read must
+ * surface as an explicit failed-precondition migration error instead of a raw
+ * HTTP 500, so clients can show a resolvable message without leaking data.
+ */
+export function buildCompatibilityMigrationError(error: unknown): HttpsError {
+  if (error instanceof Error && error.message === "CASE_RECORD_UNSUPPORTED_SCHEMA") {
+    return new HttpsError(
+      "failed-precondition",
+      "CASE_RECORD_REQUIRES_COMPATIBILITY_MIGRATION"
+    );
+  }
+  throw error;
+}
+
+function translateCaseCompatibilityError(error: unknown): never {
+  throw buildCompatibilityMigrationError(error);
+}
+
 export function parseCaseData(
   data: unknown,
   uid: string,
@@ -200,7 +219,7 @@ export const saveCbamCase = createCallable(
       return { caseId: newCase.caseId, status: "success" };
     }
 
-    const existing = await getCase(caseId);
+    const existing = await getCase(caseId).catch(translateCaseCompatibilityError);
     if (!existing || existing.uid !== auth.uid) {
       throw new HttpsError("not-found", "Case not found or access denied.");
     }
@@ -222,7 +241,7 @@ export const saveCbamCase = createCallable(
 export const getCbamCase = createCallable(
   { schema: z.object({ caseId: CaseIdSchema }) },
   async ({ caseId }, { auth }) => {
-    const cbamCase = await getCase(caseId);
+    const cbamCase = await getCase(caseId).catch(translateCaseCompatibilityError);
     if (!cbamCase || cbamCase.uid !== auth.uid) {
       throw new HttpsError("not-found", "Case not found or access denied.");
     }
@@ -319,7 +338,7 @@ export const renameCbamCase = createCallable(
     }),
   },
   async ({ caseId, newName }, { auth }) => {
-    const existing = await getCase(caseId);
+    const existing = await getCase(caseId).catch(translateCaseCompatibilityError);
     if (!existing || existing.uid !== auth.uid) {
       throw new HttpsError("not-found", "Case not found or access denied.");
     }
@@ -378,7 +397,7 @@ export const getCbamCases = createCallable({}, async (_, { auth }) => {
 export const calculateCbam = createCallable(
   { schema: z.object({ caseId: CaseIdSchema }) },
   async ({ caseId }, { auth }) => {
-    const existing = await getCase(caseId);
+    const existing = await getCase(caseId).catch(translateCaseCompatibilityError);
     if (!existing || existing.uid !== auth.uid) {
       throw new HttpsError("not-found", "Case not found or access denied.");
     }
