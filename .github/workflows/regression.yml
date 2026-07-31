@@ -46,7 +46,7 @@ jobs:
           GCLOUD_PROJECT: "cbamvalid-ci"
 
       - name: Install Playwright
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Run Critical-Flow E2E Tests
         run: npm run test:e2e:critical
