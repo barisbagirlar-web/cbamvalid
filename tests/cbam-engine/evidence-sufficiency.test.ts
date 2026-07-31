@@ -29,6 +29,8 @@ function makeEvidence(overrides: Partial<EvidenceRecord> = {}): EvidenceRecord {
     linkedCalculations: [],
     evidencePeriodStart: "2026-01-01",
     evidencePeriodEnd: "2026-12-31",
+    issuerCategory: "ACCREDITED_VERIFICATION_BODY",
+    documentAuthority: "INDEPENDENT",
     ...overrides,
   };
 }
@@ -37,7 +39,14 @@ function evidenceRecord(
   index: number,
   issuer: string,
   linkedInputs: string[],
-  documentType = "VERIFICATION_DOCUMENT"
+  documentType = "VERIFICATION_DOCUMENT",
+  structured: {
+    issuerCategory: NonNullable<EvidenceRecord["issuerCategory"]>;
+    documentAuthority: NonNullable<EvidenceRecord["documentAuthority"]>;
+  } = {
+    issuerCategory: "GOVERNMENT_AUTHORITY",
+    documentAuthority: "INDEPENDENT",
+  }
 ): EvidenceRecord {
   const evidenceId = `cccccccc-${String(index).padStart(4, "0")}-4ccc-8ccc-${String(index).padStart(12, "0")}`;
   return {
@@ -61,6 +70,8 @@ function evidenceRecord(
     linkedCalculations: [],
     evidencePeriodStart: "2026-01-01",
     evidencePeriodEnd: "2026-12-31",
+    issuerCategory: structured.issuerCategory,
+    documentAuthority: structured.documentAuthority,
   };
 }
 
@@ -88,6 +99,10 @@ function buildFullySupportedCase(): AuditReadyCase {
     ...record,
     evidencePeriodStart: "2026-01-01",
     evidencePeriodEnd: "2026-12-31",
+    // Structured quality metadata: grades derive from structured fields, so a
+    // fully supported case must ship them (legacy records would stay PENDING).
+    issuerCategory: record.issuerCategory ?? "GOVERNMENT_AUTHORITY",
+    documentAuthority: record.documentAuthority ?? "OFFICIAL",
   }));
   return {
     ...stripDatumEvidenceIds(base),
@@ -124,25 +139,78 @@ function buildFullySupportedCase(): AuditReadyCase {
 }
 
 describe("FAZ 5 — Evidence quality grade", () => {
-  it("grades primary independently issued evidence A", () => {
-    expect(gradeEvidenceRecord(makeEvidence({ issuer: "Accredited Calibration Laboratory" }))).toBe("A");
+  it("grades official authority documents A regardless of issuer wording", () => {
+    expect(
+      gradeEvidenceRecord(
+        makeEvidence({
+          issuer: "Accredited Calibration Laboratory",
+          issuerCategory: "ACCREDITED_LAB",
+          documentAuthority: "INDEPENDENT",
+        })
+      )
+    ).toBe("A");
+    // Identical structured metadata, unrelated free-text issuer — grade stays A.
+    expect(
+      gradeEvidenceRecord(
+        makeEvidence({
+          issuer: "Totally unrelated marketing name",
+          issuerCategory: "ACCREDITED_LAB",
+          documentAuthority: "INDEPENDENT",
+        })
+      )
+    ).toBe("A");
   });
 
   it("grades operator-controlled primary evidence B", () => {
-    expect(gradeEvidenceRecord(makeEvidence({ issuer: "Plant Operations Team" }))).toBe("B");
+    expect(
+      gradeEvidenceRecord(
+        makeEvidence({
+          issuer: "Plant Operations Team",
+          issuerCategory: "OPERATOR_CONTROLLED",
+          documentAuthority: "OPERATOR",
+        })
+      )
+    ).toBe("B");
   });
 
   it("grades supplier declaration with controls C", () => {
-    expect(gradeEvidenceRecord(makeEvidence({ issuer: "Raw Material Supplier" }))).toBe("C");
+    expect(
+      gradeEvidenceRecord(
+        makeEvidence({
+          issuer: "Raw Material Supplier",
+          issuerCategory: "SUPPLIER",
+          documentAuthority: "SUPPLIER",
+        })
+      )
+    ).toBe("C");
   });
 
   it("grades secondary or estimated evidence D", () => {
-    expect(gradeEvidenceRecord(makeEvidence({ issuer: "Internal Engineering Dept", documentType: "ESTIMATION_NOTE" }))).toBe("D");
+    expect(
+      gradeEvidenceRecord(
+        makeEvidence({
+          issuer: "Internal Engineering Dept",
+          documentType: "ESTIMATION_NOTE",
+          issuerCategory: "SECONDARY_SOURCE",
+          documentAuthority: "SECONDARY",
+        })
+      )
+    ).toBe("D");
   });
 
   it("grades unsupported or unapproved evidence E", () => {
     expect(gradeEvidenceRecord(makeEvidence({ supportStatus: "UNSUPPORTED" }))).toBe("E");
     expect(gradeEvidenceRecord(makeEvidence({ reviewStatus: "PENDING" }))).toBe("E");
+  });
+
+  it("never auto-grades a legacy record without structured metadata", () => {
+    // Even a flattering issuer name must not upgrade a legacy record that
+    // lacks structured quality metadata — it needs re-review.
+    expect(
+      gradeEvidenceRecord(
+        makeEvidence({ issuer: "Accredited Calibration Laboratory", issuerCategory: null, documentAuthority: null })
+      )
+    ).toBe("PENDING");
   });
 });
 
@@ -195,7 +263,13 @@ describe("FAZ 5 — Supported states", () => {
       ...base,
       evidenceRegister: base.evidenceRegister.map((record) =>
         record.linkedInputs.includes("directEmissions")
-          ? { ...record, issuer: "Internal Engineering Dept", documentType: "ESTIMATION_NOTE" }
+          ? {
+              ...record,
+              issuer: "Internal Engineering Dept",
+              documentType: "ESTIMATION_NOTE",
+              issuerCategory: "SECONDARY_SOURCE",
+              documentAuthority: "SECONDARY",
+            }
           : record
       ),
     };

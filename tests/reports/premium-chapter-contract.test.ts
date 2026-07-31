@@ -177,6 +177,9 @@ describe("FAZ 13 — premium tier chapter contract", () => {
           internalReviewer: "Internal reviewer",
           reviewStatus: "ACCEPTED",
           rulesetVersion: "CBAM-RULESET-2025-1",
+          approverName: "Internal reviewer",
+          approverRole: "INTERNAL_REVIEWER",
+          approvedAt: "2026-03-01T10:00:00.000Z",
         },
       ],
     });

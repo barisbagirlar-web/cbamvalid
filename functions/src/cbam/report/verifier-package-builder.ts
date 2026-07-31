@@ -585,10 +585,16 @@ export async function buildUnsignedVerifierArtifacts(params: {
   });
   const workbook = await buildVerifierWorkbook({ ...params, model });
 
+  const readinessSnapshot = assessReadiness({
+    caseData: params.caseData,
+    isDraft: false,
+    assessmentTimestamp: params.assessmentContext?.assessmentTimestamp ?? params.generatedAt,
+  });
+
   const artifacts = [
     ...buildPdfArtifacts({ ...params, model, publicVerificationUrl: params.publicVerificationUrl }),
     ...buildCsvArtifacts({ ...params, model }),
-    artifact("Calculation Trace.json", Buffer.from(canonical({ reportId: params.reportId, packageCode: params.packageCode, caseId: params.caseData.caseId, generatedAt: params.generatedAt, verifierModel: model, calculation: params.calculation }), "utf8"), "application/json"),
+    artifact("Calculation Trace.json", Buffer.from(canonical({ reportId: params.reportId, packageCode: params.packageCode, caseId: params.caseData.caseId, generatedAt: params.generatedAt, verifierModel: model, calculation: params.calculation, readiness: { operatorStatus: readinessSnapshot.operatorStatus, recommendedDecision: readinessSnapshot.recommendedDecision, score: readinessSnapshot.score, assessedCoveragePercent: readinessSnapshot.assessedCoveragePercent, criticalBlockerCount: readinessSnapshot.criticalBlockerCount, missingMaterialEvidenceCount: readinessSnapshot.missingMaterialEvidenceCount, openFindingCount: readinessSnapshot.openFindingCount } }), "utf8"), "application/json"),
     ...(params.calcGraph
       ? [
           artifact(

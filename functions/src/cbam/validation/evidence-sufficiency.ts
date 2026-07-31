@@ -1,6 +1,7 @@
 import type { AuditReadyCase, EvidenceRecord } from "../schema";
 import type { EvidenceSufficiencyRow, EvidenceCoverageAssessment, EvidenceQualityGrade } from "../report/premium-dossier-schema";
 import { deriveMaterialRequirements } from "./material-input-registry";
+import { gradeEvidenceRecord as gradeEvidenceRecordStructured } from "./evidence-quality";
 import {
   type EvidenceClass,
   requirementClassForPath,
@@ -18,42 +19,18 @@ export function isEvidenceSupportedState(state: EvidenceSufficiencyRow["state"])
   return state === "SUPPORTED_BY_EVIDENCE" || state === "SUPPORTED_BY_ACCEPTED_METHODOLOGY_DECISION" || state === "SUPPORTED";
 }
 
-const INDEPENDENT_ISSUER_MARKERS = [
-  "accredited",
-  "laborator",
-  "authority",
-  "inspectorate",
-  "notary",
-  "certification body",
-  "verification body",
-  "utility",
-  "grid operator",
-  "chamber",
-  "registry",
-  "independent",
-];
-const SUPPLIER_MARKER = "supplier";
-const OPERATOR_MARKERS = ["operator", "plant", "site", "internal", "self"];
-
 /**
- * FAZ 5 — Evidence quality grade (A-E) derived deterministically from the
- * evidence record issuer and document type. A = primary independently issued,
- * B = primary operator-controlled, C = supplier declaration with controls,
- * D = secondary or estimated, E = unsupported.
+ * FAZ P0 — Evidence quality grade derived ONLY from structured metadata
+ * (issuerCategory, documentAuthority, officialReference, accreditationReference
+ * and server review state). The free-text issuer string is never scanned, so
+ * wording an issuer name cannot change the grade. Legacy records without
+ * structured metadata are graded D/PENDING and never auto-graded A/B.
  */
 export function gradeEvidenceRecord(record: EvidenceRecord): EvidenceQualityGrade {
-  const issuer = record.issuer.toLowerCase();
-  const docType = record.documentType.toLowerCase();
-  if (record.supportStatus === "UNSUPPORTED" || record.supportStatus === "PENDING") return "E";
-  if (record.reviewStatus !== "APPROVED") return "E";
-  if (docType.includes("estimate") || docType.includes("estimation") || docType.includes("assumption")) return "D";
-  if (INDEPENDENT_ISSUER_MARKERS.some((marker) => issuer.includes(marker))) return "A";
-  if (SUPPLIER_MARKER.split(" ").some((marker) => issuer.includes(marker))) return "C";
-  if (OPERATOR_MARKERS.some((marker) => issuer.includes(marker))) return "B";
-  return "D";
+  return gradeEvidenceRecordStructured(record);
 }
 
-const QUALITY_GRADE_RANK: Record<EvidenceQualityGrade, number> = { A: 5, B: 4, C: 3, D: 2, E: 1 };
+const QUALITY_GRADE_RANK: Record<EvidenceQualityGrade, number> = { A: 5, B: 4, C: 3, D: 2, E: 1, PENDING: 0 };
 
 function bestQualityGrade(grades: EvidenceQualityGrade[]): EvidenceQualityGrade {
   if (grades.length === 0) return "E";
@@ -474,10 +451,11 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
     const isSupported = isEvidenceSupportedState(worstState);
 
     const qualityGrade = bestQualityGrade(validGrades);
-    // Material inputs grounded only in D/E quality evidence cannot reach a
-    // 100/100 evidence score — downgrade the row so the gate fails closed.
+    // Material inputs grounded only in D/E/PENDING quality evidence cannot
+    // reach a 100/100 evidence score — downgrade the row so the gate fails
+    // closed (PENDING covers legacy records awaiting structured reassessment).
     const materialQualityGateBlocked =
-      isMaterial && isSupported && (qualityGrade === "D" || qualityGrade === "E");
+      isMaterial && isSupported && (qualityGrade === "D" || qualityGrade === "E" || qualityGrade === "PENDING");
     if (materialQualityGateBlocked) {
       worstState = "PARTIALLY_SUPPORTED";
       allReasonCodes.add("MATERIAL_EVIDENCE_QUALITY_D_OR_E");

@@ -1,4 +1,6 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 import { jsPDF } from "jspdf";
 import type { PremiumDossierViewModelV2 } from "./premium-dossier-schema";
 import { getReportingPeriodAssessment } from "../validation/readiness-score";
@@ -58,6 +60,36 @@ function asText(value: unknown): string {
   return String(value ?? "—").trim() || "—";
 }
 
+/**
+ * Registers the LiberationSans TTF faces (shipped with pdfjs-dist) as embedded
+ * fonts so the sealed dossier PDF carries real FontFile2 font streams instead
+ * of relying on the viewer's base-14 font substitution. Deterministic: the
+ * embedded bytes are read once at module scope and reused for every seal.
+ */
+const EMBEDDED_FONT_BYTES: Record<string, string> = (() => {
+  const standardFontsDir = path.join(path.dirname(require.resolve("pdfjs-dist/package.json")), "standard_fonts");
+  const faces: Record<string, string> = {};
+  for (const [style, fileName] of [
+    ["normal", "LiberationSans-Regular.ttf"],
+    ["bold", "LiberationSans-Bold.ttf"],
+    ["italic", "LiberationSans-Italic.ttf"],
+    ["bolditalic", "LiberationSans-BoldItalic.ttf"],
+  ] as const) {
+    const bytes = fs.readFileSync(path.join(standardFontsDir, fileName));
+    faces[style] = Buffer.from(bytes).toString("base64");
+  }
+  return faces;
+})();
+
+function registerEmbeddedFonts(doc: jsPDF): void {
+  for (const [style, base64] of Object.entries(EMBEDDED_FONT_BYTES)) {
+    const vfsName = `cbam-liberation-sans-${style}.ttf`;
+    doc.addFileToVFS(vfsName, base64);
+    doc.addFont(vfsName, "LiberationSans", style);
+  }
+  doc.setFont("LiberationSans", "normal");
+}
+
 function formatEnum(val: string): string {
   if (!val || val === "—") return "—";
   return val
@@ -77,6 +109,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   });
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+  registerEmbeddedFonts(doc);
   doc.setCreationDate(new Date(model.generatedAt));
   doc.setFileId(digest(`${model.reportId}:PremiumDossier`).slice(0, 32).toUpperCase());
   doc.setProperties({
@@ -99,7 +132,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
 
   const drawParagraph = (text: string) => {
     doc.setTextColor(43, 51, 64);
-    doc.setFont("helvetica", "normal");
+    doc.setFont("LiberationSans", "normal");
     doc.setFontSize(8.5);
     const lines = doc.splitTextToSize(asText(text), CONTENT_WIDTH) as string[];
     ensure(lines.length * 4.5 + 2);
@@ -111,11 +144,11 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     const labelText = label.toUpperCase().trim();
     const valueText = asText(value);
     
-    doc.setFont("helvetica", "bold");
+    doc.setFont("LiberationSans", "bold");
     doc.setFontSize(7.5);
     const labelLines = doc.splitTextToSize(labelText, CONTENT_WIDTH - 10) as string[];
     
-    doc.setFont("helvetica", "normal");
+    doc.setFont("LiberationSans", "normal");
     doc.setFontSize(8.0);
     const valueLines = doc.splitTextToSize(valueText, CONTENT_WIDTH - 10) as string[];
 
@@ -136,13 +169,13 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     doc.rect(MARGIN, y, 2.5, totalHeight, "F");
 
     // Label Text
-    doc.setFont("helvetica", "bold");
+    doc.setFont("LiberationSans", "bold");
     doc.setFontSize(7.5);
     doc.setTextColor(20, 42, 74);
     doc.text(labelLines, MARGIN + 5, y + paddingY + 3);
 
     // Value Text
-    doc.setFont("helvetica", "normal");
+    doc.setFont("LiberationSans", "normal");
     doc.setFontSize(8.0);
     doc.setTextColor(43, 51, 64);
     doc.text(valueLines, MARGIN + 5, y + paddingY + labelHeight + 3);
@@ -153,7 +186,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   // FAZ 9: controlled wrapping — unbroken UUID / requirement-ID tokens are
   // broken at hyphen boundaries (and only then) so they never overflow cells.
   const breakLongTokens = (value: string, maxWidth: number): string => {
-    doc.setFont("helvetica", "normal");
+    doc.setFont("LiberationSans", "normal");
     doc.setFontSize(6.8);
     const text = String(value ?? "").trim();
     if (!text) return "—";
@@ -196,7 +229,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
       ensure(headerHeight + 12);
       doc.setFillColor(12, 30, 54);
       doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("LiberationSans", "bold");
       doc.setFontSize(7.0);
       let x = MARGIN;
       headers.forEach((header, index) => {
@@ -232,7 +265,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
 
         doc.setDrawColor(215, 221, 229);
         doc.setTextColor(43, 51, 64);
-        doc.setFont("helvetica", "normal");
+        doc.setFont("LiberationSans", "normal");
         doc.setFontSize(6.8);
 
         let x = MARGIN;
@@ -264,7 +297,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   }
 
   const paragraphPreview = (text: string, width = CONTENT_WIDTH): SectionPreview => {
-    doc.setFont("helvetica", "normal");
+    doc.setFont("LiberationSans", "normal");
     doc.setFontSize(7.5);
     const lines = doc.splitTextToSize(asText(text), width);
     return { height: lines.length * 3.5 + 3 };
@@ -321,7 +354,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     doc.setFillColor(231, 237, 244);
     doc.rect(MARGIN, y, CONTENT_WIDTH, 7, "F");
     doc.setTextColor(20, 42, 74);
-    doc.setFont("helvetica", "bold");
+    doc.setFont("LiberationSans", "bold");
     doc.setFontSize(8.5);
     doc.text(`${num}. ${sectionTitle}`, MARGIN + 2, y + 4.8);
     y += 9;
@@ -335,11 +368,11 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     doc.setFillColor(201, 154, 73);
     doc.rect(MARGIN, y + 12, CONTENT_WIDTH, 1, "F");
     doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
+    doc.setFont("LiberationSans", "bold");
     doc.setFontSize(9.5);
     doc.text(chapterTitle.toUpperCase(), MARGIN + 4, y + 7.5);
     if (subtitle) {
-      doc.setFont("helvetica", "normal");
+      doc.setFont("LiberationSans", "normal");
       doc.setFontSize(7.5);
       doc.setTextColor(201, 154, 73);
       doc.text(subtitle, PAGE_WIDTH - MARGIN - 4, y + 7.5, { align: "right" });
@@ -359,7 +392,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     rows: Array<{ label: string; value: number; color?: [number, number, number]; suffix?: string }>
   ) => {
     ensure(22 + rows.length * 7);
-    doc.setFont("helvetica", "bold");
+    doc.setFont("LiberationSans", "bold");
     doc.setFontSize(7.4);
     doc.setTextColor(20, 42, 74);
     doc.text(title, MARGIN, y);
@@ -369,7 +402,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     const maxValue = Math.max(0.000001, ...rows.map((row) => Math.abs(row.value)));
     rows.forEach((row) => {
       const barWidth = (Math.abs(row.value) / maxValue) * chartWidth;
-      doc.setFont("helvetica", "normal");
+      doc.setFont("LiberationSans", "normal");
       doc.setFontSize(6.6);
       doc.setTextColor(60, 70, 85);
       doc.text(doc.splitTextToSize(row.label, 38) as string[], MARGIN, y + 3);
@@ -377,7 +410,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
       doc.setFillColor(color[0], color[1], color[2]);
       doc.rect(chartLeft, y, Math.max(barWidth, row.value === 0 ? 0.8 : 1.5), 4, "F");
       doc.setTextColor(20, 42, 74);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("LiberationSans", "bold");
       doc.text(`${row.value}${row.suffix ?? ""}`, chartLeft + barWidth + 1.5, y + 3);
       y += 7;
     });
@@ -386,17 +419,17 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
 
   const drawFlowBoxes = (steps: string[]) => {
     ensure(26 + steps.length * 11);
-    doc.setFont("helvetica", "bold");
+    doc.setFont("LiberationSans", "bold");
     doc.setFontSize(7.4);
     doc.setTextColor(20, 42, 74);
     steps.forEach((step, index) => {
       doc.setFillColor(index === 0 ? 12 : 34, index === 0 ? 30 : 50, index === 0 ? 54 : 75);
       doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 9, 1, 1, "F");
       doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("LiberationSans", "bold");
       doc.setFontSize(7.0);
       doc.text(`${index + 1}`, MARGIN + 3, y + 5.5);
-      doc.setFont("helvetica", "normal");
+      doc.setFont("LiberationSans", "normal");
       doc.text(doc.splitTextToSize(step, CONTENT_WIDTH - 14) as string[], MARGIN + 9, y + 5.5);
       if (index < steps.length - 1) {
         doc.setDrawColor(GOLD[0], GOLD[1], GOLD[2]);
@@ -415,12 +448,12 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     doc.setLineWidth(0.6);
     doc.rect(MARGIN, y, CONTENT_WIDTH / 2 - 2, 18 + included.length * 5, "S");
     doc.rect(MARGIN + CONTENT_WIDTH / 2 + 2, y, CONTENT_WIDTH / 2 - 2, 18 + Math.max(1, excluded.length) * 5, "S");
-    doc.setFont("helvetica", "bold");
+    doc.setFont("LiberationSans", "bold");
     doc.setFontSize(7.0);
     doc.setTextColor(20, 42, 74);
     doc.text("INCLUDED PROCESSES (inside boundary)", MARGIN + 2, y + 4);
     doc.text("EXCLUDED PROCESSES (outside boundary)", MARGIN + CONTENT_WIDTH / 2 + 4, y + 4);
-    doc.setFont("helvetica", "normal");
+    doc.setFont("LiberationSans", "normal");
     doc.setFontSize(6.6);
     doc.setTextColor(43, 51, 64);
     const writeList = (items: string[], left: number) => {
@@ -436,7 +469,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     ensure(30);
     const cell = 8;
     const gridLeft = MARGIN + 24;
-    doc.setFont("helvetica", "bold");
+    doc.setFont("LiberationSans", "bold");
     doc.setFontSize(7.2);
     doc.setTextColor(20, 42, 74);
     doc.text("Risk heat matrix — count of register entries by likelihood x impact", MARGIN, y);
@@ -447,7 +480,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     const countFor = (likelihood: string, impact: string) =>
       entries.filter((entry) => entry.likelihood === likelihood && entry.impact === impact).length;
     ["HIGH", "MODERATE", "LOW"].forEach((likelihood) => {
-      doc.setFont("helvetica", "bold");
+      doc.setFont("LiberationSans", "bold");
       doc.setFontSize(6.4);
       doc.setTextColor(20, 42, 74);
       doc.text(likelihood, MARGIN, y + 4);
@@ -466,7 +499,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
 
   const drawLineageChain = (labels: string[]) => {
     ensure(20 + labels.length * 8);
-    doc.setFont("helvetica", "bold");
+    doc.setFont("LiberationSans", "bold");
     doc.setFontSize(7.0);
     doc.setTextColor(20, 42, 74);
     const boxWidth = (CONTENT_WIDTH - (labels.length - 1) * 4) / labels.length;
@@ -474,7 +507,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
       doc.setFillColor(index % 2 === 0 ? 47 : 201, index % 2 === 0 ? 119 : 154, index % 2 === 0 ? 172 : 73);
       doc.rect(MARGIN + index * (boxWidth + 4), y, boxWidth, 10, "F");
       doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "normal");
+      doc.setFont("LiberationSans", "normal");
       doc.setFontSize(5.8);
       doc.text(doc.splitTextToSize(label, boxWidth - 2) as string[], MARGIN + index * (boxWidth + 4) + 1, y + 5, { align: "center" });
       if (index < labels.length - 1) {
@@ -499,7 +532,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   doc.rect(0, 115, PAGE_WIDTH, 3.5, "F");
 
   doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
+  doc.setFont("LiberationSans", "bold");
   const companyName = String(model.identity?.exporterOperator || caseData.exporterIdentity?.legalName?.value || "CBAMExporter").trim();
   if (companyName.length > 25) {
     doc.setFontSize(16);
@@ -514,7 +547,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   doc.setFontSize(14);
   doc.text("Verification Readiness & Evidence Assurance Dossier", MARGIN, 48);
   
-  doc.setFont("helvetica", "normal");
+  doc.setFont("LiberationSans", "normal");
   doc.setFontSize(9.5);
   doc.setTextColor(190, 200, 215);
   doc.text("Prepared for Independent Accredited Verifier Review", MARGIN, 58);
@@ -533,7 +566,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   doc.roundedRect(MARGIN, 76, 85, 24, 1.5, 1.5, "F");
   
   doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
+  doc.setFont("LiberationSans", "bold");
   doc.setFontSize(7.5);
   doc.text("OPERATOR READINESS STATUS", MARGIN + 5, 83);
   doc.setFontSize(10.5);
@@ -546,7 +579,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   doc.setFillColor(34, 50, 75);
   doc.roundedRect(MARGIN + 88, 76, 47, 32, 1.5, 1.5, "F");
   doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
+  doc.setFont("LiberationSans", "bold");
   doc.setFontSize(5.6);
   if (sb) {
     doc.text("OPERATOR PREPARATION", MARGIN + 91, 81);
@@ -574,14 +607,14 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
 
   // Cover Page Bottom Details
   doc.setTextColor(12, 30, 54);
-  doc.setFont("helvetica", "normal");
+  doc.setFont("LiberationSans", "normal");
   doc.setFontSize(8.5);
   let cy = 135;
   const writeCoverDetail = (label: string, val: string) => {
-    doc.setFont("helvetica", "bold");
+    doc.setFont("LiberationSans", "bold");
     doc.setTextColor(12, 30, 54);
     doc.text(`${label}:`, MARGIN, cy);
-    doc.setFont("helvetica", "normal");
+    doc.setFont("LiberationSans", "normal");
     doc.setTextColor(60, 70, 85);
     doc.text(val, MARGIN + 48, cy);
     cy += 6.0;
@@ -624,12 +657,12 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   doc.setDrawColor(201, 154, 73);
   doc.roundedRect(MARGIN, 185, CONTENT_WIDTH, 48, 1.5, 1.5, "FD");
 
-  doc.setFont("helvetica", "bold");
+  doc.setFont("LiberationSans", "bold");
   doc.setFontSize(8);
   doc.setTextColor(12, 30, 54);
   doc.text("SECURE TRUST STAMP & KMS SIGNATURE RECORD", MARGIN + 6, 191);
 
-  doc.setFont("helvetica", "normal");
+  doc.setFont("LiberationSans", "normal");
   doc.setFontSize(6.8);
   doc.setTextColor(80, 90, 105);
   doc.text(`Case Snapshot SHA-256 Hash: ${model.caseDataHash || "See Data Integrity Manifest.json"}`, MARGIN + 6, 196);
@@ -641,7 +674,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   doc.text(integrityManifestWording(componentCount), MARGIN + 6, 226);
 
   // Cover Legal Boundary statement
-  doc.setFont("helvetica", "normal");
+  doc.setFont("LiberationSans", "normal");
   doc.setFontSize(7.2);
   doc.setTextColor(120, 130, 140);
   const boundaryLines = doc.splitTextToSize(model.legalBoundary, CONTENT_WIDTH) as string[];
@@ -1456,7 +1489,7 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
   y = BODY_TOP;
   beginSection(4, "Table of Contents", 120);
 
-  doc.setFont("helvetica", "normal");
+  doc.setFont("LiberationSans", "normal");
   doc.setFontSize(7.2);
   doc.setTextColor(44, 62, 80);
 
@@ -1501,9 +1534,9 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
 
   const writeTocRow = (num: number, title: string) => {
     const page = sectionPages[num] || 3;
-    doc.setFont("helvetica", "bold");
+    doc.setFont("LiberationSans", "bold");
     doc.textWithLink(`${num}.`, MARGIN, y, { pageNumber: page });
-    doc.setFont("helvetica", "normal");
+    doc.setFont("LiberationSans", "normal");
     doc.textWithLink(title, MARGIN + 8, y, { pageNumber: page });
     doc.textWithLink(String(page), PAGE_WIDTH - MARGIN, y, { pageNumber: page, align: "right" });
     y += 5.2;
@@ -1541,10 +1574,10 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     doc.rect(0, 20, PAGE_WIDTH, 0.8, "F");
 
     doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
+    doc.setFont("LiberationSans", "bold");
     doc.setFontSize(9.5);
     doc.text(model.documentTitle, MARGIN, 11);
-    doc.setFont("helvetica", "normal");
+    doc.setFont("LiberationSans", "normal");
     doc.setFontSize(7.5);
     doc.text(`Package ID: ${model.packageCode || "—"} · Release Iteration ${model.releaseVersion}`, MARGIN, 16);
 
@@ -1552,14 +1585,14 @@ export function buildPremiumDossierPdf(model: PremiumDossierViewModelV2, caseDat
     doc.setFillColor(isReady ? 20 : 180, isReady ? 83 : 40, isReady ? 45 : 40);
     doc.rect(142, 5, 53, 10, "F");
     doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
+    doc.setFont("LiberationSans", "bold");
     doc.setFontSize(6.5);
     doc.text(isReady ? "OPERATOR CHECKS PASSED" : "REMEDIATION REQUIRED", 168.5, 11.5, { align: "center" });
 
     // Running Footer — WP-14 one line
     doc.setDrawColor(211, 218, 227);
     doc.line(MARGIN, 283, PAGE_WIDTH - MARGIN, 283);
-    doc.setFont("courier", "normal");
+    doc.setFont("LiberationSans", "normal");
     doc.setFontSize(6.5);
     doc.setTextColor(90, 99, 112);
     doc.text(

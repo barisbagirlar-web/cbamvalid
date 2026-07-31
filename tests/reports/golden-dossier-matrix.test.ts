@@ -159,6 +159,10 @@ function linkEvidence(inputs: string[], issuer: string, documentType = "VERIFICA
     linkedCalculations: [],
     evidencePeriodStart: "2026-01-01",
     evidencePeriodEnd: "2026-12-31",
+    // Structured quality metadata — grades derive from structured fields only,
+    // so a seal-ready fixture must ship them (legacy records stay PENDING).
+    issuerCategory: "GOVERNMENT_AUTHORITY",
+    documentAuthority: "OFFICIAL",
   };
 }
 
@@ -265,6 +269,9 @@ export function buildCompleteAnnualCase(sector: string): AuditReadyCase {
         evidenceIds: [],
         reviewStatus: "ACCEPTED",
         rulesetVersion: "EU-CBAM-DEFINITIVE-2026",
+        approverName: "Fixture Internal Reviewer",
+        approverRole: "INTERNAL_REVIEWER",
+        approvedAt: "2026-03-01T10:00:00.000Z",
       },
       ...fixtureDecisions,
     ],

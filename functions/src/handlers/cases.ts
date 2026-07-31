@@ -2,6 +2,7 @@ import { HttpsError } from "firebase-functions/v2/https";
 import { z } from "zod";
 import { createCallable } from "../wrapper";
 import {
+  acceptMethodologyDecision,
   archiveCase,
   createCase,
   deleteCase,
@@ -14,13 +15,20 @@ import {
 import { toCaseWorkspaceView } from "../cbam/storage/case-contract";
 import { AuditReadyCaseSchema, type AuditReadyCase } from "../cbam/schema";
 import { CaseIdSchema } from "../cbam/case-id";
+import { adminDb } from "../firebase-admin";
 import {
   isProductionSmokeIdentity,
 } from "../auth/production-smoke-identity";
 
 const CreationRequestIdSchema = z.string().uuid();
 
-function parseCaseData(data: unknown, uid: string, caseId?: string): AuditReadyCase {
+export function parseCaseData(
+  data: unknown,
+  uid: string,
+  caseId?: string,
+  allowAcceptedMethodologyDecisions = false,
+  existingAcceptedDecisionIds = new Set<string>()
+): AuditReadyCase {
   const caseDataObj = { ...(data as Record<string, unknown>) };
   if (caseDataObj.reportingPeriod && typeof caseDataObj.reportingPeriod === "object") {
     const rp = caseDataObj.reportingPeriod as Record<string, { value?: string | number; sourceType?: string; confidenceStatus?: string } | undefined>;
@@ -46,6 +54,23 @@ function parseCaseData(data: unknown, uid: string, caseId?: string): AuditReadyC
         rp.startDate.value = `${yearVal}-10-01`;
         rp.endDate.value = `${yearVal}-12-31`;
       }
+    }
+  }
+
+  // FAZ P0 — ACCEPTED methodology decisions can only be granted by a
+  // server-controlled review workflow. A user-submitted payload may only
+  // preserve previously server-accepted decision IDs; any NEW accepted
+  // record is rejected fail-closed.
+  if (!allowAcceptedMethodologyDecisions) {
+    const decisions = (caseDataObj.methodologyDecisions as Array<{ decisionId?: string; reviewStatus?: string }> | undefined) ?? [];
+    const hasNewAccepted = decisions.some(
+      (decision) => decision.reviewStatus === "ACCEPTED" && !existingAcceptedDecisionIds.has(decision.decisionId ?? "")
+    );
+    if (hasNewAccepted) {
+      throw new HttpsError(
+        "failed-precondition",
+        "USER_CREATED_ACCEPTED_METHODOLOGY_DECISION_FORBIDDEN"
+      );
     }
   }
 
@@ -102,6 +127,31 @@ async function requireAdminOrProductionSmoke(
   );
 }
 
+/**
+ * FAZ P0 — evidence internal review must be performed by an independent
+ * reviewer role (or admin / narrowly scoped smoke identity). A data preparer
+ * can never self-approve their own uploaded documents.
+ */
+async function requireEvidenceReviewer(
+  auth: { uid: string; token: Record<string, unknown> }
+): Promise<void> {
+  if (auth.token.admin === true || auth.token.ownerAdmin === true) {
+    return;
+  }
+  if (await isProductionSmokeIdentity(auth)) {
+    return;
+  }
+  const userDoc = await adminDb.collection("users").doc(auth.uid).get();
+  const role = String(userDoc.exists ? userDoc.data()?.role ?? "" : "").toUpperCase();
+  if (["INTERNAL_REVIEWER", "SUPER_ADMIN", "DATA_OWNER"].includes(role)) {
+    return;
+  }
+  throw new HttpsError(
+    "permission-denied",
+    "EVIDENCE_SELF_APPROVAL_FORBIDDEN"
+  );
+}
+
 function translateEvidenceError(error: unknown): never {
   const message = error instanceof Error ? error.message : "EVIDENCE_OPERATION_FAILED";
   if (message === "CASE_NOT_FOUND" || message === "EVIDENCE_NOT_FOUND") {
@@ -138,8 +188,13 @@ export const saveCbamCase = createCallable(
       );
     }
 
+    // FAZ P0 — a user-created payload may never claim ACCEPTED methodology
+    // decisions; only server review (or a narrowly scoped smoke identity used
+    // for controlled fixtures) can carry accepted records.
+    const allowAcceptedMethodologyDecisions = await isProductionSmokeIdentity(auth);
+
     if (!caseId) {
-      const parsedData = parseCaseData(data, auth.uid);
+      const parsedData = parseCaseData(data, auth.uid, undefined, allowAcceptedMethodologyDecisions);
       const creationRequestId = resolveCreationRequestId(requestId, parsedData);
       const newCase = await createCase(auth.uid, parsedData, creationRequestId);
       return { caseId: newCase.caseId, status: "success" };
@@ -153,7 +208,12 @@ export const saveCbamCase = createCallable(
       throw new HttpsError("failed-precondition", "Only a draft case can be edited.");
     }
 
-    const parsedData = parseCaseData(data, auth.uid, caseId);
+    const existingAcceptedDecisionIds = new Set(
+      (existing.data.methodologyDecisions ?? [])
+        .filter((decision) => decision.reviewStatus === "ACCEPTED")
+        .map((decision) => decision.decisionId)
+    );
+    const parsedData = parseCaseData(data, auth.uid, caseId, allowAcceptedMethodologyDecisions, existingAcceptedDecisionIds);
     await updateCase(caseId, auth.uid, parsedData);
     return { caseId, status: "success" };
   }
@@ -186,11 +246,44 @@ export const reviewCbamEvidence = createCallable(
     }),
   },
   async (data, { auth }) => {
+    // FAZ P0 — self-approval is blocked: only an independent reviewer role
+    // (or admin / narrowly scoped smoke identity) may approve or reject
+    // evidence on a case.
+    await requireEvidenceReviewer(auth);
     try {
       const updated = await reviewCaseEvidence({ ...data, uid: auth.uid });
       return { case: toCaseWorkspaceView(updated), status: "success" };
     } catch (error) {
       translateEvidenceError(error);
+    }
+  }
+);
+
+export const acceptCbamMethodologyDecision = createCallable(
+  {
+    schema: z.object({
+      caseId: CaseIdSchema,
+      decisionId: z.string().uuid(),
+      approverName: z.string().trim().min(1).max(200),
+      approverRole: z.string().trim().min(1).max(100),
+    }),
+  },
+  async (data, { auth }) => {
+    // FAZ P0 — ACCEPTED can only be granted by the server-controlled review
+    // workflow executed by an admin / reviewer role.
+    await requireAdminOrProductionSmoke(auth);
+    try {
+      const updated = await acceptMethodologyDecision({
+        ...data,
+        approverUid: auth.uid,
+      });
+      return { case: toCaseWorkspaceView(updated), status: "success" };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "METHODOLOGY_DECISION_OPERATION_FAILED";
+      if (message === "CASE_NOT_FOUND") throw new HttpsError("not-found", message);
+      if (message === "METHODOLOGY_DECISION_NOT_FOUND") throw new HttpsError("not-found", message);
+      if (message === "CASE_NOT_EDITABLE") throw new HttpsError("failed-precondition", message);
+      throw error;
     }
   }
 );
@@ -241,7 +334,12 @@ export const renameCbamCase = createCallable(
         name: { ...existing.data.installation.name, value: newName },
       },
     };
-    await updateCase(caseId, auth.uid, parseCaseData(updatedData, auth.uid, caseId));
+    const existingAcceptedDecisionIds = new Set(
+      (existing.data.methodologyDecisions ?? [])
+        .filter((decision) => decision.reviewStatus === "ACCEPTED")
+        .map((decision) => decision.decisionId)
+    );
+    await updateCase(caseId, auth.uid, parseCaseData(updatedData, auth.uid, caseId, false, existingAcceptedDecisionIds));
     return { success: true };
   }
 );

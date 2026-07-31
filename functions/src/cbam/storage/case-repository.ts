@@ -17,6 +17,7 @@ import {
   type CaseCreationMarker,
 } from "./case-creation-idempotency";
 import { adaptLegacyCaseData } from "./legacy-case-adapter";
+import { assessEvidenceQuality } from "../validation/evidence-quality";
 
 export type CbamCase = CbamCaseRecord;
 
@@ -320,17 +321,40 @@ export async function reviewCaseEvidence(params: {
     }
   }
 
-  const updatedEvidence = resolved.record.data.evidenceRegister.map((record) =>
-    record.evidenceId === params.evidenceId
-      ? {
-          ...record,
-          reviewStatus: params.decision,
-          supportStatus:
-            params.decision === "APPROVED" ? params.supportStatus : "UNSUPPORTED" as const,
-          reviewerNotes: params.reviewerNotes.trim(),
-        }
-      : record
-  );
+  const reviewedAt = new Date().toISOString();
+  const updatedEvidence = resolved.record.data.evidenceRegister.map((record) => {
+    if (record.evidenceId !== params.evidenceId) return record;
+
+    // FAZ P0 — when the server review workflow approves a record that carries
+    // structured quality metadata, the server computes and records the quality
+    // grade and assessment provenance. A user can never supply these fields.
+    let qualityPatch: Partial<EvidenceRecord> = {};
+    if (params.decision === "APPROVED") {
+      const assessment = assessEvidenceQuality(record);
+      qualityPatch = {
+        qualityGrade: assessment.grade,
+        qualityAssessmentBasis: assessment.basis,
+        qualityAssessedBy: params.uid,
+        qualityAssessedAt: reviewedAt,
+      };
+    } else {
+      qualityPatch = {
+        qualityGrade: "E",
+        qualityAssessmentBasis: "REJECTED_IN_REVIEW",
+        qualityAssessedBy: params.uid,
+        qualityAssessedAt: reviewedAt,
+      };
+    }
+
+    return {
+      ...record,
+      ...qualityPatch,
+      reviewStatus: params.decision,
+      supportStatus:
+        params.decision === "APPROVED" ? params.supportStatus : "UNSUPPORTED" as const,
+      reviewerNotes: params.reviewerNotes.trim(),
+    };
+  });
 
   const nextData = appendAuditEvent(
     { ...resolved.record.data, evidenceRegister: updatedEvidence },
@@ -391,6 +415,51 @@ export async function archiveCase(caseId: string, uid: string): Promise<void> {
     status: "ARCHIVED",
     updatedAt: new Date().toISOString(),
   });
+}
+
+/**
+ * FAZ P0 — server-controlled methodology decision acceptance. Only called from
+ * the admin/Internal-Reviewer callable; records approval provenance.
+ */
+export async function acceptMethodologyDecision(params: {
+  caseId: string;
+  decisionId: string;
+  approverUid: string;
+  approverName: string;
+  approverRole: string;
+}): Promise<CbamCaseRecord> {
+  const resolved = await resolveCaseDocument(params.caseId);
+  if (!resolved) throw new Error("CASE_NOT_FOUND");
+  if (resolved.record.status !== "DRAFT") throw new Error("CASE_NOT_EDITABLE");
+
+  const decision = resolved.record.data.methodologyDecisions.find(
+    (record) => record.decisionId === params.decisionId
+  );
+  if (!decision) throw new Error("METHODOLOGY_DECISION_NOT_FOUND");
+
+  const approvedAt = new Date().toISOString();
+  const updatedDecisions = resolved.record.data.methodologyDecisions.map((record) =>
+    record.decisionId === params.decisionId
+      ? {
+          ...record,
+          reviewStatus: "ACCEPTED" as const,
+          approverName: params.approverName.trim(),
+          approverRole: params.approverRole.trim(),
+          approvedAt,
+        }
+      : record
+  );
+
+  const nextData = appendAuditEvent(
+    { ...resolved.record.data, methodologyDecisions: updatedDecisions },
+    params.approverUid,
+    "METHODOLOGY_DECISION_ACCEPTED",
+    {
+      decisionId: params.decisionId,
+      topic: decision.topic,
+    }
+  );
+  return persistTrustedCaseData(resolved, nextData);
 }
 
 export async function deleteCase(caseId: string, uid: string): Promise<void> {
