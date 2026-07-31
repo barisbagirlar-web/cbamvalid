@@ -1,60 +1,87 @@
 ================================================================================
 CBAMValid DOSSIER 10/10 RELEASE — ISSUE LEDGER
 ================================================================================
-Updated: 2026-07-31T22:55Z
+Updated: 2026-07-31T12:00Z (final closure pass)
 Branch: feat/dossier-10x-release-20260731
-Commits: 2841c32 (FAZ1), 8327a77 (FAZ2), 4e81806 (FAZ3)
+Commits: 2841c32 (FAZ1), 8327a77 (FAZ2), 4e81806 (FAZ3), e4b9f6f (FAZ4),
+         a76802d (FAZ5), 34cd0a5 (FAZ6), 2b5f9c4 (FAZ7), 21bb9e9 (FAZ8),
+         fe08bc1 (FAZ9), 3f9e2c1 (FAZ10), fc2a03d (FAZ11), 0c8fb55 (FAZ12),
+         fc039ba (FAZ13), 67a9e21 (FAZ14), 2baa56b (FAZ15), f4fca97 (FAZ16),
+         c64e7f7 (SEO fixes), c6a12dd (compliance guard fix)
 ================================================================================
 
 ID    | Phase | File/Route                  | Issue                        | Root Cause                        | Sev   | Status
 ------|-------|-----------------------------|------------------------------|-----------------------------------|-------|---------
 IL-01 | FAZ0  | (operations)                | PR #79 unmerged, function    | Hotfix code done, not deployed    | HIGH  | CLOSED
      |       |                             | sealCbamReport not deployed  |                                   |       | (merged+deployed)
-IL-02 | FAZ0  | (operations)                | Live acceptance test on      | Function not yet deployed         | HIGH  | OPEN
-     |       |                             | teb232@gmail.com not done    |                                   |       | (user needs browser)
-IL-03 | FAZ1  | functions/src/cbam/registry/| Regulation records lack      | No structured legal-source        | HIGH  | CLOSED
-     |       | legal-sources.ts             | structured fields            | registry with full metadata       |       | (enhanced record model)
-IL-04 | FAZ1  | scripts/guard-report-claims | Missing guard script for     | Not implemented                   | HIGH  | CLOSED
-     |       | .mjs (enhanced)             | claims                       |                                   |       | (detectForbiddenClaims)
-IL-05 | FAZ2  | functions/src/cbam/schema.ts| Missing operator fields      | Schema not at template level      | HIGH  | CLOSED
-     |       |                             |                              |                                   |       | (added optional fields)
-IL-06 | FAZ2  | functions/src/cbam/schema.ts| Missing installation fields  | Schema not at template level      | HIGH  | CLOSED
-     |       |                             |                              |                                   |       | (added optional fields)
-IL-07 | FAZ2  | functions/src/cbam/schema.ts| Missing verifier reserved    | Schema not at template level      | MED   | CLOSED
+IL-02 | FAZ0  | (operations)                | Live acceptance test on      | Requires deploy + browser session | HIGH  | OPEN
+     |       |                             | teb232@gmail.com             | by owner; seal now correctly      |       | (data-complete case
+     |       |                             |                              | blocked on missing evidence       |       |  needed first)
+IL-03 | FAZ1  | legal-sources.ts            | Regulation records lack      | No structured legal-source        | HIGH  | CLOSED
+     |       |                             | structured fields            | registry with full metadata       |       | (enhanced record model)
+IL-04 | FAZ1  | guard-report-claims.mjs     | Missing guard script for     | Not implemented                   | HIGH  | CLOSED
+     |       |                             | claims                       |                                   |       | (detectForbiddenClaims)
+IL-05 | FAZ2  | schema.ts                   | Missing operator fields      | Schema not at template level      | HIGH  | CLOSED
+IL-06 | FAZ2  | schema.ts                   | Missing installation fields  | Schema not at template level      | HIGH  | CLOSED
+IL-07 | FAZ2  | schema.ts                   | Missing verifier reserved    | Schema not at template level      | MED   | CLOSED
      |       |                             | fields                       |                                   |       | (VerifierReservedFieldsSchema)
-IL-08 | FAZ3  | readiness-score.ts           | smoke_test bypasses period   | Test fixture leaks to production  | HIGH  | CLOSED
+IL-08 | FAZ3  | readiness-score.ts          | smoke_test bypasses period   | Test fixture leaks to production  | HIGH  | CLOSED
      |       |                             | gate in production           |                                   |       | (sealMode param)
-IL-09 | FAZ3  | readiness-score.ts           | Future period guard only     | smoke_test bypass for PREVIEW     | HIGH  | CLOSED
+IL-09 | FAZ3  | readiness-score.ts          | Future period guard only     | smoke_test bypass for PREVIEW     | HIGH  | CLOSED
      |       |                             | bypassed for production      | acceptable; PRODUCTION blocks     |       | (sealMode=PRODUCTION)
-IL-10 | FAZ3  | premium-dossier-pdf.ts       | Production reports may       | Missing content filter             | MED   | CLOSED
+IL-10 | FAZ3  | premium-dossier-pdf.ts      | Production reports may       | Missing content filter             | MED   | CLOSED
      |       |                             | contain test labels          |                                   |       | (cleanSmokeText)
-IL-11 | FAZ4  | calculator.ts                | Emissions A-H segregation    | Current model doesn't segregate   | HIGH  | CLOSED
-IL-12 | FAZ4  | calculator.ts                | Generic calculation IDs      | Node ID generation                 | HIGH  | CLOSED
-IL-13 | FAZ4  | calculator.ts                | Build blocker not enforced   | assertCalculationNodeIntegrity    | MED   | CLOSED
-IL-14 | FAZ5  | evidence-sufficiency.ts      | No evidence quality score    | Missing A-E classification         | HIGH  | OPEN
-IL-15 | FAZ5  | schema.ts                    | systemBoundaries no evidence |                                   | MED   | OPEN
-IL-16 | FAZ6  | dossier/40-readiness/        | Risk register missing        | Not implemented                   | MED   | OPEN
-IL-17 | FAZ6  | rulesets.ts                  | Materiality per-good missing |                                   | MED   | OPEN
-IL-18 | FAZ6  | dossier/50-model/            | Sampling module missing      |                                   | MED   | OPEN
-IL-19 | FAZ7  | scoreboard.ts                | Single score instead of 4    |                                   | HIGH  | OPEN
-IL-20 | FAZ7  | score.ts                     | Verifier fields count as 0   |                                   | MED   | OPEN
-IL-21 | FAZ8  | premium-dossier-pdf.ts       | Sections < 31                |                                   | HIGH  | OPEN
-IL-22 | FAZ8  | premium-dossier-pdf.ts       | Visual charts missing        |                                   | MED   | OPEN
-IL-23 | FAZ9  | professional-pdf.ts          | Font, bookmarks, TOC         |                                   | MED   | OPEN
-IL-24 | FAZ10 | premium-dossier-pdf.ts       | Placeholder values banned    | Already fixed in PATCH8           | HIGH  | CLOSED
-IL-25 | FAZ10 | seal-service.ts              | Public verification page     |                                   | MED   | OPEN
-IL-26 | FAZ11 | xlsx-builder.ts              | XLSX missing sheets          |                                   | MED   | OPEN
-IL-27 | FAZ12 | verification-template-       | Registry template incomplete |                                   | HIGH  | OPEN
-     |       | 2025-2546.ts                 |                              |                                   |       |
-IL-28 | FAZ13 | enterprise-chapters.ts        | Chapter contract not enforced|                                   | HIGH  | OPEN
-IL-29 | FAZ14 | tests/dossier/               | 30 scenarios not all covered |                                   | HIGH  | OPEN
-IL-30 | FAZ15 | tests/reports/               | PDF render QA missing        |                                   | MED   | OPEN
-IL-31 | FAZ16 | (external)                   | External verifier review     |                                   | MED   | OPEN
-IL-32 | FAZ1  | lib/cbam vs functions/       | Validation drift             | Runtime split                     | HIGH  | OPEN
-     |       |                               | addressed for legal-sources, | (partially addressed)             |       |
-     |       |                               | schema                       |                                   |       |
+IL-11 | FAZ4  | calculator.ts               | Emissions A-H segregation    | Current model doesn't segregate   | HIGH  | CLOSED
+IL-12 | FAZ4  | calculator.ts               | Generic calculation IDs      | Node ID generation                 | HIGH  | CLOSED
+IL-13 | FAZ4  | calculator.ts               | Build blocker not enforced   | assertCalculationNodeIntegrity    | MED   | CLOSED
+IL-14 | FAZ5  | evidence-sufficiency.ts     | No evidence quality score    | Missing A-E classification         | HIGH  | CLOSED
+     |       |                             |                              |                                   |       | (gradeEvidenceRecord)
+IL-15 | FAZ5  | schema.ts                   | systemBoundaries no evidence | No evidence-linked field          | MED   | CLOSED
+     |       |                             |                              |                                   |       | (two-basis support model)
+IL-16 | FAZ6  | dossier/40-readiness/       | Risk register missing        | Not implemented                   | MED   | CLOSED
+     |       |                             |                              |                                   |       | (risk-assurance.ts)
+IL-17 | FAZ6  | rulesets.ts                 | Materiality per-good missing | Not implemented                   | MED   | CLOSED
+     |       |                             |                              |                                   |       | (MaterialityWorkpaper)
+IL-18 | FAZ6  | dossier/50-model/           | Sampling module missing      | Not implemented                   | MED   | CLOSED
+     |       |                             |                              |                                   |       | (sampling population/rationale)
+IL-19 | FAZ7  | scoreboard.ts               | Single score instead of 4    | Not implemented                   | HIGH  | CLOSED
+     |       |                             |                              |                                   |       | (honest-scoreboard.ts)
+IL-20 | FAZ7  | score.ts                    | Verifier fields count as 0   | Not implemented                   | MED   | CLOSED
+     |       |                             |                              |                                   |       | (verifier-reserved excluded)
+IL-21 | FAZ8  | premium-dossier-pdf.ts      | Sections < 31                | Not implemented                   | HIGH  | CLOSED
+IL-22 | FAZ8  | premium-dossier-pdf.ts      | Visual charts missing        | Not implemented                   | MED   | CLOSED
+IL-23 | FAZ9  | professional-pdf.ts          | Font, bookmarks, TOC         | Not implemented                   | MED   | CLOSED
+IL-24 | FAZ10 | premium-dossier-pdf.ts      | Placeholder values banned    | Already fixed in PATCH8           | HIGH  | CLOSED
+IL-25 | FAZ10 | seal-service.ts              | Public verification page     | Not implemented                   | MED   | CLOSED
+     |       |                             |                              |                                   |       | (lib/verify/public-verification)
+IL-26 | FAZ11 | xlsx-builder.ts              | XLSX missing sheets          | Not implemented                   | MED   | CLOSED
+IL-27 | FAZ12 | verification-template-       | Registry template incomplete | Not implemented                   | HIGH  | CLOSED
+     |       | 2025-2546.ts                 |                              |                                   |       | (registry-template-mapping.ts)
+IL-28 | FAZ13 | enterprise-chapters.ts        | Chapter contract not enforced| Not implemented                   | HIGH  | CLOSED
+     |       |                             |                              |                                   |       | (premium-chapter-contract.ts)
+IL-29 | FAZ14 | tests/dossier/               | 30 scenarios not all covered | Not implemented                   | HIGH  | CLOSED
+     |       |                             |                              |                                   |       | (golden-dossier-matrix.test.ts)
+IL-30 | FAZ15 | tests/reports/               | PDF render QA missing        | Not implemented                   | MED   | CLOSED
+     |       |                             |                              |                                   |       | (render-qa analyzer + gate)
+IL-31 | FAZ16 | (external)                  | External verifier review     | Requires 3 human reviewers        | MED   | BLOCKED
+     |       |                             |                              |                                   |       | (prep done in external-
+     |       |                             |                              |                                   |       |  acceptance.ts; human review
+     |       |                             |                              |                                   |       |  pending, fail-closed)
+IL-32 | FAZ1  | lib/cbam vs functions/       | Validation drift             | Runtime split                     | HIGH  | CLOSED
+     |       |                               |                              |                                   |       | (byte-identical registry
+     |       |                               |                              |                                   |       |  guards; schema parity guard)
 IL-33 | FAZ4  | calculator.ts                | Unit dimensional safety      | outputUnit enforced per node      | HIGH  | CLOSED
 IL-34 | FAZ4  | calculator.ts                | Decimal.js not universal     | precision 34, no mid-rounding     | MED   | CLOSED
+IL-35 | SEO   | public/sitemap.xml           | Static sitemap competes with | Stale artifact                    | MED   | CLOSED
+     |       |                             | app/sitemap.ts (G04)         |                                   |       | (deleted; app/sitemap.ts owns)
+IL-36 | SEO   | scripts/seo/validate-all.ts | Price SSOT hardcoded "149"   | Stale pre-mandate price hardcode  | MED   | CLOSED
+     |       |                             | (G14)                        |                                   |       | (assert vs CANONICAL_PRICING
+     |       |                             |                              |                                   |       |  $449 + amountMinor)
+IL-37 | SEO   | lib/seo/registry.ts          | /cbam-methodology orphan +   | Redirect existed but registry     | MED   | CLOSED
+     |       |                             | still indexable (G10/G32)    | still advertised index            |       | (noindex + sitemapEligible=false)
+IL-38 | FAZ16 | guard-premium-dossier-       | Compliance scan flagged      | Blanket substring ban hit         | MED   | CLOSED
+     |       | release.mjs + compliance     | required disclaimers and     | canonical positioning +           |       | (affirmative-claim patterns;
+     |       | guard.test.ts                | canonical positioning        | fail-closed disclaimers           |       |  positive/negative controls)
 ================================================================================
-OPEN: 18 items | CLOSED: 16 items | IN PROGRESS: 0 | BLOCKED: 0
+CLOSED: 35 | OPEN: 1 (IL-02, owner browser + complete case data) | BLOCKED: 1 (IL-31, external human review) | IN PROGRESS: 0
 ================================================================================
