@@ -71,7 +71,12 @@ walk(rootDir, (filePath) => {
   }
 
   for (const word of forbiddenTurkishSubstrings) {
-    if (content.includes(word)) {
+    // The dossier contract file defines FORBIDDEN_PLACEHOLDERS — the ban list
+    // that prevents placeholder content from leaking into output. That English
+    // identifier is enforcement code, not leaked copy, so exclude it from the
+    // PLACEHOLDER substring scan.
+    const scanContent = content.replaceAll("FORBIDDEN_PLACEHOLDERS", "");
+    if (scanContent.includes(word)) {
       logError(relPath, `Contains forbidden Turkish terminology: "${word}"`);
     }
   }

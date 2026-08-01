@@ -711,7 +711,7 @@ export const CERTIFICATE_PRICE_SECTIONS: readonly GuideSection[] = [
     id: "related",
     title: "Related methodology",
     paragraphs: [
-      "See `/cbam-2026-definitive-period` for timetable context and `/pricing` for CBAMValid product pricing (USD 149 pack) — product price is not a CBAM certificate price.",
+      "See `/cbam-2026-definitive-period` for timetable context and `/pricing` for CBAMValid product pricing ($449 pay-at-lock pack) — product price is not a CBAM certificate price.",
     ],
   },
   {

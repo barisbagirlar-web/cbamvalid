@@ -107,13 +107,22 @@ test.describe("Visual Regression", () => {
   // Snapshots are OS-specific (darwin vs linux). Keep local; skip in CI until linux baselines exist.
   test.skip(!!process.env.CI, "Visual baselines are platform-specific");
 
+  // Under parallel workers the heavier pages can still be painting when the
+  // default `toHaveScreenshot` snapshot fires, yielding a blank capture. Wait
+  // for real content plus font readiness so the baseline is deterministic.
+  async function waitForPaintedScreenshot(page: Page, anchor: string) {
+    await page.goto(anchor, { waitUntil: "networkidle" });
+    await expect(page.locator("h1, h2").first()).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+  }
+
   test("homepage screenshot", async ({ page }) => {
-    await page.goto("/");
+    await waitForPaintedScreenshot(page, "/");
     await expect(page).toHaveScreenshot("cbamvalid-homepage.png", { maxDiffPixels: 100 });
   });
 
   test("pricing page screenshot", async ({ page }) => {
-    await page.goto("/pricing");
+    await waitForPaintedScreenshot(page, "/pricing");
     await expect(page).toHaveScreenshot("cbamvalid-pricing.png", { maxDiffPixels: 100 });
   });
 });

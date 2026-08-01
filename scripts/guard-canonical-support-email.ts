@@ -18,22 +18,33 @@ function getFiles(dir: string, ext: string[]): string[] {
 
 const foldersToScan = ["app", "components", "lib"];
 const extensions = [".ts", ".tsx", ".js", ".jsx"];
+
+// Canonical customer support inbox. Any other @cbamvalid.com address is
+// prohibited UNLESS it is a recognized purpose-bound inbox that must stay
+// distinct from support (e.g. legal deletion/access requests).
+const CANONICAL_SUPPORT_EMAIL = "info@cbamvalid.com";
+const ALLOWED_PURPOSE_BOUND_EMAILS = new Set([
+  "privacy@cbamvalid.com",
+]);
 let offendingCount = 0;
 
 foldersToScan.forEach(folder => {
   const dirPath = path.join(process.cwd(), folder);
   if (!fs.existsSync(dirPath)) return;
   const files = getFiles(dirPath, extensions);
-  
+
   files.forEach(file => {
     if (file.includes("guard-canonical-support-email") || file.includes("verify-navigation-routes")) return;
-    
+
     const content = fs.readFileSync(file, "utf8");
     const emailRegex = /[a-zA-Z0-9._%+-]+@cbamvalid\.com/gi;
     let match;
     while ((match = emailRegex.exec(content)) !== null) {
       const email = match[0].toLowerCase();
-      if (email !== "info@cbamvalid.com") {
+      if (
+        email !== CANONICAL_SUPPORT_EMAIL &&
+        !ALLOWED_PURPOSE_BOUND_EMAILS.has(email)
+      ) {
         console.error(`Offending email "${email}" found in ${file}`);
         offendingCount++;
       }

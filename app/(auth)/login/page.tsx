@@ -110,8 +110,9 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2">Corporate Email</label>
+              <label htmlFor="email" className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2">Corporate Email</label>
               <input
+                id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -123,8 +124,9 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2">Password</label>
+              <label htmlFor="password" className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-2">Password</label>
               <input
+                id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

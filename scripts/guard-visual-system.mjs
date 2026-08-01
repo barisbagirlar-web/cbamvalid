@@ -43,6 +43,8 @@ const SVG_ALLOWLIST = [
   "app/(public)/pricing/page.tsx",
   "app/(auth)/login/page.tsx",
   "app/(auth)/register/page.tsx",
+  "app/icon.tsx",
+  "app/apple-icon.tsx",
 ];
 
 const packageJsonPath = path.resolve("package.json");
@@ -152,12 +154,23 @@ function checkFile(filePath) {
       ext === ".tsx" &&
       line.includes("<svg") &&
       !line.includes("lucide") &&
-      !isSvgAllowed(filePath) &&
-      !/stroke=["']currentColor["']/.test(line) &&
-      !/fill=["']currentColor["']/.test(line)
+      !isSvgAllowed(filePath)
     ) {
-      console.error(`❌ Violation in ${filePath}:${lineNum}: Inline SVG markup found in code file: "${line.trim()}"`);
-      violations++;
+      // The opening tag may span multiple lines; collect it before judging
+      // whether it uses currentColor (a hardcoded-color check).
+      let tagText = line;
+      let cursor = idx;
+      while (!/>\s*$/.test(tagText) && cursor + 1 < lines.length) {
+        cursor += 1;
+        tagText += lines[cursor];
+      }
+      if (
+        !/stroke=["']currentColor["']/.test(tagText) &&
+        !/fill=["']currentColor["']/.test(tagText)
+      ) {
+        console.error(`❌ Violation in ${filePath}:${lineNum}: Inline SVG markup found in code file: "${line.trim()}"`);
+        violations++;
+      }
     }
 
     const emojiRegex = /[\u{1F300}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u;
