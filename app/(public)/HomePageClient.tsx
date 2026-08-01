@@ -25,7 +25,7 @@ export default function HomePageClient() {
           EU Regulatory Method Alignment
         </span>
         <h1>CBAM Exporter<br /><span className="serif-i">Final Evidence Report</span></h1>
-        <p className="lede">When an EU buyer asks for actual embedded-emissions evidence, you need a package you can defend — not a fragile spreadsheet. Build one installation, one reporting year, link evidence, clear blockers, then seal a verifier-preparation dossier.</p>
+        <p className="lede">Self-service software for exporter verification preparation. When an EU buyer asks for actual embedded-emissions evidence, you need a package you can defend — not a fragile spreadsheet. You enter the data, the software calculates and checks, you link evidence, then seal a verifier-preparation dossier.</p>
         <p className="aeo-lead">
           <strong>Direct answer:</strong>{" "}
           <span className="speakable-answer">

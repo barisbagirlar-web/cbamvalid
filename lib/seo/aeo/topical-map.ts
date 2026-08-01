@@ -355,13 +355,13 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
   },
   {
     path: "/about",
-    topic: "Independence and expert review boundary",
+    topic: "Independence and software boundary",
     role: "spoke",
     parentPath: "/",
     childPaths: ["/contact", "/methodology", "/product", "/legal-notice"],
     covers: [
       "is CBAMValid an official EU service",
-      "academic mathematical review boundary",
+      "self-service software boundary",
     ],
     ...chainExtras("/about"),
   },

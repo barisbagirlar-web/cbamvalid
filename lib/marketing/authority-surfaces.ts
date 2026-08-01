@@ -95,7 +95,7 @@ export const AUTHORITY_SURFACES: readonly AuthoritySurface[] = [
     label: "Product Demo",
     blurb: "Self-guided software workflow demonstration.",
     status: "LIVE",
-    inMoreNav: true,
+    inMoreNav: false,
     inHomepageMap: false,
   },
   {

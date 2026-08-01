@@ -55,12 +55,12 @@ export default function AboutPage() {
               IIT
             </div>
             <div>
-              <h3>Academic mathematical review</h3>
+              <h3>Prior academic assessment</h3>
               <p>
-                Calculation engines and allocation logic are reviewed against EU CBAM mathematical rules
-                by an independent academic reviewer. That review supports mathematical integrity — it is
-                not an accredited CBAM verification opinion, and the reviewer is not available to
-                customers or part of any purchased service.
+                A prior independent academic assessment evaluated selected software calculation logic
+                during product development. It is not included in the purchase, does not review customer
+                files, and does not provide customers with consulting, advice, verification or expert
+                access. It is not an accredited CBAM verification opinion.
               </p>
               <div className="who">
                 <b>Prof. Dr. Neela Nataraj</b>

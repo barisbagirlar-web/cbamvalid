@@ -65,7 +65,7 @@ const FAQS: { question: string; answer: string }[] = [
   {
     question: "What is not included?",
     answer:
-      "The purchase covers software access and automated digital delivery only. It does not include consulting, advisory services, manual preparation, evidence review, methodology recommendations, legal/tax/customs advice, accredited verification or access to experts.",
+      "No human services included. The purchase covers software access and automated digital delivery only. It does not include consulting, advisory services, manual preparation, evidence review, methodology recommendations, legal/tax/customs advice, accredited verification or access to experts.",
   },
 ];
 
@@ -127,8 +127,8 @@ export default function PricingPage() {
           </div>
 
           <div className="price-card">
-            <h3>Not included</h3>
-            <p className="sub">Software access and automated delivery only.</p>
+            <h3>No human services included</h3>
+            <p className="sub">Software access and automated digital delivery only.</p>
             <ul className="feat-list">
               {NOT_INCLUDED.map((item) => (
                 <li key={item}>

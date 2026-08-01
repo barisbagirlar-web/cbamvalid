@@ -5,7 +5,7 @@ const PRICE = CANONICAL_PRICING.priceFormatted;
 const PACK = CANONICAL_PRICING.packName;
 
 const EXPERT_BLOCK =
-  "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.";
+  "A prior independent academic assessment evaluated selected software calculation logic during product development. That assessment is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.";
 
 /**
  * Authority chains for critical public URLs.
@@ -792,7 +792,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     directAnswer:
       "CBAMValid is an independent software service that helps exporters and importers prepare evidence-linked CBAM dossiers. It is not an EU institution, customs authority, accredited CBAM verifier, or CBAM Registry submission service.",
     calculation:
-      "Mathematical engines and allocation logic are reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (IIT Bombay). That review supports calculation integrity — it is not an accredited verification opinion.",
+      "A prior independent academic assessment evaluated selected software calculation logic during product development. It is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.",
     explanation:
       "Use CBAMValid to compile scope, evidence, calculations, and sealed packages for handover to buyers or independent verifiers.",
     methodology:
@@ -801,14 +801,14 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
       "Independence and support identity claims are product-policy facts published on About, Legal Notice, and contact surfaces.",
     expert: EXPERT_BLOCK,
     relatedProblems: [
-      { question: "Contact support", href: "/contact", why: "Human help" },
+      { question: "Contact support", href: "/contact", why: "Software support" },
       { question: "Methodology sources", href: "/methodology", why: "Ruleset basis" },
       { question: "Product capabilities", href: "/product", why: "What you get" },
     ],
-    entities: ["CBAMValid", "independent software service", "IIT Bombay mathematical review"],
+    entities: ["CBAMValid", "independent software service", "self-service CBAM software"],
     fanOutQueries: [
       "is CBAMValid an official EU service",
-      "who reviews CBAMValid calculations",
+      "was CBAMValid calculation logic independently assessed",
       "CBAMValid independence notice",
     ],
   },
@@ -818,7 +818,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     empathyLead:
       "When a seal is blocked or a buyer is waiting, you need a real inbox — not a ticket black hole.",
     directAnswer:
-      "Email info@cbamvalid.com for technical, dossier, and billing help. Legal and privacy requests use the published legal and privacy addresses on the contact page. Typical response window is 24–48 business hours.",
+      "Email info@cbamvalid.com for account, billing, and technical operation of the software. Legal and privacy requests use the published legal and privacy addresses on the contact page. Typical response window is 24–48 business hours.",
     calculation:
       "Support does not recalculate sealed releases client-side. Authoritative numbers remain those sealed by the server engine for a specific case snapshot.",
     explanation:
@@ -828,7 +828,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     evidence:
       "Canonical support identity is info@cbamvalid.com as published in site legal configuration.",
     expert:
-      "Support staff explain product boundaries. Academic mathematical review of engines is separate from day-to-day support tickets.",
+      "Support is limited to account, billing, security, privacy and technical operation of the software. Support does not review customer emissions data, approve evidence, prepare dossiers, recommend methodologies, interpret regulations for a customer or issue verification opinions.",
     relatedProblems: [
       { question: "Pricing and pack scope", href: "/pricing", why: "Billing clarity" },
       { question: "About independence", href: "/about", why: "Who we are" },

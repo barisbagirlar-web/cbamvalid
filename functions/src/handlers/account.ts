@@ -30,6 +30,8 @@ export const getAccountOverview = createCallable({}, async (_, { auth }) => {
       displayName: profile?.displayName || "",
       company: profile?.company || "",
       country: profile?.country || "",
+      organisationId: typeof profile?.organisationId === "string" ? profile.organisationId : "",
+      role: String(profile?.role ?? "").toUpperCase(),
       email: auth.token.email,
       emailVerified: auth.token.email_verified || false,
     },
@@ -37,11 +39,21 @@ export const getAccountOverview = createCallable({}, async (_, { auth }) => {
   };
 });
 
+const OrganisationIdSchema = z
+  .string()
+  .trim()
+  .min(3)
+  .max(64)
+  .regex(/^[a-zA-Z0-9][a-zA-Z0-9-]*$/, "Only letters, numbers and dashes are allowed.")
+  .optional()
+  .or(z.literal(""));
+
 export const updateOwnProfile = createCallable({
   schema: z.object({
-    displayName: z.string().optional(),
-    company: z.string().optional(),
-    country: z.string().optional()
+    displayName: z.string().max(200).optional(),
+    company: z.string().max(200).optional(),
+    country: z.string().max(100).optional(),
+    organisationId: OrganisationIdSchema
   })
 }, async (data, { auth }) => {
   const uid = auth.uid;
@@ -49,6 +61,9 @@ export const updateOwnProfile = createCallable({
   if (data.displayName !== undefined) updateData.displayName = data.displayName;
   if (data.company !== undefined) updateData.company = data.company;
   if (data.country !== undefined) updateData.country = data.country;
+  if (data.organisationId !== undefined) {
+    updateData.organisationId = data.organisationId === "" ? "" : data.organisationId.trim();
+  }
 
   await adminDb.collection("users").doc(uid).set(updateData, { merge: true });
   return { success: true };

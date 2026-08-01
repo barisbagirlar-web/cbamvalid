@@ -27,7 +27,7 @@
       "explanation": "Define scope, enter goods and production data, link evidence, clear fail-closed quality blockers, pay once to lock that working file, then download immutable PDF/JSON/O3CI field-mapped exports. Same-file corrections stay included; another plant or year needs another payment.",
       "methodology": "Methods pin to Regulation (EU) 2023/956 and related implementing rules recorded in the sealed package. Historical seals keep the ruleset they were built against.",
       "evidence": "Material values require evidence lineage (hash, size, support status). Sealing requires approved and fully supported evidence; partially supported is not enough.",
-      "expert": "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.",
+      "expert": "A prior independent academic assessment evaluated selected software calculation logic during product development. That assessment is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.",
       "relatedProblems": [
         {
           "question": "What does the USD 449 pack include?",
@@ -73,7 +73,7 @@
       "explanation": "You compile installation and goods data, link supporting documents, resolve blockers, pay once to lock, then seal releases for buyer or verifier handover without rewriting prior seals.",
       "methodology": "Versioned rulesets and legal source citations travel with each sealed release so method history stays auditable.",
       "evidence": "Evidence objects store hash, size, path ownership, review status, and support status. Seal is blocked when evidence is missing, rejected, unsupported, or hash-mismatched.",
-      "expert": "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.",
+      "expert": "A prior independent academic assessment evaluated selected software calculation logic during product development. That assessment is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.",
       "relatedProblems": [
         {
           "question": "How much does the pack cost?",
@@ -268,7 +268,7 @@
       "explanation": "One Where-you-are strip guides eight plain stages from scope setup through evidence linking, QC, pay-at-lock, seal, and download — without a second duplicate step bar. Drafts stay free until you pay to lock that file.",
       "methodology": "Each sealed release records the ruleset and engine version used so replay stays deterministic.",
       "evidence": "Every material field should point to approved, fully supported evidence before seal.",
-      "expert": "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.",
+      "expert": "A prior independent academic assessment evaluated selected software calculation logic during product development. That assessment is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.",
       "relatedProblems": [
         {
           "question": "Inspect a sample dossier",
@@ -307,7 +307,7 @@
       "explanation": "Methodology pages and sealed traces cite Regulation (EU) 2023/956 and implementing rules for calculation and verification principles where applied.",
       "methodology": "Ruleset identity, engine version, legal source IDs, and calculation-node hashes form the reproducibility contract.",
       "evidence": "Method decisions and material inputs must be evidence-linked where required before a seal can pass.",
-      "expert": "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.",
+      "expert": "A prior independent academic assessment evaluated selected software calculation logic during product development. That assessment is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.",
       "relatedProblems": [
         {
           "question": "How are embedded emissions calculated?",
@@ -347,7 +347,7 @@
       "explanation": "Use the public interactive viewer (page thumbs, document stage, contents panel), then the authority and answer sections below, to inspect cover-to-integrity structure before sealing your own case.",
       "methodology": "Sample content follows the same independence boundary and package-contract discipline as production seals, citing Regulation (EU) 2023/956 and definitive-period implementing rules.",
       "evidence": "Manifest-listed files must exist with matching size and hash. Public sample demonstrates the integrity pattern without exposing tenant data.",
-      "expert": "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.",
+      "expert": "A prior independent academic assessment evaluated selected software calculation logic during product development. That assessment is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.",
       "relatedProblems": [
         {
           "question": "Verify a dossier signature",
@@ -656,7 +656,7 @@
       "explanation": "EU importers face annual declaration and certificate surrender duties. Non-EU producers must supply evidence-linked actual data when buyers require it. Do not treat transitional quarterly report dates as 2026 definitive obligations.",
       "methodology": "Cite Regulation (EU) 2023/956 as amended, plus implementing rules for verification, emissions calculation, and certificate price.",
       "evidence": "Keep period-correct installation data, goods lists, and evidence hashes aligned to the reporting year you will seal.",
-      "expert": "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.",
+      "expert": "A prior independent academic assessment evaluated selected software calculation logic during product development. That assessment is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.",
       "relatedProblems": [
         {
           "question": "Certificate price cadence",
@@ -696,7 +696,7 @@
       "explanation": "Separate direct and indirect bases, prevent double counting, and keep unit conversions explicit (including kg/t and energy units). Client previews are advisory until the server seal.",
       "methodology": "Follow Implementing Regulation (EU) 2025/2547 calculation principles as applied by the active CBAMValid ruleset version recorded in the seal.",
       "evidence": "Activity data, factors, electricity data, precursor quantities, and allocation methodology need evidence IDs and support status before sealing.",
-      "expert": "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.",
+      "expert": "A prior independent academic assessment evaluated selected software calculation logic during product development. That assessment is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.",
       "relatedProblems": [
         {
           "question": "Actual vs default values",
@@ -736,7 +736,7 @@
       "explanation": "Prefer actual values when evidence quality can support verification. Use defaults only under conditions permitted by applicable implementing rules, understanding mark-ups and dimensional dependencies.",
       "methodology": "Document the actual/default decision in the methodology decision log with legal basis and evidence IDs.",
       "evidence": "Actual pathways need stronger primary evidence. Default pathways still need transparent citation of the factor source and dimensions used.",
-      "expert": "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.",
+      "expert": "A prior independent academic assessment evaluated selected software calculation logic during product development. That assessment is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.",
       "relatedProblems": [
         {
           "question": "Default values guide",
@@ -775,7 +775,7 @@
       "explanation": "Defaults exist for defined fallback cases. They are not a shortcut that removes documentation duty or automatic acceptance.",
       "methodology": "Cite the default-value dataset version and dimensions in the sealed methodology and calculation trace.",
       "evidence": "Retain the factor source reference, effective period, and selection rationale with the case evidence register.",
-      "expert": "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.",
+      "expert": "A prior independent academic assessment evaluated selected software calculation logic during product development. That assessment is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.",
       "relatedProblems": [
         {
           "question": "Actual vs default decision",
@@ -851,7 +851,7 @@
       "explanation": "Lock scope, finish evidence support statuses, clear material findings, then seal a package that a verifier can navigate without reconstructing your email history.",
       "methodology": "Follow verification principles in Implementing Regulation (EU) 2025/2546 as the assurance framework — preparation software does not replace that assurance.",
       "evidence": "Evidence must be approved and fully supported with matching hashes. Partial support blocks a serious seal.",
-      "expert": "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.",
+      "expert": "A prior independent academic assessment evaluated selected software calculation logic during product development. That assessment is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.",
       "relatedProblems": [
         {
           "question": "Evidence requirements",
@@ -890,7 +890,7 @@
       "explanation": "Build an evidence register early. Approve and mark support status before you attempt seal. Duplicate hashes and path traversal attempts are rejected.",
       "methodology": "Evidence sufficiency rules are fail-closed and versioned with the product quality-control contract.",
       "evidence": "Physical bytes must match registered hash and size. Pending, rejected, unsupported, missing, or tampered evidence blocks sealing.",
-      "expert": "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.",
+      "expert": "A prior independent academic assessment evaluated selected software calculation logic during product development. That assessment is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.",
       "relatedProblems": [
         {
           "question": "Verification preparation",
@@ -929,7 +929,7 @@
       "explanation": "Align commercial contracts to data handover, keep CN classification rationale, and seal reproducible packages your buyer can share with advisors or verifiers.",
       "methodology": "Use versioned EU rulesets and keep independence language honest: preparation ≠ accredited verification.",
       "evidence": "Supply evidence-backed actual values when required; document default-value use only when permitted and disclosed.",
-      "expert": "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.",
+      "expert": "A prior independent academic assessment evaluated selected software calculation logic during product development. That assessment is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.",
       "relatedProblems": [
         {
           "question": "2026 definitive period",
@@ -1006,7 +1006,7 @@
       "explanation": "Use this page as the methodology cluster hub, then fan out to embedded-emissions, actual/default, and legal-source pages.",
       "methodology": "Ruleset versioning + deterministic replay + legal source citation is the core contract.",
       "evidence": "Method claims on public pages stay aligned to verified regulatory facts and product boundaries.",
-      "expert": "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.",
+      "expert": "A prior independent academic assessment evaluated selected software calculation logic during product development. That assessment is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.",
       "relatedProblems": [
         {
           "question": "Full methodology index",
@@ -1040,16 +1040,16 @@
       "primaryQuestion": "Who is CBAMValid and what independence boundary applies?",
       "empathyLead": "Buyers and compliance teams need to know whether a vendor is an official EU service — or an independent preparation tool with clear limits.",
       "directAnswer": "CBAMValid is an independent software service that helps exporters and importers prepare evidence-linked CBAM dossiers. It is not an EU institution, customs authority, accredited CBAM verifier, or CBAM Registry submission service.",
-      "calculation": "Mathematical engines and allocation logic are reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (IIT Bombay). That review supports calculation integrity — it is not an accredited verification opinion.",
+      "calculation": "A prior independent academic assessment evaluated selected software calculation logic during product development. It is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.",
       "explanation": "Use CBAMValid to compile scope, evidence, calculations, and sealed packages for handover to buyers or independent verifiers.",
       "methodology": "Public methodology pages cite versioned rulesets and Regulation (EU) 2023/956-family sources; sealed packages pin the ruleset used at seal time.",
       "evidence": "Independence and support identity claims are product-policy facts published on About, Legal Notice, and contact surfaces.",
-      "expert": "Calculation logic is reviewed against EU CBAM mathematical rules by Prof. Dr. Neela Nataraj (Department of Mathematics, Indian Institute of Technology Bombay). That review supports mathematical integrity of engines and allocation logic — it is not an accredited CBAM verification opinion, EU approval, or customs acceptance.",
+      "expert": "A prior independent academic assessment evaluated selected software calculation logic during product development. That assessment is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.",
       "relatedProblems": [
         {
           "question": "Contact support",
           "href": "/contact",
-          "why": "Human help"
+          "why": "Software support"
         },
         {
           "question": "Methodology sources",
@@ -1065,11 +1065,11 @@
       "entities": [
         "CBAMValid",
         "independent software service",
-        "IIT Bombay mathematical review"
+        "self-service CBAM software"
       ],
       "fanOutQueries": [
         "is CBAMValid an official EU service",
-        "who reviews CBAMValid calculations",
+        "was CBAMValid calculation logic independently assessed",
         "CBAMValid independence notice"
       ]
     },
@@ -1077,12 +1077,12 @@
       "path": "/contact",
       "primaryQuestion": "How do I contact CBAMValid for technical, billing, or legal questions?",
       "empathyLead": "When a seal is blocked or a buyer is waiting, you need a real inbox — not a ticket black hole.",
-      "directAnswer": "Email info@cbamvalid.com for technical, dossier, and billing help. Legal and privacy requests use the published legal and privacy addresses on the contact page. Typical response window is 24–48 business hours.",
+      "directAnswer": "Email info@cbamvalid.com for account, billing, and technical operation of the software. Legal and privacy requests use the published legal and privacy addresses on the contact page. Typical response window is 24–48 business hours.",
       "calculation": "Support does not recalculate sealed releases client-side. Authoritative numbers remain those sealed by the server engine for a specific case snapshot.",
       "explanation": "Include your case ID, reporting year, and the blocker text when asking for technical help so diagnosis stays fast.",
       "methodology": "Support answers product and workflow questions; accredited verification opinions remain outside CBAMValid’s scope.",
       "evidence": "Canonical support identity is info@cbamvalid.com as published in site legal configuration.",
-      "expert": "Support staff explain product boundaries. Academic mathematical review of engines is separate from day-to-day support tickets.",
+      "expert": "Support is limited to account, billing, security, privacy and technical operation of the software. Support does not review customer emissions data, approve evidence, prepare dossiers, recommend methodologies, interpret regulations for a customer or issue verification opinions.",
       "relatedProblems": [
         {
           "question": "Pricing and pack scope",

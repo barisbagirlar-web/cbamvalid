@@ -7,7 +7,7 @@ import {
   createCase,
   deleteCase,
   getCase,
-  getCasesForUser,
+  getCasesForUsers,
   recordEvidenceMalwareScan,
   reviewCaseEvidence,
   updateCase,
@@ -19,6 +19,12 @@ import { adminDb } from "../firebase-admin";
 import {
   isProductionSmokeIdentity,
 } from "../auth/production-smoke-identity";
+import {
+  requireOrganisationCaseReadAccess,
+  requireOrganisationReviewerAccess,
+  getUserOrganisationId,
+  getUserRole,
+} from "../auth/organisation-access";
 
 const CreationRequestIdSchema = z.string().uuid();
 
@@ -242,9 +248,10 @@ export const getCbamCase = createCallable(
   { schema: z.object({ caseId: CaseIdSchema }) },
   async ({ caseId }, { auth }) => {
     const cbamCase = await getCase(caseId).catch(translateCaseCompatibilityError);
-    if (!cbamCase || cbamCase.uid !== auth.uid) {
+    if (!cbamCase) {
       throw new HttpsError("not-found", "Case not found or access denied.");
     }
+    await requireOrganisationCaseReadAccess(auth, cbamCase.uid);
     return { case: toCaseWorkspaceView(cbamCase), status: "success" };
   }
 );
@@ -266,11 +273,20 @@ export const reviewCbamEvidence = createCallable(
   },
   async (data, { auth }) => {
     // FAZ P0 — self-approval is blocked: only an independent reviewer role
-    // (or admin / narrowly scoped smoke identity) may approve or reject
-    // evidence on a case.
+    // (admin / production-smoke identity, or a peer reviewer from the SAME
+    // customer organisation) may approve or reject evidence on a case.
     await requireEvidenceReviewer(auth);
+    const cbamCase = await getCase(data.caseId).catch(translateCaseCompatibilityError);
+    if (!cbamCase) {
+      throw new HttpsError("not-found", "Case not found or access denied.");
+    }
+    await requireOrganisationReviewerAccess(auth, cbamCase.uid);
     try {
-      const updated = await reviewCaseEvidence({ ...data, uid: auth.uid });
+      const updated = await reviewCaseEvidence({
+        ...data,
+        uid: cbamCase.uid,
+        actorUid: auth.uid,
+      });
       return { case: toCaseWorkspaceView(updated), status: "success" };
     } catch (error) {
       translateEvidenceError(error);
@@ -288,9 +304,14 @@ export const acceptCbamMethodologyDecision = createCallable(
     }),
   },
   async (data, { auth }) => {
-    // FAZ P0 — ACCEPTED can only be granted by the server-controlled review
-    // workflow executed by an admin / reviewer role.
-    await requireAdminOrProductionSmoke(auth);
+    // FAZ P0 / FAZ 13 — ACCEPTED can be granted by the server-controlled review
+    // workflow: an admin / production-smoke identity, or a peer reviewer from
+    // the SAME customer organisation (self-approval stays blocked).
+    const cbamCase = await getCase(data.caseId).catch(translateCaseCompatibilityError);
+    if (!cbamCase) {
+      throw new HttpsError("not-found", "Case not found or access denied.");
+    }
+    await requireOrganisationReviewerAccess(auth, cbamCase.uid);
     try {
       const updated = await acceptMethodologyDecision({
         ...data,
@@ -390,7 +411,32 @@ export const deleteCbamCase = createCallable(
 );
 
 export const getCbamCases = createCallable({}, async (_, { auth }) => {
-  const cases = await getCasesForUser(auth.uid);
+  // FAZ 13 — a peer reviewer from the same customer organisation may list the
+  // organisation's cases (not just their own) so in-org approval is usable.
+  // Only callers holding an internal-review role may see peer cases.
+  const ownCases = await getCasesForUsers([auth.uid]);
+
+  const role = await getUserRole(auth.uid);
+  const canSeePeerCases = (["INTERNAL_REVIEWER", "DATA_OWNER", "SUPER_ADMIN"] as string[]).includes(role);
+  if (!canSeePeerCases) {
+    return { cases: ownCases, status: "success" };
+  }
+
+  const organisationId = await getUserOrganisationId(auth.uid);
+  if (!organisationId) {
+    return { cases: ownCases, status: "success" };
+  }
+
+  const membersSnapshot = await adminDb
+    .collection("users")
+    .where("organisationId", "==", organisationId)
+    .limit(30)
+    .get();
+  const reviewerUids = membersSnapshot.docs
+    .map((doc) => doc.id)
+    .filter((memberUid) => memberUid !== auth.uid);
+
+  const cases = await getCasesForUsers([auth.uid, ...reviewerUids]);
   return { cases, status: "success" };
 });
 
