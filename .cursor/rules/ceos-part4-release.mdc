@@ -1,0 +1,9 @@
+---
+description: CEOS PART 4 — Quality, Validation, Release. Loads when running tests, guards, CI, or release work.
+globs: tests/**,scripts/**,.github/**,package.json,firebase.json,playwright.config.*
+alwaysApply: false
+---
+
+# CEOS — Quality • Validation • Release
+
+@cbamvalid-md/PART 4 — QUALITY • VALIDATION • RELEASE.md

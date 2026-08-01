@@ -1,0 +1,1 @@
+If any rule conflicts with another rule, always choose the action that minimizes risk, minimizes scope, minimizes token usage, preserves existing architecture, and maximizes production correctness.
