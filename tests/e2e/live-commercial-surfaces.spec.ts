@@ -31,12 +31,16 @@ test.describe("live pay-at-lock commercial surfaces", () => {
     expect(text.toLowerCase()).not.toMatch(/exactly 5 sealed releases/);
   });
 
-  test("sitemap index is hostable", async ({ request }) => {
+  test("sitemap is hostable and canonical", async ({ request }) => {
     const res = await request.get(`${BASE}/sitemap.xml`);
     expect(res.status()).toBe(200);
     const xml = await res.text();
-    expect(xml).toContain("<sitemapindex");
-    expect(xml).toMatch(/sitemap\/0\.xml/);
+    // Single-registry sitemap: 47 URLs render as a flat <urlset> (sitemapindex
+    // splitting only kicks in above the per-file cap). Assert the canonical URL
+    // set is present and points at the custom domain.
+    expect(xml).toContain("<urlset");
+    expect(xml).toContain("https://cbamvalid.com/");
+    expect(xml).toMatch(/<loc>https:\/\/cbamvalid\.com\/pricing<\/loc>/);
   });
 
   test("terms commercial-terms anchor exists", async ({ request }) => {

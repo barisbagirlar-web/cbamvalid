@@ -529,13 +529,13 @@ export default function CbamLandingPage() {
                     <li className="flex items-start gap-2">
                       <span className="font-mono text-accent font-bold">3.</span>
                       <span>
-                        Buy the {CANONICAL_PRICING.priceFormatted} Preparation Pack at checkout (card charged
-                        then — not when you lock).
+                        Draft free; pay {CANONICAL_PRICING.priceFormatted} once when you lock this working file —{" "}
+                        {CANONICAL_PRICING.correctionPolicy.toLowerCase()}.
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="font-mono text-accent font-bold">4.</span>
-                      <span>Lock &amp; download. You get up to five locked packages for corrections.</span>
+                      <span>Lock &amp; download the immutable verifier package. Same-file corrections re-lock at no extra charge.</span>
                     </li>
                   </ol>
                 </div>

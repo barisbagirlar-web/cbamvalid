@@ -517,7 +517,7 @@ export const VERIFICATION_PREPARATION_SECTIONS: readonly GuideSection[] = [
     id: "related",
     title: "Related CN and methodology",
     paragraphs: [
-      "See exporter evidence requirements for lineage rules, sample dossier for package shape, and product page for commercial entitlement (100 credits → 5 sealed releases).",
+      "See exporter evidence requirements for lineage rules, sample dossier for package shape, and product page for the commercial entitlement (draft free; pay once to lock a working file; same-file correction re-locks included).",
     ],
   },
   {
