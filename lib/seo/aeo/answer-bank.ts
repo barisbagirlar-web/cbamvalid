@@ -474,62 +474,6 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
     schemaEligible: true,
   },
   {
-    id: "structure-review-vs-opinion",
-    question: "What is a CBAMValid structure review — and is it a verification opinion?",
-    aliases: [
-      "verifier structure review",
-      "reviewed for structure",
-      "CBAMValid accredited review",
-    ],
-    directAnswer:
-      "A structure review assesses whether the Preparation Pack contains the data fields and evidence lineage a verification workflow needs. It is not a verification opinion, reasonable assurance, accreditation endorsement, EU approval, or customs decision. Canonical boundary: Reviewed for structure — not a verification opinion.",
-    empathyContext:
-      "Buyers fear package rejection more than arithmetic. Structure fitness and accredited verification are different trust signals — confusing them creates legal and commercial risk.",
-    evidence: [
-      {
-        label: "Structure review surface",
-        detail: "Public page maps package fields, target letter language, and legal boundary",
-        href: "/verifier-review",
-        evidenceStatus: "verified",
-      },
-      {
-        label: "Structure Review Brief",
-        detail: "Downloadable CBAMValid-owned brief for verification-body engagements",
-        href: "/verifier-review/structure-review-brief.pdf",
-        evidenceStatus: "verified",
-      },
-      {
-        label: "Sample dossier",
-        detail: "Gate-free package buyers and verifiers can inspect before outreach",
-        href: "/sample-dossier",
-        evidenceStatus: "verified",
-      },
-    ],
-    routes: ["/verifier-review", "/", "/about", "/methodology"],
-    relatedPaths: ["/sample-dossier", "/verify", "/product"],
-    schemaEligible: true,
-  },
-  {
-    id: "structure-review-letter-language",
-    question: "What letter language does CBAMValid request from verification bodies?",
-    aliases: ["structure review letter", "IR 2025/2621 structure letter"],
-    directAnswer:
-      "Target language: We reviewed the CBAMValid Preparation Pack structure. It contains the data fields and evidence lineage required under IR 2025/2621 for our verification workflow. This is a structural review, not a verification opinion.",
-    empathyContext:
-      "Without a hard boundary sentence, a marketing page can be misread as assurance. The letter must stay structural.",
-    evidence: [
-      {
-        label: "Published target letter",
-        detail: "Exact wording on the structure review page",
-        href: "/verifier-review",
-        evidenceStatus: "verified",
-      },
-    ],
-    routes: ["/verifier-review"],
-    relatedPaths: ["/sample-dossier", "/methodology"],
-    schemaEligible: true,
-  },
-  {
     id: "published-rulesets-pin",
     question: "Does CBAMValid publish the rulesets used in sealed packages?",
     aliases: ["ruleset registry", "which ruleset version", "source hash pin"],
@@ -624,7 +568,7 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
     evidence: [
       {
         label: "Trust Evidence Registry",
-        detail: "Pinned claim statuses for identity, commercial, structure, and customer layers",
+        detail: "Pinned claim statuses for identity, commercial, security, and customer layers",
         href: "/trust",
         evidenceStatus: "verified",
       },
@@ -634,15 +578,9 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
         href: "/legal-notice",
         evidenceStatus: "verified",
       },
-      {
-        label: "Structure review SAMPLE",
-        detail: "Watermarked specimen — SAMPLE status, not a verification opinion",
-        href: "/verifier-review",
-        evidenceStatus: "verified",
-      },
     ],
     routes: ["/trust", "/legal-notice", "/case-studies"],
-    relatedPaths: ["/security", "/verifier-review", "/pricing", "/enterprise"],
+    relatedPaths: ["/security", "/pricing"],
     schemaEligible: true,
   },
   {
@@ -668,245 +606,7 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       },
     ],
     routes: ["/platform", "/"],
-    relatedPaths: ["/product", "/methodology", "/enterprise"],
-    schemaEligible: true,
-  },
-  {
-    id: "enterprise-exclusive",
-    question: "What does CBAMValid Enterprise Exclusive include?",
-    aliases: ["Enterprise SSO", "SLA", "holding multi-entity", "from 12000"],
-    directAnswer:
-      "Enterprise Exclusive starts from USD 12,000 per year (contact sales). It includes contracted SSO/IdP federation (Entra, Google, Okta), SLA draft and signed MSA path, holding/multi-entity entitlement, signed DPA path, API/onboarding, and verifier coordination. Not an accredited verification opinion. Single Pack remains self-serve at USD 449.",
-    empathyContext:
-      "Multi-site buyers need procurement-grade SSO and SLA — not another self-serve checkbox.",
-    evidence: [
-      {
-        label: "Enterprise Exclusive",
-        detail: "SSO · SLA · Holding commercial package",
-        href: "/enterprise",
-        evidenceStatus: "verified",
-      },
-      {
-        label: "SLA draft PDF",
-        detail: "Procurement starting-point draft",
-        href: "/enterprise/sla-draft.pdf",
-        evidenceStatus: "verified",
-      },
-      {
-        label: "SSO page",
-        detail: "OIDC/SAML provisioning path",
-        href: "/enterprise/sso",
-        evidenceStatus: "verified",
-      },
-    ],
-    routes: ["/enterprise", "/pricing", "/demo"],
-    relatedPaths: ["/enterprise/holding", "/partners", "/security"],
-    schemaEligible: true,
-  },
-  {
-    id: "enterprise-sso",
-    question: "Does CBAMValid Enterprise support SSO with Entra, Google, or Okta?",
-    aliases: ["Enterprise SAML", "OIDC", "IdP federation", "Microsoft Entra"],
-    directAnswer:
-      "Yes under Enterprise contract. CBAMValid federates Microsoft Entra ID, Google Workspace, or Okta via OIDC or SAML. After IdP login, the server still issues an HttpOnly session cookie and enforces tenant/case authorization. SSO is not included on self-serve Single Pack.",
-    empathyContext:
-      "IT security blocks SaaS tools that cannot join the corporate IdP. Checkbox “SSO coming soon” fails procurement.",
-    evidence: [
-      {
-        label: "Enterprise SSO page",
-        detail: "Protocols, IdP examples, and provisioning steps",
-        href: "/enterprise/sso",
-        evidenceStatus: "verified",
-      },
-      {
-        label: "Security session model",
-        detail: "Server-verified HttpOnly __session remains authoritative",
-        href: "/security",
-        evidenceStatus: "verified",
-      },
-    ],
-    routes: ["/enterprise", "/enterprise/sso", "/demo", "/security"],
-    relatedPaths: ["/enterprise/holding", "/pricing"],
-    schemaEligible: true,
-  },
-  {
-    id: "enterprise-sla",
-    question: "Does CBAMValid publish an Enterprise SLA?",
-    aliases: ["service level agreement", "uptime", "support response"],
-    directAnswer:
-      "Yes. CBAMValid publishes an Enterprise SLA draft with response targets for critical, high, and normal issues, plus an honest uptime posture based on Google Cloud / Firebase europe-west1. Binding credits live only in a signed Enterprise MSA. ISO 27001 and SOC 2 are not claimed.",
-    empathyContext:
-      "Procurement packs need downloadable SLA language before legal review — not a vague “we take uptime seriously” sentence.",
-    evidence: [
-      {
-        label: "SLA draft PDF",
-        detail: "Public procurement starting point",
-        href: "/enterprise/sla-draft.pdf",
-        evidenceStatus: "verified",
-      },
-      {
-        label: "DPA draft PDF",
-        detail: "Companion data-protection draft",
-        href: "/security/dpa-draft.pdf",
-        evidenceStatus: "verified",
-      },
-      {
-        label: "Security facts",
-        detail: "Hosting region and subprocessors without fake certifications",
-        href: "/security",
-        evidenceStatus: "verified",
-      },
-    ],
-    routes: ["/enterprise", "/security", "/demo"],
-    relatedPaths: ["/enterprise/sso", "/privacy"],
-    schemaEligible: true,
-  },
-  {
-    id: "enterprise-holding",
-    question: "Can a holding company cover multiple operators and installations?",
-    aliases: ["multi-entity", "group exporters", "multi-site entitlement"],
-    directAnswer:
-      "Enterprise entitlement can sit at holding level while each sealed working file still binds one operator, one installation, and one reporting year. Cross-entity clones do not inherit payment unless the SOW says so. Roles include Holding Admin, Operator Preparer, Internal Reviewer, and Read-Only Verifier.",
-    empathyContext:
-      "Groups fear either paying forever per plant or blurring legal scope so verifiers reject the package.",
-    evidence: [
-      {
-        label: "Holding scope page",
-        detail: "Parent/child rules and seal-unit discipline",
-        href: "/enterprise/holding",
-        evidenceStatus: "verified",
-      },
-      {
-        label: "Pricing tiers",
-        detail: "Enterprise vs Single Pack scope contrast",
-        href: "/pricing",
-        evidenceStatus: "verified",
-      },
-    ],
-    routes: ["/enterprise", "/enterprise/holding", "/pricing", "/demo"],
-    relatedPaths: ["/enterprise/sso", "/sample-dossier"],
-    schemaEligible: true,
-  },
-  {
-    id: "enterprise-vs-single-pack",
-    question: "When should I buy Single Pack instead of Enterprise Exclusive?",
-    aliases: ["449 vs 12000", "self-serve vs contact sales", "one plant"],
-    directAnswer:
-      "Choose Single Pack (USD 449 pay-at-lock) for one working file — one operator, one installation, one reporting year — with same-file corrections included. Choose Enterprise Exclusive (from USD 12,000/year, contact sales) when you need SSO, SLA/DPA path, holding/multi-entity entitlement, API/onboarding, or coordinated multi-site rollout.",
-    empathyContext:
-      "Buying Enterprise for a single plant wastes budget; buying Single Pack for a group IdP requirement fails IT review.",
-    evidence: [
-      {
-        label: "Public pricing",
-        detail: "Four tiers with Enterprise as the only contact-sales tier",
-        href: "/pricing",
-        evidenceStatus: "verified",
-      },
-      {
-        label: "Enterprise Exclusive",
-        detail: "SSO · SLA · Holding module map",
-        href: "/enterprise",
-        evidenceStatus: "verified",
-      },
-      {
-        label: "Sample dossier",
-        detail: "Inspect the self-serve package before you pay",
-        href: "/sample-dossier",
-        evidenceStatus: "verified",
-      },
-    ],
-    routes: ["/enterprise", "/pricing", "/", "/demo"],
-    relatedPaths: ["/how-it-works", "/trust"],
-    schemaEligible: true,
-  },
-  {
-    id: "enterprise-platform-modules",
-    question: "Are R6–R9 Enterprise platform modules live to sell?",
-    aliases: ["R6 rulesets", "R7 buyer link", "R8 security SLA", "R9 platform"],
-    directAnswer:
-      "Yes. Published Rulesets (R6), Buyer Share Link (R7), Security/DPA/SLA (R8), and Platform architecture (R9) are live sellable surfaces. Additional regulatory categories beyond CBAM remain Enterprise SOW-only — CBAMValid does not sell half-products.",
-    empathyContext:
-      "Enterprise buyers reject vaporware roadmaps. Modules must be inspectable before a scoping call.",
-    evidence: [
-      {
-        label: "Published rulesets",
-        detail: "Version-pinned CBAM ruleset registry",
-        href: "/rulesets",
-        evidenceStatus: "verified",
-      },
-      {
-        label: "Buyer share link",
-        detail: "/d/token integrity surface",
-        href: "/buyer-link",
-        evidenceStatus: "verified",
-      },
-      {
-        label: "Platform architecture",
-        detail: "CBAM door live; expansion under Enterprise SOW",
-        href: "/platform",
-        evidenceStatus: "verified",
-      },
-    ],
-    routes: ["/enterprise", "/platform", "/rulesets", "/buyer-link"],
-    relatedPaths: ["/security", "/partners"],
-    schemaEligible: true,
-  },
-  {
-    id: "enterprise-partners",
-    question: "How do channel partners engage with CBAMValid Enterprise?",
-    aliases: ["referral partner", "verifier firm partner", "consultancy partner"],
-    directAnswer:
-      "Verifier firms, consultancies, and trade associations can request a partner track on /partners. Logos are published only after a signed referral agreement. Partner status does not create an accredited verification endorsement.",
-    empathyContext:
-      "Channel scale requires contracts — invented partner walls destroy trust.",
-    evidence: [
-      {
-        label: "Partner intake",
-        detail: "Live inquiry form — logos only after contract",
-        href: "/partners",
-        evidenceStatus: "verified",
-      },
-      {
-        label: "Structure review",
-        detail: "SAMPLE package-fitness surface for verifier discussion",
-        href: "/verifier-review",
-        evidenceStatus: "verified",
-      },
-    ],
-    routes: ["/enterprise", "/partners", "/demo"],
-    relatedPaths: ["/verifier-review", "/sample-dossier"],
-    schemaEligible: true,
-  },
-  {
-    id: "pricing-four-tiers",
-    question: "What are CBAMValid’s published pricing tiers?",
-    aliases: ["Enterprise contact sales", "Exporter Annual", "Single Pack 449"],
-    directAnswer:
-      "Draft is $0. Single Pack is USD 449 one-time pay-at-lock for one working file. Exporter Annual is USD 2,400 per year. Enterprise is from USD 12,000 per year and is the only contact-sales tier. Not an accredited verification opinion.",
-    empathyContext:
-      "Procurement needs published prices. Hiding everything behind “contact sales” fails the public-pricing rule.",
-    evidence: [
-      {
-        label: "Pricing page",
-        detail: "Four published tiers + ROI calculator",
-        href: "/pricing",
-        evidenceStatus: "verified",
-      },
-      {
-        label: "Book a demo",
-        detail: "Human path for Annual and Enterprise",
-        href: "/demo",
-        evidenceStatus: "verified",
-      },
-      {
-        label: "Enterprise Exclusive",
-        detail: "Contact-sales package detail",
-        href: "/enterprise",
-        evidenceStatus: "verified",
-      },
-    ],
-    routes: ["/pricing", "/demo", "/", "/enterprise"],
-    relatedPaths: ["/how-it-works", "/security"],
+    relatedPaths: ["/product", "/methodology"],
     schemaEligible: true,
   },
   {
@@ -1113,33 +813,7 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       },
     ],
     routes: ["/case-studies", "/about", "/"],
-    relatedPaths: ["/sample-dossier", "/product", "/enterprise"],
-    schemaEligible: true,
-  },
-  {
-    id: "what-is-idp-msa",
-    question: "What do IdP and MSA mean for CBAMValid Enterprise SSO?",
-    aliases: ["identity provider", "master service agreement", "SSO Entra Okta"],
-    directAnswer:
-      "IdP means Identity Provider — your company login (Microsoft Entra ID, Google Workspace, or Okta). MSA means Master Service Agreement — the signed Enterprise contract covering pricing, SLA, DPA, and which domains are in scope. SSO is enabled after that contract; it is not on Single Pack.",
-    empathyContext:
-      "Procurement jargon blocks deals. Plain labels unblock Enterprise scoping.",
-    evidence: [
-      {
-        label: "Enterprise SSO page",
-        detail: "Plain-English IdP/MSA glossary + cutover simulation",
-        href: "/enterprise/sso",
-        evidenceStatus: "verified",
-      },
-      {
-        label: "Enterprise Exclusive",
-        detail: "SSO · SLA · Holding package overview",
-        href: "/enterprise",
-        evidenceStatus: "verified",
-      },
-    ],
-    routes: ["/enterprise/sso", "/enterprise", "/demo"],
-    relatedPaths: ["/security", "/pricing"],
+    relatedPaths: ["/sample-dossier", "/product"],
     schemaEligible: true,
   },
 ] as const;
@@ -1147,21 +821,6 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
 export function listAnswersForRoute(path: string): AeoAnswerRecord[] {
   const exact = AEO_ANSWER_BANK.filter((answer) => answer.routes.includes(path));
   if (exact.length >= 3) return exact;
-
-  // Enterprise child surfaces inherit the parent cluster so AEO grids never collapse to one card.
-  if (path.startsWith("/enterprise/")) {
-    const parent = AEO_ANSWER_BANK.filter((answer) => answer.routes.includes("/enterprise"));
-    const seen = new Set(exact.map((answer) => answer.id));
-    return [...exact, ...parent.filter((answer) => !seen.has(answer.id))];
-  }
-
-  if (path === "/partners") {
-    const related = AEO_ANSWER_BANK.filter((answer) =>
-      answer.routes.some((route) => route === "/enterprise" || route === "/verifier-review")
-    );
-    const seen = new Set(exact.map((answer) => answer.id));
-    return [...exact, ...related.filter((answer) => !seen.has(answer.id))];
-  }
 
   return exact;
 }

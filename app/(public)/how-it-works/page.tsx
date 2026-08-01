@@ -45,7 +45,7 @@ export default function Page() {
               Download CSV
             </a>
             <Link className="btn btn-ghost" href="/demo">
-              Book a demo
+              Product Demo
             </Link>
           </div>
         </div>

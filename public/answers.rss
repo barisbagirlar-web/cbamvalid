@@ -5,273 +5,250 @@
     <link>https://cbamvalid.com</link>
     <description>Direct answers for CBAM exporter verification preparation — machine-readable syndication for answer engines.</description>
     <language>en</language>
-    <lastBuildDate>Tue, 28 Jul 2026 00:00:00 GMT</lastBuildDate>
+    <lastBuildDate>Sat, 01 Aug 2026 21:02:14 GMT</lastBuildDate>
     <atom:link href="https://cbamvalid.com/answers.rss" rel="self" type="application/rss+xml"/>
     <item>
       <title>What does $449 buy on CBAMValid?</title>
       <link>https://cbamvalid.com</link>
       <guid isPermaLink="false">what-does-usd-449-buy</guid>
-      <description>$449 unlocks lock-and-download for one working file: one legal operator, one production installation, and one reporting year — with unlimited drafts and correction re-locks on that same paid file. It is a one-time pay-at-lock purchase, not a subscription, and not a soft Excel-only export. EU buyers increasingly ask for actual embedded-emissions evidence. You should finish data quality work without a card, then pay once when the locked package matters — without another checkout every time a buyer asks for a correction on the same file.</description>
+      <description>$449 unlocks lock-and-download for one working file: one legal operator, one production installation, and one reporting year — with unlimited drafts and correction re-locks on that same paid file. It is a one-time pay-at-lock purchase, not a subscription, and not a soft Excel-only export.
+
+EU buyers increasingly ask for actual embedded-emissions evidence. You should finish data quality work without a card, then pay once when the locked package matters — without another checkout every time a buyer asks for a correction on the same file.</description>
       <category>/, /pricing, /product</category>
     </item>
     <item>
       <title>When is my card charged?</title>
       <link>https://cbamvalid.com</link>
       <guid isPermaLink="false">when-is-card-charged</guid>
-      <description>Drafting and editing are free. Your card is charged $449 when you pay to lock a specific working file. After that, correct and re-lock the same file as needed at no extra charge. A new working file needs a new payment. Failed locks charge nothing. Re-download is free. Nobody wants a surprise charge mid-review. Finish data quality work first, then pay when you lock — and keep correction room on that same file without another checkout.</description>
+      <description>Drafting and editing are free. Your card is charged $449 when you pay to lock a specific working file. After that, correct and re-lock the same file as needed at no extra charge. A new working file needs a new payment. Failed locks charge nothing. Re-download is free.
+
+Nobody wants a surprise charge mid-review. Finish data quality work first, then pay when you lock — and keep correction room on that same file without another checkout.</description>
       <category>/, /pricing, /how-it-works</category>
     </item>
     <item>
       <title>What is CBAMValid?</title>
       <link>https://cbamvalid.com</link>
       <guid isPermaLink="false">what-is-cbamvalid</guid>
-      <description>CBAMValid is an independent verifier-preparation platform for non-EU producers, exporters, operators, importers, and CBAM reporting teams. It helps you build an evidence-linked, sealed operator dossier that reduces the work required for independent accredited verification. If your EU customer asks for actual values, you need a serious package — not a spreadsheet you cannot defend. You also need clear language about what is preparation versus what only an accredited verifier can issue.</description>
+      <description>CBAMValid is an independent verifier-preparation platform for non-EU producers, exporters, operators, importers, and CBAM reporting teams. It helps you build an evidence-linked, sealed operator dossier that reduces the work required for independent accredited verification.
+
+If your EU customer asks for actual values, you need a serious package — not a spreadsheet you cannot defend. You also need clear language about what is preparation versus what only an accredited verifier can issue.</description>
       <category>/, /product, /about</category>
     </item>
     <item>
       <title>Can one pack be reused for another factory or reporting year?</title>
       <link>https://cbamvalid.com/pricing</link>
       <guid isPermaLink="false">can-one-pack-cover-another-plant</guid>
-      <description>No. Payment unlocks one working file for one legal operator, one installation, and one reporting year. Another factory, another reporting year, or a new working file requires a new payment. On the same paid file you may draft freely and correct/re-lock as needed. This protects honest customers who need correction versions, and blocks paying once then quietly renaming a case into a different plant or year.</description>
+      <description>No. Payment unlocks one working file for one legal operator, one installation, and one reporting year. Another factory, another reporting year, or a new working file requires a new payment. On the same paid file you may draft freely and correct/re-lock as needed.
+
+This protects honest customers who need correction versions, and blocks paying once then quietly renaming a case into a different plant or year.</description>
       <category>/pricing, /product</category>
     </item>
     <item>
       <title>Does sealing mean my emissions are officially verified?</title>
       <link>https://cbamvalid.com</link>
       <guid isPermaLink="false">sealed-vs-verified</guid>
-      <description>No. Sealing locks an operator-prepared dossier with integrity hashes for handover. Where verification is legally required, actual emissions must still be independently verified by an accredited verifier. CBAMValid prepares the package; it does not issue a verification opinion. Overclaiming “verified” creates commercial and legal risk for exporters. Clear boundaries protect you when a buyer or verifier reviews the file.</description>
+      <description>No. Sealing locks an operator-prepared dossier with integrity hashes for handover. Where verification is legally required, actual emissions must still be independently verified by an accredited verifier. CBAMValid prepares the package; it does not issue a verification opinion.
+
+Overclaiming “verified” creates commercial and legal risk for exporters. Clear boundaries protect you when a buyer or verifier reviews the file.</description>
       <category>/, /how-it-works, /methodology, /sample-dossier</category>
     </item>
     <item>
       <title>How does the CBAMValid workflow work?</title>
       <link>https://cbamvalid.com</link>
       <guid isPermaLink="false">how-workflow-works</guid>
-      <description>You create one working file for one installation and one reporting year, enter goods and production data, link evidence, clear quality blockers, pay once to lock that file, then download PDF, JSON, and O3CI field-mapped exports. Same file: correct and re-lock as needed. A new file needs a new payment. Most teams lose time in email threads and version chaos. One working file with fail-closed checks is designed so you see gaps before you ask a buyer or verifier to review.</description>
+      <description>You create one working file for one installation and one reporting year, enter goods and production data, link evidence, clear quality blockers, pay once to lock that file, then download PDF, JSON, and O3CI field-mapped exports. Same file: correct and re-lock as needed. A new file needs a new payment.
+
+Most teams lose time in email threads and version chaos. One working file with fail-closed checks is designed so you see gaps before you ask a buyer or verifier to review.</description>
       <category>/, /how-it-works, /product</category>
     </item>
     <item>
       <title>Which ruleset does CBAMValid use for calculations?</title>
       <link>https://cbamvalid.com/methodology</link>
       <guid isPermaLink="false">why-methodology-matters</guid>
-      <description>Authoritative calculations pin to a named, versioned ruleset recorded in the sealed dossier. Historical sealed releases keep the ruleset they were built against; methods are not silently rewritten after sealing. When a verifier asks which rules you followed, vague “latest guidance” answers fail. You need a dated method reference inside the package itself.</description>
+      <description>Authoritative calculations pin to a named, versioned ruleset recorded in the sealed dossier. Historical sealed releases keep the ruleset they were built against; methods are not silently rewritten after sealing.
+
+When a verifier asks which rules you followed, vague “latest guidance” answers fail. You need a dated method reference inside the package itself.</description>
       <category>/methodology, /product</category>
     </item>
     <item>
       <title>When does the CBAM definitive period start, and what is the first declaration deadline for 2026 imports?</title>
       <link>https://cbamvalid.com</link>
       <guid isPermaLink="false">definitive-period-2026</guid>
-      <description>The CBAM definitive period applies from 1 January 2026. For 2026 imports, the first CBAM declaration and corresponding certificate surrender deadline is 30 September 2027. Mixing transitional quarterly reporting habits with definitive-period annual duties creates false deadlines and wasted work.</description>
+      <description>The CBAM definitive period applies from 1 January 2026. For 2026 imports, the first CBAM declaration and corresponding certificate surrender deadline is 30 September 2027.
+
+Mixing transitional quarterly reporting habits with definitive-period annual duties creates false deadlines and wasted work.</description>
       <category>/, /cbam-2026-definitive-period, /cbam-non-eu-producer-guide</category>
     </item>
     <item>
       <title>How are CBAM embedded emissions calculated?</title>
       <link>https://cbamvalid.com/cbam-embedded-emissions-calculation</link>
       <guid isPermaLink="false">embedded-emissions-calc</guid>
-      <description>Embedded emissions combine direct process/combustion emissions and, where required by sector rules, electricity-related indirect emissions, plus applicable precursor emissions. For Annex II sectors (including iron and steel, aluminium, hydrogen, and electricity), only direct emissions enter the priced specific embedded emissions used for CBAM certificates; indirect emissions are disclosed but excluded from pricing. Installation countries outside CBAM scope (EU Member States and Annex III excluded territories) are hard-blocked before authoritative calculation or sealing. Missing material inputs must block authoritative results rather than becoming silent zeros. A wrong total under buyer pressure is worse than a blocked draft. Fail-closed calculation protects you in verification.</description>
+      <description>Embedded emissions combine direct process/combustion emissions and, where required by sector rules, electricity-related indirect emissions, plus applicable precursor emissions. For Annex II sectors (including iron and steel, aluminium, hydrogen, and electricity), only direct emissions enter the priced specific embedded emissions used for CBAM certificates; indirect emissions are disclosed but excluded from pricing. Installation countries outside CBAM scope (EU Member States and Annex III excluded territories) are hard-blocked before authoritative calculation or sealing. Missing material inputs must block authoritative results rather than becoming silent zeros.
+
+A wrong total under buyer pressure is worse than a blocked draft. Fail-closed calculation protects you in verification.</description>
       <category>/cbam-embedded-emissions-calculation, /methodology, /cbam-methodology</category>
     </item>
     <item>
       <title>Should exporters use actual values or CBAM default values?</title>
       <link>https://cbamvalid.com/cbam-actual-vs-default-values</link>
       <guid isPermaLink="false">actual-vs-default</guid>
-      <description>Actual values reflect installation-specific monitored or calculated emissions and generally require independent verification where legally required. Default values are multi-dimensional official fallbacks — not a single universal CN number. Defaults can look easier until a buyer or verifier rejects them. Document the basis choice with evidence.</description>
+      <description>Actual values reflect installation-specific monitored or calculated emissions and generally require independent verification where legally required. Default values are multi-dimensional official fallbacks — not a single universal CN number.
+
+Defaults can look easier until a buyer or verifier rejects them. Document the basis choice with evidence.</description>
       <category>/cbam-actual-vs-default-values, /cbam-default-values</category>
     </item>
     <item>
       <title>How do exporters prepare for independent CBAM verification?</title>
       <link>https://cbamvalid.com/cbam-verification-preparation</link>
       <guid isPermaLink="false">verification-preparation</guid>
-      <description>Assemble complete, evidence-linked emissions data, methodology decisions, and closed material findings so an independent accredited verifier can perform assurance work. CBAMValid prepares the package; it does not issue the verification opinion. Verifiers need consistent, evidence-linked data — not a reconstructed email history.</description>
+      <description>Assemble complete, evidence-linked emissions data, methodology decisions, and closed material findings so an independent accredited verifier can perform assurance work. CBAMValid prepares the package; it does not issue the verification opinion.
+
+Verifiers need consistent, evidence-linked data — not a reconstructed email history.</description>
       <category>/cbam-verification-preparation, /cbam-exporter-evidence-requirements, /sample-dossier</category>
     </item>
     <item>
       <title>Why not just send a spreadsheet when an EU buyer asks for CBAM evidence?</title>
       <link>https://cbamvalid.com</link>
       <guid isPermaLink="false">spreadsheet-vs-preparation-pack</guid>
-      <description>A spreadsheet usually cannot prove evidence lineage, ruleset version, fail-closed quality controls, or an integrity hash. CBAMValid seals an operator-prepared dossier with calculation traces, evidence register, and immutable release hashes so a buyer or verifier can inspect what was locked. Buyer pressure often arrives before your files are audit-ready. The risk is not formatting — it is defending numbers without evidence, method pins, or a sealed integrity trail.</description>
+      <description>A spreadsheet usually cannot prove evidence lineage, ruleset version, fail-closed quality controls, or an integrity hash. CBAMValid seals an operator-prepared dossier with calculation traces, evidence register, and immutable release hashes so a buyer or verifier can inspect what was locked.
+
+Buyer pressure often arrives before your files are audit-ready. The risk is not formatting — it is defending numbers without evidence, method pins, or a sealed integrity trail.</description>
       <category>/, /product, /how-it-works, /sample-dossier</category>
     </item>
     <item>
       <title>Can one USD 449 payment cover a second plant or another reporting year?</title>
       <link>https://cbamvalid.com</link>
       <guid isPermaLink="false">one-pack-scope-lock</guid>
-      <description>No. $449 unlocks one working file: one legal operator, one production installation, and one reporting year, with same-file correction re-locks included. Another plant, year, or working file requires another payment. Procurement teams often hope one purchase covers the group. Scope lock prevents silent widening that would break evidence and entitlement integrity.</description>
+      <description>No. $449 unlocks one working file: one legal operator, one production installation, and one reporting year, with same-file correction re-locks included. Another plant, year, or working file requires another payment.
+
+Procurement teams often hope one purchase covers the group. Scope lock prevents silent widening that would break evidence and entitlement integrity.</description>
       <category>/, /pricing, /product</category>
     </item>
     <item>
       <title>What should I do first if my EU buyer asks for actual CBAM emissions evidence this week?</title>
       <link>https://cbamvalid.com</link>
       <guid isPermaLink="false">buyer-asks-tomorrow</guid>
-      <description>Start a free draft for one installation and one reporting year, confirm CN scope, enter production and emissions inputs you already have, link available evidence, and clear visible blockers. Pay once to lock that working file when you are ready to seal a handover package — drafting does not charge your card. Same-file corrections stay included; a new file needs a new payment. Urgent buyer emails create panic buys. The durable move is to make gaps visible first, then seal a defendable package — without claiming an accredited verification opinion.</description>
+      <description>Start a free draft for one installation and one reporting year, confirm CN scope, enter production and emissions inputs you already have, link available evidence, and clear visible blockers. Pay once to lock that working file when you are ready to seal a handover package — drafting does not charge your card. Same-file corrections stay included; a new file needs a new payment.
+
+Urgent buyer emails create panic buys. The durable move is to make gaps visible first, then seal a defendable package — without claiming an accredited verification opinion.</description>
       <category>/, /how-it-works, /cbam-non-eu-producer-guide, /cbam-2026-definitive-period</category>
     </item>
     <item>
       <title>Is CBAMValid an official European Commission service?</title>
       <link>https://cbamvalid.com/about</link>
       <guid isPermaLink="false">about-independence</guid>
-      <description>No. CBAMValid is an independent software service for exporter-to-importer evidence packaging. It is not an EU institution, customs authority, or accredited CBAM verifier. Procurement and legal teams need a clear independence boundary before they trust a vendor with emissions data.</description>
+      <description>No. CBAMValid is an independent software service for exporter-to-importer evidence packaging. It is not an EU institution, customs authority, or accredited CBAM verifier.
+
+Procurement and legal teams need a clear independence boundary before they trust a vendor with emissions data.</description>
       <category>/about, /contact, /</category>
-    </item>
-    <item>
-      <title>What is a CBAMValid structure review — and is it a verification opinion?</title>
-      <link>https://cbamvalid.com/verifier-review</link>
-      <guid isPermaLink="false">structure-review-vs-opinion</guid>
-      <description>A structure review assesses whether the Preparation Pack contains the data fields and evidence lineage a verification workflow needs. It is not a verification opinion, reasonable assurance, accreditation endorsement, EU approval, or customs decision. Canonical boundary: Reviewed for structure — not a verification opinion. Buyers fear package rejection more than arithmetic. Structure fitness and accredited verification are different trust signals — confusing them creates legal and commercial risk.</description>
-      <category>/verifier-review, /, /about, /methodology</category>
-    </item>
-    <item>
-      <title>What letter language does CBAMValid request from verification bodies?</title>
-      <link>https://cbamvalid.com/verifier-review</link>
-      <guid isPermaLink="false">structure-review-letter-language</guid>
-      <description>Target language: We reviewed the CBAMValid Preparation Pack structure. It contains the data fields and evidence lineage required under IR 2025/2621 for our verification workflow. This is a structural review, not a verification opinion. Without a hard boundary sentence, a marketing page can be misread as assurance. The letter must stay structural.</description>
-      <category>/verifier-review</category>
     </item>
     <item>
       <title>Does CBAMValid publish the rulesets used in sealed packages?</title>
       <link>https://cbamvalid.com/rulesets</link>
       <guid isPermaLink="false">published-rulesets-pin</guid>
-      <description>Yes. CBAMValid publishes a public ruleset registry with named versions, active dates, source-registry hashes, and linked official sources. Every sealed package pins a named ruleset. Historical seals keep the ruleset they were built against. Publishing the registry is not an accredited verification opinion. Verifiers and buyers ask which rules applied. A dated, named pin beats a vague “latest methodology” claim.</description>
+      <description>Yes. CBAMValid publishes a public ruleset registry with named versions, active dates, source-registry hashes, and linked official sources. Every sealed package pins a named ruleset. Historical seals keep the ruleset they were built against. Publishing the registry is not an accredited verification opinion.
+
+Verifiers and buyers ask which rules applied. A dated, named pin beats a vague “latest methodology” claim.</description>
       <category>/rulesets, /methodology, /platform</category>
     </item>
     <item>
       <title>How does a CBAMValid buyer share link work?</title>
       <link>https://cbamvalid.com/buyer-link</link>
       <guid isPermaLink="false">buyer-share-link</guid>
-      <description>After lock, a public token URL opens the sealed release summary. Short form /d/&lt;token&gt; aliases the canonical /verify/&lt;token&gt; view. The buyer can inspect integrity and download for authorized tokens without logging in. A successful open is integrity and preparation status only — not an accredited verification opinion. EU buyers need a single link, not email-attachment chaos. The link must stay an integrity surface, not fake assurance.</description>
+      <description>After lock, a public token URL opens the sealed release summary. Short form /d/<token> aliases the canonical /verify/<token> view. The buyer can inspect integrity and download for authorized tokens without logging in. A successful open is integrity and preparation status only — not an accredited verification opinion.
+
+EU buyers need a single link, not email-attachment chaos. The link must stay an integrity surface, not fake assurance.</description>
       <category>/buyer-link, /verify</category>
     </item>
     <item>
       <title>Does CBAMValid claim ISO 27001 or SOC 2 certification?</title>
       <link>https://cbamvalid.com/security</link>
       <guid isPermaLink="false">security-no-fake-iso</guid>
-      <description>No. The security page publishes hosting region (europe-west1), TLS, session model, encryption-at-rest defaults, subprocessors, and a DPA draft. ISO 27001 and SOC 2 are not claimed. Certificates will be published only with issuer, scope, and validity dates. Procurement needs facts. “In progress” certification language is a trust defect.</description>
+      <description>No. The security page publishes hosting region (europe-west1), TLS, session model, encryption-at-rest defaults, subprocessors, and a DPA draft. ISO 27001 and SOC 2 are not claimed. Certificates will be published only with issuer, scope, and validity dates.
+
+Procurement needs facts. “In progress” certification language is a trust defect.</description>
       <category>/security, /privacy</category>
     </item>
     <item>
       <title>How does CBAMValid prove marketing claims without inventing evidence?</title>
       <link>https://cbamvalid.com/trust</link>
       <guid isPermaLink="false">trust-evidence-registry</guid>
-      <description>CBAMValid publishes a Trust Evidence Registry at /trust. Each marketing claim is tagged VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Legal identity is published: SectorCalc Corporation (CBAMValid), CRO 315881, VAT IE1857162AB, Dublin registered address, support phone, and DPO contact. /case-studies publishes anonymized illustrative scenarios — not named logos. SAMPLE documents are watermarked specimens — not certificates. Procurement teams reverse-engineer claims. Invented identity destroys enterprise deals permanently.</description>
+      <description>CBAMValid publishes a Trust Evidence Registry at /trust. Each marketing claim is tagged VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Legal identity is published: SectorCalc Corporation (CBAMValid), CRO 315881, VAT IE1857162AB, Dublin registered address, support phone, and DPO contact. /case-studies publishes anonymized illustrative scenarios — not named logos. SAMPLE documents are watermarked specimens — not certificates.
+
+Procurement teams reverse-engineer claims. Invented identity destroys enterprise deals permanently.</description>
       <category>/trust, /legal-notice, /case-studies</category>
     </item>
     <item>
       <title>Is CBAMValid only a calculator, or a broader compliance platform?</title>
       <link>https://cbamvalid.com/platform</link>
       <guid isPermaLink="false">platform-cbam-first</guid>
-      <description>CBAMValid is a sealed, evidence-linked, version-pinned compliance package architecture. The live ruleset family is EU CBAM. Additional regimes can reuse the package contract later — they are not sold until CBAM leadership and opening conditions justify them. No second regulated product is live today. Architecture honesty beats vaporware roadmaps. Door = CBAM; room is larger only when earned.</description>
+      <description>CBAMValid is a sealed, evidence-linked, version-pinned compliance package architecture. The live ruleset family is EU CBAM. Additional regimes can reuse the package contract later — they are not sold until CBAM leadership and opening conditions justify them. No second regulated product is live today.
+
+Architecture honesty beats vaporware roadmaps. Door = CBAM; room is larger only when earned.</description>
       <category>/platform, /</category>
-    </item>
-    <item>
-      <title>What does CBAMValid Enterprise Exclusive include?</title>
-      <link>https://cbamvalid.com/enterprise</link>
-      <guid isPermaLink="false">enterprise-exclusive</guid>
-      <description>Enterprise Exclusive starts from USD 12,000 per year (contact sales). It includes contracted SSO/IdP federation (Entra, Google, Okta), SLA draft and signed MSA path, holding/multi-entity entitlement, signed DPA path, API/onboarding, and verifier coordination. Not an accredited verification opinion. Single Pack remains self-serve at USD 449. Multi-site buyers need procurement-grade SSO and SLA — not another self-serve checkbox.</description>
-      <category>/enterprise, /pricing, /demo</category>
-    </item>
-    <item>
-      <title>Does CBAMValid Enterprise support SSO with Entra, Google, or Okta?</title>
-      <link>https://cbamvalid.com/enterprise</link>
-      <guid isPermaLink="false">enterprise-sso</guid>
-      <description>Yes under Enterprise contract. CBAMValid federates Microsoft Entra ID, Google Workspace, or Okta via OIDC or SAML. After IdP login, the server still issues an HttpOnly session cookie and enforces tenant/case authorization. SSO is not included on self-serve Single Pack. IT security blocks SaaS tools that cannot join the corporate IdP. Checkbox “SSO coming soon” fails procurement.</description>
-      <category>/enterprise, /enterprise/sso, /demo, /security</category>
-    </item>
-    <item>
-      <title>Does CBAMValid publish an Enterprise SLA?</title>
-      <link>https://cbamvalid.com/enterprise</link>
-      <guid isPermaLink="false">enterprise-sla</guid>
-      <description>Yes. CBAMValid publishes an Enterprise SLA draft with response targets for critical, high, and normal issues, plus an honest uptime posture based on Google Cloud / Firebase europe-west1. Binding credits live only in a signed Enterprise MSA. ISO 27001 and SOC 2 are not claimed. Procurement packs need downloadable SLA language before legal review — not a vague “we take uptime seriously” sentence.</description>
-      <category>/enterprise, /security, /demo</category>
-    </item>
-    <item>
-      <title>Can a holding company cover multiple operators and installations?</title>
-      <link>https://cbamvalid.com/enterprise</link>
-      <guid isPermaLink="false">enterprise-holding</guid>
-      <description>Enterprise entitlement can sit at holding level while each sealed working file still binds one operator, one installation, and one reporting year. Cross-entity clones do not inherit payment unless the SOW says so. Roles include Holding Admin, Operator Preparer, Internal Reviewer, and Read-Only Verifier. Groups fear either paying forever per plant or blurring legal scope so verifiers reject the package.</description>
-      <category>/enterprise, /enterprise/holding, /pricing, /demo</category>
-    </item>
-    <item>
-      <title>When should I buy Single Pack instead of Enterprise Exclusive?</title>
-      <link>https://cbamvalid.com/enterprise</link>
-      <guid isPermaLink="false">enterprise-vs-single-pack</guid>
-      <description>Choose Single Pack (USD 449 pay-at-lock) for one working file — one operator, one installation, one reporting year — with same-file corrections included. Choose Enterprise Exclusive (from USD 12,000/year, contact sales) when you need SSO, SLA/DPA path, holding/multi-entity entitlement, API/onboarding, or coordinated multi-site rollout. Buying Enterprise for a single plant wastes budget; buying Single Pack for a group IdP requirement fails IT review.</description>
-      <category>/enterprise, /pricing, /, /demo</category>
-    </item>
-    <item>
-      <title>Are R6–R9 Enterprise platform modules live to sell?</title>
-      <link>https://cbamvalid.com/enterprise</link>
-      <guid isPermaLink="false">enterprise-platform-modules</guid>
-      <description>Yes. Published Rulesets (R6), Buyer Share Link (R7), Security/DPA/SLA (R8), and Platform architecture (R9) are live sellable surfaces. Additional regulatory categories beyond CBAM remain Enterprise SOW-only — CBAMValid does not sell half-products. Enterprise buyers reject vaporware roadmaps. Modules must be inspectable before a scoping call.</description>
-      <category>/enterprise, /platform, /rulesets, /buyer-link</category>
-    </item>
-    <item>
-      <title>How do channel partners engage with CBAMValid Enterprise?</title>
-      <link>https://cbamvalid.com/enterprise</link>
-      <guid isPermaLink="false">enterprise-partners</guid>
-      <description>Verifier firms, consultancies, and trade associations can request a partner track on /partners. Logos are published only after a signed referral agreement. Partner status does not create an accredited verification endorsement. Channel scale requires contracts — invented partner walls destroy trust.</description>
-      <category>/enterprise, /partners, /demo</category>
-    </item>
-    <item>
-      <title>What are CBAMValid’s published pricing tiers?</title>
-      <link>https://cbamvalid.com/pricing</link>
-      <guid isPermaLink="false">pricing-four-tiers</guid>
-      <description>Draft is $0. Single Pack is USD 449 one-time pay-at-lock for one working file. Exporter Annual is USD 2,400 per year. Enterprise is from USD 12,000 per year and is the only contact-sales tier. Not an accredited verification opinion. Procurement needs published prices. Hiding everything behind “contact sales” fails the public-pricing rule.</description>
-      <category>/pricing, /demo, /, /enterprise</category>
     </item>
     <item>
       <title>Is the CBAMValid calculation engine deterministic and replayable?</title>
       <link>https://cbamvalid.com/product</link>
       <guid isPermaLink="false">product-deterministic-engine</guid>
-      <description>Yes. Authoritative calculations run server-side and are replayable: same case snapshot, same ruleset, and same engine version produce the same outputs and node hashes. Every authoritative node records formula identity, inputs, units, conversions, and a SHA-256 node hash. Verifier questions collapse spreadsheets that cannot reproduce a figure. Replayability is what lets you defend a number weeks later.</description>
+      <description>Yes. Authoritative calculations run server-side and are replayable: same case snapshot, same ruleset, and same engine version produce the same outputs and node hashes. Every authoritative node records formula identity, inputs, units, conversions, and a SHA-256 node hash.
+
+Verifier questions collapse spreadsheets that cannot reproduce a figure. Replayability is what lets you defend a number weeks later.</description>
       <category>/product, /methodology, /</category>
     </item>
     <item>
       <title>How does the CBAMValid evidence register work?</title>
       <link>https://cbamvalid.com/product</link>
       <guid isPermaLink="false">product-evidence-register</guid>
-      <description>Evidence objects store file identity, SHA-256 hash, size, path ownership, review status, and support status, and link to the calculation nodes they support. Coverage is visible in the working file — not assumed. Missing, rejected, unsupported, or hash-mismatched evidence blocks sealing. Buyers and verifiers ask which document supports which figure. An unlinked folder of PDFs is not an evidence register.</description>
+      <description>Evidence objects store file identity, SHA-256 hash, size, path ownership, review status, and support status, and link to the calculation nodes they support. Coverage is visible in the working file — not assumed. Missing, rejected, unsupported, or hash-mismatched evidence blocks sealing.
+
+Buyers and verifiers ask which document supports which figure. An unlinked folder of PDFs is not an evidence register.</description>
       <category>/product, /cbam-exporter-evidence-requirements, /sample-dossier</category>
     </item>
     <item>
       <title>What quality controls run before a CBAMValid seal?</title>
       <link>https://cbamvalid.com/product</link>
       <guid isPermaLink="false">product-fail-closed-qc</guid>
-      <description>16 automated QC rule families run against EU guidance — including unit consistency, boundary completeness, allocation balance, and default-value flagging. Material blockers must be resolved before sealing. Missing inputs are not silently converted to zero. A package that seals with open blockers creates verifier friction and buyer rejection risk. Fail-closed is the durable path.</description>
+      <description>16 automated QC rule families run against EU guidance — including unit consistency, boundary completeness, allocation balance, and default-value flagging. Material blockers must be resolved before sealing. Missing inputs are not silently converted to zero.
+
+A package that seals with open blockers creates verifier friction and buyer rejection risk. Fail-closed is the durable path.</description>
       <category>/product, /how-it-works, /</category>
     </item>
     <item>
       <title>Does CBAMValid provide an O3CI field-mapped export?</title>
       <link>https://cbamvalid.com/product</link>
       <guid isPermaLink="false">product-o3ci-export</guid>
-      <description>Yes. CBAMValid produces an O3CI field-mapped structured data export (XLSX) aligned to the installation communication template circulating in EU supply chains. It is not an official CBAM Registry XML submission and does not claim customs or registry acceptance. Buyers often ask for field-mapped data they can reuse without re-typing. Naming the export correctly prevents false “Registry XML” claims.</description>
+      <description>Yes. CBAMValid produces an O3CI field-mapped structured data export (XLSX) aligned to the installation communication template circulating in EU supply chains. It is not an official CBAM Registry XML submission and does not claim customs or registry acceptance.
+
+Buyers often ask for field-mapped data they can reuse without re-typing. Naming the export correctly prevents false “Registry XML” claims.</description>
       <category>/product, /sample-dossier, /methodology</category>
     </item>
     <item>
       <title>How does CBAMValid sealing and integrity hashing work?</title>
       <link>https://cbamvalid.com/product</link>
       <guid isPermaLink="false">product-seal-integrity</guid>
-      <description>On sealing, deliverables are hashed (SHA-256), timestamped, and recorded in a data integrity manifest. Prior sealed releases remain immutable. Anyone holding the dossier can confirm bytes were not altered after the seal via the public verify path. Without a sealed integrity trail, a buyer cannot tell whether a file changed after handover. Hash + timestamp is the operational proof.</description>
+      <description>On sealing, deliverables are hashed (SHA-256), timestamped, and recorded in a data integrity manifest. Prior sealed releases remain immutable. Anyone holding the dossier can confirm bytes were not altered after the seal via the public verify path.
+
+Without a sealed integrity trail, a buyer cannot tell whether a file changed after handover. Hash + timestamp is the operational proof.</description>
       <category>/product, /verify, /sample-dossier</category>
     </item>
     <item>
       <title>How long does CBAMValid preparation take?</title>
       <link>https://cbamvalid.com/how-it-works</link>
       <guid isPermaLink="false">readiness-kit-time</guid>
-      <description>Honest time: 2–4 hours if your data is ready. 2–3 weeks if starting from zero. Use the readiness checklist and downloadable pre-flight XLSX before opening a working file. False “instant CBAM” claims create failed seals. Time honesty reduces buyer deadline panic.</description>
+      <description>Honest time: 2–4 hours if your data is ready. 2–3 weeks if starting from zero. Use the readiness checklist and downloadable pre-flight XLSX before opening a working file.
+
+False “instant CBAM” claims create failed seals. Time honesty reduces buyer deadline panic.</description>
       <category>/how-it-works, /product</category>
     </item>
     <item>
       <title>Where are CBAMValid customer case studies?</title>
       <link>https://cbamvalid.com/case-studies</link>
       <guid isPermaLink="false">case-studies-permissioned</guid>
-      <description>CBAMValid publishes anonymized illustrative sector scenarios on /case-studies (steel, aluminium, holding, cement). Named company logos and quotes publish only with written permission. Invented testimonials remain forbidden. Field realism without fake logos. Buyers recognize anonymized pressure paths; procurement rejects invented praise strips.</description>
+      <description>CBAMValid publishes anonymized illustrative sector scenarios on /case-studies (steel, aluminium, holding, cement). Named company logos and quotes publish only with written permission. Invented testimonials remain forbidden.
+
+Field realism without fake logos. Buyers recognize anonymized pressure paths; procurement rejects invented praise strips.</description>
       <category>/case-studies, /about, /</category>
-    </item>
-    <item>
-      <title>What do IdP and MSA mean for CBAMValid Enterprise SSO?</title>
-      <link>https://cbamvalid.com/enterprise/sso</link>
-      <guid isPermaLink="false">what-is-idp-msa</guid>
-      <description>IdP means Identity Provider — your company login (Microsoft Entra ID, Google Workspace, or Okta). MSA means Master Service Agreement — the signed Enterprise contract covering pricing, SLA, DPA, and which domains are in scope. SSO is enabled after that contract; it is not on Single Pack. Procurement jargon blocks deals. Plain labels unblock Enterprise scoping.</description>
-      <category>/enterprise/sso, /enterprise, /demo</category>
     </item>
   </channel>
 </rss>

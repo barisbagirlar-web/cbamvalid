@@ -33,14 +33,11 @@ export default function SecurityPage() {
             <a className="btn btn-primary" href="/security/dpa-draft.pdf" download>
               Download DPA draft (PDF)
             </a>
-            <a className="btn btn-ghost" href="/enterprise/sla-draft.pdf" download>
-              Download SLA draft (PDF)
-            </a>
-            <Link className="btn btn-ghost" href="/enterprise">
-              Enterprise Exclusive
-            </Link>
             <Link className="btn btn-ghost" href="/privacy">
               Privacy policy
+            </Link>
+            <Link className="btn btn-ghost" href="/pricing">
+              See pricing
             </Link>
           </div>
         </div>

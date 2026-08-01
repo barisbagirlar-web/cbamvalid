@@ -178,27 +178,6 @@
       ]
     },
     {
-      "id": "structure-review-vs-opinion",
-      "url": "https://cbamvalid.com/answers#structure-review-vs-opinion",
-      "title": "What is a CBAMValid structure review — and is it a verification opinion?",
-      "content_text": "A structure review assesses whether the Preparation Pack contains the data fields and evidence lineage a verification workflow needs. It is not a verification opinion, reasonable assurance, accreditation endorsement, EU approval, or customs decision. Canonical boundary: Reviewed for structure — not a verification opinion.\n\nBuyers fear package rejection more than arithmetic. Structure fitness and accredited verification are different trust signals — confusing them creates legal and commercial risk.",
-      "tags": [
-        "/verifier-review",
-        "/",
-        "/about",
-        "/methodology"
-      ]
-    },
-    {
-      "id": "structure-review-letter-language",
-      "url": "https://cbamvalid.com/answers#structure-review-letter-language",
-      "title": "What letter language does CBAMValid request from verification bodies?",
-      "content_text": "Target language: We reviewed the CBAMValid Preparation Pack structure. It contains the data fields and evidence lineage required under IR 2025/2621 for our verification workflow. This is a structural review, not a verification opinion.\n\nWithout a hard boundary sentence, a marketing page can be misread as assurance. The letter must stay structural.",
-      "tags": [
-        "/verifier-review"
-      ]
-    },
-    {
       "id": "published-rulesets-pin",
       "url": "https://cbamvalid.com/answers#published-rulesets-pin",
       "title": "Does CBAMValid publish the rulesets used in sealed packages?",
@@ -248,99 +227,6 @@
       "tags": [
         "/platform",
         "/"
-      ]
-    },
-    {
-      "id": "enterprise-exclusive",
-      "url": "https://cbamvalid.com/answers#enterprise-exclusive",
-      "title": "What does CBAMValid Enterprise Exclusive include?",
-      "content_text": "Enterprise Exclusive starts from USD 12,000 per year (contact sales). It includes contracted SSO/IdP federation (Entra, Google, Okta), SLA draft and signed MSA path, holding/multi-entity entitlement, signed DPA path, API/onboarding, and verifier coordination. Not an accredited verification opinion. Single Pack remains self-serve at USD 449.\n\nMulti-site buyers need procurement-grade SSO and SLA — not another self-serve checkbox.",
-      "tags": [
-        "/enterprise",
-        "/pricing",
-        "/demo"
-      ]
-    },
-    {
-      "id": "enterprise-sso",
-      "url": "https://cbamvalid.com/answers#enterprise-sso",
-      "title": "Does CBAMValid Enterprise support SSO with Entra, Google, or Okta?",
-      "content_text": "Yes under Enterprise contract. CBAMValid federates Microsoft Entra ID, Google Workspace, or Okta via OIDC or SAML. After IdP login, the server still issues an HttpOnly session cookie and enforces tenant/case authorization. SSO is not included on self-serve Single Pack.\n\nIT security blocks SaaS tools that cannot join the corporate IdP. Checkbox “SSO coming soon” fails procurement.",
-      "tags": [
-        "/enterprise",
-        "/enterprise/sso",
-        "/demo",
-        "/security"
-      ]
-    },
-    {
-      "id": "enterprise-sla",
-      "url": "https://cbamvalid.com/answers#enterprise-sla",
-      "title": "Does CBAMValid publish an Enterprise SLA?",
-      "content_text": "Yes. CBAMValid publishes an Enterprise SLA draft with response targets for critical, high, and normal issues, plus an honest uptime posture based on Google Cloud / Firebase europe-west1. Binding credits live only in a signed Enterprise MSA. ISO 27001 and SOC 2 are not claimed.\n\nProcurement packs need downloadable SLA language before legal review — not a vague “we take uptime seriously” sentence.",
-      "tags": [
-        "/enterprise",
-        "/security",
-        "/demo"
-      ]
-    },
-    {
-      "id": "enterprise-holding",
-      "url": "https://cbamvalid.com/answers#enterprise-holding",
-      "title": "Can a holding company cover multiple operators and installations?",
-      "content_text": "Enterprise entitlement can sit at holding level while each sealed working file still binds one operator, one installation, and one reporting year. Cross-entity clones do not inherit payment unless the SOW says so. Roles include Holding Admin, Operator Preparer, Internal Reviewer, and Read-Only Verifier.\n\nGroups fear either paying forever per plant or blurring legal scope so verifiers reject the package.",
-      "tags": [
-        "/enterprise",
-        "/enterprise/holding",
-        "/pricing",
-        "/demo"
-      ]
-    },
-    {
-      "id": "enterprise-vs-single-pack",
-      "url": "https://cbamvalid.com/answers#enterprise-vs-single-pack",
-      "title": "When should I buy Single Pack instead of Enterprise Exclusive?",
-      "content_text": "Choose Single Pack (USD 449 pay-at-lock) for one working file — one operator, one installation, one reporting year — with same-file corrections included. Choose Enterprise Exclusive (from USD 12,000/year, contact sales) when you need SSO, SLA/DPA path, holding/multi-entity entitlement, API/onboarding, or coordinated multi-site rollout.\n\nBuying Enterprise for a single plant wastes budget; buying Single Pack for a group IdP requirement fails IT review.",
-      "tags": [
-        "/enterprise",
-        "/pricing",
-        "/",
-        "/demo"
-      ]
-    },
-    {
-      "id": "enterprise-platform-modules",
-      "url": "https://cbamvalid.com/answers#enterprise-platform-modules",
-      "title": "Are R6–R9 Enterprise platform modules live to sell?",
-      "content_text": "Yes. Published Rulesets (R6), Buyer Share Link (R7), Security/DPA/SLA (R8), and Platform architecture (R9) are live sellable surfaces. Additional regulatory categories beyond CBAM remain Enterprise SOW-only — CBAMValid does not sell half-products.\n\nEnterprise buyers reject vaporware roadmaps. Modules must be inspectable before a scoping call.",
-      "tags": [
-        "/enterprise",
-        "/platform",
-        "/rulesets",
-        "/buyer-link"
-      ]
-    },
-    {
-      "id": "enterprise-partners",
-      "url": "https://cbamvalid.com/answers#enterprise-partners",
-      "title": "How do channel partners engage with CBAMValid Enterprise?",
-      "content_text": "Verifier firms, consultancies, and trade associations can request a partner track on /partners. Logos are published only after a signed referral agreement. Partner status does not create an accredited verification endorsement.\n\nChannel scale requires contracts — invented partner walls destroy trust.",
-      "tags": [
-        "/enterprise",
-        "/partners",
-        "/demo"
-      ]
-    },
-    {
-      "id": "pricing-four-tiers",
-      "url": "https://cbamvalid.com/answers#pricing-four-tiers",
-      "title": "What are CBAMValid’s published pricing tiers?",
-      "content_text": "Draft is $0. Single Pack is USD 449 one-time pay-at-lock for one working file. Exporter Annual is USD 2,400 per year. Enterprise is from USD 12,000 per year and is the only contact-sales tier. Not an accredited verification opinion.\n\nProcurement needs published prices. Hiding everything behind “contact sales” fails the public-pricing rule.",
-      "tags": [
-        "/pricing",
-        "/demo",
-        "/",
-        "/enterprise"
       ]
     },
     {
@@ -417,17 +303,6 @@
         "/case-studies",
         "/about",
         "/"
-      ]
-    },
-    {
-      "id": "what-is-idp-msa",
-      "url": "https://cbamvalid.com/answers#what-is-idp-msa",
-      "title": "What do IdP and MSA mean for CBAMValid Enterprise SSO?",
-      "content_text": "IdP means Identity Provider — your company login (Microsoft Entra ID, Google Workspace, or Okta). MSA means Master Service Agreement — the signed Enterprise contract covering pricing, SLA, DPA, and which domains are in scope. SSO is enabled after that contract; it is not on Single Pack.\n\nProcurement jargon blocks deals. Plain labels unblock Enterprise scoping.",
-      "tags": [
-        "/enterprise/sso",
-        "/enterprise",
-        "/demo"
       ]
     }
   ]

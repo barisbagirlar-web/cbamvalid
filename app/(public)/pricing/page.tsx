@@ -2,101 +2,29 @@ import React from "react";
 import Link from "next/link";
 import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 
-/** Comparison ledger row: one feature across the Free and Pack columns. */
-type LedgerRow = {
-  label: string;
-  detail?: string;
-  free: string;
-  pack: string;
-  /** Styling of the pack cell value. */
-  packKind?: "yes" | "na" | "text" | "plain";
-  /** Mark the free cell value as a "not available" dash. */
-  freeIsNa?: boolean;
-};
+const INCLUDED = [
+  "Unlimited free drafting before lock",
+  "Deterministic emissions calculations",
+  "Automated quality controls",
+  "Customer-controlled evidence linking",
+  "Automated digital PDF",
+  "Automated digital JSON",
+  "Automated digital XLSX",
+  "Lock and download",
+  "Same-file correction re-locks",
+];
 
-const LEDGER_SECTIONS: { title: string; rows: LedgerRow[] }[] = [
-  {
-    title: "Preparation",
-    rows: [
-      {
-        label: "Cases & drafts",
-        detail: "Create, complete and re-run without charge",
-        free: "UNLIMITED",
-        pack: "UNLIMITED",
-        packKind: "yes",
-      },
-      {
-        label: "Real-time QC engine",
-        detail: "Field-level checks as you enter data",
-        free: "INCLUDED",
-        pack: "INCLUDED",
-        packKind: "yes",
-      },
-      {
-        label: "Data gap analysis",
-        detail: "See what is missing before you commit",
-        free: "INCLUDED",
-        pack: "INCLUDED",
-        packKind: "yes",
-      },
-    ],
-  },
-  {
-    title: "Sealing & evidence",
-    rows: [
-      {
-        label: "Emissions calculations & validation",
-        detail: "Against published rulesets",
-        free: "—",
-        freeIsNa: true,
-        pack: "INCLUDED",
-        packKind: "yes",
-      },
-      {
-        label: "Sealed releases",
-        detail: "Consumed only on a successful seal",
-        free: "—",
-        freeIsNa: true,
-        pack: CANONICAL_PRICING.correctionPolicy,
-        packKind: "text",
-      },
-      {
-        label: "SHA-256 evidence chain",
-        detail: "Every sealed dossier checkable at /verify",
-        free: "—",
-        freeIsNa: true,
-        pack: "INCLUDED",
-        packKind: "yes",
-      },
-      {
-        label: "O3CI structured export",
-        detail: "Field-mapped data for downstream systems",
-        free: "—",
-        freeIsNa: true,
-        pack: "INCLUDED",
-        packKind: "yes",
-      },
-    ],
-  },
-  {
-    title: "Scope",
-    rows: [
-      {
-        label: "Installations",
-        free: "—",
-        freeIsNa: true,
-        pack: String(CANONICAL_PRICING.includedInstallations),
-        packKind: "plain",
-      },
-      {
-        label: "Reporting years",
-        free: "—",
-        freeIsNa: true,
-        pack: String(CANONICAL_PRICING.includedReportingYears),
-        packKind: "plain",
-      },
-    ],
-  },
+const NOT_INCLUDED = [
+  "Consulting",
+  "Advisory services",
+  "Manual preparation",
+  "Evidence review by CBAMValid",
+  "Methodology recommendations",
+  "Legal, tax or customs advice",
+  "Accredited verification",
+  "Access to experts",
+  "Custom onboarding",
+  "Custom implementation",
 ];
 
 const ASSURANCES: { label: string; text: string }[] = [
@@ -122,42 +50,39 @@ const FAQS: { question: string; answer: string }[] = [
   {
     question: "When am I charged?",
     answer:
-      "Once, when you lock a working file. A sealed release is consumed only after a dossier seals successfully. Failed seals cost nothing.",
+      "Once, when you lock a working file. Drafting is free before lock. A sealed release is consumed only after a dossier seals successfully — failed seals cost nothing.",
   },
   {
     question: "Is this a subscription?",
     answer:
-      "No. The Preparation Pack is a one-time purchase covering one installation and one reporting year. There is no renewal.",
+      "No. The Self-Service Software purchase is a one-time USD 449 payment covering one working file — one operator, one installation and one reporting year. There is no renewal.",
   },
   {
     question: "Can I evaluate before paying?",
     answer:
-      "Yes. Drafts are free without limit: create cases, run the real-time QC engine and review data gaps before buying anything.",
+      "Yes. Drafts are free without limit: create cases, run the automated QC engine and review data gaps before buying anything.",
   },
   {
-    question: "Does a sealed dossier replace accredited verification?",
+    question: "What is not included?",
     answer:
-      "No. CBAMValid prepares evidence-linked dossiers for verification. Where verification is legally required, emissions data must still be independently verified.",
+      "The purchase covers software access and automated digital delivery only. It does not include consulting, advisory services, manual preparation, evidence review, methodology recommendations, legal/tax/customs advice, accredited verification or access to experts.",
   },
 ];
 
-function Value({
-  value,
-  kind,
-  isNa,
-}: {
-  value: string;
-  kind?: "yes" | "na" | "text" | "plain";
-  isNa?: boolean;
-}) {
-  if (isNa) {
-    return <span className="pricing-val na">{value}</span>;
-  }
-  if (kind === "text") {
-    return <span className="pricing-val text">{value}</span>;
-  }
-  const cls = kind === "yes" ? "pricing-val yes" : "pricing-val";
-  return <span className={cls}>{value}</span>;
+function CheckIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
+      <path d="m4 12.5 5 5L20 6.5" />
+    </svg>
+  );
+}
+
+function CrossIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  );
 }
 
 export default function PricingPage() {
@@ -165,81 +90,70 @@ export default function PricingPage() {
     <main>
       <section className="pricing-wrap" aria-label="Pricing">
         <header className="pricing-hero">
-          <p className="eyebrow">Pricing — one pack, no subscription</p>
-          <h1 className="pricing-title">Prepare your CBAM case before you pay</h1>
+          <p className="eyebrow">Pricing — one self-service product</p>
+          <h1 className="pricing-title">Self-Service Software</h1>
           <p className="pricing-lede">
-            Create, complete and review your case without charge.{" "}
-            <strong>Pay once when you lock your file</strong> — releases are
-            consumed only after a dossier is successfully sealed.
+            One clear Paddle product. Draft free, run deterministic calculations and automated quality
+            controls, link your own evidence, then{" "}
+            <strong>pay once to lock your working file</strong> and download automated digital outputs.
           </p>
         </header>
 
-        {/* Comparison ledger: Free Drafts vs Preparation Pack */}
-        <section className="pricing-compare" aria-label="Plan comparison">
-          {/* Column heads */}
-          <div className="pricing-col label pricing-head">
-            <span className="pricing-kicker">Compare plans</span>
-          </div>
-          <div className="pricing-col free pricing-head">
-            <p className="pricing-tag">Evaluate first</p>
-            <h2 className="pricing-name">Free Drafts</h2>
-            <p className="pricing-price">$0</p>
-            <p className="pricing-meta">no card required</p>
-          </div>
-          <div className="pricing-col pack pricing-head pricing-pack-head">
-            <p className="pricing-tag">Prepared for accredited verification</p>
-            <h2 className="pricing-name">{CANONICAL_PRICING.packName}</h2>
-            <p className="pricing-price">{CANONICAL_PRICING.priceFormatted}</p>
-            <p className="pricing-meta">
-              one-time · {CANONICAL_PRICING.includedInstallations} installation ·{" "}
-              {CANONICAL_PRICING.includedReportingYears} reporting year
+        {/* Single product */}
+        <section className="pricing-grid" aria-label="Self-Service Software product">
+          <div className="price-card featured">
+            <span className="badge-pop">One-time · Pay at lock</span>
+            <h3>Self-Service Software</h3>
+            <p className="sub">
+              {CANONICAL_PRICING.priceFormatted} · one-time
             </p>
-          </div>
-
-          {LEDGER_SECTIONS.map((section) => (
-            <React.Fragment key={section.title}>
-              <div className="pricing-section-row">{section.title}</div>
-              {section.rows.map((row) => (
-                <React.Fragment key={row.label}>
-                  <div className="pricing-col label">
-                    <span className="pricing-fname">{row.label}</span>
-                    {row.detail ? (
-                      <span className="pricing-fdetail">{row.detail}</span>
-                    ) : null}
-                  </div>
-                  <div className="pricing-col free">
-                    <Value value={row.free} isNa={row.freeIsNa} />
-                  </div>
-                  <div className="pricing-col pack">
-                    <Value value={row.pack} kind={row.packKind} />
-                  </div>
-                </React.Fragment>
+            <p className="sub">
+              One working file covering one operator, one installation and one reporting year.
+            </p>
+            <ul className="feat-list">
+              {INCLUDED.map((item) => (
+                <li key={item}>
+                  <CheckIcon />
+                  {item}
+                </li>
               ))}
-            </React.Fragment>
-          ))}
+            </ul>
+            <Link className="btn btn-primary" href="/register?next=/cases/new" prefetch={false}>
+              Start Free Draft — Pay When You Lock <span className="arr">→</span>
+            </Link>
+            <p className="pricing-btn-note" style={{ marginTop: "10px" }}>
+              VAT may apply at checkout · <Link href="/refund-policy">Refund policy</Link>
+            </p>
+          </div>
 
-          {/* CTA row */}
-          <div className="pricing-col label pricing-cta">
-            <p className="pricing-seal">
-              <span className="pricing-seal-mark" aria-hidden="true"></span>
-              <Link href="/verify">Sealed · verifiable at /verify</Link>
-            </p>
-          </div>
-          <div className="pricing-col free pricing-cta">
-            <Link className="pricing-btn pricing-btn-ghost" href="/register?next=/cases/new" prefetch={false}>
-              Start for free
-            </Link>
-          </div>
-          <div className="pricing-col pack pricing-cta">
-            <Link className="pricing-btn pricing-btn-primary" href="/register?next=/cases/new" prefetch={false}>
-              Start free — pay when you lock
-            </Link>
-            <p className="pricing-btn-note">
-              VAT may apply at checkout ·{" "}
-              <Link href="/refund-policy">Refund policy</Link>
-            </p>
+          <div className="price-card">
+            <h3>Not included</h3>
+            <p className="sub">Software access and automated delivery only.</p>
+            <ul className="feat-list">
+              {NOT_INCLUDED.map((item) => (
+                <li key={item}>
+                  <CrossIcon />
+                  {item}
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
+
+        <ul className="guarantee-row">
+          <li>
+            <CheckIcon />
+            Draft free — no card until lock
+          </li>
+          <li>
+            <CheckIcon />
+            Same-file correction re-locks included
+          </li>
+          <li>
+            <CheckIcon />
+            Failed locks charge nothing
+          </li>
+        </ul>
 
         {/* Assurance strip */}
         <section className="pricing-assurance" aria-label="Assurances">
@@ -252,7 +166,7 @@ export default function PricingPage() {
         </section>
 
         {/* FAQ */}
-        <section className="pricing-faq" aria-label="Pricing questions">
+        <section className="pricing-faq" aria-label="Pricing questions" id="how-payment-works">
           <h2 className="pricing-faq-title">Pricing questions</h2>
           <div className="pricing-faq-grid">
             {FAQS.map((faq) => (

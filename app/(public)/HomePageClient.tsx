@@ -8,7 +8,6 @@ import { AuthorityRail } from '@/components/marketing/AuthorityRail';
 import { AeoPageChrome } from '@/components/seo/AnswerEvidenceSection';
 import { HOMEPAGE_STATS } from '@/lib/marketing/homepage-stats';
 import { PUBLIC_SAMPLE_DOSSIER } from '@/lib/sample/public-sample-dossier';
-import { STRUCTURE_REVIEW_PUBLIC } from '@/lib/trust/verifier-structure-review';
 
 export default function HomePageClient() {
   useClassReveal();
@@ -42,9 +41,10 @@ export default function HomePageClient() {
         </p>
         <p className="price-line">USD 449 per working file at lock. <span>No subscription. Drafts free. Same-file corrections included.</span></p>
         <div className="hero-ctas">
-          <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">Start a Dossier <span className="arr">→</span></a>
-          <a className="btn btn-ghost btn-lg" href="/sample-dossier">View the Sample Dossier</a>
-          <a className="btn btn-navy btn-lg" href="/demo">Book a Demo</a>
+          <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">Start Free Draft <span className="arr">→</span></a>
+          <a className="btn btn-ghost btn-lg" href="/sample-dossier">View Sample Dossier</a>
+          <a className="btn btn-navy btn-lg" href="/pricing">See Software Pricing</a>
+          <a className="btn btn-navy btn-lg" href="/demo">Product Demo</a>
         </div>
         <ul className="hero-micro">
           <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Deterministic engine</li>
@@ -82,7 +82,7 @@ export default function HomePageClient() {
   <section className="section tight">
     <div className="wrap">
       <div className="section-head center reveal">
-        <span className="eyebrow">Math review · Structure review</span>
+        <span className="eyebrow">Math review · Quality controls</span>
         <h2>You need math you can defend — and a package verifiers can navigate</h2>
       </div>
       <div className="academic-card reveal">
@@ -96,28 +96,6 @@ export default function HomePageClient() {
           </div>
         </div>
       </div>
-
-      <a className="structure-review-card reveal" href="/verifier-review">
-        <div className="structure-review-badge" aria-hidden="true">SR</div>
-        <div>
-          <span className="eyebrow">Verifier structure review</span>
-          <h3>Reviewed for structure — not a verification opinion</h3>
-          <p>
-            Watermarked SAMPLE report format published for structure-review illustration — not a
-            valid certificate. Package fields, evidence lineage, and integrity mapped for independent
-            verification workflows.
-          </p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            className="structure-review-thumb"
-            src={STRUCTURE_REVIEW_PUBLIC.sampleDocument.previewHref}
-            alt={`${STRUCTURE_REVIEW_PUBLIC.sampleDocument.title} — ${STRUCTURE_REVIEW_PUBLIC.sampleDocument.notice}`}
-            width={320}
-            height={178}
-          />
-          <span className="structure-review-cta">Open structure review <span className="arr">→</span></span>
-        </div>
-      </a>
     </div>
   </section>
 
@@ -303,7 +281,7 @@ export default function HomePageClient() {
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Real-time QC engine</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Data gap analysis</li>
           </ul>
-          <a className="btn btn-ghost" href="/register?next=/cases/new">Start for Free</a>
+          <a className="btn btn-ghost" href="/register?next=/cases/new">Start Free Draft</a>
         </div>
       </div>
       <ul className="guarantee-row">
@@ -318,17 +296,15 @@ export default function HomePageClient() {
         />
       </div>
       <p style={{ textAlign: "center", marginTop: "18px" }}>
-        <a href="/enterprise">Enterprise Exclusive (SSO · SLA · Holding)</a>
-        {" · "}
-        <a href="/demo">Book a demo</a>
-        {" · "}
-        <a href="/pricing#tiers">See all four tiers</a>
+        <a href="/demo">Product Demo</a>
         {" · "}
         <a href="/pricing#roi">ROI calculator</a>
         {" · "}
         <a href="/trust">Trust registry</a>
         {" · "}
         <a href="/case-studies">Illustrative sector scenarios</a>
+        {" · "}
+        <a href="/product">Product capabilities</a>
       </p>
     </div>
   </section>
@@ -350,7 +326,7 @@ export default function HomePageClient() {
       <div className="faq-list">
         <FaqItem
           question="How do I inspect CBAMValid claims before paying?"
-          answer="Open the Trust Evidence Registry (/trust), Sample Dossier, Published Rulesets, Security & DPA, and Structure Review SAMPLE. Anonymized sector scenarios live on /case-studies — named logos stay permissioned. Gaps stay tagged, never invented."
+          answer="Open the Trust Evidence Registry (/trust), Sample Dossier, Published Rulesets, and Security & DPA. Anonymized sector scenarios live on /case-studies — named logos stay permissioned. Gaps stay tagged, never invented."
         />
         <FaqItem
           question="Is CBAMValid an official European Commission service?"
@@ -395,7 +371,7 @@ export default function HomePageClient() {
       <span className="eyebrow navy">Definitive Period · 2026</span>
       <h2>Your buyer will ask for evidence.<br /><span className="serif-i">Be ready before they do.</span></h2>
       <p>Drafts are free. Pay USD 449 once to lock this working file — same-file corrections included. A new file needs a new payment.</p>
-      <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">Start a Dossier <span className="arr">→</span></a>
+      <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">Start Free Draft <span className="arr">→</span></a>
     </div>
   </section>
 

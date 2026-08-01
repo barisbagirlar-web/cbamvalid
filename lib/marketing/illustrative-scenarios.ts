@@ -56,18 +56,18 @@ export const ILLUSTRATIVE_SCENARIOS: readonly IllustrativeScenario[] = [
     sectorLabel: "Holding / multi-entity",
     alias: "Group C — parent holding, three operator entities",
     pressure:
-      "Group compliance needed SSO for preparers plus separate seal scopes per plant — without silent entitlement sharing.",
+      "Group compliance needed separate seal scopes per plant — without silent entitlement sharing across entities.",
     pathTaken: [
-      "Scoped Enterprise Exclusive (SSO · SLA · Holding) via sales inquiry",
-      "Mapped holding admin vs operator preparer roles",
-      "Each sealed file still bound one operator, one installation, one year",
-      "IdP federation planned under contracted cutover (Entra / Okta / Google)",
+      "Opened one self-service working file per operator entity",
+      "Each sealed file bound one operator, one installation, one year",
+      "Separate preparer accounts kept entity data isolated",
+      "Corrections re-locked on the same paid file; a new entity file required a new payment",
     ],
     outcomeShape:
-      "Holding contract for access and coordination; seal math stayed installation-scoped.",
-    commercialUnit: "Enterprise Exclusive · from USD 12,000 / year · contact sales",
+      "Group coordination stayed in the customer's hands; seal math remained installation-scoped per file.",
+    commercialUnit: "Self-service Single Pack per working file · USD 449 pay-at-lock",
     independenceNote:
-      "SSO does not replace case ownership checks. No accredited verification claim.",
+      "No silent scope widening across entities. No accredited verification claim.",
   },
   {
     id: "cement-first-year",

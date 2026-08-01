@@ -69,7 +69,6 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
       { question: "Exporter evidence requirements", href: "/cbam-exporter-evidence-requirements", why: "Evidence depth" },
       { question: "How does the workflow run?", href: "/how-it-works", why: "Working-file steps" },
       { question: "Which ruleset is pinned?", href: "/rulesets", why: "Method version" },
-      { question: "Need SSO or multi-site?", href: "/enterprise", why: "Enterprise Exclusive path" },
       { question: "Verify a sealed hash", href: "/verify", why: "Integrity check" },
       { question: "Public trust evidence", href: "/trust", why: "Proof registry" },
     ],
@@ -110,11 +109,11 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     relatedProblems: [
       { question: "What is included in the product?", href: "/product", why: "Capability detail" },
       { question: "When do I seal?", href: "/how-it-works", why: "Payment vs seal timing" },
-      { question: "Book a demo", href: "/demo", why: "Annual / Enterprise path" },
+      { question: "See the product demo", href: "/demo", why: "Self-service walkthrough" },
       { question: "Can one payment cover another plant?", href: "/pricing", why: "Scope lock clarification" },
       { question: "Refund rules", href: "/refund-policy", why: "Unused unlock / duplicates" },
     ],
-    entities: ["USD 449", "pay at lock", "Exporter Annual", "Enterprise contact sales", "ROI calculator", "same-file corrections"],
+    entities: ["USD 449", "pay at lock", "ROI calculator", "same-file corrections"],
     fanOutQueries: [
       "CBAMValid price",
       "CBAMValid USD 449",
@@ -125,24 +124,24 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
   },
   {
     path: "/demo",
-    primaryQuestion: "How do I book a CBAMValid demo for Annual or Enterprise?",
+    primaryQuestion: "What can I do in the CBAMValid product demo?",
     empathyLead:
-      "Self-serve Single Pack is not enough for multi-site buyers who need DPA, SSO, and coordination.",
+      "Self-serve software should be inspectable before any purchase. You should see the data collection, calculation, QC, evidence, and download flow without a sales conversation.",
     directAnswer:
-      "Email info@cbamvalid.com or open the Book a demo page. Single Pack remains self-serve at USD 449 pay-at-lock. Annual and Enterprise require a human scoping conversation. No accredited verification claims are made in demos.",
-    calculation: "Demos do not produce sealed emissions results.",
+      "The demo shows the CBAMValid software collecting customer-controlled data, running deterministic CBAM calculations, identifying automated quality-control blockers, linking evidence, and generating downloadable PDF, JSON and XLSX outputs. Everything works without speaking to a person.",
+    calculation: "Demos show the software flow. Authoritative emissions results are produced by the sealed server engine for a specific case.",
     explanation:
-      "Come with installation count, reporting year, and CN family. We walk working-file flow, QC, seal integrity, and buyer share links.",
+      "Enter installation and production data, add goods and CN codes, run deterministic calculations, link evidence, review quality-control results, then generate the digital package.",
     methodology: "Independence boundary remains preparation ≠ verification.",
-    evidence: "Published /demo page and pricing tiers.",
-    expert: "Enterprise is a commitment regime, not a feature checkbox.",
+    evidence: "Published /demo page and /sample-dossier.",
+    expert: "Self-service software boundaries stay explicit: no consulting, advisory, or manual dossier preparation included.",
     relatedProblems: [
-      { question: "Public pricing", href: "/pricing", why: "Tier amounts" },
+      { question: "Public pricing", href: "/pricing", why: "Amount and scope" },
       { question: "Sample dossier", href: "/sample-dossier", why: "Inspect output" },
-      { question: "Security", href: "/security", why: "DPA draft" },
+      { question: "How the workflow runs", href: "/how-it-works", why: "Operational steps" },
     ],
-    entities: ["book a demo", "Exporter Annual", "Enterprise"],
-    fanOutQueries: ["CBAMValid demo", "CBAMValid enterprise demo", "CBAMValid annual plan"],
+    entities: ["self-service software demo", "deterministic calculations", "automated QC", "digital package download"],
+    fanOutQueries: ["CBAMValid product demo", "CBAMValid self-service software", "CBAMValid digital dossier output"],
   },
   {
     path: "/case-studies",
@@ -160,8 +159,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     relatedProblems: [
       { question: "Sample dossier", href: "/sample-dossier", why: "Inspect output" },
       { question: "Product capabilities", href: "/product", why: "What ships" },
-      { question: "Enterprise Exclusive", href: "/enterprise", why: "SSO · Holding path" },
-      { question: "Book a demo", href: "/demo", why: "Talk to a human" },
+      { question: "See the product demo", href: "/demo", why: "Self-service walkthrough" },
     ],
     entities: [
       "illustrative scenarios",
@@ -300,40 +298,6 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     ],
   },
   {
-    path: "/verifier-review",
-    primaryQuestion: "How does CBAMValid handle verifier structure review without claiming a verification opinion?",
-    empathyLead:
-      "Acceptance risk is the buyer’s real fear. Structure fitness must be discussed without inventing accreditation badges.",
-    directAnswer:
-      "CBAMValid publishes a structure-review surface mapping package fields, evidence lineage, and integrity controls for independent verification workflows. Canonical boundary: Reviewed for structure — not a verification opinion. Third-party signed letters are published only when received — never invented.",
-    calculation:
-      "Structure review does not restate sealed emissions as assured. Calculation integrity remains separate from accredited verification.",
-    explanation:
-      "Use the Structure Review Brief and gate-free sample dossier when engaging verification bodies. Home page badge links to this surface.",
-    methodology:
-      "Target letter language is pinned to IR 2025/2621 workflow fitness and explicitly excludes verification opinions.",
-    evidence:
-      "Published brief PDF + field map + empty letter slot until a real signed letter arrives.",
-    expert:
-      "Structure review is a package-fitness engagement. Accredited verification remains a separate legal act.",
-    relatedProblems: [
-      { question: "Open sample dossier", href: "/sample-dossier", why: "Inspect structure" },
-      { question: "Verify integrity hash", href: "/verify", why: "Byte integrity" },
-      { question: "Methodology sources", href: "/methodology", why: "Ruleset pin" },
-    ],
-    entities: [
-      "structure review",
-      "verification opinion boundary",
-      "IR 2025/2621",
-      "evidence lineage",
-    ],
-    fanOutQueries: [
-      "CBAM structure review vs verification",
-      "CBAMValid verifier review letter",
-      "reviewed for structure not a verification opinion",
-    ],
-  },
-  {
     path: "/rulesets",
     primaryQuestion: "Where are CBAMValid ruleset versions published?",
     empathyLead:
@@ -435,15 +399,13 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     methodology:
       "H2: no claim without evidence. Status language mirrors the seal engine’s fail-closed posture.",
     evidence:
-      "Published /trust registry + full T1.3 /legal-notice identity + /verifier-review SAMPLE surface.",
+      "Published /trust registry + full T1.3 /legal-notice identity.",
     expert:
       "Published legal identity plus visible claim gaps beats invented completeness in enterprise procurement.",
     relatedProblems: [
       { question: "Legal notice", href: "/legal-notice", why: "Identity publication" },
-      { question: "Structure review", href: "/verifier-review", why: "SAMPLE boundary" },
       { question: "Case studies policy", href: "/case-studies", why: "Empty by design" },
       { question: "Security facts", href: "/security", why: "No fake ISO" },
-      { question: "Enterprise Exclusive", href: "/enterprise", why: "SSO SLA Holding" },
     ],
     entities: ["trust registry", "H2", "SAMPLE", "CRO 315881", "VAT IE1857162AB"],
     fanOutQueries: [
@@ -458,119 +420,27 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     empathyLead:
       "Category expansion before CBAM leadership creates half-products and diluted trust.",
     directAnswer:
-      "Door = CBAM. Additional regimes are available only under an Enterprise expansion SOW — not as public half-products. Enterprise Exclusive also sells SSO, SLA, and holding scope for multi-site CBAM buyers. R6–R9 modules are LIVE to sell.",
+      "Door = CBAM. CBAMValid sells one live regulatory surface today — EU CBAM. Additional regimes can reuse the package contract later; they are not public half-products. R6–R9 modules are LIVE.",
     calculation:
       "Additional categories would reuse the package contract and ruleset pin model — they are not live engines today.",
     explanation:
-      "Use /enterprise for SSO/SLA/holding. Use /rulesets and /product for the live CBAM surface.",
+      "Use /rulesets and /product for the live CBAM surface.",
     methodology:
-      "One live ruleset family first. Enterprise expands commercial depth without inventing certifications.",
+      "One live ruleset family first. CBAMValid does not invent certifications or second-product claims.",
     evidence:
-      "Published /platform, /enterprise, /rulesets, /security with DPA and SLA drafts.",
+      "Published /platform, /rulesets, /security with DPA draft.",
     expert:
       "Architecture reuse is real. Fake second-product marketing is banned.",
     relatedProblems: [
-      { question: "Enterprise Exclusive", href: "/enterprise", why: "SSO SLA Holding" },
       { question: "Published rulesets", href: "/rulesets", why: "Live CBAM pins" },
       { question: "Product", href: "/product", why: "What ships today" },
-      { question: "Security", href: "/security", why: "DPA SLA" },
+      { question: "Security", href: "/security", why: "DPA facts" },
     ],
-    entities: ["category architecture", "CBAM first", "Enterprise SOW", "R6-R9"],
+    entities: ["category architecture", "CBAM first", "R6-R9"],
     fanOutQueries: [
       "CBAMValid platform architecture",
-      "CBAMValid Enterprise SSO",
       "CBAMValid beyond CBAM",
     ],
-  },
-  {
-    path: "/enterprise",
-    primaryQuestion: "What does CBAMValid Enterprise Exclusive include?",
-    empathyLead:
-      "Multi-site exporters need SSO, SLA, and holding scope — not another self-serve checkbox.",
-    directAnswer:
-      "Enterprise Exclusive starts from USD 12,000 per year (contact sales). It includes contracted SSO/IdP federation, an SLA draft and signed MSA path, holding/multi-entity entitlement, signed DPA path, API/onboarding plan, and verifier coordination. It is not an accredited verification opinion.",
-    calculation:
-      "Enterprise changes entitlement and access control — sealed emissions arithmetic remains the same fail-closed engine.",
-    explanation:
-      "Request scoping on /enterprise. Single Pack stays self-serve at USD 449 pay-at-lock.",
-    methodology:
-      "SSO uses OIDC/SAML via Identity Platform. Holding keeps each seal scoped to one operator/installation/year.",
-    evidence:
-      "Published Enterprise pages, SLA draft PDF, DPA draft PDF, inquiry API.",
-    expert:
-      "Enterprise is a commitment regime for procurement — not a fake certification badge.",
-    relatedProblems: [
-      { question: "SSO", href: "/enterprise/sso", why: "IdP federation" },
-      { question: "Holding", href: "/enterprise/holding", why: "Multi-entity" },
-      { question: "Pricing", href: "/pricing", why: "Tier map" },
-      { question: "Partners", href: "/partners", why: "Channel" },
-      { question: "Sample dossier", href: "/sample-dossier", why: "Inspect package" },
-      { question: "Trust registry", href: "/trust", why: "Pinned claims" },
-    ],
-    entities: ["Enterprise Exclusive", "SSO", "SLA", "holding", "from $12,000"],
-    fanOutQueries: [
-      "CBAMValid Enterprise",
-      "CBAMValid SSO",
-      "CBAMValid SLA",
-      "CBAMValid holding multi-entity",
-    ],
-  },
-  {
-    path: "/enterprise/sso",
-    primaryQuestion: "Does CBAMValid support SSO for Enterprise buyers?",
-    empathyLead:
-      "IT will block any SaaS that cannot federate Entra, Google, or Okta.",
-    directAnswer:
-      "Yes under Enterprise contract. CBAMValid federates Microsoft Entra ID, Google Workspace, or Okta via OIDC/SAML. The server HttpOnly session remains authoritative; SSO does not replace tenant or case authorization.",
-    calculation: "SSO does not alter emissions calculations.",
-    explanation: "Provisioning requires SOW, IdP metadata, domain allow-list, and pilot cutover.",
-    methodology: "Firebase Identity Platform SAML/OIDC bound per tenant.",
-    evidence: "Published /enterprise/sso provisioning steps.",
-    expert: "SSO is contracted enablement, not a Single Pack feature.",
-    relatedProblems: [
-      { question: "Enterprise", href: "/enterprise", why: "Full package" },
-      { question: "Security", href: "/security", why: "Session model" },
-    ],
-    entities: ["SSO", "OIDC", "SAML", "Entra", "Okta"],
-    fanOutQueries: ["CBAMValid SSO", "CBAMValid SAML", "CBAMValid Entra ID"],
-  },
-  {
-    path: "/enterprise/holding",
-    primaryQuestion: "Can a holding company cover multiple operators in CBAMValid?",
-    empathyLead:
-      "Groups fear either paying per plant forever or blurring legal scope.",
-    directAnswer:
-      "Enterprise entitlement can sit at holding level while each sealed working file still binds one operator, one installation, and one reporting year. Cross-entity clones do not inherit payment unless the SOW says so.",
-    calculation: "Holding structure does not merge emissions across entities in one seal.",
-    explanation: "Roles include Holding Admin, Operator Preparer, Internal Reviewer, Read-Only Verifier.",
-    methodology: "Explicit scope remains a seal invariant.",
-    evidence: "Published /enterprise/holding contract rules.",
-    expert: "No silent scope widening — verifiers see clear boundaries.",
-    relatedProblems: [
-      { question: "Enterprise", href: "/enterprise", why: "Commercial package" },
-      { question: "Pricing", href: "/pricing", why: "Tier contrast" },
-    ],
-    entities: ["holding", "multi-entity", "installation scope"],
-    fanOutQueries: ["CBAMValid holding", "CBAMValid multi-site", "CBAMValid group exporters"],
-  },
-  {
-    path: "/partners",
-    primaryQuestion: "How do I become a CBAMValid channel partner?",
-    empathyLead:
-      "Consultancies and verifier firms want a referral track without fake logo walls.",
-    directAnswer:
-      "Open /partners and submit the partner inquiry. Logos are published only after a signed referral agreement. The program does not create accredited verification endorsements.",
-    calculation: "Partner referrals do not change sealed arithmetic.",
-    explanation: "Intake is live; public partner logos remain permissioned.",
-    methodology: "H2: no invented partner logos.",
-    evidence: "Published /partners intake form.",
-    expert: "Channel scale follows contracts, not invented badges.",
-    relatedProblems: [
-      { question: "Enterprise", href: "/enterprise", why: "Buyer path" },
-      { question: "Structure review", href: "/verifier-review", why: "Package fitness" },
-    ],
-    entities: ["channel partner", "referral agreement"],
-    fanOutQueries: ["CBAMValid partner", "CBAMValid reseller", "CBAMValid referral"],
   },
   {
     path: "/cn-code",

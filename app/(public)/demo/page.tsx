@@ -3,10 +3,17 @@ import Link from "next/link";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 import { JsonLdForRoute } from "@/components/seo/JsonLdForRoute";
 import { AeoPageChrome } from "@/components/seo/AnswerEvidenceSection";
-import { EnterpriseInquiryForm } from "@/components/enterprise/EnterpriseInquiryForm";
-import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 
 export const metadata: Metadata = generateSeoMetadata("/demo");
+
+const DEMO_STEPS = [
+  "Enter installation and production data",
+  "Add goods, CN codes and reporting-period information",
+  "Run deterministic emissions calculations",
+  "Link customer-controlled evidence",
+  "Review automated quality-control results",
+  "Generate the digital PDF, JSON and XLSX package",
+];
 
 export default function DemoPage() {
   return (
@@ -15,60 +22,51 @@ export default function DemoPage() {
       <main id="main">
         <section className="hero" style={{ paddingBottom: "40px" }}>
           <div className="wrap" style={{ maxWidth: "820px" }}>
-            <span className="eyebrow">Enterprise &amp; Annual · Human path</span>
-            <h1>
-              Book a demo
-              <br />
-              <span className="serif-i">self-serve is not the only door</span>
-            </h1>
+            <span className="eyebrow">Self-Service Product Demo</span>
+            <h1>See CBAMValid software in action</h1>
             <p className="lede">
-              Single Pack remains self-serve at {CANONICAL_PRICING.priceFormatted} pay-at-lock. Annual and
-              Enterprise buyers speak with a human — SSO, SLA, holding scope, and DPA are contracted
-              on the Enterprise Exclusive path.
+              Explore how the CBAMValid software collects customer-controlled data, runs deterministic
+              CBAM calculations, identifies automated quality-control blockers, links evidence and
+              generates downloadable digital outputs.
             </p>
             <div className="hero-ctas">
-              <Link className="btn btn-primary" href="/enterprise#inquiry">
-                Enterprise Exclusive scoping
+              <Link className="btn btn-primary" href="/register?next=/cases/new">
+                Start Free Draft
               </Link>
-              <a
-                className="btn btn-ghost"
-                href="mailto:info@cbamvalid.com?subject=CBAMValid%20demo%20request"
-              >
-                Email info@cbamvalid.com
-              </a>
+              <Link className="btn btn-ghost" href="/sample-dossier">
+                View Sample Dossier
+              </Link>
               <Link className="btn btn-ghost" href="/pricing">
-                See public pricing
+                See Software Pricing
               </Link>
             </div>
           </div>
         </section>
 
         <section className="section">
-          <div className="wrap">
-            <div className="deliv-grid">
-              <div className="deliv-card">
-                <span className="fmt">COME WITH</span>
-                <h3>What to prepare</h3>
-                <p>Installation count, reporting year, CN family, IdP, and holding structure.</p>
-              </div>
-              <div className="deliv-card">
-                <span className="fmt">WE SHOW</span>
-                <h3>What you will see</h3>
-                <p>Working-file flow, QC blockers, seal integrity, buyer share link, SSO/SLA path.</p>
-              </div>
-              <div className="deliv-card">
-                <span className="fmt">BOUNDARY</span>
-                <h3>What we will not claim</h3>
-                <p>No accredited verification opinion, EU approval, or customs acceptance during the demo.</p>
-              </div>
-            </div>
+          <div className="wrap" style={{ maxWidth: "820px" }}>
+            <h2>What you can do in the demo</h2>
+            <ol className="demo-steps">
+              {DEMO_STEPS.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+            <p>
+              Everything above works without speaking to a person. You can register, open a draft case and
+              explore the software directly.
+            </p>
           </div>
         </section>
 
         <section className="section" style={{ background: "var(--paper-2)" }}>
           <div className="wrap" style={{ maxWidth: "720px" }}>
-            <h2>Request a demo / Enterprise scoping</h2>
-            <EnterpriseInquiryForm source="demo" defaultSso defaultHolding defaultSla />
+            <h2>Boundary</h2>
+            <p>
+              CBAMValid is self-service software. The {`USD 449`} purchase unlocks automated software
+              functionality for one working file. It does not include consulting, advisory services,
+              manual dossier preparation, evidence assessment, methodology recommendations or a
+              verification opinion.
+            </p>
           </div>
         </section>
 

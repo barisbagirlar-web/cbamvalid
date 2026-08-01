@@ -6,6 +6,15 @@ import { AeoPageChrome } from "@/components/seo/AnswerEvidenceSection";
 
 export const metadata = generateSeoMetadata("/contact");
 
+const SUPPORT_REASONS = [
+  "Account access",
+  "Billing or Paddle transaction",
+  "Reproducible software defect",
+  "File-generation failure",
+  "Security",
+  "Privacy",
+];
+
 export default function ContactPage() {
   return (
     <main id="main">
@@ -16,12 +25,11 @@ export default function ContactPage() {
           <div style={{ maxWidth: "720px" }}>
             <span className="eyebrow">Contact</span>
             <h1>
-              Need help before a buyer deadline?{" "}
-              <span className="serif-i">Write the real inbox.</span>
+              Software Support
             </h1>
             <p className="lede">
-              Technical, billing, and dossier questions go to the published support address. Legal and
-              privacy requests use the dedicated legal contacts below.
+              CBAMValid support is limited to account, billing, security, privacy and technical
+              operation of the software. Legal and privacy requests use the dedicated contacts below.
             </p>
             <AuthorityLead path="/contact" />
           </div>
@@ -34,11 +42,13 @@ export default function ContactPage() {
         <div className="wrap" style={{ maxWidth: "760px" }}>
           <div className="method-grid">
             <div className="method-card reveal">
-              <h3>Support &amp; billing</h3>
-              <p>
-                For technical assistance, report generation issues, or Paddle payment inquiries — include
-                your case ID and blocker text when possible.
-              </p>
+              <h3>Software Support</h3>
+              <p>For account, billing, security, privacy and technical operation of the software:</p>
+              <ul className="feat-list" style={{ marginTop: "12px" }}>
+                {SUPPORT_REASONS.map((reason) => (
+                  <li key={reason}>{reason}</li>
+                ))}
+              </ul>
               <p>
                 <a className="text-accent" href={`mailto:${legalConfig.supportEmail}`}>
                   {legalConfig.supportEmail}
@@ -70,6 +80,12 @@ export default function ContactPage() {
                 ))}
               </div>
             </div>
+          </div>
+          <div className="notice" style={{ marginTop: "24px" }}>
+            <b>Support boundary:</b> CBAMValid support is limited to account, billing, security,
+            privacy and technical operation of the software. Support does not review customer
+            emissions data, approve evidence, prepare dossiers, recommend methodologies, interpret
+            regulations for a customer or issue verification opinions.
           </div>
         </div>
       </section>

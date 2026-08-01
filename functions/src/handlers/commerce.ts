@@ -4,6 +4,7 @@ import { z } from "zod";
 import { HttpsError } from "firebase-functions/v2/https";
 import { adminDb } from "../firebase-admin";
 import { isTestAdmin, ensureTestAdminEntitlement } from "../commerce/test-admin-access";
+import { verifyCaseOwner } from "../cbam/storage/case-repository";
 
 const MAX_RELEASES_PER_PACK = 5;
 
@@ -66,6 +67,16 @@ export const createCheckoutSession = createCallable(
     const isPrivileged = auth.token.role === "admin" || auth.token.admin === true || auth.token.role === "pilot" || auth.token.pilot === true || auth.token.role === "Owner";
     if (!publicPaidLaunchEnabled && !isPrivileged) {
       throw new HttpsError("failed-precondition", "Purchasing is temporarily unavailable while final launch checks are completed.");
+    }
+
+    // Case ownership is a server-side authorization boundary: a buyer may only
+    // bind a payment to a case they own. Verify before creating any order.
+    try {
+      await verifyCaseOwner(caseId, auth.uid);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Case ownership verification failed.";
+      const notFound = message.includes("was not found");
+      throw new HttpsError(notFound ? "not-found" : "permission-denied", "You may only purchase a pack for a case you own.");
     }
 
     const { createCheckout } = await import("../commerce/paddle/checkout-service");

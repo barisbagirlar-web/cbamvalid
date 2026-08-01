@@ -11,16 +11,15 @@
     "email": "info@cbamvalid.com"
   },
   "license": "Informational product documentation — not legal advice or accredited verification",
-  "dateModified": "2026-07-28",
+  "dateModified": "2026-08-01",
   "product": {
-    "name": "CBAMValid Exporter Verification Preparation Pack — Prepared for Independent Accredited Verification",
+    "name": "Exporter Verification Preparation Pack — Prepared for Independent Accredited Verification",
     "price": "$449",
     "independence": "CBAMValid is an independent software service for exporter-to-importer evidence packaging. It is not an EU institution, customs authority, or accredited CBAM verifier. Actual emissions data must be independently verified where verification is legally required."
   },
   "authorityChains": [
     {
       "path": "/",
-      "url": "https://cbamvalid.com",
       "primaryQuestion": "What should a non-EU exporter prepare when an EU buyer asks for actual CBAM emissions evidence?",
       "empathyLead": "Buyer pressure arrives before your evidence package is ready. You need a defendable dossier for one plant and one year — without pretending the software issued an accredited verification opinion.",
       "directAnswer": "$449 unlocks lock-and-download for one working file: one legal operator, one installation, one reporting year — unlimited drafts and same-file correction re-locks. CBAMValid prepares an evidence-linked operator dossier for independent accredited verification — it does not verify emissions itself.",
@@ -67,7 +66,6 @@
     },
     {
       "path": "/product",
-      "url": "https://cbamvalid.com/product",
       "primaryQuestion": "What capabilities does the Exporter Verification Preparation Pack provide?",
       "empathyLead": "Spreadsheets break under verifier questions. You need deterministic calculations, an evidence register, and fail-closed QC before you hand anything over.",
       "directAnswer": "The pack provides a scoped working file with deterministic embedded-emissions calculations, evidence register, quality controls, methodology decisions, findings closure, and sealed releases for one operator, one installation, and one reporting year. Pay once to lock that file; same-file corrections are included.",
@@ -103,11 +101,6 @@
           "why": "Method version"
         },
         {
-          "question": "Need SSO or multi-site?",
-          "href": "/enterprise",
-          "why": "Enterprise Exclusive path"
-        },
-        {
           "question": "Verify a sealed hash",
           "href": "/verify",
           "why": "Integrity check"
@@ -139,7 +132,6 @@
     },
     {
       "path": "/pricing",
-      "url": "https://cbamvalid.com/pricing",
       "primaryQuestion": "What does $449 buy, and when is the card charged?",
       "empathyLead": "Nobody wants a surprise charge mid-review or a vague “credits” story. You should finish data quality first, then buy when you are ready to seal.",
       "directAnswer": "$449 unlocks lock-and-download for one working file (Exporter Verification Preparation Pack): unlimited drafts and same-file correction re-locks for one operator, one installation, and one reporting year. Drafting is free. The card is charged when you pay to lock that file — not while you edit drafts. A new file needs a new payment.",
@@ -160,9 +152,9 @@
           "why": "Payment vs seal timing"
         },
         {
-          "question": "Book a demo",
+          "question": "See the product demo",
           "href": "/demo",
-          "why": "Annual / Enterprise path"
+          "why": "Self-service walkthrough"
         },
         {
           "question": "Can one payment cover another plant?",
@@ -178,8 +170,6 @@
       "entities": [
         "USD 449",
         "pay at lock",
-        "Exporter Annual",
-        "Enterprise contact sales",
         "ROI calculator",
         "same-file corrections"
       ],
@@ -193,20 +183,19 @@
     },
     {
       "path": "/demo",
-      "url": "https://cbamvalid.com/demo",
-      "primaryQuestion": "How do I book a CBAMValid demo for Annual or Enterprise?",
-      "empathyLead": "Self-serve Single Pack is not enough for multi-site buyers who need DPA, SSO, and coordination.",
-      "directAnswer": "Email info@cbamvalid.com or open the Book a demo page. Single Pack remains self-serve at USD 449 pay-at-lock. Annual and Enterprise require a human scoping conversation. No accredited verification claims are made in demos.",
-      "calculation": "Demos do not produce sealed emissions results.",
-      "explanation": "Come with installation count, reporting year, and CN family. We walk working-file flow, QC, seal integrity, and buyer share links.",
+      "primaryQuestion": "What can I do in the CBAMValid product demo?",
+      "empathyLead": "Self-serve software should be inspectable before any purchase. You should see the data collection, calculation, QC, evidence, and download flow without a sales conversation.",
+      "directAnswer": "The demo shows the CBAMValid software collecting customer-controlled data, running deterministic CBAM calculations, identifying automated quality-control blockers, linking evidence, and generating downloadable PDF, JSON and XLSX outputs. Everything works without speaking to a person.",
+      "calculation": "Demos show the software flow. Authoritative emissions results are produced by the sealed server engine for a specific case.",
+      "explanation": "Enter installation and production data, add goods and CN codes, run deterministic calculations, link evidence, review quality-control results, then generate the digital package.",
       "methodology": "Independence boundary remains preparation ≠ verification.",
-      "evidence": "Published /demo page and pricing tiers.",
-      "expert": "Enterprise is a commitment regime, not a feature checkbox.",
+      "evidence": "Published /demo page and /sample-dossier.",
+      "expert": "Self-service software boundaries stay explicit: no consulting, advisory, or manual dossier preparation included.",
       "relatedProblems": [
         {
           "question": "Public pricing",
           "href": "/pricing",
-          "why": "Tier amounts"
+          "why": "Amount and scope"
         },
         {
           "question": "Sample dossier",
@@ -214,25 +203,25 @@
           "why": "Inspect output"
         },
         {
-          "question": "Security",
-          "href": "/security",
-          "why": "DPA draft"
+          "question": "How the workflow runs",
+          "href": "/how-it-works",
+          "why": "Operational steps"
         }
       ],
       "entities": [
-        "book a demo",
-        "Exporter Annual",
-        "Enterprise"
+        "self-service software demo",
+        "deterministic calculations",
+        "automated QC",
+        "digital package download"
       ],
       "fanOutQueries": [
-        "CBAMValid demo",
-        "CBAMValid enterprise demo",
-        "CBAMValid annual plan"
+        "CBAMValid product demo",
+        "CBAMValid self-service software",
+        "CBAMValid digital dossier output"
       ]
     },
     {
       "path": "/case-studies",
-      "url": "https://cbamvalid.com/case-studies",
       "primaryQuestion": "Does CBAMValid publish customer logos and case studies?",
       "empathyLead": "Buyers want field realism without fake logos. Anonymized scenarios beat invented praise strips.",
       "directAnswer": "CBAMValid publishes anonymized illustrative sector scenarios on /case-studies — steel, aluminium, holding, and cement working-file paths with no company names or logos. Named customer references publish only with written permission.",
@@ -253,14 +242,9 @@
           "why": "What ships"
         },
         {
-          "question": "Enterprise Exclusive",
-          "href": "/enterprise",
-          "why": "SSO · Holding path"
-        },
-        {
-          "question": "Book a demo",
+          "question": "See the product demo",
           "href": "/demo",
-          "why": "Talk to a human"
+          "why": "Self-service walkthrough"
         }
       ],
       "entities": [
@@ -277,7 +261,6 @@
     },
     {
       "path": "/how-it-works",
-      "url": "https://cbamvalid.com/how-it-works",
       "primaryQuestion": "How do I go from raw plant data to a sealed CBAM preparation dossier?",
       "empathyLead": "Most teams lose weeks in email threads and version chaos. You need a guided path that shows gaps before a buyer or verifier sees the file.",
       "directAnswer": "Start with the readiness checklist and pre-flight XLSX. Honest time: 2–4 hours if data is ready, 2–3 weeks if starting from zero. Then define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, pay once to lock that working file, and download PDF, JSON, and O3CI field-mapped exports.",
@@ -317,7 +300,6 @@
     },
     {
       "path": "/methodology",
-      "url": "https://cbamvalid.com/methodology",
       "primaryQuestion": "Which ruleset and methods does CBAMValid use for authoritative calculations?",
       "empathyLead": "When a verifier asks which rules you followed, “latest guidance” is not an answer. You need a dated method reference inside the package.",
       "directAnswer": "Authoritative calculations pin to a named, versioned ruleset recorded in the sealed dossier. Historical sealed releases keep the ruleset they were built against; methods are not silently rewritten after sealing.",
@@ -358,7 +340,6 @@
     },
     {
       "path": "/sample-dossier",
-      "url": "https://cbamvalid.com/sample-dossier",
       "primaryQuestion": "What does a sealed CBAMValid preparation dossier contain?",
       "empathyLead": "Buyers and verifiers ask what they will receive. You should inspect structure and integrity expectations before you purchase.",
       "directAnswer": "A sealed package is an immutable operator-prepared dossier with reports, structured data, evidence folder references, and a data integrity manifest with file sizes and SHA-256 hashes — prepared for independent review, not as an accredited verification opinion. Each sealed release also carries a short Package ID (letter + four digits, for example Y7654) so operators can distinguish versions without reading truncated hashes.",
@@ -400,7 +381,6 @@
     },
     {
       "path": "/verify",
-      "url": "https://cbamvalid.com/verify",
       "primaryQuestion": "How can someone check that a sealed CBAMValid dossier was not altered?",
       "empathyLead": "Recipients need a trust check without opening a black box. Integrity verification must be independent of marketing claims.",
       "directAnswer": "Public verification checks the sealed dossier integrity signature / hash against the published manifest pattern. A passing integrity check confirms package bytes match the seal — it does not mean emissions were accredited-verified.",
@@ -432,48 +412,7 @@
       ]
     },
     {
-      "path": "/verifier-review",
-      "url": "https://cbamvalid.com/verifier-review",
-      "primaryQuestion": "How does CBAMValid handle verifier structure review without claiming a verification opinion?",
-      "empathyLead": "Acceptance risk is the buyer’s real fear. Structure fitness must be discussed without inventing accreditation badges.",
-      "directAnswer": "CBAMValid publishes a structure-review surface mapping package fields, evidence lineage, and integrity controls for independent verification workflows. Canonical boundary: Reviewed for structure — not a verification opinion. Third-party signed letters are published only when received — never invented.",
-      "calculation": "Structure review does not restate sealed emissions as assured. Calculation integrity remains separate from accredited verification.",
-      "explanation": "Use the Structure Review Brief and gate-free sample dossier when engaging verification bodies. Home page badge links to this surface.",
-      "methodology": "Target letter language is pinned to IR 2025/2621 workflow fitness and explicitly excludes verification opinions.",
-      "evidence": "Published brief PDF + field map + empty letter slot until a real signed letter arrives.",
-      "expert": "Structure review is a package-fitness engagement. Accredited verification remains a separate legal act.",
-      "relatedProblems": [
-        {
-          "question": "Open sample dossier",
-          "href": "/sample-dossier",
-          "why": "Inspect structure"
-        },
-        {
-          "question": "Verify integrity hash",
-          "href": "/verify",
-          "why": "Byte integrity"
-        },
-        {
-          "question": "Methodology sources",
-          "href": "/methodology",
-          "why": "Ruleset pin"
-        }
-      ],
-      "entities": [
-        "structure review",
-        "verification opinion boundary",
-        "IR 2025/2621",
-        "evidence lineage"
-      ],
-      "fanOutQueries": [
-        "CBAM structure review vs verification",
-        "CBAMValid verifier review letter",
-        "reviewed for structure not a verification opinion"
-      ]
-    },
-    {
       "path": "/rulesets",
-      "url": "https://cbamvalid.com/rulesets",
       "primaryQuestion": "Where are CBAMValid ruleset versions published?",
       "empathyLead": "A sealed dossier without a named ruleset pin is hard to defend when a verifier asks which rules applied.",
       "directAnswer": "CBAMValid publishes a public ruleset registry with named versions, active dates, source-registry hashes, and linked official sources. Historical seals keep the ruleset they were built against.",
@@ -512,7 +451,6 @@
     },
     {
       "path": "/buyer-link",
-      "url": "https://cbamvalid.com/buyer-link",
       "primaryQuestion": "How does the CBAMValid buyer share link work?",
       "empathyLead": "Buyers want one URL, not a ZIP emailed into oblivion. The URL must stay integrity-only.",
       "directAnswer": "After lock, /d/<token> aliases /verify/<token> for the same sealed-release summary and authorized download path. No login is required for the public token view. Success proves integrity and preparation status — not accredited verification.",
@@ -551,7 +489,6 @@
     },
     {
       "path": "/security",
-      "url": "https://cbamvalid.com/security",
       "primaryQuestion": "What security facts does CBAMValid publish — and does it claim ISO 27001?",
       "empathyLead": "Procurement asks for region, encryption, subprocessors, and a DPA. Fake certification language destroys trust.",
       "directAnswer": "CBAMValid publishes europe-west1 hosting, TLS, HttpOnly sessions, provider encryption at rest, subprocessors (Firebase/Google Cloud and Paddle), and a DPA draft. ISO 27001 and SOC 2 are not claimed.",
@@ -596,25 +533,19 @@
     },
     {
       "path": "/trust",
-      "url": "https://cbamvalid.com/trust",
       "primaryQuestion": "How does CBAMValid prove marketing claims without inventing evidence?",
       "empathyLead": "Enterprise buyers reject sites that invent CRO numbers, logos, or verifier endorsements.",
       "directAnswer": "CBAMValid publishes a Trust Evidence Registry. Each claim is VERIFIED, CODE PROVEN, SAMPLE, EMPTY BY DESIGN, OWNER ACTION, or EXTERNAL BLOCKER. Legal identity is published (CRO 315881, VAT IE1857162AB, Dublin address). Half-identity and forged letters remain forbidden. Remaining gaps stay visible.",
       "calculation": "Claim discipline does not change sealed emissions arithmetic; it protects procurement trust around the product.",
       "explanation": "SAMPLE documents are watermarked specimens. EMPTY BY DESIGN pages (case studies) refuse invented logos. OWNER ACTION / EXTERNAL BLOCKER items stay visible until closed.",
       "methodology": "H2: no claim without evidence. Status language mirrors the seal engine’s fail-closed posture.",
-      "evidence": "Published /trust registry + full T1.3 /legal-notice identity + /verifier-review SAMPLE surface.",
+      "evidence": "Published /trust registry + full T1.3 /legal-notice identity.",
       "expert": "Published legal identity plus visible claim gaps beats invented completeness in enterprise procurement.",
       "relatedProblems": [
         {
           "question": "Legal notice",
           "href": "/legal-notice",
           "why": "Identity publication"
-        },
-        {
-          "question": "Structure review",
-          "href": "/verifier-review",
-          "why": "SAMPLE boundary"
         },
         {
           "question": "Case studies policy",
@@ -625,11 +556,6 @@
           "question": "Security facts",
           "href": "/security",
           "why": "No fake ISO"
-        },
-        {
-          "question": "Enterprise Exclusive",
-          "href": "/enterprise",
-          "why": "SSO SLA Holding"
         }
       ],
       "entities": [
@@ -647,21 +573,15 @@
     },
     {
       "path": "/platform",
-      "url": "https://cbamvalid.com/platform",
       "primaryQuestion": "Is CBAMValid opening other regulatory categories beyond CBAM?",
       "empathyLead": "Category expansion before CBAM leadership creates half-products and diluted trust.",
-      "directAnswer": "Door = CBAM. Additional regimes are available only under an Enterprise expansion SOW — not as public half-products. Enterprise Exclusive also sells SSO, SLA, and holding scope for multi-site CBAM buyers. R6–R9 modules are LIVE to sell.",
+      "directAnswer": "Door = CBAM. CBAMValid sells one live regulatory surface today — EU CBAM. Additional regimes can reuse the package contract later; they are not public half-products. R6–R9 modules are LIVE.",
       "calculation": "Additional categories would reuse the package contract and ruleset pin model — they are not live engines today.",
-      "explanation": "Use /enterprise for SSO/SLA/holding. Use /rulesets and /product for the live CBAM surface.",
-      "methodology": "One live ruleset family first. Enterprise expands commercial depth without inventing certifications.",
-      "evidence": "Published /platform, /enterprise, /rulesets, /security with DPA and SLA drafts.",
+      "explanation": "Use /rulesets and /product for the live CBAM surface.",
+      "methodology": "One live ruleset family first. CBAMValid does not invent certifications or second-product claims.",
+      "evidence": "Published /platform, /rulesets, /security with DPA draft.",
       "expert": "Architecture reuse is real. Fake second-product marketing is banned.",
       "relatedProblems": [
-        {
-          "question": "Enterprise Exclusive",
-          "href": "/enterprise",
-          "why": "SSO SLA Holding"
-        },
         {
           "question": "Published rulesets",
           "href": "/rulesets",
@@ -675,184 +595,21 @@
         {
           "question": "Security",
           "href": "/security",
-          "why": "DPA SLA"
+          "why": "DPA facts"
         }
       ],
       "entities": [
         "category architecture",
         "CBAM first",
-        "Enterprise SOW",
         "R6-R9"
       ],
       "fanOutQueries": [
         "CBAMValid platform architecture",
-        "CBAMValid Enterprise SSO",
         "CBAMValid beyond CBAM"
       ]
     },
     {
-      "path": "/enterprise",
-      "url": "https://cbamvalid.com/enterprise",
-      "primaryQuestion": "What does CBAMValid Enterprise Exclusive include?",
-      "empathyLead": "Multi-site exporters need SSO, SLA, and holding scope — not another self-serve checkbox.",
-      "directAnswer": "Enterprise Exclusive starts from USD 12,000 per year (contact sales). It includes contracted SSO/IdP federation, an SLA draft and signed MSA path, holding/multi-entity entitlement, signed DPA path, API/onboarding plan, and verifier coordination. It is not an accredited verification opinion.",
-      "calculation": "Enterprise changes entitlement and access control — sealed emissions arithmetic remains the same fail-closed engine.",
-      "explanation": "Request scoping on /enterprise. Single Pack stays self-serve at USD 449 pay-at-lock.",
-      "methodology": "SSO uses OIDC/SAML via Identity Platform. Holding keeps each seal scoped to one operator/installation/year.",
-      "evidence": "Published Enterprise pages, SLA draft PDF, DPA draft PDF, inquiry API.",
-      "expert": "Enterprise is a commitment regime for procurement — not a fake certification badge.",
-      "relatedProblems": [
-        {
-          "question": "SSO",
-          "href": "/enterprise/sso",
-          "why": "IdP federation"
-        },
-        {
-          "question": "Holding",
-          "href": "/enterprise/holding",
-          "why": "Multi-entity"
-        },
-        {
-          "question": "Pricing",
-          "href": "/pricing",
-          "why": "Tier map"
-        },
-        {
-          "question": "Partners",
-          "href": "/partners",
-          "why": "Channel"
-        },
-        {
-          "question": "Sample dossier",
-          "href": "/sample-dossier",
-          "why": "Inspect package"
-        },
-        {
-          "question": "Trust registry",
-          "href": "/trust",
-          "why": "Pinned claims"
-        }
-      ],
-      "entities": [
-        "Enterprise Exclusive",
-        "SSO",
-        "SLA",
-        "holding",
-        "from $12,000"
-      ],
-      "fanOutQueries": [
-        "CBAMValid Enterprise",
-        "CBAMValid SSO",
-        "CBAMValid SLA",
-        "CBAMValid holding multi-entity"
-      ]
-    },
-    {
-      "path": "/enterprise/sso",
-      "url": "https://cbamvalid.com/enterprise/sso",
-      "primaryQuestion": "Does CBAMValid support SSO for Enterprise buyers?",
-      "empathyLead": "IT will block any SaaS that cannot federate Entra, Google, or Okta.",
-      "directAnswer": "Yes under Enterprise contract. CBAMValid federates Microsoft Entra ID, Google Workspace, or Okta via OIDC/SAML. The server HttpOnly session remains authoritative; SSO does not replace tenant or case authorization.",
-      "calculation": "SSO does not alter emissions calculations.",
-      "explanation": "Provisioning requires SOW, IdP metadata, domain allow-list, and pilot cutover.",
-      "methodology": "Firebase Identity Platform SAML/OIDC bound per tenant.",
-      "evidence": "Published /enterprise/sso provisioning steps.",
-      "expert": "SSO is contracted enablement, not a Single Pack feature.",
-      "relatedProblems": [
-        {
-          "question": "Enterprise",
-          "href": "/enterprise",
-          "why": "Full package"
-        },
-        {
-          "question": "Security",
-          "href": "/security",
-          "why": "Session model"
-        }
-      ],
-      "entities": [
-        "SSO",
-        "OIDC",
-        "SAML",
-        "Entra",
-        "Okta"
-      ],
-      "fanOutQueries": [
-        "CBAMValid SSO",
-        "CBAMValid SAML",
-        "CBAMValid Entra ID"
-      ]
-    },
-    {
-      "path": "/enterprise/holding",
-      "url": "https://cbamvalid.com/enterprise/holding",
-      "primaryQuestion": "Can a holding company cover multiple operators in CBAMValid?",
-      "empathyLead": "Groups fear either paying per plant forever or blurring legal scope.",
-      "directAnswer": "Enterprise entitlement can sit at holding level while each sealed working file still binds one operator, one installation, and one reporting year. Cross-entity clones do not inherit payment unless the SOW says so.",
-      "calculation": "Holding structure does not merge emissions across entities in one seal.",
-      "explanation": "Roles include Holding Admin, Operator Preparer, Internal Reviewer, Read-Only Verifier.",
-      "methodology": "Explicit scope remains a seal invariant.",
-      "evidence": "Published /enterprise/holding contract rules.",
-      "expert": "No silent scope widening — verifiers see clear boundaries.",
-      "relatedProblems": [
-        {
-          "question": "Enterprise",
-          "href": "/enterprise",
-          "why": "Commercial package"
-        },
-        {
-          "question": "Pricing",
-          "href": "/pricing",
-          "why": "Tier contrast"
-        }
-      ],
-      "entities": [
-        "holding",
-        "multi-entity",
-        "installation scope"
-      ],
-      "fanOutQueries": [
-        "CBAMValid holding",
-        "CBAMValid multi-site",
-        "CBAMValid group exporters"
-      ]
-    },
-    {
-      "path": "/partners",
-      "url": "https://cbamvalid.com/partners",
-      "primaryQuestion": "How do I become a CBAMValid channel partner?",
-      "empathyLead": "Consultancies and verifier firms want a referral track without fake logo walls.",
-      "directAnswer": "Open /partners and submit the partner inquiry. Logos are published only after a signed referral agreement. The program does not create accredited verification endorsements.",
-      "calculation": "Partner referrals do not change sealed arithmetic.",
-      "explanation": "Intake is live; public partner logos remain permissioned.",
-      "methodology": "H2: no invented partner logos.",
-      "evidence": "Published /partners intake form.",
-      "expert": "Channel scale follows contracts, not invented badges.",
-      "relatedProblems": [
-        {
-          "question": "Enterprise",
-          "href": "/enterprise",
-          "why": "Buyer path"
-        },
-        {
-          "question": "Structure review",
-          "href": "/verifier-review",
-          "why": "Package fitness"
-        }
-      ],
-      "entities": [
-        "channel partner",
-        "referral agreement"
-      ],
-      "fanOutQueries": [
-        "CBAMValid partner",
-        "CBAMValid reseller",
-        "CBAMValid referral"
-      ]
-    },
-    {
       "path": "/cn-code",
-      "url": "https://cbamvalid.com/cn-code",
       "primaryQuestion": "How do I check whether a CN code is in CBAM goods scope?",
       "empathyLead": "Wrong CN scope wastes months. You need a clear scope decision before you build an entire dossier.",
       "directAnswer": "Use the CN code hub to inspect CBAM Annex I-oriented public entries for covered goods chapters. Classification remains an operator responsibility; CBAMValid does not replace customs classification advice.",
@@ -892,7 +649,6 @@
     },
     {
       "path": "/cbam-2026-definitive-period",
-      "url": "https://cbamvalid.com/cbam-2026-definitive-period",
       "primaryQuestion": "What changed when the CBAM definitive period started in 2026?",
       "empathyLead": "Teams still mix transitional quarterly reporting habits with definitive-period annual duties. That confusion creates false deadlines and wrong workplans.",
       "directAnswer": "The CBAM definitive period applies from 1 January 2026. For 2026 imports, the first CBAM declaration and corresponding certificate surrender deadline is 30 September 2027. Certificate price calculation in 2026 follows a quarterly cadence — that is not the same as transitional quarterly emissions reporting.",
@@ -933,7 +689,6 @@
     },
     {
       "path": "/cbam-embedded-emissions-calculation",
-      "url": "https://cbamvalid.com/cbam-embedded-emissions-calculation",
       "primaryQuestion": "How are CBAM embedded emissions calculated for goods?",
       "empathyLead": "A wrong total under buyer pressure is worse than a blocked draft. Missing data must stop the result — not become a silent zero.",
       "directAnswer": "Embedded emissions combine direct process/combustion emissions and, where required, electricity-related indirect emissions, plus applicable precursor emissions. Authoritative results require complete material inputs, reconciled allocation, and evidence links.",
@@ -974,7 +729,6 @@
     },
     {
       "path": "/cbam-actual-vs-default-values",
-      "url": "https://cbamvalid.com/cbam-actual-vs-default-values",
       "primaryQuestion": "When should exporters use actual values instead of CBAM default values?",
       "empathyLead": "Defaults can look easier until a buyer or verifier rejects them. Choosing the wrong basis creates commercial and legal risk.",
       "directAnswer": "Actual values reflect installation-specific monitored or calculated emissions and generally require independent verification where legally required. Default values are official fallbacks that depend on multiple regulatory dimensions — not a single universal CN number.",
@@ -1014,7 +768,6 @@
     },
     {
       "path": "/cbam-default-values",
-      "url": "https://cbamvalid.com/cbam-default-values",
       "primaryQuestion": "What are CBAM default values and why are they multi-dimensional?",
       "empathyLead": "Searching for “one default number per CN code” is a common trap. Wrong dimensions produce indefensible figures.",
       "directAnswer": "CBAM default values are official fallback emission factors that depend on multiple dimensions such as goods, country, production route, and year where the published dataset defines them — not a single timeless CN-only number.",
@@ -1053,7 +806,6 @@
     },
     {
       "path": "/cbam-certificate-price",
-      "url": "https://cbamvalid.com/cbam-certificate-price",
       "primaryQuestion": "How does CBAM certificate pricing work in 2026?",
       "empathyLead": "Finance teams often confuse certificate price publication cadence with transitional quarterly emissions reporting. That mix-up drives the wrong calendar.",
       "directAnswer": "In 2026, CBAM certificate prices are calculated on a quarterly cadence under Implementing Regulation (EU) 2025/2548. Certificate purchase and surrender obligations follow definitive-period rules and must not be confused with transitional quarterly emissions reporting.",
@@ -1092,7 +844,6 @@
     },
     {
       "path": "/cbam-verification-preparation",
-      "url": "https://cbamvalid.com/cbam-verification-preparation",
       "primaryQuestion": "How should exporters prepare for independent CBAM verification?",
       "empathyLead": "Verifiers do not want a story — they want complete, consistent, evidence-linked data. Preparation quality decides how painful the review becomes.",
       "directAnswer": "Verification preparation means assembling complete, evidence-linked emissions data, methodology decisions, and findings closure so an independent accredited verifier can perform assurance work. CBAMValid prepares the package; it does not issue the verification opinion.",
@@ -1132,7 +883,6 @@
     },
     {
       "path": "/cbam-exporter-evidence-requirements",
-      "url": "https://cbamvalid.com/cbam-exporter-evidence-requirements",
       "primaryQuestion": "What evidence do non-EU exporters need for CBAM embedded emissions?",
       "empathyLead": "A beautiful PDF with weak evidence fails. Buyers and verifiers follow the data lineage, not the cover page.",
       "directAnswer": "Exporters need evidence lineage for material data: document identity, issuer, period, MIME/size, storage path, SHA-256 hash, uploader, confidentiality, review status, support status, and links to input fields and calculations.",
@@ -1172,7 +922,6 @@
     },
     {
       "path": "/cbam-non-eu-producer-guide",
-      "url": "https://cbamvalid.com/cbam-non-eu-producer-guide",
       "primaryQuestion": "What must non-EU producers and exporters do under CBAM?",
       "empathyLead": "You may not be the declarant, but your EU customer still needs defendable actual data. Waiting until the PO is blocked is already too late.",
       "directAnswer": "Non-EU producers and exporters should determine goods scope, compile installation and production-route data, calculate evidence-linked embedded emissions, and provide an operator-prepared package that EU importers can use toward CBAM duties. CBAMValid helps prepare that package for independent accredited verification.",
@@ -1212,7 +961,6 @@
     },
     {
       "path": "/cbam-cn-code-scope",
-      "url": "https://cbamvalid.com/cbam-cn-code-scope",
       "primaryQuestion": "How do I decide if my goods CN code falls under CBAM?",
       "empathyLead": "Scope mistakes cascade into wrong data collection. Confirm Annex I coverage before you build the full evidence stack.",
       "directAnswer": "Compare your goods’ Combined Nomenclature codes against CBAM Annex I coverage as published in the applicable legal texts and CBAMValid’s public CN registry entries. CBAMValid helps you navigate published scope notes; it does not replace formal customs classification.",
@@ -1251,7 +999,6 @@
     },
     {
       "path": "/cbam-methodology",
-      "url": "https://cbamvalid.com/cbam-methodology",
       "primaryQuestion": "What is the CBAM methodology overview CBAMValid publishes?",
       "empathyLead": "Teams need a short map before diving into formulas. Methodology without version pins becomes non-reproducible.",
       "directAnswer": "CBAMValid’s methodology overview explains versioned rulesets, reproducible calculation traces, evidence linkage, and the independence boundary between operator preparation and accredited verification.",
@@ -1290,7 +1037,6 @@
     },
     {
       "path": "/about",
-      "url": "https://cbamvalid.com/about",
       "primaryQuestion": "Who is CBAMValid and what independence boundary applies?",
       "empathyLead": "Buyers and compliance teams need to know whether a vendor is an official EU service — or an independent preparation tool with clear limits.",
       "directAnswer": "CBAMValid is an independent software service that helps exporters and importers prepare evidence-linked CBAM dossiers. It is not an EU institution, customs authority, accredited CBAM verifier, or CBAM Registry submission service.",
@@ -1329,7 +1075,6 @@
     },
     {
       "path": "/contact",
-      "url": "https://cbamvalid.com/contact",
       "primaryQuestion": "How do I contact CBAMValid for technical, billing, or legal questions?",
       "empathyLead": "When a seal is blocked or a buyer is waiting, you need a real inbox — not a ticket black hole.",
       "directAnswer": "Email info@cbamvalid.com for technical, dossier, and billing help. Legal and privacy requests use the published legal and privacy addresses on the contact page. Typical response window is 24–48 business hours.",
@@ -1408,7 +1153,8 @@
         "/pricing",
         "/how-it-works",
         "/sample-dossier"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "when-is-card-charged",
@@ -1448,7 +1194,8 @@
       "relatedPaths": [
         "/pricing",
         "/credits/buy"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "what-is-cbamvalid",
@@ -1483,7 +1230,8 @@
         "/product",
         "/methodology",
         "/sample-dossier"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "can-one-pack-cover-another-plant",
@@ -1516,7 +1264,8 @@
       "relatedPaths": [
         "/pricing",
         "/how-it-works"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "sealed-vs-verified",
@@ -1552,7 +1301,8 @@
         "/methodology",
         "/sample-dossier",
         "/verify"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "how-workflow-works",
@@ -1587,7 +1337,8 @@
         "/how-it-works",
         "/sample-dossier",
         "/pricing"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "why-methodology-matters",
@@ -1621,7 +1372,8 @@
         "/methodology",
         "/cbam-methodology",
         "/sample-dossier"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "definitive-period-2026",
@@ -1655,7 +1407,8 @@
       "relatedPaths": [
         "/cbam-certificate-price",
         "/cbam-verification-preparation"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "embedded-emissions-calc",
@@ -1689,7 +1442,8 @@
       "relatedPaths": [
         "/cbam-actual-vs-default-values",
         "/product"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "actual-vs-default",
@@ -1722,7 +1476,8 @@
       "relatedPaths": [
         "/cbam-verification-preparation",
         "/methodology"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "verification-preparation",
@@ -1757,7 +1512,8 @@
         "/sample-dossier",
         "/pricing",
         "/methodology"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "spreadsheet-vs-preparation-pack",
@@ -1793,7 +1549,8 @@
         "/sample-dossier",
         "/pricing",
         "/cbam-exporter-evidence-requirements"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "one-pack-scope-lock",
@@ -1828,7 +1585,8 @@
       "relatedPaths": [
         "/pricing",
         "/how-it-works"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "buyer-asks-tomorrow",
@@ -1869,7 +1627,8 @@
       "relatedPaths": [
         "/pricing",
         "/cn-code"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "about-independence",
@@ -1903,74 +1662,8 @@
         "/about",
         "/methodology",
         "/legal-notice"
-      ]
-    },
-    {
-      "id": "structure-review-vs-opinion",
-      "question": "What is a CBAMValid structure review — and is it a verification opinion?",
-      "aliases": [
-        "verifier structure review",
-        "reviewed for structure",
-        "CBAMValid accredited review"
       ],
-      "directAnswer": "A structure review assesses whether the Preparation Pack contains the data fields and evidence lineage a verification workflow needs. It is not a verification opinion, reasonable assurance, accreditation endorsement, EU approval, or customs decision. Canonical boundary: Reviewed for structure — not a verification opinion.",
-      "empathyContext": "Buyers fear package rejection more than arithmetic. Structure fitness and accredited verification are different trust signals — confusing them creates legal and commercial risk.",
-      "evidence": [
-        {
-          "label": "Structure review surface",
-          "detail": "Public page maps package fields, target letter language, and legal boundary",
-          "href": "/verifier-review",
-          "evidenceStatus": "verified"
-        },
-        {
-          "label": "Structure Review Brief",
-          "detail": "Downloadable CBAMValid-owned brief for verification-body engagements",
-          "href": "/verifier-review/structure-review-brief.pdf",
-          "evidenceStatus": "verified"
-        },
-        {
-          "label": "Sample dossier",
-          "detail": "Gate-free package buyers and verifiers can inspect before outreach",
-          "href": "/sample-dossier",
-          "evidenceStatus": "verified"
-        }
-      ],
-      "routes": [
-        "/verifier-review",
-        "/",
-        "/about",
-        "/methodology"
-      ],
-      "relatedPaths": [
-        "/sample-dossier",
-        "/verify",
-        "/product"
-      ]
-    },
-    {
-      "id": "structure-review-letter-language",
-      "question": "What letter language does CBAMValid request from verification bodies?",
-      "aliases": [
-        "structure review letter",
-        "IR 2025/2621 structure letter"
-      ],
-      "directAnswer": "Target language: We reviewed the CBAMValid Preparation Pack structure. It contains the data fields and evidence lineage required under IR 2025/2621 for our verification workflow. This is a structural review, not a verification opinion.",
-      "empathyContext": "Without a hard boundary sentence, a marketing page can be misread as assurance. The letter must stay structural.",
-      "evidence": [
-        {
-          "label": "Published target letter",
-          "detail": "Exact wording on the structure review page",
-          "href": "/verifier-review",
-          "evidenceStatus": "verified"
-        }
-      ],
-      "routes": [
-        "/verifier-review"
-      ],
-      "relatedPaths": [
-        "/sample-dossier",
-        "/methodology"
-      ]
+      "schemaEligible": true
     },
     {
       "id": "published-rulesets-pin",
@@ -2004,7 +1697,8 @@
       "relatedPaths": [
         "/sample-dossier",
         "/verify"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "buyer-share-link",
@@ -2037,7 +1731,8 @@
       "relatedPaths": [
         "/sample-dossier",
         "/security"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "security-no-fake-iso",
@@ -2072,7 +1767,8 @@
         "/contact",
         "/legal-notice",
         "/trust"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "trust-evidence-registry",
@@ -2089,7 +1785,7 @@
       "evidence": [
         {
           "label": "Trust Evidence Registry",
-          "detail": "Pinned claim statuses for identity, commercial, structure, and customer layers",
+          "detail": "Pinned claim statuses for identity, commercial, security, and customer layers",
           "href": "/trust",
           "evidenceStatus": "verified"
         },
@@ -2097,12 +1793,6 @@
           "label": "Legal notice",
           "detail": "Full T1.3 identity block — CRO, VAT, address, phone, DPO",
           "href": "/legal-notice",
-          "evidenceStatus": "verified"
-        },
-        {
-          "label": "Structure review SAMPLE",
-          "detail": "Watermarked specimen — SAMPLE status, not a verification opinion",
-          "href": "/verifier-review",
           "evidenceStatus": "verified"
         }
       ],
@@ -2113,10 +1803,9 @@
       ],
       "relatedPaths": [
         "/security",
-        "/verifier-review",
-        "/pricing",
-        "/enterprise"
-      ]
+        "/pricing"
+      ],
+      "schemaEligible": true
     },
     {
       "id": "platform-cbam-first",
@@ -2148,320 +1837,9 @@
       ],
       "relatedPaths": [
         "/product",
-        "/methodology",
-        "/enterprise"
-      ]
-    },
-    {
-      "id": "enterprise-exclusive",
-      "question": "What does CBAMValid Enterprise Exclusive include?",
-      "aliases": [
-        "Enterprise SSO",
-        "SLA",
-        "holding multi-entity",
-        "from 12000"
+        "/methodology"
       ],
-      "directAnswer": "Enterprise Exclusive starts from USD 12,000 per year (contact sales). It includes contracted SSO/IdP federation (Entra, Google, Okta), SLA draft and signed MSA path, holding/multi-entity entitlement, signed DPA path, API/onboarding, and verifier coordination. Not an accredited verification opinion. Single Pack remains self-serve at USD 449.",
-      "empathyContext": "Multi-site buyers need procurement-grade SSO and SLA — not another self-serve checkbox.",
-      "evidence": [
-        {
-          "label": "Enterprise Exclusive",
-          "detail": "SSO · SLA · Holding commercial package",
-          "href": "/enterprise",
-          "evidenceStatus": "verified"
-        },
-        {
-          "label": "SLA draft PDF",
-          "detail": "Procurement starting-point draft",
-          "href": "/enterprise/sla-draft.pdf",
-          "evidenceStatus": "verified"
-        },
-        {
-          "label": "SSO page",
-          "detail": "OIDC/SAML provisioning path",
-          "href": "/enterprise/sso",
-          "evidenceStatus": "verified"
-        }
-      ],
-      "routes": [
-        "/enterprise",
-        "/pricing",
-        "/demo"
-      ],
-      "relatedPaths": [
-        "/enterprise/holding",
-        "/partners",
-        "/security"
-      ]
-    },
-    {
-      "id": "enterprise-sso",
-      "question": "Does CBAMValid Enterprise support SSO with Entra, Google, or Okta?",
-      "aliases": [
-        "Enterprise SAML",
-        "OIDC",
-        "IdP federation",
-        "Microsoft Entra"
-      ],
-      "directAnswer": "Yes under Enterprise contract. CBAMValid federates Microsoft Entra ID, Google Workspace, or Okta via OIDC or SAML. After IdP login, the server still issues an HttpOnly session cookie and enforces tenant/case authorization. SSO is not included on self-serve Single Pack.",
-      "empathyContext": "IT security blocks SaaS tools that cannot join the corporate IdP. Checkbox “SSO coming soon” fails procurement.",
-      "evidence": [
-        {
-          "label": "Enterprise SSO page",
-          "detail": "Protocols, IdP examples, and provisioning steps",
-          "href": "/enterprise/sso",
-          "evidenceStatus": "verified"
-        },
-        {
-          "label": "Security session model",
-          "detail": "Server-verified HttpOnly __session remains authoritative",
-          "href": "/security",
-          "evidenceStatus": "verified"
-        }
-      ],
-      "routes": [
-        "/enterprise",
-        "/enterprise/sso",
-        "/demo",
-        "/security"
-      ],
-      "relatedPaths": [
-        "/enterprise/holding",
-        "/pricing"
-      ]
-    },
-    {
-      "id": "enterprise-sla",
-      "question": "Does CBAMValid publish an Enterprise SLA?",
-      "aliases": [
-        "service level agreement",
-        "uptime",
-        "support response"
-      ],
-      "directAnswer": "Yes. CBAMValid publishes an Enterprise SLA draft with response targets for critical, high, and normal issues, plus an honest uptime posture based on Google Cloud / Firebase europe-west1. Binding credits live only in a signed Enterprise MSA. ISO 27001 and SOC 2 are not claimed.",
-      "empathyContext": "Procurement packs need downloadable SLA language before legal review — not a vague “we take uptime seriously” sentence.",
-      "evidence": [
-        {
-          "label": "SLA draft PDF",
-          "detail": "Public procurement starting point",
-          "href": "/enterprise/sla-draft.pdf",
-          "evidenceStatus": "verified"
-        },
-        {
-          "label": "DPA draft PDF",
-          "detail": "Companion data-protection draft",
-          "href": "/security/dpa-draft.pdf",
-          "evidenceStatus": "verified"
-        },
-        {
-          "label": "Security facts",
-          "detail": "Hosting region and subprocessors without fake certifications",
-          "href": "/security",
-          "evidenceStatus": "verified"
-        }
-      ],
-      "routes": [
-        "/enterprise",
-        "/security",
-        "/demo"
-      ],
-      "relatedPaths": [
-        "/enterprise/sso",
-        "/privacy"
-      ]
-    },
-    {
-      "id": "enterprise-holding",
-      "question": "Can a holding company cover multiple operators and installations?",
-      "aliases": [
-        "multi-entity",
-        "group exporters",
-        "multi-site entitlement"
-      ],
-      "directAnswer": "Enterprise entitlement can sit at holding level while each sealed working file still binds one operator, one installation, and one reporting year. Cross-entity clones do not inherit payment unless the SOW says so. Roles include Holding Admin, Operator Preparer, Internal Reviewer, and Read-Only Verifier.",
-      "empathyContext": "Groups fear either paying forever per plant or blurring legal scope so verifiers reject the package.",
-      "evidence": [
-        {
-          "label": "Holding scope page",
-          "detail": "Parent/child rules and seal-unit discipline",
-          "href": "/enterprise/holding",
-          "evidenceStatus": "verified"
-        },
-        {
-          "label": "Pricing tiers",
-          "detail": "Enterprise vs Single Pack scope contrast",
-          "href": "/pricing",
-          "evidenceStatus": "verified"
-        }
-      ],
-      "routes": [
-        "/enterprise",
-        "/enterprise/holding",
-        "/pricing",
-        "/demo"
-      ],
-      "relatedPaths": [
-        "/enterprise/sso",
-        "/sample-dossier"
-      ]
-    },
-    {
-      "id": "enterprise-vs-single-pack",
-      "question": "When should I buy Single Pack instead of Enterprise Exclusive?",
-      "aliases": [
-        "449 vs 12000",
-        "self-serve vs contact sales",
-        "one plant"
-      ],
-      "directAnswer": "Choose Single Pack (USD 449 pay-at-lock) for one working file — one operator, one installation, one reporting year — with same-file corrections included. Choose Enterprise Exclusive (from USD 12,000/year, contact sales) when you need SSO, SLA/DPA path, holding/multi-entity entitlement, API/onboarding, or coordinated multi-site rollout.",
-      "empathyContext": "Buying Enterprise for a single plant wastes budget; buying Single Pack for a group IdP requirement fails IT review.",
-      "evidence": [
-        {
-          "label": "Public pricing",
-          "detail": "Four tiers with Enterprise as the only contact-sales tier",
-          "href": "/pricing",
-          "evidenceStatus": "verified"
-        },
-        {
-          "label": "Enterprise Exclusive",
-          "detail": "SSO · SLA · Holding module map",
-          "href": "/enterprise",
-          "evidenceStatus": "verified"
-        },
-        {
-          "label": "Sample dossier",
-          "detail": "Inspect the self-serve package before you pay",
-          "href": "/sample-dossier",
-          "evidenceStatus": "verified"
-        }
-      ],
-      "routes": [
-        "/enterprise",
-        "/pricing",
-        "/",
-        "/demo"
-      ],
-      "relatedPaths": [
-        "/how-it-works",
-        "/trust"
-      ]
-    },
-    {
-      "id": "enterprise-platform-modules",
-      "question": "Are R6–R9 Enterprise platform modules live to sell?",
-      "aliases": [
-        "R6 rulesets",
-        "R7 buyer link",
-        "R8 security SLA",
-        "R9 platform"
-      ],
-      "directAnswer": "Yes. Published Rulesets (R6), Buyer Share Link (R7), Security/DPA/SLA (R8), and Platform architecture (R9) are live sellable surfaces. Additional regulatory categories beyond CBAM remain Enterprise SOW-only — CBAMValid does not sell half-products.",
-      "empathyContext": "Enterprise buyers reject vaporware roadmaps. Modules must be inspectable before a scoping call.",
-      "evidence": [
-        {
-          "label": "Published rulesets",
-          "detail": "Version-pinned CBAM ruleset registry",
-          "href": "/rulesets",
-          "evidenceStatus": "verified"
-        },
-        {
-          "label": "Buyer share link",
-          "detail": "/d/token integrity surface",
-          "href": "/buyer-link",
-          "evidenceStatus": "verified"
-        },
-        {
-          "label": "Platform architecture",
-          "detail": "CBAM door live; expansion under Enterprise SOW",
-          "href": "/platform",
-          "evidenceStatus": "verified"
-        }
-      ],
-      "routes": [
-        "/enterprise",
-        "/platform",
-        "/rulesets",
-        "/buyer-link"
-      ],
-      "relatedPaths": [
-        "/security",
-        "/partners"
-      ]
-    },
-    {
-      "id": "enterprise-partners",
-      "question": "How do channel partners engage with CBAMValid Enterprise?",
-      "aliases": [
-        "referral partner",
-        "verifier firm partner",
-        "consultancy partner"
-      ],
-      "directAnswer": "Verifier firms, consultancies, and trade associations can request a partner track on /partners. Logos are published only after a signed referral agreement. Partner status does not create an accredited verification endorsement.",
-      "empathyContext": "Channel scale requires contracts — invented partner walls destroy trust.",
-      "evidence": [
-        {
-          "label": "Partner intake",
-          "detail": "Live inquiry form — logos only after contract",
-          "href": "/partners",
-          "evidenceStatus": "verified"
-        },
-        {
-          "label": "Structure review",
-          "detail": "SAMPLE package-fitness surface for verifier discussion",
-          "href": "/verifier-review",
-          "evidenceStatus": "verified"
-        }
-      ],
-      "routes": [
-        "/enterprise",
-        "/partners",
-        "/demo"
-      ],
-      "relatedPaths": [
-        "/verifier-review",
-        "/sample-dossier"
-      ]
-    },
-    {
-      "id": "pricing-four-tiers",
-      "question": "What are CBAMValid’s published pricing tiers?",
-      "aliases": [
-        "Enterprise contact sales",
-        "Exporter Annual",
-        "Single Pack 449"
-      ],
-      "directAnswer": "Draft is $0. Single Pack is USD 449 one-time pay-at-lock for one working file. Exporter Annual is USD 2,400 per year. Enterprise is from USD 12,000 per year and is the only contact-sales tier. Not an accredited verification opinion.",
-      "empathyContext": "Procurement needs published prices. Hiding everything behind “contact sales” fails the public-pricing rule.",
-      "evidence": [
-        {
-          "label": "Pricing page",
-          "detail": "Four published tiers + ROI calculator",
-          "href": "/pricing",
-          "evidenceStatus": "verified"
-        },
-        {
-          "label": "Book a demo",
-          "detail": "Human path for Annual and Enterprise",
-          "href": "/demo",
-          "evidenceStatus": "verified"
-        },
-        {
-          "label": "Enterprise Exclusive",
-          "detail": "Contact-sales package detail",
-          "href": "/enterprise",
-          "evidenceStatus": "verified"
-        }
-      ],
-      "routes": [
-        "/pricing",
-        "/demo",
-        "/",
-        "/enterprise"
-      ],
-      "relatedPaths": [
-        "/how-it-works",
-        "/security"
-      ]
+      "schemaEligible": true
     },
     {
       "id": "product-deterministic-engine",
@@ -2495,7 +1873,8 @@
       "relatedPaths": [
         "/sample-dossier",
         "/rulesets"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "product-evidence-register",
@@ -2529,7 +1908,8 @@
       "relatedPaths": [
         "/how-it-works",
         "/methodology"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "product-fail-closed-qc",
@@ -2563,7 +1943,8 @@
       "relatedPaths": [
         "/sample-dossier",
         "/methodology"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "product-o3ci-export",
@@ -2597,7 +1978,8 @@
       "relatedPaths": [
         "/pricing",
         "/how-it-works"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "product-seal-integrity",
@@ -2637,7 +2019,8 @@
       "relatedPaths": [
         "/trust",
         "/how-it-works"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "readiness-kit-time",
@@ -2669,7 +2052,8 @@
       "relatedPaths": [
         "/pricing",
         "/sample-dossier"
-      ]
+      ],
+      "schemaEligible": true
     },
     {
       "id": "case-studies-permissioned",
@@ -2703,1034 +2087,9 @@
       ],
       "relatedPaths": [
         "/sample-dossier",
-        "/product",
-        "/enterprise"
-      ]
-    },
-    {
-      "id": "what-is-idp-msa",
-      "question": "What do IdP and MSA mean for CBAMValid Enterprise SSO?",
-      "aliases": [
-        "identity provider",
-        "master service agreement",
-        "SSO Entra Okta"
-      ],
-      "directAnswer": "IdP means Identity Provider — your company login (Microsoft Entra ID, Google Workspace, or Okta). MSA means Master Service Agreement — the signed Enterprise contract covering pricing, SLA, DPA, and which domains are in scope. SSO is enabled after that contract; it is not on Single Pack.",
-      "empathyContext": "Procurement jargon blocks deals. Plain labels unblock Enterprise scoping.",
-      "evidence": [
-        {
-          "label": "Enterprise SSO page",
-          "detail": "Plain-English IdP/MSA glossary + cutover simulation",
-          "href": "/enterprise/sso",
-          "evidenceStatus": "verified"
-        },
-        {
-          "label": "Enterprise Exclusive",
-          "detail": "SSO · SLA · Holding package overview",
-          "href": "/enterprise",
-          "evidenceStatus": "verified"
-        }
-      ],
-      "routes": [
-        "/enterprise/sso",
-        "/enterprise",
-        "/demo"
-      ],
-      "relatedPaths": [
-        "/security",
-        "/pricing"
-      ]
-    }
-  ],
-  "topicalMap": [
-    {
-      "path": "/",
-      "url": "https://cbamvalid.com",
-      "topic": "CBAM exporter verification preparation",
-      "role": "hub",
-      "parentPath": null,
-      "childPaths": [
-        "/product",
-        "/pricing",
-        "/how-it-works",
-        "/methodology",
-        "/answers",
-        "/glossary",
-        "/sample-dossier",
-        "/cn-code",
-        "/rulesets",
-        "/security",
-        "/trust",
-        "/enterprise",
-        "/platform",
-        "/cbam-2026-definitive-period",
-        "/cbam-verification-preparation",
-        "/cbam-non-eu-producer-guide",
-        "/about"
-      ],
-      "covers": [
-        "what is CBAMValid",
-        "CBAM evidence dossier for exporters",
-        "verification preparation vs accredited verification"
-      ],
-      "entities": [
-        "CBAMValid",
-        "Exporter Verification Preparation Pack",
-        "embedded emissions",
-        "independent accredited verification",
-        "Regulation (EU) 2023/956"
-      ],
-      "fanOutQueries": [
-        "CBAM exporter evidence dossier",
-        "CBAM verification preparation software",
-        "actual embedded emissions package for EU buyer",
-        "CBAM sealed dossier vs verification opinion"
-      ]
-    },
-    {
-      "path": "/product",
-      "url": "https://cbamvalid.com/product",
-      "topic": "Preparation Pack product capabilities",
-      "role": "spoke",
-      "parentPath": "/",
-      "childPaths": [
-        "/how-it-works",
-        "/sample-dossier",
-        "/pricing",
-        "/methodology",
-        "/verify",
-        "/rulesets",
-        "/enterprise",
-        "/trust"
-      ],
-      "covers": [
-        "deterministic CBAM calculation engine",
-        "evidence register",
-        "fail-closed quality controls before sealing",
-        "O3CI field-mapped export",
-        "versioned EU rulesets",
-        "integrity manifest and SHA-256 sealing",
-        "case readiness workspace"
-      ],
-      "entities": [
-        "Exporter Verification Preparation Pack",
-        "calculation trace",
-        "evidence register",
-        "fail-closed quality controls",
-        "O3CI field-mapped export",
-        "versioned EU rulesets",
-        "SHA-256 integrity manifest",
-        "case readiness"
-      ],
-      "fanOutQueries": [
-        "CBAM verification preparation product",
-        "CBAM evidence register software",
-        "deterministic CBAM calculation engine",
-        "CBAM O3CI field-mapped export",
-        "CBAM sealed dossier integrity hash",
-        "CBAM fail-closed quality controls"
-      ]
-    },
-    {
-      "path": "/pricing",
-      "url": "https://cbamvalid.com/pricing",
-      "topic": "One-time Preparation Pack pricing",
-      "role": "commercial",
-      "parentPath": "/",
-      "childPaths": [
-        "/how-it-works",
-        "/sample-dossier",
-        "/product",
-        "/demo"
-      ],
-      "covers": [
-        "USD 449 pay-at-lock inclusions",
-        "four published tiers",
-        "when card is charged",
-        "same-file corrections included",
-        "new file requires new payment",
-        "scope lock per installation and year",
-        "ROI default-value exposure calculator"
-      ],
-      "entities": [
-        "USD 449",
-        "pay at lock",
-        "Exporter Annual",
-        "Enterprise contact sales",
-        "ROI calculator",
-        "same-file corrections"
-      ],
-      "fanOutQueries": [
-        "CBAMValid price",
-        "CBAMValid USD 449",
-        "CBAM preparation pack cost",
-        "is CBAMValid a subscription",
-        "when is CBAMValid card charged"
-      ]
-    },
-    {
-      "path": "/demo",
-      "url": "https://cbamvalid.com/demo",
-      "topic": "Book a demo — Annual & Enterprise",
-      "role": "commercial",
-      "parentPath": "/pricing",
-      "childPaths": [
-        "/pricing",
-        "/sample-dossier",
-        "/security",
-        "/enterprise",
-        "/contact"
-      ],
-      "covers": [
-        "human demo path",
-        "Enterprise contact sales only"
-      ],
-      "entities": [
-        "book a demo",
-        "Exporter Annual",
-        "Enterprise"
-      ],
-      "fanOutQueries": [
-        "CBAMValid demo",
-        "CBAMValid enterprise demo",
-        "CBAMValid annual plan"
-      ]
-    },
-    {
-      "path": "/enterprise",
-      "url": "https://cbamvalid.com/enterprise",
-      "topic": "Enterprise Exclusive — SSO SLA Holding",
-      "role": "commercial",
-      "parentPath": "/pricing",
-      "childPaths": [
-        "/enterprise/sso",
-        "/enterprise/holding",
-        "/partners",
-        "/security",
-        "/demo",
-        "/sample-dossier",
-        "/trust"
-      ],
-      "covers": [
-        "SSO IdP federation",
-        "SLA draft",
-        "holding multi-entity",
-        "from $12000",
-        "sample package inspection",
-        "trust evidence registry"
-      ],
-      "entities": [
-        "Enterprise Exclusive",
-        "SSO",
-        "SLA",
-        "holding",
-        "from $12,000"
-      ],
-      "fanOutQueries": [
-        "CBAMValid Enterprise",
-        "CBAMValid SSO",
-        "CBAMValid SLA",
-        "CBAMValid holding multi-entity"
-      ]
-    },
-    {
-      "path": "/enterprise/sso",
-      "url": "https://cbamvalid.com/enterprise/sso",
-      "topic": "Enterprise SSO / IdP federation",
-      "role": "spoke",
-      "parentPath": "/enterprise",
-      "childPaths": [
-        "/enterprise",
-        "/security",
-        "/demo"
-      ],
-      "covers": [
-        "OIDC SAML",
-        "Entra Google Okta"
-      ],
-      "entities": [
-        "SSO",
-        "OIDC",
-        "SAML",
-        "Entra",
-        "Okta"
-      ],
-      "fanOutQueries": [
-        "CBAMValid SSO",
-        "CBAMValid SAML",
-        "CBAMValid Entra ID"
-      ]
-    },
-    {
-      "path": "/enterprise/holding",
-      "url": "https://cbamvalid.com/enterprise/holding",
-      "topic": "Holding / multi-entity Enterprise scope",
-      "role": "spoke",
-      "parentPath": "/enterprise",
-      "childPaths": [
-        "/enterprise",
-        "/pricing",
-        "/demo"
-      ],
-      "covers": [
-        "holding entitlement",
-        "explicit seal scope"
-      ],
-      "entities": [
-        "holding",
-        "multi-entity",
-        "installation scope"
-      ],
-      "fanOutQueries": [
-        "CBAMValid holding",
-        "CBAMValid multi-site",
-        "CBAMValid group exporters"
-      ]
-    },
-    {
-      "path": "/partners",
-      "url": "https://cbamvalid.com/partners",
-      "topic": "Channel partner intake",
-      "role": "spoke",
-      "parentPath": "/enterprise",
-      "childPaths": [
-        "/enterprise",
-        "/sample-dossier",
-        "/verifier-review"
-      ],
-      "covers": [
-        "partner inquiry",
-        "no invented logos"
-      ],
-      "entities": [
-        "channel partner",
-        "referral agreement"
-      ],
-      "fanOutQueries": [
-        "CBAMValid partner",
-        "CBAMValid reseller",
-        "CBAMValid referral"
-      ]
-    },
-    {
-      "path": "/case-studies",
-      "url": "https://cbamvalid.com/case-studies",
-      "topic": "Anonymized illustrative sector scenarios",
-      "role": "spoke",
-      "parentPath": "/",
-      "childPaths": [
-        "/sample-dossier",
-        "/product",
-        "/enterprise",
-        "/demo"
-      ],
-      "covers": [
-        "anonymized steel aluminium cement holding scenarios",
-        "no invented logos or testimonials",
-        "named references still permissioned"
-      ],
-      "entities": [
-        "illustrative scenarios",
-        "anonymized sector paths",
-        "permissioned named reference",
-        "no invented logos"
-      ],
-      "fanOutQueries": [
-        "CBAMValid case studies",
-        "CBAMValid customer scenarios",
-        "CBAM preparation steel exporter example"
-      ]
-    },
-    {
-      "path": "/how-it-works",
-      "url": "https://cbamvalid.com/how-it-works",
-      "topic": "Working-file to locked-package workflow",
-      "role": "spoke",
-      "parentPath": "/",
-      "childPaths": [
-        "/pricing",
-        "/sample-dossier",
-        "/methodology"
-      ],
-      "covers": [
-        "case scope setup",
-        "evidence linking",
-        "seal and download deliverables"
-      ],
-      "entities": [
-        "draft-to-seal workflow",
-        "quality blockers",
-        "sealed release",
-        "O3CI export"
-      ],
-      "fanOutQueries": [
-        "how to prepare CBAM dossier",
-        "CBAMValid workflow steps",
-        "seal CBAM evidence package"
-      ]
-    },
-    {
-      "path": "/methodology",
-      "url": "https://cbamvalid.com/methodology",
-      "topic": "Calculation methodology and legal sources",
-      "role": "methodology",
-      "parentPath": "/",
-      "childPaths": [
-        "/cbam-methodology",
-        "/cbam-embedded-emissions-calculation",
         "/product"
       ],
-      "covers": [
-        "versioned rulesets",
-        "Regulation (EU) 2023/956 basis",
-        "deterministic replay"
-      ],
-      "entities": [
-        "versioned ruleset",
-        "Regulation (EU) 2023/956",
-        "Implementing Regulation (EU) 2025/2547",
-        "calculation trace",
-        "deterministic replay"
-      ],
-      "fanOutQueries": [
-        "CBAM calculation methodology",
-        "CBAM ruleset versioning",
-        "deterministic embedded emissions calculation"
-      ]
-    },
-    {
-      "path": "/sample-dossier",
-      "url": "https://cbamvalid.com/sample-dossier",
-      "topic": "Sample sealed dossier structure",
-      "role": "verification",
-      "parentPath": "/",
-      "childPaths": [
-        "/verify",
-        "/pricing",
-        "/product"
-      ],
-      "covers": [
-        "what a sealed package contains",
-        "interactive 16-page dossier viewer",
-        "integrity manifest preview"
-      ],
-      "entities": [
-        "sample sealed dossier",
-        "integrity manifest",
-        "SHA-256",
-        "verifier navigation package",
-        "interactive dossier viewer"
-      ],
-      "fanOutQueries": [
-        "CBAM sample dossier",
-        "CBAM verification preparation package contents",
-        "CBAM integrity manifest",
-        "CBAMValid sample dossier preview"
-      ]
-    },
-    {
-      "path": "/cn-code",
-      "url": "https://cbamvalid.com/cn-code",
-      "topic": "CBAM CN code scope",
-      "role": "spoke",
-      "parentPath": "/",
-      "childPaths": [
-        "/cbam-cn-code-scope",
-        "/product"
-      ],
-      "covers": [
-        "is my CN code in CBAM scope"
-      ],
-      "entities": [
-        "CN code",
-        "Annex I",
-        "CBAM goods scope",
-        "customs classification"
-      ],
-      "fanOutQueries": [
-        "is my CN code in CBAM",
-        "CBAM CN code list",
-        "CBAM Annex I goods"
-      ]
-    },
-    {
-      "path": "/verify",
-      "url": "https://cbamvalid.com/verify",
-      "topic": "Public dossier signature verification",
-      "role": "verification",
-      "parentPath": "/sample-dossier",
-      "childPaths": [
-        "/sample-dossier",
-        "/product",
-        "/verifier-review"
-      ],
-      "covers": [
-        "verify sealed dossier integrity hash"
-      ],
-      "entities": [
-        "dossier integrity hash",
-        "public verification",
-        "manifest SHA-256"
-      ],
-      "fanOutQueries": [
-        "verify CBAM dossier hash",
-        "CBAMValid signature verification"
-      ]
-    },
-    {
-      "path": "/verifier-review",
-      "url": "https://cbamvalid.com/verifier-review",
-      "topic": "Verifier structure review surface",
-      "role": "verification",
-      "parentPath": "/",
-      "childPaths": [
-        "/sample-dossier",
-        "/verify",
-        "/methodology"
-      ],
-      "covers": [
-        "structure review vs verification opinion",
-        "package fields for verifier workflows",
-        "target structure-review letter language"
-      ],
-      "entities": [
-        "structure review",
-        "verification opinion boundary",
-        "IR 2025/2621",
-        "evidence lineage"
-      ],
-      "fanOutQueries": [
-        "CBAM structure review vs verification",
-        "CBAMValid verifier review letter",
-        "reviewed for structure not a verification opinion"
-      ]
-    },
-    {
-      "path": "/rulesets",
-      "url": "https://cbamvalid.com/rulesets",
-      "topic": "Published CBAM ruleset registry",
-      "role": "methodology",
-      "parentPath": "/methodology",
-      "childPaths": [
-        "/methodology",
-        "/sample-dossier",
-        "/verify",
-        "/platform"
-      ],
-      "covers": [
-        "named ruleset versions",
-        "source-registry hash pin",
-        "historical seals keep ruleset"
-      ],
-      "entities": [
-        "ruleset version",
-        "source-registry hash",
-        "historical seal pin"
-      ],
-      "fanOutQueries": [
-        "CBAMValid ruleset registry",
-        "which CBAM ruleset version",
-        "CBAM ruleset source hash"
-      ]
-    },
-    {
-      "path": "/buyer-link",
-      "url": "https://cbamvalid.com/buyer-link",
-      "topic": "Buyer share link /d/token",
-      "role": "verification",
-      "parentPath": "/verify",
-      "childPaths": [
-        "/verify",
-        "/sample-dossier",
-        "/product"
-      ],
-      "covers": [
-        "short /d/token alias",
-        "buyer integrity check without login",
-        "integrity is not assurance"
-      ],
-      "entities": [
-        "buyer share link",
-        "/d/token",
-        "public verification token"
-      ],
-      "fanOutQueries": [
-        "CBAMValid buyer share link",
-        "CBAM dossier token URL",
-        "/d/token CBAMValid"
-      ]
-    },
-    {
-      "path": "/security",
-      "url": "https://cbamvalid.com/security",
-      "topic": "Security and data protection facts",
-      "role": "spoke",
-      "parentPath": "/",
-      "childPaths": [
-        "/privacy",
-        "/buyer-link",
-        "/legal-notice",
-        "/trust"
-      ],
-      "covers": [
-        "europe-west1 hosting",
-        "subprocessors",
-        "DPA draft without fake ISO claims"
-      ],
-      "entities": [
-        "europe-west1",
-        "DPA draft",
-        "subprocessors",
-        "no ISO 27001 claim"
-      ],
-      "fanOutQueries": [
-        "CBAMValid security",
-        "CBAMValid DPA",
-        "CBAMValid ISO 27001"
-      ]
-    },
-    {
-      "path": "/trust",
-      "url": "https://cbamvalid.com/trust",
-      "topic": "Trust evidence registry",
-      "role": "spoke",
-      "parentPath": "/",
-      "childPaths": [
-        "/legal-notice",
-        "/security",
-        "/verifier-review",
-        "/case-studies",
-        "/pricing"
-      ],
-      "covers": [
-        "pinned marketing claims",
-        "SAMPLE vs VERIFIED discipline",
-        "visible OWNER ACTION gaps"
-      ],
-      "entities": [
-        "trust registry",
-        "H2",
-        "SAMPLE",
-        "CRO 315881",
-        "VAT IE1857162AB"
-      ],
-      "fanOutQueries": [
-        "CBAMValid trust evidence",
-        "CBAMValid company registration",
-        "CBAMValid VAT"
-      ]
-    },
-    {
-      "path": "/platform",
-      "url": "https://cbamvalid.com/platform",
-      "topic": "Category architecture — CBAM first",
-      "role": "spoke",
-      "parentPath": "/",
-      "childPaths": [
-        "/rulesets",
-        "/product",
-        "/methodology",
-        "/enterprise"
-      ],
-      "covers": [
-        "CBAM is the live door",
-        "Enterprise expands the room under SOW",
-        "second category not a public half-product"
-      ],
-      "entities": [
-        "category architecture",
-        "CBAM first",
-        "Enterprise SOW",
-        "R6-R9"
-      ],
-      "fanOutQueries": [
-        "CBAMValid platform architecture",
-        "CBAMValid Enterprise SSO",
-        "CBAMValid beyond CBAM"
-      ]
-    },
-    {
-      "path": "/cbam-2026-definitive-period",
-      "url": "https://cbamvalid.com/cbam-2026-definitive-period",
-      "topic": "CBAM 2026 definitive period",
-      "role": "spoke",
-      "parentPath": "/",
-      "childPaths": [
-        "/cbam-certificate-price",
-        "/cbam-verification-preparation",
-        "/cbam-non-eu-producer-guide",
-        "/pricing"
-      ],
-      "covers": [
-        "definitive period start 2026",
-        "30 September 2027 declaration deadline for 2026 imports",
-        "certificate surrender timing"
-      ],
-      "entities": [
-        "CBAM definitive period",
-        "1 January 2026",
-        "30 September 2027",
-        "certificate surrender",
-        "Regulation (EU) 2025/2083"
-      ],
-      "fanOutQueries": [
-        "CBAM 2026 definitive period",
-        "CBAM declaration deadline 2027",
-        "CBAM certificate surrender 2026 imports"
-      ]
-    },
-    {
-      "path": "/cbam-embedded-emissions-calculation",
-      "url": "https://cbamvalid.com/cbam-embedded-emissions-calculation",
-      "topic": "Embedded emissions calculation guide",
-      "role": "methodology",
-      "parentPath": "/methodology",
-      "childPaths": [
-        "/cbam-actual-vs-default-values",
-        "/methodology",
-        "/product"
-      ],
-      "covers": [
-        "direct and indirect emissions",
-        "precursor treatment",
-        "evidence requirements for calculations"
-      ],
-      "entities": [
-        "embedded emissions",
-        "direct emissions",
-        "indirect emissions",
-        "precursors",
-        "allocation reconciliation"
-      ],
-      "fanOutQueries": [
-        "how to calculate CBAM embedded emissions",
-        "CBAM direct and indirect emissions",
-        "CBAM precursor emissions calculation"
-      ]
-    },
-    {
-      "path": "/cbam-actual-vs-default-values",
-      "url": "https://cbamvalid.com/cbam-actual-vs-default-values",
-      "topic": "Actual values vs default values",
-      "role": "methodology",
-      "parentPath": "/methodology",
-      "childPaths": [
-        "/cbam-default-values",
-        "/cbam-verification-preparation",
-        "/methodology"
-      ],
-      "covers": [
-        "when actual values are required",
-        "default value implications",
-        "verification preparation impact"
-      ],
-      "entities": [
-        "actual values",
-        "default values",
-        "multi-dimensional factors",
-        "verification requirement"
-      ],
-      "fanOutQueries": [
-        "CBAM actual vs default values",
-        "when are CBAM actual values required",
-        "CBAM default value mark-up"
-      ]
-    },
-    {
-      "path": "/cbam-default-values",
-      "url": "https://cbamvalid.com/cbam-default-values",
-      "topic": "CBAM default values",
-      "role": "methodology",
-      "parentPath": "/cbam-actual-vs-default-values",
-      "childPaths": [
-        "/cbam-actual-vs-default-values",
-        "/cn-code",
-        "/methodology"
-      ],
-      "covers": [
-        "multi-dimensional default factors",
-        "country route and year dimensions"
-      ],
-      "entities": [
-        "default emission factors",
-        "country route year dimensions",
-        "fallback values"
-      ],
-      "fanOutQueries": [
-        "CBAM default values",
-        "CBAM default factor by country",
-        "CBAM default values 2026"
-      ]
-    },
-    {
-      "path": "/cbam-certificate-price",
-      "url": "https://cbamvalid.com/cbam-certificate-price",
-      "topic": "CBAM certificate price cadence",
-      "role": "spoke",
-      "parentPath": "/cbam-2026-definitive-period",
-      "childPaths": [
-        "/cbam-2026-definitive-period",
-        "/pricing",
-        "/methodology"
-      ],
-      "covers": [
-        "2026 quarterly certificate price calculation",
-        "not the same as transitional quarterly reporting"
-      ],
-      "entities": [
-        "CBAM certificate price",
-        "quarterly price calculation",
-        "Implementing Regulation (EU) 2025/2548"
-      ],
-      "fanOutQueries": [
-        "CBAM certificate price 2026",
-        "CBAM certificate quarterly price",
-        "CBAM certificate surrender cost"
-      ]
-    },
-    {
-      "path": "/cbam-verification-preparation",
-      "url": "https://cbamvalid.com/cbam-verification-preparation",
-      "topic": "Verification preparation guide",
-      "role": "spoke",
-      "parentPath": "/",
-      "childPaths": [
-        "/sample-dossier",
-        "/methodology",
-        "/pricing",
-        "/cbam-exporter-evidence-requirements"
-      ],
-      "covers": [
-        "how to prepare for CBAM verification"
-      ],
-      "entities": [
-        "verification preparation",
-        "accredited verifier",
-        "assurance boundary",
-        "Implementing Regulation (EU) 2025/2546"
-      ],
-      "fanOutQueries": [
-        "how to prepare for CBAM verification",
-        "CBAM verifier readiness package",
-        "CBAM operator dossier for verification"
-      ]
-    },
-    {
-      "path": "/cbam-exporter-evidence-requirements",
-      "url": "https://cbamvalid.com/cbam-exporter-evidence-requirements",
-      "topic": "Exporter evidence requirements",
-      "role": "spoke",
-      "parentPath": "/cbam-verification-preparation",
-      "childPaths": [
-        "/cbam-verification-preparation",
-        "/product",
-        "/methodology"
-      ],
-      "covers": [
-        "evidence lineage and hashes",
-        "support status before sealing"
-      ],
-      "entities": [
-        "evidence register",
-        "SHA-256",
-        "support status",
-        "field-to-evidence matrix"
-      ],
-      "fanOutQueries": [
-        "CBAM exporter evidence requirements",
-        "CBAM evidence hash integrity",
-        "CBAM supporting documents checklist"
-      ]
-    },
-    {
-      "path": "/cbam-non-eu-producer-guide",
-      "url": "https://cbamvalid.com/cbam-non-eu-producer-guide",
-      "topic": "Non-EU producer CBAM guide",
-      "role": "spoke",
-      "parentPath": "/",
-      "childPaths": [
-        "/pricing",
-        "/how-it-works",
-        "/cbam-exporter-evidence-requirements",
-        "/cbam-2026-definitive-period"
-      ],
-      "covers": [
-        "CBAM duties for non-EU producers and exporters"
-      ],
-      "entities": [
-        "non-EU producer",
-        "exporter",
-        "EU importer",
-        "embedded emissions handover"
-      ],
-      "fanOutQueries": [
-        "CBAM duties for non-EU producers",
-        "CBAM exporter obligations",
-        "CBAM evidence for EU buyer"
-      ]
-    },
-    {
-      "path": "/cbam-cn-code-scope",
-      "url": "https://cbamvalid.com/cbam-cn-code-scope",
-      "topic": "CN code scope decision guide",
-      "role": "spoke",
-      "parentPath": "/cn-code",
-      "childPaths": [
-        "/cn-code",
-        "/methodology",
-        "/product"
-      ],
-      "covers": [
-        "Annex I goods scope by CN code"
-      ],
-      "entities": [
-        "CN classification",
-        "Annex I goods",
-        "CBAM scope decision"
-      ],
-      "fanOutQueries": [
-        "CBAM CN code scope",
-        "is product under CBAM Annex I",
-        "CBAM goods list by CN"
-      ]
-    },
-    {
-      "path": "/cbam-methodology",
-      "url": "https://cbamvalid.com/cbam-methodology",
-      "topic": "CBAM methodology overview",
-      "role": "methodology",
-      "parentPath": "/methodology",
-      "childPaths": [
-        "/methodology",
-        "/cbam-embedded-emissions-calculation",
-        "/product"
-      ],
-      "covers": [
-        "ruleset versioning",
-        "reproducible calculation traces"
-      ],
-      "entities": [
-        "CBAM methodology",
-        "ruleset versioning",
-        "reproducible traces"
-      ],
-      "fanOutQueries": [
-        "CBAM methodology overview",
-        "CBAM ruleset version",
-        "CBAM calculation reproducibility"
-      ]
-    },
-    {
-      "path": "/about",
-      "url": "https://cbamvalid.com/about",
-      "topic": "Independence and expert review boundary",
-      "role": "spoke",
-      "parentPath": "/",
-      "childPaths": [
-        "/contact",
-        "/methodology",
-        "/product",
-        "/legal-notice"
-      ],
-      "covers": [
-        "is CBAMValid an official EU service",
-        "academic mathematical review boundary"
-      ],
-      "entities": [
-        "CBAMValid",
-        "independent software service",
-        "IIT Bombay mathematical review"
-      ],
-      "fanOutQueries": [
-        "is CBAMValid an official EU service",
-        "who reviews CBAMValid calculations",
-        "CBAMValid independence notice"
-      ]
-    },
-    {
-      "path": "/contact",
-      "url": "https://cbamvalid.com/contact",
-      "topic": "Support, billing, and legal contact",
-      "role": "commercial",
-      "parentPath": "/about",
-      "childPaths": [
-        "/about",
-        "/pricing",
-        "/refund-policy",
-        "/privacy"
-      ],
-      "covers": [
-        "CBAMValid support email",
-        "billing and GDPR contacts"
-      ],
-      "entities": [
-        "info@cbamvalid.com",
-        "technical support",
-        "billing support"
-      ],
-      "fanOutQueries": [
-        "CBAMValid support email",
-        "CBAMValid billing contact",
-        "CBAMValid GDPR contact"
-      ]
-    },
-    {
-      "path": "/answers",
-      "url": "https://cbamvalid.com/answers",
-      "topic": "Answer bank hub for CBAMValid",
-      "role": "hub",
-      "parentPath": "/",
-      "childPaths": [
-        "/glossary",
-        "/pricing",
-        "/product",
-        "/methodology",
-        "/how-it-works"
-      ],
-      "covers": [
-        "CBAMValid FAQ",
-        "direct answers with evidence",
-        "answer engine citation hub"
-      ],
-      "entities": [
-        "Answer bank",
-        "Exporter Verification Preparation Pack",
-        "independence boundary"
-      ],
-      "fanOutQueries": [
-        "CBAMValid FAQ",
-        "what does CBAMValid cost",
-        "is CBAMValid an accredited verifier"
-      ]
-    },
-    {
-      "path": "/glossary",
-      "url": "https://cbamvalid.com/glossary",
-      "topic": "CBAM entity glossary",
-      "role": "methodology",
-      "parentPath": "/",
-      "childPaths": [
-        "/answers",
-        "/methodology",
-        "/cn-code",
-        "/cbam-embedded-emissions-calculation"
-      ],
-      "covers": [
-        "what are embedded emissions",
-        "CN code meaning for CBAM",
-        "actual vs default values definition"
-      ],
-      "entities": [
-        "embedded emissions",
-        "CN code",
-        "accredited verifier",
-        "precursor"
-      ],
-      "fanOutQueries": [
-        "CBAM glossary",
-        "what is embedded emissions",
-        "what is an accredited CBAM verifier"
-      ]
+      "schemaEligible": true
     }
   ],
   "nonClaims": [
