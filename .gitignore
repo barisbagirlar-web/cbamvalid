@@ -17,6 +17,8 @@ functions/build/
 functions/lib/
 coverage/
 playwright-report/
+.playwright/
+wizard-auth.json
 test-results/
 .gemini/
 *.log

@@ -1181,7 +1181,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         <header className="flex flex-col justify-between gap-4 border-b border-border pb-4 md:flex-row md:items-center">
           <div>
             <h1 className="text-2xl font-bold">Working file</h1>
-            <p className="text-sm text-muted">
+            <p className="text-sm text-muted break-all">
               ID: {caseData.caseId || "UNASSIGNED"} · User: {sessionUser.email || sessionUser.uid} · One factory · one year
             </p>
           </div>
