@@ -3,10 +3,21 @@ import { createCallable } from "../wrapper";
 import { z } from "zod";
 import { HttpsError } from "firebase-functions/v2/https";
 import { adminDb } from "../firebase-admin";
+import { isTestAdmin, ensureTestAdminEntitlement } from "../commerce/test-admin-access";
 
 const MAX_RELEASES_PER_PACK = 5;
 
 export const getEntitlements = createCallable({}, async (_, { auth }) => {
+  // Owner-approved test administrators get an idempotent synthetic entitlement
+  // so the full pay-at-lock flow can be exercised without a real payment or
+  // credit balance. Provisioned inside the read path so the client always sees
+  // a usable pack; sealing still runs through the normal reserve/consume gates.
+  if (isTestAdmin(auth.token)) {
+    await adminDb.runTransaction((transaction) =>
+      ensureTestAdminEntitlement(transaction, auth.uid, String(auth.token.email || ""))
+    );
+  }
+
   const snapshot = await adminDb.collection("entitlements")
     .where("uid", "==", auth.uid)
     .where("status", "==", "AVAILABLE")

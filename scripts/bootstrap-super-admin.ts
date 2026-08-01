@@ -10,39 +10,20 @@ import { getFirestore } from "firebase-admin/firestore";
 import * as path from "path";
 import * as fs from "fs";
 
-const SUPER_ADMIN_EMAIL = "barisbagirlar@gmail.com";
+const SUPER_ADMIN_EMAILS: string[] = [
+  "barisbagirlar@gmail.com",
+  "teb232@gmail.com",
+];
 
-async function bootstrap() {
-  const args = process.argv.slice(2);
-  const isDryRun = args.includes("--dry-run");
-
-  console.log(`[BOOTSTRAP] Starting super admin bootstrap for: ${SUPER_ADMIN_EMAIL}`);
-  if (isDryRun) {
-    console.log(`[BOOTSTRAP] Running in DRY RUN mode. No changes will be applied.`);
-  }
-
-  // Initialize Firebase Admin (ensure credentials exist)
-  if (getApps().length === 0) {
-    // Attempt to load from standard location or environment variable
-    const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS 
-      || path.resolve(process.cwd(), "service-account.json");
-    
-    if (fs.existsSync(serviceAccountPath)) {
-      initializeApp({
-        credential: cert(serviceAccountPath)
-      });
-    } else {
-      // Fallback to default application credentials if running in environment with them
-      initializeApp();
-    }
-  }
+async function bootstrapOne(email: string) {
+  console.log(`[BOOTSTRAP] Starting super admin bootstrap for: ${email}`);
 
   const auth = getAuth();
   const db = getFirestore();
 
   try {
     // 1. Fetch user by email
-    const userRecord = await auth.getUserByEmail(SUPER_ADMIN_EMAIL);
+    const userRecord = await auth.getUserByEmail(email);
     console.log(`[BOOTSTRAP] Found user. UID: ${userRecord.uid}`);
 
     // 2. Require emailVerified
@@ -76,14 +57,44 @@ async function bootstrap() {
     }
 
     console.log(`\n[BOOTSTRAP] SUCCESS: Super Admin identity established.`);
-    console.log(`SUPER_ADMIN_EMAIL=${SUPER_ADMIN_EMAIL}`);
+    console.log(`SUPER_ADMIN_EMAIL=${email}`);
     console.log(`SUPER_ADMIN_UID=${userRecord.uid}`);
     console.log(`Please add SUPER_ADMIN_UID to your secure server environment variables if not already present.`);
-    
-  } catch (error: any) {
-    console.error(`[BOOTSTRAP] ERROR:`, error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`[BOOTSTRAP] ERROR:`, message);
     process.exit(1);
   }
 }
 
+async function bootstrap() {
+  const args = process.argv.slice(2);
+  isDryRun = args.includes("--dry-run");
+
+  if (isDryRun) {
+    console.log(`[BOOTSTRAP] Running in DRY RUN mode. No changes will be applied.`);
+  }
+
+  // Initialize Firebase Admin (ensure credentials exist)
+  if (getApps().length === 0) {
+    // Attempt to load from standard location or environment variable
+    const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS 
+      || path.resolve(process.cwd(), "service-account.json");
+    
+    if (fs.existsSync(serviceAccountPath)) {
+      initializeApp({
+        credential: cert(serviceAccountPath)
+      });
+    } else {
+      // Fallback to default application credentials if running in environment with them
+      initializeApp();
+    }
+  }
+
+  for (const email of SUPER_ADMIN_EMAILS) {
+    await bootstrapOne(email);
+  }
+}
+
+let isDryRun = false;
 bootstrap();
