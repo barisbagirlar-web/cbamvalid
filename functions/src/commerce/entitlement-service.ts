@@ -95,6 +95,10 @@ export async function createEntitlement(
     scopeCaseId?: string;
     billingModel?: string;
     maxReleases?: number;
+  },
+  prefetchedLedger?: {
+    existingEntry?: import("./ledger-service").LedgerEntry | null;
+    previousEntryHash?: string;
   }
 ): Promise<Entitlement> {
   validateIdentifier("uid", params.uid);
@@ -134,7 +138,7 @@ export async function createEntitlement(
     type: "ENTITLEMENT_ISSUED",
     quantity: params.quantity,
     idempotencyKey: `entitlement:${params.transactionId}:${params.productCode}`,
-  });
+  }, prefetchedLedger);
   transaction.set(entitlementRef, entitlementPayload);
   return entitlement;
 }
@@ -327,13 +331,21 @@ export async function releaseEntitlementReservation(
 
 export async function revokeEntitlement(
   transaction: admin.firestore.Transaction,
-  params: { entitlementId: string; eventId: string }
+  params: { entitlementId: string; eventId: string },
+  prefetched?: {
+    entitlement?: Entitlement;
+    existingEntry?: import("./ledger-service").LedgerEntry | null;
+    previousEntryHash?: string;
+  }
 ): Promise<Entitlement> {
   validateIdentifier("entitlementId", params.entitlementId);
   const entitlementRef = adminDb.collection("entitlements").doc(params.entitlementId);
-  const snapshot = await transaction.get(entitlementRef);
-  if (!snapshot.exists) throw new EntitlementUnavailableError();
-  const entitlement = normalizeEntitlement(snapshot.data(), snapshot.id);
+  let entitlement = prefetched?.entitlement;
+  if (!entitlement) {
+    const snapshot = await transaction.get(entitlementRef);
+    if (!snapshot.exists) throw new EntitlementUnavailableError();
+    entitlement = normalizeEntitlement(snapshot.data(), snapshot.id);
+  }
   const now = new Date().toISOString();
   await writeLedgerEntry(transaction, {
     uid: entitlement.uid,
@@ -343,7 +355,7 @@ export async function revokeEntitlement(
     type: "ENTITLEMENT_REVOKED",
     quantity: 1,
     idempotencyKey: `revoke:${params.entitlementId}:${params.eventId}`,
-  });
+  }, prefetched ? { existingEntry: prefetched.existingEntry, previousEntryHash: prefetched.previousEntryHash } : undefined);
   transaction.update(entitlementRef, { status: "REVOKED", reservedReportId: null, reservationExpiresAt: null, updatedAt: now });
   return { ...entitlement, status: "REVOKED", updatedAt: now };
 }

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { adminDb, getStorageBucket } from "../../firebase-admin";
 import { CaseOwnershipViolationError } from "../../commerce/commerce-errors";
 import { validateIdentifier } from "../../firestore-validator";
+import { assertEvidenceFileSignature } from "./evidence-signature";
 import {
   AuditReadyCaseSchema,
   type AuditReadyCase,
@@ -231,6 +232,7 @@ async function verifyEvidenceObject(
   }
 
   const [buffer] = await file.download();
+  assertEvidenceFileSignature(buffer, evidence.mimeType);
   const actualHash = createHash("sha256").update(buffer).digest("hex");
   if (buffer.byteLength !== evidence.sizeBytes || actualHash !== evidence.fileHash.toLowerCase()) {
     throw new Error("EVIDENCE_FILE_INTEGRITY_MISMATCH");
