@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthProvider";
 import { doc, onSnapshot } from "firebase/firestore";
 import { firebaseDb } from "@/lib/firebase/client";
-import { Menu, X, User, LogOut, Shield, FileText, LayoutDashboard, CreditCard, Activity, Plus } from "lucide-react";
+import { Menu, X, User, LogOut, Shield, CreditCard } from "lucide-react";
 import { BrandLockup } from "@/components/brand/BrandLockup";
 import { APP_NAV } from "@/lib/navigation";
 import { getEntitlements } from "@/lib/functions/client";
@@ -15,7 +15,6 @@ import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 
 export function AppHeader() {
   const { user, claims, signOutUser, loading } = useAuth();
-  const router = useRouter();
   const pathname = usePathname();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -27,6 +26,7 @@ export function AppHeader() {
   const [activePackCount, setActivePackCount] = useState<number>(0);
 
   const isAdmin = claims?.admin === true || claims?.ownerAdmin === true;
+  const entitlementsEnabled = Boolean(user && !isAdmin);
 
   // Live credit balance (display only). Pack/seal capacity comes from entitlements.
   useEffect(() => {
@@ -44,11 +44,7 @@ export function AppHeader() {
 
   // Active Preparation Pack releases must come from AVAILABLE entitlements, not credits/20.
   useEffect(() => {
-    if (!user || isAdmin) {
-      setAvailableUses(0);
-      setActivePackCount(0);
-      return;
-    }
+    if (!entitlementsEnabled) return;
     let cancelled = false;
     void getEntitlements()
       .then((entitlements) => {
@@ -70,7 +66,11 @@ export function AppHeader() {
     return () => {
       cancelled = true;
     };
-  }, [user, isAdmin, pathname]);
+  }, [entitlementsEnabled, user?.uid, pathname]);
+
+  // The pack counters are meaningful only while an entitlement scope is active.
+  const displayUses = entitlementsEnabled ? availableUses : 0;
+  const displayPackCount = entitlementsEnabled ? activePackCount : 0;
 
   // Click outside listener for account menu
   useEffect(() => {
@@ -83,11 +83,14 @@ export function AppHeader() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Close menus on route change
-  useEffect(() => {
+  // Close menus on route change: reset state during render so the header
+  // never shows a stale open menu after navigation.
+  const [previousPathname, setPreviousPathname] = useState(pathname);
+  if (pathname !== previousPathname) {
+    setPreviousPathname(pathname);
     setIsMobileMenuOpen(false);
     setIsAccountMenuOpen(false);
-  }, [pathname]);
+  }
 
   if (loading) {
     return (
@@ -199,10 +202,10 @@ export function AppHeader() {
           {!isAdmin && (
             <Link href="/account" className="hidden lg:flex items-center gap-2 bg-surface hover:bg-border/30 transition-colors text-foreground px-4 py-1.5 rounded-full border border-border outline-none focus-visible:ring-2 focus-visible:ring-accent">
               <span className="text-[13px] font-medium text-muted">
-                {availableUses > 0 ? (
+                {displayUses > 0 ? (
                   <>
-                    {activePackCount} Active Preparation Pack{activePackCount === 1 ? "" : "s"} &middot;{" "}
-                    <span className="text-foreground">{availableUses} Sealed Releases Left</span>
+                    {displayPackCount} unused preparation pack{displayPackCount === 1 ? "" : "s"} &middot;{" "}
+                    <span className="text-foreground">ready to lock working files</span>
                   </>
                 ) : packsUnlockableFromCredits(availableCredits) > 0 ? (
                   <>
@@ -217,7 +220,7 @@ export function AppHeader() {
             </Link>
           )}
 
-          {!isAdmin && availableUses === 0 && packsUnlockableFromCredits(availableCredits) === 0 && (
+          {!isAdmin && displayUses === 0 && packsUnlockableFromCredits(availableCredits) === 0 && (
             <Link 
               href="/credits/buy" 
               className="hidden lg:inline-flex h-[44px] items-center justify-center gap-2 rounded-md bg-accent px-5 text-[15px] font-medium text-surface transition-colors hover:bg-accent-hover active:bg-accent-active outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent shadow-sm"
@@ -225,7 +228,7 @@ export function AppHeader() {
               Buy Pack — {CANONICAL_PRICING.priceFormatted}
             </Link>
           )}
-          {!isAdmin && availableUses === 0 && packsUnlockableFromCredits(availableCredits) > 0 && (
+          {!isAdmin && displayUses === 0 && packsUnlockableFromCredits(availableCredits) > 0 && (
             <Link 
               href="/account" 
               className="hidden lg:inline-flex h-[44px] items-center justify-center gap-2 rounded-md bg-accent px-5 text-[15px] font-medium text-surface transition-colors hover:bg-accent-hover active:bg-accent-active outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent shadow-sm"
@@ -256,13 +259,15 @@ export function AppHeader() {
             {!isAdmin && (
               <div className="px-6 py-4 mb-2 bg-accent/5 border-b border-border">
                 <Link
-                  href={availableUses > 0 || packsUnlockableFromCredits(availableCredits) > 0 ? "/account" : "/credits/buy"}
+                  href={displayUses > 0 || packsUnlockableFromCredits(availableCredits) > 0 ? "/account" : "/credits/buy"}
                   className="flex items-center justify-between outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
                 >
                   <span className="text-[15px] font-semibold text-muted uppercase tracking-wider">Preparation Pack</span>
                   <div className="flex items-center gap-2">
-                    {availableUses > 0 ? (
-                      <span className="text-sm font-bold text-accent px-2 py-1 bg-accent/10 rounded">{availableUses} Releases Left</span>
+                    {displayUses > 0 ? (
+                      <span className="text-sm font-bold text-accent px-2 py-1 bg-accent/10 rounded">
+                        {displayPackCount} unused preparation pack{displayPackCount === 1 ? "" : "s"}
+                      </span>
                     ) : packsUnlockableFromCredits(availableCredits) > 0 ? (
                       <span className="text-sm font-bold text-accent px-2 py-1 bg-accent/10 rounded">
                         {packsUnlockableFromCredits(availableCredits)} pack

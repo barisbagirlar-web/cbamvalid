@@ -21,19 +21,63 @@
 import type { AuditReadyCase } from "@/lib/cbam/schema";
 import type { MaterialInputRequirement } from "@/lib/cbam/premium-dossier-model";
 import { getFieldGuidanceForPath } from "@/lib/cbam/field-guidance";
+import {
+  CBAM_WORKFLOW_STEPS,
+  getWorkflowStep,
+} from "@/lib/cbam/workflow-definition";
 import { deriveMaterialRequirements } from "@/lib/cbam/validation/material-input-registry";
 
-export const WIZARD_STEP_COUNT = 8;
+export const WIZARD_STEP_COUNT = CBAM_WORKFLOW_STEPS.length;
 
 /** Steps at/after which missing material evidence hard-blocks progression. */
 export const HARD_BLOCK_START_STEP = 7;
 
+/**
+ * Step 1–7 stepper state model.
+ * `NEEDS_INFORMATION`  — required data is missing.
+ * `NEEDS_DOCUMENTS`    — required data present but supporting evidence missing.
+ * `AWAITING_REVIEW`    — data and linked evidence present; documents still
+ *                        awaiting the server-controlled internal review.
+ * `COMPLETE`           — all data present and supported by approved evidence.
+ */
 export type WizardStepperState =
   | "NOT_STARTED"
   | "IN_PROGRESS"
-  | "NEEDS_ATTENTION"
-  | "NEEDS_EVIDENCE"
+  | "NEEDS_INFORMATION"
+  | "NEEDS_DOCUMENTS"
+  | "AWAITING_REVIEW"
   | "COMPLETE";
+
+/**
+ * Step 8 has its own status model because it holds no data fields and can
+ * never be auto-COMPLETE. It is derived from readiness, entitlement and lock
+ * state only.
+ */
+export type Step8Status =
+  | "BLOCKED"
+  | "PAYMENT_REQUIRED"
+  | "READY_TO_LOCK"
+  | "LOCKING"
+  | "LOCKED"
+  | "LOCK_FAILED";
+
+/**
+ * Step 8 wording SSOT. The pre-seal package preview never claims a sealed
+ * release; the success headline is emitted only after a real reportId/SEALED
+ * release exists. The footer shows exactly one contextual CTA per status and
+ * a single remaining-actions CTA exists on the step body.
+ */
+export const STEP8_PACKAGE_PREVIEW_HEADLINE = "What your controlled package will include";
+export const STEP8_SEALED_SUCCESS_HEADLINE = "Sealed release created successfully";
+export const STEP8_REVIEW_ACTIONS_LABEL = "Review remaining actions";
+export const STEP8_FOOTER_CTA_LABELS: Record<Step8Status, string> = {
+  BLOCKED: "Review remaining requirements",
+  PAYMENT_REQUIRED: "Pay to unlock this working file",
+  READY_TO_LOCK: "Lock & download package",
+  LOCKING: "Creating package…",
+  LOCKED: "Open sealed release",
+  LOCK_FAILED: "Review remaining requirements",
+};
 
 export interface WizardStepIssue {
   fieldPath: string;
@@ -51,6 +95,7 @@ export interface WizardStepValidation {
   completedFieldCount: number;
   missingFieldCount: number;
   missingEvidenceCount: number;
+  awaitingReviewCount: number;
   state: WizardStepperState;
 }
 
@@ -63,16 +108,20 @@ export interface WizardFieldSpec {
   valuePath?: string;
 }
 
-export const WIZARD_STEP_HEADERS: Record<number, { title: string; shortTitle: string }> = {
-  1: { title: "Who and where", shortTitle: "Identity" },
-  2: { title: "What you sell", shortTitle: "Goods" },
-  3: { title: "How you make it", shortTitle: "Installation" },
-  4: { title: "Emissions numbers", shortTitle: "Direct emissions" },
-  5: { title: "Indirect emissions", shortTitle: "Indirect" },
-  6: { title: "Bought inputs", shortTitle: "Precursors" },
-  7: { title: "Proof documents", shortTitle: "Evidence" },
-  8: { title: "Lock & download", shortTitle: "Seal" },
-};
+/** SSOT-derived render keys indexed by step number (1..8). */
+export const WIZARD_STEP_RENDER_KEYS = CBAM_WORKFLOW_STEPS.map((step) => step.renderKey);
+
+export function wizardStepTitle(step: number): string {
+  return getWorkflowStep(step).title;
+}
+
+export function wizardStepShortTitle(step: number): string {
+  return getWorkflowStep(step).shortTitle;
+}
+
+export function wizardStepDescription(step: number): string {
+  return getWorkflowStep(step).description;
+}
 
 const valueAt = (caseData: AuditReadyCase, path: string): unknown => {
   const parts = path.split(".");
@@ -224,6 +273,9 @@ export function validateWizardStep(step: number, caseData: AuditReadyCase): Wiza
   let completedFieldCount = 0;
   let missingFieldCount = 0;
   let missingEvidenceCount = 0;
+  const awaitingReviewCount = caseData.evidenceRegister.filter(
+    (record) => record.reviewStatus === "PENDING"
+  ).length;
 
   for (const { spec, concretePath } of expanded) {
     const label = spec.label;
@@ -332,7 +384,7 @@ export function validateWizardStep(step: number, caseData: AuditReadyCase): Wiza
     completedFieldCount,
     missingFieldCount,
     missingEvidenceCount,
-    valid
+    awaitingReviewCount
   );
 
   return {
@@ -344,6 +396,7 @@ export function validateWizardStep(step: number, caseData: AuditReadyCase): Wiza
     completedFieldCount,
     missingFieldCount,
     missingEvidenceCount,
+    awaitingReviewCount,
     state,
   };
 }
@@ -353,18 +406,45 @@ function deriveStepState(
   completed: number,
   missingFields: number,
   missingEvidence: number,
-  valid: boolean
+  awaitingReview: number
 ): WizardStepperState {
   const total = STEP_FIELD_SPECS[step - 1]?.length ?? 0;
+  // Step 8 holds no data fields and uses its own status model (Step8Status).
+  // It can never be auto-COMPLETE.
   if (step === 8) {
-    if (missingEvidence > 0) return "NEEDS_EVIDENCE";
-    if (missingFields > 0) return "NEEDS_ATTENTION";
-    return valid ? "COMPLETE" : "IN_PROGRESS";
+    return missingEvidence > 0 || missingFields > 0 ? "NEEDS_DOCUMENTS" : "IN_PROGRESS";
   }
   if (total === 0) return "COMPLETE";
-  if (missingFields > 0) return "NEEDS_ATTENTION";
-  if (missingEvidence > 0) return "NEEDS_EVIDENCE";
+  if (missingFields > 0) return "NEEDS_INFORMATION";
+  if (missingEvidence > 0) return "NEEDS_DOCUMENTS";
+  if (awaitingReview > 0) return "AWAITING_REVIEW";
   return completed >= total ? "COMPLETE" : "IN_PROGRESS";
+}
+
+export interface Step8StatusInput {
+  isEligibleForSealing: boolean;
+  criticalBlockerCount: number;
+  hasEntitlement: boolean;
+  lockState: "IDLE" | "LOCKING" | "LOCKED" | "LOCK_FAILED";
+  lockedReportId?: string | null;
+}
+
+/**
+ * Step 8 status derivation (separate model). Precedence:
+ *   LOCKING      — a seal is in flight
+ *   LOCKED       — a real SEALED release/reportId exists
+ *   LOCK_FAILED  — last seal attempt failed
+ *   BLOCKED      — readiness not eligible (critical blockers / missing evidence)
+ *   PAYMENT_REQUIRED — readiness pass but no usable entitlement
+ *   READY_TO_LOCK — readiness pass and entitlement present
+ */
+export function deriveStep8Status(input: Step8StatusInput): Step8Status {
+  if (input.lockState === "LOCKING") return "LOCKING";
+  if (input.lockState === "LOCKED" && input.lockedReportId) return "LOCKED";
+  if (input.lockState === "LOCK_FAILED") return "LOCK_FAILED";
+  if (!input.isEligibleForSealing || input.criticalBlockerCount > 0) return "BLOCKED";
+  if (!input.hasEntitlement) return "PAYMENT_REQUIRED";
+  return "READY_TO_LOCK";
 }
 
 /**

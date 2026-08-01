@@ -75,7 +75,12 @@ rejectText(
 const journeyStrip = read("components/cbam/WorkingFileJourneyStrip.tsx");
 requireText(journeyStrip, "Where you are", "Wizard where-you-are strip");
 requireText(journeyStrip, "Step {currentStep} of 8", "Wizard step counter");
-requireText(journeyStrip, 'aria-label="Eight plain steps"', "Single SSOT step grid in journey strip");
+// FAZ UX (2026-08-01): the eight-card step grid was removed (mobile drawer +
+// desktop 280px rail replaced it). The journey strip must never re-introduce it.
+rejectText(journeyStrip, 'aria-label="Eight plain steps"', "Legacy eight-card step grid must not render in journey strip");
+requireText(wizardClient, 'aria-label="Workflow steps"', "Desktop step rail navigation");
+requireText(wizardClient, "View all steps", "Mobile step drawer trigger");
+rejectText(wizardClient, 'aria-label="Eight plain steps"', "Legacy eight-card step grid removed from wizard");
 requireText(workspaceMethodology, "MethodologyContent", "Workspace methodology content");
 requireText(publicMethodology, "MethodologyContent", "Public methodology content");
 

@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "cbam-desk"
+    "default": "cbam-desk",
+    "sandbox": "cbam-desk-sandbox"
   }
 }

@@ -252,6 +252,7 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
         coverageDenominator: "1.0",
         blocksOperatorReadiness: isMaterial,
         blocksSealing: isMaterial,
+        isMaterial,
         reasonCodes: ["INPUT_VALUE_MISSING"],
       });
       continue;
@@ -289,6 +290,7 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
             coverageDenominator: "1.0",
             blocksOperatorReadiness: false,
             blocksSealing: false,
+            isMaterial,
             reasonCodes: ["ACCEPTED_METHODOLOGY_DECISION"],
             supportBasis: "SUPPORTED_BY_ACCEPTED_METHODOLOGY_DECISION",
             evidenceQualityGrade: "C",
@@ -304,6 +306,7 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
             coverageDenominator: "1.0",
             blocksOperatorReadiness: isMaterial,
             blocksSealing: isMaterial,
+            isMaterial,
             reasonCodes: ["ACCEPTED_METHODOLOGY_DECISION_MISSING"],
           });
         }
@@ -317,6 +320,7 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
           coverageDenominator: "1.0",
           blocksOperatorReadiness: isMaterial,
           blocksSealing: isMaterial,
+          isMaterial,
           reasonCodes: ["EVIDENCE_ID_MISSING"],
         });
       }
@@ -471,6 +475,7 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
       coverageDenominator: requiredDays.toString(),
       blocksOperatorReadiness: isMaterial && !supportedAfterGate,
       blocksSealing: isMaterial && !supportedAfterGate,
+      isMaterial,
       reasonCodes: allReasonCodes.size > 0 ? Array.from(allReasonCodes) : ["PASS"],
       evidencePeriodStart: validIntervalsForUnion[0]?.start || null,
       evidencePeriodEnd: validIntervalsForUnion[0]?.end || null,

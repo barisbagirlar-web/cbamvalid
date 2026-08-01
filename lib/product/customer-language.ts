@@ -1,3 +1,5 @@
+import { CBAM_WORKFLOW_STEPS } from "@/lib/cbam/workflow-definition";
+
 /**
  * Customer-facing product language (workspace + guided journey).
  * Internal ledger may still use credits; customers see packs and working files.
@@ -19,13 +21,13 @@ export const CUSTOMER_LANGUAGE = {
     "Work free on one factory + one year file. Pay once to lock it. Correct and re-lock the same file as needed. A new file needs a new payment.",
 } as const;
 
-export const WORKFLOW_STEPS_PLAIN = [
-  { num: 1, title: "Who and where", desc: "Operator, installation, and reporting year." },
-  { num: 2, title: "What you sell", desc: "Goods and CN codes." },
-  { num: 3, title: "How you make it", desc: "Production route and boundaries." },
-  { num: 4, title: "Emissions numbers", desc: "Direct and indirect embedded emissions." },
-  { num: 5, title: "Bought inputs", desc: "Precursors and adjustments, if any." },
-  { num: 6, title: "Proof documents", desc: "Link invoices, meters, and records." },
-  { num: 7, title: "Fix blockers", desc: "Clear automated quality checks." },
-  { num: 8, title: "Lock & download", desc: "Create the sealed package for your buyer or verifier." },
-] as const;
+/**
+ * Derived from the single workflow SSOT (lib/cbam/workflow-definition.ts).
+ * Kept for callers that consumed the legacy plain step list; titles and
+ * descriptions now come exclusively from CBAM_WORKFLOW_STEPS.
+ */
+export const WORKFLOW_STEPS_PLAIN = CBAM_WORKFLOW_STEPS.map((step) => ({
+  num: step.id,
+  title: step.title,
+  desc: step.description,
+}));

@@ -9,17 +9,20 @@ import {
   ArrowRight,
   BookOpenCheck,
   CheckCircle2,
+  ChevronDown,
   Eraser,
   FileCode2,
   FileCheck2,
   FileUp,
   LockKeyhole,
   Loader2,
+  Menu,
   PackageCheck,
   Plus,
   Save,
   Shield,
   Trash2,
+  X,
 } from "lucide-react";
 import { DecimalInput } from "@/components/cbam/DecimalInput";
 import { FieldHelp } from "@/components/cbam/FieldHelp";
@@ -33,18 +36,26 @@ import { gradeEvidenceRecord } from "@/lib/cbam/evidence-quality";
 import {
   buildEvidenceLinkOptions,
   clampWizardStep,
+  deriveStep8Status,
   evaluateSealAttempt,
   firstDataIssuePath,
   parseStepFromQuery,
+  STEP8_FOOTER_CTA_LABELS,
+  STEP8_PACKAGE_PREVIEW_HEADLINE,
+  STEP8_REVIEW_ACTIONS_LABEL,
+  STEP8_SEALED_SUCCESS_HEADLINE,
   summarizeStep8Actions,
   translateSealError,
   validateWizardStep,
-  WIZARD_STEP_HEADERS,
+  wizardStepDescription,
+  wizardStepTitle,
   wizardStepTotalFields,
+  type Step8Status,
   type WizardStepIssue,
   type WizardStepperState,
   type WizardStepValidation,
 } from "@/lib/cbam/wizard-validation";
+import { CBAM_WORKFLOW_STEPS, getWorkflowStep } from "@/lib/cbam/workflow-definition";
 import { GRID_EMISSION_FACTOR_MAX_TCO2E_PER_MWH } from "@/lib/cbam/input-constraints";
 import {
   ILLUSTRATIVE_SCENARIO_ID,
@@ -74,17 +85,6 @@ interface CaseWizardClientProps {
   initialCase: AuditReadyCase;
   availableEntitlements: PreparationPackEntitlement[];
 }
-
-const STEPS = [
-  { id: 1, label: "Who and where" },
-  { id: 2, label: "What you sell" },
-  { id: 3, label: "How you make it" },
-  { id: 4, label: "Emissions numbers" },
-  { id: 5, label: "Bought inputs" },
-  { id: 6, label: "Proof documents" },
-  { id: 7, label: "Fix blockers" },
-  { id: 8, label: "Lock & download" },
-] as const;
 
 const SECTORS = [
   "IRON_AND_STEEL",
@@ -177,15 +177,25 @@ function StatusBanner({ status, tone = "neutral" }: { status: string; tone?: "ne
 const STEP_STATE_STYLES: Record<WizardStepperState, string> = {
   NOT_STARTED: "border-border bg-neutral-soft text-muted",
   IN_PROGRESS: "border-border bg-neutral-soft text-foreground",
-  NEEDS_ATTENTION: "border-status-blocked/40 bg-[color:var(--status-blocked-soft)] text-status-blocked",
-  NEEDS_EVIDENCE: "border-status-warning/40 bg-[color:var(--status-warning-soft)] text-status-warning",
+  NEEDS_INFORMATION: "border-status-blocked/40 bg-[color:var(--status-blocked-soft)] text-status-blocked",
+  NEEDS_DOCUMENTS: "border-status-warning/40 bg-[color:var(--status-warning-soft)] text-status-warning",
+  AWAITING_REVIEW: "border-border bg-surface text-muted",
   COMPLETE: "border-forest-light bg-forest-pale text-forest",
 };
 
-function StepStateBadge({ state }: { state: WizardStepperState }) {
+const STEP8_STATUS_STYLES: Record<Step8Status, string> = {
+  BLOCKED: "border-status-blocked/40 bg-[color:var(--status-blocked-soft)] text-status-blocked",
+  PAYMENT_REQUIRED: "border-status-warning/40 bg-[color:var(--status-warning-soft)] text-status-warning",
+  READY_TO_LOCK: "border-forest-light bg-forest-pale text-forest",
+  LOCKING: "border-border bg-neutral-soft text-foreground",
+  LOCKED: "border-forest-light bg-forest-pale text-forest",
+  LOCK_FAILED: "border-status-blocked/40 bg-[color:var(--status-blocked-soft)] text-status-blocked",
+};
+
+function Step8StateBadge({ status }: { status: Step8Status }) {
   return (
-    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${STEP_STATE_STYLES[state]}`} aria-label={`Step state: ${state.replaceAll("_", " ")}`}>
-      {state.replaceAll("_", " ")}
+    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${STEP8_STATUS_STYLES[status]}`} aria-label={`Final review status: ${status.replaceAll("_", " ")}`}>
+      {status.replaceAll("_", " ")}
     </span>
   );
 }
@@ -233,6 +243,9 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const [nextHint, setNextHint] = useState("");
   const [sealTechnicalCode, setSealTechnicalCode] = useState("");
   const [sealTone, setSealTone] = useState<"neutral" | "success" | "error" | "warning">("neutral");
+  // FAZ UX — mobile step drawer and step-8 advanced technical accordion.
+  const [mobileStepsOpen, setMobileStepsOpen] = useState(false);
+  const [showAdvancedDetails, setShowAdvancedDetails] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -362,6 +375,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     setShowErrors(false);
     setNextHint("");
     setShowBlockers(false);
+    setMobileStepsOpen(false);
     setCurrentStep(clampWizardStep(step));
   };
 
@@ -427,6 +441,25 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         0
       ),
     [usableEntitlements]
+  );
+
+  // FAZ UX — Step 8 status uses its own model derived from readiness +
+  // entitlement + lock state; it can never be auto-COMPLETE.
+  const lockState: "IDLE" | "LOCKING" | "LOCKED" | "LOCK_FAILED" = sealing
+    ? "LOCKING"
+    : sealTone === "error" && sealStatus
+      ? "LOCK_FAILED"
+      : "IDLE";
+
+  const step8Status = useMemo(
+    () =>
+      deriveStep8Status({
+        isEligibleForSealing: readiness.isEligibleForSealing,
+        criticalBlockerCount: readiness.criticalBlockers.length,
+        hasEntitlement: usableEntitlements.length > 0,
+        lockState,
+      }),
+    [readiness, usableEntitlements, lockState]
   );
 
   const unlockablePacks = packsUnlockableFromCredits(availableCredits);
@@ -748,6 +781,8 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       );
       const reportId = response.report?.reportId;
       if (!reportId) throw new Error("SEALED_REPORT_ID_MISSING");
+      setSealStatus(STEP8_SEALED_SUCCESS_HEADLINE);
+      setSealTone("success");
       router.push(`/cbam/reports/${reportId}`);
     } catch (error) {
       console.error("Sealing failed", error);
@@ -763,8 +798,8 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const renderStep1 = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold">1. Case setup</h2>
-        <p className="mt-1 text-sm text-muted">Define the legal identity of the importer and exporter, and select the reporting calendar year and period.</p>
+        <h2 className="text-xl font-bold">{wizardStepTitle(1)}</h2>
+        <p className="mt-1 text-sm text-muted">{wizardStepDescription(1)}</p>
       </div>
       <div className="grid gap-4 rounded-xl border border-border bg-surface p-6 md:grid-cols-2">
         {[
@@ -792,8 +827,8 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const renderStep2 = () => (
     <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-bold">2. Goods, units and allocation</h2>
-        <p className="mt-1 text-sm text-muted">Add the Combined Nomenclature (CN) codes of the goods, specify production quantities, and allocate installation-level emissions if declaring multiple goods.</p>
+        <h2 className="text-xl font-bold">{wizardStepTitle(2)}</h2>
+        <p className="mt-1 text-sm text-muted">{wizardStepDescription(2)}</p>
       </div>
       {caseData.goods.length === 0 && <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted">No goods declared.</div>}
       {caseData.goods.map((good, index) => (
@@ -813,8 +848,8 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const renderStep3 = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold">3. Installation and system boundary</h2>
-        <p className="mt-1 text-sm text-muted">Specify the manufacturing facility details, geographic location, production technology route, and write a system-boundary statement.</p>
+        <h2 className="text-xl font-bold">{wizardStepTitle(3)}</h2>
+        <p className="mt-1 text-sm text-muted">{wizardStepDescription(3)}</p>
       </div>
       <div className="grid gap-4 rounded-xl border border-border bg-surface p-6 md:grid-cols-2">
         <div data-field-path="installation.name"><FieldLabel helpKey="installationName">Installation name</FieldLabel><input aria-label="Installation name" aria-invalid={Boolean(fieldIssue("installation.name"))} value={datumValue(caseData.installation.name.value)} onChange={(event) => updateDatum("installation.name", { value: event.target.value })} className={inputClass("installation.name")} /><FieldError issue={fieldIssue("installation.name")} /><p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.installationName.source}</p></div>
@@ -850,8 +885,8 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const renderStep4 = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold">4. Direct emissions</h2>
-        <p className="mt-1 text-sm text-muted">Enter the total direct greenhouse gas emissions (tCO2e) generated inside the installation boundary for the reporting period.</p>
+        <h2 className="text-xl font-bold">{wizardStepTitle(4)}</h2>
+        <p className="mt-1 text-sm text-muted">{wizardStepDescription(4)}</p>
       </div>
       {emissionInput("directEmissions", "Total direct emissions", "tCO2e", "directEmissions")}
     </div>
@@ -860,8 +895,8 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const renderStep5 = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold">5. Indirect emissions</h2>
-        <p className="mt-1 text-sm text-muted">Report total electricity consumed by production processes (MWh) and the grid emission factor (tCO2e/MWh) applied.</p>
+        <h2 className="text-xl font-bold">{wizardStepTitle(5)}</h2>
+        <p className="mt-1 text-sm text-muted">{wizardStepDescription(5)}</p>
       </div>
       {emissionInput("electricityConsumed", "Electricity consumed", "MWh", "electricityConsumed")}
       {emissionInput("gridEmissionFactor", "Grid emission factor", "tCO2e/MWh", "gridEmissionFactor")}
@@ -871,8 +906,8 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const renderStep6 = () => (
     <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-bold">6. Precursors and methodology decisions</h2>
-        <p className="mt-1 text-sm text-muted">Declare embedded emissions from precursor materials or record a methodology decision confirming the absence of precursors. You can import precursor records via CSV.</p>
+        <h2 className="text-xl font-bold">{wizardStepTitle(6)}</h2>
+        <p className="mt-1 text-sm text-muted">{wizardStepDescription(6)}</p>
       </div>
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-bold">Precursors</h3>
@@ -914,8 +949,8 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const renderStep7 = () => (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl font-bold">7. Carbon price and evidence register</h2>
-        <p className="mt-1 text-sm text-muted">Record any carbon price paid in the country of origin, upload supporting files, and link them to inputs to construct a digital audit trail.</p>
+        <h2 className="text-xl font-bold">{wizardStepTitle(7)}</h2>
+        <p className="mt-1 text-sm text-muted">{wizardStepDescription(7)}</p>
       </div>
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-bold">Carbon price records</h3>
@@ -952,8 +987,8 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-bold">8. Lock &amp; download your package</h2>
-          <p className="mt-1 text-sm text-muted">Final review before the package is created. Sealing stays fail-closed: every automated quality control and evidence requirement must pass, and payment must be in place.</p>
+          <h2 className="text-xl font-bold">{getWorkflowStep(8).title}</h2>
+          <p className="mt-1 text-sm text-muted">Review readiness, payment and what the controlled package will include before you lock and download. Sealing stays fail-closed: every automated quality control and evidence requirement must pass, and payment must be in place.</p>
         </div>
 
         {scenarioActive && calculation.result && (
@@ -993,36 +1028,37 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           </section>
         )}
 
-        {/* A. Readiness overview */}
-        <section aria-label="Readiness overview" className="rounded-xl border border-border bg-surface p-5">
-          <h3 className="flex items-center gap-2 font-bold"><Shield className="h-5 w-5 text-accent" /> Readiness overview</h3>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-lg border border-border bg-neutral-soft p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted">Operator preparation</p>
-              <p className="mt-1 text-2xl font-bold">{readiness.completenessPercentage}%</p>
-              <p className="mt-1 text-xs text-muted">{readiness.passedControls}/{readiness.applicableControls} automated controls passed</p>
-            </div>
-            <div className="rounded-lg border border-border bg-neutral-soft p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted">Evidence assurance</p>
-              <p className="mt-1 text-2xl font-bold">{evidenceAssurance.score}%</p>
-              <p className="mt-1 text-xs text-muted">{evidenceAssurance.approvedCount}/{evidenceAssurance.total} documents approved, supported and clean{evidenceAssurance.pendingCount > 0 ? ` · ${evidenceAssurance.pendingCount} pending` : ""}</p>
-            </div>
-            <div className={`rounded-lg border p-4 ${readiness.isEligibleForSealing ? "border-forest-light bg-forest-pale" : "border-status-blocked/40 bg-[color:var(--status-blocked-soft)]"}`}>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted">Package integrity</p>
-              <p className={`mt-1 text-sm font-bold ${readiness.isEligibleForSealing ? "text-forest" : "text-status-blocked"}`}>{readiness.status.replaceAll("_", " ")}</p>
-              {scenarioActive && <p className="mt-1 text-xs text-status-warning">Illustrative scenario values cannot be sealed.</p>}
-              {blockerCount > 0 && <p className="mt-1 text-xs text-status-blocked">{blockerCount} blocker{blockerCount === 1 ? "" : "s"} still open.</p>}
-            </div>
-            <div className="rounded-lg border border-border bg-neutral-soft p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted">External verifier</p>
-              <p className="mt-1 text-sm font-bold">Prepared for independent verification</p>
-              <p className="mt-1 text-xs text-muted">CBAMValid prepares the operator dossier and evidence chain; only an appropriately accredited independent verifier can issue an opinion.</p>
-            </div>
+        {/* 1. Four status cards — Operator preparation · Evidence assurance · Package integrity · External verifier */}
+        <section aria-label="Final review status" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-lg border border-border bg-surface p-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted">Operator preparation</p>
+            <p className="mt-1 text-2xl font-bold">{readiness.completenessPercentage}%</p>
+            <p className="mt-1 text-xs text-muted">{readiness.passedControls}/{readiness.applicableControls} automated controls passed</p>
+          </div>
+          <div className="rounded-lg border border-border bg-surface p-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted">Evidence assurance</p>
+            <p className="mt-1 text-2xl font-bold">{evidenceAssurance.score}%</p>
+            <p className="mt-1 text-xs text-muted">{evidenceAssurance.approvedCount}/{evidenceAssurance.total} documents approved, supported and clean{evidenceAssurance.pendingCount > 0 ? ` · ${evidenceAssurance.pendingCount} pending` : ""}</p>
+          </div>
+          <div className={`rounded-lg border p-4 ${readiness.isEligibleForSealing ? "border-forest-light bg-forest-pale" : "border-status-blocked/40 bg-[color:var(--status-blocked-soft)]"}`}>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted">Package integrity</p>
+            <p className={`mt-1 text-sm font-bold ${readiness.isEligibleForSealing ? "text-forest" : "text-status-blocked"}`}>{readiness.isEligibleForSealing ? "READY" : "BLOCKED"}</p>
+            <p className="mt-1 text-xs text-muted">
+              {readiness.isEligibleForSealing
+                ? "Every automated control passed"
+                : `${blockerCount} requirement${blockerCount === 1 ? "" : "s"} remain${blockerCount === 1 ? "s" : ""}`}
+            </p>
+            {scenarioActive && <p className="mt-1 text-xs text-status-warning">Illustrative scenario values cannot be sealed.</p>}
+          </div>
+          <div className="rounded-lg border border-border bg-surface p-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted">External verifier</p>
+            <p className="mt-1 text-sm font-bold">PENDING</p>
+            <p className="mt-1 text-xs text-muted">Only an appropriately accredited independent verifier can issue a verification opinion.</p>
           </div>
         </section>
 
-        {/* B. Remaining actions — blocker panel (revealed in place, never auto-navigates) */}
-        <section ref={blockerPanelRef} aria-label="Resolve evidence blockers" className={`scroll-mt-4 rounded-xl border p-5 ${showBlockers ? "border-status-blocked/40 bg-[color:var(--status-blocked-soft)]" : "border-border bg-surface"}`}>
+        {/* 2. Remaining actions — single CTA, revealed in place, never auto-navigates */}
+        <section ref={blockerPanelRef} aria-label="Remaining actions" className={`scroll-mt-4 rounded-xl border p-5 ${showBlockers ? "border-status-blocked/40 bg-[color:var(--status-blocked-soft)]" : "border-border bg-surface"}`}>
           <h3 className="flex items-center gap-2 font-bold"><AlertTriangle className="h-5 w-5 text-status-blocked" /> Remaining actions</h3>
           <p className="mt-1 text-xs text-muted">
             {blockerCount} blocker{blockerCount === 1 ? "" : "s"} · {documentsToUpload} document{documentsToUpload === 1 ? "" : "s"} to upload · {awaitingReview} document{awaitingReview === 1 ? "" : "s"} awaiting review · {methodologyPending} methodology decision{methodologyPending === 1 ? "" : "s"} awaiting approval{calculationIssues > 0 ? ` · ${calculationIssues} calculation issue${calculationIssues === 1 ? "" : "s"}` : ""}
@@ -1035,48 +1071,141 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
               onClick={revealSealBlockers}
               className="mt-4 inline-flex items-center gap-2 rounded border border-status-blocked/50 bg-surface px-4 py-2 text-sm font-semibold text-status-blocked"
             >
-              <AlertTriangle className="h-4 w-4" /> Review remaining actions
+              <AlertTriangle className="h-4 w-4" /> {STEP8_REVIEW_ACTIONS_LABEL}
             </button>
           )}
           {showBlockers && (
             <div className="mt-4 space-y-3">
-              {readiness.allGaps.length > 0 && (
-                <div className="max-h-[26rem] space-y-3 overflow-y-auto pr-1" aria-label="Seal blocker remediation plan">
-                  {readiness.allGaps.map((gap) => {
+              {(() => {
+                const remainingItems = [
+                  ...readiness.allGaps.map((gap) => {
                     const resolution = gapResolution(gap);
-                    return (
-                      <article key={gap.gapId} className="rounded-lg border border-status-blocked/30 bg-[color:var(--status-blocked-soft)] p-4 text-xs text-status-blocked">
-                        <div className="flex items-start gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-status-blocked" /><div><h4 className="font-bold">{gap.requirement}</h4><p className="mt-1 leading-relaxed text-status-blocked">{gap.whyItMatters}</p></div></div>
-                        <div className="mt-3 rounded border border-status-blocked/30 bg-surface-elevated/70 p-3"><p><strong>How to fix:</strong> {resolution.action}</p><p className="mt-1"><strong>Evidence:</strong> {resolution.evidence}</p></div>
-                        <button type="button" onClick={() => goToStep(resolution.step)} className="mt-3 inline-flex items-center gap-1 font-semibold text-status-blocked underline underline-offset-2">Go to step {resolution.step} <ArrowRight className="h-3 w-3" /></button>
+                    return {
+                      id: gap.gapId,
+                      category: "Requirement",
+                      fieldLabel: gap.requirement,
+                      problem: "Open requirement",
+                      why: gap.whyItMatters,
+                      acceptedDocuments: resolution.evidence,
+                      currentStatus: "Missing",
+                      responsibleParty: "Operator",
+                      step: resolution.step,
+                      action: resolution.action,
+                    };
+                  }),
+                  ...step8Actions.map((item) => ({
+                    id: `${item.category}-${item.fieldPath}`,
+                    category: item.category,
+                    fieldLabel: item.fieldLabel,
+                    problem: item.category,
+                    why: item.why,
+                    acceptedDocuments: item.acceptedDocuments,
+                    currentStatus:
+                      item.category === "Documents awaiting review"
+                        ? "Awaiting review"
+                        : item.category === "Methodology decisions awaiting approval"
+                          ? "Awaiting approval"
+                          : item.category === "Calculation inconsistencies"
+                            ? "Requires correction"
+                            : "Missing",
+                    responsibleParty:
+                      item.category === "Documents awaiting review" || item.category === "Methodology decisions awaiting approval"
+                        ? "Internal reviewer"
+                        : "Operator",
+                    step: item.step,
+                    action: "",
+                  })),
+                ];
+                if (remainingItems.length === 0) {
+                  return <p className="text-sm text-muted">No open action items were found by the automated review.</p>;
+                }
+                return (
+                  <div className="max-h-[30rem] space-y-3 overflow-y-auto pr-1" aria-label="Seal blocker remediation plan">
+                    {remainingItems.map((item) => (
+                      <article key={item.id} className="rounded-lg border border-border bg-surface p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="rounded-full border border-border bg-neutral-soft px-2.5 py-0.5 text-[11px] font-bold">{item.category}</span>
+                          <button type="button" onClick={() => goToStep(item.step)} className="inline-flex items-center gap-1 text-xs font-semibold text-accent underline underline-offset-2">Go to step {item.step} <ArrowRight className="h-3 w-3" /></button>
+                        </div>
+                        <h4 className="mt-2 font-semibold">{item.fieldLabel}</h4>
+                        <dl className="mt-2 grid gap-x-4 gap-y-1 text-xs text-muted sm:grid-cols-2">
+                          <div><dt className="font-semibold text-foreground">Problem</dt><dd>{item.problem}</dd></div>
+                          <div><dt className="font-semibold text-foreground">Why needed</dt><dd>{item.why}</dd></div>
+                          <div><dt className="font-semibold text-foreground">Accepted document</dt><dd>{item.acceptedDocuments}</dd></div>
+                          <div><dt className="font-semibold text-foreground">Current status</dt><dd>{item.currentStatus}</dd></div>
+                          <div><dt className="font-semibold text-foreground">Responsible party</dt><dd>{item.responsibleParty}</dd></div>
+                          <div><dt className="font-semibold text-foreground">Fix in</dt><dd>Step {item.step}</dd></div>
+                        </dl>
+                        {item.action && <p className="mt-2 text-xs text-muted"><strong className="text-foreground">How to fix:</strong> {item.action}</p>}
                       </article>
-                    );
-                  })}
-                </div>
-              )}
-              {step8Actions.length === 0 && readiness.allGaps.length === 0 && <p className="text-sm text-muted">No open action items were found by the automated review.</p>}
-              {step8Actions.map((item) => (
-                <article key={`${item.category}-${item.fieldPath}`} className="rounded-lg border border-border bg-surface p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="rounded-full border border-border bg-neutral-soft px-2.5 py-0.5 text-[11px] font-bold">{item.category}</span>
-                    <button type="button" onClick={() => goToStep(item.step)} className="inline-flex items-center gap-1 text-xs font-semibold text-accent underline underline-offset-2">Go to step {item.step} <ArrowRight className="h-3 w-3" /></button>
+                    ))}
                   </div>
-                  <h4 className="mt-2 font-semibold">{item.fieldLabel}</h4>
-                  <p className="mt-1 text-xs leading-relaxed text-muted"><strong>How to fix:</strong> {item.why}</p>
-                  <p className="mt-1 text-[11px] text-muted"><strong>Accepted documents:</strong> {item.acceptedDocuments}</p>
-                </article>
-              ))}
+                );
+              })()}
             </div>
           )}
         </section>
 
-        {/* C. Package preview */}
+        {/* 3. Payment and release — payment and readiness shown separately */}
+        <section aria-label="Payment and release" className="rounded-xl border border-border bg-surface p-5">
+          <h3 className="flex items-center gap-2 font-bold"><LockKeyhole className="h-5 w-5 text-accent" /> Payment and release</h3>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className={`rounded-lg border p-4 ${usableEntitlements.length > 0 ? "border-forest-light bg-forest-pale" : "border-status-warning/40 bg-[color:var(--status-warning-soft)]"}`}>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted">Payment</p>
+              <p className={`mt-1 text-sm font-bold ${usableEntitlements.length > 0 ? "text-forest" : "text-status-warning"}`}>
+                {usableEntitlements.length > 0 ? "READY" : "PAYMENT REQUIRED"}
+              </p>
+              <p className="mt-1 text-xs text-muted">
+                {usableEntitlements.length > 0
+                  ? "This working file has an available release."
+                  : "Pay once to unlock this working file. Failed or blocked locks charge nothing."}
+              </p>
+            </div>
+            <div className={`rounded-lg border p-4 ${readiness.isEligibleForSealing ? "border-forest-light bg-forest-pale" : "border-status-blocked/40 bg-[color:var(--status-blocked-soft)]"}`}>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted">Preparation</p>
+              <p className={`mt-1 text-sm font-bold ${readiness.isEligibleForSealing ? "text-forest" : "text-status-blocked"}`}>
+                {readiness.isEligibleForSealing ? "READY" : "BLOCKED"}
+              </p>
+              <p className="mt-1 text-xs text-muted">
+                {readiness.isEligibleForSealing
+                  ? "Every automated preparation control has passed."
+                  : `${blockerCount} requirement${blockerCount === 1 ? "" : "s"} remain${blockerCount === 1 ? "s" : ""}. Review the remaining actions above.`}
+              </p>
+            </div>
+          </div>
+
+          {currentReleasesCount > 0 && (
+            <div className="mt-4">
+              <FieldLabel helpKey="correctionReason">Correction Reason (Required for Release {currentReleasesCount + 1})</FieldLabel>
+              <textarea
+                aria-label="Correction reason"
+                value={correctionReason}
+                onChange={(event) => setCorrectionReason(event.target.value)}
+                placeholder="Describe the corrections made in this release (e.g., corrected CN code, updated precursor emissions)."
+                rows={3}
+                className="w-full rounded border border-border bg-background p-2.5 text-sm"
+              />
+              <p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.correctionReason.source}</p>
+            </div>
+          )}
+
+          <div className="mt-4"><StatusBanner status={sealStatus} tone={sealTone} /></div>
+          {sealTechnicalCode && (
+            <p className="mt-2 rounded border border-border bg-neutral-soft px-2 py-1 font-mono text-[10px] break-all text-muted" aria-label="Technical error code">
+              Technical code: {sealTechnicalCode}
+            </p>
+          )}
+          <p className="mt-3 text-xs text-muted">
+            Payment is for this working file only. Failed or blocked locks charge nothing. Re-download is free. The primary action is in the footer bar below.
+          </p>
+        </section>
+
+        {/* 4. Package preview — never claims a sealed release before one exists */}
         <section aria-label="Package preview" className="rounded-xl border border-border-strong bg-dark p-6 text-surface-elevated shadow-sm">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-seal">Successful sealed release</p>
-              <h3 className="mt-1 flex items-center gap-2 text-xl font-bold"><PackageCheck className="h-6 w-6" /> What the Preparation Pack actually delivers</h3>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-dark-text/80">A paid release is created only from case-specific data after every preparation control passes and produces a verifier-facing, immutable package.</p>
+              <h3 className="flex items-center gap-2 text-xl font-bold"><PackageCheck className="h-6 w-6" /> {STEP8_PACKAGE_PREVIEW_HEADLINE}</h3>
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-dark-text/80">Once you lock and pay, the package is created from case-specific data after every preparation control passes, producing a verifier-facing, immutable release.</p>
             </div>
             <span className="shrink-0 rounded-full border border-border-strong px-3 py-1 text-xs font-semibold">26 controlled components</span>
           </div>
@@ -1095,79 +1224,69 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
             <li>Offline verifier review layout</li>
           </ul>
           <p className="mt-4 text-xs leading-relaxed text-ink-muted">Professional boundary: CBAMValid prepares the operator dossier and evidence chain. Only an appropriately accredited independent verifier can issue a verification opinion.</p>
+        </section>
 
-          <div className="mt-6 grid gap-4 lg:grid-cols-2">
-            <section className="rounded-xl border border-border bg-surface p-5">
-              <h3 className="flex items-center gap-2 font-bold"><FileCode2 className="h-5 w-5 text-accent" /> Mathematical audit and emissions flow</h3>
-              {calculation.error ? <div className="mt-4"><StatusBanner status={calculation.error} tone="warning" /></div> : <>
-                <div className="mt-4 grid grid-cols-2 gap-3 text-sm"><div><span className="text-muted">Total embedded</span><strong className="block">{calculation.result?.totalEmbeddedEmissions} tCO2e</strong></div><div><span className="text-muted">Aggregate intensity</span><strong className="block">{calculation.result?.specificEmbeddedEmissions} tCO2e/t</strong></div><div><span className="text-muted">Allocation total</span><strong className="block">{calculation.result?.allocationShareTotal}</strong></div><div><span className="text-muted">Reconciliation delta</span><strong className="block">{calculation.result?.allocationReconciliationDelta}</strong></div></div>
-                {calculation.result && numeric(calculation.result.totalEmbeddedEmissions) > 0 && <div className="mt-5 rounded-lg border border-border bg-neutral-soft p-4" aria-label="Emissions composition chart"><div className="flex items-center justify-between text-xs"><strong>Emissions composition</strong><span className="text-muted">tCO2e</span></div><div className="mt-3 flex h-8 overflow-hidden rounded-md bg-surface-secondary" title="Direct, electricity and precursor emissions"><div className="bg-forest" style={{ width: `${percentOf(calculation.result.installationDirectEmissions, calculation.result.totalEmbeddedEmissions)}%` }} /><div className="bg-forest-light" style={{ width: `${percentOf(calculation.result.electricityIndirectEmissions, calculation.result.totalEmbeddedEmissions)}%` }} /><div className="bg-seal" style={{ width: `${percentOf(calculation.result.precursorDirectEmissions, calculation.result.totalEmbeddedEmissions)}%` }} /><div className="bg-seal-light" style={{ width: `${percentOf(calculation.result.precursorIndirectEmissions, calculation.result.totalEmbeddedEmissions)}%` }} /></div><div className="mt-3 grid gap-2 text-[11px] sm:grid-cols-2"><span><i className="mr-2 inline-block h-2 w-2 bg-forest" />Installation direct {calculation.result.installationDirectEmissions}</span><span><i className="mr-2 inline-block h-2 w-2 bg-forest-light" />Electricity indirect {calculation.result.electricityIndirectEmissions}</span><span><i className="mr-2 inline-block h-2 w-2 bg-seal" />Precursor direct {calculation.result.precursorDirectEmissions}</span><span><i className="mr-2 inline-block h-2 w-2 bg-seal-light" />Precursor indirect {calculation.result.precursorIndirectEmissions}</span></div></div>}
-                <div className="mt-4 max-h-80 space-y-3 overflow-y-auto">{calculation.result?.trace.map((trace) => <div key={trace.calculationId} className="rounded border border-border bg-neutral-soft p-3 font-mono text-xs"><div className="font-bold text-accent">{trace.formulaId}</div><div>{String(trace.outputValue)} {trace.outputUnit}</div><div className="break-all text-[10px] text-muted">SHA-256 {trace.calculationHash}</div></div>)}</div>
-              </>}
-            </section>
-
-            <section className="rounded-xl border border-border bg-surface p-5" aria-label="Lock package controls">
-              <h3 className="flex items-center gap-2 font-bold"><LockKeyhole className="h-5 w-5 text-accent" /> Payment and release</h3>
-              {currentReleasesCount > 0 && (
-                <div className="mt-4">
-                  <FieldLabel helpKey="correctionReason">Correction Reason (Required for Release {currentReleasesCount + 1})</FieldLabel>
-                  <textarea
-                    aria-label="Correction reason"
-                    value={correctionReason}
-                    onChange={(event) => setCorrectionReason(event.target.value)}
-                    placeholder="Describe the corrections made in this release (e.g., corrected CN code, updated precursor emissions)."
-                    rows={3}
-                    className="w-full rounded border border-border bg-background p-2.5 text-sm"
-                  />
-                  <p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.correctionReason.source}</p>
+        {/* 5. Emissions summary + advanced technical details (closed by default) */}
+        <section aria-label="Emissions summary" className="rounded-xl border border-border bg-surface p-5">
+          <h3 className="flex items-center gap-2 font-bold"><FileCode2 className="h-5 w-5 text-accent" /> Emissions summary</h3>
+          {calculation.error ? <div className="mt-4"><StatusBanner status={calculation.error} tone="warning" /></div> : (
+            <>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                <div className="rounded-lg border border-border bg-neutral-soft p-3"><span className="text-xs text-muted">Total embedded emissions</span><strong className="block text-lg">{calculation.result?.totalEmbeddedEmissions} tCO2e</strong></div>
+                <div className="rounded-lg border border-border bg-neutral-soft p-3"><span className="text-xs text-muted">Direct emissions</span><strong className="block text-lg">{calculation.result?.totalDirectEmissions} tCO2e</strong></div>
+                <div className="rounded-lg border border-border bg-neutral-soft p-3"><span className="text-xs text-muted">Indirect emissions</span><strong className="block text-lg">{calculation.result?.totalIndirectEmissions} tCO2e</strong></div>
+                <div className="rounded-lg border border-border bg-neutral-soft p-3"><span className="text-xs text-muted">Precursor emissions</span><strong className="block text-lg">{calculation.result?.totalPrecursorEmissions} tCO2e</strong></div>
+                <div className="rounded-lg border border-border bg-neutral-soft p-3"><span className="text-xs text-muted">Allocation reconciliation</span><strong className="block text-lg">{calculation.result?.allocationReconciliationDelta}</strong></div>
+              </div>
+              {calculation.result && numeric(calculation.result.totalEmbeddedEmissions) > 0 && (
+                <div className="mt-5 rounded-lg border border-border bg-neutral-soft p-4" aria-label="Emissions composition chart">
+                  <div className="flex items-center justify-between text-xs"><strong>Emissions composition</strong><span className="text-muted">tCO2e</span></div>
+                  <div className="mt-3 flex h-8 overflow-hidden rounded-md bg-surface-secondary" title="Direct, electricity and precursor emissions">
+                    <div className="bg-forest" style={{ width: `${percentOf(calculation.result.installationDirectEmissions, calculation.result.totalEmbeddedEmissions)}%` }} />
+                    <div className="bg-forest-light" style={{ width: `${percentOf(calculation.result.electricityIndirectEmissions, calculation.result.totalEmbeddedEmissions)}%` }} />
+                    <div className="bg-seal" style={{ width: `${percentOf(calculation.result.precursorDirectEmissions, calculation.result.totalEmbeddedEmissions)}%` }} />
+                    <div className="bg-seal-light" style={{ width: `${percentOf(calculation.result.precursorIndirectEmissions, calculation.result.totalEmbeddedEmissions)}%` }} />
+                  </div>
+                  <div className="mt-3 grid gap-2 text-[11px] sm:grid-cols-2">
+                    <span><i className="mr-2 inline-block h-2 w-2 bg-forest" />Installation direct {calculation.result.installationDirectEmissions}</span>
+                    <span><i className="mr-2 inline-block h-2 w-2 bg-forest-light" />Electricity indirect {calculation.result.electricityIndirectEmissions}</span>
+                    <span><i className="mr-2 inline-block h-2 w-2 bg-seal" />Precursor direct {calculation.result.precursorDirectEmissions}</span>
+                    <span><i className="mr-2 inline-block h-2 w-2 bg-seal-light" />Precursor indirect {calculation.result.precursorIndirectEmissions}</span>
+                  </div>
                 </div>
               )}
-
-              {readiness.isEligibleForSealing && usableEntitlements.length === 0 && (
-                <div className="mt-4 space-y-2">
-                  <p className="text-sm text-muted">Draft is free. Pay once to lock this file. Same file: correct and re-lock as needed. A new file needs a new payment.</p>
-                  <Link
-                    href={`/credits/buy?caseId=${encodeURIComponent(caseData.caseId || "")}`}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded bg-accent p-3 text-sm font-semibold text-surface"
-                  >
-                    <LockKeyhole className="h-4 w-4" /> Pay and unlock this working file
-                  </Link>
-                </div>
-              )}
-
-              {readiness.isEligibleForSealing && usableEntitlements.length > 0 && (
+              <div className="mt-4 rounded-lg border border-border bg-neutral-soft">
                 <button
                   type="button"
-                  aria-label="Lock and download package"
-                  onClick={handleSeal}
-                  disabled={sealing}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded bg-status-pass p-3 text-sm font-semibold text-surface-elevated disabled:cursor-not-allowed disabled:opacity-40"
+                  onClick={() => setShowAdvancedDetails((previous) => !previous)}
+                  aria-expanded={showAdvancedDetails}
+                  className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold"
                 >
-                  {sealing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Lock &amp; download package
+                  Advanced calculation and integrity details
+                  <ChevronDown className={`h-4 w-4 transition-transform ${showAdvancedDetails ? "rotate-180" : ""}`} />
                 </button>
-              )}
-
-              {!readiness.isEligibleForSealing && (
-                <button
-                  type="button"
-                  onClick={revealSealBlockers}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded border border-status-blocked/50 bg-surface p-3 text-sm font-semibold text-status-blocked"
-                >
-                  <AlertTriangle className="h-4 w-4" /> Review remaining actions
-                </button>
-              )}
-
-              <div className="mt-4"><StatusBanner status={sealStatus} tone={sealTone} /></div>
-              {sealTechnicalCode && (
-                <p className="mt-2 rounded border border-border bg-neutral-soft px-2 py-1 font-mono text-[10px] break-all text-muted" aria-label="Technical error code">
-                  Technical code: {sealTechnicalCode}
-                </p>
-              )}
-              <p className="mt-3 text-xs text-muted">
-                Payment is for this working file only. Failed or blocked locks charge nothing. Re-download is free.
-              </p>
-            </section>
-          </div>
+                {showAdvancedDetails && (
+                  <div className="border-t border-border px-4 py-3">
+                    <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                      <div><span className="text-muted">Aggregate intensity</span><strong className="block">{calculation.result?.specificEmbeddedEmissions} tCO2e/t</strong></div>
+                      <div><span className="text-muted">Allocation total</span><strong className="block">{calculation.result?.allocationShareTotal}</strong></div>
+                      <div><span className="text-muted">Reconciliation delta</span><strong className="block">{calculation.result?.allocationReconciliationDelta}</strong></div>
+                      <div><span className="text-muted">Ruleset</span><strong className="block text-xs">{caseData.methodologyDecisions[0]?.rulesetVersion || "EU-CBAM-DEFINITIVE-2026"}</strong></div>
+                    </div>
+                    <div className="mt-3 max-h-72 space-y-3 overflow-y-auto" aria-label="Calculation trace">
+                      {calculation.result?.trace.map((trace) => (
+                        <div key={trace.calculationId} className="rounded border border-border bg-surface p-3 font-mono text-xs">
+                          <div className="font-bold text-accent">{trace.formulaId}</div>
+                          <div>{String(trace.outputValue)} {trace.outputUnit}</div>
+                          <div className="break-all text-[10px] text-muted">SHA-256 {trace.calculationHash}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </section>
       </div>
     );
@@ -1175,11 +1294,123 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
 
   const stepContent = [renderStep1, renderStep2, renderStep3, renderStep4, renderStep5, renderStep6, renderStep7, renderStep8][currentStep - 1];
 
+  const stepRailEntry = (stepNumber: number) => {
+    const validation = stepValidations[stepNumber];
+    const state = stepStates[stepNumber];
+    const active = stepNumber === currentStep;
+    const ssot = getWorkflowStep(stepNumber);
+    const isStep8 = stepNumber === 8;
+    const status = isStep8 ? step8Status : state;
+    const statusClass = isStep8
+      ? STEP8_STATUS_STYLES[status as Step8Status]
+      : STEP_STATE_STYLES[status as WizardStepperState];
+    const complete = state === "COMPLETE" || (isStep8 && status === "LOCKED");
+    return (
+      <button
+        type="button"
+        key={stepNumber}
+        onClick={() => goToStep(stepNumber)}
+        aria-current={active ? "step" : undefined}
+        className={`flex w-full items-start gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors ${
+          active ? "border-accent bg-accent/10" : "border-border bg-surface hover:bg-neutral-soft"
+        }`}
+      >
+        <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+          complete
+            ? "bg-forest-pale text-forest"
+            : active
+              ? "bg-accent text-surface"
+              : "bg-neutral-soft text-muted"
+        }`}>
+          {complete ? <CheckCircle2 className="h-4 w-4" /> : stepNumber}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold leading-tight">{ssot.shortTitle}</span>
+          <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
+            <span className={`rounded-full border px-1.5 py-px font-bold ${statusClass}`}>{status.replaceAll("_", " ")}</span>
+            {!isStep8 && validation.missingFieldCount > 0 && (
+              <span className="font-semibold text-status-blocked">{validation.missingFieldCount} field{validation.missingFieldCount === 1 ? "" : "s"} missing</span>
+            )}
+            {!isStep8 && validation.missingEvidenceCount > 0 && (
+              <span className="font-semibold text-status-warning">{validation.missingEvidenceCount} doc{validation.missingEvidenceCount === 1 ? "" : "s"} needed</span>
+            )}
+            {!isStep8 && validation.awaitingReviewCount > 0 && (
+              <span className="font-semibold text-muted">{validation.awaitingReviewCount} awaiting review</span>
+            )}
+            {isStep8 && status === "PAYMENT_REQUIRED" && <span className="font-semibold text-status-warning">Payment required</span>}
+            {isStep8 && status === "BLOCKED" && (
+              <span className="font-semibold text-status-blocked">{readiness.criticalBlockers.length} requirement{readiness.criticalBlockers.length === 1 ? "" : "s"}</span>
+            )}
+          </span>
+        </span>
+      </button>
+    );
+  };
+
+  const renderFooterCta = () => {
+    if (currentStep !== 8) {
+      return (
+        <button
+          type="button"
+          onClick={goToNext}
+          className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded bg-accent px-3 py-2 text-sm font-semibold text-surface sm:flex-none sm:px-4"
+        >
+          Continue <ArrowRight className="h-4 w-4" />
+        </button>
+      );
+    }
+    switch (step8Status) {
+      case "BLOCKED":
+      case "LOCK_FAILED":
+        return (
+          <button
+            type="button"
+            onClick={revealSealBlockers}
+            className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded border border-status-blocked/50 bg-surface px-3 py-2 text-sm font-semibold text-status-blocked sm:flex-none sm:px-4"
+          >
+            <AlertTriangle className="h-4 w-4 shrink-0" /> {STEP8_FOOTER_CTA_LABELS.BLOCKED}
+          </button>
+        );
+      case "PAYMENT_REQUIRED":
+        return (
+          <Link
+            href={`/credits/buy?caseId=${encodeURIComponent(caseData.caseId || "")}`}
+            className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded bg-accent px-3 py-2 text-sm font-semibold text-surface sm:flex-none sm:px-4"
+          >
+            <LockKeyhole className="h-4 w-4 shrink-0" /> {STEP8_FOOTER_CTA_LABELS.PAYMENT_REQUIRED}
+          </Link>
+        );
+      case "READY_TO_LOCK":
+        return (
+          <button
+            type="button"
+            onClick={handleSeal}
+            disabled={sealing}
+            className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded bg-status-pass px-3 py-2 text-sm font-semibold text-surface-elevated disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none sm:px-4"
+          >
+            {sealing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4 shrink-0" />} {sealing ? STEP8_FOOTER_CTA_LABELS.LOCKING : STEP8_FOOTER_CTA_LABELS.READY_TO_LOCK}
+          </button>
+        );
+      case "LOCKING":
+        return (
+          <button type="button" disabled className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded bg-neutral-soft px-3 py-2 text-sm font-semibold text-muted disabled:cursor-wait sm:flex-none sm:px-4">
+            <Loader2 className="h-4 w-4 animate-spin" /> {STEP8_FOOTER_CTA_LABELS.LOCKING}
+          </button>
+        );
+      case "LOCKED":
+        return (
+          <Link href="/reports" className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded bg-status-pass px-3 py-2 text-sm font-semibold text-surface-elevated sm:flex-none sm:px-4">
+            {STEP8_FOOTER_CTA_LABELS.LOCKED} <ArrowRight className="h-4 w-4" />
+          </Link>
+        );
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-background px-4 py-8 pb-32 text-foreground md:px-8">
-      <div className="mx-auto max-w-6xl space-y-6">
+    <main className="min-h-screen bg-background px-4 py-6 pb-24 text-foreground md:px-8">
+      <div className="mx-auto max-w-6xl">
         <header className="flex flex-col justify-between gap-4 border-b border-border pb-4 md:flex-row md:items-center">
-          <div>
+          <div className="min-w-0">
             <h1 className="text-2xl font-bold">Working file</h1>
             <p className="text-sm text-muted break-all">
               ID: {caseData.caseId || "UNASSIGNED"} · User: {sessionUser.email || sessionUser.uid} · One factory · one year
@@ -1203,111 +1434,146 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           releasesRemaining={releasesRemaining}
           unlockablePacks={unlockablePacks}
           caseId={caseData.caseId || ""}
-          canLock={readiness.isEligibleForSealing && usableEntitlements.length > 0}
-          onGoToStep={goToStep}
-          onLock={() => void handleSeal()}
-          onRevealBlockers={revealSealBlockers}
         />
 
-        <section aria-label={`Step ${currentStep} progress summary`} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-          <span className="font-bold">Step {currentStep} of 8</span>
-          <span aria-hidden="true" className="text-muted">·</span>
-          <span>{WIZARD_STEP_HEADERS[currentStep].shortTitle}</span>
-          {wizardStepTotalFields(currentStep) > 0 ? (
-            <span className="text-muted">· {currentStepValidation.completedFieldCount}/{wizardStepTotalFields(currentStep)} fields complete</span>
-          ) : (
-            <span className="text-muted">· final review</span>
-          )}
-          {currentStepValidation.missingEvidenceCount > 0 && (
-            <span className="font-semibold text-status-warning">· {currentStepValidation.missingEvidenceCount} document{currentStepValidation.missingEvidenceCount === 1 ? "" : "s"} needed</span>
-          )}
-          <StepStateBadge state={stepStates[currentStep]} />
-        </section>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-soft" role="progressbar" aria-valuenow={readiness.completenessPercentage} aria-valuemin={0} aria-valuemax={100} aria-label="Working file completeness">
-          <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${readiness.completenessPercentage}%` }} />
-        </div>
-
-        {nextHint && (
-          <div role="alert" aria-label="Next step guidance" className="flex flex-col gap-3 rounded-lg border border-status-warning/40 bg-[color:var(--status-warning-soft)] p-4 text-sm text-status-warning md:flex-row md:items-center md:justify-between">
-            <div className="flex items-start gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><span>{nextHint}</span></div>
-            <button
-              type="button"
-              onClick={() => void handleSave()}
-              disabled={saving}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded border border-status-warning px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
-            >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save draft and continue later
-            </button>
-          </div>
-        )}
-
-        {showErrors && !currentStepValidation.valid && currentStepValidation.issues.length > 0 && (
-          <div role="alert" aria-label="Step validation errors" className="rounded-lg border border-status-blocked/40 bg-[color:var(--status-blocked-soft)] p-4 text-status-blocked">
-            <h2 className="flex items-center gap-2 font-bold"><AlertTriangle className="h-5 w-5" /> {currentStep === 8 ? "Sealing is blocked by unresolved requirements" : "Complete the required fields before continuing"}</h2>
-            <ul className="mt-2 space-y-1.5 text-sm">
-              {currentStepValidation.issues.map((issue) => (
-                <li key={`${issue.fieldPath}-${issue.kind}`} className="flex flex-wrap items-start gap-2">
-                  <button type="button" onClick={() => focusField(issue.fieldPath)} className="font-semibold underline underline-offset-2">{issue.label}</button>
-                  <span>{issue.message}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {scenarioActive && (
-          <aside className="flex flex-col justify-between gap-4 rounded-xl border-2 border-forest-light bg-forest-pale p-5 text-forest md:flex-row md:items-center">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em]">Illustrative scenario active</p>
-              <p className="mt-1 max-w-3xl text-sm leading-relaxed">
-                Every step is prefilled with a coherent steel-export example. Review the inputs, open the field guidance, and inspect the calculated scenario report in step 8. These values are not evidence and cannot be locked.
+        {/* Mobile / tablet step header — no eight-cards row, no horizontal overflow */}
+        <section aria-label={`Step ${currentStep} progress summary`} className="mt-4 rounded-xl border border-border bg-surface p-4 lg:hidden">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted">Step {currentStep} of 8</p>
+              <h2 className="mt-1 font-serif text-lg font-bold leading-tight break-words">{wizardStepTitle(currentStep)}</h2>
+              <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+                {currentStep === 8 ? (
+                  <Step8StateBadge status={step8Status} />
+                ) : (
+                  <>
+                    {currentStepValidation.completedFieldCount}/{wizardStepTotalFields(currentStep)} fields complete
+                    {currentStepValidation.missingEvidenceCount > 0 && (
+                      <span className="font-semibold text-status-warning">· {currentStepValidation.missingEvidenceCount} document{currentStepValidation.missingEvidenceCount === 1 ? "" : "s"} needed</span>
+                    )}
+                  </>
+                )}
               </p>
             </div>
             <button
               type="button"
-              onClick={handleStartBlankCase}
-              disabled={clearingScenario}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded border border-forest bg-surface-elevated px-4 py-2 text-sm font-semibold disabled:opacity-50"
+              onClick={() => setMobileStepsOpen(true)}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded border border-border bg-neutral-soft px-3 py-2 text-xs font-semibold"
             >
-              {clearingScenario ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eraser className="h-4 w-4" />}{" "}
-              {clearingScenario ? "Removing…" : "Start with blank working file"}
+              <Menu className="h-4 w-4" /> View all steps
             </button>
-          </aside>
-        )}
+          </div>
+          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-neutral-soft" role="progressbar" aria-valuenow={readiness.completenessPercentage} aria-valuemin={0} aria-valuemax={100} aria-label="Working file completeness">
+            <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${readiness.completenessPercentage}%` }} />
+          </div>
+        </section>
 
-        <div className="rounded-lg border border-status-warning/30 bg-[color:var(--status-warning-soft)] p-4 text-xs text-status-warning leading-relaxed print:hidden flex gap-3 items-start">
-          <Shield className="w-4 h-4 text-status-warning shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <strong>Regulatory Disclaimer:</strong> This platform generates an exporter-prepared verification dossier to streamline independent audit preparation. It is <strong>NOT</strong> an official European Commission verification opinion and does not substitute for independent verification by an EU accredited body.
+        <div className="mt-6 lg:flex lg:gap-8">
+          {/* Desktop step rail — 280px sticky, single navigation */}
+          <aside className="hidden w-[280px] shrink-0 lg:block" data-testid="desktop-step-rail">
+            <nav className="sticky top-24 space-y-1.5" aria-label="Workflow steps">
+              <p className="px-1 text-[11px] font-semibold uppercase tracking-wider text-muted">Workflow · Step {currentStep} of 8</p>
+              {CBAM_WORKFLOW_STEPS.map((step) => stepRailEntry(step.id))}
+            </nav>
+          </aside>
+
+          <div className="min-w-0 flex-1">
+            {nextHint && (
+              <div role="alert" aria-label="Next step guidance" className="flex flex-col gap-3 rounded-lg border border-status-warning/40 bg-[color:var(--status-warning-soft)] p-4 text-sm text-status-warning md:flex-row md:items-center md:justify-between">
+                <div className="flex items-start gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><span>{nextHint}</span></div>
+                <button
+                  type="button"
+                  onClick={() => void handleSave()}
+                  disabled={saving}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded border border-status-warning px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save draft and continue later
+                </button>
+              </div>
+            )}
+
+            {showErrors && !currentStepValidation.valid && currentStepValidation.issues.length > 0 && (
+              <div role="alert" aria-label="Step validation errors" className="rounded-lg border border-status-blocked/40 bg-[color:var(--status-blocked-soft)] p-4 text-status-blocked">
+                <h2 className="flex items-center gap-2 font-bold"><AlertTriangle className="h-5 w-5" /> {currentStep === 8 ? "Sealing is blocked by unresolved requirements" : "Complete the required fields before continuing"}</h2>
+                <ul className="mt-2 space-y-1.5 text-sm">
+                  {currentStepValidation.issues.map((issue) => (
+                    <li key={`${issue.fieldPath}-${issue.kind}`} className="flex flex-wrap items-start gap-2">
+                      <button type="button" onClick={() => focusField(issue.fieldPath)} className="font-semibold underline underline-offset-2">{issue.label}</button>
+                      <span>{issue.message}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {scenarioActive && (
+              <aside className="flex flex-col justify-between gap-4 rounded-xl border-2 border-forest-light bg-forest-pale p-5 text-forest md:flex-row md:items-center">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em]">Illustrative scenario active</p>
+                  <p className="mt-1 max-w-3xl text-sm leading-relaxed">
+                    Every step is prefilled with a coherent steel-export example. Review the inputs, open the field guidance, and inspect the calculated scenario report in step 8. These values are not evidence and cannot be locked.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleStartBlankCase}
+                  disabled={clearingScenario}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded border border-forest bg-surface-elevated px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                >
+                  {clearingScenario ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eraser className="h-4 w-4" />}{" "}
+                  {clearingScenario ? "Removing…" : "Start with blank working file"}
+                </button>
+              </aside>
+            )}
+
+            <div className="rounded-lg border border-status-warning/30 bg-[color:var(--status-warning-soft)] p-4 text-xs text-status-warning leading-relaxed print:hidden flex gap-3 items-start">
+              <Shield className="w-4 h-4 text-status-warning shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <strong>Regulatory Disclaimer:</strong> This platform generates an exporter-prepared verification dossier to streamline independent audit preparation. It is <strong>NOT</strong> an official European Commission verification opinion and does not substitute for independent verification by an EU accredited body.
+              </div>
+            </div>
+
+            <StatusBanner status={saveStatus} tone={saveTone} />
+
+            <section className="py-2 md:py-4">{stepContent()}</section>
           </div>
         </div>
-
-        <StatusBanner status={saveStatus} tone={saveTone} />
-
-        <section className="py-2 md:py-4">{stepContent()}</section>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface p-4 shadow-[0_-4px_8px_rgba(0,0,0,0.08)]">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
+      {/* Mobile / tablet step drawer */}
+      {mobileStepsOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="All workflow steps" data-testid="mobile-step-drawer">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setMobileStepsOpen(false)} aria-hidden="true" />
+          <div className="absolute inset-y-0 left-0 w-[85vw] max-w-sm overflow-y-auto border-r border-border bg-surface p-4 shadow-xl">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="font-bold">All workflow steps</p>
+              <button type="button" onClick={() => setMobileStepsOpen(false)} aria-label="Close step list" className="rounded p-1.5 hover:bg-neutral-soft"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="space-y-1.5">{CBAM_WORKFLOW_STEPS.map((step) => stepRailEntry(step.id))}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Fixed footer — Previous · Save draft · contextual CTA (never a disabled Next on step 8) */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_8px_rgba(0,0,0,0.08)]">
+        <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-3 sm:px-4">
           <button
             type="button"
             onClick={() => navigateToStep(currentStep - 1)}
             disabled={currentStep === 1}
-            className="inline-flex items-center gap-2 rounded border border-border px-4 py-2 disabled:opacity-40"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded border border-border px-3 py-2 text-sm disabled:opacity-40"
           >
             <ArrowLeft className="h-4 w-4" /> Previous
           </button>
-          <span className="text-sm font-bold text-muted">
-            Step {currentStep} of 8 · {STEPS[currentStep - 1]?.label}
-          </span>
           <button
             type="button"
-            onClick={goToNext}
-            disabled={currentStep === 8}
-            className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-surface disabled:opacity-40"
+            onClick={() => void handleSave()}
+            disabled={saving}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded border border-border px-3 py-2 text-sm disabled:opacity-50"
           >
-            Next <ArrowRight className="h-4 w-4" />
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {saving ? "Saving…" : "Save draft"}
           </button>
+          {renderFooterCta()}
         </div>
       </div>
     </main>

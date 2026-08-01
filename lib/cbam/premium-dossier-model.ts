@@ -151,6 +151,7 @@ export const EvidenceSufficiencyRowSchema = z.object({
   coverageDenominator: z.string().regex(/^\d+(\.\d+)?$/),
   blocksOperatorReadiness: z.boolean(),
   blocksSealing: z.boolean(),
+  isMaterial: z.boolean().optional(),
   reasonCodes: z.array(z.string().min(1)),
   evidencePeriodStart: z.string().nullable().optional(),
   evidencePeriodEnd: z.string().nullable().optional(),

@@ -115,9 +115,11 @@ requireText(fieldHelp, 'max-h-[calc(100dvh-2rem)]', "Field guidance viewport hei
 requireText(fieldHelp, 'aria-modal="true"', "Accessible field guidance dialog");
 requireText(fieldHelp, 'event.key === "Escape"', "Keyboard-close field guidance dialog");
 requireText(fieldHelp, "Close data-source help", "Visible close control contract");
-requireText(caseWizard, "What the Preparation Pack actually delivers", "Paid package value disclosure");
+const wizardValidation = read("lib/cbam/wizard-validation.ts");
+requireText(wizardValidation, "What your controlled package will include", "Paid package value disclosure");
+requireText(caseWizard, "STEP8_PACKAGE_PREVIEW_HEADLINE", "Paid package value disclosure SSOT wiring");
 requireText(caseWizard, "How to fix:", "Readiness remediation guidance");
-requireText(caseWizard, "Resolve evidence blockers", "Actionable blocked sealing state");
+requireText(caseWizard, 'aria-label="Remaining actions"', "Actionable blocked sealing state");
 
 requireText(caseSummary, "caseData.installation.name", "Canonical installation summary path");
 requireText(caseSummary, "caseData.goods[0]?.cnCode", "Canonical CN-code summary path");

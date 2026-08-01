@@ -1,9 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { WORKFLOW_STEPS_PLAIN } from "@/lib/product/customer-language";
-import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
+import { getWorkflowStep } from "@/lib/cbam/workflow-definition";
 
 export type WorkingFileJourneyStripProps = {
   currentStep: number;
@@ -11,114 +8,46 @@ export type WorkingFileJourneyStripProps = {
   blockerCount: number;
   releasesRemaining: number;
   unlockablePacks: number;
-  canLock: boolean;
   caseId: string;
-  onGoToStep: (step: number) => void;
-  onLock?: () => void;
-  onRevealBlockers?: () => void;
 };
 
+/**
+ * "Where you are" banner. Informational only — all primary actions live in
+ * the fixed footer so no CTA is duplicated. Step navigation on desktop comes
+ * from the 280px step rail; on mobile from the "View all steps" drawer, so
+ * the eight small cards row is no longer rendered.
+ */
 export function WorkingFileJourneyStrip({
   currentStep,
   completenessPercentage,
   blockerCount,
   releasesRemaining,
-  canLock,
-  caseId,
-  onGoToStep,
-  onLock,
-  onRevealBlockers,
+  unlockablePacks,
 }: WorkingFileJourneyStripProps) {
-  const step = WORKFLOW_STEPS_PLAIN.find((item) => item.num === currentStep) ?? WORKFLOW_STEPS_PLAIN[0];
-  const nextStep = WORKFLOW_STEPS_PLAIN.find((item) => item.num === currentStep + 1);
-
-  let nextLabel = nextStep ? `Next: ${nextStep.title}` : "Review readiness on this step";
-  let nextAction: (() => void) | null = nextStep ? () => onGoToStep(nextStep.num) : null;
-  let nextHref: string | null = null;
-
-  if (currentStep === 8) {
-    if (blockerCount > 0) {
-      // FAZ UX — step 8 stays open; the user reviews the blockers in place
-      // instead of being pushed back to step 7.
-      nextLabel = `Review ${blockerCount} blocker${blockerCount === 1 ? "" : "s"}`;
-      nextAction = onRevealBlockers ?? null;
-    } else if (releasesRemaining <= 0) {
-      nextLabel = `Pay ${CANONICAL_PRICING.priceFormatted} to lock this file`;
-      nextHref = `/credits/buy?caseId=${encodeURIComponent(caseId)}`;
-      nextAction = null;
-    } else if (canLock && onLock) {
-      nextLabel = "Lock & download package";
-      nextAction = onLock;
-    } else {
-      nextLabel = "Finish checks, then lock";
-      nextAction = null;
-    }
-  }
+  const step = getWorkflowStep(currentStep);
 
   return (
     <section
       aria-label="Where you are in this working file"
       className="rounded-xl border border-accent/25 bg-accent/5 p-4 md:p-5"
     >
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="min-w-0 space-y-1">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-accent">Where you are</p>
-          <p className="font-serif text-lg font-bold text-foreground md:text-xl">
-            Working file · Step {currentStep} of 8 · {step.title}
-          </p>
-          <p className="text-xs text-muted leading-relaxed">
-            {step.desc} Completeness {completenessPercentage}%
-            {blockerCount > 0
-              ? ` · ${blockerCount} blocker${blockerCount === 1 ? "" : "s"} still open`
-              : " · no open blockers on last assessment"}
-            {releasesRemaining > 0
-              ? " · this file is paid — lock allowed"
-              : " · this file is unpaid — pay once to lock"}
-          </p>
-        </div>
-        {nextHref ? (
-          <Link
-            href={nextHref}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-surface hover:bg-accent-hover"
-          >
-            {nextLabel} <ArrowRight className="h-4 w-4" />
-          </Link>
-        ) : (
-          <button
-            type="button"
-            onClick={() => nextAction?.()}
-            disabled={!nextAction}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-surface hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {nextLabel} {nextAction ? <ArrowRight className="h-4 w-4" /> : null}
-          </button>
-        )}
+      <div className="min-w-0 space-y-1">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-accent">Where you are</p>
+        <p className="font-serif text-lg font-bold text-foreground md:text-xl">
+          Working file · Step {currentStep} of 8 · {step.title}
+        </p>
+        <p className="text-xs text-muted leading-relaxed">
+          {step.description} Completeness {completenessPercentage}%
+          {blockerCount > 0
+            ? ` · ${blockerCount} blocker${blockerCount === 1 ? "" : "s"} still open`
+            : " · no open blockers on last assessment"}
+          {releasesRemaining > 0
+            ? " · this working file is paid"
+            : unlockablePacks > 0
+              ? " · unused preparation packs are ready to activate"
+              : " · this working file is unpaid — pay once to lock"}
+        </p>
       </div>
-      <ol className="mt-4 grid grid-cols-4 gap-2 md:grid-cols-8" aria-label="Eight plain steps">
-        {WORKFLOW_STEPS_PLAIN.map((item) => {
-          const done = item.num < currentStep;
-          const active = item.num === currentStep;
-          return (
-            <li key={item.num}>
-              <button
-                type="button"
-                onClick={() => onGoToStep(item.num)}
-                className={`w-full rounded-md border px-1 py-2 text-center transition-colors ${
-                  active
-                    ? "border-accent bg-accent text-surface"
-                    : done
-                      ? "border-accent/30 bg-surface text-accent"
-                      : "border-border bg-surface text-muted"
-                }`}
-                aria-current={active ? "step" : undefined}
-              >
-                <span className="block font-mono text-[10px] font-bold">{item.num}</span>
-                <span className="mt-0.5 block truncate text-[10px] font-semibold leading-tight">{item.title}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
     </section>
   );
 }
