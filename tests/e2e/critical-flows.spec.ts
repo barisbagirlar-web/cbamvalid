@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import fs from "node:fs";
 
 /**
  * CBAMValid Critical Flows — Regression Guard
@@ -18,6 +19,7 @@ const WIZARD_BASE_URL = process.env.E2E_WIZARD_BASE_URL || "";
 const WIZARD_EMAIL = process.env.E2E_WIZARD_EMAIL || "";
 const WIZARD_PASSWORD = process.env.E2E_WIZARD_PASSWORD || "";
 const WIZARD_CASE_ID = process.env.E2E_WIZARD_CASE_ID || "";
+const WIZARD_STORAGE_STATE = process.env.E2E_WIZARD_STORAGE_STATE || "";
 const wizardEnabled = Boolean(WIZARD_BASE_URL && WIZARD_EMAIL && WIZARD_PASSWORD && WIZARD_CASE_ID);
 
 test.describe("Authentication", () => {
@@ -147,6 +149,9 @@ test.describe("Wizard Step 8 UX — authenticated live regression (opt-in)", () 
     "Set E2E_WIZARD_BASE_URL, E2E_WIZARD_EMAIL, E2E_WIZARD_PASSWORD and E2E_WIZARD_CASE_ID to run the authenticated wizard UX regression."
   );
 
+  const storageStateOptions = fs.existsSync(WIZARD_STORAGE_STATE) ? { storageState: WIZARD_STORAGE_STATE } : {};
+  test.use(storageStateOptions);
+
   const wizardUrl = (query = "step=8") => `${WIZARD_BASE_URL}/cases/${WIZARD_CASE_ID}?${query}`;
 
   const stepText = (page: Page) =>
@@ -160,12 +165,11 @@ test.describe("Wizard Step 8 UX — authenticated live regression (opt-in)", () 
     page.on("console", (msg) => {
       if (msg.type() === "error") console.error(`[WIZARD BROWSER ERROR] ${msg.text()}`);
     });
-    await page.goto(`${WIZARD_BASE_URL}/login`);
-    await page.waitForLoadState("networkidle");
-    await page.fill('input[type="email"]', WIZARD_EMAIL);
-    await page.fill('input[type="password"]', WIZARD_PASSWORD);
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/\/cbam/, { timeout: 30000 });
+    // The authenticated session comes from the shared storageState (see
+    // scripts/e2e-wizard-auth.ts) so the flaky identitytoolkit login is not
+    // repeated per test. Go straight to the case page.
+    await page.goto(wizardUrl());
+    await expect(page).not.toHaveURL(/\/login/, { timeout: 15000 });
   });
 
   // E. Refresh → ?step=N reopens the same step.
