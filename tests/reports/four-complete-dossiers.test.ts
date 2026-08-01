@@ -14,6 +14,8 @@ import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
 import { AuditReadyCaseSchema } from "../../functions/src/cbam/schema";
 import { assessReadiness } from "../../functions/src/cbam/validation/readiness-score";
+import { runEvidenceSufficiency } from "../../functions/src/cbam/validation/evidence-sufficiency";
+import { computeEvidenceAssuranceScore } from "../../functions/src/cbam/report/honest-scoreboard";
 import {
   REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5,
   REQUIRED_TOP_LEVEL_COMPONENTS_V5,
@@ -83,8 +85,13 @@ describe("four complete sandbox dossiers", () => {
         expect(readiness.criticalBlockerCount).toBe(0);
         expect(readiness.missingMaterialEvidenceCount).toBe(0);
         expect(readiness.openFindingCount).toBe(0);
-        expect(parseFloat(readiness.assessedCoveragePercent)).toBe(100);
-        expect(parseFloat(readiness.score)).toBeGreaterThanOrEqual(90);
+        expect(readiness.assessedCoveragePercent).toBe("100");
+        expect(readiness.score).toBe("100");
+
+        const evidenceAssurance = computeEvidenceAssuranceScore(
+          runEvidenceSufficiency(parsed, FOUR_DOSSIER_ASSESSMENT_TIMESTAMP)
+        );
+        expect(evidenceAssurance.score).toBe(100);
       });
 
       it("seal PASS — full pipeline produces a signed immutable ZIP", async () => {

@@ -135,7 +135,18 @@ export function runQualityControls(caseData: AuditReadyCase): QualityControlResu
   else add("QC_10", "Evidence integrity", "PASS");
 
   for (const record of caseData.carbonPriceRecords) {
-    if (!record.proofOfPaymentEvidenceId || !caseData.evidenceRegister.some((evidence) => evidence.evidenceId === record.proofOfPaymentEvidenceId && evidence.reviewStatus === "APPROVED" && evidence.malwareScanStatus === "CLEAN")) add(`QC_11_${record.id}`, "Carbon price proof", "BLOCKER", "Carbon-price reduction requires approved payment evidence.", "REM_LINK_CARBON_PRICE_EVIDENCE");
+    const hasValidProof =
+      Boolean(record.proofOfPaymentEvidenceId) &&
+      caseData.evidenceRegister.some((evidence) =>
+        evidence.evidenceId === record.proofOfPaymentEvidenceId &&
+        evidence.reviewStatus === "APPROVED" &&
+        evidence.malwareScanStatus === "CLEAN"
+      );
+    if (!hasValidProof) {
+      add(`QC_11_${record.id}`, "Carbon price proof", "BLOCKER", "Carbon-price reduction requires approved payment evidence.", "REM_LINK_CARBON_PRICE_EVIDENCE");
+    } else {
+      add(`QC_11_${record.id}`, "Carbon price proof", "PASS");
+    }
   }
   if (caseData.carbonPriceRecords.length === 0) add("QC_11", "Carbon price records", "NOT_APPLICABLE");
 

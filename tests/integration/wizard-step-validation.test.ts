@@ -28,9 +28,11 @@ import {
   summarizeWizardCompletion,
   translateSealError,
   validateWizardStep,
-  WIZARD_STEP_HEADERS,
+  wizardStepShortTitle,
+  wizardStepTitle,
   wizardStepTotalFields,
 } from "@/lib/cbam/wizard-validation";
+import { CBAM_WORKFLOW_STEPS } from "@/lib/cbam/workflow-definition";
 
 const EV_EORI = "11111111-1111-4111-8111-111111111111";
 const EV_CN = "22222222-2222-4222-8222-222222222222";
@@ -152,7 +154,7 @@ describe("wizard step validation", () => {
     expect(issue).toBeDefined();
     expect(issue!.kind).toBe("MISSING");
     expect(issue!.message).toContain("EORI");
-    expect(validation.state).toBe("NEEDS_ATTENTION");
+    expect(validation.state).toBe("NEEDS_INFORMATION");
   });
 
   it("blocks Step 2 when a CN code is missing", () => {
@@ -189,7 +191,7 @@ describe("wizard step validation", () => {
     expect(boundaryIssue!.message).toMatch(/statement|system boundary/i);
   });
 
-  it("keeps early steps navigable when evidence is missing but flags NEEDS_EVIDENCE", () => {
+  it("keeps early steps navigable when evidence is missing but flags NEEDS_DOCUMENTS", () => {
     const caseData = baseCase();
     // Full data, no evidence linked.
     const validation = validateWizardStep(1, caseData);
@@ -197,7 +199,7 @@ describe("wizard step validation", () => {
     // Data is complete so the step is valid; the evidence gap is advisory.
     expect(validation.valid).toBe(true);
     expect(validation.missingEvidenceCount).toBeGreaterThan(0);
-    expect(validation.state).toBe("NEEDS_EVIDENCE");
+    expect(validation.state).toBe("NEEDS_DOCUMENTS");
   });
 
   it("hard-blocks the evidence and seal steps on missing material evidence", () => {
@@ -210,7 +212,7 @@ describe("wizard step validation", () => {
     const sealValidation = validateWizardStep(8, caseData);
     expect(sealValidation.valid).toBe(false);
     expect(sealValidation.evidenceIssues.length).toBeGreaterThan(0);
-    expect(sealValidation.state).toBe("NEEDS_EVIDENCE");
+    expect(sealValidation.state).toBe("NEEDS_DOCUMENTS");
 
     const evidenceStep = validateWizardStep(7, caseData);
     expect(evidenceStep.valid).toBe(false);
@@ -250,10 +252,11 @@ describe("wizard step validation", () => {
     expect(summary.missingEvidence).toBeGreaterThan(0);
   });
 
-  it("exposes step headers and per-step field counts", () => {
-    expect(WIZARD_STEP_HEADERS[2]!.shortTitle).toBe("Goods");
+  it("exposes SSOT-derived step titles and per-step field counts", () => {
+    expect(wizardStepShortTitle(2)).toBe("Goods");
+    expect(wizardStepTitle(2)).toBe("Goods and CN codes");
     expect(wizardStepTotalFields(2)).toBe(5);
-    expect(Object.keys(WIZARD_STEP_HEADERS)).toHaveLength(8);
+    expect(CBAM_WORKFLOW_STEPS).toHaveLength(8);
   });
 
   it("derives stepper states across the full lifecycle", () => {
@@ -264,11 +267,11 @@ describe("wizard step validation", () => {
     empty.methodologyDecisions = [];
 
     const step2Empty = validateWizardStep(2, empty);
-    expect(step2Empty.state).toBe("NEEDS_ATTENTION");
+    expect(step2Empty.state).toBe("NEEDS_INFORMATION");
     expect(step2Empty.missingFieldCount).toBeGreaterThan(0);
 
     const step8Empty = validateWizardStep(8, empty);
-    expect(step8Empty.state).toBe("NEEDS_EVIDENCE");
+    expect(step8Empty.state).toBe("NEEDS_DOCUMENTS");
 
     const complete = baseCase();
     linkEvidence(complete, EV_EORI, "importerIdentity.eoriNumber", "EORI_REGISTRATION_RECORD");
@@ -286,7 +289,7 @@ describe("wizard step validation", () => {
     linkEvidence(complete, EV_VOL, "electricityConsumed", "ELECTRICITY_METER_RECORD");
     linkEvidence(complete, EV_VOL, "gridEmissionFactor", "OFFICIAL_GRID_OPERATOR_PUBLICATION");
 
-    expect(validateWizardStep(8, complete).state).toBe("COMPLETE");
+    expect(validateWizardStep(8, complete).state).toBe("IN_PROGRESS");
   });
 
   it("builds dynamic evidence-link options covering every material path", () => {
@@ -535,9 +538,9 @@ describe("wizard final-review UX (never force Step 8 back to 7)", () => {
   it("F. Step 8 preview stays open with missing evidence while the seal gate holds", () => {
     const blocked = blockedCase();
 
-    // The final review is still computable and reports NEEDS_EVIDENCE.
+    // The final review is still computable and reports NEEDS_DOCUMENTS.
     const step8 = validateWizardStep(8, blocked);
-    expect(step8.state).toBe("NEEDS_EVIDENCE");
+    expect(step8.state).toBe("NEEDS_DOCUMENTS");
     expect(step8.valid).toBe(false);
 
     // Next is NOT blocked by evidence alone — only missing data blocks Next.

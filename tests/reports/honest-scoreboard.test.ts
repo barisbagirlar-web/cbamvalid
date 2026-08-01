@@ -34,6 +34,7 @@ function materialRow(
     coverageDenominator: "1",
     blocksOperatorReadiness: true,
     blocksSealing: true,
+    isMaterial: true,
     reasonCodes: [],
     evidencePeriodStart: "2026-01-01",
     evidencePeriodEnd: "2026-12-31",

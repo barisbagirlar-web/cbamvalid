@@ -25,6 +25,8 @@ import {
   type DossierSealedPackage,
 } from "../tests/fixtures/four-dossier-package";
 import { assessReadiness } from "../functions/src/cbam/validation/readiness-score";
+import { runEvidenceSufficiency } from "../functions/src/cbam/validation/evidence-sufficiency";
+import { computeEvidenceAssuranceScore } from "../functions/src/cbam/report/honest-scoreboard";
 
 function topLevel(paths: string[]): string[] {
   return [...new Set(paths.map((path) => {
@@ -88,12 +90,21 @@ async function main(): Promise<void> {
       readiness.operatorStatus === "OPERATOR_PREPARATION_COMPLETE" ? "PASS" : "FAIL";
     results[`preflight decision=${readiness.recommendedDecision}`] =
       readiness.recommendedDecision === "READY_FOR_ACCREDITED_VERIFIER_ENGAGEMENT" ? "PASS" : "FAIL";
-    results[`preflight score=${readiness.score}`] =
-      parseFloat(readiness.score) >= 90 ? "PASS" : "FAIL";
+    results[`operator preparation score=${readiness.score}`] =
+      readiness.score === "100" ? "PASS" : "FAIL";
+    results["operator preparation coverage=100"] =
+      readiness.assessedCoveragePercent === "100" ? "PASS" : "FAIL";
+    const evidenceAssurance = computeEvidenceAssuranceScore(
+      runEvidenceSufficiency(pkg.caseData, FOUR_DOSSIER_ASSESSMENT_TIMESTAMP)
+    );
+    results[`evidence assurance score=${evidenceAssurance.score}`] =
+      evidenceAssurance.score === 100 ? "PASS" : "FAIL";
     results["preflight no critical blockers"] =
       readiness.criticalBlockerCount === 0 ? "PASS" : "FAIL";
     results["preflight no missing material evidence"] =
       readiness.missingMaterialEvidenceCount === 0 ? "PASS" : "FAIL";
+    results["preflight no open findings"] =
+      readiness.openFindingCount === 0 ? "PASS" : "FAIL";
 
     // 3. Component contract — exactly 26 top-level components.
     const zip = await JSZip.loadAsync(pkg.finalized.zip);

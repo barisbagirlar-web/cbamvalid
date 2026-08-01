@@ -50,9 +50,10 @@ export const FOUR_DOSSIER_KEYS: readonly FourDossierKey[] = [
 export const FOUR_DOSSIER_ASSESSMENT_TIMESTAMP = "2027-01-31T00:00:00.000Z";
 export const FOUR_DOSSIER_PERIOD = "2026 ANNUAL";
 export const FOUR_DOSSIER_RULESET = "EU-CBAM-DEFINITIVE-2026";
-export const FOUR_DOSSIER_REVIEWER = "sandbox-internal-reviewer";
-export const FOUR_DOSSIER_REVIEWER_NAME = "Sandbox Internal Reviewer";
-export const FOUR_DOSSIER_REVIEWER_ROLE = "INTERNAL_REVIEWER";
+export const FOUR_DOSSIER_REVIEWER = "sandbox-qa-reviewer";
+export const FOUR_DOSSIER_REVIEWER_NAME = "Sandbox QA Reviewer";
+export const FOUR_DOSSIER_REVIEWER_ROLE = "SANDBOX_QA_REVIEWER";
+export const FOUR_DOSSIER_ENVIRONMENT = "SANDBOX";
 
 interface DatumOptions {
   evidenceId?: string;
@@ -127,6 +128,11 @@ function evidenceRecord(caseId: string, ownerId: string, spec: EvidenceSpec): Ev
     qualityAssessmentBasis: `SERVER_ASSESSED_EXPLICIT_GRADE_${spec.qualityGrade}`,
     qualityAssessedBy: FOUR_DOSSIER_REVIEWER,
     qualityAssessedAt: FOUR_DOSSIER_ASSESSMENT_TIMESTAMP,
+    reviewerId: FOUR_DOSSIER_REVIEWER,
+    reviewerRole: FOUR_DOSSIER_REVIEWER_ROLE,
+    reviewedAt: FOUR_DOSSIER_ASSESSMENT_TIMESTAMP,
+    reviewRulesetVersion: FOUR_DOSSIER_RULESET,
+    reviewEnvironment: FOUR_DOSSIER_ENVIRONMENT,
     officialReference: spec.officialReference,
     ...(spec.accreditationReference ? { accreditationReference: spec.accreditationReference } : {}),
   };
@@ -152,6 +158,7 @@ function acceptedDecision(
     approverName: FOUR_DOSSIER_REVIEWER_NAME,
     approverRole: FOUR_DOSSIER_REVIEWER_ROLE,
     approvedAt: FOUR_DOSSIER_ASSESSMENT_TIMESTAMP,
+    decisionEnvironment: FOUR_DOSSIER_ENVIRONMENT,
   };
 }
 

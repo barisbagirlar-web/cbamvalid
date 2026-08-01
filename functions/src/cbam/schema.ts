@@ -95,6 +95,13 @@ export const EvidenceRecordSchema = z.object({
   qualityAssessedAt: z.string().datetime().optional(),
   officialReference: z.string().trim().max(240).optional(),
   accreditationReference: z.string().trim().max(240).optional(),
+  // Sandbox QA reviewer provenance (set only in the isolated QA sandbox;
+  // production evidence records never carry these fields).
+  reviewerId: z.string().trim().max(200).optional(),
+  reviewerRole: z.string().trim().max(200).optional(),
+  reviewedAt: z.string().datetime().optional(),
+  reviewRulesetVersion: z.string().trim().max(120).optional(),
+  reviewEnvironment: z.enum(["SANDBOX", "PRODUCTION"]).optional(),
 });
 
 export type EvidenceRecord = z.infer<typeof EvidenceRecordSchema>;
@@ -190,6 +197,7 @@ export const MethodologyDecisionSchema = z
     approverName: z.string().trim().min(1).optional(),
     approverRole: z.string().trim().min(1).optional(),
     approvedAt: z.string().datetime().optional(),
+    decisionEnvironment: z.enum(["SANDBOX", "PRODUCTION"]).optional(),
   })
   .superRefine((decision, context) => {
     // ACCEPTED is a server-controlled review outcome only. A record that

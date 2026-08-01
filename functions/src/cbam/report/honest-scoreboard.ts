@@ -87,7 +87,10 @@ export function computeEvidenceAssuranceScore(sufficiency: readonly EvidenceSuff
   let total = 0;
 
   for (const row of sufficiency) {
-    if (!row.blocksSealing) continue;
+    // Assess every material requirement row, whether or not it currently
+    // blocks sealing: a fully supported dossier must reach 100/100, not 0.
+    const isMaterial = row.isMaterial ?? row.blocksSealing;
+    if (!isMaterial) continue;
     assessedMaterialRows += 1;
 
     if (!isEvidenceSupportedState(row.state)) {
