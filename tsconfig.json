@@ -30,5 +30,11 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "functions"]
+  "exclude": [
+    "node_modules",
+    "functions",
+    "scripts/s4-test-admin-concurrency.ts",
+    "scripts/s8-audit-detail.ts",
+    "scripts/s8-commerce-ledger-audit.ts"
+  ]
 }
