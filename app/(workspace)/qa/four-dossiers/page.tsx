@@ -112,7 +112,7 @@ export default async function QaFourDossiersPage() {
             Ruleset {FOUR_DOSSIER_RULESET} · reviewer {FOUR_DOSSIER_REVIEWER_ROLE} ({FOUR_DOSSIER_REVIEWER_NAME} / {FOUR_DOSSIER_REVIEWER})
           </p>
         </div>
-        <span className="inline-flex items-center rounded-md border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
+        <span className="inline-flex items-center rounded-md border border-status-warning/40 bg-status-warning/10 px-3 py-1 text-xs font-bold text-status-warning">
           {SANDBOX_BADGE_LABEL}
         </span>
       </div>

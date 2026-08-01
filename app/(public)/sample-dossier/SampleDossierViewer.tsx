@@ -98,7 +98,7 @@ export default function SampleDossierViewer() {
         <img
           src={pageSrc(pageNumber)}
           alt={`Sample dossier page ${pageNumber}`}
-          style={{ width: "100%", height: "auto", display: "block", background: "#fff" }}
+          style={{ width: "100%", height: "auto", display: "block", background: "#ffffff" }}
         />
       </div>
 

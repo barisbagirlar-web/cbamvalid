@@ -58,9 +58,9 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     path: "/pricing",
     pageType: "pricing",
     indexability: "index",
-    title: "Pricing | USD 149 Exporter Verification Preparation Pack",
+    title: "Pricing | USD 449 Exporter Verification Preparation Pack",
     description:
-      "USD 149 one-time for one installation, one reporting year, and five sealed releases. Drafts are free. No subscription.",
+      "USD 449 one-time for one installation and one reporting year. Drafts are free. Pay once when you lock a file — same-file corrections and re-locks included. No subscription.",
     h1: "Prepare your CBAM case before you pay",
     canonicalPath: "/pricing",
     primaryIntent: "CBAMValid pricing",
