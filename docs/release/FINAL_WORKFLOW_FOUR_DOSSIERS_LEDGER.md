@@ -132,11 +132,11 @@ Legend:
 **Proof (unit-level):** `tests/reports/four-complete-dossiers.test.ts` + related report suites build and verify package artifacts; 76 dossier tests PASS.
 
 ### QA-05 — Live production case mistaken for a test fixture
-**Status: FIXED (guard code) / hosted isolation pending (QA-01)**
+**Status: FIXED (guard code + proxy hard-404) — hosted isolation pending (QA-01)**
 **Evidence:** No environment isolation guard proving synthetic dossiers live only in sandbox.
-**Remediation:** `APP_ENV=sandbox`, `PADDLE_DISABLED=true`, `SYNTHETIC_DOSSIERS_ONLY=true`; sandbox badge "QA SANDBOX — SYNTHETIC DATA — NOT FOR SUBMISSION"; production `/qa/four-dossiers` returns 404.
-**Verification:** `guard-release-mandate` + QA route isolation test.
-**Proof:** `lib/cbam/sandbox-env.ts` (`isSandboxApp`, `SANDBOX_BADGE_LABEL = "QA SANDBOX — SYNTHETIC DATA — NOT FOR SUBMISSION"`); `/qa/four-dossiers` page calls `notFound()` when `isSandboxApp()` is false and loads fixture data only after the gate (dynamic import). `.env.sandbox` carries the three isolation vars and is gitignored. Seed scripts default to the emulator target, never production.
+**Remediation:** `APP_ENV=sandbox`, `PADDLE_DISABLED=true`, `SYNTHETIC_DOSSIERS_ONLY=true`; sandbox badge "QA SANDBOX — SYNTHETIC DATA — NOT FOR SUBMISSION"; production `/qa/four-dossiers` returns HTTP 404.
+**Verification:** `guard-release-mandate` + QA route isolation test + E2E (`/qa/four-dossiers` → 404 outside sandbox).
+**Proof:** `lib/cbam/sandbox-env.ts` (`isSandboxApp`, `SANDBOX_BADGE_LABEL = "QA SANDBOX — SYNTHETIC DATA — NOT FOR SUBMISSION"`); `/qa/four-dossiers` page calls `notFound()` when `isSandboxApp()` is false and loads fixture data only after the gate (dynamic import). Next 16 `notFound()` returns HTTP 200 for streamed responses, so `proxy.ts` additionally returns a hard edge `404` for `/qa/*` when `NEXT_PUBLIC_APP_ENV !== "sandbox"` (defense-in-depth; verified locally `LOCAL_QA_HTTP=404` and live). `.env.sandbox` carries the three isolation vars and is gitignored. Seed scripts default to the emulator target, never production.
 
 ### QA-06 — STEEL_IN full test score not proven at 100
 **Status: FIXED (unit/engine level) — hosted proof pending (QA-01)**
@@ -161,3 +161,4 @@ Legend:
 | 2026-08-01 | `/qa/four-dossiers` sandbox-only QA page (404 in production, fixtures loaded only after sandbox gate) | QA-02, QA-05 |
 | 2026-08-01 | Evidence/MethodologyDecision schemas + four-dossier fixture: `SANDBOX_QA_REVIEWER` provenance (`reviewerId`, `reviewerRole`, `reviewedAt`, `reviewRulesetVersion`, `reviewEnvironment=SANDBOX`, `decisionEnvironment=SANDBOX`) | QA-02, K |
 | 2026-08-01 | Full gate run: `npm run ci:gate` exit 0 (90 PASS markers: guards, dossier-all, typecheck, build:functions, lint, seo:validate, auth/integration/commerce/cbam-engine/reports/preflight tests, production build); `npm run test:dossier` 49 PASS; `npm run verify:four-complete-dossiers` ALL_DOSSIERS_PASS (53 PASS, all four operator preparation=100 / evidence assurance=100 / 0 blockers / 0 missing material evidence / 26-component contract / offline verifier PASS); `npm run test:e2e:critical` 28 passed (14 CI-skip/opt-in); `npm run sandbox:doctor` 10 checks PASS incl. production isolation, project `cbam-desk-sandbox` NOT_PROVISIONED (EXTERNAL_BLOCKER, GCP quota); visual baselines refreshed for intentional header copy change | UX-01..12, QA-03, QA-04, QA-06, P |
+| 2026-08-01 | PR #88 merged (`f2c2d29`); production hosting deployed + Cloud Run cutover 100% `ssrcbamdesk-00615-tej`; all 28 production functions deployed/synchronized; live `/qa/four-dossiers` observed returning HTTP 200 soft-404 → fixed with edge hard-404 in `proxy.ts` (Next 16 `notFound()` returns 200 for streamed responses) + E2E + integration guard tests | QA-05, S, T |

@@ -139,6 +139,13 @@ test.describe("Wizard Step 8 UX — CI-safe guards (no auth required)", () => {
     await page.goto("/sample-dossier");
     expect(errors).toEqual([]);
   });
+
+  test("sandbox-only /qa/four-dossiers returns hard 404 outside sandbox", async ({ page }) => {
+    const response = await page.goto("/qa/four-dossiers");
+    expect(response?.status()).toBe(404);
+    const body = await page.textContent("body");
+    expect(body).not.toContain("FOUR_DOSSIERS_QA");
+  });
 });
 
 test.describe("Wizard Step 8 UX — authenticated live regression (opt-in)", () => {
