@@ -1,5 +1,4 @@
 import { test, expect, type Page } from "@playwright/test";
-import fs from "node:fs";
 
 /**
  * CBAMValid Critical Flows — Regression Guard
@@ -19,7 +18,6 @@ const WIZARD_BASE_URL = process.env.E2E_WIZARD_BASE_URL || "";
 const WIZARD_EMAIL = process.env.E2E_WIZARD_EMAIL || "";
 const WIZARD_PASSWORD = process.env.E2E_WIZARD_PASSWORD || "";
 const WIZARD_CASE_ID = process.env.E2E_WIZARD_CASE_ID || "";
-const WIZARD_STORAGE_STATE = process.env.E2E_WIZARD_STORAGE_STATE || "";
 const wizardEnabled = Boolean(WIZARD_BASE_URL && WIZARD_EMAIL && WIZARD_PASSWORD && WIZARD_CASE_ID);
 
 test.describe("Authentication", () => {
@@ -149,9 +147,6 @@ test.describe("Wizard Step 8 UX — authenticated live regression (opt-in)", () 
     "Set E2E_WIZARD_BASE_URL, E2E_WIZARD_EMAIL, E2E_WIZARD_PASSWORD and E2E_WIZARD_CASE_ID to run the authenticated wizard UX regression."
   );
 
-  const storageStateOptions = fs.existsSync(WIZARD_STORAGE_STATE) ? { storageState: WIZARD_STORAGE_STATE } : {};
-  test.use(storageStateOptions);
-
   const wizardUrl = (query = "step=8") => `${WIZARD_BASE_URL}/cases/${WIZARD_CASE_ID}?${query}`;
 
   const stepText = (page: Page) =>
@@ -160,14 +155,44 @@ test.describe("Wizard Step 8 UX — authenticated live regression (opt-in)", () 
   const footerStepText = (page: Page) =>
     page.locator("div.fixed.bottom-0").getByText(/Step \d of 8 ·/);
 
+  /**
+   * Firebase Auth stores browserLocalPersistence state in IndexedDB, which
+   * Playwright storageState cannot restore (cookies + localStorage only).
+   * The shared __session cookie is not enough for the client-side Firebase
+   * Auth state, so each test logs in directly. The identitytoolkit call is
+   * intermittently flaky (auth/network-request-failed), so retry the login.
+   */
+  async function loginWithRetry(page: Page, maxAttempts = 5): Promise<void> {
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      await page.goto(`${WIZARD_BASE_URL}/login`);
+      await page.waitForLoadState("domcontentloaded");
+      await page.waitForTimeout(1500);
+      await page.fill('input[type="email"]', WIZARD_EMAIL);
+      await page.fill('input[type="password"]', WIZARD_PASSWORD);
+      await page.click('button[type="submit"]');
+
+      let landed = false;
+      for (let i = 0; i < 45; i += 1) {
+        await page.waitForTimeout(1000);
+        if (/^https:\/\/[^/]+\/(cbam|dashboard|admin|cases)(\/|$)/.test(page.url())) {
+          landed = true;
+          break;
+        }
+      }
+      if (landed) return;
+      console.warn(`[WIZARD LOGIN] attempt ${attempt}/${maxAttempts} did not land on a workspace route (last=${page.url()})`);
+    }
+    throw new Error(`AUTH_FAILED after ${maxAttempts} login attempts against ${WIZARD_BASE_URL}`);
+  }
+
   test.beforeEach(async ({ page }) => {
     page.on("pageerror", (err) => console.error(`[WIZARD PAGE ERROR] ${err.message}`));
     page.on("console", (msg) => {
       if (msg.type() === "error") console.error(`[WIZARD BROWSER ERROR] ${msg.text()}`);
     });
-    // The authenticated session comes from the shared storageState (see
-    // scripts/e2e-wizard-auth.ts) so the flaky identitytoolkit login is not
-    // repeated per test. Go straight to the case page.
+    // Firebase Auth client state lives in IndexedDB, so a real login per test
+    // is required even when a shared __session cookie exists.
+    await loginWithRetry(page);
     await page.goto(wizardUrl());
     await expect(page).not.toHaveURL(/\/login/, { timeout: 15000 });
   });
