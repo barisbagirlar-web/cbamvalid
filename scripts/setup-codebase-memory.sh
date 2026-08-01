@@ -30,5 +30,5 @@ codebase-memory-mcp cli list_projects
 
 echo
 echo "Indexed project id: ${PROJECT_NAME}"
-echo "Rule file: .cursor/rules/codebase-memory.mdc (alwaysApply=true)"
+echo "Rule file: .cursor/rules/ceos.mdc (CEOS working principles; codebase-memory MCP is advisory only)"
 echo "Restart Cursor if MCP tools are not visible."

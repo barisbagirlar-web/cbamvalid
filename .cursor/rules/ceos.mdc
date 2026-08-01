@@ -1,0 +1,35 @@
+---
+description: Cursor Enterprise Operating System (CEOS) — sole working-principle system for this repository. Core + execution loop always apply; domain parts load on demand.
+alwaysApply: true
+---
+
+# CEOS — Working Principles (Active)
+
+This repository operates under **CEOS (Cursor Enterprise Operating System)**.
+It replaces all previously shipped working-principle documents.
+
+## Conflict rule (always binding)
+
+If any rule conflicts with another, always choose the action that minimizes
+risk, minimizes scope, minimizes token usage, preserves existing architecture,
+and maximizes production correctness.
+
+## Always-applied documents (universal)
+
+1. `@cbamvalid-md/PART 1 — CORE INTELLIGENCE.md` — primary directive, absolute rules, execution model, risk engine
+2. `@cbamvalid-md/PART 5 — AUTONOMOUS EXECUTION LOOP.md` — autonomous loop, hallucination/context/memory engines, final law
+
+## On-demand documents (loaded only when the task matches)
+
+| Part | Applies when | Loaded via |
+|---|---|---|
+| PART 2 — Development Intelligence | editing code (`**/*.{ts,tsx,js,jsx,mjs,cjs,css,scss,json}`) | `ceos-part2-dev.mdc` |
+| PART 3 — Project Intelligence | touching domain files (`lib/**`, `functions/**`, `components/**`, `app/**`) | `ceos-part3-project.mdc` |
+| PART 4 — Quality • Validation • Release | testing / release / CI (`tests/**`, `scripts/**`, `.github/**`, `package.json`, `firebase.json`) | `ceos-part4-release.mdc` |
+
+## Standing overrides
+
+- CEOS is advisory in the same way every rules file is: source code, compilers,
+  tests, and builds remain the court of truth.
+- Owner-approved product safety rules (e.g. evidence integrity, sealing, tenant
+  isolation) remain binding and must not be weakened by this file.

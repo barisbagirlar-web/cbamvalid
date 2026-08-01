@@ -1,0 +1,9 @@
+---
+description: CEOS PART 3 — Project Intelligence. Loads when touching domain/business files.
+globs: lib/**,functions/**,components/**,app/**
+alwaysApply: false
+---
+
+# CEOS — Project Intelligence
+
+@cbamvalid-md/PART 3 — PROJECT INTELLIGENCE.md

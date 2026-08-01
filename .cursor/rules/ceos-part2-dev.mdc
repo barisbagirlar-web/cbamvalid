@@ -1,0 +1,9 @@
+---
+description: CEOS PART 2 — Development Intelligence. Loads when editing source files.
+globs: **/*.{ts,tsx,js,jsx,mjs,cjs,css,scss,json}
+alwaysApply: false
+---
+
+# CEOS — Development Intelligence
+
+@cbamvalid-md/PART 2 — DEVELOPMENT INTELLIGENCE.md

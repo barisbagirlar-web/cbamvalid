@@ -22,7 +22,7 @@ CBAMValid is a Next.js 16, React 19, TypeScript and Firebase application for pre
 
 ## Working method
 
-1. Read `AGENTS.md` and the nearest applicable instruction file before editing.
+1. Read `.cursor/rules/ceos.mdc` and the applicable `cbamvalid-md/` instruction file before editing.
 2. Trace callers, imports, API boundaries, storage paths, authorization, error propagation and tests before changing a module.
 3. Fix root causes and add a regression guard for each production defect.
 4. Do not weaken tests to match an implementation. Expected calculation results must be independent of the production function under test.
