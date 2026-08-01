@@ -20,6 +20,17 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Sandbox-only surfaces: return a hard 404 outside the sandbox project so
+  // synthetic QA routes can never render (or be soft-404 cached) in production.
+  // notFound() alone returns HTTP 200 for streamed responses, so the edge
+  // must short-circuit before rendering.
+  if (
+    process.env.NEXT_PUBLIC_APP_ENV !== "sandbox" &&
+    (pathname === "/qa/four-dossiers" || pathname.startsWith("/qa/"))
+  ) {
+    return new NextResponse(null, { status: 404 });
+  }
+
   const session = request.cookies.get('__session');
   const isAuthenticated = !!session;
 

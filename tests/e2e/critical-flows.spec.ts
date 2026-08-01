@@ -20,6 +20,14 @@ const WIZARD_PASSWORD = process.env.E2E_WIZARD_PASSWORD || "";
 const WIZARD_CASE_ID = process.env.E2E_WIZARD_CASE_ID || "";
 const wizardEnabled = Boolean(WIZARD_BASE_URL && WIZARD_EMAIL && WIZARD_PASSWORD && WIZARD_CASE_ID);
 
+// The live regression suite hits production (BASE_URL=cbamvalid.com). The
+// sandbox-route 404 test verifies the proxy hard-404, which only takes effect
+// once deployed, so it runs against local/dev targets only; the integration
+// source-contract test pins the guard in the meantime.
+const isLiveProductionTarget = /cbamvalid\.com/.test(
+  process.env.PLAYWRIGHT_TEST_BASE_URL || process.env.BASE_URL || "",
+);
+
 test.describe("Authentication", () => {
   test("login page renders", async ({ page }) => {
     await page.goto("/login");
@@ -138,6 +146,14 @@ test.describe("Wizard Step 8 UX — CI-safe guards (no auth required)", () => {
     await page.goto("/pricing");
     await page.goto("/sample-dossier");
     expect(errors).toEqual([]);
+  });
+
+  test("sandbox-only /qa/four-dossiers returns hard 404 outside sandbox", async ({ page }) => {
+    test.skip(isLiveProductionTarget, "Verifies the proxy 404 that is live only after deploy; covered by integration contract test pre-deploy.");
+    const response = await page.goto("/qa/four-dossiers");
+    expect(response?.status()).toBe(404);
+    const body = await page.textContent("body");
+    expect(body).not.toContain("FOUR_DOSSIERS_QA");
   });
 });
 
