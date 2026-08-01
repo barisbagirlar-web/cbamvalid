@@ -75,10 +75,10 @@ export default function Page() {
               </p>
               <div className="hero-ctas">
                 <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">
-                  Start a Dossier <span className="arr">→</span>
+                  Start Free Draft <span className="arr">→</span>
                 </a>
                 <a className="btn btn-ghost btn-lg" href="/sample-dossier">
-                  See a Sealed Sample
+                  View Sample Dossier
                 </a>
               </div>
               <ul className="hero-micro">
@@ -170,6 +170,69 @@ export default function Page() {
         </div>
       </section>
 
+      <section className="section" style={{ background: "var(--paper-2)" }}>
+        <div className="wrap">
+          <div className="section-head center reveal">
+            <span className="eyebrow">How the software works</span>
+            <h2>Self-service by design</h2>
+            <p>
+              No CBAMValid employee prepares, reviews or approves your dossier. You enter the data,
+              the software calculates and checks, and the platform generates your digital outputs.
+            </p>
+          </div>
+          <div className="timeline">
+            <div className="tl-step reveal">
+              <div className="tl-node">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+              </div>
+              <p className="step-no">Step 1</p>
+              <h3>Customer enters data</h3>
+              <p>You enter installation, production, goods and CN-code data in the working file.</p>
+            </div>
+            <div className="tl-step reveal">
+              <div className="tl-node">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M9 3v2m6-2v2M5 7h14v13H5V7Z"/><path d="M9 11h6m-6 4h6"/></svg>
+              </div>
+              <p className="step-no">Step 2</p>
+              <h3>Software calculates</h3>
+              <p>The engine runs deterministic embedded-emissions calculations against the pinned ruleset.</p>
+            </div>
+            <div className="tl-step reveal">
+              <div className="tl-node">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 9v4m0 4h.01"/><circle cx="12" cy="12" r="9"/></svg>
+              </div>
+              <p className="step-no">Step 3</p>
+              <h3>Software identifies blockers</h3>
+              <p>The platform flags missing inputs, unit and boundary issues and quality-control blockers.</p>
+            </div>
+            <div className="tl-step reveal">
+              <div className="tl-node">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg>
+              </div>
+              <p className="step-no">Step 4</p>
+              <h3>Customer links evidence</h3>
+              <p>You link your own invoices, meter logs and supplier declarations to the calculation nodes they support.</p>
+            </div>
+            <div className="tl-step reveal">
+              <div className="tl-node">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M7 3h7l5 5v13H7V3Z"/><path d="M14 3v5h5M10 13h6m-6 4h6"/></svg>
+              </div>
+              <p className="step-no">Step 5</p>
+              <h3>Software generates outputs</h3>
+              <p>The platform generates automated digital PDF, JSON and XLSX deliverables with an integrity manifest.</p>
+            </div>
+            <div className="tl-step reveal">
+              <div className="tl-node">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>
+              </div>
+              <p className="step-no">Step 6</p>
+              <h3>Customer locks and downloads</h3>
+              <p>You pay once to lock the working file and download the sealed package — same-file re-locks included.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="section">
         <div className="wrap">
           <div className="product-workspace">
@@ -245,7 +308,7 @@ export default function Page() {
             no subscription. A new file needs a new payment.
           </p>
           <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">
-            Start a Dossier <span className="arr">→</span>
+            Start Free Draft <span className="arr">→</span>
           </a>
         </div>
       </section>

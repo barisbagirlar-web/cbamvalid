@@ -36,7 +36,7 @@ export const CANONICAL_PRICING = {
     "Working files already unlocked at a prior checkout amount remain paid for that file. New lock checkouts use the current Single Pack price.",
 } as const;
 
-/** Public four-tier architecture (H4: only Enterprise is contact-sales). */
+/** Public self-service tier architecture (Draft + Single Pack). */
 export const PRICING_TIERS = [
   {
     id: "draft",
@@ -46,7 +46,7 @@ export const PRICING_TIERS = [
     highlight: false,
     contactSales: false,
     ctaHref: "/register?next=/cases/new",
-    ctaLabel: "Start free drafts",
+    ctaLabel: "Start Free Draft",
     scope: "Unlimited drafts, QC engine, and gap analysis — no card until lock.",
     features: [
       "Create and edit working files",
@@ -75,45 +75,6 @@ export const PRICING_TIERS = [
       "Sealed PDF, JSON, and O3CI field-mapped export",
       "Immutable sealed versions + free re-download",
       "Buyer share link (/d/token)",
-    ],
-  },
-  {
-    id: "exporter-annual",
-    name: "Exporter Annual",
-    priceLabel: "$2,400",
-    cadence: "per year",
-    highlight: false,
-    contactSales: false,
-    ctaHref: "mailto:info@cbamvalid.com?subject=Exporter%20Annual%20tier",
-    ctaLabel: "Request Annual onboarding",
-    scope: "Up to 3 installations · unlimited working files · ruleset updates · buyer portal · priority support.",
-    features: [
-      "Up to 3 installations",
-      "Unlimited working files in annual term",
-      "Ruleset update notices",
-      "Buyer portal coordination",
-      "Priority support (info@cbamvalid.com)",
-    ],
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    priceLabel: "from $12,000",
-    cadence: "per year · contact sales",
-    highlight: false,
-    contactSales: true,
-    ctaHref: "/enterprise",
-    ctaLabel: "Open Enterprise Exclusive",
-    scope: "Unlimited installations · SSO · SLA · Holding · DPA · API · verifier coordination.",
-    features: [
-      "Unlimited installations (contracted)",
-      "SSO / IdP federation (Entra · Google · Okta)",
-      "Published SLA draft + signed MSA path",
-      "Holding / multi-entity entitlement",
-      "Signed DPA path",
-      "API and onboarding plan",
-      "Verifier coordination workflow",
-      "Channel partner coordination available",
     ],
   },
 ] as const;

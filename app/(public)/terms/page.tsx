@@ -37,10 +37,22 @@ export default function TermsPage() {
         <div>
           <h2 className="text-xl font-bold mb-2">2. Product Scope &amp; Account Requirements</h2>
           <p className="text-sm text-muted">
-            CBAMValid provides software tools for compiling Carbon Border Adjustment Mechanism (CBAM)
-            exporter evidence and sealing an operator-prepared verifier-preparation package. You must
-            provide accurate information when creating an account and generating packages. Our
-            services are intended for business use.
+            CBAMValid provides self-service software functionality and automatically generated digital
+            outputs. The software supports compiling Carbon Border Adjustment Mechanism (CBAM) exporter
+            evidence and sealing an operator-prepared verifier-preparation package. You must provide
+            accurate information when creating an account and generating packages. Our services are
+            intended for business use.
+          </p>
+          <p className="text-sm text-muted mt-3">
+            The purchase price applies exclusively to software access and automated digital delivery. It
+            does not purchase or include human consulting, advisory services, managed dossier
+            preparation, manual evidence assessment, methodology recommendations, legal advice, tax
+            advice, customs advice, accredited verification, custom implementation, custom development
+            or access to experts.
+          </p>
+          <p className="text-sm text-muted mt-3">
+            Customers remain responsible for their data, evidence, methodology decisions, regulatory
+            obligations and engagement of any independent accredited verifier.
           </p>
         </div>
 
@@ -67,7 +79,21 @@ export default function TermsPage() {
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-2">4. Delivery</h2>
+          <h2 className="text-xl font-bold mb-2">4. No Human Services Included</h2>
+          <p className="text-sm text-muted">
+            CBAMValid personnel do not review, approve, correct, prepare, certify or validate customer
+            emissions data as part of the purchased product.
+          </p>
+          <p className="text-sm text-muted mt-3">
+            Customer support is limited to account, billing, security, privacy and technical operation
+            of the software. Support does not review customer emissions data, approve evidence, prepare
+            dossiers, recommend methodologies, interpret regulations for a customer or issue
+            verification opinions.
+          </p>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-bold mb-2">5. Delivery</h2>
           <p className="text-sm text-muted">
             Digital delivery of a sealed package is completed after a successful server-side seal for a
             paid Working File. Immutable prior sealed versions remain available for re-download without
@@ -76,7 +102,7 @@ export default function TermsPage() {
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-2">5. Disclaimers</h2>
+          <h2 className="text-xl font-bold mb-2">6. Disclaimers</h2>
           <p className="text-sm text-muted">
             <strong>No Guarantee of Authority Acceptance:</strong> CBAMValid relies on user input and
             regulatory-source versioning. We do not guarantee that your package will be accepted by the
@@ -91,7 +117,7 @@ export default function TermsPage() {
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-2">6. Payments and Taxes</h2>
+          <h2 className="text-xl font-bold mb-2">7. Payments and Taxes</h2>
           <p className="text-sm text-muted">
             Payments are processed securely via our Merchant of Record, Paddle. Prices displayed are
             subject to applicable taxes, depending on your jurisdiction. Refunds are governed by the{" "}
@@ -103,7 +129,7 @@ export default function TermsPage() {
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-2">7. Limitation of Liability &amp; Governing Law</h2>
+          <h2 className="text-xl font-bold mb-2">8. Limitation of Liability &amp; Governing Law</h2>
           <p className="text-sm text-muted">
             To the maximum extent permitted by applicable law, {legalConfig.legalEntityName} shall not
             be liable for direct, indirect, incidental, or consequential damages arising from the use of

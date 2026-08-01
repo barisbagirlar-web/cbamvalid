@@ -16,11 +16,12 @@ export default function AboutPage() {
           <div style={{ maxWidth: "720px" }}>
             <span className="eyebrow">About</span>
             <h1>
-              Independent CBAM preparation — <span className="serif-i">with clear limits</span>
+              About CBAMValid — <span className="serif-i">Self-Service CBAM Software</span>
             </h1>
             <p className="lede">
-              When buyers ask who stands behind your emissions package, they need independence language
-              you can defend — not a fake official seal.
+              CBAMValid is a self-service software platform operated by SectorCalc Corporation.
+              Customers enter and control their own data. The software runs deterministic calculations,
+              automated quality checks, evidence-linking controls and digital export generation.
             </p>
             <AuthorityLead path="/about" />
           </div>
@@ -33,18 +34,20 @@ export default function AboutPage() {
         <div className="wrap" style={{ maxWidth: "760px" }}>
           <div className="section-head reveal">
             <span className="eyebrow">Mission</span>
-            <h2>Help exporters hand over evidence they can explain</h2>
+            <h2>Self-service software for customer-controlled CBAM evidence</h2>
             <p>
-              CBAMValid assists exporters and importers in compiling embedded-emissions data into an
-              operator-prepared dossier aligned to published EU CBAM methodological expectations —
-              without claiming accredited verification or Registry acceptance.
+              CBAMValid is a software platform for entering CBAM production data, running deterministic
+              calculations and automated quality controls, linking customer-controlled evidence and
+              generating downloadable digital files. No CBAMValid employee prepares, reviews or approves
+              customer work as part of the product.
             </p>
           </div>
           <div className="authority-empathy reveal" role="note">
-            <p className="authority-empathy-label">Independence notice</p>
+            <p className="authority-empathy-label">Boundary</p>
             <p>
-              CBAMValid is an independent software service and is not an official European Commission or
-              CBAM Registry service.
+              CBAMValid does not sell consulting, advisory services, manual preparation, evidence
+              approval, managed compliance, legal advice, customs advice, tax advice, expert access or
+              accredited verification.
             </p>
           </div>
           <div className="academic-card reveal" style={{ marginTop: "28px" }}>
@@ -52,11 +55,12 @@ export default function AboutPage() {
               IIT
             </div>
             <div>
-              <h3>Academic mathematical review</h3>
+              <h3>Prior academic assessment</h3>
               <p>
-                Calculation engines and allocation logic are reviewed against EU CBAM mathematical rules.
-                That review supports mathematical integrity — it is not an accredited CBAM verification
-                opinion.
+                A prior independent academic assessment evaluated selected software calculation logic
+                during product development. It is not included in the purchase, does not review customer
+                files, and does not provide customers with consulting, advice, verification or expert
+                access. It is not an accredited CBAM verification opinion.
               </p>
               <div className="who">
                 <b>Prof. Dr. Neela Nataraj</b>
@@ -66,7 +70,7 @@ export default function AboutPage() {
           </div>
           <p style={{ marginTop: "28px" }}>
             <Link className="btn btn-ghost" href="/contact">
-              Contact support <span className="arr">→</span>
+              Contact software support <span className="arr">→</span>
             </Link>
           </p>
         </div>

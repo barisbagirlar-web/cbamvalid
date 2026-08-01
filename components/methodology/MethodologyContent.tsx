@@ -126,9 +126,12 @@ export function MethodologyContent({ showTitle = true }: MethodologyContentProps
               IIT
             </div>
             <div className="space-y-3">
-              <h3 className="text-lg font-bold font-serif text-foreground">Academic Oversight & Expert Review</h3>
+              <h3 className="text-lg font-bold font-serif text-foreground">Prior academic assessment</h3>
               <p className="text-sm text-muted leading-relaxed">
-                To guarantee mathematical rigour and absolute compliance with EU CBAM allocation formulas, our computational engines undergo continuous expert peer-review.
+                A prior independent academic assessment evaluated selected software calculation logic
+                during product development. It is not included in the purchase, does not review customer
+                files, and does not provide customers with consulting, advice, verification or expert
+                access. It is not an accredited CBAM verification opinion.
               </p>
               <div className="pt-2 border-t border-border/50">
                 <p className="font-semibold text-foreground text-sm">Prof. Dr. Neela Nataraj</p>

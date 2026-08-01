@@ -15,14 +15,14 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 
 - [CBAM Exporter Final Evidence Report](https://cbamvalid.com): CBAM verification preparation software
 - [Exporter Verification Preparation Pack](https://cbamvalid.com/product): CBAM verification preparation product
-- [Prepare your CBAM case before you pay](https://cbamvalid.com/pricing): CBAMValid pricing
+- [Self-Service Software](https://cbamvalid.com/pricing): CBAMValid self-service pricing
 - [How CBAMValid Works](https://cbamvalid.com/how-it-works): CBAMValid workflow
 - [Sample Verification Preparation Dossier](https://cbamvalid.com/sample-dossier): CBAM sample dossier
 - [Understand CBAM Calculation Methodology](https://cbamvalid.com/methodology): CBAM calculation methodology
 - [Verify CBAM CN-Code Scope](https://cbamvalid.com/cn-code): CBAM CN code scope
 - [Verify a Dossier](https://cbamvalid.com/verify): CBAMValid dossier verification
-- [About CBAMValid](https://cbamvalid.com/about): About CBAMValid
-- [Contact CBAMValid](https://cbamvalid.com/contact): Contact CBAMValid
+- [About CBAMValid — Self-Service CBAM Software](https://cbamvalid.com/about): About CBAMValid self-service software
+- [Software Support](https://cbamvalid.com/contact): Contact CBAMValid software support
 - [CBAM 2026 Definitive Period](https://cbamvalid.com/cbam-2026-definitive-period): CBAM definitive period 2026
 - [Calculate CBAM Embedded Emissions](https://cbamvalid.com/cbam-embedded-emissions-calculation): how to calculate embedded emissions
 - [Actual Values vs Default Values](https://cbamvalid.com/cbam-actual-vs-default-values): CBAM actual vs default values
@@ -32,11 +32,11 @@ CBAMValid is an independent software service for exporter-to-importer evidence p
 - [Exporter Evidence Requirements](https://cbamvalid.com/cbam-exporter-evidence-requirements): CBAM exporter evidence requirements
 - [CBAM Guide for Non-EU Producers](https://cbamvalid.com/cbam-non-eu-producer-guide): CBAM non-EU producer guide
 - [CBAM CN Code Scope](https://cbamvalid.com/cbam-cn-code-scope): CBAM CN code list / scope
-- [Book a demo — self-serve is not the only door](https://cbamvalid.com/demo): CBAMValid demo booking
-- [Built for how verifiers actually work](https://cbamvalid.com/verifier-review): CBAMValid verifier structure review
+- [See CBAMValid software in action](https://cbamvalid.com/demo): CBAMValid self-service product demo
 - [Published rulesets — named, dated, pinned](https://cbamvalid.com/rulesets): CBAMValid published ruleset registry
 - [One link for the buyer — integrity, not assurance](https://cbamvalid.com/buyer-link): CBAMValid buyer share link
 - [Field scenarios — anonymized on purpose](https://cbamvalid.com/case-studies): CBAMValid illustrative sector scenarios
+- [Door = CBAM. No public half-products.](https://cbamvalid.com/platform): CBAMValid platform architecture
 
 ## Key regulatory facts
 

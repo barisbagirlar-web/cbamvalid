@@ -11,6 +11,7 @@ const PRIMARY_NAV = [
   { href: "/how-it-works", label: "How It Works" },
   { href: "/sample-dossier", label: "Sample" },
   { href: "/pricing", label: "Pricing" },
+  { href: "/demo", label: "Product Demo" },
   { href: "/verify", label: "Verify" },
 ] as const;
 
@@ -64,9 +65,6 @@ export function PublicHeader() {
           </nav>
 
           <div className="header-actions">
-            <Link href="/demo" className="btn btn-ghost header-demo">
-              Book a Demo
-            </Link>
             <Link href="/login" className="signin">
               Sign In
             </Link>

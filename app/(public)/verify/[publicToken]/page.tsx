@@ -134,7 +134,7 @@ export default function TokenVerificationPage() {
               Prepare your own pack
             </Link>
             <Link className="btn btn-ghost" href="/demo">
-              Book a demo
+              Product Demo
             </Link>
           </div>
         </div>

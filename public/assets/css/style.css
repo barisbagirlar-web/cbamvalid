@@ -571,6 +571,7 @@ h3{font-size:1.35rem}
   text-transform:uppercase;padding:6px 14px;border-radius:999px;
 }
 .price-card h3{font-size:1.3rem}
+.price-card .btn{white-space:normal}
 .price-card .sub{font-size:.86rem;color:var(--muted);margin:6px 0 24px}
 .price-fig{font-family:var(--serif);font-size:3.4rem;line-height:1;margin-bottom:26px}
 .price-fig small{font-family:var(--mono);font-size:.78rem;color:var(--muted);letter-spacing:.04em}

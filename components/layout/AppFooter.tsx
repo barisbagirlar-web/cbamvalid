@@ -11,17 +11,11 @@ const PRODUCT_LINKS = [
   { href: "/sample-dossier", label: "Sample Dossier" },
   { href: "/methodology", label: "Methodology & Sources" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/verify", label: "Verify a Dossier" },
-  { href: "/demo", label: "Book a Demo" },
-] as const;
-
-const ENTERPRISE_LINKS = [
-  { href: "/enterprise", label: "Enterprise Exclusive" },
-  { href: "/verifier-review", label: "Structure Review" },
+  { href: "/verify", label: "Verify" },
+  { href: "/demo", label: "Product Demo" },
   { href: "/rulesets", label: "Published Rulesets" },
   { href: "/buyer-link", label: "Buyer Share Link" },
   { href: "/platform", label: "Platform Architecture" },
-  { href: "/partners", label: "Partners" },
   { href: "/trust", label: "Trust Registry" },
 ] as const;
 
@@ -82,8 +76,8 @@ export default function AppFooter() {
               </span>
             </Link>
             <p>
-              Independent software for CBAM verification preparation — sealed, evidence-linked
-              dossiers for exporters and EU buyers.
+              Independent self-service software for preparing customer-controlled CBAM data and
+              generating evidence-linked digital dossiers.
             </p>
             <div className="footer-badges">
               <span className="f-badge">EU hosted</span>
@@ -99,7 +93,6 @@ export default function AppFooter() {
           </div>
 
           <FooterColumn title="Product" links={PRODUCT_LINKS} />
-          <FooterColumn title="Enterprise" links={ENTERPRISE_LINKS} />
           <FooterColumn title="Guides" links={GUIDE_LINKS} />
           <FooterColumn title="Company" links={COMPANY_LINKS} />
         </div>
@@ -125,10 +118,11 @@ export default function AppFooter() {
             ))}
           </div>
           <p className="disclaimer">
-            <b>Independence Notice:</b> CBAMValid is an independent software service for
-            exporter-to-importer evidence packaging. It is not an EU institution, customs authority
-            or accredited CBAM verifier. Actual emissions data must be independently verified where
-            verification is legally required.
+            <b>Independence Notice:</b> CBAMValid is an independent self-service software service for
+            exporter-to-importer evidence packaging. CBAMValid does not provide consulting, advisory
+            services, legal advice, customs advice, tax advice, managed compliance or accredited
+            verification. It is not an EU institution, customs authority or accredited CBAM verifier.
+            Actual emissions data must be independently verified where verification is legally required.
           </p>
         </div>
       </div>

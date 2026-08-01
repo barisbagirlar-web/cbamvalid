@@ -73,10 +73,12 @@ import {
 } from "@/lib/cbam/schema";
 import { uploadEvidenceFile } from "@/lib/cbam/evidence-upload";
 import {
+  assignOrganisationReviewer,
   getAccountOverview,
   reviewEvidence,
   saveCase,
   sealReport,
+  updateOwnProfile,
   type PreparationPackEntitlement,
 } from "@/lib/functions/client";
 
@@ -246,6 +248,13 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   // FAZ UX — mobile step drawer and step-8 advanced technical accordion.
   const [mobileStepsOpen, setMobileStepsOpen] = useState(false);
   const [showAdvancedDetails, setShowAdvancedDetails] = useState(false);
+  // FAZ 13 — customer organisation profile used for peer-to-peer in-org review.
+  const [myOrganisationId, setMyOrganisationId] = useState("");
+  const [myRole, setMyRole] = useState("");
+  const [organisationStatus, setOrganisationStatus] = useState("");
+  const [orgTargetEmail, setOrgTargetEmail] = useState("");
+  const [orgTargetRole, setOrgTargetRole] = useState<"INTERNAL_REVIEWER" | "DATA_OWNER">("INTERNAL_REVIEWER");
+  const [orgAssigning, setOrgAssigning] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -254,6 +263,9 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         if (cancelled) return;
         const credits = overview.credits as { availableCredits?: number } | undefined;
         setAvailableCredits(Number(credits?.availableCredits || 0));
+        const profile = overview.profile as { organisationId?: string; role?: string } | undefined;
+        setMyOrganisationId(profile?.organisationId || "");
+        setMyRole((profile?.role || "").toUpperCase());
       })
       .catch((error) => {
         console.error("Failed to load case credit balance", error);
@@ -709,13 +721,50 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         evidenceId,
         decision,
         supportStatus,
-        reviewerNotes: reviewNotes[evidenceId] || "Internal dossier review completed.",
+        reviewerNotes: reviewNotes[evidenceId] || "Organisation review completed.",
       });
       setCaseData(updated);
-      setEvidenceStatus(`Evidence ${decision.toLowerCase()} by the server-controlled review workflow.`);
+      setEvidenceStatus(`Evidence ${decision.toLowerCase()} under your organisation's review.`);
     } catch (error) {
       console.error("Evidence review failed", error);
       setEvidenceStatus(errorMessage(error));
+    }
+  };
+
+  // FAZ 13 — the customer organisation manages its own in-org reviewers
+  // (peer-to-peer approval). Self-approval stays blocked server-side.
+  const handleSaveOrganisationId = async () => {
+    setOrganisationStatus("");
+    const trimmed = myOrganisationId.trim();
+    if (!trimmed) {
+      setOrganisationStatus("Enter an organisation identifier to join or create one.");
+      return;
+    }
+    try {
+      await updateOwnProfile({ organisationId: trimmed });
+      setMyOrganisationId(trimmed);
+      setOrganisationStatus(`Organisation "${trimmed}" saved. Share this identifier with reviewers so they can join, then assign them a review role.`);
+    } catch (error) {
+      setOrganisationStatus(errorMessage(error));
+    }
+  };
+
+  const handleAssignReviewer = async () => {
+    setOrganisationStatus("");
+    const email = orgTargetEmail.trim().toLowerCase();
+    if (!email) {
+      setOrganisationStatus("Enter the reviewer's account email.");
+      return;
+    }
+    setOrgAssigning(true);
+    try {
+      await assignOrganisationReviewer({ targetEmail: email }, orgTargetRole);
+      setOrgTargetEmail("");
+      setOrganisationStatus(`${orgTargetRole === "INTERNAL_REVIEWER" ? "Internal Reviewer" : "Data Owner"} role assigned to ${email}. They can now review this organisation's evidence and methodology decisions.`);
+    } catch (error) {
+      setOrganisationStatus(errorMessage(error));
+    } finally {
+      setOrgAssigning(false);
     }
   };
 
@@ -862,7 +911,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         <h3 className="font-bold">System-boundary support</h3>
         <p className="mt-1 text-xs text-muted">The boundary statement is only supported once it is backed by approved evidence (monitoring plan, installation permit/scope, process map or controlled statement) or by a server-reviewed accepted methodology decision.</p>
         <button type="button" onClick={() => addMethodologyDecision("SYSTEM_BOUNDARY")} className="mt-3 rounded border border-border bg-neutral-soft px-4 py-2 text-sm font-semibold">Record system-boundary methodology decision</button>
-        {caseData.methodologyDecisions.filter((decision) => decision.topic === "SYSTEM_BOUNDARY").map((decision) => <div key={decision.decisionId} className="mt-3 rounded border border-border bg-neutral-soft p-3 text-sm"><strong>{decision.topic}</strong><p>{decision.selectedMethod}</p><p className="text-xs text-muted">{decision.reviewStatus} · {decision.rulesetVersion}{decision.reviewStatus === "ACCEPTED" ? ` · approved by ${decision.approverName || "server review"}` : " · awaiting server review — ACCEPTED is granted only by an internal reviewer"}</p></div>)}
+        {caseData.methodologyDecisions.filter((decision) => decision.topic === "SYSTEM_BOUNDARY").map((decision) => <div key={decision.decisionId} className="mt-3 rounded border border-border bg-neutral-soft p-3 text-sm"><strong>{decision.topic}</strong><p>{decision.selectedMethod}</p><p className="text-xs text-muted">{decision.reviewStatus} · {decision.rulesetVersion}{decision.reviewStatus === "ACCEPTED" ? ` · approved by ${decision.approverName || "organisation review"}` : " · awaiting your organisation's review — ACCEPTED is granted only by your own reviewer"}</p></div>)}
       </div>
     </div>
   );
@@ -942,7 +991,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         <button type="button" onClick={() => setCaseData((previous) => ({ ...previous, precursors: previous.precursors.filter((_, itemIndex) => itemIndex !== index) }))} className="inline-flex items-center gap-2 text-sm text-status-blocked md:col-span-2"><Trash2 className="h-4 w-4" /> Remove precursor</button>
       </div>)}
       {caseData.goods.length > 1 && <button type="button" onClick={() => addMethodologyDecision("GOODS_EMISSIONS_ALLOCATION")} className="rounded border border-border bg-surface px-4 py-3 text-sm">Record allocation methodology (server review required before it becomes accepted)</button>}
-      <div className="space-y-2">{caseData.methodologyDecisions.map((decision) => <div key={decision.decisionId} className="rounded border border-border bg-neutral-soft p-3 text-sm"><strong>{decision.topic}</strong><p>{decision.selectedMethod}</p><p className="text-xs text-muted">{decision.reviewStatus} · {decision.rulesetVersion}{decision.reviewStatus === "ACCEPTED" ? ` · approved by ${decision.approverName || "server review"}` : " · ACCEPTED is granted only by an internal reviewer"}</p></div>)}</div>
+      <div className="space-y-2">{caseData.methodologyDecisions.map((decision) => <div key={decision.decisionId} className="rounded border border-border bg-neutral-soft p-3 text-sm"><strong>{decision.topic}</strong><p>{decision.selectedMethod}</p><p className="text-xs text-muted">{decision.reviewStatus} · {decision.rulesetVersion}{decision.reviewStatus === "ACCEPTED" ? ` · approved by ${decision.approverName || "organisation review"}` : " · awaiting your organisation's review — ACCEPTED is granted only by your own reviewer"}</p></div>)}</div>
     </div>
   );
 
@@ -973,7 +1022,78 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         <div className="md:col-span-2"><FieldLabel helpKey="evidenceLinkedInput">Linked input</FieldLabel><select aria-label="Evidence linked input" value={evidenceLinkedInput} onChange={(event) => setEvidenceLinkedInput(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="" disabled>Select the input this document supports…</option>{linkOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>{(() => { const selected = linkOptions.find((option) => option.value === evidenceLinkedInput); if (!selected) return null; return <div className="mt-2 rounded border border-border bg-neutral-soft p-3 text-xs leading-relaxed text-muted"><strong>Accepted evidence:</strong> {selected.acceptedEvidenceTypes.join(", ") || "Source document"}<br /><strong>Preferred issuers:</strong> {selected.preferredIssuerCategories.join(", ") || "Any"}<br />{selected.required ? <span className="text-status-warning">This input requires at least one internally approved evidence record before sealing.</span> : <span>Optional support document.</span>}</div>; })()}<p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.evidenceLinkedInput.source}</p></div>
       </div><button type="button" onClick={handleEvidenceUpload} disabled={uploading} className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-sm font-semibold text-surface disabled:opacity-50">{uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />} Upload and register evidence</button><StatusBanner status={evidenceStatus} tone={evidenceStatus.toLowerCase().includes("failed") || evidenceStatus.includes("EVIDENCE_") ? "error" : "warning"} /></div>
 
-      <div className="space-y-3">{caseData.evidenceRegister.map((evidence) => <div key={evidence.evidenceId} className="rounded-xl border border-border bg-surface p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{evidence.fileName}</p><p className="text-xs text-muted">{evidence.documentType} · {evidence.sizeBytes} bytes · {evidence.reviewStatus === "PENDING" ? "PENDING_REVIEW" : evidence.reviewStatus}/{evidence.supportStatus}/{evidence.malwareScanStatus}</p><p className="mt-1 text-xs text-muted">Linked inputs: {evidence.linkedInputs.length > 0 ? evidence.linkedInputs.join(", ") : "none"}</p><p className="mt-1 text-xs text-muted">Quality grade (derived from structured issuer metadata, not issuer wording): <strong>{gradeEvidenceRecord(evidence)}</strong>{evidence.qualityAssessedBy ? ` · assessed by ${evidence.qualityAssessedBy}` : ""}</p><p className="mt-1 break-all font-mono text-[10px] text-muted">SHA-256 {evidence.fileHash}</p></div></div><div className="mt-3"><FieldLabel helpKey="evidenceReviewNotes">Internal review note</FieldLabel><div className="flex flex-col gap-2 md:flex-row"><input aria-label={`Review notes for ${evidence.fileName}`} value={reviewNotes[evidence.evidenceId] || ""} onChange={(event) => setReviewNotes((previous) => ({ ...previous, [evidence.evidenceId]: event.target.value }))} placeholder="Internal review note" className="flex-1 rounded border border-border bg-background p-2 text-sm" /><button type="button" disabled={evidence.malwareScanStatus !== "CLEAN"} onClick={() => handleEvidenceReview(evidence.evidenceId, "APPROVED")} className="rounded bg-status-pass px-3 py-2 text-xs font-semibold text-surface-elevated disabled:opacity-40">Request approval</button><button type="button" onClick={() => handleEvidenceReview(evidence.evidenceId, "REJECTED")} className="rounded bg-status-blocked px-3 py-2 text-xs font-semibold text-surface-elevated">Reject</button></div></div><div className="mt-2 grid gap-2 md:grid-cols-2"><select aria-label={`Link ${evidence.fileName} to an additional input`} value="" onChange={(event) => { const value = event.target.value; if (!value) return; setCaseData((previous) => ({ ...previous, evidenceRegister: previous.evidenceRegister.map((record) => record.evidenceId === evidence.evidenceId && !record.linkedInputs.includes(value) ? { ...record, linkedInputs: [...record.linkedInputs, value] } : record) })); }} className="w-full rounded border border-border bg-background p-2 text-xs"><option value="">Link to additional input…</option>{linkOptions.filter((option) => !evidence.linkedInputs.includes(option.value)).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>{evidence.malwareScanStatus !== "CLEAN" && <p className="mt-2 text-xs text-status-warning">Approval is disabled until an administrator records an external malware scan as CLEAN.</p>}<p className="mt-2 text-[11px] text-muted">Approval and quality grades are assigned by the internal review workflow only. The uploading user cannot self-approve a document or assign A/B/C/D/E grades.</p></div>)}</div>
+      <div className="space-y-3">{caseData.evidenceRegister.map((evidence) => <div key={evidence.evidenceId} className="rounded-xl border border-border bg-surface p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{evidence.fileName}</p><p className="text-xs text-muted">{evidence.documentType} · {evidence.sizeBytes} bytes · {evidence.reviewStatus === "PENDING" ? "PENDING_REVIEW" : evidence.reviewStatus}/{evidence.supportStatus}/{evidence.malwareScanStatus}</p><p className="mt-1 text-xs text-muted">Linked inputs: {evidence.linkedInputs.length > 0 ? evidence.linkedInputs.join(", ") : "none"}</p><p className="mt-1 text-xs text-muted">Quality grade (derived from structured issuer metadata, not issuer wording): <strong>{gradeEvidenceRecord(evidence)}</strong>{evidence.qualityAssessedBy ? ` · assessed by ${evidence.qualityAssessedBy}` : ""}</p><p className="mt-1 break-all font-mono text-[10px] text-muted">SHA-256 {evidence.fileHash}</p></div></div><div className="mt-3"><FieldLabel helpKey="evidenceReviewNotes">Organisation review note</FieldLabel><div className="flex flex-col gap-2 md:flex-row"><input aria-label={`Review notes for ${evidence.fileName}`} value={reviewNotes[evidence.evidenceId] || ""} onChange={(event) => setReviewNotes((previous) => ({ ...previous, [evidence.evidenceId]: event.target.value }))} placeholder="Organisation review note" className="flex-1 rounded border border-border bg-background p-2 text-sm" /><button type="button" disabled={evidence.malwareScanStatus !== "CLEAN"} onClick={() => handleEvidenceReview(evidence.evidenceId, "APPROVED")} className="rounded bg-status-pass px-3 py-2 text-xs font-semibold text-surface-elevated disabled:opacity-40">Request approval</button><button type="button" onClick={() => handleEvidenceReview(evidence.evidenceId, "REJECTED")} className="rounded bg-status-blocked px-3 py-2 text-xs font-semibold text-surface-elevated">Reject</button></div></div><div className="mt-2 grid gap-2 md:grid-cols-2"><select aria-label={`Link ${evidence.fileName} to an additional input`} value="" onChange={(event) => { const value = event.target.value; if (!value) return; setCaseData((previous) => ({ ...previous, evidenceRegister: previous.evidenceRegister.map((record) => record.evidenceId === evidence.evidenceId && !record.linkedInputs.includes(value) ? { ...record, linkedInputs: [...record.linkedInputs, value] } : record) })); }} className="w-full rounded border border-border bg-background p-2 text-xs"><option value="">Link to additional input…</option>{linkOptions.filter((option) => !evidence.linkedInputs.includes(option.value)).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>{evidence.malwareScanStatus !== "CLEAN" && <p className="mt-2 text-xs text-status-warning">Approval is disabled until an external malware scan is recorded as CLEAN.</p>}<p className="mt-2 text-[11px] text-muted">Approval and quality grades are assigned through your organisation&apos;s review workflow only. The uploading user cannot self-approve a document or assign A/B/C/D/E grades.</p></div>)}</div>
+
+      <div className="rounded-xl border border-border bg-surface p-5" data-testid="organisation-review-panel">
+        <div className="flex items-center gap-2">
+          <Shield className="h-5 w-5 text-accent" />
+          <h3 className="font-bold">Your organisation&apos;s reviewers</h3>
+        </div>
+        <p className="mt-2 text-sm text-muted leading-relaxed">
+          Review is controlled by your own organisation, not by CBAMValid personnel. Set an organisation
+          identifier, ask a colleague to use the same identifier in their account settings, then assign them a
+          review role here. That reviewer can approve evidence and accept methodology decisions so the dossier
+          can be sealed — while the case owner can never approve their own documents.
+        </p>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="rounded-lg border border-border bg-neutral-soft p-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted">Organisation identifier</p>
+            {myOrganisationId ? (
+              <p className="mt-2 text-sm font-semibold break-all">{myOrganisationId}</p>
+            ) : (
+              <p className="mt-2 text-sm text-muted">Not set yet.</p>
+            )}
+            <div className="mt-3 flex gap-2">
+              <input
+                aria-label="Organisation identifier"
+                value={myOrganisationId}
+                onChange={(event) => setMyOrganisationId(event.target.value)}
+                placeholder="e.g. acme-steel-2026"
+                className="min-w-0 flex-1 rounded border border-border bg-background p-2 text-sm"
+              />
+              <button
+                type="button"
+                onClick={handleSaveOrganisationId}
+                className="shrink-0 rounded bg-accent px-3 py-2 text-xs font-semibold text-surface"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+          <div className="rounded-lg border border-border bg-neutral-soft p-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted">Assign a reviewer role</p>
+            <p className="mt-2 text-xs text-muted">Your role: <strong>{myRole || "USER"}</strong>. The target must already use the same organisation identifier.</p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <input
+                aria-label="Reviewer account email"
+                type="email"
+                value={orgTargetEmail}
+                onChange={(event) => setOrgTargetEmail(event.target.value)}
+                placeholder="reviewer@example.com"
+                className="min-w-0 flex-1 rounded border border-border bg-background p-2 text-sm"
+              />
+              <select
+                aria-label="Reviewer role"
+                value={orgTargetRole}
+                onChange={(event) => setOrgTargetRole(event.target.value as "INTERNAL_REVIEWER" | "DATA_OWNER")}
+                className="shrink-0 rounded border border-border bg-background p-2 text-sm"
+              >
+                <option value="INTERNAL_REVIEWER">Internal Reviewer</option>
+                <option value="DATA_OWNER">Data Owner</option>
+              </select>
+              <button
+                type="button"
+                onClick={handleAssignReviewer}
+                disabled={orgAssigning}
+                className="shrink-0 rounded bg-status-pass px-3 py-2 text-xs font-semibold text-surface-elevated disabled:opacity-50"
+              >
+                {orgAssigning ? <Loader2 className="h-4 w-4 animate-spin" /> : "Assign role"}
+              </button>
+            </div>
+          </div>
+        </div>
+        {organisationStatus && <StatusBanner status={organisationStatus} tone={organisationStatus.toLowerCase().includes("failed") || organisationStatus.includes("_") ? "error" : "success"} />}
+      </div>
     </div>
   );
 
@@ -1110,7 +1230,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
                             : "Missing",
                     responsibleParty:
                       item.category === "Documents awaiting review" || item.category === "Methodology decisions awaiting approval"
-                        ? "Internal reviewer"
+                        ? "Your organisation's reviewer"
                         : "Operator",
                     step: item.step,
                     action: "",

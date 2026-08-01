@@ -5,7 +5,6 @@
  */
 import { isLegalIdentityComplete, LEGAL_IDENTITY } from "@/lib/legal-identity";
 import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
-import { STRUCTURE_REVIEW_PUBLIC } from "@/lib/trust/verifier-structure-review";
 
 export type EvidenceStatus =
   | "VERIFIED"
@@ -95,23 +94,6 @@ export const TRUST_EVIDENCE_ITEMS: readonly TrustEvidenceItem[] = [
       "1) Create/confirm Live price ID at USD 449. 2) Store Live PADDLE_API_KEY in Secret Manager (not pdl_sdbx_*). 3) Set production NEXT_PUBLIC_PADDLE_SANDBOX=false + live client token + live price ID. 4) Redeploy. 5) npm run prove:paddle-amount → LIVE=PASS.",
   },
   {
-    id: "structure-sample",
-    layer: "structure",
-    title: "Watermarked SAMPLE structure document",
-    status: "SAMPLE",
-    proof: STRUCTURE_REVIEW_PUBLIC.sampleDocument.notice,
-    publicHref: STRUCTURE_REVIEW_PUBLIC.path,
-  },
-  {
-    id: "structure-letter-signed",
-    layer: "structure",
-    title: "Third-party signed structure letter",
-    status: "EMPTY_BY_DESIGN",
-    proof:
-      "Owner waived — signed structure letters are not a competitive requirement. Package fitness stays on the SAMPLE structure-review surface.",
-    publicHref: STRUCTURE_REVIEW_PUBLIC.path,
-  },
-  {
     id: "case-studies",
     layer: "customer",
     title: "Anonymized illustrative sector scenarios",
@@ -133,7 +115,7 @@ export const TRUST_EVIDENCE_ITEMS: readonly TrustEvidenceItem[] = [
     layer: "independence",
     title: "Independence / non-verifier boundary",
     status: "VERIFIED",
-    proof: "Preparation ≠ accredited verification opinion — published on homepage, legal notice, verifier-review",
+    proof: "Preparation ≠ accredited verification opinion — published on homepage, legal notice and methodology",
     publicHref: "/legal-notice",
   },
 ] as const;

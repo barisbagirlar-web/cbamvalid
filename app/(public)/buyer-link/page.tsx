@@ -27,7 +27,7 @@ export default function BuyerLinkPage() {
               Inspect sample dossier
             </Link>
             <Link className="btn btn-ghost" href="/demo">
-              Book a demo
+              Product Demo
             </Link>
           </div>
         </div>

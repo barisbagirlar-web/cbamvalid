@@ -40,14 +40,14 @@ export default function TrustPage() {
             </h1>
             <p className="lede">{TRUST_PUBLIC.lede}</p>
             <div className="hero-ctas">
-              <Link className="btn btn-primary" href="/verifier-review">
-                Structure review surface
-              </Link>
-              <Link className="btn btn-ghost" href="/legal-notice">
+              <Link className="btn btn-primary" href="/legal-notice">
                 Legal notice
               </Link>
               <Link className="btn btn-ghost" href="/security">
                 Security &amp; DPA
+              </Link>
+              <Link className="btn btn-ghost" href="/case-studies">
+                Case studies policy
               </Link>
             </div>
           </div>
@@ -101,7 +101,7 @@ export default function TrustPage() {
         <section className="section" style={{ background: "var(--paper-2)" }}>
           <div className="wrap" style={{ maxWidth: "820px" }}>
             <span className="eyebrow">Why this page exists</span>
-            <h2>Enterprise buyers audit claims before they pay</h2>
+            <h2>Buyers audit claims before they pay</h2>
             <p className="lede">
               Invented CRO numbers, forged verifier letters, and fake logos destroy procurement
               trust permanently. CBAMValid scores itself with the same fail-closed discipline as

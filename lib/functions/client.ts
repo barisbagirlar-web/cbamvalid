@@ -137,6 +137,11 @@ export const verifyDocumentCallable = httpsCallable<{ documentHash: string }, Un
 
 export const getAccountOverviewCallable = httpsCallable<void, UnknownRecord>(firebaseFunctions, "getAccountOverview");
 export const updateOwnProfileCallable = httpsCallable<UnknownRecord, UnknownRecord>(firebaseFunctions, "updateOwnProfile");
+export const assignOrganisationReviewerCallable = httpsCallable<{
+  targetUserId?: string;
+  targetEmail?: string;
+  role: "INTERNAL_REVIEWER" | "DATA_OWNER";
+}, { success: boolean }>(firebaseFunctions, "assignOrganisationReviewer");
 export const listCreditLedgerCallable = httpsCallable<{ limit?: number }, { ledger: UnknownRecord[] }>(firebaseFunctions, "listCreditLedger");
 export const listPurchaseHistoryCallable = httpsCallable<{ limit?: number }, { history: UnknownRecord[] }>(firebaseFunctions, "listPurchaseHistory");
 export const requestAccountClosureCallable = httpsCallable<void, UnknownRecord>(firebaseFunctions, "requestAccountClosure");
@@ -278,6 +283,14 @@ export async function getAccountOverview() {
 
 export async function updateOwnProfile(data: UnknownRecord) {
   const result = await updateOwnProfileCallable(data);
+  return result.data;
+}
+
+export async function assignOrganisationReviewer(
+  target: { targetUserId: string } | { targetEmail: string },
+  role: "INTERNAL_REVIEWER" | "DATA_OWNER"
+) {
+  const result = await assignOrganisationReviewerCallable({ ...target, role });
   return result.data;
 }
 

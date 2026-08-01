@@ -334,6 +334,7 @@ export async function updateCase(caseId: string, uid: string, data: unknown): Pr
 export async function reviewCaseEvidence(params: {
   caseId: string;
   uid: string;
+  actorUid?: string;
   evidenceId: string;
   decision: EvidenceReviewDecision;
   supportStatus: EvidenceSupportStatus;
@@ -348,7 +349,7 @@ export async function reviewCaseEvidence(params: {
     (record) => record.evidenceId === params.evidenceId
   );
   if (!evidence) throw new Error("EVIDENCE_NOT_FOUND");
-  await verifyEvidenceObject(resolved.record.caseId, params.uid, evidence);
+  await verifyEvidenceObject(resolved.record.caseId, resolved.record.uid, evidence);
 
   if (params.decision === "APPROVED") {
     if (evidence.malwareScanStatus !== "CLEAN") throw new Error("EVIDENCE_MALWARE_SCAN_NOT_CLEAN");
@@ -370,14 +371,14 @@ export async function reviewCaseEvidence(params: {
       qualityPatch = {
         qualityGrade: assessment.grade,
         qualityAssessmentBasis: assessment.basis,
-        qualityAssessedBy: params.uid,
+        qualityAssessedBy: params.actorUid ?? params.uid,
         qualityAssessedAt: reviewedAt,
       };
     } else {
       qualityPatch = {
         qualityGrade: "E",
         qualityAssessmentBasis: "REJECTED_IN_REVIEW",
-        qualityAssessedBy: params.uid,
+        qualityAssessedBy: params.actorUid ?? params.uid,
         qualityAssessedAt: reviewedAt,
       };
     }
@@ -394,7 +395,7 @@ export async function reviewCaseEvidence(params: {
 
   const nextData = appendAuditEvent(
     { ...resolved.record.data, evidenceRegister: updatedEvidence },
-    params.uid,
+    params.actorUid ?? params.uid,
     "EVIDENCE_INTERNAL_REVIEWED",
     {
       evidenceId: params.evidenceId,
@@ -508,6 +509,26 @@ export async function deleteCase(caseId: string, uid: string): Promise<void> {
 export async function getCasesForUser(uid: string): Promise<CbamCaseRecord[]> {
   validateIdentifier("uid", uid);
   const snapshot = await adminDb.collection("cbam_cases").where("uid", "==", uid).get();
+  return collectCases(snapshot);
+}
+
+export async function getCasesForUsers(uids: string[]): Promise<CbamCaseRecord[]> {
+  const uniqueUids = [...new Set(uids.filter(Boolean))];
+  if (uniqueUids.length === 0) return [];
+  for (const uid of uniqueUids) {
+    validateIdentifier("uid", uid);
+  }
+
+  const snapshot =
+    uniqueUids.length === 1
+      ? await adminDb.collection("cbam_cases").where("uid", "==", uniqueUids[0]).get()
+      : await adminDb.collection("cbam_cases").where("uid", "in", uniqueUids).get();
+  return collectCases(snapshot);
+}
+
+function collectCases(
+  snapshot: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData>
+): CbamCaseRecord[] {
   const byCaseId = new Map<string, { documentId: string; record: CbamCaseRecord }>();
 
   for (const document of snapshot.docs) {

@@ -35,7 +35,7 @@ export default function CaseStudiesPage() {
                 Product capabilities
               </Link>
               <Link className="btn btn-ghost" href="/demo">
-                Book a demo
+                Product Demo
               </Link>
             </div>
           </div>
