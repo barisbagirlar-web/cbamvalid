@@ -420,8 +420,12 @@ describe("Production Security & Foundation Audits", () => {
 
     await processWebhookEvent(event);
 
-    // Assert ledger, entitlement, and case commercial PAID merge writes.
-    expect(mockDbTransaction.set).toHaveBeenCalledTimes(4); // 2 ledger + entitlement + case commercial
+    // Assert ledger, entitlement, case commercial PAID merge, and the separate
+    // purchase-analytics idempotency record writes. The analytics emission runs
+    // in its own runTransaction after the commerce transaction (exactly-once
+    // outside the fulfillment txn), so the shared mock counts 5 set calls:
+    // 2 ledger + entitlement + case commercial + analytics.
+    expect(mockDbTransaction.set).toHaveBeenCalledTimes(5);
     expect(mockDbTransaction.update).toHaveBeenCalledTimes(2); // Order transition to PAID + transition to ENTITLED
   });
 });

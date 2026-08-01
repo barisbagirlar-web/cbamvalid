@@ -75,13 +75,19 @@ export async function createOrder(
 }
 
 /**
- * Atomic status transition with validation rules
+ * Atomic status transition with validation rules.
+ *
+ * All reads must happen before any write inside a Firestore transaction.
+ * Callers that already hold the order snapshot (read earlier in the same
+ * transaction) must pass it via `prefetchedOrder` so no read-after-write
+ * occurs (Firestore rejects reads after writes with FAILED_PRECONDITION).
  */
 export async function transitionOrderStatus(
   dbTransaction: admin.firestore.Transaction,
   orderId: string,
   newStatus: CommerceOrder["status"],
-  metadata?: Partial<CommerceOrder>
+  metadata?: Partial<CommerceOrder>,
+  prefetchedOrder?: admin.firestore.DocumentSnapshot
 ): Promise<CommerceOrder> {
   validateIdentifier("orderId", orderId);
   if (metadata?.paddleTransactionId) {
@@ -89,7 +95,7 @@ export async function transitionOrderStatus(
   }
   
   const orderRef = adminDb.collection("commerce_orders").doc(orderId);
-  const snapshot: any = await dbTransaction.get(orderRef as any);
+  const snapshot = prefetchedOrder ?? (await dbTransaction.get(orderRef));
 
   if (!snapshot.exists) {
     throw new OrderNotFoundError(orderId);

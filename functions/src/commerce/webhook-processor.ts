@@ -151,10 +151,46 @@ async function handleTransactionCompleted(
   const uid = order.uid;
   const totalEntitlementsToGrant = catalogProduct.entitlementQuantity * purchasedQuantity;
 
-  // Execute atomic transactional updates
+  // Execute atomic transactional updates.
+  // Firestore requires ALL reads to precede ALL writes inside a transaction
+  // (reads after writes throw FAILED_PRECONDITION). Every document/query we
+  // need is therefore fetched up front, then writes run against prefetched data.
   await adminDb.runTransaction(async (dbTransaction: firestore.Transaction) => {
+    const ledgerCollection = adminDb.collection("commerce_ledger");
+    const orderRef = adminDb.collection("commerce_orders").doc(orderId);
+
+    // ---- READ PHASE (all reads before any write) ----
+    const existingPaymentQuery = await dbTransaction.get(
+      ledgerCollection.where("idempotencyKey", "==", `payment:${transactionId}`).limit(1)
+    );
+    const existingPaymentEntry = existingPaymentQuery.empty
+      ? null
+      : (existingPaymentQuery.docs[0].data() as {
+          entryHash: string;
+          idempotencyKey: string;
+        });
+
+    const latestLedgerQuery = await dbTransaction.get(
+      ledgerCollection.orderBy("createdAt", "desc").limit(1)
+    );
+    const previousEntryHash = latestLedgerQuery.empty
+      ? ""
+      : (latestLedgerQuery.docs[0].data() as { entryHash: string }).entryHash;
+
+    const orderSnapshot = await dbTransaction.get(orderRef);
+
+    const existingEntitlementQuery = await dbTransaction.get(
+      ledgerCollection
+        .where("idempotencyKey", "==", `entitlement:${transactionId}:${productCode}`)
+        .limit(1)
+    );
+    const existingEntitlementEntry = existingEntitlementQuery.empty
+      ? null
+      : (existingEntitlementQuery.docs[0].data() as { entryHash: string });
+
+    // ---- WRITE PHASE (writes only; no reads after this point) ----
     // 1. Log payment captured entry in the ledger with idempotency verification
-    await writeLedgerEntry(dbTransaction, {
+    const paymentEntry = await writeLedgerEntry(dbTransaction, {
       uid,
       orderId,
       transactionId,
@@ -164,12 +200,15 @@ async function handleTransactionCompleted(
       currency,
       amountMinor: order.amountMinor,
       idempotencyKey: `payment:${transactionId}`,
+    }, {
+      existingEntry: existingPaymentEntry as never,
+      previousEntryHash,
     });
 
     // 2. Transition order state to PAID
     await transitionOrderStatus(dbTransaction, orderId, "PAID", {
       paddleTransactionId: transactionId,
-    });
+    }, orderSnapshot);
 
     // 3. Issue entitlement document and write entitlement ledger entry
     const scopeCaseId = typeof order.caseId === "string" && order.caseId.trim() ? order.caseId.trim() : undefined;
@@ -187,6 +226,9 @@ async function handleTransactionCompleted(
       scopeCaseId,
       billingModel: "CASE_PAY_AT_LOCK",
       maxReleases: CASE_COMMERCIAL_SERVER.maxReleasesPerPaidCase,
+    }, {
+      existingEntry: existingEntitlementEntry as never,
+      previousEntryHash: paymentEntry.entryHash,
     });
 
     const caseRef = adminDb.collection("cbam_cases").doc(scopeCaseId);
@@ -206,7 +248,7 @@ async function handleTransactionCompleted(
     );
 
     // 4. Transition order state to ENTITLED
-    await transitionOrderStatus(dbTransaction, orderId, "ENTITLED");
+    await transitionOrderStatus(dbTransaction, orderId, "ENTITLED", undefined, orderSnapshot);
   });
 
   // 5. Exactly-once purchase analytics (persistent Firestore idempotency; outside

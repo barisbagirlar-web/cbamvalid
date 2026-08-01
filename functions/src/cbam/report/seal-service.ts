@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { adminDb, getStorageBucket } from "../../firebase-admin";
 import { reserveEntitlement, consumeEntitlement, releaseEntitlementReservation } from "../../commerce/entitlement-service";
 import { AuditReadyCaseSchema, type AuditReadyCase } from "../schema";
+import { assertEvidenceFileSignature } from "../storage/evidence-signature";
 import { performDossierCalculations } from "../calculator";
 import { runQualityControls } from "../validation/quality-controls";
 import { deriveInstrumentation } from "./instrumentation-derivation";
@@ -263,6 +264,7 @@ async function loadEvidenceFiles(caseData: AuditReadyCase): Promise<EvidenceBina
       (custom.sha256 && custom.sha256.toLowerCase() !== evidence.fileHash.toLowerCase())
     ) throw new Error(`EVIDENCE_METADATA_MISMATCH:${evidence.evidenceId}`);
     const [bytes] = await object.download();
+    assertEvidenceFileSignature(bytes, evidence.mimeType);
     if (bytes.byteLength !== evidence.sizeBytes || sha256(bytes) !== evidence.fileHash.toLowerCase()) {
       throw new Error(`EVIDENCE_HASH_MISMATCH:${evidence.evidenceId}`);
     }
