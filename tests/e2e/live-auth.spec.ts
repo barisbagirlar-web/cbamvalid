@@ -10,7 +10,7 @@ test("Live Production Authentication Acceptance Test", async ({ page, context })
 
   // 1. Navigate to live registration page
   console.log("Navigating to live registration...");
-  await page.goto("https://cbam-desk.web.app/register");
+  await page.goto("https://cbamvalid.com/register");
 
   // 2. Fill out registration
   console.log("Filling out registration...");
@@ -42,9 +42,12 @@ test("Live Production Authentication Acceptance Test", async ({ page, context })
   await page.waitForURL("**/cbam");
   expect(page.url()).toContain("/cbam");
 
-  // 7. Click Sign Out
+  // 7. Click Sign Out (inside the account dropdown menu)
   console.log("Signing out...");
-  await page.click('button:has-text("Sign Out")');
+  const accountMenu = page.locator('button[aria-label="User account menu"]');
+  await accountMenu.waitFor({ state: "visible", timeout: 15000 });
+  await accountMenu.click();
+  await page.getByRole("button", { name: "Sign Out" }).click();
 
   // 8. Verify redirected to login
   console.log("Waiting for login redirect...");
@@ -58,7 +61,7 @@ test("Live Production Authentication Acceptance Test", async ({ page, context })
 
   // 10. Attempt to access protected dashboard directly -> should redirect back to /login
   console.log("Attempting direct access to /cbam...");
-  await page.goto("https://cbam-desk.web.app/cbam");
+  await page.goto("https://cbamvalid.com/cbam");
   await page.waitForURL("**/login*");
   expect(page.url()).toContain("/login");
   console.log("All live checks PASSED!");
