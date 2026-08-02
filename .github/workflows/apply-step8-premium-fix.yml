@@ -7,6 +7,10 @@ on:
     paths:
       - scripts/apply-step8-premium-ux.mjs
       - .github/workflows/apply-step8-premium-fix.yml
+  pull_request:
+    branches:
+      - main
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: write
@@ -17,10 +21,11 @@ concurrency:
 
 jobs:
   apply-and-validate:
+    if: github.head_ref == 'fix/step8-premium-release-command-center-20260802' || github.ref_name == 'fix/step8-premium-release-command-center-20260802'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - name: Checkout branch
+      - name: Checkout implementation branch
         uses: actions/checkout@v4
         with:
           ref: fix/step8-premium-release-command-center-20260802
