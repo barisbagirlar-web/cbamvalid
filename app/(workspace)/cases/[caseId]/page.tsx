@@ -41,8 +41,10 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
       const cachedEntitlements = localStorage.getItem(`cbam_entitlements_cache_${user.uid}`);
       setTimeout(() => {
         if (cachedCase) {
+          // Cache may accelerate the visual loading state, but it is never
+          // authoritative for release readiness or entitlement decisions. Keep
+          // the gate closed until the server returns the current case and pack.
           setInitialCase(JSON.parse(cachedCase));
-          setDataLoading(false);
         }
         if (cachedEntitlements) {
           setAvailableEntitlements(JSON.parse(cachedEntitlements));

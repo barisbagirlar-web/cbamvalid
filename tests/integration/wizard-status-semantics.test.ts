@@ -184,17 +184,21 @@ describe("Step 8 status model", () => {
     expect(deriveStep8Status({ isEligibleForSealing: true, criticalBlockerCount: 0, hasEntitlement: true, lockState: "LOCK_FAILED" })).toBe("LOCK_FAILED");
   });
 
-  it("no lock CTA while blockers are open: BLOCKED and PAYMENT_REQUIRED never carry a lock label", () => {
+  it("keeps blocked/payment states fail-closed and gives a failed attempt an explicit retry", () => {
     expect(STEP8_FOOTER_CTA_LABELS.BLOCKED).toBe("Review remaining requirements");
-    expect(STEP8_FOOTER_CTA_LABELS.LOCK_FAILED).toBe("Review remaining requirements");
-    expect(STEP8_FOOTER_CTA_LABELS.READY_TO_LOCK).toBe("Lock & download package");
-    // Only READY_TO_LOCK/LOCKING/LOCKED states may claim a lock action.
-    expect(STEP8_FOOTER_CTA_LABELS.BLOCKED).not.toMatch(/lock/i);
-    expect(STEP8_FOOTER_CTA_LABELS.LOCK_FAILED).not.toMatch(/lock/i);
-    expect(STEP8_FOOTER_CTA_LABELS.PAYMENT_REQUIRED).not.toMatch(/Lock & download/i);
-    expect(STEP8_FOOTER_CTA_LABELS.READY_TO_LOCK).toMatch(/Lock & download/i);
+    expect(STEP8_FOOTER_CTA_LABELS.PAYMENT_REQUIRED).toBe("Pay to unlock this working file");
+    expect(STEP8_FOOTER_CTA_LABELS.READY_TO_LOCK).toBe("Create sealed package");
+    expect(STEP8_FOOTER_CTA_LABELS.LOCK_FAILED).toBe("Retry package creation");
+    expect(STEP8_FOOTER_CTA_LABELS.BLOCKED).not.toMatch(/create sealed|retry/i);
+    expect(STEP8_FOOTER_CTA_LABELS.PAYMENT_REQUIRED).not.toMatch(/create sealed|retry/i);
     expect(STEP8_FOOTER_CTA_LABELS.LOCKING).toMatch(/Creating package/i);
     expect(STEP8_FOOTER_CTA_LABELS.LOCKED).toMatch(/Open sealed release/i);
+  });
+
+  it("marks an optional empty Step 7 as complete when no material gap remains", () => {
+    const ready = readyCase();
+    expect(ready.carbonPriceRecords).toHaveLength(0);
+    expect(validateWizardStep(7, ready).state).toBe("COMPLETE");
   });
 
   it("payment readiness never claims lock-allowed while blockers are open", () => {
