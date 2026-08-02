@@ -23,27 +23,3 @@ export function applyWorkingFileReviewPolicy(caseData: AuditReadyCase): AuditRea
     ),
   };
 }
-
-/**
- * True only when every linked record exists and is waiting for review. A
- * rejected record, missing record, or any non-review defect remains blocking.
- */
-export function isPendingReviewOnly(
-  caseData: AuditReadyCase,
-  evidenceIds: readonly string[],
-  reasonCodes: readonly string[]
-): boolean {
-  if (evidenceIds.length === 0) return false;
-  if (
-    reasonCodes.length === 0 ||
-    reasonCodes.some((code) => code !== "EVIDENCE_NOT_APPROVED_BY_OPERATOR")
-  ) {
-    return false;
-  }
-
-  return evidenceIds.every((evidenceId) =>
-    caseData.evidenceRegister.some(
-      (record) => record.evidenceId === evidenceId && record.reviewStatus === "PENDING"
-    )
-  );
-}
