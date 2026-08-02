@@ -94,6 +94,7 @@ export function teb232CaseId(key: FourDossierKey): string {
 
 function replaceVisibleTestLanguage(value: unknown): unknown {
   if (typeof value === "string") {
+    if (value === "SANDBOX" || value === "PRODUCTION") return value;
     return value
       .replace(/sandbox fixture/gi, "controlled test record")
       .replace(/sandbox/gi, "controlled test")
@@ -123,6 +124,11 @@ export async function buildTeb232Case(key: FourDossierKey): Promise<PreparedCase
     ...record,
     storagePath: `evidence/${TEB232_UID}/${caseId}/${record.evidenceId}/${record.fileName}`,
     uploader: TEB232_UID,
+    reviewEnvironment: "PRODUCTION" as const,
+  }));
+  data.methodologyDecisions = data.methodologyDecisions.map((decision) => ({
+    ...decision,
+    decisionEnvironment: "PRODUCTION" as const,
   }));
   data.auditEvents = [
     ...data.auditEvents.filter((event) => event.action !== "FIXTURE_SEEDED"),
