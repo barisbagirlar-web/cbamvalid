@@ -17,6 +17,31 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Probe sandbox deploy credential availability
+        if: startsWith(github.head_ref, 'ops/probe-sandbox-deploy-credentials-')
+        env:
+          FIREBASE_TOKEN_PRESENT: ${{ secrets.FIREBASE_TOKEN != '' }}
+          FIREBASE_SANDBOX_SA_PRESENT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CBAM_DESK_SANDBOX != '' }}
+          FIREBASE_PROD_SA_PRESENT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CBAM_DESK != '' }}
+          GCP_SA_KEY_PRESENT: ${{ secrets.GCP_SA_KEY != '' }}
+          GOOGLE_CREDENTIALS_PRESENT: ${{ secrets.GOOGLE_CREDENTIALS != '' }}
+          WIF_PROVIDER_SECRET_PRESENT: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER != '' }}
+          WIF_SERVICE_ACCOUNT_SECRET_PRESENT: ${{ secrets.GCP_SERVICE_ACCOUNT != '' }}
+          WIF_PROVIDER_VAR_PRESENT: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER != '' }}
+          WIF_SERVICE_ACCOUNT_VAR_PRESENT: ${{ vars.GCP_SERVICE_ACCOUNT != '' }}
+          FIREBASE_PROJECT_VAR_PRESENT: ${{ vars.FIREBASE_PROJECT != '' }}
+        run: |
+          echo "FIREBASE_TOKEN_PRESENT=${FIREBASE_TOKEN_PRESENT}"
+          echo "FIREBASE_SANDBOX_SA_PRESENT=${FIREBASE_SANDBOX_SA_PRESENT}"
+          echo "FIREBASE_PROD_SA_PRESENT=${FIREBASE_PROD_SA_PRESENT}"
+          echo "GCP_SA_KEY_PRESENT=${GCP_SA_KEY_PRESENT}"
+          echo "GOOGLE_CREDENTIALS_PRESENT=${GOOGLE_CREDENTIALS_PRESENT}"
+          echo "WIF_PROVIDER_SECRET_PRESENT=${WIF_PROVIDER_SECRET_PRESENT}"
+          echo "WIF_SERVICE_ACCOUNT_SECRET_PRESENT=${WIF_SERVICE_ACCOUNT_SECRET_PRESENT}"
+          echo "WIF_PROVIDER_VAR_PRESENT=${WIF_PROVIDER_VAR_PRESENT}"
+          echo "WIF_SERVICE_ACCOUNT_VAR_PRESENT=${WIF_SERVICE_ACCOUNT_VAR_PRESENT}"
+          echo "FIREBASE_PROJECT_VAR_PRESENT=${FIREBASE_PROJECT_VAR_PRESENT}"
+
       - name: Setup Node.js (22)
         uses: actions/setup-node@v4
         with:
