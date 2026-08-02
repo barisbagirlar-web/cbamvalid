@@ -30,7 +30,7 @@ function moveOrganisationReviewToPending<T extends Awaited<ReturnType<typeof com
 }
 
 describe("operator working-file readiness", () => {
-  it("allows a conditional operator package while organisation review and the annual period are open", async () => {
+  it("allows a conditional operator package while organisation review and the complete annual period are open", async () => {
     const caseData = moveOrganisationReviewToPending(await completeSteelCase());
 
     const browserAssessment = assessCaseReadiness(caseData);
@@ -67,6 +67,43 @@ describe("operator working-file readiness", () => {
     expect(reviewFindings.length).toBeGreaterThan(0);
     expect(reviewFindings.every((finding) => finding.blocksSealing === false)).toBe(true);
     expect(reviewFindings.every((finding) => finding.blocksVerifierHandover === true)).toBe(true);
+  });
+
+  it("keeps quarterly and partial reporting periods fail-closed", async () => {
+    const caseData = moveOrganisationReviewToPending(await completeSteelCase());
+    caseData.reportingPeriod.quarter = {
+      ...caseData.reportingPeriod.quarter,
+      value: "Q1",
+    };
+    caseData.reportingPeriod.startDate = {
+      ...caseData.reportingPeriod.startDate!,
+      value: "2026-01-01",
+    };
+    caseData.reportingPeriod.endDate = {
+      ...caseData.reportingPeriod.endDate!,
+      value: "2026-03-31",
+    };
+
+    const serverAssessment = assessReadiness({
+      caseData,
+      isDraft: false,
+      assessmentTimestamp: MID_YEAR_ASSESSMENT,
+      sealMode: "PRODUCTION",
+    });
+    expect(serverAssessment.operatorStatus).toBe("NOT_READY");
+    expect(serverAssessment.canSeal).toBe(false);
+    expect(serverAssessment.criticalBlockerCount).toBeGreaterThan(0);
+
+    const { findings } = generateFindingsAndActions(
+      caseData,
+      MID_YEAR_ASSESSMENT,
+      "PRODUCTION"
+    );
+    const nonAnnual = findings.find(
+      (finding) => finding.findingId === "FND-PERIOD-NON-ANNUAL"
+    );
+    expect(nonAnnual?.blocksSealing).toBe(true);
+    expect(nonAnnual?.blocksVerifierHandover).toBe(true);
   });
 
   it("keeps rejected evidence fail-closed", async () => {
