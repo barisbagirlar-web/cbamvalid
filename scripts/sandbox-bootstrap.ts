@@ -3,8 +3,7 @@
  * FAZ P0 (J) — sandbox bootstrap.
  *
  * Provisions the hosted QA sandbox project and local config so that:
- *   - `cbam-desk-sandbox` exists (created when the caller has authority and
- *     quota; otherwise the script stops with EXTERNAL_BLOCKER)
+ *   - `cbam-desk-sandbox` exists as an actual Firebase project
  *   - required Google APIs are enabled
  *   - `.firebaserc` gains a `sandbox` alias
  *   - `.env.sandbox` is written with isolated Firebase and Paddle sandbox
@@ -22,6 +21,8 @@ import path from "node:path";
 const SANDBOX_PROJECT = "cbam-desk-sandbox";
 const PRODUCTION_PROJECT = "cbam-desk";
 const REQUIRED_APIS = [
+  "firebase.googleapis.com",
+  "firebasehosting.googleapis.com",
   "firestore.googleapis.com",
   "storage-api.googleapis.com",
   "cloudfunctions.googleapis.com",
@@ -52,9 +53,73 @@ function run(command: string, args: string[], opts: { failOk?: boolean; capture?
   return { status: result.status ?? -1, stdout, stderr };
 }
 
-function projectExists(): boolean {
+function googleCloudProjectExists(): boolean {
   const result = run("gcloud", ["projects", "describe", SANDBOX_PROJECT], { failOk: true });
   return result.status === 0 && result.stdout.includes(SANDBOX_PROJECT);
+}
+
+function firebaseProjectExists(): boolean {
+  const result = run("firebase", ["projects:list", "--json"], { failOk: true });
+  return result.status === 0 && result.stdout.includes(`"${SANDBOX_PROJECT}"`);
+}
+
+function failExternalBlocker(detail: string): never {
+  console.error(`FAIL  sandbox project provisioning blocked — ${detail}`);
+  ensureFirebasercAlias();
+  writeSandboxEnv();
+  console.error("      This is an EXTERNAL_BLOCKER: create/enable cbam-desk-sandbox");
+  console.error("      using the owner account, accept Firebase terms if prompted, and attach billing");
+  console.error("      before hosted Functions/Hosting E2E can run.");
+  console.error("      Local emulator and offline dossier E2E remain available.");
+  console.error("BOOTSTRAP_STATUS=EXTERNAL_BLOCKER");
+  process.exit(2);
+}
+
+function ensureFirebaseProject(): void {
+  const gcpExists = googleCloudProjectExists();
+  const firebaseExists = firebaseProjectExists();
+
+  if (firebaseExists) {
+    console.log(`PASS  Firebase project ${SANDBOX_PROJECT} already exists`);
+    return;
+  }
+
+  if (!gcpExists) {
+    console.log(`INFO  project ${SANDBOX_PROJECT} does not exist — creating Firebase project`);
+    const create = run(
+      "firebase",
+      [
+        "projects:create",
+        SANDBOX_PROJECT,
+        "--display-name",
+        "CBAMValid Sandbox",
+        "--json",
+      ],
+      { failOk: true }
+    );
+    if (create.status !== 0) {
+      const detail = `${create.stdout} ${create.stderr}`.trim().split("\n").slice(0, 4).join(" | ");
+      failExternalBlocker(detail);
+    }
+    console.log(`PASS  Firebase project ${SANDBOX_PROJECT} created`);
+    return;
+  }
+
+  console.log(`INFO  Google Cloud project exists without Firebase — adding Firebase resources`);
+  const addFirebase = run(
+    "firebase",
+    ["projects:addfirebase", SANDBOX_PROJECT, "--json"],
+    { failOk: true }
+  );
+  if (addFirebase.status !== 0) {
+    const detail = `${addFirebase.stdout} ${addFirebase.stderr}`
+      .trim()
+      .split("\n")
+      .slice(0, 4)
+      .join(" | ");
+    failExternalBlocker(detail);
+  }
+  console.log(`PASS  Firebase resources added to ${SANDBOX_PROJECT}`);
 }
 
 function ensureFirebasercAlias(): void {
@@ -103,27 +168,7 @@ function writeSandboxEnv(): void {
 function main(): void {
   console.log(`CBAMValid sandbox bootstrap — sandbox "${SANDBOX_PROJECT}"`);
 
-  const exists = projectExists();
-  if (exists) {
-    console.log(`PASS  project ${SANDBOX_PROJECT} already exists`);
-  } else {
-    console.log(`INFO  project ${SANDBOX_PROJECT} does not exist — attempting creation`);
-    const create = run("gcloud", ["projects", "create", SANDBOX_PROJECT, "--name=CBAMValid Sandbox"], { failOk: true });
-    if (create.status !== 0) {
-      const detail = `${create.stdout} ${create.stderr}`.trim().split("\n").slice(0, 3).join(" | ");
-      console.error(`FAIL  project creation blocked — ${detail}`);
-      // Local config is still prepared so the doctor can confirm isolation
-      // and the sandbox alias; the hosted project itself remains blocked.
-      ensureFirebasercAlias();
-      writeSandboxEnv();
-      console.error("      This is an EXTERNAL_BLOCKER: the sandbox project must be provisioned");
-      console.error("      by an account with project-creation quota before hosted E2E can run.");
-      console.error("      Local emulator E2E remains available.");
-      console.error("BOOTSTRAP_STATUS=EXTERNAL_BLOCKER");
-      process.exit(2);
-    }
-    console.log(`PASS  project ${SANDBOX_PROJECT} created (${create.stdout.trim()})`);
-  }
+  ensureFirebaseProject();
 
   for (const api of REQUIRED_APIS) {
     const enable = run("gcloud", ["services", "enable", api, "--project", SANDBOX_PROJECT], { failOk: true });
