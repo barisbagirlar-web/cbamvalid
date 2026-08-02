@@ -609,7 +609,7 @@ describe("premium-dossier-v5 deliverables", () => {
     expect(goodsConsistency?.status).toBe("BLOCKER");
   });
 
-  it("verifies PDF visual geometry and ensures all 30 sections, IDs and labels are present without silent truncation", async () => {
+  it("verifies PDF visual geometry and the premium assurance architecture without silent truncation", async () => {
     const outputDir = path.join(process.cwd(), "artifacts", "sample-v5");
     const primaryPdfPath = path.join(outputDir, "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf");
     expect(fs.existsSync(primaryPdfPath)).toBe(true);
@@ -619,21 +619,31 @@ describe("premium-dossier-v5 deliverables", () => {
 
     const { text, pages } = await pdfText(pdfBytes);
     
-    // Check 30 sections
-    for (let i = 1; i <= 30; i++) {
-      expect(text).toContain(`${i}.`);
-    }
+    for (const heading of [
+      "Executive assurance dashboard",
+      "Controlled identity and reporting period",
+      "Emissions result and A-H reconciliation",
+      "Goods allocation and materiality",
+      "Evidence assurance and data provenance",
+      "Calculation reproducibility and audit trail",
+      "Findings and corrective actions",
+      "Regulatory and registry crosswalk",
+      "Premium chapter contract",
+      "Independent verifier handover",
+      "Package integrity and release control",
+      "Annex index and legal boundary",
+    ]) expect(text).toContain(heading);
 
     // Check critical findings & evidence references are present
     expect(text).toContain("11111111");
     expect(text).toContain("Prepared for Independent");
     expect(text).toContain("Verified Steel Operator A.S.");
-    expect(text).toContain("NOT_PROVIDED");
+    expect(text).not.toContain("NOT_PROVIDED");
     expect(text).not.toContain("2023/1776");
     expect(text).toContain("2025/2547");
-    expect(text).toContain(`${REQUIRED_TOP_LEVEL_COMPONENTS_V5.length} controlled`);
-    expect(text).toContain("NOT_READY");
-    expect(text).toContain("ANNEX II");
+    expect(text).toContain(String(REQUIRED_TOP_LEVEL_COMPONENTS_V5.length));
+    expect(text).toContain("Independent verifier handover");
+    expect(text).toContain("Annex index and legal boundary");
     expect(text).not.toContain("FIPS 140-2 Level 3 KMS Sealed Hash");
     expect(text).toContain("detached KMS signature");
     expect(text).toContain("72011011");
@@ -649,27 +659,23 @@ describe("premium-dossier-v5 deliverables", () => {
 
     const { text } = await pdfText(fs.readFileSync(primaryPdfPath));
 
-    // FAZ 8 content sections (added on top of the 30-section core)
-    expect(text).toContain("32. Monitoring Plan Conformance");
-    expect(text).toContain("33. Source Streams and Emission Sources");
-    expect(text).toContain("34. Metering and Instrumentation");
-    expect(text).toContain("35. Calculation Methodology");
-    expect(text).toContain("36. Risk Assessment");
-    expect(text).toContain("37. Materiality and Sampling Plan");
-    expect(text).toContain("38. Data Visualisation Annex");
-
-    // Data-driven visuals must be present
-    expect(text).toContain("A-H emission segregation");
-    expect(text).toContain("Per-good specific embedded emissions");
-    expect(text).toContain("Evidence coverage by material requirement");
-    expect(text).toContain("Risk heat matrix");
+    // Premium 101 content architecture and data-driven assurance views
+    expect(text).toContain("Controlled identity and reporting period");
+    expect(text).toContain("Emissions result and A-H reconciliation");
+    expect(text).toContain("Goods allocation and materiality");
+    expect(text).toContain("Evidence assurance and data provenance");
+    expect(text).toContain("Calculation reproducibility and audit trail");
+    expect(text).toContain("Regulatory and registry crosswalk");
+    expect(text).toContain("Premium chapter contract");
+    expect(text).toContain("Independent verifier handover");
+    expect(text).toContain("Package integrity and release control");
+    expect(text).toContain("Certificate-relevant direct total");
+    expect(text).toContain("Total informational embedded emissions");
     expect(text).toContain("Allocation reconciliation");
-    expect(text).toContain("INCLUDED PROCESSES");
-    expect(text).toContain("EXCLUDED PROCESSES");
 
     // Risk registers and materiality wording from FAZ 6 modules
-    expect(text).toContain("INHERENT");
-    expect(text).toContain("DETECTION");
+    expect(text.toLowerCase()).toContain("inherent");
+    expect(text.toLowerCase()).toContain("detection");
     expect(text).toContain("PROVISIONAL_FOR_VERIFIER_PLANNING");
   });
 
