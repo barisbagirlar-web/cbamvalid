@@ -33,7 +33,7 @@ jobs:
               raise SystemExit('strict backup typing target not found exactly once')
           p.write_text(s.replace(old, new, 1))
           PY
-          git rm .github/workflows/one-shot-teb232-refresh-fix.yml
+          git rm .github/workflows/one-shot-teb232-refresh-fix.yml docs/release/teb232-refresh-trigger.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add scripts/refresh-teb232-four-complete-cases.ts
