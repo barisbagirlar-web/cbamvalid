@@ -8,8 +8,7 @@
  *  - hosted execution is allowed only for cbam-desk-sandbox
  *  - default mode is dry-run; destructive replacement requires --apply
  *  - old Firestore documents and Storage bytes are backed up before deletion
- *  - if the replacement fails, newly written data is removed and the backup is
- *    restored before the script exits non-zero
+ *  - if replacement fails, new state is removed and the backup is restored
  *
  * Hosted sandbox:
  *   FIREBASE_PROJECT=cbam-desk-sandbox \
@@ -25,6 +24,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import admin from "firebase-admin";
+import type { Bucket, File } from "@google-cloud/storage";
 import { AuditReadyCaseSchema } from "../functions/src/cbam/schema";
 import { REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5 } from "../functions/src/cbam/report/package-components";
 import {
@@ -48,6 +48,7 @@ const apply = process.argv.includes("--apply");
 const emulator = process.argv.includes("--emulator");
 
 type JsonRecord = Record<string, unknown>;
+type BuiltPackage = Awaited<ReturnType<typeof buildDossierSealedPackage>>;
 type StoredDocumentBackup = { path: string; data: JsonRecord };
 type StoredFileBackup = {
   name: string;
@@ -55,10 +56,9 @@ type StoredFileBackup = {
   contentType?: string;
   metadata?: Record<string, string>;
 };
-
 type CleanupState = {
   documents: Map<string, admin.firestore.DocumentReference>;
-  files: Map<string, admin.storage.File>;
+  files: Map<string, File>;
   documentBackups: StoredDocumentBackup[];
   fileBackups: StoredFileBackup[];
 };
@@ -98,7 +98,9 @@ function asPlainRecord(value: unknown): JsonRecord {
 }
 
 function deterministicUuid(key: FourDossierKey): string {
-  const raw = sha256(`${FOUR_DOSSIER_FIXTURE_SET}\u0000REQUEST\u0000${key}`).slice(0, 32).split("");
+  const raw = sha256(`${FOUR_DOSSIER_FIXTURE_SET}\u0000REQUEST\u0000${key}`)
+    .slice(0, 32)
+    .split("");
   raw[12] = "4";
   raw[16] = "8";
   const hex = raw.join("");
@@ -132,7 +134,7 @@ async function addDocumentIfExists(
 
 async function addFilesByPrefix(
   state: CleanupState,
-  bucket: admin.storage.Bucket,
+  bucket: Bucket,
   prefix: string
 ): Promise<void> {
   const [files] = await bucket.getFiles({ prefix });
@@ -141,8 +143,8 @@ async function addFilesByPrefix(
 
 async function discoverCleanupState(
   db: admin.firestore.Firestore,
-  bucket: admin.storage.Bucket,
-  packages: Awaited<ReturnType<typeof buildDossierSealedPackage>>[]
+  bucket: Bucket,
+  packages: BuiltPackage[]
 ): Promise<CleanupState> {
   const state: CleanupState = {
     documents: new Map(),
@@ -162,17 +164,15 @@ async function discoverCleanupState(
     await addQueryDocuments(state, db.collection("cbam_reports").where("caseId", "==", caseId));
     await addQueryDocuments(state, db.collection("document_seals").where("caseId", "==", caseId));
     await addQueryDocuments(state, db.collection("report_requests").where("caseId", "==", caseId));
-
     await addDocumentIfExists(state, db.collection("cbam_reports").doc(currentReportId));
     await addDocumentIfExists(state, db.collection("cbam_reports").doc(legacyReportId));
-
     await addFilesByPrefix(state, bucket, `evidence/${ownerId}/${caseId}/`);
   }
 
-  // Reports discovered by caseId provide the authoritative old report IDs,
-  // hashes, package codes and owner paths needed for bounded cleanup.
-  const reportDocuments = [...state.documents.values()].filter((ref) => ref.parent.id === "cbam_reports");
-  for (const reportRef of reportDocuments) {
+  const reportRefs = [...state.documents.values()].filter(
+    (ref) => ref.parent.id === "cbam_reports"
+  );
+  for (const reportRef of reportRefs) {
     const reportSnapshot = await reportRef.get();
     if (!reportSnapshot.exists) continue;
     const data = reportSnapshot.data() || {};
@@ -183,8 +183,12 @@ async function discoverCleanupState(
 
     await addDocumentIfExists(state, db.collection("seal_log").doc(reportId));
     await addDocumentIfExists(state, db.collection("seal_outbox").doc(reportId));
-    if (documentHash) await addDocumentIfExists(state, db.collection("document_seals").doc(documentHash));
-    if (packageCode) await addDocumentIfExists(state, db.collection("package_codes").doc(packageCode));
+    if (documentHash) {
+      await addDocumentIfExists(state, db.collection("document_seals").doc(documentHash));
+    }
+    if (packageCode) {
+      await addDocumentIfExists(state, db.collection("package_codes").doc(packageCode));
+    }
     if (uid) await addFilesByPrefix(state, bucket, `reports/${uid}/${reportId}/`);
   }
 
@@ -240,10 +244,13 @@ async function backupCleanupState(
   );
 }
 
-async function deleteDocuments(state: CleanupState): Promise<void> {
+async function deleteDocuments(
+  db: admin.firestore.Firestore,
+  state: CleanupState
+): Promise<void> {
   const refs = [...state.documents.values()];
   for (let index = 0; index < refs.length; index += 400) {
-    const batch = refs[index].firestore.batch();
+    const batch = db.batch();
     for (const ref of refs.slice(index, index + 400)) batch.delete(ref);
     await batch.commit();
   }
@@ -257,7 +264,7 @@ async function deleteFiles(state: CleanupState): Promise<void> {
 
 async function restoreCleanupState(
   db: admin.firestore.Firestore,
-  bucket: admin.storage.Bucket,
+  bucket: Bucket,
   state: CleanupState
 ): Promise<void> {
   for (const backup of state.fileBackups) {
@@ -277,7 +284,7 @@ async function restoreCleanupState(
 }
 
 async function uploadVerified(
-  bucket: admin.storage.Bucket,
+  bucket: Bucket,
   objectPath: string,
   bytes: Buffer,
   contentType: string,
@@ -302,8 +309,8 @@ async function uploadVerified(
 
 async function writeFreshPackage(
   db: admin.firestore.Firestore,
-  bucket: admin.storage.Bucket,
-  pkg: Awaited<ReturnType<typeof buildDossierSealedPackage>>,
+  bucket: Bucket,
+  pkg: BuiltPackage,
   createdDocumentPaths: Set<string>,
   createdFilePaths: Set<string>
 ): Promise<void> {
@@ -326,14 +333,20 @@ async function writeFreshPackage(
   const caseDataHash = sha256(snapshotBytes);
 
   if (!/^report_[a-f0-9]{64}$/.test(reportId)) throw new Error(`REPORT_ID_INVALID:${reportId}`);
-  if (manifest.schemaVersion !== "CBAMVALID-DOSSIER-5.0") throw new Error(`MANIFEST_SCHEMA_INVALID:${pkg.key}`);
-  if (manifest.releaseVersion !== DOSSIER_RELEASE_VERSION) throw new Error(`RELEASE_VERSION_INVALID:${pkg.key}`);
+  if (manifest.schemaVersion !== "CBAMVALID-DOSSIER-5.0") {
+    throw new Error(`MANIFEST_SCHEMA_INVALID:${pkg.key}`);
+  }
+  if (manifest.releaseVersion !== DOSSIER_RELEASE_VERSION) {
+    throw new Error(`RELEASE_VERSION_INVALID:${pkg.key}`);
+  }
   if (manifest.componentContract.requiredCount !== REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5) {
     throw new Error(`COMPONENT_COUNT_INVALID:${pkg.key}`);
   }
 
   for (const evidence of pkg.evidenceFiles) {
-    const record = parsedCase.evidenceRegister.find((item) => item.evidenceId === evidence.evidenceId);
+    const record = parsedCase.evidenceRegister.find(
+      (item) => item.evidenceId === evidence.evidenceId
+    );
     if (!record) throw new Error(`EVIDENCE_RECORD_MISSING:${evidence.evidenceId}`);
     await uploadVerified(bucket, record.storagePath, evidence.bytes, record.mimeType, {
       qaFixtureSet: FOUR_DOSSIER_FIXTURE_SET,
@@ -355,14 +368,37 @@ async function writeFreshPackage(
   const storageEntries = await Promise.all([
     uploadVerified(bucket, `${basePath}/dossier.zip`, pkg.finalized.zip, "application/zip", commonMetadata),
     uploadVerified(bucket, `${basePath}/dossier.pdf`, pkg.finalized.primaryPdf, "application/pdf", commonMetadata),
-    uploadVerified(bucket, `${basePath}/dossier.xlsx`, pkg.finalized.workbook, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", commonMetadata),
-    uploadVerified(bucket, `${basePath}/manifest.json`, Buffer.from(pkg.manifestResult.bytes), "application/json", commonMetadata),
-    uploadVerified(bucket, `${basePath}/manifest.sig`, pkg.finalized.signatureBytes, "application/vnd.cbamvalid.kms-signature+json", commonMetadata),
-    uploadVerified(bucket, `${basePath}/case-snapshot.json`, snapshotBytes, "application/json", commonMetadata),
+    uploadVerified(
+      bucket,
+      `${basePath}/dossier.xlsx`,
+      pkg.finalized.workbook,
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      commonMetadata
+    ),
+    uploadVerified(
+      bucket,
+      `${basePath}/manifest.json`,
+      Buffer.from(pkg.manifestResult.bytes),
+      "application/json",
+      commonMetadata
+    ),
+    uploadVerified(
+      bucket,
+      `${basePath}/manifest.sig`,
+      pkg.finalized.signatureBytes,
+      "application/vnd.cbamvalid.kms-signature+json",
+      commonMetadata
+    ),
+    uploadVerified(
+      bucket,
+      `${basePath}/case-snapshot.json`,
+      snapshotBytes,
+      "application/json",
+      commonMetadata
+    ),
   ]);
   for (const entry of storageEntries) createdFilePaths.add(entry.path);
-
-  if (storageEntries[0].sha256 !== pkg.finalized.zipHash) {
+  if (storageEntries[0]?.sha256 !== pkg.finalized.zipHash) {
     throw new Error(`PACKAGE_HASH_MISMATCH:${pkg.key}`);
   }
 
@@ -418,7 +454,9 @@ async function writeFreshPackage(
     syntheticData: true,
   };
 
-  const requestDigest = sha256(`${FOUR_DOSSIER_FIXTURE_SET}\u0000${pkg.key}\u0000${requestId}`);
+  const requestDigest = sha256(
+    `${FOUR_DOSSIER_FIXTURE_SET}\u0000${pkg.key}\u0000${requestId}`
+  );
   const casePayload = asPlainRecord({
     ...parsedCase,
     uid,
@@ -510,7 +548,7 @@ async function writeFreshPackage(
 
 async function removeCreatedState(
   db: admin.firestore.Firestore,
-  bucket: admin.storage.Bucket,
+  bucket: Bucket,
   documentPaths: Set<string>,
   filePaths: Set<string>
 ): Promise<void> {
@@ -527,17 +565,17 @@ async function removeCreatedState(
 
 async function verifyFreshState(
   db: admin.firestore.Firestore,
-  packages: Awaited<ReturnType<typeof buildDossierSealedPackage>>[]
+  packages: BuiltPackage[]
 ): Promise<void> {
   for (const pkg of packages) {
     const caseId = pkg.caseData.caseId!;
     const reportId = dossierReportId(pkg.key);
     const reports = await db.collection("cbam_reports").where("caseId", "==", caseId).get();
     const seals = await db.collection("document_seals").where("caseId", "==", caseId).get();
-    if (reports.size !== 1 || reports.docs[0].id !== reportId) {
+    if (reports.size !== 1 || reports.docs[0]?.id !== reportId) {
       throw new Error(`REPORT_CARDINALITY_FAILED:${pkg.key}:${reports.size}`);
     }
-    if (seals.size !== 1 || seals.docs[0].data().reportId !== reportId) {
+    if (seals.size !== 1 || seals.docs[0]?.data().reportId !== reportId) {
       throw new Error(`SEAL_CARDINALITY_FAILED:${pkg.key}:${seals.size}`);
     }
     const legacy = await db.collection("cbam_reports").doc(legacyDossierReportId(pkg.key)).get();
@@ -561,7 +599,7 @@ async function main(): Promise<void> {
   console.log(`FOUR_DOSSIER_FIXTURE_SET=${FOUR_DOSSIER_FIXTURE_SET}`);
 
   // Build and validate all four new packages before touching persisted data.
-  const packages = [] as Awaited<ReturnType<typeof buildDossierSealedPackage>>[];
+  const packages: BuiltPackage[] = [];
   for (const key of FOUR_DOSSIER_KEYS) {
     const pkg = await buildDossierSealedPackage(key);
     AuditReadyCaseSchema.parse(pkg.caseData);
@@ -600,7 +638,7 @@ async function main(): Promise<void> {
   const createdFilePaths = new Set<string>();
   try {
     await deleteFiles(cleanup);
-    await deleteDocuments(cleanup);
+    await deleteDocuments(db, cleanup);
     for (const pkg of packages) {
       await writeFreshPackage(db, bucket, pkg, createdDocumentPaths, createdFilePaths);
       console.log(`REFRESHED ${pkg.key}: ${dossierReportId(pkg.key)}`);
