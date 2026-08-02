@@ -1,0 +1,132 @@
+name: Deploy validated Step 8 release once
+
+on:
+  push:
+    branches:
+      - ops/deploy-step8-premium-20260802
+    paths:
+      - .github/workflows/deploy-step8-production-once.yml
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: cbamvalid-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      TARGET_SHA: 795025b96a8a6757a8f8756b6a9d33c00c37d4df
+      FIREBASE_PROJECT: cbam-desk
+      FIREBASE_REGION: europe-west1
+      SSR_SERVICE: ssrcbamdesk
+      GCP_CREDENTIALS_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CBAM_DESK || secrets.FIREBASE_SERVICE_ACCOUNT || secrets.GCP_SA_KEY || secrets.GOOGLE_CREDENTIALS }}
+    steps:
+      - name: Require deployment credentials
+        shell: bash
+        run: |
+          if [ -z "$GCP_CREDENTIALS_JSON" ]; then
+            echo "No supported Google/Firebase deployment credential secret is configured." >&2
+            exit 78
+          fi
+
+      - name: Checkout exact validated main commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify immutable deployment target
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          git diff --exit-code
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ env.GCP_CREDENTIALS_JSON }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: cbam-desk
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked dependencies and Firebase CLI
+        shell: bash
+        run: |
+          npm ci --no-audit --no-fund
+          npm install --global firebase-tools@latest
+          firebase experiments:enable webframeworks
+
+      - name: Reconfirm production build before deployment
+        shell: bash
+        env:
+          CI: "true"
+          NEXT_TELEMETRY_DISABLED: "1"
+          NEXT_PUBLIC_FIREBASE_API_KEY: "ci-placeholder-not-a-secret"
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "cbamvalid-ci.invalid"
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: "cbamvalid-ci"
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "cbamvalid-ci.appspot.com"
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+          NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:0000000000000000000000"
+          ADMIN_USE_ADC: "true"
+          GCLOUD_PROJECT: "cbamvalid-ci"
+        run: npm run build
+
+      - name: Deploy Hosting and cut Cloud Run traffic to the new revision
+        shell: bash
+        run: bash scripts/deploy-hosting-cutover.sh
+
+      - name: Verify custom-domain runtime and deployed traffic revision
+        shell: bash
+        run: |
+          LATEST_CREATED="$(gcloud run services describe "$SSR_SERVICE" --project="$FIREBASE_PROJECT" --region="$FIREBASE_REGION" --format='value(status.latestCreatedRevisionName)')"
+          LATEST_READY="$(gcloud run services describe "$SSR_SERVICE" --project="$FIREBASE_PROJECT" --region="$FIREBASE_REGION" --format='value(status.latestReadyRevisionName)')"
+          TRAFFIC_REVISION="$(gcloud run services describe "$SSR_SERVICE" --project="$FIREBASE_PROJECT" --region="$FIREBASE_REGION" --format='value(status.traffic[0].revisionName)')"
+          echo "LATEST_CREATED=$LATEST_CREATED"
+          echo "LATEST_READY=$LATEST_READY"
+          echo "TRAFFIC_REVISION=$TRAFFIC_REVISION"
+          test -n "$LATEST_CREATED"
+          test "$LATEST_CREATED" = "$LATEST_READY"
+          test "$LATEST_CREATED" = "$TRAFFIC_REVISION"
+
+          for path in / /login /pricing '/cases/case_ci_guard_2026?step=8'; do
+            code="$(curl --retry 6 --retry-delay 5 --retry-all-errors -L -sS -o /tmp/cbamvalid-response.html -w '%{http_code}' "https://cbamvalid.com${path}")"
+            echo "SMOKE ${path} -> ${code}"
+            test "$code" -lt 500
+          done
+
+      - name: Record deployment evidence
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "TARGET_SHA=$TARGET_SHA"
+            echo "PROJECT=$FIREBASE_PROJECT"
+            echo "REGION=$FIREBASE_REGION"
+            echo "SERVICE=$SSR_SERVICE"
+            echo "COMPLETED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } | tee deployment-evidence.txt
+
+      - name: Upload deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: step8-production-deployment-${{ env.TARGET_SHA }}
+          path: deployment-evidence.txt
+          if-no-files-found: error
+          retention-days: 30
