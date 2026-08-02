@@ -31,9 +31,10 @@ describe("wizard footer", () => {
   it("labels match the mandate wording exactly", () => {
     expect(STEP8_FOOTER_CTA_LABELS.BLOCKED).toBe("Review remaining requirements");
     expect(STEP8_FOOTER_CTA_LABELS.PAYMENT_REQUIRED).toBe("Pay to unlock this working file");
-    expect(STEP8_FOOTER_CTA_LABELS.READY_TO_LOCK).toBe("Lock & download package");
+    expect(STEP8_FOOTER_CTA_LABELS.READY_TO_LOCK).toBe("Create sealed package");
     expect(STEP8_FOOTER_CTA_LABELS.LOCKING).toBe("Creating package…");
     expect(STEP8_FOOTER_CTA_LABELS.LOCKED).toBe("Open sealed release");
+    expect(STEP8_FOOTER_CTA_LABELS.LOCK_FAILED).toBe("Retry package creation");
   });
 
   it("never renders a disabled Next on step 8 (STEP8_DISABLED_NEXT=0)", () => {
@@ -60,7 +61,7 @@ describe("wizard footer", () => {
 
   it("main content reserves footer height and the footer uses mobile safe-area", () => {
     const client = readSource("app/(workspace)/cases/[caseId]/CaseWizardClient.tsx");
-    expect(client).toContain("pb-24");
+    expect(client).toContain("pb-32");
     expect(client).toContain("fixed bottom-0");
     expect(client).toContain("pb-[env(safe-area-inset-bottom)]");
   });

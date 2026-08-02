@@ -73,10 +73,10 @@ export const STEP8_REVIEW_ACTIONS_LABEL = "Review remaining actions";
 export const STEP8_FOOTER_CTA_LABELS: Record<Step8Status, string> = {
   BLOCKED: "Review remaining requirements",
   PAYMENT_REQUIRED: "Pay to unlock this working file",
-  READY_TO_LOCK: "Lock & download package",
+  READY_TO_LOCK: "Create sealed package",
   LOCKING: "Creating package…",
   LOCKED: "Open sealed release",
-  LOCK_FAILED: "Review remaining requirements",
+  LOCK_FAILED: "Retry package creation",
 };
 
 export interface WizardStepIssue {
@@ -408,7 +408,10 @@ function deriveStepState(
   missingEvidence: number,
   awaitingReview: number
 ): WizardStepperState {
-  const total = STEP_FIELD_SPECS[step - 1]?.length ?? 0;
+  // Only fields expanded for this case are applicable. Optional empty arrays
+  // (for example, no carbon-price deduction) must not leave a completed step
+  // permanently IN_PROGRESS.
+  const total = completed + missingFields;
   // Step 8 holds no data fields and uses its own status model (Step8Status).
   // It can never be auto-COMPLETE.
   if (step === 8) {

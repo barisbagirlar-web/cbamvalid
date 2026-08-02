@@ -240,11 +240,13 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   // FAZ UX — Step 8 never redirects back to Step 7; the blocker panel is
   // revealed in place and the user chooses any remediation step themselves.
   const blockerPanelRef = useRef<HTMLDivElement | null>(null);
+  const releaseCommandRef = useRef<HTMLElement | null>(null);
   const [showBlockers, setShowBlockers] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   const [nextHint, setNextHint] = useState("");
   const [sealTechnicalCode, setSealTechnicalCode] = useState("");
   const [sealTone, setSealTone] = useState<"neutral" | "success" | "error" | "warning">("neutral");
+  const [sealProgress, setSealProgress] = useState<"IDLE" | "VALIDATING" | "CREATING" | "SUCCESS" | "ERROR">("IDLE");
   // FAZ UX — mobile step drawer and step-8 advanced technical accordion.
   const [mobileStepsOpen, setMobileStepsOpen] = useState(false);
   const [showAdvancedDetails, setShowAdvancedDetails] = useState(false);
@@ -436,7 +438,12 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       const status = String(entitlement.status || "").toUpperCase();
       const scoped = entitlement.scopeCaseId || entitlement.caseId;
       const caseMatches = !scoped || scoped === caseData.caseId;
-      return caseMatches && ["AVAILABLE", "ACTIVE", "PURCHASED"].includes(status);
+      const entitlementId = typeof entitlement.entitlementId === "string"
+        ? entitlement.entitlementId.trim()
+        : "";
+      // A list row without its server identifier cannot be reserved or consumed.
+      // Never advertise READY_TO_LOCK from stale/incomplete cached metadata.
+      return Boolean(entitlementId) && caseMatches && ["AVAILABLE", "ACTIVE", "PURCHASED"].includes(status);
     });
     // Prefer entitlements already bound to this case (pay-at-lock), then unbound legacy.
     return [...matched].sort((a, b) => {
@@ -786,6 +793,12 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     }));
   };
 
+  const focusReleaseCommand = () => {
+    requestAnimationFrame(() => {
+      releaseCommandRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
   const handleSeal = async () => {
     if (!caseData.caseId) return;
     const decision = evaluateSealAttempt({
@@ -806,6 +819,8 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         setSealStatus("Correction reason is required and must be at least 10 characters long.");
         setSealTechnicalCode("CORRECTION_REASON_REQUIRED");
         setSealTone("warning");
+        setSealProgress("ERROR");
+        focusReleaseCommand();
         return;
       }
       setSealStatus(
@@ -813,15 +828,21 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       );
       setSealTechnicalCode("ENTITLEMENT_REQUIRED");
       setSealTone("warning");
+      setSealProgress("ERROR");
+      focusReleaseCommand();
       return;
     }
     if (!sealRequestId.current) sealRequestId.current = crypto.randomUUID();
+    setSealProgress("VALIDATING");
     setSealing(true);
-    setSealStatus("");
+    setSealStatus("Validating the latest working-file data and entitlement…");
     setSealTechnicalCode("");
     setSealTone("neutral");
+    focusReleaseCommand();
     try {
       await persistDraft();
+      setSealProgress("CREATING");
+      setSealStatus("All gates passed. Creating the controlled package and integrity manifest…");
       const response = await sealReport(
         caseData.caseId,
         decision.entitlementId,
@@ -830,15 +851,18 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       );
       const reportId = response.report?.reportId;
       if (!reportId) throw new Error("SEALED_REPORT_ID_MISSING");
+      setSealProgress("SUCCESS");
       setSealStatus(STEP8_SEALED_SUCCESS_HEADLINE);
       setSealTone("success");
       router.push(`/cbam/reports/${reportId}`);
     } catch (error) {
       console.error("Sealing failed", error);
       const translated = translateSealError(error);
+      setSealProgress("ERROR");
       setSealStatus(translated.userMessage);
       setSealTechnicalCode(translated.technicalCode);
       setSealTone("error");
+      focusReleaseCommand();
     } finally {
       setSealing(false);
     }
@@ -1108,8 +1132,125 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       <div className="space-y-6">
         <div>
           <h2 className="text-xl font-bold">{getWorkflowStep(8).title}</h2>
-          <p className="mt-1 text-sm text-muted">Review readiness, payment and what the controlled package will include before you lock and download. Sealing stays fail-closed: every automated quality control and evidence requirement must pass, and payment must be in place.</p>
+          <p className="mt-1 text-sm text-muted">Review the final gates and create the controlled package from one explicit release command. Every click produces an immediate, visible state and the server remains the authority for readiness, entitlement and sealing.</p>
         </div>
+
+        <section
+          ref={releaseCommandRef}
+          aria-label="Release command center"
+          aria-live="polite"
+          aria-busy={sealing}
+          className={`scroll-mt-24 rounded-2xl border-2 p-5 shadow-sm md:p-6 ${
+            step8Status === "BLOCKED"
+              ? "border-status-blocked/40 bg-[color:var(--status-blocked-soft)]"
+              : step8Status === "PAYMENT_REQUIRED"
+                ? "border-status-warning/40 bg-[color:var(--status-warning-soft)]"
+                : step8Status === "LOCK_FAILED"
+                  ? "border-status-blocked/40 bg-surface"
+                  : "border-accent/40 bg-surface"
+          }`}
+        >
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+            <div className="max-w-3xl">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Release command center</p>
+              <h3 className="mt-2 font-serif text-2xl font-bold">
+                {step8Status === "BLOCKED"
+                  ? "Resolve the remaining requirements"
+                  : step8Status === "PAYMENT_REQUIRED"
+                    ? "Authorize this working file"
+                    : step8Status === "LOCKING"
+                      ? "Package creation is in progress"
+                      : step8Status === "LOCK_FAILED"
+                        ? "The previous attempt did not complete"
+                        : step8Status === "LOCKED"
+                          ? "Sealed release is ready"
+                          : "Ready to create the sealed package"}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                {step8Status === "BLOCKED"
+                  ? `${readiness.criticalBlockers.length} blocking requirement${readiness.criticalBlockers.length === 1 ? "" : "s"} must be resolved. No payment or release capacity will be consumed.`
+                  : step8Status === "PAYMENT_REQUIRED"
+                    ? `All preparation controls passed. Pay ${CANONICAL_PRICING.priceFormatted} once to authorize this working file before package creation.`
+                    : step8Status === "LOCKING"
+                      ? "Keep this page open. The server is validating the saved case, reserving release capacity and generating the signed package."
+                      : step8Status === "LOCK_FAILED"
+                        ? "Your draft is safe and the same idempotent request can be retried. The technical reason is shown below without hiding the next action."
+                        : "All preparation controls and the entitlement gate are confirmed. One action creates the immutable package and opens its release page."}
+              </p>
+            </div>
+            <Step8StateBadge status={step8Status} />
+          </div>
+
+          <div className="mt-5 grid gap-2 sm:grid-cols-3" aria-label="Package creation progress">
+            {[
+              { label: "1. Validate", detail: "Saved case + release entitlement", active: sealProgress === "VALIDATING", done: ["CREATING", "SUCCESS"].includes(sealProgress) },
+              { label: "2. Create", detail: "Reports + manifest + signature", active: sealProgress === "CREATING", done: sealProgress === "SUCCESS" },
+              { label: "3. Open", detail: "Immutable release and downloads", active: sealProgress === "SUCCESS", done: sealProgress === "SUCCESS" },
+            ].map((phase) => (
+              <div
+                key={phase.label}
+                className={`rounded-lg border p-3 ${phase.done ? "border-forest-light bg-forest-pale" : phase.active ? "border-accent bg-accent/5" : "border-border bg-neutral-soft"}`}
+              >
+                <p className="text-xs font-bold">{phase.label}</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted">{phase.detail}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5">
+            {step8Status === "BLOCKED" && (
+              <button
+                type="button"
+                data-testid="step8-primary-action"
+                onClick={revealSealBlockers}
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-status-blocked px-5 py-3 text-sm font-bold text-surface-elevated sm:w-auto"
+              >
+                <AlertTriangle className="h-5 w-5" /> {STEP8_FOOTER_CTA_LABELS.BLOCKED}
+              </button>
+            )}
+            {step8Status === "PAYMENT_REQUIRED" && (
+              <Link
+                data-testid="step8-primary-action"
+                href={`/credits/buy?caseId=${encodeURIComponent(caseData.caseId || "")}`}
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-accent px-5 py-3 text-sm font-bold text-surface sm:w-auto"
+              >
+                <LockKeyhole className="h-5 w-5" /> {STEP8_FOOTER_CTA_LABELS.PAYMENT_REQUIRED}
+              </Link>
+            )}
+            {(step8Status === "READY_TO_LOCK" || step8Status === "LOCK_FAILED") && (
+              <button
+                type="button"
+                data-testid="step8-primary-action"
+                onClick={handleSeal}
+                disabled={sealing}
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-accent px-5 py-3 text-sm font-bold text-surface shadow-sm transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+              >
+                <CheckCircle2 className="h-5 w-5" /> {step8Status === "LOCK_FAILED" ? STEP8_FOOTER_CTA_LABELS.LOCK_FAILED : STEP8_FOOTER_CTA_LABELS.READY_TO_LOCK}
+              </button>
+            )}
+            {step8Status === "LOCKING" && (
+              <button type="button" data-testid="step8-primary-action" disabled className="inline-flex min-h-12 w-full cursor-wait items-center justify-center gap-2 rounded-md bg-accent px-5 py-3 text-sm font-bold text-surface opacity-80 sm:w-auto">
+                <Loader2 className="h-5 w-5 animate-spin" /> {STEP8_FOOTER_CTA_LABELS.LOCKING}
+              </button>
+            )}
+            {step8Status === "LOCKED" && (
+              <Link data-testid="step8-primary-action" href="/reports" className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-status-pass px-5 py-3 text-sm font-bold text-surface-elevated sm:w-auto">
+                {STEP8_FOOTER_CTA_LABELS.LOCKED} <ArrowRight className="h-5 w-5" />
+              </Link>
+            )}
+          </div>
+
+          {sealStatus && <div className="mt-4"><StatusBanner status={sealStatus} tone={sealTone} /></div>}
+          {sealTechnicalCode && (
+            <details className="mt-3 rounded-lg border border-border bg-neutral-soft p-3">
+              <summary className="cursor-pointer text-xs font-semibold">Technical details</summary>
+              <p className="mt-2 break-all font-mono text-[10px] text-muted">{sealTechnicalCode}</p>
+            </details>
+          )}
+          <p className="mt-4 text-xs leading-relaxed text-muted">
+            Click once. Duplicate submissions are protected by one request identifier; failed or blocked attempts consume no release capacity.
+          </p>
+        </section>
 
         {scenarioActive && calculation.result && (
           <section className="rounded-xl border-2 border-forest-light bg-forest-pale p-6 text-forest" aria-label="Illustrative scenario report">
@@ -1171,9 +1312,9 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
             {scenarioActive && <p className="mt-1 text-xs text-status-warning">Illustrative scenario values cannot be sealed.</p>}
           </div>
           <div className="rounded-lg border border-border bg-surface p-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted">External verifier</p>
-            <p className="mt-1 text-sm font-bold">PENDING</p>
-            <p className="mt-1 text-xs text-muted">Only an appropriately accredited independent verifier can issue a verification opinion.</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted">Independent verification</p>
+            <p className="mt-1 text-sm font-bold">POST-RELEASE</p>
+            <p className="mt-1 text-xs text-muted">Begins after package creation and does not block the operator working-file release.</p>
           </div>
         </section>
 
@@ -1184,7 +1325,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
             {blockerCount} blocker{blockerCount === 1 ? "" : "s"} · {documentsToUpload} document{documentsToUpload === 1 ? "" : "s"} to upload · {awaitingReview} document{awaitingReview === 1 ? "" : "s"} awaiting review · {methodologyPending} methodology decision{methodologyPending === 1 ? "" : "s"} awaiting approval{calculationIssues > 0 ? ` · ${calculationIssues} calculation issue${calculationIssues === 1 ? "" : "s"}` : ""}
           </p>
           {readiness.isEligibleForSealing ? (
-            <div className="mt-4 rounded-lg border border-forest-pale bg-forest-pale p-4 text-sm text-forest"><CheckCircle2 className="mb-2 h-5 w-5" /> Every automated preparation control has passed. Create the sealed package once payment is in place.</div>
+            <div className="mt-4 rounded-lg border border-forest-pale bg-forest-pale p-4 text-sm text-forest"><CheckCircle2 className="mb-2 h-5 w-5" /> Every automated preparation control has passed. Use the Release command center above to create the package.</div>
           ) : (
             <button
               type="button"
@@ -1309,14 +1450,8 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
             </div>
           )}
 
-          <div className="mt-4"><StatusBanner status={sealStatus} tone={sealTone} /></div>
-          {sealTechnicalCode && (
-            <p className="mt-2 rounded border border-border bg-neutral-soft px-2 py-1 font-mono text-[10px] break-all text-muted" aria-label="Technical error code">
-              Technical code: {sealTechnicalCode}
-            </p>
-          )}
-          <p className="mt-3 text-xs text-muted">
-            Payment is for this working file only. Failed or blocked locks charge nothing. Re-download is free. The primary action is in the footer bar below.
+          <p className="mt-4 text-xs text-muted">
+            Payment is for this working file only. Failed or blocked attempts charge nothing. Re-download is free. The authoritative action and live operation status are in the Release command center above.
           </p>
         </section>
 
@@ -1481,7 +1616,6 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     }
     switch (step8Status) {
       case "BLOCKED":
-      case "LOCK_FAILED":
         return (
           <button
             type="button"
@@ -1489,6 +1623,17 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
             className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded border border-status-blocked/50 bg-surface px-3 py-2 text-sm font-semibold text-status-blocked sm:flex-none sm:px-4"
           >
             <AlertTriangle className="h-4 w-4 shrink-0" /> {STEP8_FOOTER_CTA_LABELS.BLOCKED}
+          </button>
+        );
+      case "LOCK_FAILED":
+        return (
+          <button
+            type="button"
+            onClick={handleSeal}
+            disabled={sealing}
+            className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded bg-accent px-3 py-2 text-sm font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-4"
+          >
+            <LockKeyhole className="h-4 w-4 shrink-0" /> {STEP8_FOOTER_CTA_LABELS.LOCK_FAILED}
           </button>
         );
       case "PAYMENT_REQUIRED":
@@ -1527,7 +1672,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   };
 
   return (
-    <main className="min-h-screen bg-background px-4 py-6 pb-24 text-foreground md:px-8">
+    <main className="min-h-screen bg-background px-4 py-6 pb-32 text-foreground md:px-8">
       <div className="mx-auto max-w-6xl">
         <header className="flex flex-col justify-between gap-4 border-b border-border pb-4 md:flex-row md:items-center">
           <div className="min-w-0">
