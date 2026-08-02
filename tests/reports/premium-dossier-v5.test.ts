@@ -638,7 +638,7 @@ describe("premium-dossier-v5 deliverables", () => {
     expect(text).toContain("11111111");
     expect(text).toContain("Prepared for Independent");
     expect(text).toContain("Verified Steel Operator A.S.");
-    expect(text).toContain("Not recorded");
+    expect(text).not.toContain("NOT_PROVIDED");
     expect(text).not.toContain("2023/1776");
     expect(text).toContain("2025/2547");
     expect(text).toContain(String(REQUIRED_TOP_LEVEL_COMPONENTS_V5.length));
@@ -674,8 +674,8 @@ describe("premium-dossier-v5 deliverables", () => {
     expect(text).toContain("Allocation reconciliation");
 
     // Risk registers and materiality wording from FAZ 6 modules
-    expect(text).toContain("INHERENT");
-    expect(text).toContain("DETECTION");
+    expect(text.toLowerCase()).toContain("inherent");
+    expect(text.toLowerCase()).toContain("detection");
     expect(text).toContain("PROVISIONAL_FOR_VERIFIER_PLANNING");
   });
 

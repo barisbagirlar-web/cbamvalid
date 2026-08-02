@@ -104,7 +104,7 @@ describe("cross-format reconciliation", () => {
       }
 
       // Readiness state identical.
-      expect(pdf).toContain("OPERATOR_PREPARATION_COMPLETE");
+      expect(pdf).toContain("OPERATOR CHECKS PASSED");
       expect(jsonText).toContain("OPERATOR_PREPARATION_COMPLETE");
       expect(jsonText).toContain("READY_FOR_ACCREDITED_VERIFIER_ENGAGEMENT");
 

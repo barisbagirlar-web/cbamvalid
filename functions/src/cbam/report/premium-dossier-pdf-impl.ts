@@ -492,7 +492,7 @@ export function buildPremiumDossierPdf(
   // Goods
   section("Goods allocation and materiality", "CN-coded production population, allocation reconciliation and 5% verifier planning reference");
   table(["Good", "CN code", "Sector", "Production t", "Allocation", "Allocated tCO2e", "Specific tCO2e/t", "5% reference"],
-    model.goods.map((good) => [good.goodIndex, good.cnCode, good.sector, good.productionVolume, good.allocationShare, good.allocatedEmbeddedEmissions, good.specificEmbeddedEmissions, good.materialityThresholdSpecific]),
+    model.goods.map((good, index) => [good.goodIndex, good.cnCode, good.sector, good.productionVolume, caseData.goods[index]?.allocationShare?.value ?? good.allocationShare, good.allocatedEmbeddedEmissions, good.specificEmbeddedEmissions, good.materialityThresholdSpecific]),
     [8, 13, 16, 13, 12, 15, 13, 10], 6.2);
   callout("Materiality boundary", "The 5% values are planning references calculated per good. They do not constitute a verifier-confirmed materiality determination. Final materiality remains an independent verifier-reserved decision.", "amber");
   table(["Precursor", "Quantity", "Direct tCO2e", "Indirect tCO2e", "Origin"],
@@ -610,6 +610,7 @@ export function buildPremiumDossierPdf(
     ["Controlled report reference", reportRef],
     ["Dossier schema", model.dossierSchemaVersion],
     ["Release contract", model.releaseContractVersion],
+    ["Ruleset", caseData.methodologyDecisions.find((decision) => decision.rulesetVersion)?.rulesetVersion || "EU-CBAM-DEFINITIVE-2026"],
   ], [40, 60]);
   callout("Cryptographic scope", "The detached KMS signature covers the exact UTF-8 bytes of Data Integrity Manifest.json. Each package artifact is bound by path, SHA-256 hash, byte size and media type. See Data Integrity Manifest.json and Manifest Signature.sig for authoritative cryptographic values; a PDF visual statement never substitutes for manifest verification.");
 
