@@ -224,7 +224,10 @@ async function backupState(state: CleanupState, root: string): Promise<void> {
   mkdirSync(root, { recursive: true });
   for (const ref of state.documents.values()) {
     const snapshot = await ref.get();
-    if (snapshot.exists) state.documentBackups.push({ path: ref.path, data: clone(snapshot.data()) });
+    const data = snapshot.data();
+    if (snapshot.exists && data) {
+      state.documentBackups.push({ path: ref.path, data: clone(data) as JsonRecord });
+    }
   }
   for (const file of state.files.values()) {
     const [bytes] = await file.download();
