@@ -129,7 +129,7 @@ export function buildPremiumDossierPdf(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6);
   doc.setTextColor(255, 255, 255);
-  doc.text(".", 1, 1);
+  doc.text(".", 1, 5);
   doc.setFont("LiberationSans", "normal");
 
   const scoreboard = model.honestScoreboard;
