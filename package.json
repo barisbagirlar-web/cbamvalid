@@ -79,7 +79,7 @@
     "seo:scan-claims": "npx tsx scripts/seo/scan-complete-claims.ts",
     "seo:lab-cwv": "bash scripts/seo/lab-cwv.sh",
     "test:dossier": "vitest run tests/dossier",
-    "test:preflight": "vitest run tests/scripts",
+    "test:preflight": "vitest run tests/scripts tests/compliance-guard.test.ts",
     "verify:four-complete-dossiers": "npx tsx scripts/verify-four-complete-dossiers.ts",
     "render:four-complete-dossiers": "npx tsx scripts/render-four-complete-dossiers.ts",
     "inspect:four-complete-dossiers": "npx tsx scripts/inspect-four-complete-dossiers.ts",
