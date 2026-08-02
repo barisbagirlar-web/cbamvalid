@@ -1,14 +1,13 @@
 /**
- * FAZ P0 (H) — Four-dossier render QA.
+ * Four-dossier render QA.
  *
  * Every primary PDF must:
- *  - be a real, renderable multi-page document (≥ 5 pages)
- *  - keep every text item inside the page geometry (long UUIDs never break
- *    table layout)
+ *  - be a real, renderable multi-page document
+ *  - keep every text item inside page geometry
  *  - expose a working table of contents / bookmarks outline
- *  - embed its fonts
- *  - contain no replacement characters (broken Unicode)
- *  - contain no blank or hyper-cramped pages
+ *  - contain no replacement characters or blank pages
+ *  - use the current four-indicator honest scoreboard, never the legacy single
+ *    diagnostic score card
  */
 
 import { describe, expect, it } from "vitest";
@@ -71,7 +70,7 @@ async function analyzePdf(bytes: Buffer): Promise<PdfReport> {
 
 describe("four-dossier render QA", () => {
   for (const key of FOUR_DOSSIER_KEYS) {
-    it(`${key} — primary PDF renders cleanly`, async () => {
+    it(`${key} — primary PDF renders cleanly with honest scoreboard`, async () => {
       const pkg = await buildDossierSealedPackage(key);
       const report = await analyzePdf(pkg.finalized.primaryPdf);
 
@@ -79,16 +78,16 @@ describe("four-dossier render QA", () => {
       expect(report.blankPages).toEqual([]);
       expect(report.clippedItems).toBe(0);
       expect(report.textItemCount).toBeGreaterThan(100);
-
-      // Table of contents / bookmarks present and populated.
       expect(report.hasOutline).toBe(true);
-
-      // No broken Unicode replacement characters.
       expect(report.text).not.toContain("\uFFFD");
 
-      // Fonts resolve to valid PDF font references. The report engine uses the
-      // PDF standard 14 font set (Helvetica), which every PDF viewer embeds
-      // internally — so no FontFile streams are required for reliable render.
+      expect(report.text).toContain("OPERATOR PREPARATION");
+      expect(report.text).toContain("EVIDENCE ASSURANCE");
+      expect(report.text).toContain("PACKAGE INTEGRITY");
+      expect(report.text).toContain("External verifier completion");
+      expect(report.text).toContain("PENDING");
+      expect(report.text).not.toContain("DIAGNOSTIC SCORE");
+
       const pdfBytes = pkg.finalized.primaryPdf.toString("latin1");
       expect(pdfBytes).toMatch(/\/Type\s*\/Font/);
       expect(pdfBytes).toMatch(/\/BaseFont\s*\/Helvetica/);

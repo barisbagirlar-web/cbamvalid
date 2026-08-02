@@ -51,15 +51,35 @@ export default async function QaFourDossiersPage() {
 
   // Load fixtures and the server SSOT only after the sandbox gate, so
   // production bundles never touch synthetic dossier data.
-  const [{ FOUR_DOSSIER_ASSESSMENT_TIMESTAMP, FOUR_DOSSIER_KEYS, createFourDossierCase, buildFourDossierEvidenceFiles, FOUR_DOSSIER_RULESET, FOUR_DOSSIER_REVIEWER, FOUR_DOSSIER_REVIEWER_NAME, FOUR_DOSSIER_REVIEWER_ROLE }, { AuditReadyCaseSchema }, { assessReadiness }, { runEvidenceSufficiency }, { computeEvidenceAssuranceScore }, { dossierReportId }] =
-    await Promise.all([
-      import("@/tests/fixtures/four-dossiers"),
-      import("@/functions/src/cbam/schema"),
-      import("@/functions/src/cbam/validation/readiness-score"),
-      import("@/functions/src/cbam/validation/evidence-sufficiency"),
-      import("@/functions/src/cbam/report/honest-scoreboard"),
-      import("@/tests/fixtures/four-dossier-package"),
-    ]);
+  const [
+    {
+      FOUR_DOSSIER_ASSESSMENT_TIMESTAMP,
+      FOUR_DOSSIER_KEYS,
+      createFourDossierCase,
+      buildFourDossierEvidenceFiles,
+      FOUR_DOSSIER_RULESET,
+      FOUR_DOSSIER_REVIEWER,
+      FOUR_DOSSIER_REVIEWER_NAME,
+      FOUR_DOSSIER_REVIEWER_ROLE,
+    },
+    { AuditReadyCaseSchema },
+    { assessReadiness },
+    { runEvidenceSufficiency },
+    { computeEvidenceAssuranceScore },
+    {
+      dossierReportId,
+      DOSSIER_RELEASE_VERSION,
+      DOSSIER_RELEASE_CONTRACT_VERSION,
+      FOUR_DOSSIER_FIXTURE_SET,
+    },
+  ] = await Promise.all([
+    import("@/tests/fixtures/four-dossiers"),
+    import("@/functions/src/cbam/schema"),
+    import("@/functions/src/cbam/validation/readiness-score"),
+    import("@/functions/src/cbam/validation/evidence-sufficiency"),
+    import("@/functions/src/cbam/report/honest-scoreboard"),
+    import("@/tests/fixtures/four-dossier-package"),
+  ]);
 
   const rows: QaRow[] = [];
   for (const key of FOUR_DOSSIER_KEYS) {
@@ -78,7 +98,9 @@ export default async function QaFourDossiersPage() {
     const caseId = parsed.caseId ?? "";
     const sealOk = readiness.canSeal;
     const stepCompletion = readiness.dimensions.every(
-      (d) => d.assessmentState === "ASSESSED" && d.passedRequirementCount === d.applicableRequirementCount
+      (dimension) =>
+        dimension.assessmentState === "ASSESSED" &&
+        dimension.passedRequirementCount === dimension.applicableRequirementCount
     );
 
     rows.push({
@@ -100,14 +122,31 @@ export default async function QaFourDossiersPage() {
   }
 
   const allPass = rows.every(
-    (r) => r.stepCompletion && r.operatorPreparation === "100" && r.evidenceAssurance === 100 && r.blockers === 0 && r.missingEvidence === 0 && r.sealStatus === "READY"
+    (row) =>
+      row.stepCompletion &&
+      row.operatorPreparation === "100" &&
+      row.evidenceAssurance === 100 &&
+      row.blockers === 0 &&
+      row.missingEvidence === 0 &&
+      row.sealStatus === "READY"
   );
+
+  const processSteps = [
+    "Build the complete annual sector fixture and deterministic evidence files.",
+    "Run reporting-period, methodology, evidence, calculation and reconciliation gates.",
+    "Generate the current V5 PDF, verifier workbook, JSON traces and 26-component package.",
+    "Hash every component, create the detached sandbox signature and reopen the ZIP.",
+    "Run the offline verifier and publish the current synthetic QA downloads below.",
+  ];
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-serif font-bold">Four sandbox dossiers — QA index</h1>
+          <h1 className="text-2xl font-serif font-bold">Current-engine four-sector dossier review</h1>
+          <p className="mt-1 text-sm text-muted">
+            Fixture set {FOUR_DOSSIER_FIXTURE_SET} · Release {DOSSIER_RELEASE_VERSION} · report contract V{DOSSIER_RELEASE_CONTRACT_VERSION}
+          </p>
           <p className="text-sm text-muted">
             Ruleset {FOUR_DOSSIER_RULESET} · reviewer {FOUR_DOSSIER_REVIEWER_ROLE} ({FOUR_DOSSIER_REVIEWER_NAME} / {FOUR_DOSSIER_REVIEWER})
           </p>
@@ -117,46 +156,68 @@ export default async function QaFourDossiersPage() {
         </span>
       </div>
 
+      <section className="rounded-xl border border-border bg-surface p-5">
+        <h2 className="font-serif text-lg font-bold">How each current package is produced</h2>
+        <ol className="mt-4 grid gap-3 md:grid-cols-5">
+          {processSteps.map((step, index) => (
+            <li key={step} className="rounded-lg border border-border bg-background p-3 text-xs leading-relaxed text-muted">
+              <span className="mb-2 block font-mono text-sm font-bold text-accent">{index + 1}</span>
+              {step}
+            </li>
+          ))}
+        </ol>
+      </section>
+
       <div className="overflow-x-auto rounded-lg border border-border">
-        <table className="w-full min-w-[1080px] text-left text-sm">
+        <table className="w-full min-w-[1380px] text-left text-sm">
           <thead className="border-b border-border bg-surface">
             <tr>
               <th className="px-3 py-2 font-semibold">Scenario</th>
-              <th className="px-3 py-2 font-semibold">Case ID</th>
               <th className="px-3 py-2 font-semibold">Sector</th>
-              <th className="px-3 py-2 font-semibold">Step completion</th>
+              <th className="px-3 py-2 font-semibold">Case ID</th>
+              <th className="px-3 py-2 font-semibold">8-step completion</th>
               <th className="px-3 py-2 font-semibold">Operator preparation</th>
               <th className="px-3 py-2 font-semibold">Evidence assurance</th>
               <th className="px-3 py-2 font-semibold">Blockers</th>
+              <th className="px-3 py-2 font-semibold">Missing evidence</th>
               <th className="px-3 py-2 font-semibold">Seal status</th>
-              <th className="px-3 py-2 font-semibold">PDF</th>
-              <th className="px-3 py-2 font-semibold">XLSX</th>
-              <th className="px-3 py-2 font-semibold">ZIP</th>
-              <th className="px-3 py-2 font-semibold">Offline verifier</th>
+              <th className="px-3 py-2 font-semibold">Current PDF</th>
+              <th className="px-3 py-2 font-semibold">Current XLSX</th>
+              <th className="px-3 py-2 font-semibold">Current ZIP</th>
+              <th className="px-3 py-2 font-semibold">Manifest</th>
               <th className="px-3 py-2 font-semibold">Working file</th>
-              <th className="px-3 py-2 font-semibold">Sealed release</th>
+              <th className="px-3 py-2 font-semibold">Stored release</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {rows.map((row) => (
               <tr key={row.key} className="hover:bg-surface/60">
                 <td className="px-3 py-2 font-semibold">{row.key}</td>
-                <td className="px-3 py-2 font-mono text-xs">{row.caseId}</td>
                 <td className="px-3 py-2">{row.sector}</td>
-                <td className="px-3 py-2"><Pill ok={row.stepCompletion} label="8/8" /></td>
+                <td className="px-3 py-2 font-mono text-xs">{row.caseId}</td>
+                <td className="px-3 py-2"><Pill ok={row.stepCompletion} label="INCOMPLETE" /></td>
                 <td className="px-3 py-2">{row.operatorPreparation}/100</td>
                 <td className="px-3 py-2">{row.evidenceAssurance}/100</td>
                 <td className="px-3 py-2">{row.blockers}</td>
+                <td className="px-3 py-2">{row.missingEvidence}</td>
                 <td className="px-3 py-2"><Pill ok={row.sealStatus === "READY"} label={row.sealStatus} /></td>
-                <td className="px-3 py-2"><Pill ok={row.pdf} label="FAIL" /></td>
-                <td className="px-3 py-2"><Pill ok={row.xlsx} label="FAIL" /></td>
-                <td className="px-3 py-2"><Pill ok={row.zip} label="FAIL" /></td>
-                <td className="px-3 py-2"><Pill ok={row.offlineVerifier} label="FAIL" /></td>
                 <td className="px-3 py-2">
-                  <Link href={`/cases/${row.caseId}`} className="text-primary underline underline-offset-2">Open</Link>
+                  <a href={`/api/qa/four-dossiers/${row.key}/pdf`} className="text-primary underline underline-offset-2">Download</a>
                 </td>
                 <td className="px-3 py-2">
-                  <Link href={`/cbam/reports/${row.reportId}`} className="text-primary underline underline-offset-2">Open</Link>
+                  <a href={`/api/qa/four-dossiers/${row.key}/xlsx`} className="text-primary underline underline-offset-2">Download</a>
+                </td>
+                <td className="px-3 py-2">
+                  <a href={`/api/qa/four-dossiers/${row.key}/zip`} className="text-primary underline underline-offset-2">Download</a>
+                </td>
+                <td className="px-3 py-2">
+                  <a href={`/api/qa/four-dossiers/${row.key}/manifest`} className="text-primary underline underline-offset-2">Download</a>
+                </td>
+                <td className="px-3 py-2">
+                  <Link href={`/cases/${row.caseId}?step=8`} className="text-primary underline underline-offset-2">Open step 8</Link>
+                </td>
+                <td className="px-3 py-2">
+                  <Link href={`/cbam/reports/${row.reportId}`} className="text-primary underline underline-offset-2">Open release</Link>
                 </td>
               </tr>
             ))}
@@ -165,7 +226,9 @@ export default async function QaFourDossiersPage() {
       </div>
 
       <div className={`rounded-lg border p-4 text-sm font-semibold ${allPass ? "border-forest-light bg-forest-pale text-forest" : "border-status-blocked/40 bg-[color:var(--status-blocked-soft)] text-[color:var(--status-blocked)]"}`}>
-        {allPass ? "FOUR_DOSSIERS_QA=PASS — all four sandbox dossiers are seal-ready" : "FOUR_DOSSIERS_QA=FAIL — at least one sandbox dossier is not seal-ready"}
+        {allPass
+          ? "FOUR_DOSSIERS_QA=PASS — all four current-engine sandbox dossiers are seal-ready"
+          : "FOUR_DOSSIERS_QA=FAIL — at least one current-engine sandbox dossier is not seal-ready"}
       </div>
     </div>
   );

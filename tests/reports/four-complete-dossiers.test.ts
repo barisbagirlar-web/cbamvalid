@@ -1,12 +1,12 @@
 /**
- * FAZ P0 (F/G/H) — Four complete sandbox dossiers.
+ * Four complete current-engine sandbox dossiers.
  *
  * Mandatory tests:
- *  - four fixtures preflight PASS (server assessReadiness → canSeal)
- *  - four fixtures seal PASS (full pipeline → finalizeVerifierPackage)
+ *  - four fixtures preflight PASS
+ *  - four current report identities satisfy the production report contract
+ *  - four full package seals PASS
  *  - four ZIP archives expose exactly 26 top-level components
- *  - four offline verifier runs PASS (manifest files all present, hashes and
- *    byte sizes match the ZIP)
+ *  - four offline verifier runs PASS
  */
 
 import { createHash } from "node:crypto";
@@ -28,7 +28,12 @@ import {
   createFourDossierCase,
 } from "../fixtures/four-dossiers";
 import {
+  DOSSIER_RELEASE_CONTRACT_VERSION,
+  DOSSIER_RELEASE_VERSION,
+  FOUR_DOSSIER_FIXTURE_SET,
   buildDossierSealedPackage,
+  dossierReportId,
+  legacyDossierReportId,
   type DossierSealedPackage,
 } from "../fixtures/four-dossier-package";
 
@@ -64,13 +69,24 @@ async function runOfflineVerifier(pkg: DossierSealedPackage): Promise<{
   return { ok: missing.length === 0 && mismatched.length === 0, missing, mismatched };
 }
 
-describe("four complete sandbox dossiers", () => {
+describe("four complete current-engine sandbox dossiers", () => {
+  it("uses fresh production-compatible report identities and Release 1/V5 contract separation", () => {
+    expect(FOUR_DOSSIER_FIXTURE_SET).toBe("FOUR_COMPLETE_DOSSIERS_V2");
+    expect(DOSSIER_RELEASE_VERSION).toBe(1);
+    expect(DOSSIER_RELEASE_CONTRACT_VERSION).toBe(5);
+
+    const reportIds = FOUR_DOSSIER_KEYS.map(dossierReportId);
+    expect(new Set(reportIds).size).toBe(FOUR_DOSSIER_KEYS.length);
+    for (const key of FOUR_DOSSIER_KEYS) {
+      expect(dossierReportId(key)).toMatch(/^report_[a-f0-9]{64}$/);
+      expect(dossierReportId(key)).not.toBe(legacyDossierReportId(key));
+    }
+  });
+
   for (const key of FOUR_DOSSIER_KEYS) {
     describe(key, () => {
       it("preflight PASS — server assessReadiness allows sealing", async () => {
         const caseData = createFourDossierCase(key);
-        // Hydrate fileHash/sizeBytes from the deterministic synthetic PDFs,
-        // exactly as the shared seal helper does.
         await buildFourDossierEvidenceFiles(caseData);
         const parsed = AuditReadyCaseSchema.parse(caseData);
         const readiness = assessReadiness({
@@ -98,9 +114,13 @@ describe("four complete sandbox dossiers", () => {
         const pkg = await buildDossierSealedPackage(key);
         expect(pkg.finalized.zipHash).toMatch(/^[a-f0-9]{64}$/);
         expect(pkg.finalized.primaryPdf.byteLength).toBeGreaterThan(5000);
+        expect(pkg.manifestResult.manifest.reportId).toBe(dossierReportId(key));
+        expect(pkg.manifestResult.manifest.releaseVersion).toBe(1);
+        expect(pkg.manifestResult.manifest.schemaVersion).toBe("CBAMVALID-DOSSIER-5.0");
         const archive = await JSZip.loadAsync(pkg.finalized.zip, { checkCRC32: true });
-        const paths = Object.keys(archive.files);
-        expect(topLevel(paths)).toEqual([...REQUIRED_TOP_LEVEL_COMPONENTS_V5].sort());
+        expect(topLevel(Object.keys(archive.files))).toEqual(
+          [...REQUIRED_TOP_LEVEL_COMPONENTS_V5].sort()
+        );
       }, 30_000);
 
       it("ZIP component contract — exactly 26 top-level components", async () => {
@@ -112,8 +132,7 @@ describe("four complete sandbox dossiers", () => {
           REQUIRED_TOP_LEVEL_COMPONENTS_V5
         );
         const archive = await JSZip.loadAsync(pkg.finalized.zip);
-        const paths = Object.keys(archive.files);
-        expect(topLevel(paths).length).toBe(26);
+        expect(topLevel(Object.keys(archive.files)).length).toBe(26);
       });
 
       it("offline verifier PASS — every manifest file exists with matching hash and size", async () => {
