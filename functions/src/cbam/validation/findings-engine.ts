@@ -223,9 +223,9 @@ export function generateFindingsAndActions(
     correctiveActions.push(action);
   });
 
-  // 4. A current/future or interim reporting period cannot claim definitive
-  // annual readiness, but it may still produce an explicitly conditional
-  // operator working file.
+  // 4. A future end date on a structurally complete annual period may create
+  // a conditional operator working file. Partial/interim/custom periods remain
+  // fail-closed for sealing and verifier handover.
   const period = getReportingPeriodAssessment(caseData, assessmentTimestamp, sealMode);
   if (!period.definitiveAnnualEligible) {
     if (period.type !== "DEFINITIVE_ANNUAL") {
@@ -234,10 +234,10 @@ export function generateFindingsAndActions(
         actionId: `ACT-${findingId}`,
         findingId,
         priority: "P0",
-        requiredAction: "Update the reporting period to a definitive annual period and supply full-year data before independent-verifier handover.",
+        requiredAction: "Update the reporting period to a definitive annual period and supply full-year data before sealing.",
         responsibleRole: "OPERATOR_ADMIN",
         targetDate: null,
-        closureCondition: "Reporting period is updated to a completed definitive annual period.",
+        closureCondition: "Reporting period is updated to a structurally complete annual period.",
         closureEvidenceIds: [],
         state: "OPEN",
       };
@@ -248,17 +248,17 @@ export function generateFindingsAndActions(
         severity: "CRITICAL_BLOCKER",
         category: "REPORTING_PERIOD",
         status: "OPEN",
-        title: "Definitive Annual Reporting Period Required for Verifier Handover",
-        description: "This case covers an interim or partial-year period. The operator working file may be generated, but it cannot be represented as a completed definitive annual package.",
+        title: "Definitive Annual Reporting Period Required",
+        description: "This case covers an interim, partial-year or custom period. It cannot be sealed as a definitive operator working file.",
         regulatoryOrTechnicalBasis: "Commission Implementing Regulation (EU) 2025/2546 - Article 5",
         affectedInputIds: ["reportingPeriod.quarter"],
         affectedCalculationIds: [],
         affectedEvidenceIds: [],
         affectedReportSectionIds: [],
-        impactStatement: "Quarterly or partial-year data blocks definitive annual readiness and verifier handover, not operator working-file generation.",
-        remediationRequirement: "Change the reporting period to a completed full year (ANNUAL) and link corresponding annual data before verifier handover.",
+        impactStatement: "Quarterly, partial-year and custom periods block both sealing and verifier handover.",
+        remediationRequirement: "Change the reporting period to a structurally complete full year (ANNUAL) and link corresponding annual data.",
         blocksOperatorReadiness: true,
-        blocksSealing: false,
+        blocksSealing: true,
         blocksVerifierHandover: true,
         createdDeterministicallyFrom: "getReportingPeriodAssessment",
         action,
@@ -277,7 +277,7 @@ export function generateFindingsAndActions(
 
       if (blockerId === "FND-PERIOD-FUTURE-END-DATE") {
         title = "Future Reporting Period End Date";
-        description = "The reporting period end date is in the future relative to the assessment timestamp. The operator working file may be generated, but definitive annual readiness and verifier handover remain blocked.";
+        description = "The structurally complete annual reporting period ends in the future. A conditional operator working file may be generated, but definitive annual readiness and verifier handover remain blocked.";
         inputId = "reportingPeriod.endDate";
         blocksWorkingFile = false;
       } else if (blockerId === "FND-PERIOD-MISSING-START-DATE") {
@@ -333,7 +333,7 @@ export function generateFindingsAndActions(
         affectedReportSectionIds: [],
         impactStatement: blocksWorkingFile
           ? "Invalid or incomplete reporting-period dates block working-file generation."
-          : "A future period blocks definitive annual readiness and verifier handover, but not an explicitly conditional operator working file.",
+          : "A future annual period blocks definitive readiness and verifier handover, but not an explicitly conditional operator working file.",
         remediationRequirement: blocksWorkingFile
           ? "Ensure all reporting-period bounds are valid and complete."
           : "Refresh the file after period end with complete annual data and evidence.",
