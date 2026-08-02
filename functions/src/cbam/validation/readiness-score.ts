@@ -4,6 +4,7 @@ import type { ReadinessAssessment, ReadinessDimension, ReadinessDimensionId, Ope
 import { runEvidenceSufficiency, isEvidenceSupportedState } from "./evidence-sufficiency";
 import { generateFindingsAndActions } from "./findings-engine";
 import { runQualityControls } from "./quality-controls";
+import { isPendingReviewOnly } from "./working-file-review-policy";
 
 const TOTAL_WEIGHT = new Decimal(100);
 
@@ -386,49 +387,79 @@ export function assessReadiness(params: {
     : new Decimal(0);
   const hasIncompleteAssessment = unassessedWeight.greaterThan(0);
 
-  // 3. Count gates & indicators
-  const criticalBlockerCount = findings.filter(f => (f.severity === "CRITICAL" || f.severity === "CRITICAL_BLOCKER") && f.status === "OPEN").length;
+  // 3. Count separate gates and indicators. `criticalBlockerCount` and
+  // `missingMaterialEvidenceCount` are the working-file seal contract. Strict
+  // verifier-handover blockers remain visible through the recommended decision.
+  const criticalBlockerCount = findings.filter(
+    (finding) =>
+      (finding.severity === "CRITICAL" || finding.severity === "CRITICAL_BLOCKER") &&
+      finding.status === "OPEN" &&
+      finding.blocksSealing
+  ).length;
+  const verifierHandoverBlockerCount = findings.filter(
+    (finding) => finding.status === "OPEN" && finding.blocksVerifierHandover
+  ).length;
   const materialFindingCount = findings.filter(f => f.severity === "MATERIAL" && f.status === "OPEN").length;
   const openFindingCount = findings.filter(f => f.status === "OPEN").length;
-  const missingMaterialEvidenceCount = sufficiency.filter(r => r.blocksSealing && !isEvidenceSupportedState(r.state)).length;
+  const missingMaterialEvidenceCount = sufficiency.filter(
+    (row) =>
+      row.blocksSealing &&
+      !isEvidenceSupportedState(row.state) &&
+      !isPendingReviewOnly(caseData, row.evidenceIds, row.reasonCodes)
+  ).length;
   const unresolvedCalculationExceptionCount = findings.filter(f => f.category === "CALCULATION_EXCEPTION" && f.status === "OPEN").length;
 
   const period = getReportingPeriodAssessment(caseData, assessmentTimestamp, sealMode);
-  const hasCriticalBlocker = criticalBlockerCount > 0 || !period.definitiveAnnualEligible;
+  const hasCriticalBlocker = criticalBlockerCount > 0;
   const hasUnsupportedMaterialEvidence = missingMaterialEvidenceCount > 0;
-  const hasIntegrityFailure = findings.some(f => f.category === "EVIDENCE_INTEGRITY" && f.status === "OPEN");
+  const hasIntegrityFailure = findings.some(
+    (finding) =>
+      finding.category === "EVIDENCE_INTEGRITY" &&
+      finding.status === "OPEN" &&
+      finding.blocksSealing
+  );
 
   const hardBlockersCount = (hasCriticalBlocker ? 1 : 0) +
     (hasIntegrityFailure ? 1 : 0) +
     (hasUnsupportedMaterialEvidence ? 1 : 0);
+  const verifierHandoverBlocked =
+    verifierHandoverBlockerCount > 0 || !period.definitiveAnnualEligible;
 
-  // Derive operator status
+  // Derive operator working-file status. Pending review and an unfinished
+  // annual period produce CONDITIONAL, not NOT_READY. Invalid chronology,
+  // malware, missing material evidence and calculation/integrity defects stay
+  // fail-closed.
   let operatorStatus: OperatorReadinessStatus = "DRAFT";
   if (!isDraft) {
     if (hardBlockersCount > 0) {
       operatorStatus = "NOT_READY";
     } else if (hasIncompleteAssessment) {
       operatorStatus = "INCOMPLETE_ASSESSMENT";
-    } else if (finalScore.lessThan(90) || openFindingCount > 0) {
+    } else if (finalScore.lessThan(90) || openFindingCount > 0 || verifierHandoverBlocked) {
       operatorStatus = "CONDITIONAL";
     } else {
       operatorStatus = "OPERATOR_PREPARATION_COMPLETE";
     }
   }
 
-  // Recommended Decision — READY_FOR_ACCREDITED_VERIFIER_ENGAGEMENT requires full weighted coverage.
+  // Recommended decision remains the strict verifier-handover decision. A
+  // conditional working file is never represented as submission-ready.
   let recommendedDecision: ReadinessAssessment["recommendedDecision"] = "READY_FOR_ACCREDITED_VERIFIER_ENGAGEMENT";
   const decisionReasonCodes: string[] = [];
 
-  if (hardBlockersCount > 0) {
+  if (hardBlockersCount > 0 || verifierHandoverBlocked) {
     recommendedDecision = "DO_NOT_SUBMIT";
     if (criticalBlockerCount > 0) decisionReasonCodes.push("CRITICAL_BLOCKERS_PRESENT");
+    if (verifierHandoverBlockerCount > 0) decisionReasonCodes.push("VERIFIER_HANDOVER_BLOCKERS_PRESENT");
     if (!period.definitiveAnnualEligible) decisionReasonCodes.push("NON_ANNUAL_PERIOD_BLOCKED");
     if (period.hardBlockerFindingIds.includes("FND-PERIOD-FUTURE-END-DATE")) {
       decisionReasonCodes.push("FUTURE_REPORTING_PERIOD_END");
     }
     if (hasIntegrityFailure) decisionReasonCodes.push("EVIDENCE_INTEGRITY_FAILURE");
     if (hasUnsupportedMaterialEvidence) decisionReasonCodes.push("MATERIAL_EVIDENCE_MISSING");
+    if (hardBlockersCount === 0) {
+      decisionReasonCodes.push("CONDITIONAL_WORKING_FILE_ONLY");
+    }
   } else if (hasIncompleteAssessment) {
     recommendedDecision = "REMEDIATE_BEFORE_REVIEW";
     decisionReasonCodes.push("INCOMPLETE_DIMENSION_ASSESSMENT");
@@ -441,18 +472,16 @@ export function assessReadiness(params: {
     decisionReasonCodes.push("FULL_WEIGHTED_COVERAGE");
   }
 
-  // Fail-closed: never allow seal/handover when coverage incomplete or score renormalization would hide gaps.
+  // Fail-closed: never claim verifier readiness when coverage is incomplete.
   if (hasIncompleteAssessment && finalScore.equals(100)) {
-    // Defensive invariant — absolute scoring should already prevent this.
     recommendedDecision = "REMEDIATE_BEFORE_REVIEW";
     decisionReasonCodes.push("SCORE_COVERAGE_INVARIANT_VIOLATION");
   }
 
-  const canSeal =
-    operatorStatus === "OPERATOR_PREPARATION_COMPLETE" &&
-    hardBlockersCount === 0 &&
-    !hasIncompleteAssessment &&
-    recommendedDecision === "READY_FOR_ACCREDITED_VERIFIER_ENGAGEMENT";
+  // Working-file sealing is independent from the strict verifier-handover
+  // recommendation. The package remains NOT_REVIEWED and carries its open
+  // findings; only true data, evidence-integrity and calculation blockers stop it.
+  const canSeal = hardBlockersCount === 0 && missingMaterialEvidenceCount === 0;
 
   return {
     operatorStatus,
