@@ -61,7 +61,7 @@ export async function GET(
         };
       case "manifest":
         return {
-          bytes: Buffer.from(pkg.manifestResult.bytes),
+          bytes: pkg.manifestResult.bytes,
           mediaType: "application/json",
           fileName: `${baseName}-manifest.json`,
         };
