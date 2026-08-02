@@ -643,7 +643,7 @@ describe("premium-dossier-v5 deliverables", () => {
     expect(text).toContain("2025/2547");
     expect(text).toContain(String(REQUIRED_TOP_LEVEL_COMPONENTS_V5.length));
     expect(text).toContain("Independent verifier handover");
-    expect(text).toContain("ANNEX II");
+    expect(text).toContain("Annex index and legal boundary");
     expect(text).not.toContain("FIPS 140-2 Level 3 KMS Sealed Hash");
     expect(text).toContain("detached KMS signature");
     expect(text).toContain("72011011");
