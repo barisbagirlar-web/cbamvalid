@@ -65,6 +65,7 @@ export default function BuyCreditsPage() {
           adminClaim ||
             pilotClaim ||
             role === "admin" ||
+            role === "super_admin" ||
             role === "Owner" ||
             role === "pilot"
         );

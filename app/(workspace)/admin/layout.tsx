@@ -13,7 +13,8 @@ import {
   Activity,
   ShieldAlert,
   Server,
-  TerminalSquare
+  TerminalSquare,
+  BookOpen
 } from "lucide-react";
 
 export const metadata = {
@@ -38,6 +39,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { label: "Reports", href: "/admin/reports", icon: <FileText className="w-4 h-4" /> },
     { label: "Entitlements", href: "/admin/entitlements", icon: <Key className="w-4 h-4" /> },
     { label: "Webhooks", href: "/admin/webhooks", icon: <Globe className="w-4 h-4" /> },
+    { label: "Sample Dossier", href: "/admin/sample-dossier", icon: <BookOpen className="w-4 h-4" /> },
     { label: "System Health", href: "/admin/system", icon: <Server className="w-4 h-4" /> },
     { label: "Audit Log", href: "/admin/audit", icon: <TerminalSquare className="w-4 h-4" /> },
     { label: "Security", href: "/admin/security", icon: <ShieldAlert className="w-4 h-4" /> },
@@ -46,6 +48,29 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-screen bg-surface">
+      {/* Mobile nav — CSS-only disclosure so admin navigation stays usable on small screens */}
+      <details className="md:hidden border-b border-border bg-surface">
+        <summary className="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+          <span className="font-serif font-bold tracking-tight text-[16px]">Admin Console</span>
+          <span className="text-xs font-medium text-muted uppercase tracking-wider">Menu</span>
+        </summary>
+        <nav className="px-3 pb-3">
+          <ul className="grid grid-cols-1 gap-1">
+            {adminNav.map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground rounded-md hover:bg-border/30 transition-colors"
+                >
+                  {item.icon}
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </details>
+
       {/* Left Sidebar */}
       <aside className="w-64 border-r border-border bg-surface/50 hidden md:flex flex-col">
         <div className="h-[76px] flex items-center px-6 border-b border-border">

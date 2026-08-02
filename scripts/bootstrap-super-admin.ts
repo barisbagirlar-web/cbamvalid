@@ -35,6 +35,9 @@ async function bootstrapOne(email: string) {
     const customClaims = {
       role: "super_admin",
       owner: true,
+      // Header navigation and post-login routing gate on claims.admin / ownerAdmin.
+      admin: true,
+      ownerAdmin: true,
       adminVersion: 1
     };
 
