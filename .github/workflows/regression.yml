@@ -32,6 +32,25 @@ jobs:
       - name: Vitest Unit Tests
         run: npx vitest run
 
+      - name: Render current four-sector dossier artifacts
+        if: startsWith(github.head_ref, 'refresh/four-sector-dossiers-')
+        run: |
+          npm run render:four-complete-dossiers
+          npm run inspect:four-complete-dossiers
+          npm run verify:four-complete-dossiers
+          tar -czf artifacts/four-sector-dossiers-current.tar.gz -C artifacts four-complete-dossiers
+
+      - name: Upload current four-sector dossier artifacts
+        if: startsWith(github.head_ref, 'refresh/four-sector-dossiers-')
+        uses: actions/upload-artifact@v4
+        with:
+          name: four-sector-dossiers-current
+          path: |
+            artifacts/four-complete-dossiers/
+            artifacts/four-sector-dossiers-current.tar.gz
+          retention-days: 14
+          if-no-files-found: error
+
       - name: Build (Next.js — Firebase Web Frameworks)
         run: npm run build
         env:
