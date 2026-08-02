@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthProvider";
+import { sendEmailVerification, sendPasswordResetEmail } from "firebase/auth";
+import { firebaseAuth as auth } from "@/lib/firebase/client";
 import {
   getAccountOverview,
   getEntitlements,
@@ -472,6 +474,65 @@ export default function AccountPage() {
               </tbody>
             </table>
           )}
+        </div>
+      </div>
+
+      <div id="security" className="border border-border rounded-sm p-6 bg-kil-surface shadow-sm">
+        <div className="flex items-center gap-2 mb-1">
+          <ShieldAlert className="w-5 h-5 text-kil-accent" />
+          <h2 className="font-serif text-xl text-kil-text">Security</h2>
+        </div>
+        <p className="text-xs text-kil-text/60 mb-4">
+          Account credentials and email verification for this CBAMValid sign-in.
+        </p>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-mono uppercase text-kil-text/60 mb-1">Email verification</label>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className={`inline-flex px-2 py-0.5 rounded text-xs font-semibold border ${user?.emailVerified ? "border-success/30 bg-success/5 text-success" : "border-status-blocked/30 bg-status-blocked/5 text-status-blocked"}`}>
+                {user?.emailVerified ? "Verified" : "Not verified"}
+              </span>
+              {!user?.emailVerified && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!user) return;
+                    sendEmailVerification(user)
+                      .then(() => alert("Verification email sent. Check your inbox."))
+                      .catch((err: unknown) => {
+                        const message = err instanceof Error ? err.message : "Failed to send verification email.";
+                        alert(message);
+                      });
+                  }}
+                  className="text-xs font-semibold text-accent hover:underline"
+                >
+                  Send verification email
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="border-t border-kil-text/10 pt-4">
+            <label className="block text-xs font-mono uppercase text-kil-text/60 mb-1">Password</label>
+            <button
+              type="button"
+              onClick={() => {
+                if (!user?.email) return;
+                sendPasswordResetEmail(auth, user.email)
+                  .then(() => alert("Password reset email sent. Check your inbox."))
+                  .catch((err: unknown) => {
+                    const message = err instanceof Error ? err.message : "Failed to send password reset email.";
+                    alert(message);
+                  });
+              }}
+              className="px-4 py-2 border border-border text-kil-text text-xs font-semibold hover:bg-kil-base transition-colors"
+            >
+              Send password reset email
+            </button>
+            <p className="text-[11px] text-kil-text/50 mt-2">
+              A secure reset link is emailed to {user?.email || "your inbox"}. CBAMValid never stores your password.
+            </p>
+          </div>
         </div>
       </div>
 

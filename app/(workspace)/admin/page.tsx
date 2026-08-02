@@ -42,7 +42,7 @@ export default async function AdminDashboardPage() {
             <Banknote className="w-4 h-4" />
             <h3 className="text-xs font-semibold uppercase tracking-wider">Est. Gross Revenue</h3>
           </div>
-          <p className="text-3xl font-bold font-mono text-accent">\${metrics.monthlyRevenue.toFixed(2)}</p>
+          <p className="text-3xl font-bold font-mono text-accent">${metrics.monthlyRevenue.toFixed(2)}</p>
         </div>
 
         <div className="p-6 bg-surface border border-border rounded-lg shadow-sm flex flex-col justify-center">

@@ -46,7 +46,7 @@ export default async function AdminUsersPage() {
                   </td>
                   <td className="py-3 px-4 text-xs font-mono text-muted">{profile.id}</td>
                   <td className="py-3 px-4">
-                    {profile.role === "admin" ? (
+                    {profile.role === "super_admin" ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-accent/10 text-accent border border-accent/20">
                         <ShieldCheck className="w-3 h-3" /> Admin
                       </span>

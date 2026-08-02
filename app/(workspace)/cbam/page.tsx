@@ -793,7 +793,7 @@ export default function CbamLandingPage() {
                   <ul className="list-disc list-inside space-y-1 pl-1">
                     <li>1 working file scope (operator · installation · year)</li>
                     <li>Unlimited drafts</li>
-                    <li>5 successful locks</li>
+                    <li>{CANONICAL_PRICING.correctionPolicy}</li>
                     <li>Free re-download of locked packages</li>
                   </ul>
                 </div>

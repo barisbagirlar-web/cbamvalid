@@ -25,8 +25,9 @@ export default function GrantCreditsForm({ initialUid }: { initialUid: string })
         setSuccess(`Successfully granted ${amount} credits. Transaction ID: ${res.transactionId}`);
         router.refresh();
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to grant credits.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to grant credits.";
+      setError(message);
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { generateSampleDossierAction } from "./actions";
 import { RefreshCw, FileText, CheckCircle, AlertTriangle } from "lucide-react";
 
@@ -14,8 +14,9 @@ export default function AdminSampleDossierPage() {
     try {
       const res = await generateSampleDossierAction("v1");
       setResult(res);
-    } catch (err: any) {
-      setResult({ success: false, error: err.message });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to generate sample dossier.";
+      setResult({ success: false, error: message });
     } finally {
       setIsGenerating(false);
     }

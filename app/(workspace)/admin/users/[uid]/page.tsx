@@ -2,7 +2,7 @@ import React from "react";
 import { requireSuperAdmin } from "@/lib/auth/admin-gate";
 import { fetchUserDetails } from "../../actions";
 import Link from "next/link";
-import { ArrowLeft, Key, Plus, RotateCcw, UserX } from "lucide-react";
+import { ArrowLeft, Plus, RotateCcw, UserX } from "lucide-react";
 
 export default async function AdminUserDetailPage({ params }: { params: Promise<{ uid: string }> }) {
   await requireSuperAdmin();
