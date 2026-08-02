@@ -1,11 +1,12 @@
 /**
- * FAZ P0 — Shared helper that builds a fully sealed verifier package for each
- * of the four sandbox dossiers, mirroring the server seal pipeline
+ * Shared helper that builds a fully sealed verifier package for each of the
+ * four sandbox dossiers, mirroring the server seal pipeline
  * (calculations → quality controls → unsigned artifacts → manifest → signature
  * → finalized ZIP). Used by the four-dossier, cross-format, editorial and
- * render-QA test suites so every suite exercises the identical package bytes.
+ * render-QA test suites so every suite exercises identical package bytes.
  */
 
+import { createHash } from "node:crypto";
 import { AuditReadyCaseSchema } from "../../functions/src/cbam/schema";
 import { performDossierCalculations } from "../../functions/src/cbam/calculator";
 import { runQualityControls } from "../../functions/src/cbam/validation/quality-controls";
@@ -25,10 +26,22 @@ import {
   type FourDossierKey,
 } from "./four-dossiers";
 
-export const DOSSIER_RELEASE_VERSION = 5;
+/** Fresh sandbox refreshes always start at release 1. */
+export const DOSSIER_RELEASE_VERSION = 1;
+/** The report/package schema contract remains V5. */
+export const DOSSIER_RELEASE_CONTRACT_VERSION = 5 as const;
 export const DOSSIER_PRODUCT_CODE = "pack_premium_dossier_v5";
+export const FOUR_DOSSIER_FIXTURE_SET = "FOUR_COMPLETE_DOSSIERS_V2";
 
 export function dossierReportId(key: FourDossierKey): string {
+  const digest = createHash("sha256")
+    .update(`${FOUR_DOSSIER_FIXTURE_SET}\u0000${key}`)
+    .digest("hex");
+  return `report_${digest}`;
+}
+
+/** Previous fixture identity retained only for bounded sandbox cleanup. */
+export function legacyDossierReportId(key: FourDossierKey): string {
   return `report_${key.toLowerCase()}_fixture`;
 }
 
@@ -125,7 +138,7 @@ export async function buildDossierSealedPackage(key: FourDossierKey): Promise<Do
       releaseVersion: DOSSIER_RELEASE_VERSION,
       rulesetVersion: FOUR_DOSSIER_RULESET,
       productCode: DOSSIER_PRODUCT_CODE,
-      releaseContractVersion: DOSSIER_RELEASE_VERSION,
+      releaseContractVersion: DOSSIER_RELEASE_CONTRACT_VERSION,
     },
   });
 
@@ -138,12 +151,12 @@ export async function buildDossierSealedPackage(key: FourDossierKey): Promise<Do
     generatedAt,
     evidenceCount: evidenceFiles.length,
     productCode: DOSSIER_PRODUCT_CODE,
-    releaseContractVersion: DOSSIER_RELEASE_VERSION,
+    releaseContractVersion: DOSSIER_RELEASE_CONTRACT_VERSION,
   });
 
   const finalized = await finalizeVerifierPackage({
     artifacts,
-    manifestBytes: manifestResult.bytes,
+    manifestBytes: Buffer.from(manifestResult.bytes),
     signature: createSignature(manifestResult.bytes),
     generatedAt,
   });
