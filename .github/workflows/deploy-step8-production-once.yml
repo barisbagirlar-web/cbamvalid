@@ -1,11 +1,10 @@
 name: Deploy validated Step 8 release once
 
 on:
-  push:
+  pull_request:
     branches:
-      - ops/deploy-step8-premium-20260802
-    paths:
-      - .github/workflows/deploy-step8-production-once.yml
+      - main
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: read
@@ -17,6 +16,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.head_ref == 'ops/deploy-step8-premium-20260802'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
