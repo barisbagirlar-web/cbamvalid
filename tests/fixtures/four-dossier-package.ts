@@ -10,6 +10,13 @@ import { createHash } from "node:crypto";
 import { AuditReadyCaseSchema } from "../../functions/src/cbam/schema";
 import { performDossierCalculations } from "../../functions/src/cbam/calculator";
 import { runQualityControls } from "../../functions/src/cbam/validation/quality-controls";
+import { assessReadiness } from "../../functions/src/cbam/validation/readiness-score";
+import { runEvidenceSufficiency } from "../../functions/src/cbam/validation/evidence-sufficiency";
+import {
+  computeEvidenceAssuranceScore,
+  countExternalVerifierCompletion,
+  type HonestScoreboard,
+} from "../../functions/src/cbam/report/honest-scoreboard";
 import {
   buildDataIntegrityManifest,
   buildUnsignedVerifierArtifacts,
@@ -46,9 +53,6 @@ export function legacyDossierReportId(key: FourDossierKey): string {
 }
 
 export function dossierPackageCode(key: FourDossierKey): string {
-  // Real package codes are one Latin letter + four digits (see
-  // package-code.ts PACKAGE_CODE_PATTERN); the fixture uses the same format so
-  // the dossier model and manifest stay schema-valid.
   const letter = key.slice(0, 1);
   const digits = String((key.length * 7919) % 10000).padStart(4, "0");
   return `${letter}${digits}`;
@@ -98,6 +102,46 @@ function buildDossierTestCalcGraph(rootHash: string): {
   return { rootHash, nodes };
 }
 
+function buildFixtureScoreboard(
+  caseData: ReturnType<typeof AuditReadyCaseSchema.parse>
+): HonestScoreboard {
+  const readiness = assessReadiness({
+    caseData,
+    isDraft: false,
+    assessmentTimestamp: FOUR_DOSSIER_ASSESSMENT_TIMESTAMP,
+    sealMode: "PREVIEW",
+  });
+  const sufficiency = runEvidenceSufficiency(
+    caseData,
+    FOUR_DOSSIER_ASSESSMENT_TIMESTAMP
+  );
+  const evidence = computeEvidenceAssuranceScore(sufficiency);
+  const verifier = countExternalVerifierCompletion(caseData.verifierReserved);
+  const operatorPreparationScore = Number(readiness.score);
+
+  return {
+    operatorReadiness: operatorPreparationScore,
+    verifierReservedCount: verifier.completed,
+    verifierReservedTotal: verifier.total,
+    dossierCompleteness: operatorPreparationScore,
+    status: readiness.operatorStatus,
+    formula:
+      "OPERATOR PREPARATION, EVIDENCE ASSURANCE, PACKAGE INTEGRITY and EXTERNAL VERIFIER COMPLETION are reported independently.",
+    operatorPreparationScore,
+    evidenceAssuranceScore: evidence.score,
+    packageIntegrity: "PASS",
+    externalVerifierCompleted: verifier.completed,
+    externalVerifierTotal: verifier.total,
+    scoreboardClaim:
+      verifier.completed < verifier.total
+        ? "OPERATOR CHECKS PASSED — EXTERNAL VERIFIER PENDING"
+        : "OPERATOR CHECKS PASSED — EXTERNAL VERIFIER COMPLETE",
+    premiumChapterContract: "COMPLETE",
+    premiumNameVisible: true,
+    productTierLabel: "Premium Dossier",
+  };
+}
+
 export interface DossierSealedPackage {
   key: FourDossierKey;
   caseData: ReturnType<typeof createFourDossierCase>;
@@ -119,6 +163,7 @@ export async function buildDossierSealedPackage(key: FourDossierKey): Promise<Do
   const reportId = dossierReportId(key);
   const packageCode = dossierPackageCode(key);
   const generatedAt = FOUR_DOSSIER_ASSESSMENT_TIMESTAMP;
+  const honestScoreboard = buildFixtureScoreboard(caseData);
 
   const artifacts = await buildUnsignedVerifierArtifacts({
     caseData,
@@ -130,6 +175,8 @@ export async function buildDossierSealedPackage(key: FourDossierKey): Promise<Do
     generatedAt,
     evidenceFiles,
     calcGraph,
+    honestScoreboard,
+    publicVerificationUrl: `https://sandbox.cbamvalid.com/verify/package/${reportId}`,
     assessmentContext: {
       generatedAt,
       assessmentTimestamp: FOUR_DOSSIER_ASSESSMENT_TIMESTAMP,
