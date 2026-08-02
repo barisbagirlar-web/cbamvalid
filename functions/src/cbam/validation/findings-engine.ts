@@ -4,27 +4,29 @@ import type { Finding, CorrectiveAction } from "../report/premium-dossier-schema
 import { runQualityControls } from "./quality-controls";
 import { runEvidenceSufficiency, isEvidenceSupportedState } from "./evidence-sufficiency";
 import { getReportingPeriodAssessment } from "./readiness-score";
-import {
-  applyWorkingFileReviewPolicy,
-  isPendingReviewOnly,
-} from "./working-file-review-policy";
+import { applyWorkingFileReviewPolicy } from "./working-file-review-policy";
 
 function stableHashPrefix(subject: string): string {
   return crypto.createHash("sha256").update(subject).digest("hex").slice(0, 8);
 }
 
-export function generateFindingsAndActions(caseData: AuditReadyCase, assessmentTimestamp?: string): {
+export function generateFindingsAndActions(
+  caseData: AuditReadyCase,
+  assessmentTimestamp?: string,
+  sealMode: "PRODUCTION" | "PREVIEW" = "PREVIEW"
+): {
   findings: Finding[];
   correctiveActions: CorrectiveAction[];
 } {
   const findings: Finding[] = [];
   const correctiveActions: CorrectiveAction[] = [];
+  const workingFileCase = applyWorkingFileReviewPolicy(caseData);
 
   // 1. Process working-file quality controls. Pending organisation review is
   // not a file-integrity defect and therefore cannot block operator package
   // generation. Rejected review, malware, ownership, linkage, support and
   // calculation defects remain fail-closed.
-  const qcs = runQualityControls(applyWorkingFileReviewPolicy(caseData));
+  const qcs = runQualityControls(workingFileCase);
   for (const qc of qcs) {
     if (qc.status === "PASS" || qc.status === "NOT_APPLICABLE") {
       continue;
@@ -81,17 +83,24 @@ export function generateFindingsAndActions(caseData: AuditReadyCase, assessmentT
     correctiveActions.push(action);
   }
 
-  // 2. Process Evidence Sufficiency Gaps
+  // 2. Process strict evidence sufficiency and compare it with the normalized
+  // working-file view. If review normalization alone resolves the row, the
+  // issue is disclosed as verifier-handover pending but cannot block sealing.
   const sufficiencies = runEvidenceSufficiency(caseData, assessmentTimestamp);
+  const workingFileSufficiencies = runEvidenceSufficiency(
+    workingFileCase,
+    assessmentTimestamp
+  );
   for (const row of sufficiencies) {
     if (isEvidenceSupportedState(row.state)) {
       continue;
     }
 
-    const pendingReviewOnly = isPendingReviewOnly(
-      caseData,
-      row.evidenceIds,
-      row.reasonCodes
+    const workingFileRow = workingFileSufficiencies.find(
+      (candidate) => candidate.requirementId === row.requirementId
+    );
+    const pendingReviewOnly = Boolean(
+      workingFileRow && isEvidenceSupportedState(workingFileRow.state)
     );
     let findingId = `FND-EVD-${row.requirementId}-${stableHashPrefix(row.inputPath)}`;
 
@@ -116,12 +125,12 @@ export function generateFindingsAndActions(caseData: AuditReadyCase, assessmentT
       findingId,
       priority: (severity === "CRITICAL" || severity === "MATERIAL") ? "P0" : "P1",
       requiredAction: pendingReviewOnly
-        ? `Complete the organisation review for evidence linked to '${row.inputPath}'.`
+        ? `Complete the organisation review for evidence or methodology supporting '${row.inputPath}'.`
         : `Provide valid and approved evidence for input path '${row.inputPath}'.`,
       responsibleRole: pendingReviewOnly ? "INTERNAL_REVIEWER" : "DATA_PREPARER",
       targetDate: null,
       closureCondition: pendingReviewOnly
-        ? `Organisation review for '${row.inputPath}' is APPROVED.`
+        ? `Organisation review for '${row.inputPath}' is complete.`
         : `Evidence sufficiency check status for '${row.inputPath}' is SUPPORTED.`,
       closureEvidenceIds: [],
       state: "OPEN",
@@ -137,7 +146,7 @@ export function generateFindingsAndActions(caseData: AuditReadyCase, assessmentT
         ? `Organisation review pending for ${row.inputPath}`
         : `Evidence sufficiency for ${row.inputPath}`,
       description: pendingReviewOnly
-        ? `The evidence is present, linked and structurally valid, but organisation review is still pending.`
+        ? "The supporting record is present, linked and structurally valid, but the customer's organisation review is still pending."
         : `Evidence check failed with status '${row.state}'. Reason codes: ${row.reasonCodes.join(", ")}`,
       regulatoryOrTechnicalBasis: "Commission Implementing Regulation (EU) 2025/2546 - Article 6",
       affectedInputIds: [row.inputPath],
@@ -145,28 +154,26 @@ export function generateFindingsAndActions(caseData: AuditReadyCase, assessmentT
       affectedEvidenceIds: row.evidenceIds,
       affectedReportSectionIds: [],
       impactStatement: pendingReviewOnly
-        ? `The operator working file may be generated, but the package is not ready for independent-verifier handover until organisation review is completed.`
+        ? "The operator working file may be generated, but the package is not ready for independent-verifier handover until organisation review is completed."
         : `Unsupported or missing evidence for input path '${row.inputPath}'. State: ${row.state}.`,
       remediationRequirement: pendingReviewOnly
-        ? `Complete organisation review for the linked evidence at ${row.inputPath}.`
+        ? `Complete organisation review for the support linked to ${row.inputPath}.`
         : `Upload approved, clean, and supported evidence file linked to ${row.inputPath}.`,
       blocksOperatorReadiness: row.blocksOperatorReadiness,
       blocksSealing: pendingReviewOnly ? false : row.blocksSealing,
       blocksVerifierHandover: row.blocksOperatorReadiness,
-      createdDeterministicallyFrom: "runEvidenceSufficiency",
+      createdDeterministicallyFrom: "runEvidenceSufficiency:strict-vs-working-file",
       action,
     });
 
     correctiveActions.push(action);
   }
 
-  // 3. Keep resolved/accepted findings history if they were in the original case gap assessment
-  // Since we are evolutionary, if there were manual findings in caseData.gapAssessment, we can convert them.
+  // 3. Keep resolved/accepted findings history if they were in the original case gap assessment.
   caseData.gapAssessment.forEach((gap, index) => {
-    // Avoid duplicating deterministic findings
     const ruleId = gap.affectedResult || `GAP_${index}`;
     const findingId = `FND-GAP-${ruleId}-${stableHashPrefix(gap.requirement)}`;
-    if (findings.some((f) => f.findingId === findingId || f.ruleId === ruleId)) {
+    if (findings.some((finding) => finding.findingId === findingId || finding.ruleId === ruleId)) {
       return;
     }
 
@@ -216,10 +223,10 @@ export function generateFindingsAndActions(caseData: AuditReadyCase, assessmentT
     correctiveActions.push(action);
   });
 
-  // 4. Period assessment. A current/future or interim reporting period cannot
-  // claim definitive annual readiness, but it may still produce an explicitly
-  // conditional operator working file.
-  const period = getReportingPeriodAssessment(caseData, assessmentTimestamp);
+  // 4. A current/future or interim reporting period cannot claim definitive
+  // annual readiness, but it may still produce an explicitly conditional
+  // operator working file.
+  const period = getReportingPeriodAssessment(caseData, assessmentTimestamp, sealMode);
   if (!period.definitiveAnnualEligible) {
     if (period.type !== "DEFINITIVE_ANNUAL") {
       const findingId = "FND-PERIOD-NON-ANNUAL";
@@ -260,45 +267,44 @@ export function generateFindingsAndActions(caseData: AuditReadyCase, assessmentT
       correctiveActions.push(action);
     }
 
-    // Add other specific period findings.
-    for (const bhId of period.hardBlockerFindingIds) {
-      if (bhId === "FND-PERIOD-NON-ANNUAL") continue;
+    for (const blockerId of period.hardBlockerFindingIds) {
+      if (blockerId === "FND-PERIOD-NON-ANNUAL") continue;
 
       let title = "Reporting Period Assessment Blocker";
-      let desc = `The reporting period fails definitive-readiness assessment due to ${bhId}.`;
+      let description = `The reporting period fails definitive-readiness assessment due to ${blockerId}.`;
       let inputId = "reportingPeriod.year";
       let blocksWorkingFile = true;
 
-      if (bhId === "FND-PERIOD-FUTURE-END-DATE") {
+      if (blockerId === "FND-PERIOD-FUTURE-END-DATE") {
         title = "Future Reporting Period End Date";
-        desc = "The reporting period end date is in the future relative to the assessment timestamp. The operator working file may be generated, but definitive annual readiness and verifier handover remain blocked.";
+        description = "The reporting period end date is in the future relative to the assessment timestamp. The operator working file may be generated, but definitive annual readiness and verifier handover remain blocked.";
         inputId = "reportingPeriod.endDate";
         blocksWorkingFile = false;
-      } else if (bhId === "FND-PERIOD-MISSING-START-DATE") {
+      } else if (blockerId === "FND-PERIOD-MISSING-START-DATE") {
         title = "Missing Start Date";
-        desc = "The reporting period start date is missing.";
+        description = "The reporting period start date is missing.";
         inputId = "reportingPeriod.startDate";
-      } else if (bhId === "FND-PERIOD-MISSING-END-DATE") {
+      } else if (blockerId === "FND-PERIOD-MISSING-END-DATE") {
         title = "Missing End Date";
-        desc = "The reporting period end date is missing.";
+        description = "The reporting period end date is missing.";
         inputId = "reportingPeriod.endDate";
-      } else if (bhId === "FND-PERIOD-INVALID-CHRONOLOGY") {
+      } else if (blockerId === "FND-PERIOD-INVALID-CHRONOLOGY") {
         title = "Invalid Chronology";
-        desc = "The reporting period end date is chronologically before the start date.";
+        description = "The reporting period end date is chronologically before the start date.";
         inputId = "reportingPeriod.endDate";
-      } else if (bhId === "FND-PERIOD-INVALID-START-DATE") {
+      } else if (blockerId === "FND-PERIOD-INVALID-START-DATE") {
         title = "Invalid Start Date";
-        desc = "The reporting period start date is invalid.";
+        description = "The reporting period start date is invalid.";
         inputId = "reportingPeriod.startDate";
-      } else if (bhId === "FND-PERIOD-INVALID-END-DATE") {
+      } else if (blockerId === "FND-PERIOD-INVALID-END-DATE") {
         title = "Invalid End Date";
-        desc = "The reporting period end date is invalid.";
+        description = "The reporting period end date is invalid.";
         inputId = "reportingPeriod.endDate";
       }
 
       const action: CorrectiveAction = {
-        actionId: `ACT-${bhId}`,
-        findingId: bhId,
+        actionId: `ACT-${blockerId}`,
+        findingId: blockerId,
         priority: "P0",
         requiredAction: blocksWorkingFile
           ? "Correct the reporting period dates before generating the working file."
@@ -313,13 +319,13 @@ export function generateFindingsAndActions(caseData: AuditReadyCase, assessmentT
       };
 
       findings.push({
-        findingId: bhId,
+        findingId: blockerId,
         ruleId: "REQ-PERIOD-VALID",
         severity: "CRITICAL_BLOCKER",
         category: "REPORTING_PERIOD",
         status: "OPEN",
         title,
-        description: desc,
+        description,
         regulatoryOrTechnicalBasis: "Commission Implementing Regulation (EU) 2025/2546",
         affectedInputIds: [inputId],
         affectedCalculationIds: [],
