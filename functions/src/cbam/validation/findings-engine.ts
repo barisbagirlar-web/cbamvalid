@@ -161,7 +161,7 @@ export function generateFindingsAndActions(
         : `Upload approved, clean, and supported evidence file linked to ${row.inputPath}.`,
       blocksOperatorReadiness: row.blocksOperatorReadiness,
       blocksSealing: pendingReviewOnly ? false : row.blocksSealing,
-      blocksVerifierHandover: row.blocksOperatorReadiness,
+      blocksVerifierHandover: pendingReviewOnly ? true : row.blocksOperatorReadiness,
       createdDeterministicallyFrom: "runEvidenceSufficiency:strict-vs-working-file",
       action,
     });
