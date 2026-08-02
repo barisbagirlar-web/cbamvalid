@@ -8,6 +8,11 @@
  *   "does not include consulting", "no human services included",
  *   "NOT_INCLUDED" lists, "does not provide advisory services".
  *
+ * Also fails when the legal-identity SSOT or any public surface contains a
+ * placeholder company address (e.g. "123 Validation Way") instead of the
+ * owner-verified registered address. Paddle rejects template/placeholder
+ * seller addresses, so a placeholder must never be renderable.
+ *
  * Design constraints (mandate #15):
  *   - No broad regex rules that create uncontrolled false positives.
  *   - Phrase matches are evaluated per line with a negative-boundary check.
@@ -85,6 +90,24 @@ const FORBIDDEN_PHRASES = [
   "Methodology support",
 ];
 
+// Placeholder company addresses that Paddle treats as invalid or template
+// information. The SSOT (lib/legal-identity.ts) must carry the owner-verified
+// registered address only. Matches are case-insensitive and admit no
+// negative-boundary exception: a placeholder is never acceptable.
+const FORBIDDEN_ADDRESS_PLACEHOLDERS = [
+  "123 Validation Way",
+  "123 validation way",
+  "123 VALIDATION WAY",
+  "Validation Way",
+  "Tech District",
+  "tech district",
+  "TECH DISTRICT",
+  "Sample Address",
+  "Your Company Address",
+  "123 Sample St",
+  "123 Test St",
+];
+
 // A forbidden route must be a slash-prefixed path token, not a bare word.
 const routePattern = new RegExp(
   `(^|[\\s"'\\(\\[])(${FORBIDDEN_ROUTES.map((route) =>
@@ -116,6 +139,16 @@ function scanRoutes(source, relativePath) {
   while ((match = routePattern.exec(source)) !== null) {
     const route = match[2];
     failures.push(`${relativePath}: link to removed route ${route}`);
+  }
+}
+
+function scanAddressPlaceholders(source, relativePath) {
+  for (const placeholder of FORBIDDEN_ADDRESS_PLACEHOLDERS) {
+    if (!source.includes(placeholder)) continue;
+    const lineIndex = source.split("\n").findIndex((line) => line.includes(placeholder));
+    failures.push(
+      `${relativePath}:${lineIndex + 1}: placeholder company address ${JSON.stringify(placeholder)} — owner-verified registered address required`
+    );
   }
 }
 
@@ -156,6 +189,9 @@ const TARGET_FILES = [
   "lib/seo/hub-content.ts",
   "lib/billing/pricing-config.ts",
   "lib/product/customer-language.ts",
+  "lib/legal-identity.ts",
+  "lib/legal-config.ts",
+  "lib/site-config.ts",
   "app/sitemap.ts",
   "app/.well-known/ai.txt/route.ts",
   "public/llm.txt",
@@ -176,6 +212,7 @@ for (const dir of TARGET_DIRS) {
     const source = fs.readFileSync(file, "utf8");
     scanRoutes(source, relative);
     scanPhrases(source, relative);
+    scanAddressPlaceholders(source, relative);
   }
 }
 
@@ -185,6 +222,7 @@ for (const relativePath of TARGET_FILES) {
   if (!source) continue;
   scanRoutes(source, relativePath);
   scanPhrases(source, relativePath);
+  scanAddressPlaceholders(source, relativePath);
 }
 
 if (failures.length > 0) {
