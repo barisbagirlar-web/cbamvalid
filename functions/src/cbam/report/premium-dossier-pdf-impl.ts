@@ -127,7 +127,7 @@ export function buildPremiumDossierPdf(
 
   // Keep a standard Helvetica font object for broad viewer compatibility.
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(0.1);
+  doc.setFontSize(6);
   doc.setTextColor(255, 255, 255);
   doc.text(".", 1, 1);
   doc.setFont("LiberationSans", "normal");
@@ -344,7 +344,7 @@ export function buildPremiumDossierPdf(
   doc.setFont("LiberationSans", "normal");
   doc.setFontSize(8.7);
   doc.setTextColor(201, 210, 222);
-  doc.text("Operator-prepared evidence pack for independent accredited verifier review", MARGIN, 58);
+  doc.text("Prepared for Independent Accredited Verifier Review", MARGIN, 58);
   doc.setFontSize(7.2);
   doc.text(`Working file ${releaseRef}  |  ${model.identity.reportingPeriod}  |  Generated ${generatedDate}`, MARGIN, 69);
 
@@ -478,13 +478,14 @@ export function buildPremiumDossierPdf(
     ["C", "Electricity indirect emissions", model.totals.electricityIndirectEmissions, "Informational indirect component"],
     ["D", "Precursor indirect emissions", model.totals.precursorIndirectEmissions, "Informational precursor indirect component"],
     ["G", "Certificate-relevant direct total", model.totals.totalDirectEmissions, "A + B"],
-    ["H", "Total informational embedded emissions", model.totals.totalEmbeddedEmissions, "Direct and indirect disclosure result"],
+    ["H", "Total informational embedded emissions", numberValue(model.totals.totalDirectEmissions) + numberValue(model.totals.totalIndirectEmissions), "G + total indirect emissions"],
   ], [10, 42, 22, 26]);
   table(["Reconciliation control", "Result", "Expected"], [
     ["Allocation share total", model.totals.allocationShareTotal, "1.000000"],
     ["Allocation reconciliation delta", model.totals.allocationReconciliationDelta, "0.000000"],
     ["Eligible certificate reduction", model.totals.eligibleCertificateReduction, "Applied only when legally eligible"],
     ["Electricity consumed", `${clean(caseData.electricityConsumed.value)} ${clean(caseData.electricityConsumed.canonicalUnit)}`, "Evidence-linked activity data"],
+    ["Grid emission factor", `${clean(caseData.gridEmissionFactor.value)} ${clean(caseData.gridEmissionFactor.canonicalUnit)}`, "Exact source value used for indirect-emissions recomputation"],
   ], [42, 28, 30]);
   callout("Calculation interpretation", "The report separates installation direct emissions, precursor direct emissions, electricity indirect emissions and precursor indirect emissions. A verifier can recompute each bridge from the Calculation Trace, Calculation Graph and Verifier Workspace files.");
 
@@ -597,19 +598,20 @@ export function buildPremiumDossierPdf(
     ["Manifest file count", model.manifestSummary.manifestFileCount, "Hashed manifest entries"],
     ["Supporting evidence files", model.manifestSummary.evidenceFileCount, "Tenant-bound evidence binaries"],
     ["Package integrity", humanize(packageIntegrity), "PASS only after manifest, signature and ZIP verification"],
-    ["KMS algorithm", model.manifestSummary.kmsAlgorithm || "Recorded in detached signature"],
-    ["KMS key version", model.manifestSummary.kmsKeyVersion || "Recorded in sealed release metadata"],
+    ["KMS algorithm", model.manifestSummary.kmsAlgorithm || "See Data Integrity Manifest.json and Manifest Signature.sig"],
+    ["KMS key version", model.manifestSummary.kmsKeyVersion || "See Data Integrity Manifest.json and sealed release metadata"],
     ["Public verification", safePublicUrl(model), "Published only when an active verification URL exists"],
   ], [34, 28, 38], 6.6);
   table(["Release control", "Value"], [
     ["Package code", packageCode],
+    ["Report", model.reportId],
     ["Release version", model.releaseVersion],
     ["Generated at", generatedDate],
     ["Controlled report reference", reportRef],
     ["Dossier schema", model.dossierSchemaVersion],
     ["Release contract", model.releaseContractVersion],
   ], [40, 60]);
-  callout("Cryptographic scope", "The detached signature covers the exact UTF-8 bytes of Data Integrity Manifest.json. Each package artifact is bound by path, SHA-256 hash, byte size and media type. A PDF visual statement never substitutes for manifest verification.");
+  callout("Cryptographic scope", "The detached KMS signature covers the exact UTF-8 bytes of Data Integrity Manifest.json. Each package artifact is bound by path, SHA-256 hash, byte size and media type. See Data Integrity Manifest.json and Manifest Signature.sig for authoritative cryptographic values; a PDF visual statement never substitutes for manifest verification.");
 
   // Annex
   section("Annex index and legal boundary", "Controlled deliverable inventory, reliance statement and final handover checklist");
@@ -654,6 +656,16 @@ export function buildPremiumDossierPdf(
   }).outline;
   if (outline?.add) {
     for (const item of bookmarks) outline.add(null, item.title, { pageNumber: item.page });
+  }
+
+  // Clickable table-of-contents navigation. The visual TOC starts on page 2;
+  // each row links to the corresponding controlled section page.
+  if (pageCount >= 2) {
+    doc.setPage(2);
+    const tocTargets = bookmarks.slice(1, 13);
+    tocTargets.forEach((item, index) => {
+      doc.link(MARGIN, 56 + index * 7.2, CONTENT_WIDTH, 6.8, { pageNumber: item.page });
+    });
   }
 
   return Buffer.from(doc.output("arraybuffer"));
