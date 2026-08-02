@@ -1,0 +1,41 @@
+name: One-shot Teb232 refresh repair
+
+on:
+  push:
+    branches:
+      - fix/teb232-four-complete-test-cases-20260802
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/teb232-four-complete-test-cases-20260802
+          fetch-depth: 0
+      - name: Fix strict Firestore backup typing
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/refresh-teb232-four-complete-cases.ts')
+          s = p.read_text()
+          old = '    if (snapshot.exists) state.documentBackups.push({ path: ref.path, data: clone(snapshot.data()) });'
+          new = '''    const data = snapshot.data();
+    if (snapshot.exists && data) {
+      state.documentBackups.push({ path: ref.path, data: clone(data) as JsonRecord });
+    }'''
+          if s.count(old) != 1:
+              raise SystemExit('strict backup typing target not found exactly once')
+          p.write_text(s.replace(old, new, 1))
+          PY
+          git rm .github/workflows/one-shot-teb232-refresh-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/refresh-teb232-four-complete-cases.ts
+          git commit -m "fix(qa): make Teb232 backup snapshot strict-type safe"
+          git push origin HEAD:fix/teb232-four-complete-test-cases-20260802
