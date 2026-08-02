@@ -46,7 +46,7 @@ async function reviewPdf(bytes: Buffer): Promise<{
       if (tx) {
         const x = tx[4];
         const y = tx[5];
-        if (x < -50 || x > viewport.width + 50 || y < -50 || y > viewport.height + 50) {
+        if (x < -0.5 || x > viewport.width + 0.5 || y < -0.5 || y > viewport.height + 0.5) {
           clippedItems += 1;
         }
       }
