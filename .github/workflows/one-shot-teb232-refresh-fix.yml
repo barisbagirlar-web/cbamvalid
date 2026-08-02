@@ -25,10 +25,7 @@ jobs:
           p = Path('scripts/refresh-teb232-four-complete-cases.ts')
           s = p.read_text()
           old = '    if (snapshot.exists) state.documentBackups.push({ path: ref.path, data: clone(snapshot.data()) });'
-          new = '''    const data = snapshot.data();
-    if (snapshot.exists && data) {
-      state.documentBackups.push({ path: ref.path, data: clone(data) as JsonRecord });
-    }'''
+          new = '    const data = snapshot.data();\n    if (snapshot.exists && data) {\n      state.documentBackups.push({ path: ref.path, data: clone(data) as JsonRecord });\n    }'
           if s.count(old) != 1:
               raise SystemExit('strict backup typing target not found exactly once')
           p.write_text(s.replace(old, new, 1))
