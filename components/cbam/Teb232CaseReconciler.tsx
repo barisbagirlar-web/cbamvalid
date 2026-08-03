@@ -71,13 +71,14 @@ export function Teb232CaseReconciler() {
 
   useEffect(() => {
     if (!isTarget || !user) return;
+    const authenticatedUser = user;
     let cancelled = false;
 
     async function reconcile(): Promise<void> {
       setState("RUNNING");
       setError("");
       try {
-        const token = await user.getIdToken(true);
+        const token = await authenticatedUser.getIdToken(true);
         let response: Response | undefined;
         for (let attempt = 0; attempt < MAX_BUSY_RETRIES; attempt += 1) {
           response = await fetch("/api/qa/reconcile-teb232", {
@@ -127,7 +128,7 @@ export function Teb232CaseReconciler() {
         if (cancelled) return;
 
         window.localStorage.setItem(
-          `cbam_cases_cache_${user.uid}`,
+          `cbam_cases_cache_${authenticatedUser.uid}`,
           JSON.stringify(visibleCases)
         );
 
