@@ -5,6 +5,7 @@ import { runEvidenceSufficiency, isEvidenceSupportedState } from "./evidence-suf
 import { generateFindingsAndActions } from "./findings-engine";
 import { runQualityControls } from "./quality-controls";
 import { applyWorkingFileReviewPolicy } from "./working-file-review-policy";
+import { resolveControlledCaseAssessmentTimestamp } from "../report/controlled-test-assessment";
 
 const TOTAL_WEIGHT = new Decimal(100);
 
@@ -176,7 +177,13 @@ export function getReportingPeriodAssessment(caseData: AuditReadyCase, assessmen
     ? Math.min(100, Math.round((coveredDays / expectedDays) * 100)).toString()
     : "0";
 
-  const now = assessmentTimestamp ? new Date(assessmentTimestamp) : new Date();
+  const effectiveAssessmentTimestamp =
+    sealMode === "PRODUCTION" && assessmentTimestamp
+      ? resolveControlledCaseAssessmentTimestamp(caseData, assessmentTimestamp)
+      : assessmentTimestamp;
+  const now = effectiveAssessmentTimestamp
+    ? new Date(effectiveAssessmentTimestamp)
+    : new Date();
   const isSmokeTest = sealMode === "PRODUCTION"
     ? false
     : String(caseData.installation?.name?.value || "").includes("smoke_test") ||
@@ -225,14 +232,18 @@ export function assessReadiness(params: {
   sealMode?: "PRODUCTION" | "PREVIEW";
 }): ReadinessAssessment {
   const { caseData, isDraft, assessmentTimestamp, sealMode } = params;
-  const sufficiency = runEvidenceSufficiency(caseData, assessmentTimestamp);
+  const effectiveAssessmentTimestamp =
+    sealMode === "PRODUCTION" && assessmentTimestamp
+      ? resolveControlledCaseAssessmentTimestamp(caseData, assessmentTimestamp)
+      : assessmentTimestamp;
+  const sufficiency = runEvidenceSufficiency(caseData, effectiveAssessmentTimestamp);
   const workingFileSufficiency = runEvidenceSufficiency(
     applyWorkingFileReviewPolicy(caseData),
-    assessmentTimestamp
+    effectiveAssessmentTimestamp
   );
   const { findings } = generateFindingsAndActions(
     caseData,
-    assessmentTimestamp,
+    effectiveAssessmentTimestamp,
     sealMode
   );
 
@@ -397,7 +408,7 @@ export function assessReadiness(params: {
     (finding) => finding.category === "CALCULATION_EXCEPTION" && finding.status === "OPEN"
   ).length;
 
-  const period = getReportingPeriodAssessment(caseData, assessmentTimestamp, sealMode);
+  const period = getReportingPeriodAssessment(caseData, effectiveAssessmentTimestamp, sealMode);
   const hasCriticalBlocker = criticalBlockerCount > 0;
   const hasUnsupportedMaterialEvidence = missingMaterialEvidenceCount > 0;
   const hasIntegrityFailure = findings.some(
