@@ -1,16 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { useAuth } from "@/context/AuthProvider";
 import type { AuditReadyCase } from "@/lib/cbam/schema";
 import { isCaseId } from "@/lib/cbam/case-id";
 import {
-  getCase,
-  getEntitlements,
-  type PreparationPackEntitlement,
-} from "@/lib/functions/client";
+  readFreshCaseWorkspaceCache,
+  writeCaseWorkspaceCache,
+} from "@/lib/cbam/workspace-cache";
+import type { PreparationPackEntitlement } from "@/lib/functions/client";
+import {
+  loadWorkspaceCase,
+  loadWorkspaceEntitlements,
+  seedWorkspaceCase,
+} from "@/lib/functions/workspace-loader";
 import CaseWizardClient from "./CaseWizardClient";
 
 function describeError(error: unknown): string {
@@ -24,88 +29,88 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
   const { user, loading } = useAuth();
   const [initialCase, setInitialCase] = useState<AuditReadyCase | null>(null);
   const [availableEntitlements, setAvailableEntitlements] = useState<PreparationPackEntitlement[]>([]);
-  const [dataLoading, setDataLoading] = useState(validCaseId);
+  const [caseLoading, setCaseLoading] = useState(validCaseId);
+  const [entitlementsLoading, setEntitlementsLoading] = useState(validCaseId);
   const [error, setError] = useState("");
+  const [workspaceWarning, setWorkspaceWarning] = useState("");
   const [entitlementWarning, setEntitlementWarning] = useState("");
   const [attempt, setAttempt] = useState(0);
+  const hasRenderableCase = useRef(false);
 
   const malformedCaseError = validCaseId
     ? ""
     : "The case link is malformed. Open the dossier again from Cases.";
 
-  // Load from cache on mount
+  // Cases primes this validated, timestamped cache before navigation. A fresh
+  // record opens the editor immediately while the server read continues in the
+  // background. Entitlements are never trusted from this cache.
   useEffect(() => {
     if (!user || !validCaseId) return;
-    try {
-      const cachedCase = localStorage.getItem(`cbam_case_cache_${caseId}`);
-      const cachedEntitlements = localStorage.getItem(`cbam_entitlements_cache_${user.uid}`);
-      setTimeout(() => {
-        if (cachedCase) {
-          // Cache may accelerate the visual loading state, but it is never
-          // authoritative for release readiness or entitlement decisions. Keep
-          // the gate closed until the server returns the current case and pack.
-          setInitialCase(JSON.parse(cachedCase));
-        }
-        if (cachedEntitlements) {
-          setAvailableEntitlements(JSON.parse(cachedEntitlements));
-        }
-      }, 0);
-    } catch (e) {
-      console.warn("Failed to load case cache:", e);
-    }
+    const cached = readFreshCaseWorkspaceCache(caseId);
+    if (!cached) return;
+
+    hasRenderableCase.current = true;
+    seedWorkspaceCase(caseId, cached);
+    setInitialCase(cached);
+    setCaseLoading(false);
   }, [user, caseId, validCaseId]);
 
   useEffect(() => {
     if (loading || !user || !validCaseId) return;
 
     let cancelled = false;
+    const startedAt = typeof performance !== "undefined" ? performance.now() : 0;
 
-    void Promise.allSettled([getCase(caseId), getEntitlements()])
-      .then(([caseResult, entitlementResult]) => {
+    void loadWorkspaceCase(caseId, { forceRefresh: true })
+      .then((value) => {
         if (cancelled) return;
-
-        if (caseResult.status === "rejected") {
-          console.error("Case workspace load failed", caseResult.reason);
-          setInitialCase(null);
-          setAvailableEntitlements([]);
-          setError(describeError(caseResult.reason));
-          setDataLoading(false);
-          return;
-        }
-
-        setInitialCase(caseResult.value);
+        hasRenderableCase.current = true;
+        setInitialCase(value);
         setError("");
+        setWorkspaceWarning("");
+        setCaseLoading(false);
         try {
-          localStorage.setItem(`cbam_case_cache_${caseId}`, JSON.stringify(caseResult.value));
-        } catch (e) {
-          console.warn("Failed to save case cache:", e);
+          writeCaseWorkspaceCache(caseId, value);
+        } catch (cacheError) {
+          console.warn("Failed to save case workspace cache", cacheError);
         }
-
-        if (entitlementResult.status === "fulfilled") {
-          setAvailableEntitlements(entitlementResult.value);
-          setEntitlementWarning("");
-          try {
-            localStorage.setItem(`cbam_entitlements_cache_${user.uid}`, JSON.stringify(entitlementResult.value));
-          } catch (e) {
-            console.warn("Failed to save entitlements cache:", e);
-          }
-        } else {
-          console.error("Entitlement status could not be loaded", entitlementResult.reason);
-          setAvailableEntitlements([]);
-          setEntitlementWarning(
-            "Preparation Pack status is temporarily unavailable. Draft editing remains available; sealing stays disabled until status can be verified."
+        if (startedAt && typeof performance !== "undefined") {
+          performance.measure(
+            "cbam-case-authoritative-read",
+            { start: startedAt, end: performance.now() }
           );
         }
-
-        setDataLoading(false);
       })
-      .catch((unexpectedError: unknown) => {
+      .catch((caseError: unknown) => {
         if (cancelled) return;
-        console.error("Unexpected case workspace failure", unexpectedError);
+        console.error("Case workspace load failed", caseError);
+        setCaseLoading(false);
+        if (hasRenderableCase.current) {
+          setWorkspaceWarning(
+            "The working file opened from the latest local snapshot. Server refresh is temporarily unavailable; saving remains server-validated."
+          );
+          return;
+        }
         setInitialCase(null);
         setAvailableEntitlements([]);
-        setError(describeError(unexpectedError));
-        setDataLoading(false);
+        setError(describeError(caseError));
+      });
+
+    void loadWorkspaceEntitlements({ forceRefresh: true })
+      .then((value) => {
+        if (cancelled) return;
+        setAvailableEntitlements(value);
+        setEntitlementWarning("");
+        setEntitlementsLoading(false);
+      })
+      .catch((entitlementError: unknown) => {
+        if (cancelled) return;
+        console.error("Entitlement status could not be loaded", entitlementError);
+        setAvailableEntitlements([]);
+        setEntitlementsLoading(false);
+        setEntitlementWarning(
+          "Preparation Pack status is temporarily unavailable. Draft editing remains available; sealing stays disabled until status can be verified."
+        );
       });
 
     return () => {
@@ -114,15 +119,17 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
   }, [attempt, caseId, loading, user, validCaseId]);
 
   const retryLoading = () => {
-    setDataLoading(true);
+    setCaseLoading(!hasRenderableCase.current);
+    setEntitlementsLoading(true);
     setError("");
+    setWorkspaceWarning("");
     setEntitlementWarning("");
     setAttempt((current) => current + 1);
   };
 
   if (!loading && !user) return null;
 
-  if (loading || dataLoading) {
+  if (loading || caseLoading) {
     return (
       <main className="min-h-screen bg-background px-6 py-16 text-foreground">
         <section
@@ -132,7 +139,7 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
         >
           <Loader2 className="h-8 w-8 animate-spin text-accent" aria-hidden="true" />
           <h1 className="mt-5 font-serif text-2xl font-bold">Loading dossier workspace</h1>
-          <p className="mt-2 text-sm text-muted">Retrieving the case record and verified release capacity.</p>
+          <p className="mt-2 text-sm text-muted">Retrieving the working file.</p>
         </section>
       </main>
     );
@@ -182,12 +189,12 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
 
   return (
     <>
-      {entitlementWarning && (
+      {(workspaceWarning || entitlementWarning || entitlementsLoading) && (
         <div
           role="status"
-          className="mx-auto mt-6 max-w-6xl rounded-lg border border-accent/20 bg-accent/5 px-4 py-3 text-sm text-accent"
+          className="mx-auto mt-4 max-w-6xl rounded-lg border border-accent/20 bg-accent/5 px-4 py-2.5 text-sm text-accent"
         >
-          {entitlementWarning}
+          {workspaceWarning || entitlementWarning || "Workspace ready. Verifying release capacity in the background…"}
         </div>
       )}
       <CaseWizardClient
