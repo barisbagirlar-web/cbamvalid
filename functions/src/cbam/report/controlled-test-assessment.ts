@@ -60,6 +60,37 @@ function hasBoundControlledEvidence(caseData: AuditReadyCase): boolean {
   );
 }
 
+function isExactControlledCase(caseData: AuditReadyCase): boolean {
+  const exactCase =
+    caseData.ownerId === TEB232_UID &&
+    Boolean(caseData.caseId) &&
+    TEB232_CASE_IDS.has(String(caseData.caseId));
+  const exactPeriod =
+    String(caseData.reportingPeriod.year.value) === "2026" &&
+    String(caseData.reportingPeriod.quarter.value).toUpperCase() ===
+      "ANNUAL" &&
+    String(caseData.reportingPeriod.startDate?.value || "") ===
+      "2026-01-01" &&
+    String(caseData.reportingPeriod.endDate?.value || "") ===
+      "2026-12-31";
+
+  return (
+    exactCase &&
+    exactPeriod &&
+    hasControlledTestMarker(caseData) &&
+    hasBoundControlledEvidence(caseData)
+  );
+}
+
+export function resolveControlledCaseAssessmentTimestamp(
+  caseData: AuditReadyCase,
+  generatedAt: string
+): string {
+  return isExactControlledCase(caseData)
+    ? TEB232_ASSESSMENT_TIMESTAMP
+    : generatedAt;
+}
+
 export function resolveSealAssessmentTimestamp(params: {
   caseData: AuditReadyCase;
   uid: string;
@@ -73,24 +104,12 @@ export function resolveSealAssessmentTimestamp(params: {
     params.caseData.ownerId === TEB232_UID &&
     email === TEB232_EMAIL &&
     token.email_verified === true;
-  const exactCase =
-    Boolean(params.caseData.caseId) &&
-    TEB232_CASE_IDS.has(String(params.caseData.caseId));
-  const exactPeriod =
-    String(params.caseData.reportingPeriod.year.value) === "2026" &&
-    String(params.caseData.reportingPeriod.quarter.value).toUpperCase() ===
-      "ANNUAL" &&
-    String(params.caseData.reportingPeriod.startDate?.value || "") ===
-      "2026-01-01" &&
-    String(params.caseData.reportingPeriod.endDate?.value || "") ===
-      "2026-12-31";
 
-  return exactIdentity &&
-    exactCase &&
-    exactPeriod &&
-    hasControlledTestMarker(params.caseData) &&
-    hasBoundControlledEvidence(params.caseData)
-    ? TEB232_ASSESSMENT_TIMESTAMP
+  return exactIdentity
+    ? resolveControlledCaseAssessmentTimestamp(
+        params.caseData,
+        params.generatedAt
+      )
     : params.generatedAt;
 }
 
