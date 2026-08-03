@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Check, Loader2, ShieldCheck } from "lucide-react";
@@ -39,10 +39,14 @@ export default function BuyCreditsPage() {
   );
   const [fulfillmentPhase, setFulfillmentPhase] = useState<FulfillmentPhase>("idle");
   const [confirmedOrderId, setConfirmedOrderId] = useState("");
-  // Checkout / lock flow uses a full navigation with ?caseId=...
-  const caseId = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    return String(new URLSearchParams(window.location.search).get("caseId") || "").trim();
+  const [caseId, setCaseId] = useState("");
+
+  useEffect(() => {
+    const nextCaseId = String(
+      new URLSearchParams(window.location.search).get("caseId") || ""
+    ).trim();
+    const timer = window.setTimeout(() => setCaseId(nextCaseId), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const packages = CREDIT_PACKAGES.filter((p) => p.active).sort((a, b) => a.displayOrder - b.displayOrder);
@@ -147,7 +151,6 @@ export default function BuyCreditsPage() {
     });
   }, []);
 
-  // Fulfill after Paddle redirects back with ?_ptxn=txn_...&orderId=...
   useEffect(() => {
     if (!user || loading) return;
     const params = new URLSearchParams(window.location.search);
