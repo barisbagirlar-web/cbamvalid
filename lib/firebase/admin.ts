@@ -21,9 +21,15 @@ const getCredential = () => {
   return applicationDefault();
 };
 
+const configuredStorageBucket =
+  process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
+  process.env.FIREBASE_STORAGE_BUCKET ||
+  undefined;
+
 const app = getApps()[0] ?? initializeApp({
   credential: getCredential(),
   projectId: process.env.GCLOUD_PROJECT ?? "cbam-desk",
+  ...(configuredStorageBucket ? { storageBucket: configuredStorageBucket } : {}),
 });
 
 export const adminDb = getFirestore(app);
@@ -32,6 +38,10 @@ export { FieldValue };
 export type { DecodedIdToken } from "firebase-admin/auth";
 export type { DocumentData } from "firebase-admin/firestore";
 
-export function getAdminStorageBucket() {
-  return getStorage(app).bucket();
+export function getAdminStorageBucket(bucketName?: string) {
+  const resolved = bucketName || configuredStorageBucket || app.options.storageBucket;
+  if (!resolved) {
+    throw new Error("FIREBASE_STORAGE_BUCKET_NOT_CONFIGURED");
+  }
+  return getStorage(app).bucket(resolved);
 }
