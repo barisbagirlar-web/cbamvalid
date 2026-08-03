@@ -51,6 +51,11 @@ console.log("[GUARD-ARCH] Running architecture regression checks...");
 let clientInitializers = 0;
 let adminInitializers = 0;
 
+const approvedServerOnlyAdminModules = new Set([
+  'lib/cbam/qa/reconcile-teb232.ts',
+  'lib/cbam/qa/reconcile-teb232-live.ts',
+]);
+
 walk(rootDir, isSourceFile, (filePath) => {
   const relPath = path.relative(rootDir, filePath);
   const content = fs.readFileSync(filePath, 'utf8');
@@ -205,7 +210,10 @@ walk(rootDir, isSourceFile, (filePath) => {
     clientInitializers++;
   }
 
-  // 12. Forbidden Firebase Admin SDK initializers or imports
+  // 12. Forbidden Firebase Admin SDK initializers or imports. Two narrowly
+  // scoped reconciliation modules are permitted only when explicitly marked
+  // server-only; they receive Admin objects from the authenticated route and
+  // never initialize an SDK or enter a client bundle.
   if (content.includes('firebase-admin')) {
     const isApprovedNextConfigExternalization =
       relPath === 'next.config.js' &&
@@ -214,12 +222,18 @@ walk(rootDir, isSourceFile, (filePath) => {
       !content.includes("require('firebase-admin')") &&
       !content.includes('from "firebase-admin') &&
       !content.includes("from 'firebase-admin");
+    const isApprovedServerOnlyAdminModule =
+      approvedServerOnlyAdminModules.has(relPath) &&
+      (content.startsWith('import "server-only";') || content.startsWith("import 'server-only';")) &&
+      !content.includes('initializeApp(') &&
+      !isClientComponent;
 
     if (
       relPath !== 'lib/firebase/admin.ts' &&
       relPath !== 'lib/cbam/registry/legacy-migration.ts' &&
       !relPath.startsWith('scripts/') &&
-      !isApprovedNextConfigExternalization
+      !isApprovedNextConfigExternalization &&
+      !isApprovedServerOnlyAdminModule
     ) {
       logError(relPath, "Imports or uses firebase-admin, which is forbidden in Next.js.");
       adminInitializers++;
