@@ -36,7 +36,7 @@ const publicMethodology = read("app/(public)/methodology/page.tsx");
 
 const routeContracts = [
   ['{ label: "Home", href: "/cbam" }', "Home route"],
-  ['{ label: "Working files", href: "/cases" }', "Working files route"],
+  ['{ label: "Cases", href: "/cases" }', "Cases route"],
   ['{ label: "Locked packages", href: "/reports" }', "Locked packages route"],
   ['{ label: "Methodology & Sources", href: "/cbam/methodology" }', "Workspace methodology route"]
 ];
