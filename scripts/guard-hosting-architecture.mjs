@@ -75,7 +75,7 @@ if (!fs.existsSync(liveAssetVerifierPath)) {
 } else {
   const verifier = fs.readFileSync(liveAssetVerifierPath, "utf8");
   for (const required of [
-    "/_next\\/static/",
+    "\\/_next\\/static\\/",
     "ASSET_HTTP_",
     "ASSET_MIME_INVALID",
     "LIVE_NEXT_ASSET_INTEGRITY=PASS",
