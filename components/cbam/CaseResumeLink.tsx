@@ -21,11 +21,10 @@ export function CaseResumeLink({
   updatedAt?: string;
 }) {
   useEffect(() => {
-    const ownerUid = firebaseAuth.currentUser?.uid;
-    if (!ownerUid) return;
+    if (!firebaseAuth.currentUser?.uid) return;
     seedWorkspaceCase(caseId, caseData);
     try {
-      writeCaseWorkspaceCache(ownerUid, caseId, caseData, updatedAt);
+      writeCaseWorkspaceCache(caseId, caseData, updatedAt);
     } catch (error) {
       console.warn("Failed to prepare instant case navigation", caseId, error);
     }
