@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, signOut, onAuthStateChanged } from "firebase/auth";
 import { firebaseAuth as auth } from "@/lib/firebase/client";
+import { projectClientWorkspaceClaims } from "@/lib/auth/controlled-workspace-account";
 
 interface AuthContextType {
   user: User | null;
@@ -34,7 +35,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (currentUser) {
           try {
             const tokenResult = await currentUser.getIdTokenResult();
-            setClaims(tokenResult.claims);
+            setClaims(projectClientWorkspaceClaims(currentUser, tokenResult.claims));
             
             // Only exchange token if it was authenticated recently (within 5 minutes)
             // and has not already been established via finalizeServerSession.
