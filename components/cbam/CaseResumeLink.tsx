@@ -11,10 +11,12 @@ import {
 } from "@/lib/functions/workspace-loader";
 
 export function CaseResumeLink({
+  ownerUid,
   caseId,
   caseData,
   updatedAt,
 }: {
+  ownerUid: string;
   caseId: string;
   caseData: AuditReadyCase;
   updatedAt?: string;
@@ -22,11 +24,11 @@ export function CaseResumeLink({
   useEffect(() => {
     seedWorkspaceCase(caseId, caseData);
     try {
-      writeCaseWorkspaceCache(caseId, caseData, updatedAt);
+      writeCaseWorkspaceCache(ownerUid, caseId, caseData, updatedAt);
     } catch (error) {
       console.warn("Failed to prepare instant case navigation", caseId, error);
     }
-  }, [caseData, caseId, updatedAt]);
+  }, [caseData, caseId, ownerUid, updatedAt]);
 
   const prewarm = () => {
     seedWorkspaceCase(caseId, caseData);
