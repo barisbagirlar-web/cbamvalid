@@ -23,9 +23,20 @@ describe("Teb232 live reconciliation and translation-safety contract", () => {
     expect(route).toContain("requireFirebaseSession(request)");
     expect(route).toContain("token.email_verified === true");
     expect(route).toContain("reconcileTeb232LiveCases");
-    expect(reconciler).toContain('TEB232_RECONCILE_IDENTITY_REFUSED');
-    expect(reconciler).toContain('params.authenticatedUid !== TEB232_UID');
-    expect(reconciler).toContain('params.authenticatedEmail.trim().toLowerCase() !== TEB232_EMAIL');
+    expect(reconciler).toContain("TEB232_RECONCILE_IDENTITY_REFUSED");
+    expect(reconciler).toContain("params.authenticatedUid !== TEB232_UID");
+    expect(reconciler).toContain("params.authenticatedEmail.trim().toLowerCase() !== TEB232_EMAIL");
+  });
+
+  it("routes the controlled account away from tenant-wide admin cases", () => {
+    const listPage = read("app/(workspace)/admin/cases/page.tsx");
+    const detailPage = read("app/(workspace)/admin/cases/[caseId]/page.tsx");
+    for (const source of [listPage, detailPage]) {
+      expect(source).toContain('const TEB232_UID = "r3Sv0U5YqEcLLylbw5ndwK1Zg652"');
+      expect(source).toContain('const TEB232_EMAIL = "teb232@gmail.com"');
+      expect(source).toContain("admin.uid === TEB232_UID");
+      expect(source).toContain('redirect("/cases")');
+    }
   });
 
   it("removes the fifth observed legacy case through an exact allowlist path", () => {
@@ -53,7 +64,7 @@ describe("Teb232 live reconciliation and translation-safety contract", () => {
     expect(reconciler).toContain("readiness.completenessPercentage !== 100");
     expect(reconciler).toContain("readiness.criticalBlockers.length !== 0");
     expect(reconciler).toContain("sha256(bytes) !== record.fileHash");
-    expect(reconciler).toContain("String(metadata.contentType || \"\") !== record.mimeType");
+    expect(reconciler).toContain('String(metadata.contentType || "") !== record.mimeType');
     expect(reconciler).toContain("await restoreState(params.db, params.bucket, cleanupState)");
     expect(reconciler).toContain("TEB232_FINAL_STATE_INVALID");
   });
