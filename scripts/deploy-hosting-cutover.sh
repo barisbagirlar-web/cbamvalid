@@ -1,50 +1,32 @@
 #!/usr/bin/env bash
-# Deploy Firebase Hosting (frameworksBackend) and force Cloud Run traffic
-# onto the newly created ssrcbamdesk revision.
-#
-# Firebase Frameworks often creates a new revision but leaves the hosting
-# pin tag (fh-*) on an older revision. Without this cutover, cbamvalid.com
-# keeps serving stale SSR HTML even after "Deploy complete".
-set -euo pipefail
+# Deploy Firebase Framework-Aware Hosting as one atomic HTML/SSR/static-asset
+# release. Do not alter Cloud Run traffic after Firebase completes the deploy:
+# the Hosting release, backend pin and generated Next.js chunk set must stay
+# bound to the same deployment.
+set -Eeuo pipefail
 
 PROJECT="${FIREBASE_PROJECT:-cbam-desk}"
-REGION="${FIREBASE_REGION:-europe-west1}"
-SERVICE="${SSR_SERVICE:-ssrcbamdesk}"
+LIVE_URL="${LIVE_BASE_URL:-https://cbamvalid.com}"
+DEPLOY_SHA="$(git rev-parse HEAD)"
 
-echo "DEPLOY_SHA=$(git rev-parse HEAD)"
-echo "PROJECT=$PROJECT REGION=$REGION SERVICE=$SERVICE"
+echo "DEPLOY_SHA=$DEPLOY_SHA"
+echo "PROJECT=$PROJECT"
+echo "LIVE_URL=$LIVE_URL"
 
+echo "HOSTING_RELEASE_MODE=FIREBASE_ATOMIC"
+echo "MANUAL_CLOUD_RUN_TRAFFIC_MUTATION=DISABLED"
+
+# Firebase owns the frameworksBackend revision pin and uploads the matching
+# _next/static payload in the same Hosting release. A later gcloud traffic
+# mutation can make HTML reference chunks that do not exist in that release.
 firebase deploy --only hosting --project "$PROJECT" --non-interactive
 
-LATEST="$(gcloud run services describe "$SERVICE" \
-  --project="$PROJECT" \
-  --region="$REGION" \
-  --format='value(status.latestCreatedRevisionName)')"
+# A deploy is not accepted merely because the CLI exited zero. Fetch fresh HTML,
+# enumerate every referenced Next.js JS/CSS asset, and require HTTP 200 with the
+# executable stylesheet/script MIME type. This catches stale SSR pinning,
+# incomplete CDN releases and HTML/chunk generation mismatches immediately.
+LIVE_BASE_URL="$LIVE_URL" node scripts/verify-live-next-assets.mjs "$LIVE_URL"
 
-if [[ -z "$LATEST" ]]; then
-  echo "ERROR: could not resolve latestCreatedRevisionName" >&2
-  exit 1
-fi
-
-TAG="$(gcloud run services describe "$SERVICE" \
-  --project="$PROJECT" \
-  --region="$REGION" \
-  --format='value(status.traffic[0].tag)')"
-
-echo "LATEST_REVISION=$LATEST"
-echo "HOSTING_PIN_TAG=${TAG:-none}"
-
-if [[ -n "$TAG" ]]; then
-  gcloud run services update-traffic "$SERVICE" \
-    --project="$PROJECT" \
-    --region="$REGION" \
-    --to-revisions="${LATEST}=100" \
-    --update-tags="${TAG}=${LATEST}"
-else
-  gcloud run services update-traffic "$SERVICE" \
-    --project="$PROJECT" \
-    --region="$REGION" \
-    --to-revisions="${LATEST}=100"
-fi
-
-echo "CUTOVER_COMPLETE revision=$LATEST tag=${TAG:-none}"
+echo "HOSTING_DEPLOY=PASS"
+echo "LIVE_NEXT_ASSET_INTEGRITY=PASS"
+echo "DEPLOYED_SHA=$DEPLOY_SHA"
