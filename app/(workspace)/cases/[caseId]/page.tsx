@@ -41,9 +41,6 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
     ? ""
     : "The case link is malformed. Open the dossier again from Cases.";
 
-  // Cases primes this validated, timestamped cache before navigation. A fresh
-  // record opens the editor immediately while the server read continues in the
-  // background. Entitlements are never trusted from this cache.
   useEffect(() => {
     if (!user || !validCaseId) return;
     const cached = readFreshCaseWorkspaceCache(caseId);
@@ -55,6 +52,9 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
     setCaseLoading(false);
   }, [user, caseId, validCaseId]);
 
+  // Failure isolation is equivalent to Promise.allSettled, but the two reads
+  // intentionally settle independently so release-capacity latency never blocks
+  // the editable working-file render path.
   useEffect(() => {
     if (loading || !user || !validCaseId) return;
 
