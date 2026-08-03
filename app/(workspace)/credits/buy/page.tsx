@@ -176,7 +176,7 @@ export default function BuyCreditsPage() {
               router.replace(
                 paidCaseId
                   ? `/cases/${encodeURIComponent(paidCaseId)}?purchase=success`
-                  : "/cbam?purchase=success"
+                  : "/cases?purchase=success"
               );
             }
           }, 1600);
@@ -336,7 +336,7 @@ export default function BuyCreditsPage() {
   }
 
   const isCheckoutBlocked = !publicPaidLaunchEnabled && !isAdmin;
-  const returnHref = caseId ? `/cases/${encodeURIComponent(caseId)}?purchase=success` : "/cbam?purchase=success";
+  const returnHref = caseId ? `/cases/${encodeURIComponent(caseId)}?purchase=success` : "/cases?purchase=success";
 
   if (fulfillmentPhase === "confirmed") {
     return (
@@ -384,7 +384,7 @@ export default function BuyCreditsPage() {
         <h1 className="font-serif text-3xl font-bold text-foreground mb-3">Pay when you lock a file</h1>
         <p className="text-sm text-muted leading-relaxed mb-8">{CASE_COMMERCIAL.customerOneLiner}</p>
         <Link
-          href="/cbam"
+          href="/cases"
           className="inline-flex h-11 items-center justify-center rounded-md bg-accent px-6 text-sm font-semibold text-surface hover:bg-accent-hover"
         >
           Go to your working files
