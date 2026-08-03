@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, ArrowRight, ChevronLeft, ChevronRight, Clock, Plus, RefreshCw } from "lucide-react";
 import { useAuth } from "@/context/AuthProvider";
+import { CaseResumeLink } from "@/components/cbam/CaseResumeLink";
 import {
   formatCaseUpdatedDate,
   getCaseDisplayName,
@@ -94,7 +95,6 @@ export default function CasesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
-  // Sort cases by latest updated/created date descending
   const sortedCases = useMemo(() => {
     return [...cases].sort((a, b) => {
       const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
@@ -109,7 +109,6 @@ export default function CasesPage() {
     return sortedCases.slice(start, start + ITEMS_PER_PAGE);
   }, [sortedCases, currentPage]);
 
-  // Load from cache on mount
   useEffect(() => {
     if (!user) return;
     try {
@@ -253,12 +252,11 @@ export default function CasesPage() {
                       </span>
                     </div>
                   </div>
-                  <Link
-                    href={`/cases/${cbamCase.caseId}`}
-                    className="bg-accent hover:bg-accent-hover text-surface text-xs font-semibold px-4 py-2 rounded-md transition-colors flex items-center gap-1 self-end sm:self-auto"
-                  >
-                    Resume Draft <ArrowRight className="w-3 h-3" />
-                  </Link>
+                  <CaseResumeLink
+                    caseId={cbamCase.caseId}
+                    caseData={cbamCase.data}
+                    updatedAt={cbamCase.updatedAt}
+                  />
                 </div>
               ))}
             </div>
