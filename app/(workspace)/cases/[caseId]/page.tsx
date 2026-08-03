@@ -43,22 +43,17 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
 
   useEffect(() => {
     if (!user || !validCaseId) return;
-    let cancelled = false;
+    const cachedCase = readFreshCaseWorkspaceCache(caseId);
+    const timer = window.setTimeout(() => {
+      if (cachedCase) {
+        // Cache primes parsing and memory, but never opens an actionable wizard.
+        // Keep the gate closed until the server returns the current case and pack.
+        seedWorkspaceCase(caseId, cachedCase);
+        setInitialCase(cachedCase);
+      }
+    }, 0);
 
-    queueMicrotask(() => {
-      if (cancelled) return;
-      const cached = readFreshCaseWorkspaceCache(caseId);
-      if (!cached) return;
-
-      hasRenderableCase.current = true;
-      seedWorkspaceCase(caseId, cached);
-      setInitialCase(cached);
-      setCaseLoading(false);
-    });
-
-    return () => {
-      cancelled = true;
-    };
+    return () => window.clearTimeout(timer);
   }, [user, caseId, validCaseId]);
 
   // Failure isolation is equivalent to Promise.allSettled, but the two reads
