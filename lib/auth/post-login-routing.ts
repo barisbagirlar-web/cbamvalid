@@ -24,7 +24,7 @@ export async function resolvePostLoginRoute(user: User): Promise<string> {
   // The exact controlled production account must enter the customer Cases workspace,
   // even though its server-side token retains super-admin claims for audit operations.
   if (isControlledWorkspaceAccount(user)) {
-    return nextRoute || "/cases";
+    return "/cases";
   }
 
   // 3. Route logic
