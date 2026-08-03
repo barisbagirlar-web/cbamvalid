@@ -10,7 +10,7 @@ export const PUBLIC_NAV = [
 
 export const APP_NAV = [
   { label: "Home", href: "/cbam" },
-  { label: "Working files", href: "/cases" },
+  { label: "Cases", href: "/cases" },
   { label: "Locked packages", href: "/reports" },
   { label: "Methodology & Sources", href: "/cbam/methodology" }
 ] as const;

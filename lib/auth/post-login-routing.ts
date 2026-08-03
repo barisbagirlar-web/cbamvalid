@@ -1,4 +1,5 @@
 import { User } from "firebase/auth";
+import { isControlledWorkspaceAccount } from "@/lib/auth/controlled-workspace-account";
 
 export async function resolvePostLoginRoute(user: User): Promise<string> {
   // 1. Wait for Firebase user and call getIdTokenResult(true)
@@ -18,6 +19,12 @@ export async function resolvePostLoginRoute(user: User): Promise<string> {
     ) {
       nextRoute = null; // invalid, fallback
     }
+  }
+
+  // The exact controlled production account must enter the customer Cases workspace,
+  // even though its server-side token retains super-admin claims for audit operations.
+  if (isControlledWorkspaceAccount(user)) {
+    return "/cases";
   }
 
   // 3. Route logic
