@@ -2,6 +2,10 @@ import React from "react";
 import { requireSuperAdmin } from "@/lib/auth/admin-gate";
 import { fetchAllCases } from "../actions";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+
+const TEB232_UID = "r3Sv0U5YqEcLLylbw5ndwK1Zg652";
+const TEB232_EMAIL = "teb232@gmail.com";
 
 const RELEASE_STATUS_STYLES: Record<string, string> = {
   DRAFT: "bg-surface border-border text-muted",
@@ -15,7 +19,12 @@ const RELEASE_STATUS_STYLES: Record<string, string> = {
 };
 
 export default async function AdminCasesPage() {
-  await requireSuperAdmin();
+  const admin = await requireSuperAdmin();
+  const email = String(admin.email || "").trim().toLowerCase();
+  if (admin.uid === TEB232_UID && email === TEB232_EMAIL) {
+    redirect("/cases");
+  }
+
   const cases = await fetchAllCases();
 
   return (
