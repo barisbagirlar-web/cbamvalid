@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import type { AuditReadyCase } from "@/lib/cbam/schema";
+import { firebaseAuth } from "@/lib/firebase/client";
 import { writeCaseWorkspaceCache } from "@/lib/cbam/workspace-cache";
 import {
   prewarmCaseWorkspace,
@@ -11,26 +12,27 @@ import {
 } from "@/lib/functions/workspace-loader";
 
 export function CaseResumeLink({
-  ownerUid,
   caseId,
   caseData,
   updatedAt,
 }: {
-  ownerUid: string;
   caseId: string;
   caseData: AuditReadyCase;
   updatedAt?: string;
 }) {
   useEffect(() => {
+    const ownerUid = firebaseAuth.currentUser?.uid;
+    if (!ownerUid) return;
     seedWorkspaceCase(caseId, caseData);
     try {
       writeCaseWorkspaceCache(ownerUid, caseId, caseData, updatedAt);
     } catch (error) {
       console.warn("Failed to prepare instant case navigation", caseId, error);
     }
-  }, [caseData, caseId, ownerUid, updatedAt]);
+  }, [caseData, caseId, updatedAt]);
 
   const prewarm = () => {
+    if (!firebaseAuth.currentUser?.uid) return;
     seedWorkspaceCase(caseId, caseData);
     prewarmCaseWorkspace(caseId);
   };
