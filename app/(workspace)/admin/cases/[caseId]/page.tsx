@@ -2,12 +2,20 @@ import React from "react";
 import { requireSuperAdmin } from "@/lib/auth/admin-gate";
 import { fetchCaseDetail } from "../../actions";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowLeft, Database, FileText } from "lucide-react";
 
-export default async function AdminCaseDetailPage({ params }: { params: Promise<{ caseId: string }> }) {
-  await requireSuperAdmin();
-  const { caseId } = await params;
+const TEB232_UID = "r3Sv0U5YqEcLLylbw5ndwK1Zg652";
+const TEB232_EMAIL = "teb232@gmail.com";
 
+export default async function AdminCaseDetailPage({ params }: { params: Promise<{ caseId: string }> }) {
+  const admin = await requireSuperAdmin();
+  const email = String(admin.email || "").trim().toLowerCase();
+  if (admin.uid === TEB232_UID && email === TEB232_EMAIL) {
+    redirect("/cases");
+  }
+
+  const { caseId } = await params;
   const item = await fetchCaseDetail(caseId);
 
   if (!item) {
