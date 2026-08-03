@@ -47,7 +47,7 @@ jobs:
           esac
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Run ZAP baseline against staging
         uses: zaproxy/action-baseline@v0.15.0
