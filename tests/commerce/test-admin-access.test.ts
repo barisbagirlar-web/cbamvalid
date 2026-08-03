@@ -106,24 +106,22 @@ describe("Test-admin access (owner-approved test bypass)", () => {
     vi.clearAllMocks();
   });
 
-  it("1. Allowlist contains exactly the two approved test accounts", () => {
-    expect(TEST_ADMIN_EMAILS).toEqual([
-      "barisbagirlar@gmail.com",
-      "teb232@gmail.com",
-    ]);
+  it("1. Allowlist contains only the approved owner account", () => {
+    expect(TEST_ADMIN_EMAILS).toEqual(["barisbagirlar@gmail.com"]);
+    expect(TEST_ADMIN_EMAILS).not.toContain("teb232@gmail.com");
   });
 
   it("2. isTestAdmin requires verified email + allowlist membership", () => {
-    expect(isTestAdmin({ email: "teb232@gmail.com", email_verified: true })).toBe(true);
     expect(isTestAdmin({ email: "BARISBAGIRLAR@gmail.com", email_verified: true })).toBe(true);
-    expect(isTestAdmin({ email: "teb232@gmail.com", email_verified: false })).toBe(false);
+    expect(isTestAdmin({ email: "barisbagirlar@gmail.com", email_verified: false })).toBe(false);
+    expect(isTestAdmin({ email: "teb232@gmail.com", email_verified: true })).toBe(false);
     expect(isTestAdmin({ email: "someone@example.com", email_verified: true })).toBe(false);
     expect(isTestAdmin(null)).toBe(false);
     expect(isTestAdmin(undefined)).toBe(false);
   });
 
   it("3. ensureTestAdminEntitlement provisions an idempotent synthetic AVAILABLE entitlement", async () => {
-    const first = await ensureTestAdminEntitlement(mockDbTransaction as never, "user-test-1", "teb232@gmail.com");
+    const first = await ensureTestAdminEntitlement(mockDbTransaction as never, "user-test-1", "barisbagirlar@gmail.com");
     expect(first.entitlementId).toMatch(/^ent_test_[a-f0-9]{40}$/);
     expect(first.releasesRemaining).toBe(TEST_ADMIN_MAX_RELEASES);
     expect(first.maxReleases).toBe(TEST_ADMIN_MAX_RELEASES);
@@ -136,16 +134,14 @@ describe("Test-admin access (owner-approved test bypass)", () => {
     expect(stored?.productCode).toBe("pack_premium_dossier_v5");
     expect(stored?.syntheticTest).toBe(true);
     expect(stored?.environment).toBe("sandbox");
-    expect(stored?.provisionedForEmail).toBe("teb232@gmail.com");
+    expect(stored?.provisionedForEmail).toBe("barisbagirlar@gmail.com");
 
-    // Ledger entry written with syntheticTest flag.
     const ledgerPath = Object.keys(mockDocs).find((path) => path.startsWith("commerce_ledger/"));
     expect(ledgerPath).toBeTruthy();
     expect(mockDocs[ledgerPath as string]?.type).toBe("ENTITLEMENT_ISSUED");
     expect(mockDocs[ledgerPath as string]?.syntheticTest).toBe(true);
 
-    // Second call converges on the same deterministic id and does not duplicate.
-    const second = await ensureTestAdminEntitlement(mockDbTransaction as never, "user-test-1", "teb232@gmail.com");
+    const second = await ensureTestAdminEntitlement(mockDbTransaction as never, "user-test-1", "barisbagirlar@gmail.com");
     expect(second.entitlementId).toBe(first.entitlementId);
     const entitlementDocs = Object.keys(mockDocs).filter((path) => path.startsWith("entitlements/"));
     expect(entitlementDocs).toHaveLength(1);
@@ -153,15 +149,14 @@ describe("Test-admin access (owner-approved test bypass)", () => {
 
   it("4. Rejects invalid uid (fail-closed) before writing", async () => {
     await expect(
-      ensureTestAdminEntitlement(mockDbTransaction as never, "", "teb232@gmail.com")
+      ensureTestAdminEntitlement(mockDbTransaction as never, "", "barisbagirlar@gmail.com")
     ).rejects.toThrow();
-    const writes = Object.keys(mockDocs);
-    expect(writes).toHaveLength(0);
+    expect(Object.keys(mockDocs)).toHaveLength(0);
   });
 
   it("5. isTestAdminEmail lowercases and trims", () => {
     expect(isTestAdminEmail("  BARISBAGIRLAR@gmail.com ")).toBe(true);
-    expect(isTestAdminEmail("teb232@GMAIL.com")).toBe(true);
+    expect(isTestAdminEmail("teb232@GMAIL.com")).toBe(false);
     expect(isTestAdminEmail("nope@gmail.com")).toBe(false);
   });
 });

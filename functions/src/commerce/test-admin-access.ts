@@ -14,7 +14,6 @@ import { validateIdentifier } from "../firestore-validator";
  */
 export const TEST_ADMIN_EMAILS = Object.freeze([
   "barisbagirlar@gmail.com",
-  "teb232@gmail.com",
 ]);
 
 export function isTestAdminEmail(email: unknown): boolean {
@@ -34,11 +33,6 @@ export function isTestAdmin(
 
 export const TEST_ADMIN_MAX_RELEASES = 100;
 
-/**
- * Idempotent synthetic entitlement for a test admin. Deterministic document id
- * (`ent_test_<sha256(uid) prefix>`), so concurrent or repeated calls converge
- * on the same entitlement. Ledger entry is written with syntheticTest=true.
- */
 export async function ensureTestAdminEntitlement(
   transaction: admin.firestore.Transaction,
   uid: string,
