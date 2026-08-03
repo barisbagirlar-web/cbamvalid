@@ -56,6 +56,11 @@ function validateVisibleCases(
   }
 }
 
+function currentCaseId(pathname: string): string | null {
+  const match = pathname.match(/^\/cases\/([^/]+)$/);
+  return match?.[1] ? decodeURIComponent(match[1]) : null;
+}
+
 export function Teb232CaseReconciler() {
   const pathname = usePathname();
   const { user, loading } = useAuth();
@@ -132,7 +137,10 @@ export function Teb232CaseReconciler() {
           JSON.stringify(visibleCases)
         );
 
-        if (payload.changed || pathname !== "/cases") {
+        const openCaseId = currentCaseId(pathname);
+        const staleCaseRoute =
+          openCaseId !== null && !payload.caseIds.includes(openCaseId);
+        if (payload.changed || staleCaseRoute) {
           window.location.replace("/cases?controlledTestCases=ready");
           return;
         }
