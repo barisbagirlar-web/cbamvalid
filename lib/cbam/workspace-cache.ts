@@ -3,31 +3,27 @@ import {
   type AuditReadyCase,
 } from "@/lib/cbam/schema";
 
-const CASE_CACHE_VERSION = 2;
+const CASE_CACHE_VERSION = 3;
 const FAST_OPEN_MAX_AGE_MS = 5 * 60 * 1000;
 
 type CaseCacheEnvelope = {
   version: typeof CASE_CACHE_VERSION;
+  ownerUid: string;
   cachedAt: number;
   serverUpdatedAt?: string;
   value: AuditReadyCase;
-};
-
-type CaseLikeRecord = {
-  caseId: string;
-  data: AuditReadyCase;
-  updatedAt?: string;
 };
 
 function storageAvailable(): boolean {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 }
 
-function cacheKey(caseId: string): string {
-  return `cbam_case_cache_${caseId}`;
+function cacheKey(ownerUid: string, caseId: string): string {
+  return `cbam_case_cache_${ownerUid}_${caseId}`;
 }
 
 export function writeCaseWorkspaceCache(
+  ownerUid: string,
   caseId: string,
   value: AuditReadyCase,
   serverUpdatedAt?: string
@@ -36,56 +32,44 @@ export function writeCaseWorkspaceCache(
   const parsed = AuditReadyCaseSchema.parse(value);
   const envelope: CaseCacheEnvelope = {
     version: CASE_CACHE_VERSION,
+    ownerUid,
     cachedAt: Date.now(),
     serverUpdatedAt,
     value: parsed,
   };
-  window.localStorage.setItem(cacheKey(caseId), JSON.stringify(envelope));
-}
-
-export function primeCaseWorkspaceCaches(records: CaseLikeRecord[]): void {
-  if (!storageAvailable()) return;
-  for (const record of records) {
-    try {
-      writeCaseWorkspaceCache(record.caseId, record.data, record.updatedAt);
-    } catch (error) {
-      console.warn("Failed to prime case workspace cache", record.caseId, error);
-    }
-  }
+  window.localStorage.setItem(cacheKey(ownerUid, caseId), JSON.stringify(envelope));
 }
 
 export function readFreshCaseWorkspaceCache(
+  ownerUid: string,
   caseId: string,
   maxAgeMs = FAST_OPEN_MAX_AGE_MS
 ): AuditReadyCase | null {
   if (!storageAvailable()) return null;
-  const raw = window.localStorage.getItem(cacheKey(caseId));
+  const raw = window.localStorage.getItem(cacheKey(ownerUid, caseId));
   if (!raw) return null;
 
   try {
-    const parsed = JSON.parse(raw) as CaseCacheEnvelope | AuditReadyCase;
-
-    // Legacy raw-case cache remains readable but is not trusted for fast-open
-    // because it has no freshness timestamp.
+    const candidate = JSON.parse(raw) as Partial<CaseCacheEnvelope>;
     if (
-      typeof parsed !== "object" ||
-      parsed === null ||
-      !("version" in parsed) ||
-      parsed.version !== CASE_CACHE_VERSION
+      candidate.version !== CASE_CACHE_VERSION ||
+      candidate.ownerUid !== ownerUid ||
+      typeof candidate.cachedAt !== "number" ||
+      candidate.value == null
     ) {
       return null;
     }
 
-    const age = Date.now() - Number(parsed.cachedAt || 0);
+    const age = Date.now() - candidate.cachedAt;
     if (!Number.isFinite(age) || age < 0 || age > maxAgeMs) return null;
-    return AuditReadyCaseSchema.parse(parsed.value);
+    return AuditReadyCaseSchema.parse(candidate.value);
   } catch (error) {
     console.warn("Failed to read case workspace cache", caseId, error);
     return null;
   }
 }
 
-export function clearCaseWorkspaceCache(caseId: string): void {
+export function clearCaseWorkspaceCache(ownerUid: string, caseId: string): void {
   if (!storageAvailable()) return;
-  window.localStorage.removeItem(cacheKey(caseId));
+  window.localStorage.removeItem(cacheKey(ownerUid, caseId));
 }
