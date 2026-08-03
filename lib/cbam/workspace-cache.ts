@@ -2,6 +2,7 @@ import {
   AuditReadyCaseSchema,
   type AuditReadyCase,
 } from "@/lib/cbam/schema";
+import { firebaseAuth } from "@/lib/firebase/client";
 
 const CASE_CACHE_VERSION = 3;
 const FAST_OPEN_MAX_AGE_MS = 5 * 60 * 1000;
@@ -18,17 +19,21 @@ function storageAvailable(): boolean {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 }
 
+function activeOwnerUid(): string | null {
+  return firebaseAuth.currentUser?.uid || null;
+}
+
 function cacheKey(ownerUid: string, caseId: string): string {
   return `cbam_case_cache_${ownerUid}_${caseId}`;
 }
 
 export function writeCaseWorkspaceCache(
-  ownerUid: string,
   caseId: string,
   value: AuditReadyCase,
   serverUpdatedAt?: string
 ): void {
-  if (!storageAvailable()) return;
+  const ownerUid = activeOwnerUid();
+  if (!ownerUid || !storageAvailable()) return;
   const parsed = AuditReadyCaseSchema.parse(value);
   const envelope: CaseCacheEnvelope = {
     version: CASE_CACHE_VERSION,
@@ -41,11 +46,11 @@ export function writeCaseWorkspaceCache(
 }
 
 export function readFreshCaseWorkspaceCache(
-  ownerUid: string,
   caseId: string,
   maxAgeMs = FAST_OPEN_MAX_AGE_MS
 ): AuditReadyCase | null {
-  if (!storageAvailable()) return null;
+  const ownerUid = activeOwnerUid();
+  if (!ownerUid || !storageAvailable()) return null;
   const raw = window.localStorage.getItem(cacheKey(ownerUid, caseId));
   if (!raw) return null;
 
@@ -69,7 +74,8 @@ export function readFreshCaseWorkspaceCache(
   }
 }
 
-export function clearCaseWorkspaceCache(ownerUid: string, caseId: string): void {
-  if (!storageAvailable()) return;
+export function clearCaseWorkspaceCache(caseId: string): void {
+  const ownerUid = activeOwnerUid();
+  if (!ownerUid || !storageAvailable()) return;
   window.localStorage.removeItem(cacheKey(ownerUid, caseId));
 }
