@@ -45,6 +45,47 @@ if (!fs.existsSync(firebaseConfigPath)) {
   }
 }
 
+const deployScriptPath = path.join(rootDir, "scripts", "deploy-hosting-cutover.sh");
+const liveAssetVerifierPath = path.join(rootDir, "scripts", "verify-live-next-assets.mjs");
+
+if (!fs.existsSync(deployScriptPath)) {
+  fail("scripts/deploy-hosting-cutover.sh is required");
+} else {
+  const deployScript = fs.readFileSync(deployScriptPath, "utf8");
+  if (!deployScript.includes("firebase deploy --only hosting")) {
+    fail("hosting deploy script must use Firebase Framework-Aware Hosting deployment");
+  }
+  if (!deployScript.includes("verify-live-next-assets.mjs")) {
+    fail("hosting deploy script must verify live Next.js JS/CSS assets after deployment");
+  }
+  for (const forbidden of [
+    "gcloud run services update-traffic",
+    "latestCreatedRevisionName",
+    "--update-tags",
+    "--to-revisions",
+  ]) {
+    if (deployScript.includes(forbidden)) {
+      fail(`hosting deploy script must not mutate Cloud Run traffic after Firebase deploy: ${forbidden}`);
+    }
+  }
+}
+
+if (!fs.existsSync(liveAssetVerifierPath)) {
+  fail("scripts/verify-live-next-assets.mjs is required");
+} else {
+  const verifier = fs.readFileSync(liveAssetVerifierPath, "utf8");
+  for (const required of [
+    "\\/_next\\/static\\/",
+    "ASSET_HTTP_",
+    "ASSET_MIME_INVALID",
+    "LIVE_NEXT_ASSET_INTEGRITY=PASS",
+  ]) {
+    if (!verifier.includes(required)) {
+      fail(`live Next.js asset verifier is missing required fail-closed control: ${required}`);
+    }
+  }
+}
+
 const trackedFilesResult = spawnSync("git", ["ls-files", "-z"], {
   cwd: rootDir,
   encoding: "buffer",
@@ -118,4 +159,6 @@ if (failures.length > 0) {
 console.log("HOSTING_ARCHITECTURE_GUARD=PASS");
 console.log("HOSTING_PROVIDER=FIREBASE_FRAMEWORK_AWARE_HOSTING");
 console.log("HOSTING_REGION=europe-west1");
+console.log("HOSTING_RELEASE_ATOMICITY=ENFORCED");
+console.log("LIVE_NEXT_ASSET_CHECK=REQUIRED");
 console.log("TRACKED_SECRET_SCAN=PASS");
