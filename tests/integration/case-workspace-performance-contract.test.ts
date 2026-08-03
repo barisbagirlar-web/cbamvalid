@@ -9,7 +9,7 @@ function read(relativePath: string): string {
 }
 
 describe("case workspace performance contract", () => {
-  it("primes a validated timestamped case cache before navigation", () => {
+  it("primes a validated timestamped and owner-scoped case cache before navigation", () => {
     const link = read("components/cbam/CaseResumeLink.tsx");
     const cache = read("lib/cbam/workspace-cache.ts");
 
@@ -22,23 +22,29 @@ describe("case workspace performance contract", () => {
     expect(cache).toContain("AuditReadyCaseSchema.parse");
     expect(cache).toContain("FAST_OPEN_MAX_AGE_MS");
     expect(cache).toContain("cachedAt: Date.now()");
+    expect(cache).toContain("ownerUid");
+    expect(cache).toContain("firebaseAuth.currentUser?.uid");
   });
 
-  it("deduplicates concurrent case and entitlement reads", () => {
+  it("deduplicates concurrent case and entitlement reads within one owner session", () => {
     const loader = read("lib/functions/workspace-loader.ts");
 
     expect(loader).toContain("caseInflight");
     expect(loader).toContain("entitlementInflight");
     expect(loader).toContain("if (active) return active");
-    expect(loader).toContain("if (entitlementInflight) return entitlementInflight");
+    expect(loader).toContain("entitlementInflight?.ownerUid === ownerUid");
+    expect(loader).toContain("return entitlementInflight.promise");
+    expect(loader).toContain("caseMemoryKey(ownerUid, caseId)");
     expect(loader).toContain("Promise.allSettled");
   });
 
-  it("opens the editor from a fresh case snapshot without waiting for capacity", () => {
+  it("opens after the authoritative case read without waiting for release capacity", () => {
     const page = read("app/(workspace)/cases/[caseId]/page.tsx");
+    const cacheBlock = page.match(/if \(cachedCase\) \{([\s\S]*?)\n      \}/)?.[1] || "";
 
     expect(page).toContain("readFreshCaseWorkspaceCache");
-    expect(page).toContain("setCaseLoading(false)");
+    expect(cacheBlock).toContain("setInitialCase");
+    expect(cacheBlock).not.toContain("setCaseLoading(false)");
     expect(page).toContain("loadWorkspaceCase(caseId, { forceRefresh: true })");
     expect(page).toContain("loadWorkspaceEntitlements({ forceRefresh: true })");
     expect(page).toContain("Verifying release capacity in the background");
