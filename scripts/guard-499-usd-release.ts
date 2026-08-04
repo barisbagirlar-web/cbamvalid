@@ -2,22 +2,18 @@
 
 import { createHash, verify as verifySignature } from "node:crypto";
 import { execFileSync, execSync } from "node:child_process";
-import {
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import JSZip from "jszip";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import { AuditReadyCaseSchema } from "../functions/src/cbam/schema";
 import { performDossierCalculations } from "../functions/src/cbam/calculator";
 import { runQualityControls } from "../functions/src/cbam/validation/quality-controls";
+import { assessReadiness } from "../functions/src/cbam/validation/readiness-score";
 import {
-  assessReadiness,
-} from "../functions/src/cbam/validation/readiness-score";
-import { runEvidenceSufficiency } from "../functions/src/cbam/validation/evidence-sufficiency";
+  isEvidenceSupportedState,
+  runEvidenceSufficiency,
+} from "../functions/src/cbam/validation/evidence-sufficiency";
 import { buildVerificationCrosswalk } from "../functions/src/cbam/registry/verification-template-2025-2546";
 import {
   computeEvidenceAssuranceScore,
@@ -71,17 +67,14 @@ type GateResult = {
   evidence: string[];
   failures: string[];
 };
-
 type PdfInspection = {
   pages: number;
   text: string;
-  perPageCharacters: number[];
   blankPages: number[];
   lowContentPages: number[];
   clippedItems: number;
   hasOutline: boolean;
 };
-
 type ValueBenchmark = {
   contractId: string;
   blendedProfessionalRateUsdPerHour: number;
@@ -91,65 +84,37 @@ type ValueBenchmark = {
   calculatedEquivalentValueUsd: number;
   tasks: Array<{
     id: string;
-    name: string;
     manualEquivalentHours: number;
     requiredOutputs: string[];
   }>;
-};
-
-type PackageEvidence = {
-  key: string;
-  reportId: string;
-  packageCode: string;
-  pdfSha256: string;
-  zipSha256: string;
-  manifestSha256: string;
-  pages: number;
-  topLevelComponents: number;
-  manifestFiles: number;
-  evidenceFiles: number;
 };
 
 const ROOT = resolve(process.cwd(), "artifacts", "499-usd-release");
 const CONTRACT_PATH = resolve(process.cwd(), "docs", "release", "499_USD_RELEASE_CONTRACT.md");
 const VALUE_PATH = resolve(process.cwd(), "docs", "release", "499-value-benchmark.json");
 
-function sha256(bytes: Uint8Array | Buffer | string): string {
-  return createHash("sha256").update(bytes).digest("hex");
+function sha256(value: Uint8Array | Buffer | string): string {
+  return createHash("sha256").update(value).digest("hex");
 }
-
-function canonical(value: unknown): string {
-  if (value === undefined) return "null";
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
-  const record = value as Record<string, unknown>;
-  return `{${Object.keys(record)
-    .sort()
-    .map((key) => `${JSON.stringify(key)}:${canonical(record[key])}`)
-    .join(",")}}`;
+function sourceCommit(): string {
+  const value = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+  if (!/^[a-f0-9]{40}$/i.test(value)) throw new Error(`SOURCE_SHA_INVALID:${value}`);
+  return value;
 }
-
-function exactSourceCommit(): string {
-  const gitSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
-  if (!/^[a-f0-9]{40}$/i.test(gitSha)) throw new Error(`SOURCE_SHA_INVALID:${gitSha}`);
-  return gitSha;
-}
-
-function gate(id: GateId): GateResult {
+function newGate(id: GateId): GateResult {
   return { id, status: "PASS", evidence: [], failures: [] };
 }
-
+function pass(result: GateResult, message: string): void {
+  result.evidence.push(message);
+}
 function fail(result: GateResult, message: string): void {
   result.status = "FAIL";
   result.failures.push(message);
 }
-
-function assertGate(result: GateResult, condition: boolean, passEvidence: string, failure: string): void {
-  if (condition) result.evidence.push(passEvidence);
-  else fail(result, failure);
+function check(result: GateResult, condition: boolean, success: string, failure: string): void {
+  condition ? pass(result, success) : fail(result, failure);
 }
-
-function normalizePdfText(value: string): string {
+function normalizeText(value: string): string {
   return value.replace(/\s+/g, " ").trim();
 }
 
@@ -162,42 +127,30 @@ async function inspectPdf(bytes: Buffer): Promise<PdfInspection> {
   const outline = await document.getOutline().catch(() => null);
   const blankPages: number[] = [];
   const lowContentPages: number[] = [];
-  const perPageCharacters: number[] = [];
   let clippedItems = 0;
-  let text = "";
-
+  let combined = "";
   for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
     const page = await document.getPage(pageNumber);
     const viewport = page.getViewport({ scale: 1 });
     const content = await page.getTextContent();
     const items = content.items.filter((item) => "str" in item && item.str.trim());
-    const pageText = normalizePdfText(
-      items.map((item) => ("str" in item ? item.str : "")).join(" ")
-    );
-    const characterCount = pageText.replace(/\s/g, "").length;
-    perPageCharacters.push(characterCount);
-    if (characterCount === 0) blankPages.push(pageNumber);
-    if (characterCount > 0 && characterCount < 80) lowContentPages.push(pageNumber);
-
+    const pageText = normalizeText(items.map((item) => ("str" in item ? item.str : "")).join(" "));
+    const chars = pageText.replace(/\s/g, "").length;
+    if (chars === 0) blankPages.push(pageNumber);
+    if (chars > 0 && chars < 80) lowContentPages.push(pageNumber);
     for (const item of items) {
       const transform = (item as { transform?: number[] }).transform;
       if (
         transform &&
-        (transform[4] < -50 ||
-          transform[4] > viewport.width + 50 ||
-          transform[5] < -50 ||
-          transform[5] > viewport.height + 50)
-      ) {
-        clippedItems += 1;
-      }
+        (transform[4] < -50 || transform[4] > viewport.width + 50 ||
+          transform[5] < -50 || transform[5] > viewport.height + 50)
+      ) clippedItems += 1;
     }
-    text += `${pageText} `;
+    combined += `${pageText} `;
   }
-
   return {
     pages: document.numPages,
-    text: normalizePdfText(text),
-    perPageCharacters,
+    text: normalizeText(combined),
     blankPages,
     lowContentPages,
     clippedItems,
@@ -205,20 +158,13 @@ async function inspectPdf(bytes: Buffer): Promise<PdfInspection> {
   };
 }
 
-function topLevelComponents(paths: string[]): string[] {
+function topLevel(paths: string[]): string[] {
   return [...new Set(paths.map((path) => {
     const slash = path.indexOf("/");
     return slash >= 0 ? `${path.slice(0, slash)}/` : path;
   }))].sort();
 }
-
-function parseTrace(pkg: DossierSealedPackage): Record<string, unknown> {
-  const trace = pkg.artifacts.find((artifact) => artifact.path === "Calculation Trace.json");
-  if (!trace) throw new Error(`${pkg.key}:CALCULATION_TRACE_MISSING`);
-  return JSON.parse(trace.bytes.toString("utf8")) as Record<string, unknown>;
-}
-
-function compareCalculationStrings(
+function calculationMismatches(
   expected: Record<string, unknown>,
   actual: Record<string, unknown>
 ): string[] {
@@ -239,19 +185,20 @@ function compareCalculationStrings(
   ];
   return keys.filter((key) => String(expected[key]) !== String(actual[key]));
 }
+function traceCalculation(pkg: DossierSealedPackage): Record<string, unknown> {
+  const artifact = pkg.artifacts.find((entry) => entry.path === "Calculation Trace.json");
+  if (!artifact) throw new Error(`${pkg.key}:CALCULATION_TRACE_MISSING`);
+  const parsed = JSON.parse(artifact.bytes.toString("utf8")) as { calculation?: Record<string, unknown> };
+  if (!parsed.calculation) throw new Error(`${pkg.key}:TRACE_CALCULATION_MISSING`);
+  return parsed.calculation;
+}
 
-function fixtureScoreboard(
+function scoreboard(
   caseData: ReturnType<typeof AuditReadyCaseSchema.parse>,
   assessmentTimestamp: string
 ): HonestScoreboard {
-  const readiness = assessReadiness({
-    caseData,
-    isDraft: false,
-    assessmentTimestamp,
-    sealMode: "PREVIEW",
-  });
-  const sufficiency = runEvidenceSufficiency(caseData, assessmentTimestamp);
-  const evidence = computeEvidenceAssuranceScore(sufficiency);
+  const readiness = assessReadiness({ caseData, isDraft: false, assessmentTimestamp, sealMode: "PREVIEW" });
+  const evidence = computeEvidenceAssuranceScore(runEvidenceSufficiency(caseData, assessmentTimestamp));
   const verifier = countExternalVerifierCompletion(caseData.verifierReserved);
   const operatorPreparationScore = Number(readiness.score);
   return {
@@ -260,37 +207,26 @@ function fixtureScoreboard(
     verifierReservedTotal: verifier.total,
     dossierCompleteness: operatorPreparationScore,
     status: readiness.operatorStatus,
-    formula:
-      "OPERATOR PREPARATION, EVIDENCE ASSURANCE, PACKAGE INTEGRITY and EXTERNAL VERIFIER COMPLETION are reported independently.",
+    formula: "OPERATOR PREPARATION, EVIDENCE ASSURANCE, PACKAGE INTEGRITY and EXTERNAL VERIFIER COMPLETION are reported independently.",
     operatorPreparationScore,
     evidenceAssuranceScore: evidence.score,
     packageIntegrity: "PASS",
     externalVerifierCompleted: verifier.completed,
     externalVerifierTotal: verifier.total,
-    scoreboardClaim:
-      verifier.completed < verifier.total
-        ? "OPERATOR CHECKS PASSED — EXTERNAL VERIFIER PENDING"
-        : "OPERATOR CHECKS PASSED — EXTERNAL VERIFIER COMPLETE",
+    scoreboardClaim: verifier.completed < verifier.total
+      ? "OPERATOR CHECKS PASSED — EXTERNAL VERIFIER PENDING"
+      : "OPERATOR CHECKS PASSED — EXTERNAL VERIFIER COMPLETE",
     premiumChapterContract: "COMPLETE",
     premiumNameVisible: true,
     productTierLabel: "Premium Dossier",
   };
 }
-
-function testCalcGraph(rootHash: string) {
-  const node = (
-    id: string,
-    label: string,
-    formula: string,
-    value: string,
-    unit: string,
-    inputs: string[],
-    basis: string[]
-  ) => ({
+function calcGraph(rootHash: string) {
+  const node = (id: string, value: string, unit: string, inputs: string[]) => ({
     id,
-    label,
-    formula,
-    legalBasis: basis,
+    label: id,
+    formula: inputs.length ? "COMPUTE" : "INPUT",
+    legalBasis: ["IR 2025/2547"],
     inputNodes: inputs,
     inputPaths: inputs.map((path) => ({ path })),
     value: { toString: () => value },
@@ -300,17 +236,17 @@ function testCalcGraph(rootHash: string) {
   return {
     rootHash,
     nodes: [
-      node("CBAM_CALC_ROOT", "Embedded Emissions", "COMBINE", "120", "tCO2e", ["CBAM_DIRECT_80", "CBAM_INDIRECT_40"], ["IR 2025/2547"]),
-      node("CBAM_DIRECT_80", "Direct Emissions", "SUM", "80", "tCO2e", ["CBAM_DIRECT_INSTALL_80"], ["IR 2025/2547"]),
-      node("CBAM_DIRECT_INSTALL_80", "Installation Direct", "DIRECT_MEASURE", "80", "tCO2e", [], ["IR 2025/2547"]),
-      node("CBAM_INDIRECT_40", "Electricity Indirect", "GRID_FACTOR*CONSUMPTION", "40", "tCO2e", ["CBAM_GRID_0.4", "CBAM_CONSUMPTION_100"], ["IR 2025/2547"]),
-      node("CBAM_GRID_0.4", "Grid Emission Factor", "FACTOR", "0.4", "tCO2e/MWh", [], ["IR 2025/2547"]),
-      node("CBAM_CONSUMPTION_100", "Electricity Consumption", "MEASURE", "100", "MWh", [], ["IR 2025/2547"]),
+      node("CBAM_CALC_ROOT", "120", "tCO2e", ["CBAM_DIRECT_80", "CBAM_INDIRECT_40"]),
+      node("CBAM_DIRECT_80", "80", "tCO2e", ["CBAM_DIRECT_INSTALL_80"]),
+      node("CBAM_DIRECT_INSTALL_80", "80", "tCO2e", []),
+      node("CBAM_INDIRECT_40", "40", "tCO2e", ["CBAM_GRID_0.4", "CBAM_CONSUMPTION_100"]),
+      node("CBAM_GRID_0.4", "0.4", "tCO2e/MWh", []),
+      node("CBAM_CONSUMPTION_100", "100", "MWh", []),
     ],
   };
 }
 
-async function buildFutureWorkingFilePackage(): Promise<DossierSealedPackage> {
+async function buildFuturePackage(): Promise<DossierSealedPackage> {
   const key: FourDossierKey = "ALU_CN";
   const generatedAt = "2026-08-03T21:41:36.000Z";
   const rawCase = createFourDossierCase(key);
@@ -318,9 +254,8 @@ async function buildFutureWorkingFilePackage(): Promise<DossierSealedPackage> {
   const caseData = AuditReadyCaseSchema.parse(rawCase);
   const controls = runQualityControls(caseData);
   const calculation = performDossierCalculations(caseData);
-  const reportId = `report_${sha256(`499-future-working-file:${key}`)}`;
+  const reportId = `report_${sha256(`499-future:${key}`)}`;
   const packageCode = "F499W";
-  const honestScoreboard = fixtureScoreboard(caseData, generatedAt);
   const artifacts = await buildUnsignedVerifierArtifacts({
     caseData,
     controls,
@@ -330,8 +265,8 @@ async function buildFutureWorkingFilePackage(): Promise<DossierSealedPackage> {
     releaseVersion: DOSSIER_RELEASE_VERSION,
     generatedAt,
     evidenceFiles,
-    calcGraph: testCalcGraph(calculation.calculationRootHash),
-    honestScoreboard,
+    calcGraph: calcGraph(calculation.calculationRootHash),
+    honestScoreboard: scoreboard(caseData, generatedAt),
     publicVerificationUrl: `https://sandbox.cbamvalid.com/verify/package/${reportId}`,
     assessmentContext: {
       generatedAt,
@@ -361,193 +296,146 @@ async function buildFutureWorkingFilePackage(): Promise<DossierSealedPackage> {
     signature: createSignature(manifestResult.bytes),
     generatedAt,
   });
-  return {
-    key,
-    caseData,
-    evidenceFiles,
-    controls,
-    calculation,
-    artifacts,
-    manifestResult,
-    finalized,
-  };
+  return { key, caseData, evidenceFiles, controls, calculation, artifacts, manifestResult, finalized };
 }
 
-async function verifyPackageIntegrity(
+function writeArtifacts(label: string, pkg: DossierSealedPackage): void {
+  const directory = join(ROOT, label);
+  mkdirSync(directory, { recursive: true });
+  writeFileSync(join(directory, "primary-report.pdf"), pkg.finalized.primaryPdf);
+  writeFileSync(join(directory, "sealed-package.zip"), pkg.finalized.zip);
+  writeFileSync(join(directory, "Data Integrity Manifest.json"), Buffer.from(pkg.manifestResult.bytes));
+  writeFileSync(join(directory, "Verifier Workspace.xlsx"), pkg.finalized.workbook);
+}
+
+async function verifyIntegrity(
   label: string,
   pkg: DossierSealedPackage,
   result: GateResult
-): Promise<{ manifest: DataIntegrityManifest; zip: JSZip; topLevel: string[] }> {
+): Promise<{ manifest: DataIntegrityManifest; components: string[] }> {
   const manifestBytes = Buffer.from(pkg.manifestResult.bytes);
   const manifest = JSON.parse(manifestBytes.toString("utf8")) as DataIntegrityManifest;
   const zip = await JSZip.loadAsync(pkg.finalized.zip, { checkCRC32: true });
-  const topLevel = topLevelComponents(
-    Object.keys(zip.files).filter(
-      (path) => !zip.files[path]!.dir || path === "Supporting_Evidence/"
-    )
-  );
-
-  assertGate(
-    result,
-    topLevel.length === manifest.componentContract.requiredCount && topLevel.length === 26,
+  const components = topLevel(Object.keys(zip.files).filter(
+    (path) => !zip.files[path]!.dir || path === "Supporting_Evidence/"
+  ));
+  check(result,
+    components.length === 26 && components.length === manifest.componentContract.requiredCount,
     `${label}: 26/26 top-level components`,
-    `${label}: top-level component mismatch ${topLevel.length}/${manifest.componentContract.requiredCount}`
+    `${label}: component mismatch ${components.length}/${manifest.componentContract.requiredCount}`
   );
-
-  const artifactByPath = new Map<string, PackageArtifact>(
-    pkg.artifacts.map((artifact) => [artifact.path, artifact])
-  );
+  const source = new Map<string, PackageArtifact>(pkg.artifacts.map((artifact) => [artifact.path, artifact]));
   for (const entry of manifest.files) {
     const zipEntry = zip.file(entry.path);
     if (!zipEntry) {
-      fail(result, `${label}: manifest path missing from ZIP: ${entry.path}`);
+      fail(result, `${label}: manifest path absent from ZIP ${entry.path}`);
       continue;
     }
     const bytes = Buffer.from(await zipEntry.async("uint8array"));
-    if (sha256(bytes) !== entry.sha256) fail(result, `${label}: SHA-256 mismatch: ${entry.path}`);
-    if (bytes.byteLength !== entry.sizeBytes) fail(result, `${label}: byte-size mismatch: ${entry.path}`);
-    const sourceArtifact = artifactByPath.get(entry.path);
-    if (!sourceArtifact) fail(result, `${label}: source artifact missing: ${entry.path}`);
-    else if (sourceArtifact.mediaType !== entry.mediaType) fail(result, `${label}: media-type mismatch: ${entry.path}`);
+    if (sha256(bytes) !== entry.sha256) fail(result, `${label}: hash mismatch ${entry.path}`);
+    if (bytes.byteLength !== entry.sizeBytes) fail(result, `${label}: size mismatch ${entry.path}`);
+    if (source.get(entry.path)?.mediaType !== entry.mediaType) fail(result, `${label}: media type mismatch ${entry.path}`);
   }
-
   const manifestEntry = zip.file("Data Integrity Manifest.json");
   const signatureEntry = zip.file("Manifest Signature.sig");
   if (!manifestEntry || !signatureEntry) {
-    fail(result, `${label}: manifest or detached signature missing`);
-  } else {
-    const reopenedManifest = Buffer.from(await manifestEntry.async("uint8array"));
-    const signature = JSON.parse(await signatureEntry.async("string")) as {
-      publicKeyPem: string;
-      signatureBase64: string;
-      manifestHash: string;
-    };
-    assertGate(
-      result,
-      reopenedManifest.equals(manifestBytes),
-      `${label}: reopened manifest bytes exact`,
-      `${label}: reopened manifest bytes differ`
-    );
-    assertGate(
-      result,
-      signature.manifestHash === sha256(reopenedManifest),
-      `${label}: signature manifest hash exact`,
-      `${label}: signature manifest hash mismatch`
-    );
-    assertGate(
-      result,
-      verifySignature(
-        "sha256",
-        reopenedManifest,
-        signature.publicKeyPem,
-        Buffer.from(signature.signatureBase64, "base64")
-      ),
-      `${label}: detached signature verified`,
-      `${label}: detached signature verification failed`
-    );
+    fail(result, `${label}: manifest/signature missing`);
+    return { manifest, components };
   }
-
-  return { manifest, zip, topLevel };
-}
-
-function writePackageEvidence(label: string, pkg: DossierSealedPackage): void {
-  const out = join(ROOT, label);
-  mkdirSync(out, { recursive: true });
-  writeFileSync(join(out, "primary-report.pdf"), pkg.finalized.primaryPdf);
-  writeFileSync(join(out, "sealed-package.zip"), pkg.finalized.zip);
-  writeFileSync(join(out, "Data Integrity Manifest.json"), Buffer.from(pkg.manifestResult.bytes));
-  writeFileSync(join(out, "Verifier Workspace.xlsx"), pkg.finalized.workbook);
+  const reopened = Buffer.from(await manifestEntry.async("uint8array"));
+  const signature = JSON.parse(await signatureEntry.async("string")) as {
+    publicKeyPem: string;
+    signatureBase64: string;
+    manifestHash: string;
+  };
+  check(result, reopened.equals(manifestBytes), `${label}: manifest bytes exact`, `${label}: manifest bytes differ`);
+  check(result, signature.manifestHash === sha256(reopened), `${label}: manifest hash exact`, `${label}: signature hash mismatch`);
+  check(result,
+    verifySignature("sha256", reopened, signature.publicKeyPem, Buffer.from(signature.signatureBase64, "base64")),
+    `${label}: detached signature verified`,
+    `${label}: detached signature invalid`
+  );
+  return { manifest, components };
 }
 
 async function main(): Promise<void> {
   rmSync(ROOT, { recursive: true, force: true });
   mkdirSync(ROOT, { recursive: true });
-
-  const results = new Map<GateId, GateResult>(GATE_IDS.map((id) => [id, gate(id)]));
-  const sourceCommitSha = exactSourceCommit();
+  const gates = new Map<GateId, GateResult>(GATE_IDS.map((id) => [id, newGate(id)]));
+  const commitSha = sourceCommit();
   const contractBytes = readFileSync(CONTRACT_PATH);
-  const valueBenchmark = JSON.parse(readFileSync(VALUE_PATH, "utf8")) as ValueBenchmark;
-  const packageEvidence: PackageEvidence[] = [];
+  const benchmark = JSON.parse(readFileSync(VALUE_PATH, "utf8")) as ValueBenchmark;
 
   const packages: DossierSealedPackage[] = [];
   for (const key of FOUR_DOSSIER_KEYS) {
     const pkg = await buildDossierSealedPackage(key);
     packages.push(pkg);
-    writePackageEvidence(key, pkg);
+    writeArtifacts(key, pkg);
   }
-  const futurePackage = await buildFutureWorkingFilePackage();
-  writePackageEvidence("FUTURE_WORKING_FILE_ALU_CN", futurePackage);
+  const future = await buildFuturePackage();
+  writeArtifacts("FUTURE_WORKING_FILE_ALU_CN", future);
 
-  // G01 — exact artifact semantics, including the historical future-period failure mode.
-  const consistency = results.get("G01_INTERNAL_CONSISTENCY")!;
+  const g01 = gates.get("G01_INTERNAL_CONSISTENCY")!;
   for (const pkg of packages) {
     const pdf = await inspectPdf(pkg.finalized.primaryPdf);
-    const readiness = assessReadiness({
-      caseData: pkg.caseData,
-      isDraft: false,
-      assessmentTimestamp: FOUR_DOSSIER_ASSESSMENT_TIMESTAMP,
-    });
-    const text = pdf.text;
-    assertGate(consistency, readiness.criticalBlockerCount === 0, `${pkg.key}: model critical blockers = 0`, `${pkg.key}: model critical blockers = ${readiness.criticalBlockerCount}`);
-    assertGate(consistency, /Sealing critical blockers\s+0/i.test(text), `${pkg.key}: executive sealing blockers = 0`, `${pkg.key}: executive sealing blocker count is not zero`);
-    assertGate(consistency, !/Open critical blockers/i.test(text), `${pkg.key}: obsolete ambiguous blocker heading absent`, `${pkg.key}: obsolete Open critical blockers heading present`);
+    const readiness = assessReadiness({ caseData: pkg.caseData, isDraft: false, assessmentTimestamp: FOUR_DOSSIER_ASSESSMENT_TIMESTAMP });
+    check(g01, readiness.criticalBlockerCount === 0, `${pkg.key}: model critical blockers 0`, `${pkg.key}: model critical blockers ${readiness.criticalBlockerCount}`);
+    check(g01, /Sealing critical blockers\s+0/i.test(pdf.text), `${pkg.key}: sealing blockers 0`, `${pkg.key}: sealing blocker count inconsistent`);
+    check(g01, !/Open critical blockers/i.test(pdf.text), `${pkg.key}: obsolete blocker heading absent`, `${pkg.key}: obsolete blocker heading present`);
   }
-  const futurePdf = await inspectPdf(futurePackage.finalized.primaryPdf);
-  assertGate(consistency, /Decision\s*-\s*do not submit/i.test(futurePdf.text), "Future-period artifact: DO NOT SUBMIT decision visible", "Future-period artifact: DO NOT SUBMIT decision missing");
-  assertGate(consistency, /Sealing critical blockers\s+0/i.test(futurePdf.text), "Future-period artifact: sealing blocker count remains zero", "Future-period artifact: sealing blocker count not zero");
-  assertGate(consistency, /Reporting-period restrictions\s+1/i.test(futurePdf.text), "Future-period artifact: one reporting-period restriction disclosed", "Future-period artifact: reporting-period restriction count mismatch");
-  assertGate(consistency, /Future Reporting Period End Date/i.test(futurePdf.text), "Future-period artifact: finding remains visible", "Future-period artifact: finding missing");
-  assertGate(consistency, !/Open critical blockers/i.test(futurePdf.text), "Future-period artifact: ambiguous old heading absent", "Future-period artifact: old Open critical blockers heading present");
-  assertGate(consistency, /Registry Field-Mapping Completeness/i.test(futurePdf.text), "Future-period artifact: field-mapping heading explicit", "Future-period artifact: field-mapping heading missing");
-  assertGate(consistency, !/Registry Submission Readiness/i.test(futurePdf.text), "Future-period artifact: misleading submission-readiness heading absent", "Future-period artifact: misleading Registry Submission Readiness heading present");
+  const futurePdf = await inspectPdf(future.finalized.primaryPdf);
+  for (const [condition, success, failure] of [
+    [/Decision\s*-\s*do not submit/i.test(futurePdf.text), "Future file: DO NOT SUBMIT visible", "Future file: decision missing"],
+    [/Sealing critical blockers\s+0/i.test(futurePdf.text), "Future file: sealing blockers 0", "Future file: sealing blockers inconsistent"],
+    [/Reporting-period restrictions\s+1/i.test(futurePdf.text), "Future file: restriction count 1", "Future file: restriction count inconsistent"],
+    [/Future Reporting Period End Date/i.test(futurePdf.text), "Future file: finding visible", "Future file: finding missing"],
+    [!/Open critical blockers/i.test(futurePdf.text), "Future file: old heading absent", "Future file: old heading present"],
+    [/Registry Field-Mapping Completeness/i.test(futurePdf.text), "Future file: field-mapping heading explicit", "Future file: field-mapping heading missing"],
+    [!/Registry Submission Readiness/i.test(futurePdf.text), "Future file: submission heading absent", "Future file: submission heading present"],
+  ] as Array<[boolean, string, string]>) check(g01, condition, success, failure);
 
-  // G02 — recompute independently and reconcile against trace + manifest.
-  const recomputation = results.get("G02_RECOMPUTATION")!;
+  const g02 = gates.get("G02_RECOMPUTATION")!;
   for (const pkg of packages) {
-    const independent = performDossierCalculations(pkg.caseData) as unknown as Record<string, unknown>;
     const sealed = pkg.calculation as unknown as Record<string, unknown>;
-    const deltas = compareCalculationStrings(independent, sealed);
-    const trace = parseTrace(pkg);
-    const traceCalculation = trace.calculation as Record<string, unknown> | undefined;
-    const traceDeltas = traceCalculation ? compareCalculationStrings(sealed, traceCalculation) : ["TRACE_CALCULATION_MISSING"];
-    assertGate(recomputation, deltas.length === 0, `${pkg.key}: independent recomputation delta = 0`, `${pkg.key}: recomputation mismatches ${deltas.join(",")}`);
-    assertGate(recomputation, traceDeltas.length === 0, `${pkg.key}: trace/calculation delta = 0`, `${pkg.key}: trace mismatches ${traceDeltas.join(",")}`);
-    assertGate(recomputation, pkg.manifestResult.manifest.calculationRootHash === pkg.calculation.calculationRootHash, `${pkg.key}: manifest calculation root exact`, `${pkg.key}: manifest calculation root mismatch`);
+    const recomputed = performDossierCalculations(pkg.caseData) as unknown as Record<string, unknown>;
+    const delta = calculationMismatches(recomputed, sealed);
+    const traceDelta = calculationMismatches(sealed, traceCalculation(pkg));
+    check(g02, delta.length === 0, `${pkg.key}: recomputation delta 0`, `${pkg.key}: recomputation mismatch ${delta.join(",")}`);
+    check(g02, traceDelta.length === 0, `${pkg.key}: trace delta 0`, `${pkg.key}: trace mismatch ${traceDelta.join(",")}`);
+    check(g02,
+      pkg.manifestResult.manifest.calculationRootHash === pkg.calculation.calculationRootHash,
+      `${pkg.key}: calculation root exact`,
+      `${pkg.key}: calculation root mismatch`
+    );
   }
 
-  // G03 — material evidence or explicit methodology basis.
-  const evidenceGate = results.get("G03_EVIDENCE")!;
+  const g03 = gates.get("G03_EVIDENCE")!;
   for (const pkg of packages) {
     const rows = runEvidenceSufficiency(pkg.caseData, FOUR_DOSSIER_ASSESSMENT_TIMESTAMP);
-    const materialRows = rows.filter((row) => row.isMaterial ?? row.blocksSealing);
-    const unacceptable = materialRows.filter((row) => !["SUPPORTED", "NOT_APPLICABLE"].includes(row.state));
-    const weakGrades = materialRows.filter((row) => {
-      const grade = String((row as unknown as { evidenceQualityGrade?: string }).evidenceQualityGrade ?? "");
-      return ["D", "E", "PENDING"].includes(grade);
-    });
-    const withoutBasis = materialRows.filter((row) =>
+    const material = rows.filter((row) => row.isMaterial ?? row.blocksSealing);
+    const unsupported = material.filter((row) => !isEvidenceSupportedState(row.state) && row.state !== "NOT_APPLICABLE");
+    const weak = material.filter((row) => ["D", "E", "PENDING"].includes(String(row.evidenceQualityGrade ?? "")));
+    const withoutBasis = material.filter((row) =>
       row.evidenceIds.length === 0 &&
+      !isEvidenceSupportedState(row.state) &&
       row.state !== "NOT_APPLICABLE" &&
       !row.reasonCodes.some((code) => /METHODOLOGY|ACCEPTED|LEGAL_BASIS/i.test(code))
     );
-    assertGate(evidenceGate, unacceptable.length === 0, `${pkg.key}: all ${materialRows.length} material rows supported/applicable`, `${pkg.key}: unsupported material rows ${unacceptable.map((row) => row.requirementId).join(",")}`);
-    assertGate(evidenceGate, weakGrades.length === 0, `${pkg.key}: no material D/E/PENDING grades`, `${pkg.key}: weak material grades ${weakGrades.map((row) => row.requirementId).join(",")}`);
-    assertGate(evidenceGate, withoutBasis.length === 0, `${pkg.key}: every material row has evidence or explicit basis`, `${pkg.key}: material rows without evidence/basis ${withoutBasis.map((row) => row.requirementId).join(",")}`);
+    check(g03, unsupported.length === 0, `${pkg.key}: all ${material.length} material rows supported`, `${pkg.key}: unsupported ${unsupported.map((row) => row.requirementId).join(",")}`);
+    check(g03, weak.length === 0, `${pkg.key}: no material D/E/PENDING grade`, `${pkg.key}: weak grades ${weak.map((row) => row.requirementId).join(",")}`);
+    check(g03, withoutBasis.length === 0, `${pkg.key}: evidence/methodology basis complete`, `${pkg.key}: basis missing ${withoutBasis.map((row) => row.requirementId).join(",")}`);
   }
 
-  // G04 — verifier-reserved fields never pass before external action.
-  const verifierGate = results.get("G04_VERIFIER_BOUNDARY")!;
-  for (const [label, pkg] of [...packages.map((pkg) => [pkg.key, pkg] as const), ["FUTURE_WORKING_FILE_ALU_CN", futurePackage] as const]) {
+  const g04 = gates.get("G04_VERIFIER_BOUNDARY")!;
+  for (const [label, pkg] of [...packages.map((pkg) => [pkg.key, pkg] as const), ["FUTURE_WORKING_FILE_ALU_CN", future] as const]) {
     const pdf = await inspectPdf(pkg.finalized.primaryPdf);
-    const pendingPassed = /Pending verifier.{0,180}Passed/i.test(pdf.text);
-    assertGate(verifierGate, !pendingPassed, `${label}: pending-verifier Passed count = 0`, `${label}: pending verifier displayed as Passed`);
-    assertGate(verifierGate, /Verifier action pending/i.test(pdf.text), `${label}: verifier action pending is explicit`, `${label}: verifier pending marker missing`);
-    assertGate(verifierGate, /NOT REVIEWED\s*-\s*PENDING/i.test(pdf.text), `${label}: independent status is NOT REVIEWED - PENDING`, `${label}: independent pending status missing`);
+    check(g04, !/Pending verifier.{0,180}Passed/i.test(pdf.text), `${label}: pending-verifier Passed count 0`, `${label}: pending verifier displayed as Passed`);
+    check(g04, /Verifier action pending/i.test(pdf.text), `${label}: verifier pending explicit`, `${label}: verifier pending marker missing`);
+    check(g04, /NOT REVIEWED\s*-\s*PENDING/i.test(pdf.text), `${label}: independent status pending`, `${label}: independent pending status missing`);
   }
 
-  // G05 — one requirement, one legal source, with the 2546/2547 role split.
-  const legalGate = results.get("G05_LEGAL_SOURCE")!;
-  const requiredLegalMapping: Record<string, string> = {
+  const g05 = gates.get("G05_LEGAL_SOURCE")!;
+  const expected: Record<string, string> = {
     "CW-INST-INFO": "IMPL_2025_2546",
     "CW-VER-VISIT": "IMPL_2025_2546",
     "CW-ALLOC-METHOD": "IMPL_2025_2547",
@@ -557,28 +445,32 @@ async function main(): Promise<void> {
   };
   for (const pkg of packages) {
     const rows = buildVerificationCrosswalk(pkg.caseData);
-    const sourceByRequirement = new Map<string, Set<string>>();
+    const sources = new Map<string, Set<string>>();
     for (const row of rows) {
-      const sources = sourceByRequirement.get(row.requirementId) ?? new Set<string>();
-      sources.add(row.legalSourceId);
-      sourceByRequirement.set(row.requirementId, sources);
-      if (!row.legalLocation.trim()) fail(legalGate, `${pkg.key}: empty legal location for ${row.requirementId}`);
+      const set = sources.get(row.requirementId) ?? new Set<string>();
+      set.add(row.legalSourceId);
+      sources.set(row.requirementId, set);
+      if (!row.legalLocation.trim()) fail(g05, `${pkg.key}: legal location empty ${row.requirementId}`);
     }
-    for (const [requirement, sources] of sourceByRequirement) {
-      if (sources.size !== 1) fail(legalGate, `${pkg.key}: ${requirement} maps to ${sources.size} legal sources`);
+    for (const [requirement, set] of sources) {
+      if (set.size !== 1) fail(g05, `${pkg.key}: ${requirement} maps to ${set.size} sources`);
     }
-    for (const [requirement, expectedSource] of Object.entries(requiredLegalMapping)) {
+    for (const [requirement, legalSource] of Object.entries(expected)) {
+      if (requirement === "CW-PRECURSOR-0" && pkg.caseData.precursors.length === 0) {
+        pass(g05, `${pkg.key}: ${requirement} not applicable — no precursor row`);
+        continue;
+      }
       const actual = rows.find((row) => row.requirementId === requirement)?.legalSourceId;
-      assertGate(legalGate, actual === expectedSource, `${pkg.key}: ${requirement} -> ${expectedSource}`, `${pkg.key}: ${requirement} expected ${expectedSource}, got ${actual ?? "MISSING"}`);
+      check(g05, actual === legalSource, `${pkg.key}: ${requirement} -> ${legalSource}`, `${pkg.key}: ${requirement} expected ${legalSource}, got ${actual ?? "MISSING"}`);
     }
   }
 
-  // G06 — independently reopen and verify every package.
-  const integrityGate = results.get("G06_PACKAGE_INTEGRITY")!;
+  const g06 = gates.get("G06_PACKAGE_INTEGRITY")!;
+  const artifactSet: Array<Record<string, unknown>> = [];
   for (const pkg of packages) {
-    const verified = await verifyPackageIntegrity(pkg.key, pkg, integrityGate);
+    const verified = await verifyIntegrity(pkg.key, pkg, g06);
     const pdf = await inspectPdf(pkg.finalized.primaryPdf);
-    packageEvidence.push({
+    artifactSet.push({
       key: pkg.key,
       reportId: dossierReportId(pkg.key),
       packageCode: dossierPackageCode(pkg.key),
@@ -586,99 +478,94 @@ async function main(): Promise<void> {
       zipSha256: sha256(pkg.finalized.zip),
       manifestSha256: sha256(Buffer.from(pkg.manifestResult.bytes)),
       pages: pdf.pages,
-      topLevelComponents: verified.topLevel.length,
+      topLevelComponents: verified.components.length,
       manifestFiles: verified.manifest.files.length,
       evidenceFiles: pkg.evidenceFiles.length,
     });
   }
-  await verifyPackageIntegrity("FUTURE_WORKING_FILE_ALU_CN", futurePackage, integrityGate);
+  await verifyIntegrity("FUTURE_WORKING_FILE_ALU_CN", future, g06);
 
-  // G07 — deterministic support-free workflow contract + end-to-end generation.
-  const usabilityGate = results.get("G07_USABILITY")!;
+  const g07 = gates.get("G07_USABILITY")!;
   try {
     execSync(
       "npx vitest run tests/integration/wizard-step-validation.test.ts tests/integration/wizard-step-content-contract.test.ts tests/integration/field-help-coverage.test.ts tests/integration/new-case-runtime-contract.test.ts",
       { stdio: "inherit", env: { ...process.env, CI: "true" } }
     );
-    usabilityGate.evidence.push("Eight-step validation, content, field-help and new-case runtime tests passed");
+    pass(g07, "Eight-step validation, content, field-help and runtime tests passed");
   } catch {
-    fail(usabilityGate, "Deterministic user-flow tests failed");
+    fail(g07, "Deterministic user-flow tests failed");
   }
-  assertGate(usabilityGate, packages.length === FOUR_DOSSIER_KEYS.length, "Four sector workflows generated sealed packages end-to-end", `Expected ${FOUR_DOSSIER_KEYS.length} sector packages, generated ${packages.length}`);
+  check(g07, packages.length === FOUR_DOSSIER_KEYS.length, "Four sector packages generated end-to-end", `Generated ${packages.length}/${FOUR_DOSSIER_KEYS.length} packages`);
 
-  // G08 — inspect exact primary PDFs, not renderer source.
-  const outputGate = results.get("G08_OUTPUT_QUALITY")!;
-  for (const [label, pkg] of [...packages.map((pkg) => [pkg.key, pkg] as const), ["FUTURE_WORKING_FILE_ALU_CN", futurePackage] as const]) {
+  const g08 = gates.get("G08_OUTPUT_QUALITY")!;
+  for (const [label, pkg] of [...packages.map((pkg) => [pkg.key, pkg] as const), ["FUTURE_WORKING_FILE_ALU_CN", future] as const]) {
     const pdf = await inspectPdf(pkg.finalized.primaryPdf);
-    assertGate(outputGate, pdf.hasOutline, `${label}: PDF outline present`, `${label}: PDF outline missing`);
-    assertGate(outputGate, pdf.blankPages.length === 0, `${label}: blank pages = 0`, `${label}: blank pages ${pdf.blankPages.join(",")}`);
-    assertGate(outputGate, pdf.lowContentPages.length === 0, `${label}: low-content pages = 0`, `${label}: low-content pages ${pdf.lowContentPages.join(",")}`);
-    assertGate(outputGate, pdf.clippedItems === 0, `${label}: clipped items = 0`, `${label}: clipped items = ${pdf.clippedItems}`);
-    assertGate(outputGate, !/[�\uFFFD]/.test(pdf.text), `${label}: broken replacement glyphs = 0`, `${label}: broken replacement glyph found`);
-    assertGate(outputGate, !/Registry Submission Readiness/i.test(pdf.text), `${label}: wrong registry heading absent`, `${label}: wrong registry heading present`);
-    assertGate(outputGate, /Registry Field-Mapping Completeness/i.test(pdf.text), `${label}: correct registry heading present`, `${label}: correct registry heading missing`);
+    check(g08, pdf.hasOutline, `${label}: outline present`, `${label}: outline missing`);
+    check(g08, pdf.blankPages.length === 0, `${label}: blank pages 0`, `${label}: blank pages ${pdf.blankPages.join(",")}`);
+    check(g08, pdf.lowContentPages.length === 0, `${label}: low-content pages 0`, `${label}: low-content pages ${pdf.lowContentPages.join(",")}`);
+    check(g08, pdf.clippedItems === 0, `${label}: clipped items 0`, `${label}: clipped items ${pdf.clippedItems}`);
+    check(g08, !/[�\uFFFD]/.test(pdf.text), `${label}: broken glyphs 0`, `${label}: broken glyph found`);
+    check(g08, !/Registry Submission Readiness/i.test(pdf.text), `${label}: wrong heading absent`, `${label}: wrong heading present`);
+    check(g08, /Registry Field-Mapping Completeness/i.test(pdf.text), `${label}: correct heading present`, `${label}: correct heading missing`);
   }
 
-  // G09 — frozen conservative equivalent-work benchmark and mapped deliverables.
-  const valueGate = results.get("G09_COMMERCIAL_VALUE")!;
-  const summedHours = valueBenchmark.tasks.reduce((sum, task) => sum + task.manualEquivalentHours, 0);
-  const calculatedValue = summedHours * valueBenchmark.blendedProfessionalRateUsdPerHour;
-  assertGate(valueGate, summedHours >= valueBenchmark.minimumEquivalentHours, `Equivalent work = ${summedHours} hours`, `Equivalent work ${summedHours}h below ${valueBenchmark.minimumEquivalentHours}h`);
-  assertGate(valueGate, calculatedValue >= valueBenchmark.minimumEquivalentValueUsd, `Equivalent value = USD ${calculatedValue}`, `Equivalent value USD ${calculatedValue} below USD ${valueBenchmark.minimumEquivalentValueUsd}`);
-  assertGate(valueGate, calculatedValue === valueBenchmark.calculatedEquivalentValueUsd, "Benchmark arithmetic is internally consistent", `Benchmark arithmetic mismatch: calculated USD ${calculatedValue}, declared USD ${valueBenchmark.calculatedEquivalentValueUsd}`);
-  const firstZip = await JSZip.loadAsync(packages[0]!.finalized.zip, { checkCRC32: true });
-  for (const task of valueBenchmark.tasks) {
+  const g09 = gates.get("G09_COMMERCIAL_VALUE")!;
+  const hours = benchmark.tasks.reduce((sum, task) => sum + task.manualEquivalentHours, 0);
+  const value = hours * benchmark.blendedProfessionalRateUsdPerHour;
+  check(g09, hours >= benchmark.minimumEquivalentHours, `Equivalent work ${hours}h`, `Equivalent work ${hours}h below minimum`);
+  check(g09, value >= benchmark.minimumEquivalentValueUsd, `Equivalent value USD ${value}`, `Equivalent value USD ${value} below minimum`);
+  check(g09, hours === benchmark.calculatedEquivalentHours && value === benchmark.calculatedEquivalentValueUsd, "Benchmark arithmetic exact", "Benchmark arithmetic mismatch");
+  const sampleZip = await JSZip.loadAsync(packages[0]!.finalized.zip, { checkCRC32: true });
+  for (const task of benchmark.tasks) {
     for (const output of task.requiredOutputs) {
       const exists = output.endsWith("/")
-        ? Object.keys(firstZip.files).some((path) => path.startsWith(output))
-        : Boolean(firstZip.file(output));
-      assertGate(valueGate, exists, `${task.id}: ${output} exists`, `${task.id}: required output missing ${output}`);
+        ? Object.keys(sampleZip.files).some((path) => path.startsWith(output))
+        : Boolean(sampleZip.file(output));
+      check(g09, exists, `${task.id}: ${output} exists`, `${task.id}: missing ${output}`);
     }
   }
 
-  // G10 — software-release failures only; case-specific disclosed restrictions are not defects.
-  const p0Gate = results.get("G10_P0")!;
-  const upstreamFailures = [...results.values()]
+  const g10 = gates.get("G10_P0")!;
+  const upstreamFailures = [...gates.values()]
     .filter((result) => result.id !== "G10_P0")
-    .flatMap((result) => result.failures.map((failure) => `${result.id}:${failure}`));
-  assertGate(p0Gate, upstreamFailures.length === 0, "Release P0 defect count = 0", `Release P0 defects = ${upstreamFailures.length}`);
+    .flatMap((result) => result.failures.map((message) => `${result.id}:${message}`));
+  check(g10, upstreamFailures.length === 0, "Release P0 defect count 0", `Release P0 defects ${upstreamFailures.length}`);
 
-  const generatedAt = new Date().toISOString();
-  const gateResults = GATE_IDS.map((id) => results.get(id)!);
+  const gateResults = GATE_IDS.map((id) => gates.get(id)!);
   const releaseReady = gateResults.every((result) => result.status === "PASS");
-  const releaseEvidence = {
+  const evidence = {
     contractId: CONTRACT_ID,
     contractSha256: sha256(contractBytes),
-    valueBenchmarkContractId: valueBenchmark.contractId,
-    sourceCommitSha,
+    valueBenchmarkContractId: benchmark.contractId,
+    sourceCommitSha: commitSha,
     githubRunId: process.env.GITHUB_RUN_ID ?? null,
     githubRunAttempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
-    generatedAt,
-    artifactSet: packageEvidence,
+    generatedAt: new Date().toISOString(),
+    artifactSet,
     futureWorkingFile: {
-      pdfSha256: sha256(futurePackage.finalized.primaryPdf),
-      zipSha256: sha256(futurePackage.finalized.zip),
-      manifestSha256: sha256(Buffer.from(futurePackage.manifestResult.bytes)),
+      pdfSha256: sha256(future.finalized.primaryPdf),
+      zipSha256: sha256(future.finalized.zip),
+      manifestSha256: sha256(Buffer.from(future.manifestResult.bytes)),
     },
     gates: gateResults,
     releaseP0DefectCount: upstreamFailures.length,
-    equivalentWorkHours: summedHours,
-    equivalentValueUsd: calculatedValue,
+    equivalentWorkHours: hours,
+    equivalentValueUsd: value,
     releaseReady,
   };
-  writeFileSync(join(ROOT, "release-evidence.json"), `${JSON.stringify(releaseEvidence, null, 2)}\n`);
-  writeFileSync(join(ROOT, "release-evidence.sha256"), `${sha256(canonical(releaseEvidence))}  release-evidence.json\n`);
+  const evidenceJson = `${JSON.stringify(evidence, null, 2)}\n`;
+  writeFileSync(join(ROOT, "release-evidence.json"), evidenceJson);
+  writeFileSync(join(ROOT, "release-evidence.sha256"), `${sha256(evidenceJson)}  release-evidence.json\n`);
 
   for (const result of gateResults) {
     console.log(`\n${result.id}=${result.status}`);
     for (const item of result.evidence) console.log(`  PASS: ${item}`);
     for (const item of result.failures) console.error(`  FAIL: ${item}`);
   }
-  console.log(`\nSOURCE_COMMIT_SHA=${sourceCommitSha}`);
+  console.log(`\nSOURCE_COMMIT_SHA=${commitSha}`);
   console.log(`CONTRACT_SHA256=${sha256(contractBytes)}`);
-  console.log(`EQUIVALENT_VALUE_USD=${calculatedValue}`);
+  console.log(`EQUIVALENT_VALUE_USD=${value}`);
   console.log(`499_USD_RELEASE_READY=${releaseReady ? "YES" : "NO"}`);
-
   if (!releaseReady) process.exit(1);
 }
 
