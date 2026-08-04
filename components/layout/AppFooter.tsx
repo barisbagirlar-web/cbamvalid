@@ -7,6 +7,7 @@ import { legalConfig } from "@/lib/legal-config";
 
 const PRODUCT_LINKS = [
   { href: "/product", label: "Product" },
+  { href: "/product-classification", label: "Product Classification" },
   { href: "/how-it-works", label: "How It Works" },
   { href: "/sample-dossier", label: "Sample Dossier" },
   { href: "/methodology", label: "Methodology & Sources" },
@@ -72,14 +73,15 @@ export default function AppFooter() {
                 <span className="brand-name">
                   CBAM<em>Valid</em>
                 </span>
-                <span className="brand-sub">Carbon Border Compliance Validation</span>
+                <span className="brand-sub">Self-Service Emissions Data Software</span>
               </span>
             </Link>
             <p>
-              Independent self-service software for preparing customer-controlled CBAM data and
-              generating evidence-linked digital dossiers.
+              B2B self-service software for customer-entered emissions data, automated calculations,
+              quality controls and automated PDF, JSON and XLSX delivery.
             </p>
             <div className="footer-badges">
+              <span className="f-badge">Software only</span>
               <span className="f-badge">EU hosted</span>
               <span className="f-badge">GDPR</span>
               <span className="f-badge">TLS</span>
@@ -105,6 +107,7 @@ export default function AppFooter() {
             <Link href="/refund-policy">Refunds</Link>
             <Link href="/security">Security</Link>
             <Link href="/legal-notice">Legal notice</Link>
+            <Link href="/product-classification">Product classification</Link>
           </div>
         </div>
 
@@ -118,11 +121,12 @@ export default function AppFooter() {
             ))}
           </div>
           <p className="disclaimer">
-            <b>Independence Notice:</b> CBAMValid is an independent self-service software service for
-            exporter-to-importer evidence packaging. CBAMValid does not provide consulting, advisory
-            services, legal advice, customs advice, tax advice, managed compliance or accredited
-            verification. It is not an EU institution, customs authority or accredited CBAM verifier.
-            Actual emissions data must be independently verified where verification is legally required.
+            <b>Software Classification Notice:</b> CBAMValid sells self-service software access and
+            automated digital delivery only. It does not provide government services, authority
+            representation, government-official access, filings, registry submissions, permit services,
+            consulting, advisory services, legal advice, customs advice, tax advice, managed compliance,
+            certification or accredited verification. Customers control their own data and remain
+            responsible for official submissions and independent verification where required.
           </p>
         </div>
       </div>
