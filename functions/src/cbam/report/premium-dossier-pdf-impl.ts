@@ -125,7 +125,6 @@ export function buildPremiumDossierPdf(
     keywords: "CBAM, evidence assurance, emissions, verifier readiness, audit trail",
   });
 
-  // Keep a standard Helvetica font object for broad viewer compatibility.
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6);
   doc.setTextColor(255, 255, 255);
@@ -142,6 +141,22 @@ export function buildPremiumDossierPdf(
   const verifierTotal = scoreboard?.externalVerifierTotal ?? 7;
   const verifierPending = verifierCompleted < verifierTotal;
   const definitivePeriod = isDefinitivePeriod(model);
+  const openReportingPeriodRestrictions = model.findings.filter(
+    (finding) =>
+      finding.category === "REPORTING_PERIOD" &&
+      finding.status !== "RESOLVED"
+  ).length;
+  const periodCoveragePercent =
+    model.reportingPeriodAssessment.expectedDays > 0
+      ? Math.min(
+          100,
+          Math.round(
+            (model.reportingPeriodAssessment.coveredDays /
+              model.reportingPeriodAssessment.expectedDays) *
+              100
+          )
+        )
+      : 0;
 
   const company = clean(model.identity.exporterOperator || caseData.exporterIdentity.legalName.value);
   const importer = clean(model.identity.importer || caseData.importerIdentity.legalName.value);
@@ -330,7 +345,6 @@ export function buildPremiumDossierPdf(
     y += 3;
   };
 
-  // Cover
   doc.setFillColor(...NAVY);
   doc.rect(0, 0, PAGE_WIDTH, 121, "F");
   doc.setFillColor(...GOLD);
@@ -369,7 +383,7 @@ export function buildPremiumDossierPdf(
 
   y = 134;
   metricCards([
-    { label: "Operator preparation", value: `${formatNumber(operatorScore, 1)}%`, note: "Operator-controllable readiness", color: NAVY_2 },
+    { label: "Operator preparation", value: `${formatNumber(operatorScore, 1)}%`, note: "Automated readiness including period eligibility", color: NAVY_2 },
     { label: "Evidence assurance", value: `${formatNumber(evidenceScore, 1)}%`, note: "Material support and quality", color: BLUE },
     { label: "Package integrity", value: humanize(packageIntegrity).toUpperCase(), note: "Manifest, signature and ZIP controls", color: statusColor(packageIntegrity) },
     { label: "External verifier completion", value: `${verifierCompleted}/${verifierTotal}`, note: "Reserved for accredited verifier", color: AMBER },
@@ -394,7 +408,6 @@ export function buildPremiumDossierPdf(
     definitivePeriod ? "navy" : "red"
   );
 
-  // Contents
   addPage();
   bookmarks.push({ title: "Contents and document control", page: pageNumber() });
   section("Contents and document control", "Structured navigation for management, data preparers and independent verifier teams");
@@ -415,7 +428,6 @@ export function buildPremiumDossierPdf(
   table(["Section", "Purpose"], tocEntries.map((title, index) => [index + 1, title]), [12, 88], 7.2);
   callout("How to use this dossier", "Start with the executive dashboard, confirm the reporting-period classification, follow the A-H emissions bridge, then inspect evidence, calculations, findings and the verifier handover checklist. Machine-readable source files remain authoritative for recomputation.");
 
-  // Executive
   section("Executive assurance dashboard", "Decision-ready summary without conflating operator preparation with independent verification");
   callout(
     definitivePeriod ? "Management decision" : "Decision - do not submit",
@@ -437,13 +449,13 @@ export function buildPremiumDossierPdf(
     { label: "Informational indirect total", value: numberValue(model.totals.totalIndirectEmissions), display: `${formatNumber(model.totals.totalIndirectEmissions)} tCO2e`, color: GOLD },
   ]);
   table(["Control", "Result", "Interpretation"], [
-    ["Open critical blockers", model.readiness.criticalBlockerCount, model.readiness.criticalBlockerCount ? "Remediation required" : "None"],
+    ["Sealing critical blockers", model.readiness.criticalBlockerCount, model.readiness.criticalBlockerCount ? "Remediation required before locking" : "None"],
+    ["Reporting-period restrictions", openReportingPeriodRestrictions, openReportingPeriodRestrictions ? "Working-file restriction remains visible" : "None"],
     ["Material findings", model.readiness.materialFindingCount, model.readiness.materialFindingCount ? "Review before handover" : "None"],
     ["Missing material evidence", model.readiness.missingMaterialEvidenceCount, model.readiness.missingMaterialEvidenceCount ? "Evidence gap" : "None"],
     ["Calculation exceptions", model.readiness.unresolvedCalculationExceptionCount, model.readiness.unresolvedCalculationExceptionCount ? "Recompute required" : "None"],
   ], [35, 20, 45]);
 
-  // Identity and period
   section("Controlled identity and reporting period", "Legal parties, installation, production route, boundary and period eligibility");
   table(["Controlled field", "Declared value", "Assurance note"], [
     ["Importer", importer, "Legal counterparty recorded in the case"],
@@ -459,18 +471,17 @@ export function buildPremiumDossierPdf(
     ["Start date", model.reportingPeriodAssessment.startDate],
     ["End date", model.reportingPeriodAssessment.endDate],
     ["Covered / expected days", `${model.reportingPeriodAssessment.coveredDays} / ${model.reportingPeriodAssessment.expectedDays}`],
-    ["Completeness", `${model.reportingPeriodAssessment.completenessPercent}%`],
+    ["Evidence period coverage", `${periodCoveragePercent}%`],
     ["Definitive annual eligible", definitivePeriod ? "YES" : "NO - WORKING FILE ONLY"],
   ], [42, 58], 7.1);
   callout(
     "Period classification",
     definitivePeriod
       ? "The period satisfies the automated definitive annual completeness rule at the generated timestamp. This does not replace independent verifier review or registry acceptance."
-      : "The period is conditional or incomplete at the generated timestamp. The package must remain visibly marked as a working file and must not be submitted.",
+      : "The declared data can cover the full annual date range while the calendar period is still in the future. Coverage and submission eligibility are therefore reported separately; the package remains a working file and must not be submitted.",
     definitivePeriod ? "green" : "red"
   );
 
-  // Emissions
   section("Emissions result and A-H reconciliation", "Transparent bridge from installation activity through certificate-relevant and informational totals");
   table(["Code", "Result category", "Value (tCO2e)", "Role"], [
     ["A", "Installation direct emissions", model.totals.installationDirectEmissions, "Measured/calculated at installation"],
@@ -489,7 +500,6 @@ export function buildPremiumDossierPdf(
   ], [42, 28, 30]);
   callout("Calculation interpretation", "The report separates installation direct emissions, precursor direct emissions, electricity indirect emissions and precursor indirect emissions. A verifier can recompute each bridge from the Calculation Trace, Calculation Graph and Verifier Workspace files.");
 
-  // Goods
   section("Goods allocation and materiality", "CN-coded production population, allocation reconciliation and 5% verifier planning reference");
   table(["Good", "CN code", "Sector", "Production t", "Allocation", "Allocated tCO2e", "Specific tCO2e/t", "5% reference"],
     model.goods.map((good, index) => [good.goodIndex, good.cnCode, good.sector, good.productionVolume, caseData.goods[index]?.allocationShare?.value ?? good.allocationShare, good.allocatedEmbeddedEmissions, good.specificEmbeddedEmissions, good.materialityThresholdSpecific]),
@@ -499,7 +509,6 @@ export function buildPremiumDossierPdf(
     model.precursors.map((item) => [item.name, item.quantity, item.directEmissions, item.indirectEmissions, item.countryOfOrigin]),
     [30, 18, 18, 18, 16], 6.7);
 
-  // Evidence
   section("Evidence assurance and data provenance", "Material input support, quality grades, period coverage and evidence-to-calculation lineage");
   const materialEvidence = model.evidenceSufficiency.filter((row) => row.isMaterial ?? row.blocksSealing);
   const supported = materialEvidence.filter((row) => /SUPPORTED/.test(row.state)).length;
@@ -520,7 +529,6 @@ export function buildPremiumDossierPdf(
     ]), [14, 28, 20, 10, 12, 16], 5.9);
   callout("Evidence grading", "Grade A represents primary independently issued evidence; B primary operator-controlled evidence; C supplier evidence with controls; D secondary or estimated evidence; E unsupported evidence. Material D/E evidence cannot produce full assurance.");
 
-  // Calculation trace
   section("Calculation reproducibility and audit trail", "Formula-level outputs, units, assumptions and cryptographic calculation hashes");
   table(["Formula", "Output", "Unit", "Hash", "Warnings / assumptions"],
     model.calculationTrace.map((item) => [
@@ -538,7 +546,6 @@ export function buildPremiumDossierPdf(
   ], [34, 66], 7);
   callout("Root-of-trust", `Calculation root hash: ${clean(model.calculationRootHash).slice(0, 48)}. Case-data hash: ${clean(model.caseDataHash).slice(0, 48)}. Full values are preserved in machine-readable package files.`);
 
-  // Findings
   section("Findings and corrective actions", "Deterministic exceptions, impact statements and accountable closure requirements");
   table(["Finding", "Severity", "Category", "Status", "Impact", "Remediation"],
     model.findings.map((finding) => [finding.title, humanize(finding.severity), humanize(finding.category), humanize(finding.status), finding.impactStatement, finding.remediationRequirement]),
@@ -554,17 +561,28 @@ export function buildPremiumDossierPdf(
     model.findings.length ? "amber" : "green"
   );
 
-  // Crosswalk
   section("Regulatory and registry crosswalk", "Legal requirements mapped to report sections, source paths, evidence and calculation nodes");
   table(["Requirement", "Legal source", "Legal location", "Owner", "Status", "Evidence / calculation"],
     model.requirementCrosswalk.map((row) => [row.requirementId, row.legalSourceId, row.legalLocation, humanize(row.owner), humanize(row.status), [...row.evidenceIds, ...row.calculationIds].join(", ") || "Mapped report section"]),
     [14, 14, 18, 15, 16, 23], 5.7);
   table(["Registry field", "Section", "Owner", "Status", "Source path", "Validation"],
-    (model.registryTemplateMapping ?? []).map((row) => [row.registryFieldId, row.section, humanize(row.owner), humanize(row.status), row.sourcePath, row.validationErrors.join("; ") || "Passed"]),
+    (model.registryTemplateMapping ?? []).map((row) => [
+      row.registryFieldId,
+      row.section,
+      humanize(row.owner),
+      humanize(row.status),
+      row.sourcePath,
+      row.status === "PENDING_VERIFIER"
+        ? "Verifier action pending"
+        : row.validationErrors.length
+          ? row.validationErrors.map((error) => humanize(error)).join("; ")
+          : row.status === "NOT_APPLICABLE_WITH_BASIS"
+            ? "Not applicable with basis"
+            : "Passed",
+    ]),
     [15, 16, 14, 18, 20, 17], 5.6);
-  callout("Definitive legal basis", "Core legal references include Regulation (EU) 2023/956 and Implementing Regulation (EU) 2025/2547. The package supports preparation and field mapping; it does not constitute a customs decision, registry acceptance or independent verification opinion.");
+  callout("Definitive legal basis", "The controlled legal sources are listed row by row in the regulatory crosswalk, including Regulation (EU) 2023/956 and the applicable implementing acts. The package supports preparation and field mapping; it does not constitute a customs decision, registry acceptance or independent verification opinion.");
 
-  // Premium contract
   section("Premium chapter contract", "Completeness ledger for the advanced verifier-preparation workpapers included in this product tier");
   table(["Chapter", "Status", "Basis"],
     (model.premiumChapters ?? []).map((chapter) => [chapter.title, humanize(chapter.status), chapter.basis]),
@@ -577,7 +595,6 @@ export function buildPremiumDossierPdf(
     scoreboard?.premiumChapterContract === "COMPLETE" ? "green" : "amber"
   );
 
-  // Verifier handover
   section("Independent verifier handover", "Reserved work programme, handover sequence and explicit non-reliance boundary");
   table(["Verifier-reserved work item", "Current state", "Required independent action"], [
     ["Verifier legal identity and accreditation", verifierCompleted >= 1 ? "Recorded" : "PENDING", "Confirm accredited legal entity and scope"],
@@ -590,7 +607,6 @@ export function buildPremiumDossierPdf(
   ], [36, 18, 46], 6.5);
   callout("Independent boundary", "CBAMValid prepares and seals operator-controlled evidence, calculations and workpapers. Only an appropriately accredited independent verifier can perform verification procedures and issue a verification opinion. Until then, the correct status is NOT REVIEWED - PENDING.", "amber");
 
-  // Integrity
   section("Package integrity and release control", "Manifest, signature scope, immutable release identity and public verification state");
   table(["Integrity control", "Recorded state", "Interpretation"], [
     ["Required top-level components", model.manifestSummary.requiredTopLevelComponentCount, "Controlled package contract"],
@@ -614,7 +630,6 @@ export function buildPremiumDossierPdf(
   ], [40, 60]);
   callout("Cryptographic scope", "The detached KMS signature covers the exact UTF-8 bytes of Data Integrity Manifest.json. Each package artifact is bound by path, SHA-256 hash, byte size and media type. See Data Integrity Manifest.json and Manifest Signature.sig for authoritative cryptographic values; a PDF visual statement never substitutes for manifest verification.");
 
-  // Annex
   section("Annex index and legal boundary", "Controlled deliverable inventory, reliance statement and final handover checklist");
   table(["Component", "Purpose"], REQUIRED_TOP_LEVEL_COMPONENTS_V5.map((component) => [component, component.endsWith("/") ? "Supporting evidence directory" : "Controlled verifier-preparation deliverable"]), [48, 52], 6.3);
   callout("Final legal boundary", model.legalBoundary, "navy");
@@ -627,7 +642,6 @@ export function buildPremiumDossierPdf(
     ["No claim of independent approval or registry acceptance", "PASS"],
   ], [68, 32]);
 
-  // Footer and outline pass.
   const pageCount = doc.getNumberOfPages();
   for (let page = 1; page <= pageCount; page += 1) {
     doc.setPage(page);
@@ -659,8 +673,6 @@ export function buildPremiumDossierPdf(
     for (const item of bookmarks) outline.add(null, item.title, { pageNumber: item.page });
   }
 
-  // Clickable table-of-contents navigation. The visual TOC starts on page 2;
-  // each row links to the corresponding controlled section page.
   if (pageCount >= 2) {
     doc.setPage(2);
     const tocTargets = bookmarks.slice(1, 13);

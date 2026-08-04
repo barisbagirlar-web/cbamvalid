@@ -48,6 +48,27 @@ describe("Teb232 live reconciliation and translation-safety contract", () => {
     expect(live).toContain("restore(params.db, params.bucket, state)");
   });
 
+  it("accepts the exact four persisted cases before calling the one-time repair route", () => {
+    const client = read("components/cbam/Teb232CaseReconciler.tsx");
+    expect(client).toContain("EXPECTED_CASE_IDS");
+    expect(client).toContain("case_d8567b26ef12e5a748fc49c7753cfe53eb54c00a8e92b8d98912b5d25d8ab9c5");
+    expect(client).toContain("case_a70c36b5348782cc69c7a2c9863bec28f8bb2ad8ac1bff1c6afe7a62966d4c62");
+    expect(client).toContain("case_b71ffdbd980f658cd5a738437c27cce4d82546698df12fc2bf7a0bd31e9c286d");
+    expect(client).toContain("case_39474ac5ffe36f8df1853df51b3038085edf457cd0561fa1e501ca8231b8b892");
+    expect(client.indexOf("getCases()"))
+      .toBeLessThan(client.indexOf('fetch("/api/qa/reconcile-teb232"'));
+    expect(client).toContain("Fall through to the authenticated repair endpoint only");
+  });
+
+  it("does not parse a 404 HTML response as JSON", () => {
+    const client = read("components/cbam/Teb232CaseReconciler.tsx");
+    expect(client).toContain('response.headers.get("content-type")');
+    expect(client).toContain('contentType.includes("application/json")');
+    expect(client).toContain("TEST_CASE_RECONCILE_HTTP_${response.status}");
+    expect(client).toContain("TEST_CASE_RECONCILE_INVALID_JSON_${response.status}");
+    expect(client).toContain("await response.text().catch");
+  });
+
   it("keeps the workspace blocked until four cases and a usable entitlement read back", () => {
     const client = read("components/cbam/Teb232CaseReconciler.tsx");
     expect(client).toContain("getCases()");
