@@ -35,9 +35,9 @@ export function buildLlmDocModel(): LlmDocModel {
     }));
 
   return {
-    title: "CBAMValid — Exporter Verification Preparation Pack",
+    title: "CBAMValid — Self-Service Emissions Data Software",
     summary:
-      "CBAMValid (https://cbamvalid.com) is a verifier-preparation platform for non-EU producers, exporters, operators, importers, and CBAM reporting teams. It produces an operator-prepared dossier that reduces the work required for independent accredited verification.",
+      "CBAMValid (https://cbamvalid.com) is privately operated self-service B2B software for customer-entered emissions data, deterministic calculations, automated quality controls, and automated PDF, JSON and XLSX delivery.",
     productPositioning: assertVerifiedClaim(PRODUCT_POSITIONING_CLAIM, "PRODUCT_POSITIONING_CLAIM"),
     independence: assertVerifiedClaim(INDEPENDENCE_CLAIM, "INDEPENDENCE_CLAIM"),
     pricingLine: `${price.formatted} per ${price.packName} (one-time; no subscription; unlimited drafts; 1 installation; 1 reporting year; pay once to lock a working file — ${CANONICAL_PRICING.correctionPolicy.toLowerCase()}).`,
@@ -49,7 +49,7 @@ export function buildLlmDocModel(): LlmDocModel {
       title: source.title,
       url: source.eliUri,
     })),
-    lastUpdated: "2026-07-26",
+    lastUpdated: "2026-08-04",
   };
 }
 
@@ -64,7 +64,7 @@ export function renderLlmsTxt(model: LlmDocModel): string {
     `- ${model.productPositioning}`,
     `- Pricing: ${model.pricingLine}`,
     "",
-    "## Independence boundary",
+    "## Product boundary",
     "",
     model.independence,
     "",
@@ -104,11 +104,11 @@ export function renderLlmsFullTxt(model: LlmDocModel): string {
   return [
     renderLlmsTxt(model).trimEnd(),
     "",
-    "## Explicit non-claims",
+    "## Scope limitations",
     "",
-    "- Not an accredited verification opinion",
-    "- Not an official European Commission or CBAM Registry service",
-    "- Not customs approval or registry acceptance",
+    "- Outputs are generated from customer-entered data",
+    "- Customers manage external submissions and third-party review independently",
+    "- The software does not issue accredited opinions or authority acceptance",
     "- No synthetic customer counts, ratings, or testimonials",
     "",
   ].join("\n");
