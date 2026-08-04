@@ -4,24 +4,29 @@ import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 
 const INCLUDED = [
   "Unlimited free drafting before lock",
+  "Customer-controlled data entry",
   "Deterministic emissions calculations",
   "Automated quality controls",
   "Customer-controlled evidence linking",
-  "Automated digital PDF",
-  "Automated digital JSON",
-  "Automated digital XLSX",
+  "Automated digital PDF generation",
+  "Automated digital JSON generation",
+  "Automated digital XLSX generation",
   "Lock and download",
   "Same-file correction re-locks",
 ];
 
 const NOT_INCLUDED = [
+  "Government services or authority representation",
+  "Registry filing, customs filing or permit submissions",
+  "Access to government officials",
   "Consulting",
   "Advisory services",
+  "Managed compliance",
   "Manual preparation",
   "Evidence review by CBAMValid",
   "Methodology recommendations",
   "Legal, tax or customs advice",
-  "Accredited verification",
+  "Accredited verification or certification",
   "Access to experts",
   "Custom onboarding",
   "Custom implementation",
@@ -29,20 +34,20 @@ const NOT_INCLUDED = [
 
 const ASSURANCES: { label: string; text: string }[] = [
   {
+    label: "Product type",
+    text: "Self-service B2B software with automated digital delivery.",
+  },
+  {
     label: "Billing",
     text: "One-time purchase. No subscription, no auto-renewal.",
   },
   {
-    label: "Risk",
-    text: "Releases consumed only on a successful seal.",
+    label: "Delivery",
+    text: "PDF, JSON and XLSX are generated automatically after a successful lock.",
   },
   {
     label: "Hosting",
     text: "EU hosted, GDPR aligned, TLS in transit.",
-  },
-  {
-    label: "Verification",
-    text: "Every sealed dossier is checkable at /verify.",
   },
 ];
 
@@ -50,7 +55,7 @@ const FAQS: { question: string; answer: string }[] = [
   {
     question: "When am I charged?",
     answer:
-      "Once, when you lock a working file. Drafting is free before lock. A sealed release is consumed only after a dossier seals successfully — failed seals cost nothing.",
+      "Once, when you lock a working file. Drafting is free before lock. A sealed release is consumed only after the software completes digital delivery — failed locks cost nothing.",
   },
   {
     question: "Is this a subscription?",
@@ -63,9 +68,14 @@ const FAQS: { question: string; answer: string }[] = [
       "Yes. Drafts are free without limit: create cases, run the automated QC engine and review data gaps before buying anything.",
   },
   {
+    question: "Is CBAMValid a government service?",
+    answer:
+      "No. CBAMValid is privately operated B2B software. It does not represent customers before an authority, submit filings, provide access to government officials, issue approvals or perform government services.",
+  },
+  {
     question: "What is not included?",
     answer:
-      "No human services included. The purchase covers software access and automated digital delivery only. It does not include consulting, advisory services, manual preparation, evidence review, methodology recommendations, legal/tax/customs advice, accredited verification or access to experts.",
+      "No human or government services are included. The purchase covers software access and automated digital delivery only. It does not include consulting, advisory services, managed compliance, manual preparation, filing, authority submissions, legal/tax/customs advice, accredited verification, certification or access to experts.",
   },
 ];
 
@@ -90,23 +100,21 @@ export default function PricingPage() {
     <main>
       <section className="pricing-wrap" aria-label="Pricing">
         <header className="pricing-hero">
-          <p className="eyebrow">Pricing — one self-service product</p>
-          <h1 className="pricing-title">Self-Service Software</h1>
+          <p className="eyebrow">Pricing — one self-service software product</p>
+          <h1 className="pricing-title">Self-Service Emissions Data Software</h1>
           <p className="pricing-lede">
-            One clear Paddle product. Draft free, run deterministic calculations and automated quality
-            controls, link your own evidence, then{" "}
+            One clear software product. Enter and control your own data, run deterministic calculations
+            and automated quality controls, link your own evidence, then{" "}
             <strong>pay once to lock your working file</strong> and download automated digital outputs.
+            This is not a government, filing, consulting or verification service.
           </p>
         </header>
 
-        {/* Single product */}
         <section className="pricing-grid" aria-label="Self-Service Software product">
           <div className="price-card featured">
             <span className="badge-pop">One-time · Pay at lock</span>
             <h3>Self-Service Software</h3>
-            <p className="sub">
-              {CANONICAL_PRICING.priceFormatted} · one-time
-            </p>
+            <p className="sub">{CANONICAL_PRICING.priceFormatted} · one-time</p>
             <p className="sub">
               One working file covering one operator, one installation and one reporting year.
             </p>
@@ -127,7 +135,7 @@ export default function PricingPage() {
           </div>
 
           <div className="price-card">
-            <h3>No human services included</h3>
+            <h3>No human or government services included</h3>
             <p className="sub">Software access and automated digital delivery only.</p>
             <ul className="feat-list">
               {NOT_INCLUDED.map((item) => (
@@ -137,6 +145,9 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
+            <Link className="btn btn-ghost" href="/product-classification">
+              Review Product Classification
+            </Link>
           </div>
         </section>
 
@@ -155,7 +166,6 @@ export default function PricingPage() {
           </li>
         </ul>
 
-        {/* Assurance strip */}
         <section className="pricing-assurance" aria-label="Assurances">
           {ASSURANCES.map((item) => (
             <div className="pricing-assurance-item" key={item.label}>
@@ -165,7 +175,6 @@ export default function PricingPage() {
           ))}
         </section>
 
-        {/* FAQ */}
         <section className="pricing-faq" aria-label="Pricing questions" id="how-payment-works">
           <h2 className="pricing-faq-title">Pricing questions</h2>
           <div className="pricing-faq-grid">
