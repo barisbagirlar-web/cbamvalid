@@ -61,7 +61,7 @@ export default function PrivacyPage() {
         <div>
           <h2 className="text-xl font-bold mb-2">4. Purposes and Legal Bases</h2>
           <p className="text-sm text-muted">
-            We process your personal data primarily to perform our contract with you (providing the CBAM calculation and documentation service), to comply with legal obligations, and on the basis of our legitimate interests (such as improving the service and ensuring security).
+            We process your personal data primarily to perform our contract with you by providing access to the self-service software, storing customer-controlled working files, and generating automated digital outputs; to comply with legal obligations; and for legitimate interests such as improving the software and ensuring security.
           </p>
         </div>
 
@@ -75,10 +75,10 @@ export default function PrivacyPage() {
         <div>
           <h2 className="text-xl font-bold mb-2">6. Your Rights</h2>
           <p className="text-sm text-muted">
-            Subject to applicable law ({legalConfig.governingLaw}), you have the right to access, correct, delete, restrict, or object to our processing of your data, and the right to data portability. You also have the right to lodge a complaint with your local supervisory authority.
+            Subject to applicable law in {legalConfig.governingLaw}, you have the right to access, correct, delete, restrict, or object to our processing of your data, and the right to data portability. You also have the right to lodge a complaint with your local supervisory authority.
           </p>
           <p className="text-sm text-muted mt-2">
-            To exercise these rights, including account closure, please use the Enterprise Account settings page or contact us at {legalConfig.privacyContactEmail}. Note that certain commercial transaction records are retained under legal accounting exceptions.
+            To exercise these rights, including account closure, please use the Account settings page or contact us at {legalConfig.privacyContactEmail}. Note that certain commercial transaction records are retained under legal accounting exceptions.
           </p>
         </div>
       </section>
