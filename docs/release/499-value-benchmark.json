@@ -1,0 +1,76 @@
+{
+  "contractId": "CBAMVALID-499-VALUE-1",
+  "currency": "USD",
+  "modelType": "CONSERVATIVE_EQUIVALENT_WORK_MODEL",
+  "notACustomerGuarantee": true,
+  "blendedProfessionalRateUsdPerHour": 160,
+  "tasks": [
+    {
+      "id": "V01",
+      "name": "Evidence register, quality grading and field linking",
+      "manualEquivalentHours": 3.5,
+      "requiredOutputs": [
+        "Evidence Register.csv",
+        "Field-to-Evidence Matrix.csv",
+        "Supporting_Evidence/"
+      ]
+    },
+    {
+      "id": "V02",
+      "name": "Embedded-emissions calculation, allocation and reconciliation",
+      "manualEquivalentHours": 3,
+      "requiredOutputs": [
+        "Embedded Emissions Calculation Annex.pdf",
+        "Activity Data Ledger.csv",
+        "Calculation Trace.json",
+        "Calculation Graph.json"
+      ]
+    },
+    {
+      "id": "V03",
+      "name": "Registry field mapping and legal-source crosswalk",
+      "manualEquivalentHours": 2,
+      "requiredOutputs": [
+        "O3CI Field Mapping.csv",
+        "Product Scope Assessment.pdf",
+        "CN Code Reasoning.pdf"
+      ]
+    },
+    {
+      "id": "V04",
+      "name": "Verifier-preparation workpapers and handover workspace",
+      "manualEquivalentHours": 4,
+      "requiredOutputs": [
+        "Installation Monitoring Plan.pdf",
+        "System Boundary Register.pdf",
+        "Methodology Decision Log.pdf",
+        "Verifier Workspace.xlsx"
+      ]
+    },
+    {
+      "id": "V05",
+      "name": "Controlled package assembly, manifest, signature and integrity verification",
+      "manualEquivalentHours": 2,
+      "requiredOutputs": [
+        "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf",
+        "Complete Dossier Compilation.pdf",
+        "Data Integrity Manifest.json",
+        "Manifest Signature.sig"
+      ]
+    },
+    {
+      "id": "V06",
+      "name": "Findings, corrective-action and verifier-remediation preparation",
+      "manualEquivalentHours": 1.5,
+      "requiredOutputs": [
+        "Misstatement and Non-Conformity Register.csv",
+        "Corrective Action Log.csv",
+        "Required Data Checklist.pdf"
+      ]
+    }
+  ],
+  "minimumEquivalentHours": 16,
+  "minimumEquivalentValueUsd": 2500,
+  "calculatedEquivalentHours": 16,
+  "calculatedEquivalentValueUsd": 2560
+}
