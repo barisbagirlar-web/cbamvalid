@@ -4,9 +4,6 @@ import { describe, it, expect } from "vitest";
 
 import { LEGAL_IDENTITY, getPublicLegalIdentityLines } from "../lib/legal-identity";
 
-// Paddle rejects placeholder or template seller addresses (e.g.
-// "123 Validation Way, Tech District"). The SSOT must always carry the
-// owner-verified registered address.
 const PLACEHOLDER_ADDRESS_TOKENS = [
   "123 validation way",
   "validation way",
@@ -19,14 +16,7 @@ const PLACEHOLDER_ADDRESS_TOKENS = [
 
 const OWNER_VERIFIED_ADDRESS = "4th Floor, One Burlington Plaza, Burlington Road, Dublin 4, Ireland";
 
-// Prevent deployment of affirmative claims that the product performs
-// accredited verification or guarantees EU compliance. The bare phrase
-// "accredited verification" is the canonical positioning ("Prepared for
-// Independent Accredited Verification") and the mandatory fail-closed
-// disclaimers ("Not an accredited verification opinion"), so the scan targets
-// affirmative capability claims only.
 const PROHIBITED_CLAIMS = [
-  // Affirmative accredited-verification capability claims.
   "provides accredited verification",
   "provide accredited verification",
   "performs accredited verification",
@@ -38,7 +28,6 @@ const PROHIBITED_CLAIMS = [
   "our accredited verification",
   "accredited verification service",
   "accredited verification provider",
-  // Affirmative EU-compliance claims.
   "we are eu certified",
   "we're eu certified",
   "eu certified company",
@@ -52,6 +41,13 @@ const PROHIBITED_CLAIMS = [
   "guaranteed compliance",
 ];
 
+const STALE_COMMERCIAL_CLASSIFICATION = [
+  "carbon border compliance validation",
+  "exporter verification preparation pack",
+  "prepared for independent accredited verification",
+  "cbam exporter final evidence report",
+];
+
 function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): string[] {
   const files = fs.readdirSync(dirPath);
 
@@ -61,10 +57,8 @@ function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): string[] {
       if (!fullPath.includes("node_modules") && !fullPath.includes(".next") && !fullPath.includes(".git")) {
         arrayOfFiles = getAllFiles(fullPath, arrayOfFiles);
       }
-    } else {
-      if (fullPath.endsWith(".ts") || fullPath.endsWith(".tsx") || fullPath.endsWith(".md")) {
-        arrayOfFiles.push(fullPath);
-      }
+    } else if (/\.(ts|tsx|md|txt|svg)$/.test(fullPath)) {
+      arrayOfFiles.push(fullPath);
     }
   });
 
@@ -72,42 +66,35 @@ function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): string[] {
 }
 
 describe("Compliance Guard Regression", () => {
-  it("should not contain any prohibited claims in the source code", () => {
+  it("should not contain affirmative prohibited claims in renderable source", () => {
     const rootDir = path.resolve(__dirname, "..");
     const files = [
       ...getAllFiles(path.join(rootDir, "lib")),
       ...getAllFiles(path.join(rootDir, "app")),
+      ...getAllFiles(path.join(rootDir, "components")),
       ...getAllFiles(path.join(rootDir, "functions", "src")),
     ];
 
-    let foundViolations = false;
     let violationDetails = "";
-
-    files.forEach((file) => {
-      // Exclude this test file itself
-      if (file.includes("compliance-guard.test.ts")) return;
-
+    for (const file of files) {
+      if (file.includes("compliance-guard.test.ts")) continue;
       const content = fs.readFileSync(file, "utf8").toLowerCase();
-      PROHIBITED_CLAIMS.forEach((claim) => {
+      for (const claim of PROHIBITED_CLAIMS) {
         if (content.includes(claim)) {
-          foundViolations = true;
           violationDetails += `\nProhibited claim '${claim}' found in ${file}`;
         }
-      });
-    });
-
-    if (foundViolations) {
-      throw new Error("Compliance violations found: " + violationDetails);
+      }
     }
-    expect(foundViolations).toBe(false);
+
+    if (violationDetails) throw new Error("Compliance violations found: " + violationDetails);
+    expect(violationDetails).toBe("");
   });
 
-  it("must not flag the canonical positioning or the mandatory fail-closed disclaimers", () => {
+  it("allows accurate independent-review boundaries", () => {
     const allowed = [
-      "CBAMValid Exporter Verification Preparation Pack — Prepared for Independent Accredited Verification",
-      "Not an accredited verification opinion.",
-      "without pretending the software issued an accredited verification opinion",
-      "Prepared for independent accredited verification",
+      "Independent review may be required for the customer's downstream workflow.",
+      "The software does not issue an accredited opinion.",
+      "Customers manage third-party review independently.",
     ];
     for (const snippet of allowed) {
       const content = snippet.toLowerCase();
@@ -117,7 +104,7 @@ describe("Compliance Guard Regression", () => {
     }
   });
 
-  it("must still catch affirmative claims of performing accredited verification", () => {
+  it("still catches affirmative accredited-verification claims", () => {
     const blocked = [
       "We provide accredited verification for importers.",
       "The software performs accredited verification of emissions.",
@@ -130,6 +117,27 @@ describe("Compliance Guard Regression", () => {
       expect(hit, `blocked snippet must match a prohibited claim: ${snippet}`).toBe(true);
     }
   });
+
+  it("treats obsolete commercial classification as blocked", () => {
+    const publicCommercialFiles = [
+      "cbam_logo.svg",
+      "public/cbam_logo.svg",
+      "public/brand/cbamvalid-lockup.svg",
+      "public/llm.txt",
+      "public/llms.txt",
+      "public/llms-full.txt",
+      "lib/billing/pricing-config.ts",
+      "lib/product/customer-language.ts",
+      "components/marketing/SoftwareProductHome.tsx",
+    ];
+
+    for (const relative of publicCommercialFiles) {
+      const content = fs.readFileSync(path.resolve(__dirname, "..", relative), "utf8").toLowerCase();
+      for (const phrase of STALE_COMMERCIAL_CLASSIFICATION) {
+        expect(content, `${relative} must not contain ${phrase}`).not.toContain(phrase);
+      }
+    }
+  });
 });
 
 describe("Legal Identity SSOT Regression", () => {
@@ -140,24 +148,17 @@ describe("Legal Identity SSOT Regression", () => {
   it("must never expose a placeholder or template address", () => {
     const lower = LEGAL_IDENTITY.registeredAddress?.toLowerCase() ?? "";
     for (const token of PLACEHOLDER_ADDRESS_TOKENS) {
-      expect(
-        lower.includes(token),
-        `registeredAddress must not contain placeholder token '${token}'`
-      ).toBe(false);
+      expect(lower.includes(token), `registeredAddress must not contain placeholder token '${token}'`).toBe(false);
     }
   });
 
   it("must render the owner-verified address on the public identity block", () => {
     const { mode, lines } = getPublicLegalIdentityLines();
+    const rendered = lines.join("\n").toLowerCase();
     expect(mode).toBe("full");
-    expect(lines.join("\n").toLowerCase()).toContain(
-      OWNER_VERIFIED_ADDRESS.toLowerCase()
-    );
+    expect(rendered).toContain(OWNER_VERIFIED_ADDRESS.toLowerCase());
     for (const token of PLACEHOLDER_ADDRESS_TOKENS) {
-      expect(
-        lines.join("\n").toLowerCase().includes(token),
-        `public identity block must not contain placeholder token '${token}'`
-      ).toBe(false);
+      expect(rendered.includes(token), `public identity block must not contain placeholder token '${token}'`).toBe(false);
     }
   });
 
