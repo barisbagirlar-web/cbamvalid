@@ -106,15 +106,18 @@ describe("Test-admin access (owner-approved test bypass)", () => {
     vi.clearAllMocks();
   });
 
-  it("1. Allowlist contains only the approved owner account", () => {
-    expect(TEST_ADMIN_EMAILS).toEqual(["barisbagirlar@gmail.com"]);
-    expect(TEST_ADMIN_EMAILS).not.toContain("teb232@gmail.com");
+  it("1. Allowlist contains the approved owner and the controlled test account", () => {
+    expect(TEST_ADMIN_EMAILS).toEqual([
+      "barisbagirlar@gmail.com",
+      "teb232@gmail.com",
+    ]);
+    expect(TEST_ADMIN_EMAILS).toContain("teb232@gmail.com");
   });
 
   it("2. isTestAdmin requires verified email + allowlist membership", () => {
     expect(isTestAdmin({ email: "BARISBAGIRLAR@gmail.com", email_verified: true })).toBe(true);
     expect(isTestAdmin({ email: "barisbagirlar@gmail.com", email_verified: false })).toBe(false);
-    expect(isTestAdmin({ email: "teb232@gmail.com", email_verified: true })).toBe(false);
+    expect(isTestAdmin({ email: "teb232@gmail.com", email_verified: true })).toBe(true);
     expect(isTestAdmin({ email: "someone@example.com", email_verified: true })).toBe(false);
     expect(isTestAdmin(null)).toBe(false);
     expect(isTestAdmin(undefined)).toBe(false);
@@ -135,6 +138,7 @@ describe("Test-admin access (owner-approved test bypass)", () => {
     expect(stored?.syntheticTest).toBe(true);
     expect(stored?.environment).toBe("sandbox");
     expect(stored?.provisionedForEmail).toBe("barisbagirlar@gmail.com");
+    expect(stored?.maxReleases).toBe(TEST_ADMIN_MAX_RELEASES);
 
     const ledgerPath = Object.keys(mockDocs).find((path) => path.startsWith("commerce_ledger/"));
     expect(ledgerPath).toBeTruthy();
@@ -156,7 +160,50 @@ describe("Test-admin access (owner-approved test bypass)", () => {
 
   it("5. isTestAdminEmail lowercases and trims", () => {
     expect(isTestAdminEmail("  BARISBAGIRLAR@gmail.com ")).toBe(true);
-    expect(isTestAdminEmail("teb232@GMAIL.com")).toBe(false);
+    expect(isTestAdminEmail("teb232@GMAIL.com")).toBe(true);
     expect(isTestAdminEmail("nope@gmail.com")).toBe(false);
+  });
+
+  it("6. Revives REVOKED/CONSUMED test entitlements and resets the unlimited ceiling", async () => {
+    const uid = "user-test-1";
+    const first = await ensureTestAdminEntitlement(mockDbTransaction as never, uid, "barisbagirlar@gmail.com");
+    const entitlementPath = `entitlements/${first.entitlementId}`;
+
+    mockDocs[entitlementPath] = {
+      ...mockDocs[entitlementPath],
+      status: "REVOKED",
+      releasesCount: 3,
+      maxReleases: 5,
+    };
+    const revived = await ensureTestAdminEntitlement(mockDbTransaction as never, uid, "barisbagirlar@gmail.com");
+    expect(revived.entitlementId).toBe(first.entitlementId);
+    expect(revived.releasesRemaining).toBe(TEST_ADMIN_MAX_RELEASES);
+    expect(revived.maxReleases).toBe(TEST_ADMIN_MAX_RELEASES);
+    expect(mockDocs[entitlementPath]?.status).toBe("AVAILABLE");
+    expect(mockDocs[entitlementPath]?.releasesCount).toBe(0);
+    expect(mockDocs[entitlementPath]?.releasesList).toEqual([]);
+    expect(mockDocs[entitlementPath]?.maxReleases).toBe(TEST_ADMIN_MAX_RELEASES);
+
+    mockDocs[entitlementPath] = {
+      ...mockDocs[entitlementPath],
+      status: "CONSUMED",
+      releasesCount: 7,
+    };
+    const consumedRevived = await ensureTestAdminEntitlement(mockDbTransaction as never, uid, "barisbagirlar@gmail.com");
+    expect(consumedRevived.releasesRemaining).toBe(TEST_ADMIN_MAX_RELEASES);
+    expect(mockDocs[entitlementPath]?.status).toBe("AVAILABLE");
+    expect(mockDocs[entitlementPath]?.releasesCount).toBe(0);
+  });
+
+  it("7. Idempotent read does not rewrite an AVAILABLE unlimited entitlement", async () => {
+    const uid = "user-test-1";
+    await ensureTestAdminEntitlement(mockDbTransaction as never, uid, "barisbagirlar@gmail.com");
+
+    const updateSpy = mockDbTransaction.update;
+    updateSpy.mockClear();
+
+    const again = await ensureTestAdminEntitlement(mockDbTransaction as never, uid, "barisbagirlar@gmail.com");
+    expect(again.releasesRemaining).toBe(TEST_ADMIN_MAX_RELEASES);
+    expect(updateSpy).not.toHaveBeenCalled();
   });
 });

@@ -11,9 +11,13 @@ import { validateIdentifier } from "../firestore-validator";
  * payment or a credit balance, for controlled end-to-end testing only.
  * Fail-closed: exact verified email + explicit allowlist membership required;
  * every provisioned test entitlement is ledgered and marked syntheticTest.
+ *
+ * KEEP ALIGNED with `lib/commerce/test-admin-emails.ts` (client-safe mirror used
+ * by Next.js routes/pages so test administrators are never blocked at checkout).
  */
 export const TEST_ADMIN_EMAILS = Object.freeze([
   "barisbagirlar@gmail.com",
+  "teb232@gmail.com",
 ]);
 
 export function isTestAdminEmail(email: unknown): boolean {
@@ -31,7 +35,12 @@ export function isTestAdmin(
   return isTestAdminEmail(token.email);
 }
 
-export const TEST_ADMIN_MAX_RELEASES = 100;
+/**
+ * Effectively unlimited reseal capacity for controlled test administrators.
+ * Kept as an explicit ceiling (not marketed) so the reserve/consume gates never
+ * exhaust a test admin; UIs show "Unlimited" for syntheticTest entitlements.
+ */
+export const TEST_ADMIN_MAX_RELEASES = Number.MAX_SAFE_INTEGER;
 
 export async function ensureTestAdminEntitlement(
   transaction: admin.firestore.Transaction,
@@ -50,14 +59,36 @@ export async function ensureTestAdminEntitlement(
 
   const snapshot = await transaction.get(ref);
   if (snapshot.exists) {
-    const data = (snapshot.data() || {}) as { releasesCount?: number; maxReleases?: number };
+    const data = (snapshot.data() || {}) as {
+      releasesCount?: number;
+      maxReleases?: number;
+      status?: string;
+    };
+    const status = String(data.status || "AVAILABLE").toUpperCase();
+    const needsRevive = status === "REVOKED" || status === "CONSUMED";
+    const effectiveMax = Number(data.maxReleases || 0) < maxReleases ? maxReleases : Number(data.maxReleases || maxReleases);
+    const effectiveCount = needsRevive ? 0 : Number(data.releasesCount || 0);
+
+    if (needsRevive || effectiveMax !== Number(data.maxReleases || maxReleases)) {
+      transaction.update(ref, {
+        ...(needsRevive
+          ? {
+              status: "AVAILABLE",
+              releasesCount: 0,
+              releasesList: [],
+            }
+          : {}),
+        ...(effectiveMax !== Number(data.maxReleases || maxReleases)
+          ? { maxReleases: effectiveMax }
+          : {}),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
     return {
       entitlementId,
-      releasesRemaining: Math.max(
-        0,
-        (data.maxReleases || maxReleases) - (data.releasesCount || 0)
-      ),
-      maxReleases: data.maxReleases || maxReleases,
+      releasesRemaining: Math.max(0, effectiveMax - effectiveCount),
+      maxReleases: effectiveMax,
     };
   }
 

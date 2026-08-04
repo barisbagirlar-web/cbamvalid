@@ -56,6 +56,13 @@ const approvedServerOnlyAdminModules = new Set([
   'lib/cbam/qa/reconcile-teb232-live.ts',
 ]);
 
+// Client-safe test-admin allowlist mirror: the single approved Next.js-side
+// location allowed to hardcode the owner/test-admin emails, so test
+// administrators are never blocked by the public-launch checkout gate.
+const approvedTestAdminEmailModules = new Set([
+  'lib/commerce/test-admin-emails.ts',
+]);
+
 walk(rootDir, isSourceFile, (filePath) => {
   const relPath = path.relative(rootDir, filePath);
   const content = fs.readFileSync(filePath, 'utf8');
@@ -132,7 +139,7 @@ walk(rootDir, isSourceFile, (filePath) => {
   }
 
   // 8. Hardcoded admin email checks in auth/layout files
-  if (content.includes('barisbagirlar@gmail.com')) {
+  if (content.includes('barisbagirlar@gmail.com') && !approvedTestAdminEmailModules.has(relPath)) {
     logError(relPath, "Contains hardcoded admin email \"barisbagirlar@gmail.com\". Use Custom Claims instead.");
   }
 

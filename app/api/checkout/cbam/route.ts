@@ -5,6 +5,7 @@ import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 import { getPaddleConfig } from "@/lib/billing/paddle-config.server";
 import { apiSuccess, apiFailure } from "@/lib/http/api-response";
 import { adminDb } from "@/lib/firebase/admin";
+import { isTestAdminEmail } from "@/lib/commerce/test-admin-emails";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,7 +46,8 @@ export async function POST(request: Request) {
       decoded.admin === true ||
       decoded.role === "pilot" ||
       decoded.pilot === true ||
-      decoded.role === "Owner";
+      decoded.role === "Owner" ||
+      (decoded.email_verified === true && isTestAdminEmail(decoded.email));
     if (!publicPaidLaunchEnabled && !isPrivileged) {
       return apiFailure(
         "PAYMENT_DISABLED",

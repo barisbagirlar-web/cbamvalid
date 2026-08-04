@@ -177,6 +177,9 @@ export default function AccountPage() {
     (sum, entitlement) => sum + Number(entitlement.releasesRemaining || 0),
     0
   );
+  const hasSyntheticTestEntitlement = entitlements.some(
+    (entitlement) => entitlement.syntheticTest === true
+  );
   const hasActivePack = activeReleasesRemaining > 0;
   const unlockablePacks = packsUnlockableFromCredits(availableCredits);
   const unusedPackBalance = packsFromCredits(availableCredits);
@@ -309,8 +312,9 @@ export default function AccountPage() {
           </div>
           <p className="text-xs text-kil-text/60 mt-2 leading-relaxed">
             {CASE_COMMERCIAL.customerOneLiner} Active paid files: {activePackCount}. Internal reseal
-            capacity remaining across entitlements: {activeReleasesRemaining} (ceiling, not a marketed
-            meter).
+            capacity remaining across entitlements:{" "}
+            {hasSyntheticTestEntitlement ? "Unlimited" : activeReleasesRemaining} (ceiling, not a
+            marketed meter).
           </p>
           {unlockablePacks > 0 && !hasActivePack ? (
             <p className="mt-3 font-mono text-xs text-kil-text/70">
@@ -364,7 +368,8 @@ export default function AccountPage() {
                           <span className="block text-xs text-kil-text/50">Legacy unbound pack</span>
                         )}
                         <span className="block text-[10px] text-kil-text/40">
-                          Seals used {used}/{max} (internal ceiling)
+                          Seals used {used}/
+                          {entitlement.syntheticTest === true ? "Unlimited" : max} (internal ceiling)
                         </span>
                       </td>
                       <td className="py-3 text-right font-bold text-kil-accent">
