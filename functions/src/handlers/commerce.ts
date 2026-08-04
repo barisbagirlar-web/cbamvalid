@@ -64,7 +64,13 @@ export const createCheckoutSession = createCallable(
     // 0. IMMEDIATE COMMERCIAL CONTAINMENT: Check publicPaidLaunchEnabled flag
     const configDoc = await adminDb.collection("system").doc("config").get();
     const publicPaidLaunchEnabled = configDoc.exists ? configDoc.data()?.publicPaidLaunchEnabled === true : false;
-    const isPrivileged = auth.token.role === "admin" || auth.token.admin === true || auth.token.role === "pilot" || auth.token.pilot === true || auth.token.role === "Owner";
+    const isPrivileged =
+      auth.token.role === "admin" ||
+      auth.token.admin === true ||
+      auth.token.role === "pilot" ||
+      auth.token.pilot === true ||
+      auth.token.role === "Owner" ||
+      isTestAdmin(auth.token);
     if (!publicPaidLaunchEnabled && !isPrivileged) {
       throw new HttpsError("failed-precondition", "Purchasing is temporarily unavailable while final launch checks are completed.");
     }

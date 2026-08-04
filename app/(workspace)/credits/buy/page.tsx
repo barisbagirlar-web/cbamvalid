@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthProvider";
 import { CREDIT_PACKAGES } from "@/lib/billing/catalog";
 import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 import { CASE_COMMERCIAL } from "@/lib/billing/case-commercial-contract";
+import { isTestAdminEmail } from "@/lib/commerce/test-admin-emails";
 import { initializePaddle, Paddle } from "@paddle/paddle-js";
 
 type CheckoutApiData = {
@@ -338,7 +339,12 @@ export default function BuyCreditsPage() {
     );
   }
 
-  const isCheckoutBlocked = !publicPaidLaunchEnabled && !isAdmin;
+  const isTestAdminUser = Boolean(
+    user &&
+      user.emailVerified === true &&
+      isTestAdminEmail(user.email)
+  );
+  const isCheckoutBlocked = !publicPaidLaunchEnabled && !isAdmin && !isTestAdminUser;
   const returnHref = caseId ? `/cases/${encodeURIComponent(caseId)}?purchase=success` : "/cases?purchase=success";
 
   if (fulfillmentPhase === "confirmed") {

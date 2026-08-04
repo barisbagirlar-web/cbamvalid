@@ -25,7 +25,6 @@ loadEnvFile(path.join(process.cwd(), ".env"));
 loadEnvFile(path.join(process.cwd(), ".env.local"));
 
 import { getPaddleConfig } from "../lib/billing/paddle-config.server";
-import { CREDIT_PACKAGES } from "../lib/billing/catalog";
 import { CANONICAL_PRICING } from "../lib/billing/pricing-config";
 
 const requireWebhook = process.argv.includes("--require-webhook");
@@ -130,6 +129,10 @@ async function main(): Promise<void> {
   } else {
     console.log("PADDLE_WEBHOOK_SECRET=MISSING_OPTIONAL_FOR_CHECKOUT_REQUIRED_FOR_FULFILLMENT");
   }
+
+  // catalog.ts captures NEXT_PUBLIC_PADDLE_PRICE_ID at module evaluation time, so it must
+  // be loaded after the env files above are applied to process.env.
+  const { CREDIT_PACKAGES } = await import("../lib/billing/catalog");
 
   const activePackages = CREDIT_PACKAGES.filter((pkg) => pkg.active);
   if (activePackages.length !== 1) {
