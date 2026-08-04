@@ -42,8 +42,12 @@ async function pdfText(path: string): Promise<string> {
   return normalize(text);
 }
 
-function between(text: string, start: string, end: string): string {
-  const startIndex = text.indexOf(start);
+/**
+ * The section title also appears in the table of contents. Use the last title
+ * occurrence so the guard inspects the rendered handover page, not the TOC.
+ */
+function finalSection(text: string, start: string, end: string): string {
+  const startIndex = text.lastIndexOf(start);
   if (startIndex < 0) return "";
   const endIndex = text.indexOf(end, startIndex + start.length);
   return text.slice(startIndex, endIndex < 0 ? undefined : endIndex);
@@ -56,7 +60,7 @@ async function main(): Promise<void> {
   for (const directory of REPORT_DIRS) {
     const text = await pdfText(resolve(ROOT, directory, "primary-report.pdf"));
     const pending = /NOT REVIEWED\s*-\s*PENDING/i.test(text);
-    const handover = between(
+    const handover = finalSection(
       text,
       "Independent verifier handover",
       "Package integrity and release control"
@@ -82,7 +86,7 @@ async function main(): Promise<void> {
         passes.push(`${directory}: pending handover contains no Recorded status`);
       }
       const pendingCount = (handover.match(/\bPENDING\b/gi) ?? []).length;
-      if (pendingCount < 7) {
+      if (pendingCount !== 7) {
         failures.push(`${directory}: pending handover rows ${pendingCount}/7`);
       } else {
         passes.push(`${directory}: all 7 handover rows pending`);
