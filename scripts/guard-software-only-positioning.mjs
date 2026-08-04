@@ -2,20 +2,12 @@
 /**
  * Paddle domain-review and software-only positioning guard.
  *
- * Official Paddle domain review requires a clear product description, pricing,
- * included deliverables, accessible legal policies, legal seller identity,
- * HTTPS-ready public surfaces and a product that fits Paddle's software focus.
- * Government services and stand-alone human services are outside Paddle's AUP.
- *
- * This guard therefore fails closed when public commercial surfaces:
+ * Fails closed when public commercial or machine-readable surfaces:
  *   - use obsolete compliance-validation or service-style product names;
  *   - advertise human services or removed service routes;
  *   - expose placeholder or inconsistent legal identity copy;
  *   - omit the canonical software classification, price or digital delivery;
- *   - reintroduce forbidden enterprise/partner/verifier-service routes.
- *
- * Explicit negative legal boundaries remain permitted in Terms and the dedicated
- * Product Classification Statement.
+ *   - allow generated answer feeds to drift back to unsafe product naming.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -116,6 +108,7 @@ const STALE_COMMERCIAL_PHRASES = [
   "Exporter Verification Preparation Pack",
   "Prepared for Independent Accredited Verification",
   "CBAM Exporter Final Evidence Report",
+  "independent verifier-preparation platform",
 ];
 
 const COMMERCIAL_SURFACES = [
@@ -126,6 +119,8 @@ const COMMERCIAL_SURFACES = [
   "app/(public)/product/layout.tsx",
   "app/(public)/pricing/page.tsx",
   "app/(public)/sample-dossier/layout.tsx",
+  "app/(public)/answers/page.tsx",
+  "app/answers.json/route.ts",
   "components/marketing/SoftwareProductHome.tsx",
   "components/layout/PublicHeader.tsx",
   "components/layout/AppFooter.tsx",
@@ -134,9 +129,16 @@ const COMMERCIAL_SURFACES = [
   "lib/product/customer-language.ts",
   "lib/seo/claims.ts",
   "lib/seo/llm-doc-model.ts",
+  "lib/seo/ai-txt.ts",
+  "scripts/seo/regenerate-answer-feeds.ts",
   "public/llm.txt",
   "public/llms.txt",
   "public/llms-full.txt",
+  "public/answers.json",
+  "public/answers.rss",
+  "public/answers.feed.json",
+  "public/.well-known/ai.txt",
+  "public/ai-policy.txt",
 ];
 
 const REQUIRED_PUBLIC_FILES = [
@@ -147,6 +149,11 @@ const REQUIRED_PUBLIC_FILES = [
   "app/(public)/refund-policy/page.tsx",
   "app/(public)/legal-notice/page.tsx",
   "app/(public)/contact/page.tsx",
+  "app/(public)/answers/page.tsx",
+  "app/answers.json/route.ts",
+  "public/answers.json",
+  "public/answers.rss",
+  "public/answers.feed.json",
 ];
 
 const routePattern = new RegExp(
@@ -201,6 +208,15 @@ function scanPhrases(source, relativePath) {
   });
 }
 
+function scanStaleCommercialPhrases(source, relativePath) {
+  const lower = source.toLowerCase();
+  for (const phrase of STALE_COMMERCIAL_PHRASES) {
+    if (lower.includes(phrase.toLowerCase())) {
+      failures.push(`${relativePath}: obsolete public commercial classification ${JSON.stringify(phrase)}`);
+    }
+  }
+}
+
 function requireContains(relativePath, tokens) {
   const source = read(relativePath);
   for (const token of tokens) {
@@ -217,7 +233,7 @@ for (const routeDir of FORBIDDEN_ROUTE_DIRECTORIES) {
 }
 
 for (const requiredFile of REQUIRED_PUBLIC_FILES) {
-  if (!fs.existsSync(absolute(requiredFile))) failures.push(`Missing required public policy page: ${requiredFile}`);
+  if (!fs.existsSync(absolute(requiredFile))) failures.push(`Missing required public policy/feed page: ${requiredFile}`);
 }
 
 const TARGET_DIRS = [
@@ -245,6 +261,8 @@ const TARGET_FILES = [
   "public/answers.json",
   "public/answers.rss",
   "public/answers.feed.json",
+  "public/.well-known/ai.txt",
+  "public/ai-policy.txt",
 ];
 
 const scanned = new Set();
@@ -269,12 +287,7 @@ for (const relativePath of TARGET_FILES) {
 }
 
 for (const relativePath of COMMERCIAL_SURFACES) {
-  const source = read(relativePath);
-  for (const phrase of STALE_COMMERCIAL_PHRASES) {
-    if (source.includes(phrase)) {
-      failures.push(`${relativePath}: obsolete commercial classification ${JSON.stringify(phrase)}`);
-    }
-  }
+  scanStaleCommercialPhrases(read(relativePath), relativePath);
 }
 
 requireContains("app/(public)/page.tsx", [
@@ -309,13 +322,40 @@ requireContains("app/(public)/refund-policy/page.tsx", [
   "Paddle.com is the Merchant of Record",
   "Digital goods after successful seal",
 ]);
-requireContains("lib/legal-config.ts", [
-  'governingLaw: "Ireland"',
-]);
+requireContains("lib/legal-config.ts", ['governingLaw: "Ireland"']);
 requireContains("lib/billing/pricing-config.ts", [
   'priceFormatted: "$449"',
   "amountMinor: 44900",
   'packName: "CBAMValid Working File Software Unlock"',
+]);
+requireContains("public/answers.json", [
+  "CBAMValid Self-Service Software Answer Feed",
+  "CBAMValid Working File Software Unlock",
+  "Automated PDF, JSON and XLSX files",
+  '"humanServicesBundled": false',
+]);
+requireContains("public/answers.feed.json", [
+  "CBAMValid Self-Service Software Answer Feed",
+  "self-service B2B software",
+]);
+requireContains("public/answers.rss", [
+  "CBAMValid Self-Service Software Answer Feed",
+  "self-service B2B software",
+]);
+requireContains("app/answers.json/route.ts", [
+  "toPublicAnswerRecord",
+  "toPublicAuthorityChain",
+  "assertPublicCommercialClassification",
+  'productType: "Self-service B2B software"',
+]);
+requireContains("app/(public)/answers/page.tsx", [
+  "toPublicAnswerRecord",
+  "CBAMValid is privately operated self-service B2B software",
+]);
+requireContains("scripts/seo/regenerate-answer-feeds.ts", [
+  "toPublicAnswerRecord",
+  "toPublicAuthorityChain",
+  "assertPublicCommercialClassification",
 ]);
 
 const legalConfig = read("lib/legal-config.ts");
@@ -334,5 +374,6 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
+console.log("PADDLE_PUBLIC_MACHINE_FEEDS=PASS");
 console.log("PADDLE_DOMAIN_REQUIREMENTS=PASS");
 console.log("SOFTWARE_ONLY_POSITIONING_GUARD=PASS");
