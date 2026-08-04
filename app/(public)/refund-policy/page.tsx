@@ -72,9 +72,7 @@ export default function RefundPolicyPage() {
         <div>
           <h2 className="text-xl font-bold mb-2">5. Payment processing (Merchant of Record)</h2>
           <p className="text-sm text-muted">
-            Our order process is conducted by our online reseller Paddle.com. Paddle.com is the
-            Merchant of Record for all our orders. Refunds are processed through Paddle and typically
-            take 3–5 business days to appear on your statement.
+            Our order process is conducted by our online reseller Paddle.com. Paddle.com is the Merchant of Record for all our orders. Refunds are processed through Paddle and typically take 3–5 business days to appear on your statement.
           </p>
         </div>
 
