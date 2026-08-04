@@ -13,7 +13,7 @@ export const CANONICAL_PRICING = {
   eurApproxFormatted: "≈ €415",
   /** Minor units for order/catalog assertions (44900 = $449.00). */
   amountMinor: 44900,
-  packName: "Exporter Verification Preparation Pack",
+  packName: "CBAMValid Working File Software Unlock",
   includedOperators: 1,
   includedInstallations: 1,
   includedReportingYears: 1,
@@ -25,7 +25,7 @@ export const CANONICAL_PRICING = {
   includedSealedReleases: 100,
   draftPolicy: "Unlimited drafts",
   correctionPolicy: "Same-file correction re-locks included",
-  description: "Prepared for Independent Accredited Verification",
+  description: "Self-service software access with automated digital file generation",
   /** Short customer/SEO line — case-scoped pay-at-lock. */
   valueSummary:
     "One working file for one operator, one installation, and one reporting year — draft free, pay once to lock, correct and re-lock the same file as needed.",
@@ -57,7 +57,7 @@ export const PRICING_TIERS = [
   },
   {
     id: "single-pack",
-    name: "Single Pack",
+    name: "Working File Software Unlock",
     priceLabel: "$449",
     cadence: "one-time · pay at lock",
     highlight: true,
@@ -72,7 +72,7 @@ export const PRICING_TIERS = [
       "Unlimited drafts on that working file",
       "Pay once to lock — corrections on same file included",
       "Evidence-linked calculations and QC checks",
-      "Sealed PDF, JSON, and O3CI field-mapped export",
+      "Automated PDF, JSON, XLSX and O3CI field-mapped exports",
       "Immutable sealed versions + free re-download",
       "Buyer share link (/d/token)",
     ],

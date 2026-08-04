@@ -7,8 +7,8 @@
   role="img"
   aria-labelledby="title desc"
 >
-  <title id="title">CBAMvalid Logo</title>
-  <desc id="desc">Premium CBAMvalid logo with a clean orange validation seal and light wordmark for dark backgrounds.</desc>
+  <title id="title">CBAMValid Logo</title>
+  <desc id="desc">CBAMValid self-service emissions data software logo with an orange data-integrity mark.</desc>
 
   <defs>
     <linearGradient id="cbam-orange" x1="28" y1="24" x2="148" y2="154" gradientUnits="userSpaceOnUse">
@@ -18,10 +18,7 @@
     </linearGradient>
   </defs>
 
-  <!-- transparent background -->
-
   <g transform="translate(44 36)" fill="none" stroke="url(#cbam-orange)" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
-    <!-- closed validation seal: one clean path, no broken internal geometry -->
     <path
       d="M84 8
          L152 47
@@ -32,8 +29,6 @@
          Z"
       stroke-width="13"
     />
-
-    <!-- independent validation check: does not cut or collide with the seal -->
     <path
       d="M48 85
          L75 112
@@ -51,7 +46,7 @@
       font-size="70"
       font-weight="600"
       letter-spacing="-1.4"
-    >CBAMvalid</text>
+    >CBAMValid</text>
 
     <text
       x="254"
@@ -61,6 +56,6 @@
       font-size="28"
       font-weight="400"
       letter-spacing="0"
-    >Carbon Border Compliance Validation</text>
+    >Self-Service Emissions Data Software</text>
   </g>
 </svg>

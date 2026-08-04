@@ -9,8 +9,35 @@ import {
 } from "@/lib/seo/schema";
 import { requireSeoRoute } from "@/lib/seo/registry";
 
+const PUBLIC_ROUTE_OVERRIDES: Readonly<
+  Record<string, { title: string; description: string; h1: string }>
+> = {
+  "/": {
+    title: "CBAMValid — Self-Service Emissions Data Software",
+    description:
+      "B2B self-service software for customer-entered emissions data, deterministic calculations, automated quality controls, and automated PDF, JSON and XLSX delivery.",
+    h1: "Self-Service Emissions Data Software",
+  },
+  "/product": {
+    title: "CBAMValid Product | Self-Service Emissions Data Software",
+    description:
+      "Customer-controlled B2B software for emissions data, deterministic calculations, automated quality controls, and automated PDF, JSON and XLSX delivery.",
+    h1: "Software Product and Capabilities",
+  },
+  "/sample-dossier": {
+    title: "Sample Automated Digital Output | CBAMValid Software",
+    description:
+      "Preview an automated CBAMValid software output with PDF, structured data, workbook, integrity manifest and customer-controlled evidence links.",
+    h1: "Sample Automated Digital Output",
+  },
+};
+
 export function JsonLdForRoute({ path }: { path: string }) {
   const route = requireSeoRoute(path);
+  const override = PUBLIC_ROUTE_OVERRIDES[path];
+  const publicTitle = override?.title ?? route.title;
+  const publicDescription = override?.description ?? route.description;
+  const publicH1 = override?.h1 ?? route.h1;
   const nodes: Record<string, unknown>[] = [];
 
   if (route.schemaTypes.includes("Organization") || path === "/") {
@@ -20,7 +47,7 @@ export function JsonLdForRoute({ path }: { path: string }) {
     nodes.push(generateWebSiteSchema());
   }
   if (route.schemaTypes.includes("WebApplication")) {
-    nodes.push(generateWebApplicationSchema(route.description));
+    nodes.push(generateWebApplicationSchema(publicDescription));
   }
   if (route.schemaTypes.includes("Product") || route.schemaTypes.includes("Offer")) {
     const productDoc = generateProductOfferSchema();
@@ -50,8 +77,8 @@ export function JsonLdForRoute({ path }: { path: string }) {
     nodes.push(
       generateWebPageSchema({
         path: route.canonicalPath,
-        name: route.title,
-        description: route.description,
+        name: publicTitle,
+        description: publicDescription,
         type,
       }),
     );
@@ -61,7 +88,7 @@ export function JsonLdForRoute({ path }: { path: string }) {
     if (route.pageType === "cn-detail") {
       crumbs.push({ name: "CN Codes", item: "/cn-code" });
     }
-    crumbs.push({ name: route.h1, item: route.canonicalPath });
+    crumbs.push({ name: publicH1, item: route.canonicalPath });
     nodes.push(generateBreadcrumbSchema(crumbs));
   }
 

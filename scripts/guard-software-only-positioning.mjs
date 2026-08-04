@@ -1,23 +1,21 @@
+#!/usr/bin/env node
 /**
- * FAZ 17 guard — Software-only positioning.
+ * Paddle domain-review and software-only positioning guard.
  *
- * Fails when public renderable surfaces contain positive human-service sales
- * language or links to removed human-service routes.
+ * Official Paddle domain review requires a clear product description, pricing,
+ * included deliverables, accessible legal policies, legal seller identity,
+ * HTTPS-ready public surfaces and a product that fits Paddle's software focus.
+ * Government services and stand-alone human services are outside Paddle's AUP.
  *
- * Explicit negative legal boundaries are permitted:
- *   "does not include consulting", "no human services included",
- *   "NOT_INCLUDED" lists, "does not provide advisory services".
+ * This guard therefore fails closed when public commercial surfaces:
+ *   - use obsolete compliance-validation or service-style product names;
+ *   - advertise human services or removed service routes;
+ *   - expose placeholder or inconsistent legal identity copy;
+ *   - omit the canonical software classification, price or digital delivery;
+ *   - reintroduce forbidden enterprise/partner/verifier-service routes.
  *
- * Also fails when the legal-identity SSOT or any public surface contains a
- * placeholder company address (e.g. "123 Validation Way") instead of the
- * owner-verified registered address. Paddle rejects template/placeholder
- * seller addresses, so a placeholder must never be renderable.
- *
- * Design constraints (mandate #15):
- *   - No broad regex rules that create uncontrolled false positives.
- *   - Phrase matches are evaluated per line with a negative-boundary check.
- *   - Route matches are exact slash-prefixed paths, not bare words
- *     (e.g. "partners" as an audience keyword is allowed).
+ * Explicit negative legal boundaries remain permitted in Terms and the dedicated
+ * Product Classification Statement.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -25,20 +23,25 @@ import path from "node:path";
 const root = process.cwd();
 const failures = [];
 
+function absolute(relativePath) {
+  return path.join(root, relativePath);
+}
+
 function read(relativePath) {
-  const absolutePath = path.join(root, relativePath);
-  if (!fs.existsSync(absolutePath)) {
+  const file = absolute(relativePath);
+  if (!fs.existsSync(file)) {
     failures.push(`Missing required file: ${relativePath}`);
     return "";
   }
-  return fs.readFileSync(absolutePath, "utf8");
+  return fs.readFileSync(file, "utf8");
 }
 
 function walkDir(dir, out = []) {
+  if (!fs.existsSync(dir)) return out;
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) walkDir(full, out);
-    else if (/\.(tsx|ts|mjs|json|txt|md)$/.test(entry.name)) out.push(full);
+    else if (/\.(tsx|ts|mjs|json|txt|md|svg|xml|html)$/.test(entry.name)) out.push(full);
   }
   return out;
 }
@@ -51,8 +54,12 @@ const FORBIDDEN_ROUTES = [
   "/verifier-review",
 ];
 
-// Explicit negative-boundary markers. A line carrying one of these may hold a
-// forbidden phrase as a legal disclaimer (mandate #15, #14 boundary clause).
+const FORBIDDEN_ROUTE_DIRECTORIES = [
+  "app/(public)/enterprise",
+  "app/(public)/partners",
+  "app/(public)/verifier-review",
+];
+
 const NEGATIVE_MARKERS = [
   "does not include",
   "does not provide",
@@ -89,42 +96,64 @@ const FORBIDDEN_PHRASES = [
   "Expert access",
   "Dossier assistance",
   "Methodology support",
+  "Book a consultation",
+  "Structure Review",
+  "Enterprise Exclusive",
 ];
 
-// Placeholder company addresses that Paddle treats as invalid or template
-// information. The SSOT (lib/legal-identity.ts) must carry the owner-verified
-// registered address only. Matches are case-insensitive and admit no
-// negative-boundary exception: a placeholder is never acceptable.
 const FORBIDDEN_ADDRESS_PLACEHOLDERS = [
   "123 Validation Way",
-  "123 validation way",
-  "123 VALIDATION WAY",
   "Validation Way",
   "Tech District",
-  "tech district",
-  "TECH DISTRICT",
   "Sample Address",
   "Your Company Address",
   "123 Sample St",
   "123 Test St",
 ];
 
-// A forbidden route must be a slash-prefixed path token, not a bare word.
+const STALE_COMMERCIAL_PHRASES = [
+  "Carbon Border Compliance Validation",
+  "Exporter Verification Preparation Pack",
+  "Prepared for Independent Accredited Verification",
+  "CBAM Exporter Final Evidence Report",
+];
+
+const COMMERCIAL_SURFACES = [
+  "cbam_logo.svg",
+  "public/cbam_logo.svg",
+  "public/brand/cbamvalid-lockup.svg",
+  "app/(public)/page.tsx",
+  "app/(public)/product/layout.tsx",
+  "app/(public)/pricing/page.tsx",
+  "app/(public)/sample-dossier/layout.tsx",
+  "components/marketing/SoftwareProductHome.tsx",
+  "components/layout/PublicHeader.tsx",
+  "components/layout/AppFooter.tsx",
+  "lib/site-config.ts",
+  "lib/billing/pricing-config.ts",
+  "lib/product/customer-language.ts",
+  "lib/seo/claims.ts",
+  "lib/seo/llm-doc-model.ts",
+  "public/llm.txt",
+  "public/llms.txt",
+  "public/llms-full.txt",
+];
+
+const REQUIRED_PUBLIC_FILES = [
+  "app/(public)/pricing/page.tsx",
+  "app/(public)/product-classification/page.tsx",
+  "app/(public)/terms/page.tsx",
+  "app/(public)/privacy/page.tsx",
+  "app/(public)/refund-policy/page.tsx",
+  "app/(public)/legal-notice/page.tsx",
+  "app/(public)/contact/page.tsx",
+];
+
 const routePattern = new RegExp(
-  `(^|[\\s"'\\(\\[])(${FORBIDDEN_ROUTES.map((route) =>
-    route.replace(/\//g, "\\/")
-  ).join("|")})(?=[/\\s"'\\)\\]]|$)`,
+  `(^|[\\s"'\\(\\[])(${FORBIDDEN_ROUTES.map((route) => route.replace(/\//g, "\\/")).join("|")})(?=[/\\s"'\\)\\]]|$)`,
   "g"
 );
 
-/**
- * A forbidden phrase is allowed when the surrounding context is an explicit
- * "not included" list. We accept a phrase inside a string-literal array that
- * belongs to a variable/heading whose name contains "NOT_INCLUDED",
- * "EXCLUDED" or "not included". This keeps the pricing NOT_INCLUDED block
- * and the product-classification EXCLUDED block permitted while rejecting
- * positive sales copy.
- */
 function isNotIncludedListContext(lines, lineIndex, line) {
   const trimmed = line.trim();
   const isStringLiteral =
@@ -135,7 +164,8 @@ function isNotIncludedListContext(lines, lineIndex, line) {
   return (
     context.includes("not_included") ||
     context.includes("not included") ||
-    context.includes("excluded")
+    context.includes("excluded") ||
+    context.includes("commercial boundary")
   );
 }
 
@@ -143,18 +173,15 @@ function scanRoutes(source, relativePath) {
   routePattern.lastIndex = 0;
   let match;
   while ((match = routePattern.exec(source)) !== null) {
-    const route = match[2];
-    failures.push(`${relativePath}: link to removed route ${route}`);
+    failures.push(`${relativePath}: link to removed route ${match[2]}`);
   }
 }
 
 function scanAddressPlaceholders(source, relativePath) {
+  const lower = source.toLowerCase();
   for (const placeholder of FORBIDDEN_ADDRESS_PLACEHOLDERS) {
-    if (!source.includes(placeholder)) continue;
-    const lineIndex = source.split("\n").findIndex((line) => line.includes(placeholder));
-    failures.push(
-      `${relativePath}:${lineIndex + 1}: placeholder company address ${JSON.stringify(placeholder)} — owner-verified registered address required`
-    );
+    if (!lower.includes(placeholder.toLowerCase())) continue;
+    failures.push(`${relativePath}: placeholder company identity text ${JSON.stringify(placeholder)}`);
   }
 }
 
@@ -163,28 +190,40 @@ function scanPhrases(source, relativePath) {
   lines.forEach((line, index) => {
     const lower = line.toLowerCase();
     for (const phrase of FORBIDDEN_PHRASES) {
-      const phraseLower = phrase.toLowerCase();
-      if (!lower.includes(phraseLower)) continue;
-      // Negative boundary may be on this line or on an adjacent line (e.g.
-      // "CBAMValid does not sell … managed compliance" split across lines).
+      if (!lower.includes(phrase.toLowerCase())) continue;
       const windowStart = Math.max(0, index - 2);
-      const windowEnd = Math.min(lines.length, index + 2);
+      const windowEnd = Math.min(lines.length, index + 3);
       const window = lines.slice(windowStart, windowEnd).join("\n").toLowerCase();
-      const hasNegativeBoundary = NEGATIVE_MARKERS.some((marker) =>
-        window.includes(marker.toLowerCase())
-      );
-      if (hasNegativeBoundary) continue;
-      if (isNotIncludedListContext(lines, index, line)) continue;
-      failures.push(
-        `${relativePath}:${index + 1}: positive human-service phrase ${JSON.stringify(phrase)}`
-      );
+      const hasNegativeBoundary = NEGATIVE_MARKERS.some((marker) => window.includes(marker));
+      if (hasNegativeBoundary || isNotIncludedListContext(lines, index, line)) continue;
+      failures.push(`${relativePath}:${index + 1}: positive human-service phrase ${JSON.stringify(phrase)}`);
     }
   });
+}
+
+function requireContains(relativePath, tokens) {
+  const source = read(relativePath);
+  for (const token of tokens) {
+    if (!source.includes(token)) {
+      failures.push(`${relativePath}: missing required Paddle-domain token ${JSON.stringify(token)}`);
+    }
+  }
+}
+
+for (const routeDir of FORBIDDEN_ROUTE_DIRECTORIES) {
+  if (fs.existsSync(absolute(routeDir))) {
+    failures.push(`${routeDir}: removed service route directory must not exist`);
+  }
+}
+
+for (const requiredFile of REQUIRED_PUBLIC_FILES) {
+  if (!fs.existsSync(absolute(requiredFile))) failures.push(`Missing required public policy page: ${requiredFile}`);
 }
 
 const TARGET_DIRS = [
   "app/(public)",
   "components/layout",
+  "components/marketing",
   "lib/marketing",
   "lib/seo/aeo",
 ];
@@ -209,10 +248,8 @@ const TARGET_FILES = [
 ];
 
 const scanned = new Set();
-
 for (const dir of TARGET_DIRS) {
-  if (!fs.existsSync(path.join(root, dir))) continue;
-  for (const file of walkDir(path.join(root, dir))) {
+  for (const file of walkDir(absolute(dir))) {
     const relative = path.relative(root, file);
     scanned.add(relative);
     const source = fs.readFileSync(file, "utf8");
@@ -231,9 +268,71 @@ for (const relativePath of TARGET_FILES) {
   scanAddressPlaceholders(source, relativePath);
 }
 
+for (const relativePath of COMMERCIAL_SURFACES) {
+  const source = read(relativePath);
+  for (const phrase of STALE_COMMERCIAL_PHRASES) {
+    if (source.includes(phrase)) {
+      failures.push(`${relativePath}: obsolete commercial classification ${JSON.stringify(phrase)}`);
+    }
+  }
+}
+
+requireContains("app/(public)/page.tsx", [
+  "Self-Service Emissions Data Software",
+  "automated PDF, JSON and XLSX delivery",
+]);
+requireContains("components/marketing/SoftwareProductHome.tsx", [
+  "B2B SaaS · Automated digital delivery",
+  "privately operated self-service B2B software",
+  "Customer-entered data",
+]);
+requireContains("app/(public)/pricing/page.tsx", [
+  "CANONICAL_PRICING.priceFormatted",
+  "Automated digital PDF generation",
+  "Automated digital JSON generation",
+  "Automated digital XLSX generation",
+]);
+requireContains("app/(public)/product-classification/page.tsx", [
+  "Self-Service B2B Software",
+  "Automated PDF, JSON and XLSX generation",
+  "Human services",
+]);
+requireContains("app/(public)/terms/page.tsx", [
+  "software access and automated digital delivery",
+  "No Human or Government Services Included",
+]);
+requireContains("app/(public)/privacy/page.tsx", [
+  "providing access to the self-service software",
+  "Account settings page",
+]);
+requireContains("app/(public)/refund-policy/page.tsx", [
+  "Paddle.com is the Merchant of Record",
+  "Digital goods after successful seal",
+]);
+requireContains("lib/legal-config.ts", [
+  'governingLaw: "Ireland"',
+]);
+requireContains("lib/billing/pricing-config.ts", [
+  'priceFormatted: "$449"',
+  "amountMinor: 44900",
+  'packName: "CBAMValid Working File Software Unlock"',
+]);
+
+const legalConfig = read("lib/legal-config.ts");
+if (legalConfig.includes('governingLaw: "the laws of Ireland"')) {
+  failures.push('lib/legal-config.ts: governingLaw must be "Ireland" to prevent "laws of the laws" rendering');
+}
+
+const privacy = read("app/(public)/privacy/page.tsx");
+for (const stale of ["calculation and documentation service", "Enterprise Account settings"]) {
+  if (privacy.includes(stale)) failures.push(`app/(public)/privacy/page.tsx: stale service copy ${JSON.stringify(stale)}`);
+}
+
 if (failures.length > 0) {
   console.error("SOFTWARE_ONLY_POSITIONING_GUARD=FAIL");
-  for (const failure of failures) console.error(`- ${failure}`);
+  for (const failure of [...new Set(failures)]) console.error(`- ${failure}`);
   process.exit(1);
 }
+
+console.log("PADDLE_DOMAIN_REQUIREMENTS=PASS");
 console.log("SOFTWARE_ONLY_POSITIONING_GUARD=PASS");

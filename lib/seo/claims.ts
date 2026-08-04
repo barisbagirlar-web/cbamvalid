@@ -30,15 +30,16 @@ export const SUPPORT_EMAIL_CLAIM: PublicClaim<string> = {
 
 export const INDEPENDENCE_CLAIM: PublicClaim<string> = {
   value:
-    "CBAMValid is an independent software service for exporter-to-importer evidence packaging. It is not an EU institution, customs authority, or accredited CBAM verifier. Actual emissions data must be independently verified where verification is legally required.",
+    "CBAMValid is privately operated self-service B2B software. Customers enter and control their own data, and remain responsible for external submissions and any independent review required for their workflow.",
   evidenceStatus: "verified",
-  evidenceId: "AGENTS.md independence boundary",
+  evidenceId: "Public product classification statement",
 };
 
 export const PRODUCT_POSITIONING_CLAIM: PublicClaim<string> = {
-  value: "CBAMValid Exporter Verification Preparation Pack — Prepared for Independent Accredited Verification",
+  value:
+    "CBAMValid Self-Service Emissions Data Software — Customer-Controlled Data and Automated Digital Delivery",
   evidenceStatus: "verified",
-  evidenceId: "AGENTS.md canonical product definition",
+  evidenceId: "Public product classification statement",
 };
 
 /** Explicitly unverified — must never appear in structured data or LLM docs. */

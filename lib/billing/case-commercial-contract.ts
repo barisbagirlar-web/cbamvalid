@@ -2,10 +2,8 @@
  * Case-scoped pay-at-lock commercial contract + public messaging SSOT.
  *
  * Customer truth:
- * Work free → pay once to lock this working file → correct/re-lock same file free
- * → new file = new payment. Not accredited verification.
- *
- * Practical maxReleases is a storage/abuse ceiling, not a customer “5 pack” meter.
+ * Work free → pay once to unlock software lock-and-download for this working file
+ * → correct/re-lock same file free → new file = new payment.
  */
 
 import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
@@ -15,16 +13,16 @@ export const CASE_COMMERCIAL = {
   amountMinor: CANONICAL_PRICING.amountMinor,
   priceFormatted: CANONICAL_PRICING.priceFormatted,
   packName: CANONICAL_PRICING.packName,
-  /** Abuse/storage ceiling — presented to customers as unlimited corrections on this file. */
+  /** Abuse/storage ceiling — presented to customers as corrections included on this file. */
   maxReleasesPerPaidCase: 100,
   customerOneLiner:
     "Work free. Pay once to lock this file. Correct and re-lock this same file as needed. A new file needs a new payment.",
   paymentCtaLabel: `Pay ${CANONICAL_PRICING.priceFormatted} to lock this file`,
-  paidLockCtaLabel: "Lock & download package",
+  paidLockCtaLabel: "Lock & download digital files",
   /** Hero / AEO speakable sentence (English only). */
-  speakableAnswer: `USD ${CANONICAL_PRICING.displayPrice} unlocks lock-and-download for one working file: one operator, one installation, and one reporting year. Drafting is free. Pay when you lock. Same file: correct and re-lock as needed at no extra charge. A new file needs a new payment. Not an accredited verification opinion.`,
+  speakableAnswer: `USD ${CANONICAL_PRICING.displayPrice} unlocks software lock-and-download for one customer-controlled working file: one operator, one installation, and one reporting year. Drafting is free. Same-file corrections and re-locks are included. A new file needs a new payment.`,
   valuePitch:
-    "You only pay when the deliverable matters — when you lock a verifier-preparation package for a defined factory and year. Corrections on that same file stay included so buyer feedback does not mean another checkout.",
+    "You pay only when the automated digital outputs matter — when you lock a defined working file for one operator, installation and reporting year. Corrections on that same file remain included.",
 } as const;
 
 /** Ordered topic cards for pricing / how-it-works / legal mirrors. */
@@ -37,7 +35,7 @@ export const COMMERCIAL_TOPIC_CARDS = [
   {
     id: "pay-at-lock",
     title: "Pay once when you lock",
-    body: `Your card is charged ${CANONICAL_PRICING.priceFormatted} when you unlock lock-and-download for that specific working file — not while you edit drafts.`,
+    body: `Your card is charged ${CANONICAL_PRICING.priceFormatted} when you unlock software lock-and-download for that specific working file — not while you edit drafts.`,
   },
   {
     id: "same-file-corrections",
@@ -47,28 +45,28 @@ export const COMMERCIAL_TOPIC_CARDS = [
   {
     id: "new-file-new-payment",
     title: "New file = new payment",
-    body: "Another installation, another reporting year, or a new working file requires a new payment. One payment cannot unlock many unrelated CBAM files.",
+    body: "Another installation, another reporting year, or a new working file requires a new payment. One payment cannot unlock unrelated files.",
   },
   {
     id: "scope-lock",
-    title: "Strict commercial scope",
-    body: "Each paid file covers one legal operator/exporter, one production installation, and one reporting year with defined processes and linked goods.",
+    title: "Defined software scope",
+    body: "Each paid unlock covers one legal operator/exporter, one production installation, and one reporting year with customer-controlled processes and linked goods.",
   },
   {
-    id: "not-verification",
-    title: "Verifier preparation — not EU approval",
-    body: "CBAMValid produces an operator-prepared dossier for independent accredited verification. It is not an accredited opinion, customs approval, or registry acceptance.",
+    id: "customer-responsibility",
+    title: "Customer-controlled downstream use",
+    body: "CBAMValid generates digital files from customer-entered data. Customers remain responsible for external submissions and any independent review required for their workflow.",
   },
 ] as const;
 
 export const COMMERCIAL_PUBLIC_FAQ = [
   {
     question: "When is my card charged?",
-    answer: `Drafting and editing are free. Your card is charged ${CANONICAL_PRICING.priceFormatted} when you pay to lock a specific working file. Sealing that paid file does not charge again for ordinary corrections on the same file.`,
+    answer: `Drafting and editing are free. Your card is charged ${CANONICAL_PRICING.priceFormatted} when you pay to lock a specific working file. Re-locking that paid file after ordinary corrections does not charge again.`,
   },
   {
     question: `What exactly does ${CANONICAL_PRICING.priceFormatted} unlock?`,
-    answer: `Lock-and-download for one working file scoped to one legal operator, one installation, and one reporting year — including unlimited drafts on that file and correction re-locks on that same file. It is a verifier-preparation dossier, not a subscription and not an Excel-only export.`,
+    answer: `Software lock-and-download for one working file scoped to one legal operator, one installation, and one reporting year — including unlimited drafts and same-file correction re-locks. Automated PDF, JSON and XLSX files are generated after a successful lock.`,
   },
   {
     question: "If my buyer asks for corrections, do I pay again?",
@@ -76,9 +74,9 @@ export const COMMERCIAL_PUBLIC_FAQ = [
       "No — not for the same paid working file. Correct the data, clear blockers, and re-lock. A new factory, year, or separate working file needs a new payment.",
   },
   {
-    question: "Can one payment cover several CBAM files?",
+    question: "Can one payment cover several working files?",
     answer:
-      "No. Payment is bound to one working file (case). Cloning or creating another file does not inherit payment. This protects honest buyers from open-ended multi-site abuse while keeping correction work fair.",
+      "No. Payment is bound to one working file. Cloning or creating another file does not inherit payment.",
   },
   {
     question: "What if a lock fails?",
@@ -86,9 +84,9 @@ export const COMMERCIAL_PUBLIC_FAQ = [
       "A blocked or failed lock does not complete delivery and does not consume the paid unlock for that file. Fix the blockers and try again. Re-download of an already sealed package is free.",
   },
   {
-    question: "Is this official EU verification or customs approval?",
+    question: "What does CBAMValid provide?",
     answer:
-      "No. CBAMValid prepares an operator dossier for independent accredited verification. It does not issue an accredited verification opinion, customs approval, registry acceptance, or EU approval.",
+      "CBAMValid provides self-service software access, automated calculations, automated quality controls and automated digital file generation from customer-entered data.",
   },
   {
     question: "Do you offer refunds?",
@@ -106,11 +104,11 @@ export const COMMERCIAL_PUBLIC_FAQ = [
 export const COMMERCIAL_LEGAL_CLAUSES = [
   {
     title: "Commercial unit",
-    body: `The purchasable unit is lock-and-download for one Working File covering one legal operator/exporter, one production installation, and one reporting year (the “Commercial Scope”), currently priced at ${CANONICAL_PRICING.priceFormatted} unless otherwise stated at checkout.`,
+    body: `The purchasable unit is software lock-and-download for one Working File covering one legal operator/exporter, one production installation, and one reporting year (the “Commercial Scope”), currently priced at ${CANONICAL_PRICING.priceFormatted} unless otherwise stated at checkout.`,
   },
   {
     title: "When payment is due",
-    body: "Drafting and editing a Working File are free. Payment is due to unlock lock-and-download for that Working File. Checkout is bound to a specific Working File identifier (caseId). Payment does not unlock other Working Files.",
+    body: "Drafting and editing a Working File are free. Payment is due to unlock software lock-and-download for that Working File. Checkout is bound to a specific Working File identifier (caseId). Payment does not unlock other Working Files.",
   },
   {
     title: "Corrections on the same Working File",
@@ -118,15 +116,15 @@ export const COMMERCIAL_LEGAL_CLAUSES = [
   },
   {
     title: "New Working File requires new payment",
-    body: "A new Working File, a material change of Commercial Scope (operator, installation, or reporting year) that requires a new Working File, or a clone/copy of a Working File does not inherit prior payment. Each such file requires its own checkout.",
+    body: "A new Working File, a material change of Commercial Scope that requires a new Working File, or a clone/copy of a Working File does not inherit prior payment. Each such file requires its own checkout.",
   },
   {
     title: "Failed locks and re-download",
     body: "A blocked or failed sealing attempt does not complete delivery and does not require a new payment for the already-paid Working File. Re-download of an already sealed package does not require a new payment.",
   },
   {
-    title: "No verification claim",
-    body: "CBAMValid provides operator/exporter preparation software and sealed packages prepared for independent accredited verification. Purchase does not create an accredited verification opinion, reasonable assurance, EU approval, customs approval, or registry acceptance.",
+    title: "Software output boundary",
+    body: "The purchase provides self-service software access and automated digital outputs generated from customer-entered data. Customers remain responsible for external submissions, professional advice and any independent review required for their workflow.",
   },
 ] as const;
 

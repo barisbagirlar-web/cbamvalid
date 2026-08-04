@@ -24,7 +24,7 @@ const GUIDE_LINKS = [
   { href: "/answers", label: "Answer Bank" },
   { href: "/glossary", label: "CBAM Glossary" },
   { href: "/cbam-2026-definitive-period", label: "2026 Definitive Period" },
-  { href: "/cbam-verification-preparation", label: "Verification Preparation" },
+  { href: "/cbam-verification-preparation", label: "Independent Review Preparation" },
   { href: "/cbam-non-eu-producer-guide", label: "Non-EU Producer Guide" },
   { href: "/cbam-embedded-emissions-calculation", label: "Embedded Emissions" },
   { href: "/cn-code", label: "CN Code Scope Hub" },
@@ -121,12 +121,11 @@ export default function AppFooter() {
             ))}
           </div>
           <p className="disclaimer">
-            <b>Software Classification Notice:</b> CBAMValid sells self-service software access and
-            automated digital delivery only. It does not provide government services, authority
-            representation, government-official access, filings, registry submissions, permit services,
-            consulting, advisory services, legal advice, customs advice, tax advice, managed compliance,
-            certification or accredited verification. Customers control their own data and remain
-            responsible for official submissions and independent verification where required.
+            <b>Software Classification:</b> CBAMValid is privately operated self-service B2B software.
+            Customers enter and control their own data; the application performs automated calculations,
+            quality controls and digital file generation. Review the{" "}
+            <Link href="/product-classification">Product Classification Statement</Link> and{" "}
+            <Link href="/terms">Terms of Service</Link> for the complete commercial scope.
           </p>
         </div>
       </div>
