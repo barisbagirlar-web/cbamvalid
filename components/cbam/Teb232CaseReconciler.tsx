@@ -14,6 +14,22 @@ import {
 const TEB232_EMAIL = "teb232@gmail.com";
 const MAX_BUSY_RETRIES = 5;
 const EXPECTED_CASE_COUNT = 4;
+const EXPECTED_CASE_IDS = Object.freeze([
+  "case_d8567b26ef12e5a748fc49c7753cfe53eb54c00a8e92b8d98912b5d25d8ab9c5",
+  "case_a70c36b5348782cc69c7a2c9863bec28f8bb2ad8ac1bff1c6afe7a62966d4c62",
+  "case_b71ffdbd980f658cd5a738437c27cce4d82546698df12fc2bf7a0bd31e9c286d",
+  "case_39474ac5ffe36f8df1853df51b3038085edf457cd0561fa1e501ca8231b8b892",
+]);
+
+type ReconcilePayload = {
+  status?: string;
+  changed?: boolean;
+  code?: string;
+  message?: string;
+  caseIds?: string[];
+  operatorPreparation?: number;
+  evidenceAssurance?: number;
+};
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -40,7 +56,7 @@ function hasUsableTestEntitlement(
 
 function validateVisibleCases(
   cases: CbamCaseRecord[],
-  expectedCaseIds: string[]
+  expectedCaseIds: readonly string[]
 ): void {
   const expected = new Set(expectedCaseIds);
   const visible = new Set(cases.map((item) => item.caseId));
@@ -61,6 +77,20 @@ function currentCaseId(pathname: string): string | null {
   return match?.[1] ? decodeURIComponent(match[1]) : null;
 }
 
+async function readReconcilePayload(response: Response): Promise<ReconcilePayload> {
+  const contentType = response.headers.get("content-type")?.toLowerCase() || "";
+  if (!contentType.includes("application/json")) {
+    await response.text().catch(() => "");
+    throw new Error(`TEST_CASE_RECONCILE_HTTP_${response.status}`);
+  }
+
+  try {
+    return (await response.json()) as ReconcilePayload;
+  } catch {
+    throw new Error(`TEST_CASE_RECONCILE_INVALID_JSON_${response.status}`);
+  }
+}
+
 export function Teb232CaseReconciler() {
   const pathname = usePathname();
   const { user, loading } = useAuth();
@@ -79,10 +109,59 @@ export function Teb232CaseReconciler() {
     const authenticatedUser = user;
     let cancelled = false;
 
+    async function acceptVisibleCases(
+      visibleCases: CbamCaseRecord[],
+      entitlements: PreparationPackEntitlement[],
+      expectedCaseIds: readonly string[],
+      changed: boolean
+    ): Promise<boolean> {
+      validateVisibleCases(visibleCases, expectedCaseIds);
+      if (!hasUsableTestEntitlement(entitlements)) {
+        throw new Error("TEST_ADMIN_ENTITLEMENT_NOT_READY");
+      }
+      if (cancelled) return true;
+
+      window.localStorage.setItem(
+        `cbam_cases_cache_${authenticatedUser.uid}`,
+        JSON.stringify(visibleCases)
+      );
+
+      const openCaseId = currentCaseId(pathname);
+      const staleCaseRoute =
+        openCaseId !== null && !expectedCaseIds.includes(openCaseId);
+      if (changed || staleCaseRoute) {
+        window.location.replace("/cases?controlledTestCases=ready");
+        return true;
+      }
+
+      setState("IDLE");
+      return true;
+    }
+
     async function reconcile(): Promise<void> {
       setState("RUNNING");
       setError("");
       try {
+        // The four canonical cases are already persisted for this controlled
+        // account in normal operation. Read them first so a stale or missing
+        // one-time reconciliation route cannot block every user navigation.
+        try {
+          const [visibleCases, entitlements] = await Promise.all([
+            getCases(),
+            getEntitlements(),
+          ]);
+          await acceptVisibleCases(
+            visibleCases,
+            entitlements,
+            EXPECTED_CASE_IDS,
+            false
+          );
+          return;
+        } catch {
+          // Fall through to the authenticated repair endpoint only when the
+          // exact four-case readback or release entitlement is not ready.
+        }
+
         const token = await authenticatedUser.getIdToken(true);
         let response: Response | undefined;
         for (let attempt = 0; attempt < MAX_BUSY_RETRIES; attempt += 1) {
@@ -100,18 +179,10 @@ export function Teb232CaseReconciler() {
         }
 
         if (!response) throw new Error("TEST_CASE_RECONCILE_NO_RESPONSE");
-        const payload = (await response.json()) as {
-          status?: string;
-          changed?: boolean;
-          code?: string;
-          message?: string;
-          caseIds?: string[];
-          operatorPreparation?: number;
-          evidenceAssurance?: number;
-        };
+        const payload = await readReconcilePayload(response);
         if (!response.ok || payload.status !== "success") {
           throw new Error(
-            payload.code || payload.message || "TEST_CASE_RECONCILE_FAILED"
+            payload.code || payload.message || `TEST_CASE_RECONCILE_HTTP_${response.status}`
           );
         }
         if (
@@ -126,25 +197,12 @@ export function Teb232CaseReconciler() {
           getCases(),
           getEntitlements(),
         ]);
-        validateVisibleCases(visibleCases, payload.caseIds);
-        if (!hasUsableTestEntitlement(entitlements)) {
-          throw new Error("TEST_ADMIN_ENTITLEMENT_NOT_READY");
-        }
-        if (cancelled) return;
-
-        window.localStorage.setItem(
-          `cbam_cases_cache_${authenticatedUser.uid}`,
-          JSON.stringify(visibleCases)
+        await acceptVisibleCases(
+          visibleCases,
+          entitlements,
+          payload.caseIds,
+          payload.changed === true
         );
-
-        const openCaseId = currentCaseId(pathname);
-        const staleCaseRoute =
-          openCaseId !== null && !payload.caseIds.includes(openCaseId);
-        if (payload.changed || staleCaseRoute) {
-          window.location.replace("/cases?controlledTestCases=ready");
-          return;
-        }
-        setState("IDLE");
       } catch (reconcileError) {
         if (cancelled) return;
         const message =
@@ -183,10 +241,9 @@ export function Teb232CaseReconciler() {
               Preparing controlled test cases
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-muted">
-              The server is replacing the five obsolete working files with four
-              complete sector cases, checking every evidence object, and confirming
-              the test release entitlement. The workspace opens only after the same
-              authenticated session reads all four cases back successfully.
+              The workspace is validating the four complete sector cases and the
+              available preparation-pack entitlement. An authenticated repair runs
+              only when the exact persisted state is incomplete.
             </p>
           </>
         ) : (
