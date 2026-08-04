@@ -8,10 +8,10 @@ export const siteConfig = {
   siteName: "CBAMValid",
   canonicalOrigin: "https://cbamvalid.com",
   locale: "en",
-  defaultTitle: "CBAMValid — CBAM Evidence Validation and Report Preparation",
+  defaultTitle: "CBAMValid — Self-Service Emissions Data Software",
   titleTemplate: "%s | CBAMValid",
   defaultDescription:
-    "Prepare structured exporter evidence, identify documentation gaps, calculate embedded emissions, and generate auditable CBAM preparation dossiers.",
+    "B2B self-service software for customer-entered emissions data, deterministic calculations, automated quality controls, and automated PDF, JSON and XLSX delivery.",
   logoUrl: "https://cbamvalid.com/logo.png",
   ogImage: "https://cbamvalid.com/og.jpg",
 
