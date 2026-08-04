@@ -125,11 +125,11 @@ export function buildVerificationCrosswalk(caseData: AuditReadyCase): Verificati
     reasonCodes: dirEm.status === "COMPLETE" ? ["PASS"] : ["EVIDENCE_GAP"],
   });
 
-  // 8. Attribution/allocation method
+  // 8. Attribution/allocation method — calculation methodology belongs to 2025/2547.
   rows.push({
     requirementId: "CW-ALLOC-METHOD",
-    legalSourceId: "IMPL_2025_2546",
-    legalLocation: "Annex II",
+    legalSourceId: "IMPL_2025_2547",
+    legalLocation: "Article 6 & Annex III",
     requirementText: "Emissions attribution methodology and allocation share factors",
     owner: "OPERATOR",
     reportSectionIds: ["SEC_11"],
@@ -140,11 +140,11 @@ export function buildVerificationCrosswalk(caseData: AuditReadyCase): Verificati
     reasonCodes: ["PASS"],
   });
 
-  // 9. Non-associated flows
+  // 9. Non-associated flows — monitoring/calculation rules belong to 2025/2547.
   rows.push({
     requirementId: "CW-NON-ASSOC",
-    legalSourceId: "IMPL_2025_2546",
-    legalLocation: "Annex II.3",
+    legalSourceId: "IMPL_2025_2547",
+    legalLocation: "Annex II",
     requirementText: "Identification of non-associated goods/emissions/energy flows",
     owner: "OPERATOR",
     reportSectionIds: ["SEC_12"],
@@ -155,13 +155,13 @@ export function buildVerificationCrosswalk(caseData: AuditReadyCase): Verificati
     reasonCodes: ["PASS"],
   });
 
-  // 10. Precursor quantities and emissions
+  // 10. Precursor quantities and emissions — precursor monitoring belongs to 2025/2547.
   caseData.precursors.forEach((precursor, index) => {
     const qty = getStatusFromSufficiency(`REQ-PRE-QTY-${index}`);
     rows.push({
       requirementId: `CW-PRECURSOR-${index}`,
-      legalSourceId: "IMPL_2025_2546",
-      legalLocation: "Annex II.4",
+      legalSourceId: "IMPL_2025_2547",
+      legalLocation: "Annex II, point E",
       requirementText: `Quantity and specific embedded emissions for precursor ${index + 1} (${precursor.name.value})`,
       owner: "OPERATOR",
       reportSectionIds: ["SEC_10"],
@@ -173,11 +173,11 @@ export function buildVerificationCrosswalk(caseData: AuditReadyCase): Verificati
     });
   });
 
-  // 11. Precursor-producing installation identity
+  // 11. Precursor-producing installation identity — actual-value inputs belong to 2025/2547.
   rows.push({
     requirementId: "CW-PRECURSOR-INST",
-    legalSourceId: "IMPL_2025_2546",
-    legalLocation: "Annex II.4.1",
+    legalSourceId: "IMPL_2025_2547",
+    legalLocation: "Article 5 & Annex II, point E",
     requirementText: "Precursor-producing installation identity, country and registration when actual emissions are used",
     owner: "OPERATOR",
     reportSectionIds: ["SEC_10"],
