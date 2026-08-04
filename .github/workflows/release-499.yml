@@ -1,0 +1,59 @@
+name: 499 USD Release Contract
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  artifact-bound-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout exact candidate commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Typecheck exact candidate
+        run: npm run typecheck
+
+      - name: Run frozen report and package contracts
+        run: >-
+          npx vitest run
+          tests/reports/release-499-contract.test.ts
+          tests/reports/premium-dossier-truth-contract.test.ts
+          tests/reports/cross-format-consistency.test.ts
+          tests/reports/four-complete-dossiers.test.ts
+          tests/reports/render-qa.test.ts
+          tests/reports/editorial-quality-gate.test.ts
+
+      - name: Generate and verify exact PDF and ZIP artifacts
+        run: npx tsx scripts/guard-499-usd-release.ts
+        env:
+          CI: "true"
+          SOURCE_COMMIT_SHA: ${{ github.sha }}
+
+      - name: Upload exact release evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbamvalid-499-release-${{ github.sha }}
+          path: artifacts/499-usd-release/
+          retention-days: 30
+          if-no-files-found: error
