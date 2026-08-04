@@ -16,7 +16,7 @@ export const paddleWebhook = onRequest(
       return;
     }
 
-    let rawBody = request.rawBody.toString("utf8");
+    const rawBody = request.rawBody.toString("utf8");
     try {
       // 2. Read the signature header
       const signature = request.headers["paddle-signature"] as string || "";
@@ -36,7 +36,7 @@ export const paddleWebhook = onRequest(
 
       // 4. Duplicate event deduplication checks and registration in transactional block
       const eventRef = adminDb.collection("paddle_events").doc(eventId);
-      const duplicate = await adminDb.runTransaction(async (dbTransaction: any) => {
+      const duplicate = await adminDb.runTransaction(async (dbTransaction: FirebaseFirestore.Transaction) => {
         const docSnap = await dbTransaction.get(eventRef);
         if (docSnap.exists) {
           const existingEvent = docSnap.data();
@@ -54,7 +54,9 @@ export const paddleWebhook = onRequest(
           occurredAt,
           receivedAt: now,
           payloadSha256,
-          payload: verifiedEvent,
+          // The Paddle SDK returns typed entity instances that Firestore cannot
+          // serialize. Store a plain JSON representation for the audit ledger.
+          payload: JSON.parse(JSON.stringify(verifiedEvent)),
           signatureVerified: true,
           processingState: "PROCESSING",
           attempts: 1,
@@ -85,12 +87,12 @@ export const paddleWebhook = onRequest(
           processingState: "PROCESSED",
           processedAt: new Date().toISOString(),
         });
-      } catch (processError: any) {
-        console.error(`[PADDLE-WEBHOOK] Error processing event ${eventId}:`, processError.message || processError);
-        
+      } catch (processError: unknown) {
+        console.error(`[PADDLE-WEBHOOK] Error processing event ${eventId}:`, processError instanceof Error ? processError.message : processError);
+
         await eventRef.update({
           processingState: "FAILED_RETRYABLE",
-          lastErrorCode: processError.message || "PROCESSING_FAILED",
+          lastErrorCode: processError instanceof Error ? processError.message : "PROCESSING_FAILED",
         });
 
         response.status(500).json({ error: "Processing failed" });
@@ -101,9 +103,9 @@ export const paddleWebhook = onRequest(
       response.status(200).json({ status: "success", eventId });
       return;
 
-    } catch (error: any) {
-      console.error("[PADDLE-WEBHOOK] Webhook ingestion failure:", error.message || error);
-      response.status(401).json({ error: error.message || "Unauthorized" });
+    } catch (error: unknown) {
+      console.error("[PADDLE-WEBHOOK] Webhook ingestion failure:", error instanceof Error ? error.message : error);
+      response.status(401).json({ error: error instanceof Error ? error.message : "Unauthorized" });
       return;
     }
   }
