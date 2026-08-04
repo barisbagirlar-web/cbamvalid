@@ -35,24 +35,31 @@ export default function TermsPage() {
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-2">2. Product Scope &amp; Account Requirements</h2>
+          <h2 className="text-xl font-bold mb-2">2. Software Product Scope &amp; Account Requirements</h2>
           <p className="text-sm text-muted">
-            CBAMValid provides self-service software functionality and automatically generated digital
-            outputs. The software supports compiling Carbon Border Adjustment Mechanism (CBAM) exporter
-            evidence and sealing an operator-prepared verifier-preparation package. You must provide
-            accurate information when creating an account and generating packages. Our services are
-            intended for business use.
+            CBAMValid is privately operated, self-service B2B software that provides automated digital
+            functionality and automatically generated digital outputs. Customers enter and control their
+            own data. The application performs deterministic calculations, automated quality controls,
+            customer-controlled evidence linking and automated PDF, JSON and XLSX generation.
+          </p>
+          <p className="text-sm text-muted mt-3">
+            The software can be used to organize Carbon Border Adjustment Mechanism (CBAM)-related
+            exporter data and generate an operator-prepared digital package. Regulatory references and
+            calculation rules embedded in the software are product inputs; they do not make CBAMValid a
+            government service, public authority, filing agent, customs representative or accredited
+            verifier.
           </p>
           <p className="text-sm text-muted mt-3">
             The purchase price applies exclusively to software access and automated digital delivery. It
-            does not purchase or include human consulting, advisory services, managed dossier
-            preparation, manual evidence assessment, methodology recommendations, legal advice, tax
-            advice, customs advice, accredited verification, custom implementation, custom development
-            or access to experts.
+            does not purchase or include government services, authority representation, government-official
+            access, registry filing, customs filing, permit applications, submissions on a customer’s
+            behalf, human consulting, advisory services, managed dossier preparation, manual evidence
+            assessment, methodology recommendations, legal advice, tax advice, customs advice, accredited
+            verification, certification, custom implementation, custom development or access to experts.
           </p>
           <p className="text-sm text-muted mt-3">
             Customers remain responsible for their data, evidence, methodology decisions, regulatory
-            obligations and engagement of any independent accredited verifier.
+            obligations, official submissions and engagement of any independent accredited verifier.
           </p>
         </div>
 
@@ -79,16 +86,25 @@ export default function TermsPage() {
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-2">4. No Human Services Included</h2>
+          <h2 className="text-xl font-bold mb-2">4. No Human or Government Services Included</h2>
           <p className="text-sm text-muted">
             CBAMValid personnel do not review, approve, correct, prepare, certify or validate customer
-            emissions data as part of the purchased product.
+            emissions data as part of the purchased product. CBAMValid does not act for a customer before
+            a government body, customs authority, registry or other public authority and does not file or
+            submit customer information to those bodies.
           </p>
           <p className="text-sm text-muted mt-3">
             Customer support is limited to account, billing, security, privacy and technical operation
             of the software. Support does not review customer emissions data, approve evidence, prepare
-            dossiers, recommend methodologies, interpret regulations for a customer or issue
-            verification opinions.
+            dossiers, recommend methodologies, interpret regulations for a customer, complete official
+            forms, submit filings or issue verification or certification opinions.
+          </p>
+          <p className="text-sm text-muted mt-3">
+            See the public{" "}
+            <Link href="/product-classification" className="underline">
+              Product Classification Statement
+            </Link>{" "}
+            for a plain-language summary of the included software functions and excluded services.
           </p>
         </div>
 
@@ -104,15 +120,20 @@ export default function TermsPage() {
         <div>
           <h2 className="text-xl font-bold mb-2">6. Disclaimers</h2>
           <p className="text-sm text-muted">
+            <strong>No Government or Authority Service:</strong> CBAMValid is not a government body,
+            government contractor, filing service, customs representative or authority submission service.
+            <br />
             <strong>No Guarantee of Authority Acceptance:</strong> CBAMValid relies on user input and
             regulatory-source versioning. We do not guarantee that your package will be accepted by the
             EU CBAM Registry or any official authority.
             <br />
             <strong>No Professional Advice:</strong> The information provided does not constitute legal,
-            tax, or official EU advice. Users are responsible for their own inputs.
+            tax, customs, regulatory or official EU advice. Users are responsible for their own inputs and
+            decisions.
             <br />
             <strong>No Accredited Verification:</strong> Purchase does not create an accredited
-            verification opinion, reasonable assurance, customs approval, or registry acceptance.
+            verification opinion, reasonable assurance, customs approval, certification or registry
+            acceptance.
           </p>
         </div>
 

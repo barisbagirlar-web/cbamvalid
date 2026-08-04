@@ -18,7 +18,6 @@ const PRIMARY_NAV = [
 /** Authority + deeper surfaces — derived from marketing SSOT (Trust, Rulesets, …). */
 const MORE_NAV = AUTHORITY_MORE_NAV;
 
-
 export function PublicHeader() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -36,11 +35,11 @@ export function PublicHeader() {
         <div className="wrap">
           <span className="dot" aria-hidden="true"></span>
           <span>
-            <b>CBAM definitive period is now in force.</b> 2026 annual declarations are due — prepare
-            your evidence dossier early.
+            <b>Self-service B2B software.</b> Customer-entered data, automated calculations and
+            PDF/JSON/XLSX delivery.
           </span>
-          <Link href="/trust">Trust registry →</Link>
-          <Link href="/rulesets">See the ruleset →</Link>
+          <Link href="/product-classification">Product classification →</Link>
+          <Link href="/pricing">Software pricing →</Link>
         </div>
       </div>
 
@@ -52,7 +51,7 @@ export function PublicHeader() {
               <span className="brand-name">
                 CBAM<em>Valid</em>
               </span>
-              <span className="brand-sub">Carbon Border Compliance Validation</span>
+              <span className="brand-sub">Self-Service Emissions Data Software</span>
             </span>
           </Link>
 
@@ -69,7 +68,7 @@ export function PublicHeader() {
               Sign In
             </Link>
             <Link href="/register?next=/cases/new" className="btn btn-primary">
-              Start a Dossier
+              Start Free Draft
             </Link>
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -96,8 +95,9 @@ export function PublicHeader() {
             {item.label}
           </Link>
         ))}
+        <Link href="/product-classification">Product Classification</Link>
         <Link href="/login">Sign In</Link>
-        <Link href="/register?next=/cases/new">Start a Dossier</Link>
+        <Link href="/register?next=/cases/new">Start Free Draft</Link>
       </nav>
     </>
   );
