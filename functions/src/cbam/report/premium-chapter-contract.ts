@@ -151,7 +151,7 @@ export function derivePremiumChapterEvaluations(params: {
     (preparation.inherentRiskRegister.length > 0 || preparation.controlRiskRegister.length > 0 || preparation.detectionRiskAssessment.length > 0);
   out.push(
     riskRegistersPresent
-      ? complete("E-10", "Risk, Materiality and Sampling", `Risk register entries derived for inherent, control and detection risk`)
+      ? complete("E-10", "Risk, Materiality and Sampling", "Risk register entries derived for inherent, control and detection risk")
       : gap("E-10", "Risk, Materiality and Sampling", "DATA GAP: no risk register entries derived")
   );
 
@@ -187,8 +187,8 @@ export function derivePremiumChapterEvaluations(params: {
   const completeOperatorFields = mapping.filter((entry) => entry.status === "COMPLETE_OPERATOR");
   out.push(
     missingOperatorFields.length === 0 && completeOperatorFields.length > 0
-      ? complete("E-15", "Registry Submission Readiness", `Registry Template Mapping Dataset: ${completeOperatorFields.length} operator-complete field(s), zero MISSING_OPERATOR`)
-      : gap("E-15", "Registry Submission Readiness", `DATA GAP: ${missingOperatorFields.length} Registry template field(s) missing operator value`)
+      ? complete("E-15", "Registry Field-Mapping Completeness", `Registry Template Mapping Dataset: ${completeOperatorFields.length} operator-complete field(s), zero MISSING_OPERATOR`)
+      : gap("E-15", "Registry Field-Mapping Completeness", `DATA GAP: ${missingOperatorFields.length} Registry template field(s) missing operator value`)
   );
 
   const recomputationReady = model.calculationTraceCount > 0 && Boolean(calculation.calculationRootHash);
