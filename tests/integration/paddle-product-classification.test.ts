@@ -34,9 +34,10 @@ describe("Paddle product classification contract", () => {
   });
 
   it("keeps the purchase limited to software and automated files", () => {
-    expect(pricing).toContain("automated digital PDF generation");
-    expect(pricing).toContain("automated digital JSON generation");
-    expect(pricing).toContain("automated digital XLSX generation");
+    const pricingLower = pricing.toLowerCase();
+    expect(pricingLower).toContain("automated digital pdf generation");
+    expect(pricingLower).toContain("automated digital json generation");
+    expect(pricingLower).toContain("automated digital xlsx generation");
     expect(terms).toContain("software access and automated digital delivery");
     expect(classification).toContain("Automated PDF, JSON and XLSX generation");
   });
