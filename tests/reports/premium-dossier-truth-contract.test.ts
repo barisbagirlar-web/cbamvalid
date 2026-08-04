@@ -25,11 +25,12 @@ describe("premium dossier truth and consistency contract", () => {
     expect(pdfSource).not.toContain('row.validationErrors.join("; ") || "Passed"');
   });
 
-  it("separates verification law from calculation methodology", () => {
+  it("separates verification law from calculation methodology with readable citations", () => {
     expect(crosswalkSource).toContain('legalSourceId: "IMPL_2025_2546"');
     expect(crosswalkSource).toContain('legalSourceId: "IMPL_2025_2547"');
-    expect(crosswalkSource).toContain('legalLocation: "Article 6 & Annex III"');
-    expect(crosswalkSource).toContain('legalLocation: "Annex II, point E"');
+    expect(crosswalkSource).toContain("Implementing Regulation (EU) 2025/2546, Article 6");
+    expect(crosswalkSource).toContain("Implementing Regulation (EU) 2025/2547, Article 6 & Annex III");
+    expect(crosswalkSource).toContain("Implementing Regulation (EU) 2025/2547, Annex II, point E");
     expect(pdfSource).toContain("controlled legal sources are listed row by row");
   });
 });
