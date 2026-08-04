@@ -35,7 +35,7 @@ export function buildVerificationCrosswalk(caseData: AuditReadyCase): Verificati
   rows.push({
     requirementId: "CW-INST-INFO",
     legalSourceId: "IMPL_2025_2546",
-    legalLocation: "Article 6 & Annex",
+    legalLocation: "Implementing Regulation (EU) 2025/2546, Article 6 & Annex",
     requirementText: "Installation Name, address and UN/LOCODE coordinates",
     owner: "OPERATOR",
     reportSectionIds: ["SEC_04"],
@@ -80,7 +80,7 @@ export function buildVerificationCrosswalk(caseData: AuditReadyCase): Verificati
   rows.push({
     requirementId: "CW-VER-VISIT",
     legalSourceId: "IMPL_2025_2546",
-    legalLocation: "Article 6(2)",
+    legalLocation: "Implementing Regulation (EU) 2025/2546, Article 6(2)",
     requirementText: "Installation physical visit date or legal waiver justification basis",
     owner: "INDEPENDENT_VERIFIER",
     reportSectionIds: ["SEC_20", "SEC_24"],
@@ -129,7 +129,7 @@ export function buildVerificationCrosswalk(caseData: AuditReadyCase): Verificati
   rows.push({
     requirementId: "CW-ALLOC-METHOD",
     legalSourceId: "IMPL_2025_2547",
-    legalLocation: "Article 6 & Annex III",
+    legalLocation: "Implementing Regulation (EU) 2025/2547, Article 6 & Annex III",
     requirementText: "Emissions attribution methodology and allocation share factors",
     owner: "OPERATOR",
     reportSectionIds: ["SEC_11"],
@@ -144,7 +144,7 @@ export function buildVerificationCrosswalk(caseData: AuditReadyCase): Verificati
   rows.push({
     requirementId: "CW-NON-ASSOC",
     legalSourceId: "IMPL_2025_2547",
-    legalLocation: "Annex II",
+    legalLocation: "Implementing Regulation (EU) 2025/2547, Annex II",
     requirementText: "Identification of non-associated goods/emissions/energy flows",
     owner: "OPERATOR",
     reportSectionIds: ["SEC_12"],
@@ -161,7 +161,7 @@ export function buildVerificationCrosswalk(caseData: AuditReadyCase): Verificati
     rows.push({
       requirementId: `CW-PRECURSOR-${index}`,
       legalSourceId: "IMPL_2025_2547",
-      legalLocation: "Annex II, point E",
+      legalLocation: "Implementing Regulation (EU) 2025/2547, Annex II, point E",
       requirementText: `Quantity and specific embedded emissions for precursor ${index + 1} (${precursor.name.value})`,
       owner: "OPERATOR",
       reportSectionIds: ["SEC_10"],
@@ -177,7 +177,7 @@ export function buildVerificationCrosswalk(caseData: AuditReadyCase): Verificati
   rows.push({
     requirementId: "CW-PRECURSOR-INST",
     legalSourceId: "IMPL_2025_2547",
-    legalLocation: "Article 5 & Annex II, point E",
+    legalLocation: "Implementing Regulation (EU) 2025/2547, Article 5 & Annex II, point E",
     requirementText: "Precursor-producing installation identity, country and registration when actual emissions are used",
     owner: "OPERATOR",
     reportSectionIds: ["SEC_10"],
