@@ -15,21 +15,13 @@ const INCLUDED = [
   "Same-file correction re-locks",
 ];
 
-const NOT_INCLUDED = [
-  "Government services or authority representation",
-  "Registry filing, customs filing or permit submissions",
-  "Access to government officials",
-  "Consulting",
-  "Advisory services",
-  "Managed compliance",
-  "Manual preparation",
-  "Evidence review by CBAMValid",
-  "Methodology recommendations",
-  "Legal, tax or customs advice",
-  "Accredited verification or certification",
-  "Access to experts",
-  "Custom onboarding",
-  "Custom implementation",
+const PRODUCT_BOUNDARIES = [
+  "The customer enters and controls all working-file data",
+  "The application performs calculations and quality checks automatically",
+  "Digital files are generated automatically after a successful lock",
+  "The purchase does not bundle manual data preparation or human review",
+  "Customers remain responsible for their data and downstream use of the outputs",
+  "Technical support covers account, billing, security and software operation",
 ];
 
 const ASSURANCES: { label: string; text: string }[] = [
@@ -60,22 +52,22 @@ const FAQS: { question: string; answer: string }[] = [
   {
     question: "Is this a subscription?",
     answer:
-      "No. The Self-Service Software purchase is a one-time USD 449 payment covering one working file — one operator, one installation and one reporting year. There is no renewal.",
+      "No. The software purchase is a one-time USD 449 payment covering one working file — one operator, one installation and one reporting year. There is no renewal.",
   },
   {
     question: "Can I evaluate before paying?",
     answer:
-      "Yes. Drafts are free without limit: create cases, run the automated QC engine and review data gaps before buying anything.",
+      "Yes. Drafts are free without limit: create cases, run the automated quality-control engine and review data gaps before buying anything.",
   },
   {
-    question: "Is CBAMValid a government service?",
+    question: "What exactly is delivered?",
     answer:
-      "No. CBAMValid is privately operated B2B software. It does not represent customers before an authority, submit filings, provide access to government officials, issue approvals or perform government services.",
+      "After a successful lock, the application generates downloadable PDF, JSON and XLSX files from the customer-controlled working file.",
   },
   {
-    question: "What is not included?",
+    question: "Is manual preparation included?",
     answer:
-      "No human or government services are included. The purchase covers software access and automated digital delivery only. It does not include consulting, advisory services, managed compliance, manual preparation, filing, authority submissions, legal/tax/customs advice, accredited verification, certification or access to experts.",
+      "No. The paid product is software access and automated digital delivery. Customers enter and control their own data.",
   },
 ];
 
@@ -83,14 +75,6 @@ function CheckIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
       <path d="m4 12.5 5 5L20 6.5" />
-    </svg>
-  );
-}
-
-function CrossIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-      <path d="M6 6l12 12M18 6 6 18" />
     </svg>
   );
 }
@@ -103,17 +87,16 @@ export default function PricingPage() {
           <p className="eyebrow">Pricing — one self-service software product</p>
           <h1 className="pricing-title">Self-Service Emissions Data Software</h1>
           <p className="pricing-lede">
-            One clear software product. Enter and control your own data, run deterministic calculations
-            and automated quality controls, link your own evidence, then{" "}
-            <strong>pay once to lock your working file</strong> and download automated digital outputs.
-            This is not a government, filing, consulting or verification service.
+            Enter and control your own data, run deterministic calculations and automated quality
+            controls, link your evidence, then <strong>pay once to lock your working file</strong> and
+            download automated digital outputs.
           </p>
         </header>
 
         <section className="pricing-grid" aria-label="Self-Service Software product">
           <div className="price-card featured">
             <span className="badge-pop">One-time · Pay at lock</span>
-            <h3>Self-Service Software</h3>
+            <h3>Working File Software Unlock</h3>
             <p className="sub">{CANONICAL_PRICING.priceFormatted} · one-time</p>
             <p className="sub">
               One working file covering one operator, one installation and one reporting year.
@@ -135,12 +118,12 @@ export default function PricingPage() {
           </div>
 
           <div className="price-card">
-            <h3>No human or government services included</h3>
-            <p className="sub">Software access and automated digital delivery only.</p>
+            <h3>Software purchase boundaries</h3>
+            <p className="sub">Clear scope before checkout.</p>
             <ul className="feat-list">
-              {NOT_INCLUDED.map((item) => (
+              {PRODUCT_BOUNDARIES.map((item) => (
                 <li key={item}>
-                  <CrossIcon />
+                  <CheckIcon />
                   {item}
                 </li>
               ))}
