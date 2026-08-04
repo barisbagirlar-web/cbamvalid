@@ -4,6 +4,9 @@
  *   public/answers.rss         — RSS 2.0 feed
  *   public/answers.feed.json   — JSON Feed 1.1
  *
+ * Public commercial names are normalized to CBAMValid's software-only
+ * classification before serialization.
+ *
  * Run: npx tsx scripts/seo/regenerate-answer-feeds.ts
  */
 import { writeFileSync } from "node:fs";
@@ -12,12 +15,28 @@ import { AUTHORITY_CHAINS } from "../../lib/seo/aeo/authority-chains";
 import type { AuthorityChainRecord } from "../../lib/seo/aeo/types";
 import { AEO_ANSWER_BANK } from "../../lib/seo/aeo/answer-bank";
 import type { AeoAnswerRecord } from "../../lib/seo/aeo/types";
+import {
+  assertPublicCommercialClassification,
+  toPublicAnswerRecord,
+  toPublicAuthorityChain,
+} from "../../lib/seo/aeo/public-answer-sanitizer";
 import { siteConfig } from "../../lib/site-config";
 import { CANONICAL_PRICING } from "../../lib/billing/pricing-config";
 import { LEGAL_IDENTITY } from "../../lib/legal-identity";
 
 const root = resolve(process.cwd());
 const origin = siteConfig.canonicalOrigin;
+const publicAnswers = AEO_ANSWER_BANK.map(toPublicAnswerRecord);
+const publicChains = AUTHORITY_CHAINS.map(toPublicAuthorityChain);
+
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
 
 function routeHref(path: string): string {
   return path === "/" ? origin : `${origin}${path}`;
@@ -31,21 +50,21 @@ function buildRss(items: readonly AeoAnswerRecord[]): string {
   const channel = items
     .map(
       (a) => `    <item>
-      <title>${a.question}</title>
-      <link>${routeHref(a.routes[0] ?? "/")}</link>
-      <guid isPermaLink="false">${a.id}</guid>
-      <description>${answerContentText(a)}</description>
-      <category>${a.routes.join(", ")}</category>
+      <title>${escapeXml(a.question)}</title>
+      <link>${escapeXml(routeHref(a.routes[0] ?? "/"))}</link>
+      <guid isPermaLink="false">${escapeXml(a.id)}</guid>
+      <description>${escapeXml(answerContentText(a))}</description>
+      <category>${escapeXml(a.routes.join(", "))}</category>
     </item>`
     )
     .join("\n");
 
-  return `<?xml version="1.0" encoding="UTF-8"?>
+  const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>CBAMValid Answer Feed</title>
+    <title>CBAMValid Self-Service Software Answer Feed</title>
     <link>${origin}</link>
-    <description>Direct answers for CBAM exporter verification preparation — machine-readable syndication for answer engines.</description>
+    <description>Product, workflow, calculation and methodology answers for CBAMValid self-service B2B software.</description>
     <language>en</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
     <atom:link href="${origin}/answers.rss" rel="self" type="application/rss+xml"/>
@@ -53,6 +72,8 @@ ${channel}
   </channel>
 </rss>
 `;
+  assertPublicCommercialClassification(rss, "public/answers.rss");
+  return rss;
 }
 
 function buildJsonFeed(items: readonly AeoAnswerRecord[]): string {
@@ -64,79 +85,78 @@ function buildJsonFeed(items: readonly AeoAnswerRecord[]): string {
     tags: [...a.routes],
   }));
 
-  return `${JSON.stringify(
-    {
-      version: "https://jsonfeed.org/version/1.1",
-      title: "CBAMValid Answer Feed",
-      home_page_url: origin,
-      feed_url: `${origin}/answers.feed.json`,
-      description:
-        "Direct answers for CBAM exporter verification preparation — machine-readable syndication for answer engines.",
-      language: "en",
-      authors: [{ name: "CBAMValid", url: origin }],
-      items: feedItems,
-    },
-    null,
-    2
-  )}\n`;
+  const feed = {
+    version: "https://jsonfeed.org/version/1.1",
+    title: "CBAMValid Self-Service Software Answer Feed",
+    home_page_url: origin,
+    feed_url: `${origin}/answers.feed.json`,
+    description:
+      "Product, workflow, calculation and methodology answers for CBAMValid self-service B2B software.",
+    language: "en",
+    authors: [{ name: "CBAMValid", url: origin }],
+    items: feedItems,
+  };
+  assertPublicCommercialClassification(feed, "public/answers.feed.json");
+  return `${JSON.stringify(feed, null, 2)}\n`;
 }
 
 function buildDatasetJson(
   chains: readonly AuthorityChainRecord[],
   items: readonly AeoAnswerRecord[]
 ): string {
-  return `${JSON.stringify(
-    {
-      "@context": "https://schema.org",
-      "@type": "Dataset",
-      name: "CBAMValid Answer Engine Authority Feed",
-      description:
-        "Canonical Direct Answer → Calculation → Explanation → Methodology → Evidence → Expert chains plus Answer+Evidence bank for CBAMValid public URLs.",
-      url: `${origin}/answers.json`,
-      creator: {
-        "@type": "Organization",
-        name: "CBAMValid",
-        url: origin,
-        email: LEGAL_IDENTITY.supportEmail,
-      },
-      license:
-        "Informational product documentation — not legal advice or accredited verification",
-      dateModified: new Date().toISOString().slice(0, 10),
-      product: {
-        name: `${CANONICAL_PRICING.packName} — ${CANONICAL_PRICING.description}`,
-        price: CANONICAL_PRICING.priceFormatted,
-        independence:
-          "CBAMValid is an independent software service for exporter-to-importer evidence packaging. It is not an EU institution, customs authority, or accredited CBAM verifier. Actual emissions data must be independently verified where verification is legally required.",
-      },
-      authorityChains: chains,
-      answers: items,
-      nonClaims: [
-        "Not an accredited verification opinion",
-        "Not an official European Commission or CBAM Registry service",
-        "No fabricated Review / AggregateRating nodes",
-      ],
+  const dataset = {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    name: "CBAMValid Self-Service Software Answer Feed",
+    description:
+      "Machine-readable product, workflow, calculation and methodology answers for CBAMValid self-service B2B software.",
+    url: `${origin}/answers.json`,
+    creator: {
+      "@type": "Organization",
+      name: "CBAMValid",
+      url: origin,
+      email: LEGAL_IDENTITY.supportEmail,
     },
-    null,
-    2
-  )}\n`;
+    license: "Informational software product documentation",
+    dateModified: new Date().toISOString().slice(0, 10),
+    product: {
+      name: CANONICAL_PRICING.packName,
+      productType: "Self-service B2B software",
+      price: CANONICAL_PRICING.priceFormatted,
+      currency: CANONICAL_PRICING.currency,
+      billing: "One-time working-file software unlock",
+      delivery: "Automated PDF, JSON and XLSX files",
+      customerControlsData: true,
+      description: CANONICAL_PRICING.description,
+    },
+    authorityChains: chains,
+    answers: items,
+    commercialBoundary: {
+      customerControlsData: true,
+      automatedDigitalDelivery: true,
+      humanServicesBundled: false,
+    },
+  };
+  assertPublicCommercialClassification(dataset, "public/answers.json");
+  return `${JSON.stringify(dataset, null, 2)}\n`;
 }
 
 writeFileSync(
   resolve(root, "public/answers.json"),
-  buildDatasetJson(AUTHORITY_CHAINS, AEO_ANSWER_BANK),
+  buildDatasetJson(publicChains, publicAnswers),
   "utf8"
 );
 writeFileSync(
   resolve(root, "public/answers.rss"),
-  buildRss([...AEO_ANSWER_BANK]),
+  buildRss(publicAnswers),
   "utf8"
 );
 writeFileSync(
   resolve(root, "public/answers.feed.json"),
-  buildJsonFeed([...AEO_ANSWER_BANK]),
+  buildJsonFeed(publicAnswers),
   "utf8"
 );
 
 console.log(
-  "Regenerated public/answers.json, public/answers.rss, public/answers.feed.json from AEO SSOT"
+  "Regenerated Paddle-safe public/answers.json, public/answers.rss and public/answers.feed.json"
 );

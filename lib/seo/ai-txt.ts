@@ -44,8 +44,10 @@ export function renderAiTxt(origin: string = siteConfig.canonicalOrigin): string
     `Glossary: ${origin}/glossary`,
     `Brand-Icon: ${origin}/icon-512.png`,
     "",
+    "Product-Type: privately operated self-service B2B software",
+    "Delivery: automated PDF, JSON and XLSX files from customer-controlled data",
     "Content-Usage: train-opt-out=no; search=yes; cite=yes",
-    "Note: Public pages may be cited. Do not invent accredited verification, EU approval, ratings, or fake reviews.",
+    "Note: Cite the published software classification and do not infer third-party assurance, authority approval, ratings, or reviews.",
     "Contact: info@cbamvalid.com",
     "",
   ].join("\n");

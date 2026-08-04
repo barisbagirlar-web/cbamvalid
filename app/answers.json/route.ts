@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { AEO_ANSWER_BANK } from "@/lib/seo/aeo/answer-bank";
 import { AUTHORITY_CHAINS } from "@/lib/seo/aeo/authority-chains";
+import {
+  assertPublicCommercialClassification,
+  toPublicAnswerRecord,
+  toPublicAuthorityChain,
+} from "@/lib/seo/aeo/public-answer-sanitizer";
 import { TOPICAL_MAP } from "@/lib/seo/aeo/topical-map";
 import { buildCanonicalUrl } from "@/lib/seo/canonical";
 import { siteConfig } from "@/lib/site-config";
@@ -14,16 +19,19 @@ import {
 
 /**
  * Machine-readable answer feed for LLMs / answer engines.
- * Additive discovery surface — no auth, calc, or commerce side effects.
+ * Public product classification is normalized before serialization.
  */
 export function GET() {
   const price = assertVerifiedClaim(PRICE_CLAIM, "PRICE_CLAIM");
+  const publicChains = AUTHORITY_CHAINS.map(toPublicAuthorityChain);
+  const publicAnswers = AEO_ANSWER_BANK.map(toPublicAnswerRecord);
+
   const body = {
     "@context": "https://schema.org",
     "@type": "Dataset",
-    name: "CBAMValid Answer Engine Authority Feed",
+    name: "CBAMValid Self-Service Software Answer Feed",
     description:
-      "Canonical Direct Answer → Calculation → Explanation → Methodology → Evidence → Expert chains plus Answer+Evidence bank for CBAMValid public URLs.",
+      "Machine-readable product, workflow, calculation and methodology answers for CBAMValid self-service B2B software.",
     url: buildCanonicalUrl("/answers.json"),
     creator: {
       "@type": "Organization",
@@ -31,14 +39,17 @@ export function GET() {
       url: siteConfig.canonicalOrigin,
       email: assertVerifiedClaim(SUPPORT_EMAIL_CLAIM, "SUPPORT_EMAIL_CLAIM"),
     },
-    license: "Informational product documentation — not legal advice or accredited verification",
-    dateModified: "2026-07-27",
+    license: "Informational software product documentation",
+    dateModified: "2026-08-04",
     product: {
       name: assertVerifiedClaim(PRODUCT_POSITIONING_CLAIM, "PRODUCT_POSITIONING_CLAIM"),
+      productType: "Self-service B2B software",
       price: price.formatted,
+      billing: "One-time working-file software unlock",
+      delivery: "Automated PDF, JSON and XLSX files",
       independence: assertVerifiedClaim(INDEPENDENCE_CLAIM, "INDEPENDENCE_CLAIM"),
     },
-    authorityChains: AUTHORITY_CHAINS.map((chain) => ({
+    authorityChains: publicChains.map((chain) => ({
       path: chain.path,
       url: buildCanonicalUrl(chain.path),
       primaryQuestion: chain.primaryQuestion,
@@ -53,7 +64,7 @@ export function GET() {
       entities: chain.entities,
       fanOutQueries: chain.fanOutQueries,
     })),
-    answers: AEO_ANSWER_BANK.map((answer) => ({
+    answers: publicAnswers.map((answer) => ({
       id: answer.id,
       question: answer.question,
       aliases: answer.aliases,
@@ -74,12 +85,14 @@ export function GET() {
       entities: node.entities,
       fanOutQueries: node.fanOutQueries,
     })),
-    nonClaims: [
-      "Not an accredited verification opinion",
-      "Not an official European Commission or CBAM Registry service",
-      "No fabricated Review / AggregateRating nodes",
-    ],
+    commercialBoundary: {
+      customerControlsData: true,
+      automatedDigitalDelivery: true,
+      humanServicesBundled: false,
+    },
   };
+
+  assertPublicCommercialClassification(body, "app/answers.json/route.ts");
 
   return NextResponse.json(body, {
     headers: {
