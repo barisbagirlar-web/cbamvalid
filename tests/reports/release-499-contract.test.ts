@@ -81,7 +81,7 @@ describe("frozen USD 499 release contract", () => {
     expect(pdfRenderer).toContain('"Evidence period coverage"');
     expect(pdfRenderer).toContain('row.status === "PENDING_VERIFIER"');
     expect(pdfRenderer).toContain('"Verifier action pending"');
-    expect(releaseGuard).toContain("Pending verifier displayed as Passed");
+    expect(releaseGuard).toContain("pending verifier displayed as Passed");
     expect(releaseGuard).toContain("Future Reporting Period End Date");
     expect(releaseGuard).toContain("Registry Submission Readiness heading present");
   });
