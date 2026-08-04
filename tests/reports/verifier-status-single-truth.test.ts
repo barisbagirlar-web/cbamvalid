@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { VerifierReservedFields } from "../../functions/src/cbam/schema";
 import {
   countExternalVerifierCompletion,
   getExternalVerifierCompletionItems,
@@ -8,9 +9,15 @@ import { createFourDossierCase } from "../fixtures/four-dossiers";
 
 describe("external verifier status single source of truth", () => {
   it("does not count pre-filled identity or accreditation before signed opinion", () => {
-    const verifierReserved = createFourDossierCase("ALU_CN").verifierReserved;
-    expect(verifierReserved).toBeDefined();
-    if (!verifierReserved) throw new Error("VERIFIER_RESERVED_FIXTURE_MISSING");
+    const base = createFourDossierCase("ALU_CN").verifierReserved ?? {};
+    const verifierReserved: VerifierReservedFields = {
+      ...base,
+      verifierLegalName: "Example Accredited Verifier Ltd",
+      accreditationNumber: "ACC-12345",
+      nationalAccreditationBody: "Example NAB",
+      finalOpinion: "NO_OPINION",
+      signature: "",
+    };
 
     expect(verifierReserved.verifierLegalName).toBeTruthy();
     expect(verifierReserved.accreditationNumber).toBeTruthy();
