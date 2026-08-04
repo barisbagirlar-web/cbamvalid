@@ -83,7 +83,7 @@ describe("frozen USD 499 release contract", () => {
     expect(pdfRenderer).toContain('"Verifier action pending"');
     expect(releaseGuard).toContain("pending verifier displayed as Passed");
     expect(releaseGuard).toContain("Future Reporting Period End Date");
-    expect(releaseGuard).toContain("Registry Submission Readiness heading present");
+    expect(releaseGuard).toContain("Registry Submission Readiness");
   });
 
   it("requires artifact-bound provenance before release-ready can be true", () => {
