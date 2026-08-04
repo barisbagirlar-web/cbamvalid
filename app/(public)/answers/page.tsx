@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AEO_ANSWER_BANK } from "@/lib/seo/aeo/answer-bank";
+import { toPublicAnswerRecord } from "@/lib/seo/aeo/public-answer-sanitizer";
 import { JsonLdForRoute } from "@/components/seo/JsonLdForRoute";
 import { SeoBreadcrumbs } from "@/components/seo/SeoBreadcrumbs";
 import { CitationRail, LastReviewed } from "@/components/seo/CitationRail";
@@ -7,8 +8,12 @@ import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 
 export const metadata = generateSeoMetadata("/answers");
 
+const PUBLIC_ANSWERS = AEO_ANSWER_BANK.map(toPublicAnswerRecord);
+
 /**
- * HTML answer hub — enterprise AEO requires crawlable HTML, not JSON alone.
+ * HTML answer hub — crawlable public product and regulatory answers.
+ * Commercial product names are normalized to the software-only classification
+ * before rendering; regulatory education remains unchanged.
  */
 export default function AnswersHubPage() {
   return (
@@ -19,24 +24,24 @@ export default function AnswersHubPage() {
         <div className="wrap">
           <div className="section-head reveal">
             <span className="eyebrow">Answer engine hub</span>
-            <h1>CBAMValid answer bank</h1>
+            <h1>CBAMValid software answer bank</h1>
             <p className="lede">
-              Direct answers with evidence boundaries for buyers, operators, and answer engines. Each
-              answer is quotable, independence-safe, and linked to the page that owns the full authority
-              chain.
+              Direct answers about the self-service software, customer-controlled workflow, automated
+              calculations, digital delivery and related CBAM methodology. Each answer links to the page
+              that owns the supporting detail.
             </p>
             <p className="aeo-lead">
               <strong>Direct answer:</strong>{" "}
               <span className="speakable-answer">
-                Use this hub to find a single clear statement, then follow the linked page for
-                calculation, methodology, evidence, and expert boundaries — without inventing
-                accredited verification or EU approval.
+                CBAMValid is privately operated self-service B2B software. Customers enter and control
+                their own data; the application performs automated calculations, quality controls and
+                PDF, JSON and XLSX generation.
               </span>
             </p>
           </div>
           <LastReviewed path="/answers" />
           <div className="aeo-grid answers-hub-grid">
-            {AEO_ANSWER_BANK.map((answer, index) => (
+            {PUBLIC_ANSWERS.map((answer, index) => (
               <article
                 key={answer.id}
                 id={answer.id}
