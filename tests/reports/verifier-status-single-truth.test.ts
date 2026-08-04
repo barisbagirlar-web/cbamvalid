@@ -9,6 +9,8 @@ import { createFourDossierCase } from "../fixtures/four-dossiers";
 describe("external verifier status single source of truth", () => {
   it("does not count pre-filled identity or accreditation before signed opinion", () => {
     const verifierReserved = createFourDossierCase("ALU_CN").verifierReserved;
+    expect(verifierReserved).toBeDefined();
+    if (!verifierReserved) throw new Error("VERIFIER_RESERVED_FIXTURE_MISSING");
 
     expect(verifierReserved.verifierLegalName).toBeTruthy();
     expect(verifierReserved.accreditationNumber).toBeTruthy();
