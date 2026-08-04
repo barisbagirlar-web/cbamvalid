@@ -39,8 +39,8 @@ export default function ProductClassificationPage() {
           <p className="pricing-lede">
             CBAMValid is a privately operated software application owned and operated by{" "}
             {legalConfig.legalEntityName}. It sells software access and automated digital delivery only.
-            It is not a government service, filing service, consulting service, certification service or
-            accredited verification service.
+            It does not provide government services, filing services, consulting services,
+            certification, or independent verification opinions.
           </p>
         </header>
 
