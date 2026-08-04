@@ -67,6 +67,7 @@ const NEGATIVE_MARKERS = [
   "not part of",
   "no human",
   "no consulting",
+  "no government",
   "excluded",
   "outside the scope",
   "do not include",
@@ -119,9 +120,10 @@ const routePattern = new RegExp(
 /**
  * A forbidden phrase is allowed when the surrounding context is an explicit
  * "not included" list. We accept a phrase inside a string-literal array that
- * belongs to a variable/heading whose name contains "NOT_INCLUDED" or
- * "not included". This keeps the pricing NOT_INCLUDED block permitted while
- * rejecting positive sales copy.
+ * belongs to a variable/heading whose name contains "NOT_INCLUDED",
+ * "EXCLUDED" or "not included". This keeps the pricing NOT_INCLUDED block
+ * and the product-classification EXCLUDED block permitted while rejecting
+ * positive sales copy.
  */
 function isNotIncludedListContext(lines, lineIndex, line) {
   const trimmed = line.trim();
@@ -130,7 +132,11 @@ function isNotIncludedListContext(lines, lineIndex, line) {
   if (!isStringLiteral) return false;
   const contextStart = Math.max(0, lineIndex - 40);
   const context = lines.slice(contextStart, lineIndex + 1).join("\n").toLowerCase();
-  return context.includes("not_included") || context.includes("not included");
+  return (
+    context.includes("not_included") ||
+    context.includes("not included") ||
+    context.includes("excluded")
+  );
 }
 
 function scanRoutes(source, relativePath) {
