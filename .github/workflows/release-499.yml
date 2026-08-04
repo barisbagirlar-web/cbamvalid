@@ -2,7 +2,6 @@ name: 499 USD Release Contract
 
 on:
   pull_request:
-    branches: [main, master]
   push:
     branches: [main, master]
   workflow_dispatch:
@@ -14,12 +13,22 @@ jobs:
   artifact-bound-release:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      EXACT_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
     steps:
       - name: Checkout exact candidate commit
         uses: actions/checkout@v4
         with:
+          ref: ${{ env.EXACT_CANDIDATE_SHA }}
           persist-credentials: false
+
+      - name: Prove exact checkout provenance
+        run: |
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          echo "EXPECTED_SHA=${EXACT_CANDIDATE_SHA}"
+          echo "ACTUAL_SHA=${ACTUAL_SHA}"
+          test "${ACTUAL_SHA}" = "${EXACT_CANDIDATE_SHA}"
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v4
@@ -47,13 +56,13 @@ jobs:
         run: npx tsx scripts/guard-499-usd-release.ts
         env:
           CI: "true"
-          SOURCE_COMMIT_SHA: ${{ github.sha }}
+          SOURCE_COMMIT_SHA: ${{ env.EXACT_CANDIDATE_SHA }}
 
       - name: Upload exact release evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cbamvalid-499-release-${{ github.sha }}
+          name: cbamvalid-499-release-${{ env.EXACT_CANDIDATE_SHA }}
           path: artifacts/499-usd-release/
           retention-days: 30
           if-no-files-found: error

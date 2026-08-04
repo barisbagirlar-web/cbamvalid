@@ -29,6 +29,10 @@ const releaseGuard = fs.readFileSync(
   path.join(root, "scripts/guard-499-usd-release.ts"),
   "utf8"
 );
+const releaseWorkflow = fs.readFileSync(
+  path.join(root, ".github/workflows/release-499.yml"),
+  "utf8"
+);
 
 const gateIds = [
   "G01_INTERNAL_CONSISTENCY",
@@ -98,5 +102,21 @@ describe("frozen USD 499 release contract", () => {
     ]) {
       expect(releaseGuard).toContain(required);
     }
+  });
+
+  it("checks out and names artifacts with the exact candidate commit", () => {
+    expect(releaseWorkflow).toContain(
+      "EXACT_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}"
+    );
+    expect(releaseWorkflow).toContain("ref: ${{ env.EXACT_CANDIDATE_SHA }}");
+    expect(releaseWorkflow).toContain(
+      'test "${ACTUAL_SHA}" = "${EXACT_CANDIDATE_SHA}"'
+    );
+    expect(releaseWorkflow).toContain(
+      "SOURCE_COMMIT_SHA: ${{ env.EXACT_CANDIDATE_SHA }}"
+    );
+    expect(releaseWorkflow).toContain(
+      "cbamvalid-499-release-${{ env.EXACT_CANDIDATE_SHA }}"
+    );
   });
 });
