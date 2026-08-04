@@ -15,6 +15,15 @@ const REPORT_DIRS = [
   "FERTILISER_TR",
   "FUTURE_WORKING_FILE_ALU_CN",
 ] as const;
+const HANDOVER_ITEMS = [
+  "Verifier legal identity and accreditation",
+  "Verifier team and independent reviewer",
+  "Site visit assignment and dates",
+  "Verification objectives, scope and criteria",
+  "Verifier-confirmed materiality per good",
+  "Final opinion and signature",
+  "Verification certificate reference",
+] as const;
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
@@ -22,6 +31,10 @@ function sha256(value: string): string {
 
 function normalize(value: string): string {
   return value.replace(/\s+/g, " ").trim();
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 async function pdfText(path: string): Promise<string> {
@@ -79,18 +92,25 @@ async function main(): Promise<void> {
 
     if (!handover) {
       failures.push(`${directory}: verifier handover section missing`);
+      continue;
+    }
+
+    if (/\bRecorded\b/i.test(handover)) {
+      failures.push(`${directory}: pending verifier handover contains Recorded status`);
     } else {
-      if (/\bRecorded\b/i.test(handover)) {
-        failures.push(`${directory}: pending verifier handover contains Recorded status`);
-      } else {
-        passes.push(`${directory}: pending handover contains no Recorded status`);
-      }
-      const pendingCount = (handover.match(/\bPENDING\b/gi) ?? []).length;
-      if (pendingCount !== 7) {
-        failures.push(`${directory}: pending handover rows ${pendingCount}/7`);
-      } else {
-        passes.push(`${directory}: all 7 handover rows pending`);
-      }
+      passes.push(`${directory}: pending handover contains no Recorded status`);
+    }
+
+    const missingPendingRows = HANDOVER_ITEMS.filter((label) => {
+      const pattern = new RegExp(`${escapeRegex(label)}\\s+PENDING\\b`, "i");
+      return !pattern.test(handover);
+    });
+    if (missingPendingRows.length > 0) {
+      failures.push(
+        `${directory}: handover rows not explicitly pending: ${missingPendingRows.join(", ")}`
+      );
+    } else {
+      passes.push(`${directory}: all 7 handover rows explicitly pending`);
     }
   }
 
