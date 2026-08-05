@@ -1,4 +1,4 @@
-name: Deploy case-unblock fix to production once
+name: Deploy current validated main to production once
 
 on:
   pull_request:
@@ -22,7 +22,7 @@ jobs:
       name: production
       url: https://cbamvalid.com
     env:
-      TARGET_SHA: 082c47d70ee0c027946f102527bb2dc5472955c4
+      TARGET_SHA: 6ea1ac7b225c6976e16c540f60fff9a4eb46722e
       FIREBASE_PROJECT: cbam-desk
       LIVE_BASE_URL: https://cbamvalid.com
       FIREBASE_TOOLS_VERSION: 15.24.0
