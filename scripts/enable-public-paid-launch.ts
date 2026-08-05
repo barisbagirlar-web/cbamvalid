@@ -27,7 +27,10 @@ async function main() {
       publicPaidLaunchEnabled: true,
       updatedAt: new Date().toISOString(),
       updatedBy: "scripts/enable-public-paid-launch.ts",
-      paymentMode: "paddle_sandbox",
+      // Live production environment uses the real Paddle API key/client token.
+      // The stale paddle_sandbox marker was removed; runtime derives the sandbox
+      // mode from NEXT_PUBLIC_PADDLE_SANDBOX / NEXT_PUBLIC_PADDLE_ENV only.
+      paymentMode: "paddle_live",
     },
     { merge: true }
   );
