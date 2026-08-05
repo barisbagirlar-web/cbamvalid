@@ -47,7 +47,7 @@ describe("case workspace performance contract", () => {
     expect(cacheBlock).not.toContain("setCaseLoading(false)");
     expect(page).toContain("loadWorkspaceCase(caseId, { forceRefresh: true })");
     expect(page).toContain("loadWorkspaceEntitlements({ forceRefresh: true })");
-    expect(page).toContain("Verifying release capacity in the background");
+    expect(page).toContain("Checking payment status in the background");
     expect(page).not.toContain("Promise.allSettled([getCase(caseId), getEntitlements()])");
     expect(page).not.toContain("Retrieving the case record and verified release capacity.");
   });

@@ -27,7 +27,7 @@ export default function Page() {
           </h1>
           <p className="lede" style={{ margin: "0 auto" }}>
             One factory + one year = one working file. Enter production and emissions data, link
-            evidence, clear blockers, then pay once to lock and download. Same file: correct and
+            evidence, resolve any open items, then pay once to lock and download. Same file: correct and
             re-lock as needed.
           </p>
           <p className="aeo-lead" style={{ margin: "18px auto 0" }}>

@@ -168,7 +168,7 @@ export const unlockCbamUses = createCallable(
 
         return {
           status: "success",
-          message: "Legacy Preparation Pack balance activated (grandfather path — not a new card charge).",
+          message: "Pack balance activated (included balance — no new card charge).",
           entitlementId,
           releasesGranted: MAX_RELEASES_PER_PACK,
         };

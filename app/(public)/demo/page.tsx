@@ -26,7 +26,7 @@ export default function DemoPage() {
             <h1>See CBAMValid software in action</h1>
             <p className="lede">
               Explore how the CBAMValid software collects customer-controlled data, runs deterministic
-              CBAM calculations, identifies automated quality-control blockers, links evidence and
+              CBAM calculations, flags any open requirements, links evidence and
               generates downloadable digital outputs.
             </p>
             <div className="hero-ctas">

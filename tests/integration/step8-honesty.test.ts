@@ -2,8 +2,8 @@
  * FAZ UX (2026-08-01) — Step 8 honesty.
  *
  * The package must never claim success before a real sealed release exists:
- *   - pre-seal headline is "What your controlled package will include";
- *   - "Sealed release created successfully" only after reportId/SEALED;
+ *   - pre-seal headline is "What your locked package will include";
+ *   - "Locked package created successfully" only after reportId/SEALED;
  *   - exactly one "Review remaining actions" CTA on the step body;
  *   - raw SHA / calculation trace stays hidden behind a closed accordion.
  */
@@ -23,9 +23,9 @@ const readSource = (relative: string): string =>
 describe("step 8 honesty", () => {
   it("PRESEAL_SUCCESS_CLAIM=0: no success claim is rendered before a seal", () => {
     // The pre-seal headline is explicitly a package preview, not a result.
-    expect(STEP8_PACKAGE_PREVIEW_HEADLINE).toBe("What your controlled package will include");
+    expect(STEP8_PACKAGE_PREVIEW_HEADLINE).toBe("What your locked package will include");
     expect(STEP8_PACKAGE_PREVIEW_HEADLINE).not.toContain(STEP8_SEALED_SUCCESS_HEADLINE);
-    expect(STEP8_SEALED_SUCCESS_HEADLINE).toBe("Sealed release created successfully");
+    expect(STEP8_SEALED_SUCCESS_HEADLINE).toBe("Locked package created successfully");
   });
 
   it("the client emits the success headline only in the post-seal handler", () => {

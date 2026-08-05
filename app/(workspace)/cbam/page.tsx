@@ -510,7 +510,7 @@ export default function CbamLandingPage() {
                 </h2>
                 <p className="text-muted text-base leading-relaxed mb-6">
                   Build one working file for one installation and one reporting year. Enter data, link evidence,
-                  clear blockers, buy the pack at checkout if you have not already, then lock and download.
+                  resolve open requirements, buy the pack at checkout if you have not already, then lock and download.
                 </p>
 
                 <div className="mb-8">
@@ -524,7 +524,7 @@ export default function CbamLandingPage() {
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="font-mono text-accent font-bold">2.</span>
-                      <span>Fill the eight plain steps and fix blockers.</span>
+                      <span>Fill the eight plain steps and resolve any open items.</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="font-mono text-accent font-bold">3.</span>
@@ -693,7 +693,7 @@ export default function CbamLandingPage() {
                   <span className="text-xs text-muted font-mono">{reports.length} total</span>
                 </div>
                 <p className="text-xs text-muted mb-4">
-                  Immutable downloads from locking a working file. Re-download is free and does not use a release.
+                  Immutable downloads from locking a working file. Re-download is free and does not use a paid unlock.
                 </p>
                 {reports.length === 0 ? (
                   <div className="p-8 text-center bg-background border border-dashed border-border/80 rounded-lg">
@@ -764,7 +764,7 @@ export default function CbamLandingPage() {
                   <div className="space-y-4">
                     <div className="p-3 bg-muted/20 border border-border rounded-lg text-xs text-muted leading-relaxed">
                       <span className="font-bold text-foreground block mb-1">No paid unlock yet</span>
-                      Draft free. Pay once when you lock a working file, or activate leftover legacy pack balance if you have it.
+                      Draft free. Pay once when you lock a working file, or activate leftover pack balance if you have it.
                     </div>
                     {packsUnlockableFromCredits(availableCredits) > 0 ? (
                       <UnlockPreparationPackPanel

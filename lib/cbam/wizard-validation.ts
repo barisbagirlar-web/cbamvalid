@@ -67,16 +67,36 @@ export type Step8Status =
  * release exists. The footer shows exactly one contextual CTA per status and
  * a single remaining-actions CTA exists on the step body.
  */
-export const STEP8_PACKAGE_PREVIEW_HEADLINE = "What your controlled package will include";
-export const STEP8_SEALED_SUCCESS_HEADLINE = "Sealed release created successfully";
+export const STEP8_PACKAGE_PREVIEW_HEADLINE = "What your locked package will include";
+export const STEP8_SEALED_SUCCESS_HEADLINE = "Locked package created successfully";
 export const STEP8_REVIEW_ACTIONS_LABEL = "Review remaining actions";
 export const STEP8_FOOTER_CTA_LABELS: Record<Step8Status, string> = {
   BLOCKED: "Review remaining requirements",
   PAYMENT_REQUIRED: "Pay to unlock this working file",
-  READY_TO_LOCK: "Create sealed package",
+  READY_TO_LOCK: "Create locked package",
   LOCKING: "Creating package…",
-  LOCKED: "Open sealed release",
+  LOCKED: "Open locked package",
   LOCK_FAILED: "Retry package creation",
+};
+
+/** User-friendly short labels for the Step 8 status badge and step rail. */
+export const STEP8_STATUS_LABELS: Record<Step8Status, string> = {
+  BLOCKED: "Needs attention",
+  PAYMENT_REQUIRED: "Payment required",
+  READY_TO_LOCK: "Ready to lock",
+  LOCKING: "Creating package",
+  LOCKED: "Locked",
+  LOCK_FAILED: "Retry needed",
+};
+
+/** User-friendly short labels for the Step 1–7 stepper state badge. */
+export const STEP_STATE_LABELS: Record<WizardStepperState, string> = {
+  NOT_STARTED: "Not started",
+  IN_PROGRESS: "In progress",
+  NEEDS_INFORMATION: "Needs information",
+  NEEDS_DOCUMENTS: "Needs documents",
+  AWAITING_REVIEW: "Awaiting review",
+  COMPLETE: "Complete",
 };
 
 export interface WizardStepIssue {
@@ -565,7 +585,7 @@ export function translateSealError(error: unknown): SealErrorTranslation {
   }
   if (/BLOCKER|QC_|READINESS|blocked/i.test(technicalCode)) {
     return {
-      userMessage: "The seal gate is still blocked by unresolved quality controls. Your draft is safe and nothing was charged.",
+      userMessage: "Locking is paused because some quality checks are still open. Your draft is safe and nothing was charged.",
       technicalCode,
     };
   }
@@ -580,7 +600,7 @@ export function translateSealError(error: unknown): SealErrorTranslation {
   }
   return {
     userMessage:
-      "Sealing could not be completed. Your draft is safe and nothing was charged. Review the remaining actions and retry.",
+      "The package could not be created just now. Your draft is safe and nothing was charged. Review the remaining actions and retry.",
     technicalCode,
   };
 }

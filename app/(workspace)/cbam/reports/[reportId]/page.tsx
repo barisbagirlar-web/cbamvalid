@@ -33,13 +33,13 @@ const DOWNLOADS: Array<{
   { format: "pdf", label: "Main dossier PDF", description: "Primary Verification Readiness & Evidence Assurance PDF", icon: FileText },
   { format: "xlsx", label: "Verifier spreadsheet", description: "Controlled verifier workspace spreadsheet", icon: FileSpreadsheet },
   { format: "manifest", label: "Integrity manifest", description: "Canonical file hashes and package contract", icon: FileJson },
-  { format: "signature", label: "KMS signature record", description: "Asymmetric KMS cryptographic signature", icon: KeyRound },
+  { format: "signature", label: "Digital signature record", description: "Secure cryptographic signature", icon: KeyRound },
   { format: "snapshot", label: "Immutable case snapshot", description: "Exact sealed case database snapshot", icon: Fingerprint },
 ];
 
 function describeError(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
-  return "The sealed verifier-preparation package could not be loaded.";
+  return "The locked verifier package could not be loaded.";
 }
 
 function formatBytes(value: number): string {
@@ -140,7 +140,7 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
       <main className="min-h-screen bg-background px-6 py-16 text-foreground">
         <section className="mx-auto flex max-w-xl flex-col items-center rounded-2xl border border-border bg-surface p-10 text-center shadow-sm" role="status" aria-live="polite">
           <Loader2 className="h-8 w-8 animate-spin text-accent" aria-hidden="true" />
-          <h1 className="mt-5 font-serif text-2xl font-bold">Loading sealed verifier package</h1>
+          <h1 className="mt-5 font-serif text-2xl font-bold">Loading locked verifier package</h1>
           <p className="mt-2 text-sm text-muted">Validating the immutable report record and trust-chain metadata.</p>
         </section>
       </main>
@@ -211,11 +211,11 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
               <div className="flex items-center gap-3">
                 <ShieldCheck className="h-8 w-8 text-accent" strokeWidth={1.7} aria-hidden="true" />
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Sealed verifier-preparation dossier</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Locked verifier package</p>
                   <h1 className="mt-1 font-serif text-3xl font-bold font-serif">
                     Package {formatPackageCode(report.packageCode)} · Release {report.releaseVersion}
                   </h1>
-                  <p className="mt-1 text-sm text-muted">{componentCount} controlled components</p>
+                  <p className="mt-1 text-sm text-muted">{componentCount} package components</p>
                 </div>
               </div>
               <p className="max-w-xl text-sm leading-relaxed text-muted">
@@ -285,7 +285,7 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-3.5 w-3.5 text-accent shrink-0" />
-                Integrity manifest & KMS signature files
+                Integrity manifest & digital signature files
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-3.5 w-3.5 text-accent shrink-0" />
@@ -349,7 +349,7 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
                 <p className="text-xs text-muted font-semibold uppercase tracking-wider">Package Integrity Status</p>
                 <p className="text-sm font-semibold text-accent mt-1 flex items-center gap-1.5">
                   <ShieldCheck className="h-4 w-4" />
-                  Cryptographically Sealed & Signed ({componentCount} Components)
+                  Digitally Sealed & Signed ({componentCount} Components)
                 </p>
               </div>
             </div>
@@ -408,11 +408,11 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
             </div>
             <div className="mt-5 grid grid-cols-2 gap-3 rounded-lg border border-border bg-neutral-soft p-4 text-sm">
               <div>
-                <span className="text-muted">Share total</span>
+                <span className="text-muted">Allocation total</span>
                 <strong className="block font-mono">{calculation.allocationShareTotal}</strong>
               </div>
               <div>
-                <span className="text-muted">Delta</span>
+                <span className="text-muted">Allocation check</span>
                 <strong className="block font-mono">{calculation.allocationReconciliationDelta}</strong>
               </div>
             </div>
@@ -482,12 +482,12 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
                 ["Case-Data Hash", report.caseDataHash],
                 ["Calculation Root Hash", calculation.calculationRootHash],
                 ["Legal-Source Registry Hash", report.sourceHash],
-                ["KMS Cryptographic Algorithm", report.kmsAlgorithm],
-                ["KMS Key Version ID", report.kmsKeyVersion],
+                ["Signature Algorithm", report.kmsAlgorithm],
+                ["Signature Key Version", report.kmsKeyVersion],
                 ["Ruleset Schema Version", report.rulesetVersion],
                 ["Engine Version", calculation.engineVersion],
                 ["Allocation Share Total", calculation.allocationShareTotal],
-                ["Allocation Reconciliation Delta", calculation.allocationReconciliationDelta],
+                ["Allocation Check", calculation.allocationReconciliationDelta],
                 ["Document Seal Signature (Base64)", report.signatureBase64],
               ].map(([label, value]) => (
                 <div key={label} className="py-3 grid gap-1 sm:grid-cols-[220px_1fr]">

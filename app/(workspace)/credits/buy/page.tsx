@@ -127,7 +127,7 @@ export default function BuyCreditsPage() {
       const message =
         confirmData?.error?.message ||
         confirmData?.message ||
-        "Payment received but entitlement confirmation failed. Contact info@cbamvalid.com.";
+        "Payment was received but your access could not be confirmed yet. Contact info@cbamvalid.com.";
       const err = new Error(message) as Error & { code?: string };
       err.code = code;
       throw err;

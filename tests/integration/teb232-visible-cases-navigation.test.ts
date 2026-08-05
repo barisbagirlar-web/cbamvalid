@@ -8,11 +8,10 @@ function read(relativePath: string): string {
   return fs.readFileSync(path.join(root, relativePath), "utf8");
 }
 
-describe("Teb232 visible Cases navigation", () => {
-  it("exposes Cases as the visible customer workspace menu destination", () => {
+describe("Teb232 visible working-files navigation", () => {
+  it("exposes Working files as the visible customer workspace menu destination", () => {
     const navigation = read("lib/navigation.ts");
-    expect(navigation).toContain('{ label: "Cases", href: "/cases" }');
-    expect(navigation).not.toContain('{ label: "Working files", href: "/cases" }');
+    expect(navigation).toContain('{ label: "Working files", href: "/cases" }');
   });
 
   it("projects only the exact controlled identity out of the client admin menu", () => {

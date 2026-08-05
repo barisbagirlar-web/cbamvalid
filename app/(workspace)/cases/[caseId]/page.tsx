@@ -113,7 +113,7 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
         setAvailableEntitlements([]);
         setEntitlementsLoading(false);
         setEntitlementWarning(
-          "Preparation Pack status is temporarily unavailable. Draft editing remains available; sealing stays disabled until status can be verified."
+          "Payment status is temporarily unavailable. Draft editing remains available; locking stays disabled until payment can be verified."
         );
       });
 
@@ -183,7 +183,7 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
               href="/cases"
               className="inline-flex h-11 items-center justify-center rounded-md border border-border bg-surface px-5 text-sm font-semibold hover:bg-neutral-soft"
             >
-              Back to Cases
+              Back to Working Files
             </Link>
           </div>
         </section>
@@ -198,7 +198,7 @@ export default function CasePage({ params }: { params: Promise<{ caseId: string 
           role="status"
           className="mx-auto mt-4 max-w-6xl rounded-lg border border-accent/20 bg-accent/5 px-4 py-2.5 text-sm text-accent"
         >
-          {workspaceWarning || entitlementWarning || "Workspace ready. Verifying release capacity in the background…"}
+          {workspaceWarning || entitlementWarning || "Workspace ready. Checking payment status in the background…"}
         </div>
       )}
       <CaseWizardClient

@@ -196,7 +196,7 @@ export default function AccountPage() {
         <div>
           <h1 className="font-serif text-3xl font-black mb-2 text-kil-text">Account</h1>
           <p className="text-kil-text/60 font-mono text-sm">
-            Payment status, Preparation Packs, and sealed releases — one place.
+            Payment status, Preparation Packs, and locked packages — one place.
           </p>
         </div>
         {hasActivePack ? (
@@ -250,13 +250,12 @@ export default function AccountPage() {
         {hasActivePack ? (
           <>
             <p className="font-serif text-xl font-bold text-kil-text">
-              Payment confirmed — {activeReleasesRemaining} sealed release
-              {activeReleasesRemaining === 1 ? "" : "s"} ready
+              Payment confirmed — {activeReleasesRemaining} lock{activeReleasesRemaining === 1 ? "" : "s"} ready
             </p>
             <p className="mt-2 text-sm text-kil-text/70">
               Across {activePackCount} active Preparation Pack
-              {activePackCount === 1 ? "" : "s"}. Each successful lock uses one release.
-              Failed locks use none. You do not need to pay again to continue sealing.
+              {activePackCount === 1 ? "" : "s"}. Each successful lock uses one paid unlock.
+              Failed locks use none. You do not need to pay again to continue locking.
             </p>
           </>
         ) : pendingPurchases.length > 0 ? (
@@ -264,7 +263,7 @@ export default function AccountPage() {
             <p className="font-serif text-xl font-bold text-kil-text">Payment pending confirmation</p>
             <p className="mt-2 text-sm text-kil-text/70">
               We see a checkout in progress. If your card was charged, wait a minute and refresh.
-              If sealed releases still do not appear, email info@cbamvalid.com with your order ID.
+              If locked packages still do not appear, email info@cbamvalid.com with your order ID.
             </p>
           </>
         ) : (
@@ -311,14 +310,13 @@ export default function AccountPage() {
             {activePackCount > 0 ? "Ready to lock" : "No paid unlock"}
           </div>
           <p className="text-xs text-kil-text/60 mt-2 leading-relaxed">
-            {CASE_COMMERCIAL.customerOneLiner} Active paid files: {activePackCount}. Internal reseal
-            capacity remaining across entitlements:{" "}
-            {hasSyntheticTestEntitlement ? "Unlimited" : activeReleasesRemaining} (ceiling, not a
-            marketed meter).
+            {CASE_COMMERCIAL.customerOneLiner} Active paid files: {activePackCount}. Locks
+            remaining:{" "}
+            {hasSyntheticTestEntitlement ? "Unlimited" : activeReleasesRemaining}.
           </p>
           {unlockablePacks > 0 && !hasActivePack ? (
             <p className="mt-3 font-mono text-xs text-kil-text/70">
-              Unused legacy pack balance ready to activate: {unusedPackBalance}
+              Unused pack balance ready to activate: {unusedPackBalance}
             </p>
           ) : null}
         </div>
@@ -368,8 +366,8 @@ export default function AccountPage() {
                           <span className="block text-xs text-kil-text/50">Legacy unbound pack</span>
                         )}
                         <span className="block text-[10px] text-kil-text/40">
-                          Seals used {used}/
-                          {entitlement.syntheticTest === true ? "Unlimited" : max} (internal ceiling)
+                          Locks used {used}/
+                          {entitlement.syntheticTest === true ? "Unlimited" : max}
                         </span>
                       </td>
                       <td className="py-3 text-right font-bold text-kil-accent">
