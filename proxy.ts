@@ -24,8 +24,13 @@ export function proxy(request: NextRequest) {
   // synthetic QA routes can never render, download or be soft-404 cached in
   // production. notFound() alone returns HTTP 200 for streamed responses, so
   // the edge must short-circuit before rendering.
+  // Exception: /api/qa/reconcile-teb232 is a production TEB232 test-flow
+  // route; it is session- and identity-guarded server-side
+  // (TEB232_RECONCILE_IDENTITY_REFUSED), so it must not be edge-blocked.
+  const isProductionTeb232Reconcile = pathname === "/api/qa/reconcile-teb232";
   if (
     process.env.NEXT_PUBLIC_APP_ENV !== "sandbox" &&
+    !isProductionTeb232Reconcile &&
     (
       pathname === "/qa/four-dossiers" ||
       pathname.startsWith("/qa/") ||
