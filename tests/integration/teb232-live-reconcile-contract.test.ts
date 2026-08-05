@@ -48,16 +48,21 @@ describe("Teb232 live reconciliation and translation-safety contract", () => {
     expect(live).toContain("restore(params.db, params.bucket, state)");
   });
 
-  it("accepts the exact four persisted cases before calling the one-time repair route", () => {
+  it("accepts the canonical four-case subset before repair and allows additional working files", () => {
     const client = read("components/cbam/Teb232CaseReconciler.tsx");
     expect(client).toContain("EXPECTED_CASE_IDS");
+    expect(client).toContain("EXPECTED_CANONICAL_CASE_COUNT = 4");
+    expect(client).toContain("missingCaseIds");
+    expect(client).toContain("visibleTotal=${visible.size}");
+    expect(client).not.toContain("cases.length !== EXPECTED_CANONICAL_CASE_COUNT");
+    expect(client).not.toContain("visible.size !== EXPECTED_CANONICAL_CASE_COUNT");
     expect(client).toContain("case_d8567b26ef12e5a748fc49c7753cfe53eb54c00a8e92b8d98912b5d25d8ab9c5");
     expect(client).toContain("case_a70c36b5348782cc69c7a2c9863bec28f8bb2ad8ac1bff1c6afe7a62966d4c62");
     expect(client).toContain("case_b71ffdbd980f658cd5a738437c27cce4d82546698df12fc2bf7a0bd31e9c286d");
     expect(client).toContain("case_39474ac5ffe36f8df1853df51b3038085edf457cd0561fa1e501ca8231b8b892");
     expect(client.indexOf("getCases()"))
       .toBeLessThan(client.indexOf('fetch("/api/qa/reconcile-teb232"'));
-    expect(client).toContain("Fall through to the authenticated repair endpoint only");
+    expect(client).toContain("canonical four-case subset or release entitlement");
   });
 
   it("does not parse a 404 HTML response as JSON", () => {
@@ -69,11 +74,21 @@ describe("Teb232 live reconciliation and translation-safety contract", () => {
     expect(client).toContain("await response.text().catch");
   });
 
-  it("keeps the workspace blocked until four cases and a usable entitlement read back", () => {
+  it("keeps reconciliation off new and detail routes and never blocks the workspace", () => {
+    const client = read("components/cbam/Teb232CaseReconciler.tsx");
+    expect(client).toContain('pathname === "/cases"');
+    expect(client).not.toContain('pathname.startsWith("/cases")');
+    expect(client).toContain('if (!isTarget || state !== "FAILED") return null');
+    expect(client).not.toContain("fixed inset-0");
+    expect(client).toContain('href="/cases/new"');
+    expect(client).toContain("Existing working files, new working files and case detail pages remain");
+  });
+
+  it("still requires the canonical cases and a usable entitlement before readiness", () => {
     const client = read("components/cbam/Teb232CaseReconciler.tsx");
     expect(client).toContain("getCases()");
     expect(client).toContain("getEntitlements()");
-    expect(client).toContain("EXPECTED_CASE_COUNT = 4");
+    expect(client).toContain("EXPECTED_CANONICAL_CASE_COUNT = 4");
     expect(client).toContain("TEST_CASE_READBACK_MISMATCH");
     expect(client).toContain("TEST_ADMIN_ENTITLEMENT_NOT_READY");
     expect(client).toContain("releasesRemaining > 0");

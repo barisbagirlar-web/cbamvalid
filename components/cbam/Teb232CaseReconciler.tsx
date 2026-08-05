@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Loader2, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useAuth } from "@/context/AuthProvider";
 import {
   getCases,
@@ -13,7 +14,7 @@ import {
 
 const TEB232_EMAIL = "teb232@gmail.com";
 const MAX_BUSY_RETRIES = 5;
-const EXPECTED_CASE_COUNT = 4;
+const EXPECTED_CANONICAL_CASE_COUNT = 4;
 const EXPECTED_CASE_IDS = Object.freeze([
   "case_d8567b26ef12e5a748fc49c7753cfe53eb54c00a8e92b8d98912b5d25d8ab9c5",
   "case_a70c36b5348782cc69c7a2c9863bec28f8bb2ad8ac1bff1c6afe7a62966d4c62",
@@ -60,21 +61,18 @@ function validateVisibleCases(
 ): void {
   const expected = new Set(expectedCaseIds);
   const visible = new Set(cases.map((item) => item.caseId));
+  const missingCaseIds = [...expected].filter((caseId) => !visible.has(caseId));
+
   if (
-    expected.size !== EXPECTED_CASE_COUNT ||
-    cases.length !== EXPECTED_CASE_COUNT ||
-    visible.size !== EXPECTED_CASE_COUNT ||
-    [...expected].some((caseId) => !visible.has(caseId))
+    expected.size !== EXPECTED_CANONICAL_CASE_COUNT ||
+    missingCaseIds.length > 0
   ) {
     throw new Error(
-      `TEST_CASE_READBACK_MISMATCH:expected=${expected.size}:visible=${visible.size}`
+      `TEST_CASE_READBACK_MISMATCH:expected=${expected.size}:visibleCanonical=${
+        expected.size - missingCaseIds.length
+      }:visibleTotal=${visible.size}`
     );
   }
-}
-
-function currentCaseId(pathname: string): string | null {
-  const match = pathname.match(/^\/cases\/([^/]+)$/);
-  return match?.[1] ? decodeURIComponent(match[1]) : null;
 }
 
 async function readReconcilePayload(response: Response): Promise<ReconcilePayload> {
@@ -96,13 +94,14 @@ export function Teb232CaseReconciler() {
   const { user, loading } = useAuth();
   const [state, setState] = useState<"IDLE" | "RUNNING" | "FAILED">("IDLE");
   const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
 
   const isTarget =
     !loading &&
     user != null &&
     user.email?.trim().toLowerCase() === TEB232_EMAIL &&
     user.emailVerified === true &&
-    pathname.startsWith("/cases");
+    pathname === "/cases";
 
   useEffect(() => {
     if (!isTarget || !user) return;
@@ -126,10 +125,7 @@ export function Teb232CaseReconciler() {
         JSON.stringify(visibleCases)
       );
 
-      const openCaseId = currentCaseId(pathname);
-      const staleCaseRoute =
-        openCaseId !== null && !expectedCaseIds.includes(openCaseId);
-      if (changed || staleCaseRoute) {
+      if (changed) {
         window.location.replace("/cases?controlledTestCases=ready");
         return true;
       }
@@ -142,9 +138,9 @@ export function Teb232CaseReconciler() {
       setState("RUNNING");
       setError("");
       try {
-        // The four canonical cases are already persisted for this controlled
-        // account in normal operation. Read them first so a stale or missing
-        // one-time reconciliation route cannot block every user navigation.
+        // The four canonical cases may coexist with user-created working files.
+        // Read the current state first so a one-time repair route is called only
+        // when a canonical case or the controlled entitlement is actually absent.
         try {
           const [visibleCases, entitlements] = await Promise.all([
             getCases(),
@@ -159,12 +155,12 @@ export function Teb232CaseReconciler() {
           return;
         } catch {
           // Fall through to the authenticated repair endpoint only when the
-          // exact four-case readback or release entitlement is not ready.
+          // canonical four-case subset or release entitlement is not ready.
         }
 
         const token = await authenticatedUser.getIdToken(true);
         let response: Response | undefined;
-        for (let attempt = 0; attempt < MAX_BUSY_RETRIES; attempt += 1) {
+        for (let retry = 0; retry < MAX_BUSY_RETRIES; retry += 1) {
           response = await fetch("/api/qa/reconcile-teb232", {
             method: "POST",
             cache: "no-store",
@@ -219,51 +215,42 @@ export function Teb232CaseReconciler() {
     return () => {
       cancelled = true;
     };
-  }, [isTarget, pathname, user]);
+  }, [attempt, isTarget, user]);
 
-  if (!isTarget || state === "IDLE") return null;
+  if (!isTarget || state !== "FAILED") return null;
 
   return (
-    <div
-      className="notranslate fixed inset-0 z-[1000] flex items-center justify-center bg-background/95 px-6"
+    <aside
+      className="notranslate fixed right-4 top-24 z-[1000] w-[calc(100%-2rem)] max-w-md rounded-2xl border border-status-blocked/35 bg-surface p-5 shadow-xl"
       translate="no"
-      role="status"
+      role="alert"
       aria-live="polite"
     >
-      <div className="w-full max-w-lg rounded-2xl border border-border bg-surface p-8 text-center shadow-xl">
-        {state === "RUNNING" ? (
-          <>
-            <Loader2
-              className="mx-auto h-8 w-8 animate-spin text-accent"
-              aria-hidden="true"
-            />
-            <h2 className="mt-5 font-serif text-2xl font-bold">
-              Preparing controlled test cases
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-muted">
-              The workspace is validating the four complete sector cases and the
-              available preparation-pack entitlement. An authenticated repair runs
-              only when the exact persisted state is incomplete.
-            </p>
-          </>
-        ) : (
-          <>
-            <h2 className="font-serif text-2xl font-bold">
-              Test cases could not be prepared
-            </h2>
-            <p className="mt-3 break-words font-mono text-xs text-status-blocked">
-              {error}
-            </p>
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent px-5 text-sm font-semibold text-surface"
-            >
-              <RefreshCw className="h-4 w-4" aria-hidden="true" /> Retry safely
-            </button>
-          </>
-        )}
+      <h2 className="font-serif text-lg font-bold">
+        Controlled test refresh is unavailable
+      </h2>
+      <p className="mt-2 text-sm leading-relaxed text-muted">
+        Existing working files, new working files and case detail pages remain
+        available. The controlled four-case refresh can be retried separately.
+      </p>
+      <p className="mt-3 break-words font-mono text-xs text-status-blocked">
+        {error}
+      </p>
+      <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+        <button
+          type="button"
+          onClick={() => setAttempt((current) => current + 1)}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-surface px-4 text-sm font-semibold hover:bg-neutral-soft"
+        >
+          <RefreshCw className="h-4 w-4" aria-hidden="true" /> Retry refresh
+        </button>
+        <Link
+          href="/cases/new"
+          className="inline-flex h-10 items-center justify-center rounded-md bg-accent px-4 text-sm font-semibold text-surface hover:bg-accent-hover"
+        >
+          Start new working file
+        </Link>
       </div>
-    </div>
+    </aside>
   );
 }
