@@ -54,16 +54,16 @@ export default function ReportsPage() {
         <div className="pb-6 border-b border-border mb-8">
           <h1 className="text-3xl font-extrabold tracking-tight font-serif text-foreground">Locked packages</h1>
           <p className="text-muted text-sm mt-1">
-            Reports = immutable locked packages from sealing a working file. Re-download is free.
+            Each locked package is created when you seal a working file. Re-download is free.
           </p>
         </div>
 
         {reports.length === 0 ? (
           <div className="bg-surface border border-border border-dashed rounded-2xl p-12 text-center max-w-xl mx-auto shadow-sm">
             <Lock className="w-10 h-10 text-muted/65 mx-auto mb-4" />
-            <h2 className="text-xl font-bold mb-2">No locked packages (Reports) found</h2>
+            <h2 className="text-xl font-bold mb-2">No locked packages yet</h2>
             <p className="text-muted text-sm mb-6 leading-relaxed">
-              Once you complete a draft case, verify all compliance rules, and apply a Preparation Pack seal, your immutable verifier ZIP downloads will appear here.
+              Once you complete a draft working file, resolve all checks, and lock it once, your verifier package and downloads will appear here.
             </p>
           </div>
         ) : (

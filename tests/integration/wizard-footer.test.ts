@@ -31,9 +31,9 @@ describe("wizard footer", () => {
   it("labels match the mandate wording exactly", () => {
     expect(STEP8_FOOTER_CTA_LABELS.BLOCKED).toBe("Review remaining requirements");
     expect(STEP8_FOOTER_CTA_LABELS.PAYMENT_REQUIRED).toBe("Pay to unlock this working file");
-    expect(STEP8_FOOTER_CTA_LABELS.READY_TO_LOCK).toBe("Create sealed package");
+    expect(STEP8_FOOTER_CTA_LABELS.READY_TO_LOCK).toBe("Create locked package");
     expect(STEP8_FOOTER_CTA_LABELS.LOCKING).toBe("Creating package…");
-    expect(STEP8_FOOTER_CTA_LABELS.LOCKED).toBe("Open sealed release");
+    expect(STEP8_FOOTER_CTA_LABELS.LOCKED).toBe("Open locked package");
     expect(STEP8_FOOTER_CTA_LABELS.LOCK_FAILED).toBe("Retry package creation");
   });
 
@@ -67,7 +67,7 @@ describe("wizard footer", () => {
   });
 
   it("the package preview headline is distinct from the sealed success claim", () => {
-    expect(STEP8_PACKAGE_PREVIEW_HEADLINE).toBe("What your controlled package will include");
+    expect(STEP8_PACKAGE_PREVIEW_HEADLINE).toBe("What your locked package will include");
     expect(STEP8_PACKAGE_PREVIEW_HEADLINE.toLowerCase()).not.toContain("sealed");
     expect(STEP8_PACKAGE_PREVIEW_HEADLINE.toLowerCase()).not.toContain("successful");
   });

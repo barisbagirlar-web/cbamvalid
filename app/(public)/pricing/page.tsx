@@ -47,7 +47,7 @@ const FAQS: { question: string; answer: string }[] = [
   {
     question: "When am I charged?",
     answer:
-      "Once, when you lock a working file. Drafting is free before lock. A sealed release is consumed only after the software completes digital delivery — failed locks cost nothing.",
+      "Once, when you lock a working file. Drafting is free before lock. A paid unlock is used only after the software completes digital delivery — failed locks cost nothing.",
   },
   {
     question: "Is this a subscription?",

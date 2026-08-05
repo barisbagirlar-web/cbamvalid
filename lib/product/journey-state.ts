@@ -69,7 +69,7 @@ export function resolveJourneyState(input: JourneyInput): JourneyView {
   const packSummary = hasReleases
     ? "Paid unlock is active for at least one working file — same-file correction re-locks stay included."
     : unlockable > 0
-      ? `${unlockable} legacy Preparation Pack${unlockable === 1 ? "" : "s"} ready to activate (grandfather balance — not a new card charge).`
+      ? `${unlockable} Preparation Pack${unlockable === 1 ? "" : "s"} ready to activate (included balance — no new card charge).`
       : `Draft free. Pay ${CANONICAL_PRICING.priceFormatted} once when you lock a working file. Same file: unlimited corrections. New file = new payment.`;
 
   if (input.postPurchase && hasReleases && hasFile) {
@@ -125,9 +125,9 @@ export function resolveJourneyState(input: JourneyInput): JourneyView {
   if (blockers > 0 && hasReleases) {
     return {
       state: "BLOCKERS_OPEN",
-      headline: `Fix ${blockers} blocker${blockers === 1 ? "" : "s"} before you can lock`,
+      headline: `Fix ${blockers} open item${blockers === 1 ? "" : "s"} before you can lock`,
       explanation:
-        "This working file is paid. Open it, clear quality blockers, then lock and download. A failed lock charges nothing.",
+        "This working file is paid. Open it, resolve the open items, then lock and download. A failed lock charges nothing.",
       primaryCta: { label: CUSTOMER_LANGUAGE.continueFile, href: fileHref },
       secondaryCta: { label: "Open quality step", href: `${fileHref}` },
       packSummary,
@@ -137,9 +137,9 @@ export function resolveJourneyState(input: JourneyInput): JourneyView {
   if (blockers > 0 && !hasReleases) {
     return {
       state: "FILE_IN_PROGRESS",
-      headline: `Continue your working file (${blockers} blocker${blockers === 1 ? "" : "s"} open)`,
+      headline: `Continue your working file (${blockers} open item${blockers === 1 ? "" : "s"})`,
       explanation:
-        "Keep editing for free. Pay once when you are ready to lock this file. Blockers must be cleared before a successful lock.",
+        "Keep editing for free. Pay once when you are ready to lock this file. Open items must be resolved before a successful lock.",
       primaryCta: { label: CUSTOMER_LANGUAGE.continueFile, href: fileHref },
       secondaryCta: {
         label: unlockable > 0 ? CUSTOMER_LANGUAGE.activatePack : CASE_COMMERCIAL.paymentCtaLabel,

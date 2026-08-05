@@ -36,7 +36,7 @@ const publicMethodology = read("app/(public)/methodology/page.tsx");
 
 const routeContracts = [
   ['{ label: "Home", href: "/cbam" }', "Home route"],
-  ['{ label: "Cases", href: "/cases" }', "Cases route"],
+  ['{ label: "Working files", href: "/cases" }', "Working files route"],
   ['{ label: "Locked packages", href: "/reports" }', "Locked packages route"],
   ['{ label: "Methodology & Sources", href: "/cbam/methodology" }', "Workspace methodology route"]
 ];
@@ -54,7 +54,7 @@ requireText(dashboard, "Prepare Your CBAM Verification Package", "New-user onboa
 requireText(dashboard, "Where you are", "Journey where-you-are banner");
 requireText(dashboard, "CUSTOMER_LANGUAGE", "Customer language SSOT wiring");
 requireText(dashboard, "resolveJourneyState", "Journey state machine wiring");
-requireText(cases, "Cases", "Cases page content");
+requireText(cases, "Working files", "Working files page content");
 requireText(reports, "Reports", "Reports page content");
 
 const customerLanguage = read("lib/product/customer-language.ts");

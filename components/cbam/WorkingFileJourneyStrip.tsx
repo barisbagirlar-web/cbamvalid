@@ -39,13 +39,13 @@ export function WorkingFileJourneyStrip({
         <p className="text-xs text-muted leading-relaxed">
           {step.description} Completeness {completenessPercentage}%
           {blockerCount > 0
-            ? ` · ${blockerCount} blocker${blockerCount === 1 ? "" : "s"} still open`
-            : " · no open blockers on last assessment"}
+            ? ` · ${blockerCount} open item${blockerCount === 1 ? "" : "s"} still need your attention`
+            : " · nothing is left to fix on the last check"}
           {releasesRemaining > 0
             ? " · this working file is paid"
             : unlockablePacks > 0
-              ? " · unused preparation packs are ready to activate"
-              : " · this working file is unpaid — pay once to lock"}
+              ? " · unused packs are ready to activate"
+              : " · this working file is not paid yet — pay once to lock"}
         </p>
       </div>
     </section>

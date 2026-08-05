@@ -44,6 +44,8 @@ import {
   STEP8_PACKAGE_PREVIEW_HEADLINE,
   STEP8_REVIEW_ACTIONS_LABEL,
   STEP8_SEALED_SUCCESS_HEADLINE,
+  STEP8_STATUS_LABELS,
+  STEP_STATE_LABELS,
   summarizeStep8Actions,
   translateSealError,
   validateWizardStep,
@@ -101,9 +103,9 @@ const SOURCE_TYPES = ["PRIMARY", "SECONDARY", "DEFAULT", "ESTIMATED", "REGULATOR
 
 const SEALED_PACKAGE_HIGHLIGHTS = [
   { title: "11 professional PDFs", detail: "Executive report, monitoring plan, calculation annex, readiness assessment and methodology records", icon: FileCheck2 },
-  { title: "Verifier workspace", detail: "Controlled XLSX with 14+ worksheets, filters, validations, source links and verifier sign-off", icon: FileCode2 },
+  { title: "Verifier workspace", detail: "Spreadsheet with 14+ worksheets, filters, validations, source links and verifier sign-off", icon: FileCode2 },
   { title: "Evidence assurance", detail: "Immutable evidence copies, field links, issuer/date metadata, malware status and SHA-256 register", icon: Shield },
-  { title: "Signed trust chain", detail: "26-component controlled verifier package, canonical manifest, KMS asymmetric signature and immutable release hashes", icon: LockKeyhole },
+  { title: "Verified package", detail: "26-part verifier package, integrity manifest, secure digital signature and tamper-proof file fingerprint", icon: LockKeyhole },
 ] as const;
 
 function numeric(value: string | number | null | undefined): number {
@@ -115,6 +117,45 @@ function percentOf(value: string | number | null | undefined, total: string | nu
   const denominator = numeric(total);
   if (denominator <= 0) return 0;
   return Math.min(100, Math.max(0, (numeric(value) / denominator) * 100));
+}
+
+/** Friendly, plain-English status label for an evidence record. */
+function humanizeEvidenceStatus(
+  reviewStatus: string,
+  supportStatus: string,
+  malwareScanStatus: string
+): string {
+  const review =
+    reviewStatus === "PENDING"
+      ? "Pending review"
+      : reviewStatus === "REVIEW_REQUIRED"
+        ? "Review required"
+        : reviewStatus === "APPROVED"
+          ? "Approved"
+          : reviewStatus === "REJECTED"
+            ? "Rejected"
+            : reviewStatus === "ACCEPTED"
+              ? "Accepted"
+              : reviewStatus;
+  const support =
+    supportStatus === "SUPPORTED"
+      ? "Supported"
+      : supportStatus === "UNSUPPORTED"
+        ? "Not supported"
+        : supportStatus === "PENDING"
+          ? "Check pending"
+          : supportStatus;
+  const malware =
+    malwareScanStatus === "CLEAN"
+      ? "Safe to use"
+      : malwareScanStatus === "PENDING"
+        ? "Scan pending"
+        : malwareScanStatus === "QUARANTINED"
+          ? "Quarantined"
+          : malwareScanStatus === "INFECTED"
+            ? "Threat found"
+            : malwareScanStatus;
+  return `${review} · ${support} · ${malware}`;
 }
 
 function gapResolution(gap: GapRecord): { step: number; action: string; evidence: string } {
@@ -196,8 +237,8 @@ const STEP8_STATUS_STYLES: Record<Step8Status, string> = {
 
 function Step8StateBadge({ status }: { status: Step8Status }) {
   return (
-    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${STEP8_STATUS_STYLES[status]}`} aria-label={`Final review status: ${status.replaceAll("_", " ")}`}>
-      {status.replaceAll("_", " ")}
+    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${STEP8_STATUS_STYLES[status]}`} aria-label={`Final review status: ${STEP8_STATUS_LABELS[status]}`}>
+      {STEP8_STATUS_LABELS[status]}
     </span>
   );
 }
@@ -417,7 +458,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const revealSealBlockers = () => {
     setShowBlockers(true);
     setSealStatus(
-      `${readiness.criticalBlockers.length} blocker${readiness.criticalBlockers.length === 1 ? "" : "s"} and ${readiness.allGaps.length} action item${readiness.allGaps.length === 1 ? "" : "s"} must be resolved before sealing.`
+      `${readiness.criticalBlockers.length} open requirement${readiness.criticalBlockers.length === 1 ? "" : "s"} and ${readiness.allGaps.length} action item${readiness.allGaps.length === 1 ? "" : "s"} must be resolved before locking.`
     );
     setSealTechnicalCode("");
     setSealTone("warning");
@@ -835,14 +876,14 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     if (!sealRequestId.current) sealRequestId.current = crypto.randomUUID();
     setSealProgress("VALIDATING");
     setSealing(true);
-    setSealStatus("Validating the latest working-file data and entitlement…");
+    setSealStatus("Validating the latest working-file data and payment status…");
     setSealTechnicalCode("");
     setSealTone("neutral");
     focusReleaseCommand();
     try {
       await persistDraft();
       setSealProgress("CREATING");
-      setSealStatus("All gates passed. Creating the controlled package and integrity manifest…");
+      setSealStatus("All checks passed. Creating your locked package and integrity manifest…");
       const response = await sealReport(
         caseData.caseId,
         decision.entitlementId,
@@ -1046,7 +1087,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         <div className="md:col-span-2"><FieldLabel helpKey="evidenceLinkedInput">Linked input</FieldLabel><select aria-label="Evidence linked input" value={evidenceLinkedInput} onChange={(event) => setEvidenceLinkedInput(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm"><option value="" disabled>Select the input this document supports…</option>{linkOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>{(() => { const selected = linkOptions.find((option) => option.value === evidenceLinkedInput); if (!selected) return null; return <div className="mt-2 rounded border border-border bg-neutral-soft p-3 text-xs leading-relaxed text-muted"><strong>Accepted evidence:</strong> {selected.acceptedEvidenceTypes.join(", ") || "Source document"}<br /><strong>Preferred issuers:</strong> {selected.preferredIssuerCategories.join(", ") || "Any"}<br />{selected.required ? <span className="text-status-warning">This input requires at least one internally approved evidence record before sealing.</span> : <span>Optional support document.</span>}</div>; })()}<p className="mt-1 text-[11px] text-muted leading-normal">{fieldHelpData.evidenceLinkedInput.source}</p></div>
       </div><button type="button" onClick={handleEvidenceUpload} disabled={uploading} className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-sm font-semibold text-surface disabled:opacity-50">{uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />} Upload and register evidence</button><StatusBanner status={evidenceStatus} tone={evidenceStatus.toLowerCase().includes("failed") || evidenceStatus.includes("EVIDENCE_") ? "error" : "warning"} /></div>
 
-      <div className="space-y-3">{caseData.evidenceRegister.map((evidence) => <div key={evidence.evidenceId} className="rounded-xl border border-border bg-surface p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{evidence.fileName}</p><p className="text-xs text-muted">{evidence.documentType} · {evidence.sizeBytes} bytes · {evidence.reviewStatus === "PENDING" ? "PENDING_REVIEW" : evidence.reviewStatus}/{evidence.supportStatus}/{evidence.malwareScanStatus}</p><p className="mt-1 text-xs text-muted">Linked inputs: {evidence.linkedInputs.length > 0 ? evidence.linkedInputs.join(", ") : "none"}</p><p className="mt-1 text-xs text-muted">Quality grade (derived from structured issuer metadata, not issuer wording): <strong>{gradeEvidenceRecord(evidence)}</strong>{evidence.qualityAssessedBy ? ` · assessed by ${evidence.qualityAssessedBy}` : ""}</p><p className="mt-1 break-all font-mono text-[10px] text-muted">SHA-256 {evidence.fileHash}</p></div></div><div className="mt-3"><FieldLabel helpKey="evidenceReviewNotes">Organisation review note</FieldLabel><div className="flex flex-col gap-2 md:flex-row"><input aria-label={`Review notes for ${evidence.fileName}`} value={reviewNotes[evidence.evidenceId] || ""} onChange={(event) => setReviewNotes((previous) => ({ ...previous, [evidence.evidenceId]: event.target.value }))} placeholder="Organisation review note" className="flex-1 rounded border border-border bg-background p-2 text-sm" /><button type="button" disabled={evidence.malwareScanStatus !== "CLEAN"} onClick={() => handleEvidenceReview(evidence.evidenceId, "APPROVED")} className="rounded bg-status-pass px-3 py-2 text-xs font-semibold text-surface-elevated disabled:opacity-40">Request approval</button><button type="button" onClick={() => handleEvidenceReview(evidence.evidenceId, "REJECTED")} className="rounded bg-status-blocked px-3 py-2 text-xs font-semibold text-surface-elevated">Reject</button></div></div><div className="mt-2 grid gap-2 md:grid-cols-2"><select aria-label={`Link ${evidence.fileName} to an additional input`} value="" onChange={(event) => { const value = event.target.value; if (!value) return; setCaseData((previous) => ({ ...previous, evidenceRegister: previous.evidenceRegister.map((record) => record.evidenceId === evidence.evidenceId && !record.linkedInputs.includes(value) ? { ...record, linkedInputs: [...record.linkedInputs, value] } : record) })); }} className="w-full rounded border border-border bg-background p-2 text-xs"><option value="">Link to additional input…</option>{linkOptions.filter((option) => !evidence.linkedInputs.includes(option.value)).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>{evidence.malwareScanStatus !== "CLEAN" && <p className="mt-2 text-xs text-status-warning">Approval is disabled until an external malware scan is recorded as CLEAN.</p>}<p className="mt-2 text-[11px] text-muted">Approval and quality grades are assigned through your organisation&apos;s review workflow only. The uploading user cannot self-approve a document or assign A/B/C/D/E grades.</p></div>)}</div>
+      <div className="space-y-3">{caseData.evidenceRegister.map((evidence) => <div key={evidence.evidenceId} className="rounded-xl border border-border bg-surface p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{evidence.fileName}</p><p className="text-xs text-muted">{evidence.documentType} · {evidence.sizeBytes} bytes · {humanizeEvidenceStatus(evidence.reviewStatus, evidence.supportStatus, evidence.malwareScanStatus)}</p><p className="mt-1 text-xs text-muted">Linked inputs: {evidence.linkedInputs.length > 0 ? evidence.linkedInputs.join(", ") : "none"}</p><p className="mt-1 text-xs text-muted">Quality grade (derived from structured issuer metadata, not issuer wording): <strong>{gradeEvidenceRecord(evidence)}</strong>{evidence.qualityAssessedBy ? ` · assessed by ${evidence.qualityAssessedBy}` : ""}</p><p className="mt-1 break-all font-mono text-[10px] text-muted">SHA-256 {evidence.fileHash}</p></div></div><div className="mt-3"><FieldLabel helpKey="evidenceReviewNotes">Organisation review note</FieldLabel><div className="flex flex-col gap-2 md:flex-row"><input aria-label={`Review notes for ${evidence.fileName}`} value={reviewNotes[evidence.evidenceId] || ""} onChange={(event) => setReviewNotes((previous) => ({ ...previous, [evidence.evidenceId]: event.target.value }))} placeholder="Organisation review note" className="flex-1 rounded border border-border bg-background p-2 text-sm" /><button type="button" disabled={evidence.malwareScanStatus !== "CLEAN"} onClick={() => handleEvidenceReview(evidence.evidenceId, "APPROVED")} className="rounded bg-status-pass px-3 py-2 text-xs font-semibold text-surface-elevated disabled:opacity-40">Request approval</button><button type="button" onClick={() => handleEvidenceReview(evidence.evidenceId, "REJECTED")} className="rounded bg-status-blocked px-3 py-2 text-xs font-semibold text-surface-elevated">Reject</button></div></div><div className="mt-2 grid gap-2 md:grid-cols-2"><select aria-label={`Link ${evidence.fileName} to an additional input`} value="" onChange={(event) => { const value = event.target.value; if (!value) return; setCaseData((previous) => ({ ...previous, evidenceRegister: previous.evidenceRegister.map((record) => record.evidenceId === evidence.evidenceId && !record.linkedInputs.includes(value) ? { ...record, linkedInputs: [...record.linkedInputs, value] } : record) })); }} className="w-full rounded border border-border bg-background p-2 text-xs"><option value="">Link to additional input…</option>{linkOptions.filter((option) => !evidence.linkedInputs.includes(option.value)).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>{evidence.malwareScanStatus !== "CLEAN" && <p className="mt-2 text-xs text-status-warning">Approval is disabled until an external malware scan is recorded as CLEAN.</p>}<p className="mt-2 text-[11px] text-muted">Approval and quality grades are assigned through your organisation&apos;s review workflow only. The uploading user cannot self-approve a document or assign A/B/C/D/E grades.</p></div>)}</div>
 
       <div className="rounded-xl border border-border bg-surface p-5" data-testid="organisation-review-panel">
         <div className="flex items-center gap-2">
@@ -1132,12 +1173,12 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
       <div className="space-y-6">
         <div>
           <h2 className="text-xl font-bold">{getWorkflowStep(8).title}</h2>
-          <p className="mt-1 text-sm text-muted">Review the final gates and create the controlled package from one explicit release command. Every click produces an immediate, visible state and the server remains the authority for readiness, entitlement and sealing.</p>
+          <p className="mt-1 text-sm text-muted">Review the final checks, pay once if not already, and create your locked package in a single step. Every click shows an immediate result and the system always stays the authority on readiness, payment and locking.</p>
         </div>
 
         <section
           ref={releaseCommandRef}
-          aria-label="Release command center"
+          aria-label="Lock and download center"
           aria-live="polite"
           aria-busy={sealing}
           className={`scroll-mt-24 rounded-2xl border-2 p-5 shadow-sm md:p-6 ${
@@ -1152,7 +1193,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         >
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
             <div className="max-w-3xl">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Release command center</p>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Lock and download</p>
               <h3 className="mt-2 font-serif text-2xl font-bold">
                 {step8Status === "BLOCKED"
                   ? "Resolve the remaining requirements"
@@ -1163,19 +1204,19 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
                       : step8Status === "LOCK_FAILED"
                         ? "The previous attempt did not complete"
                         : step8Status === "LOCKED"
-                          ? "Sealed release is ready"
-                          : "Ready to create the sealed package"}
+                          ? "Your locked package is ready"
+                          : "Ready to create your locked package"}
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted">
                 {step8Status === "BLOCKED"
-                  ? `${readiness.criticalBlockers.length} blocking requirement${readiness.criticalBlockers.length === 1 ? "" : "s"} must be resolved. No payment or release capacity will be consumed.`
+                  ? `${readiness.criticalBlockers.length} open requirement${readiness.criticalBlockers.length === 1 ? "" : "s"} must be resolved first. No payment is taken and nothing is locked.`
                   : step8Status === "PAYMENT_REQUIRED"
-                    ? `All preparation controls passed. Pay ${CANONICAL_PRICING.priceFormatted} once to authorize this working file before package creation.`
+                    ? `All preparation checks passed. Pay ${CANONICAL_PRICING.priceFormatted} once to authorize this working file before creating your package.`
                     : step8Status === "LOCKING"
-                      ? "Keep this page open. The server is validating the saved case, reserving release capacity and generating the signed package."
+                      ? "Keep this page open. The system is validating your saved data, checking payment and generating the signed package."
                       : step8Status === "LOCK_FAILED"
-                        ? "Your draft is safe and the same idempotent request can be retried. The technical reason is shown below without hiding the next action."
-                        : "All preparation controls and the entitlement gate are confirmed. One action creates the immutable package and opens its release page."}
+                        ? "Your draft is safe and the same protected request can be retried. The technical reason is shown below without hiding the next action."
+                        : "All preparation checks and payment are confirmed. One action creates your locked package and opens its download page."}
               </p>
             </div>
             <Step8StateBadge status={step8Status} />
@@ -1183,9 +1224,9 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
 
           <div className="mt-5 grid gap-2 sm:grid-cols-3" aria-label="Package creation progress">
             {[
-              { label: "1. Validate", detail: "Saved case + release entitlement", active: sealProgress === "VALIDATING", done: ["CREATING", "SUCCESS"].includes(sealProgress) },
+              { label: "1. Validate", detail: "Saved working file + payment", active: sealProgress === "VALIDATING", done: ["CREATING", "SUCCESS"].includes(sealProgress) },
               { label: "2. Create", detail: "Reports + manifest + signature", active: sealProgress === "CREATING", done: sealProgress === "SUCCESS" },
-              { label: "3. Open", detail: "Immutable release and downloads", active: sealProgress === "SUCCESS", done: sealProgress === "SUCCESS" },
+              { label: "3. Open", detail: "Locked package and downloads", active: sealProgress === "SUCCESS", done: sealProgress === "SUCCESS" },
             ].map((phase) => (
               <div
                 key={phase.label}
@@ -1248,7 +1289,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
             </details>
           )}
           <p className="mt-4 text-xs leading-relaxed text-muted">
-            Click once. Duplicate submissions are protected by one request identifier; failed or blocked attempts consume no release capacity.
+            Click once. Duplicate submissions are protected automatically; failed or blocked attempts are never charged.
           </p>
         </section>
 
@@ -1301,13 +1342,13 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
             <p className="mt-1 text-2xl font-bold">{evidenceAssurance.score}%</p>
             <p className="mt-1 text-xs text-muted">{evidenceAssurance.approvedCount}/{evidenceAssurance.total} documents approved, supported and clean{evidenceAssurance.pendingCount > 0 ? ` · ${evidenceAssurance.pendingCount} pending` : ""}</p>
           </div>
-          <div className={`rounded-lg border p-4 ${readiness.isEligibleForSealing ? "border-forest-light bg-forest-pale" : "border-status-blocked/40 bg-[color:var(--status-blocked-soft)]"}`}>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted">Package integrity</p>
-            <p className={`mt-1 text-sm font-bold ${readiness.isEligibleForSealing ? "text-forest" : "text-status-blocked"}`}>{readiness.isEligibleForSealing ? "READY" : "BLOCKED"}</p>
+          <div className="rounded-lg border border-border bg-surface p-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted">Package readiness</p>
+            <p className={`mt-1 text-sm font-bold ${readiness.isEligibleForSealing ? "text-forest" : "text-status-blocked"}`}>{readiness.isEligibleForSealing ? "READY" : "NOT READY"}</p>
             <p className="mt-1 text-xs text-muted">
               {readiness.isEligibleForSealing
                 ? "Every automated control passed"
-                : `${blockerCount} requirement${blockerCount === 1 ? "" : "s"} remain${blockerCount === 1 ? "s" : ""}`}
+                : `${blockerCount} open item${blockerCount === 1 ? "" : "s"} remain${blockerCount === 1 ? "s" : ""}`}
             </p>
             {scenarioActive && <p className="mt-1 text-xs text-status-warning">Illustrative scenario values cannot be sealed.</p>}
           </div>
@@ -1322,10 +1363,10 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         <section ref={blockerPanelRef} aria-label="Remaining actions" className={`scroll-mt-4 rounded-xl border p-5 ${showBlockers ? "border-status-blocked/40 bg-[color:var(--status-blocked-soft)]" : "border-border bg-surface"}`}>
           <h3 className="flex items-center gap-2 font-bold"><AlertTriangle className="h-5 w-5 text-status-blocked" /> Remaining actions</h3>
           <p className="mt-1 text-xs text-muted">
-            {blockerCount} blocker{blockerCount === 1 ? "" : "s"} · {documentsToUpload} document{documentsToUpload === 1 ? "" : "s"} to upload · {awaitingReview} document{awaitingReview === 1 ? "" : "s"} awaiting review · {methodologyPending} methodology decision{methodologyPending === 1 ? "" : "s"} awaiting approval{calculationIssues > 0 ? ` · ${calculationIssues} calculation issue${calculationIssues === 1 ? "" : "s"}` : ""}
+            {blockerCount} open item{blockerCount === 1 ? "" : "s"} · {documentsToUpload} document{documentsToUpload === 1 ? "" : "s"} to upload · {awaitingReview} document{awaitingReview === 1 ? "" : "s"} awaiting review · {methodologyPending} methodology decision{methodologyPending === 1 ? "" : "s"} awaiting approval{calculationIssues > 0 ? ` · ${calculationIssues} calculation issue${calculationIssues === 1 ? "" : "s"}` : ""}
           </p>
           {readiness.isEligibleForSealing ? (
-            <div className="mt-4 rounded-lg border border-forest-pale bg-forest-pale p-4 text-sm text-forest"><CheckCircle2 className="mb-2 h-5 w-5" /> Every automated preparation control has passed. Use the Release command center above to create the package.</div>
+            <div className="mt-4 rounded-lg border border-forest-pale bg-forest-pale p-4 text-sm text-forest"><CheckCircle2 className="mb-2 h-5 w-5" /> Every automated preparation control has passed. Use Lock and download above to create the package.</div>
           ) : (
             <button
               type="button"
@@ -1425,19 +1466,19 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
             <div className={`rounded-lg border p-4 ${readiness.isEligibleForSealing ? "border-forest-light bg-forest-pale" : "border-status-blocked/40 bg-[color:var(--status-blocked-soft)]"}`}>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted">Preparation</p>
               <p className={`mt-1 text-sm font-bold ${readiness.isEligibleForSealing ? "text-forest" : "text-status-blocked"}`}>
-                {readiness.isEligibleForSealing ? "READY" : "BLOCKED"}
+                {readiness.isEligibleForSealing ? "Ready" : "Not ready"}
               </p>
               <p className="mt-1 text-xs text-muted">
                 {readiness.isEligibleForSealing
-                  ? "Every automated preparation control has passed."
-                  : `${blockerCount} requirement${blockerCount === 1 ? "" : "s"} remain${blockerCount === 1 ? "s" : ""}. Review the remaining actions above.`}
+                  ? "Every automated preparation check has passed."
+                  : `${blockerCount} open item${blockerCount === 1 ? "" : "s"} remain${blockerCount === 1 ? "s" : ""}. Review the remaining actions above.`}
               </p>
             </div>
           </div>
 
           {currentReleasesCount > 0 && (
             <div className="mt-4">
-              <FieldLabel helpKey="correctionReason">Correction Reason (Required for Release {currentReleasesCount + 1})</FieldLabel>
+              <FieldLabel helpKey="correctionReason">Correction reason (required for this lock — lock #{currentReleasesCount + 1})</FieldLabel>
               <textarea
                 aria-label="Correction reason"
                 value={correctionReason}
@@ -1451,7 +1492,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           )}
 
           <p className="mt-4 text-xs text-muted">
-            Payment is for this working file only. Failed or blocked attempts charge nothing. Re-download is free. The authoritative action and live operation status are in the Release command center above.
+            Payment is for this working file only. Failed or blocked attempts charge nothing. Re-download is free. The current status and next action are shown in Lock and download above.
           </p>
         </section>
 
@@ -1460,9 +1501,9 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
             <div>
               <h3 className="flex items-center gap-2 text-xl font-bold"><PackageCheck className="h-6 w-6" /> {STEP8_PACKAGE_PREVIEW_HEADLINE}</h3>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-dark-text/80">Once you lock and pay, the package is created from case-specific data after every preparation control passes, producing a verifier-facing, immutable release.</p>
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-dark-text/80">Once you lock and pay, the package is created from your data after every preparation check passes, producing a verifier-ready, tamper-proof release.</p>
             </div>
-            <span className="shrink-0 rounded-full border border-border-strong px-3 py-1 text-xs font-semibold">26 controlled components</span>
+            <span className="shrink-0 rounded-full border border-border-strong px-3 py-1 text-xs font-semibold">26 package components</span>
           </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {SEALED_PACKAGE_HIGHLIGHTS.map((item) => {
@@ -1472,10 +1513,10 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           </div>
           <ul className="mt-4 grid gap-1.5 text-xs text-dark-text/80 sm:grid-cols-2">
             <li>11 professional PDF reports and annexes</li>
-            <li>Controlled XLSX verifier workspace with sign-off</li>
-            <li>26 controlled package components</li>
-            <li>Canonical data-integrity manifest</li>
-            <li>Asymmetric signature and immutable release hash</li>
+            <li>Verifier spreadsheet with sign-off</li>
+            <li>26 package components</li>
+            <li>Data-integrity manifest</li>
+            <li>Digital signature and tamper-proof release hash</li>
             <li>Offline verifier review layout</li>
           </ul>
           <p className="mt-4 text-xs leading-relaxed text-ink-muted">Professional boundary: CBAMValid prepares the operator dossier and evidence chain. Only an appropriately accredited independent verifier can issue a verification opinion.</p>
@@ -1491,7 +1532,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
                 <div className="rounded-lg border border-border bg-neutral-soft p-3"><span className="text-xs text-muted">Direct emissions</span><strong className="block text-lg">{calculation.result?.totalDirectEmissions} tCO2e</strong></div>
                 <div className="rounded-lg border border-border bg-neutral-soft p-3"><span className="text-xs text-muted">Indirect emissions</span><strong className="block text-lg">{calculation.result?.totalIndirectEmissions} tCO2e</strong></div>
                 <div className="rounded-lg border border-border bg-neutral-soft p-3"><span className="text-xs text-muted">Precursor emissions</span><strong className="block text-lg">{calculation.result?.totalPrecursorEmissions} tCO2e</strong></div>
-                <div className="rounded-lg border border-border bg-neutral-soft p-3"><span className="text-xs text-muted">Allocation reconciliation</span><strong className="block text-lg">{calculation.result?.allocationReconciliationDelta}</strong></div>
+                <div className="rounded-lg border border-border bg-neutral-soft p-3"><span className="text-xs text-muted">Allocation check</span><strong className="block text-lg">{calculation.result?.allocationReconciliationDelta}</strong></div>
               </div>
               {calculation.result && numeric(calculation.result.totalEmbeddedEmissions) > 0 && (
                 <div className="mt-5 rounded-lg border border-border bg-neutral-soft p-4" aria-label="Emissions composition chart">
@@ -1525,7 +1566,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
                     <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
                       <div><span className="text-muted">Aggregate intensity</span><strong className="block">{calculation.result?.specificEmbeddedEmissions} tCO2e/t</strong></div>
                       <div><span className="text-muted">Allocation total</span><strong className="block">{calculation.result?.allocationShareTotal}</strong></div>
-                      <div><span className="text-muted">Reconciliation delta</span><strong className="block">{calculation.result?.allocationReconciliationDelta}</strong></div>
+                      <div><span className="text-muted">Allocation check</span><strong className="block">{calculation.result?.allocationReconciliationDelta}</strong></div>
                       <div><span className="text-muted">Ruleset</span><strong className="block text-xs">{caseData.methodologyDecisions[0]?.rulesetVersion || "EU-CBAM-DEFINITIVE-2026"}</strong></div>
                     </div>
                     <div className="mt-3 max-h-72 space-y-3 overflow-y-auto" aria-label="Calculation trace">
@@ -1582,7 +1623,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold leading-tight">{ssot.shortTitle}</span>
           <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
-            <span className={`rounded-full border px-1.5 py-px font-bold ${statusClass}`}>{status.replaceAll("_", " ")}</span>
+            <span className={`rounded-full border px-1.5 py-px font-bold ${statusClass}`}>{isStep8 ? STEP8_STATUS_LABELS[status as Step8Status] : STEP_STATE_LABELS[status as WizardStepperState]}</span>
             {!isStep8 && validation.missingFieldCount > 0 && (
               <span className="font-semibold text-status-blocked">{validation.missingFieldCount} field{validation.missingFieldCount === 1 ? "" : "s"} missing</span>
             )}
@@ -1594,7 +1635,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
             )}
             {isStep8 && status === "PAYMENT_REQUIRED" && <span className="font-semibold text-status-warning">Payment required</span>}
             {isStep8 && status === "BLOCKED" && (
-              <span className="font-semibold text-status-blocked">{readiness.criticalBlockers.length} requirement{readiness.criticalBlockers.length === 1 ? "" : "s"}</span>
+              <span className="font-semibold text-status-blocked">{readiness.criticalBlockers.length} open item{readiness.criticalBlockers.length === 1 ? "" : "s"}</span>
             )}
           </span>
         </span>
@@ -1759,7 +1800,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
 
             {showErrors && !currentStepValidation.valid && currentStepValidation.issues.length > 0 && (
               <div role="alert" aria-label="Step validation errors" className="rounded-lg border border-status-blocked/40 bg-[color:var(--status-blocked-soft)] p-4 text-status-blocked">
-                <h2 className="flex items-center gap-2 font-bold"><AlertTriangle className="h-5 w-5" /> {currentStep === 8 ? "Sealing is blocked by unresolved requirements" : "Complete the required fields before continuing"}</h2>
+                <h2 className="flex items-center gap-2 font-bold"><AlertTriangle className="h-5 w-5" /> {currentStep === 8 ? "Locking is paused until open requirements are resolved" : "Complete the required fields before continuing"}</h2>
                 <ul className="mt-2 space-y-1.5 text-sm">
                   {currentStepValidation.issues.map((issue) => (
                     <li key={`${issue.fieldPath}-${issue.kind}`} className="flex flex-wrap items-start gap-2">

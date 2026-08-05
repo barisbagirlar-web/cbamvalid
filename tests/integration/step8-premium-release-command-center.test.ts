@@ -9,12 +9,12 @@ describe("Step 8 premium release command center", () => {
   const client = readSource("app/(workspace)/cases/[caseId]/CaseWizardClient.tsx");
 
   it("renders one explicit, always-visible command center with immediate operation feedback", () => {
-    expect(client).toContain('aria-label="Release command center"');
+    expect(client).toContain('aria-label="Lock and download center"');
     expect(client).toContain('data-testid="step8-primary-action"');
     expect(client).toContain('setSealProgress("VALIDATING")');
-    expect(client).toContain('Validating the latest working-file data and entitlement');
+    expect(client).toContain('Validating the latest working-file data and payment status');
     expect(client).toContain('setSealProgress("CREATING")');
-    expect(client).toContain('Creating the controlled package and integrity manifest');
+    expect(client).toContain('Creating your locked package and integrity manifest');
   });
 
   it("makes a failed package attempt retryable instead of sending a zero-blocker user to requirements", () => {

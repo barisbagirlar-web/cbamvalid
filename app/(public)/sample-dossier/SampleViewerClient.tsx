@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Download, ShieldCheck, AlertCircle } from "lucide-react";
-import Image from "next/image";
 
 export default function SampleViewerClient() {
   const [manifest, setManifest] = useState<{ pageCount: number; version: string } | null>(null);
@@ -141,7 +140,7 @@ export default function SampleViewerClient() {
             <ul className="text-xs text-muted space-y-2 list-disc pl-4">
               <li>No underlying text layer exists in this viewer.</li>
               <li>Data redaction is explicitly baked into the pixels.</li>
-              <li>Actual reports are encrypted and sealed by the EU KMS.</li>
+              <li>Actual reports are encrypted and sealed with a secure digital key.</li>
             </ul>
           </div>
           

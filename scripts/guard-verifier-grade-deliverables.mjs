@@ -151,7 +151,7 @@ requireText(reportHandler, "Immutable report artifact metadata does not match", 
 requireText(reportClient, "parseSealedReportView", "Client report validation");
 rejectText(reportPage, "any", "Report page type safety");
 rejectText(reportPage, "alert(", "Report page observable errors");
-requireText(reportPage, "controlled components", "Report package component disclosure");
+requireText(reportPage, "package components", "Report package component disclosure");
 requireText(reportPage, "Independent verifier status", "Verifier boundary disclosure");
 requireText(reportPage, "getReportDownload", "Controlled download client");
 requireText(reportPage, "Direct to indirect composition", "Sealed-report emissions visualization");

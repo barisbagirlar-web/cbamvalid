@@ -260,7 +260,7 @@ test.describe("Wizard Step 8 UX — authenticated live regression (opt-in)", () 
       await reviewButton.first().click();
       // The blocker panel is revealed in place.
       await expect(page.getByLabel("Resolve evidence blockers")).toContainText("Remaining actions");
-      await expect(page.getByText(/blocker.*must be resolved before sealing|action item.*must be resolved before sealing/i)).toBeVisible();
+      await expect(page.getByText(/open requirement.*must be resolved before locking|action item.*must be resolved before locking/i)).toBeVisible();
       // The step did not move: still Step 8, no navigation to Step 7.
       await expect(stepText(page)).toContainText("Step 8 of 8");
       await expect(footerStepText(page)).toContainText("Step 8 of 8");
@@ -277,7 +277,7 @@ test.describe("Wizard Step 8 UX — authenticated live regression (opt-in)", () 
     if (blocked) {
       await page.getByRole("button", { name: "Review remaining actions" }).first().click();
       await expect(page.getByLabel("Resolve evidence blockers")).toBeVisible();
-      await expect(page.getByText(/blocker.*must be resolved before sealing/i)).toBeVisible();
+      await expect(page.getByText(/open requirement.*must be resolved before locking/i)).toBeVisible();
       await expect(stepText(page)).toContainText("Step 8 of 8");
       await expect(footerStepText(page)).toContainText("Step 8 of 8");
     } else {

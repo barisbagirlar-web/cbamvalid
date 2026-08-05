@@ -99,8 +99,8 @@ test.describe("Wizard full journey (authenticated, opt-in)", () => {
     // The pre-seal package preview uses the preview headline, never a success
     // claim.
     await expect(page.getByText(STEP8_PACKAGE_PREVIEW_HEADLINE).first()).toBeVisible({ timeout: 30000 });
-    await expect(page.getByText(/SUCCESSFUL SEALED RELEASE/i)).toHaveCount(0);
-    await expect(page.getByText("Sealed release created successfully", { exact: true })).toHaveCount(0);
+    await expect(page.getByText(/SUCCESSFUL LOCK/i)).toHaveCount(0);
+    await expect(page.getByText("Locked package created successfully", { exact: true })).toHaveCount(0);
 
     // No disabled Next button on step 8; exactly one primary footer CTA.
     await expect(page.getByRole("button", { name: "Next", exact: true })).toHaveCount(0);

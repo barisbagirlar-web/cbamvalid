@@ -14,7 +14,7 @@ import { getCases, type CbamCaseRecord } from "@/lib/functions/client";
 
 function describeError(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
-  return "Cases could not be loaded.";
+  return "Working files could not be loaded.";
 }
 
 function PaginationControls({
@@ -181,7 +181,7 @@ export default function CasesPage() {
           <div className="flex items-start gap-4">
             <AlertCircle className="mt-0.5 h-6 w-6 shrink-0 text-status-blocked" aria-hidden="true" />
             <div>
-              <h1 className="font-serif text-2xl font-bold">Cases could not be loaded</h1>
+              <h1 className="font-serif text-2xl font-bold">Working files could not be loaded</h1>
               <p className="mt-3 text-sm leading-relaxed text-muted">{error}</p>
             </div>
           </div>
@@ -204,21 +204,21 @@ export default function CasesPage() {
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight font-serif text-foreground">Working files</h1>
             <p className="text-muted text-sm mt-1">
-              Cases = editable working files for one installation and one reporting year. Locking creates a separate locked package.
+              Each working file covers one installation and one reporting year. Locking creates a separate locked package.
             </p>
           </div>
           <Link
             href="/cases/new"
             className="bg-accent hover:bg-accent-hover text-surface px-4 py-2 rounded-md font-semibold text-xs transition-colors flex items-center gap-1.5 shadow-sm"
           >
-            <Plus className="w-3.5 h-3.5" /> Start New Case
+            <Plus className="w-3.5 h-3.5" /> Start New Working File
           </Link>
         </div>
 
         {cases.length === 0 ? (
           <div className="bg-surface border border-border border-dashed rounded-2xl p-12 text-center max-w-xl mx-auto shadow-sm">
             <Clock className="w-10 h-10 text-muted/65 mx-auto mb-4" />
-            <h2 className="text-xl font-bold mb-2">No Active Cases Found</h2>
+            <h2 className="text-xl font-bold mb-2">No Working Files Yet</h2>
             <p className="text-muted text-sm mb-6 leading-relaxed">
               Create your initial draft dossier to start calculating embedded emissions and mapping production routes under EU CBAM rules.
             </p>
@@ -232,7 +232,7 @@ export default function CasesPage() {
         ) : (
           <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold font-serif">Working files (Cases)</h3>
+              <h3 className="text-lg font-bold font-serif">Your working files</h3>
               <span className="text-xs text-muted font-mono">{cases.length} Total</span>
             </div>
             <div className="space-y-4">
