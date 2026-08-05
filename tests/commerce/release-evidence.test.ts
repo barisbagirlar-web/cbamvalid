@@ -419,6 +419,33 @@ describe("S6 Entitlement state machine", () => {
 describe("S5 Paddle lifecycle guards", () => {
   beforeEach(() => h.clear());
 
+  it("fulfills a real Paddle SDK-shaped completed event (major-unit string totals, price.id)", async () => {
+    await seedOrder();
+    // Mirrors the exact shape returned by paddle.webhooks.unmarshal:
+    // grandTotal is a major-unit string like "449.00" and items carry price.id
+    // (the SDK does not expose priceId on notification items).
+    const evt = {
+      eventId: "evt_txn_sdk_shape",
+      eventType: "transaction.completed",
+      data: {
+        id: "txn_sdk_shape",
+        status: "completed",
+        currencyCode: "USD",
+        customData: { orderId: "ord_seed" },
+        items: [{ price: { id: PRICE_ID }, quantity: 1 }],
+        details: { totals: { grandTotal: "449.00" } },
+      },
+    };
+    await processWebhookEvent(evt as never);
+    expect(ledgerByType("PAYMENT_CAPTURED")).toHaveLength(1);
+    expect(ledgerByType("ENTITLEMENT_ISSUED")).toHaveLength(1);
+    const ents = Object.keys(h.store).filter((p) => p.startsWith("entitlements/"));
+    expect(ents).toHaveLength(1);
+    expect((h.store[ents[0]] as Record<string, unknown>).status).toBe("AVAILABLE");
+    expect((h.store[ents[0]] as Record<string, unknown>).billingModel).toBe("CASE_PAY_AT_LOCK");
+    expect((h.store["commerce_orders/ord_seed"] as Record<string, unknown>).status).toBe("ENTITLED");
+  });
+
   it("fulfills valid completed payment: 1 entitlement + 1 ledger effect", async () => {
     await seedOrder();
     const evt = {

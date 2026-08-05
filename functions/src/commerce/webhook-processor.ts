@@ -47,6 +47,21 @@ type PaddleAdjustmentPayload = {
 };
 
 /**
+ * Paddle notification entities expose money as major-unit strings ("449.00"),
+ * while our order records store minor units (44900). Normalize either form to
+ * minor units so fulfillment amount checks match.
+ */
+function toMinorUnits(value: number | string | undefined | null): number {
+  if (value === undefined || value === null) return 0;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  if (typeof value === "string" && value.includes(".")) {
+    return Math.round(numeric * 100);
+  }
+  return Math.round(numeric);
+}
+
+/**
  * Main processor of verified webhook events from Paddle
  */
 export async function processWebhookEvent(event: PaddleWebhookEvent): Promise<void> {
@@ -133,8 +148,8 @@ async function handleTransactionCompleted(
   }
 
   // Verify amount
-  const transactionAmount = Math.round(
-    Number(transaction.details?.totals?.grandTotal || transaction.totals?.grandTotal || 0)
+  const transactionAmount = toMinorUnits(
+    transaction.details?.totals?.grandTotal ?? transaction.totals?.grandTotal
   );
   if (transactionAmount !== order.amountMinor) {
     console.error(`[PADDLE-PROCESSOR] Amount mismatch: expected ${order.amountMinor}, got ${transactionAmount}`);
@@ -313,7 +328,7 @@ async function handleAdjustmentUpdated(eventId: string, adjustment: PaddleAdjust
       transactionId,
       eventId,
       adjustmentId: adjustmentId || eventId,
-      amountMinor: Number(adjustment.totals?.subtotal || 0),
+      amountMinor: toMinorUnits(adjustment.totals?.subtotal),
       currency: adjustment.currencyCode || "USD",
     });
   });
