@@ -26,7 +26,21 @@ const mockDbTransaction = {
     mockDocs[reference.path] = data;
   }),
   update: vi.fn((reference: { path: string }, data: Record<string, unknown>) => {
-    mockDocs[reference.path] = { ...mockDocs[reference.path], ...data };
+    const next = { ...mockDocs[reference.path] };
+    for (const [key, value] of Object.entries(data)) {
+      const isDeleteTransform =
+        value !== null &&
+        typeof value === "object" &&
+        !Array.isArray(value) &&
+        Object.keys(value).length === 0 &&
+        typeof (value as { isEqual?: unknown }).isEqual === "function";
+      if (isDeleteTransform) {
+        delete next[key];
+      } else {
+        next[key] = value;
+      }
+    }
+    mockDocs[reference.path] = next;
   }),
 };
 
@@ -78,7 +92,21 @@ vi.mock("../../functions/src/firebase-admin", () => ({
               mockDocs[path] = data;
             },
             update: async (data: Record<string, unknown>) => {
-              mockDocs[path] = { ...mockDocs[path], ...data };
+              const next = { ...mockDocs[path] };
+              for (const [key, value] of Object.entries(data)) {
+                const isDeleteTransform =
+                  value !== null &&
+                  typeof value === "object" &&
+                  !Array.isArray(value) &&
+                  Object.keys(value).length === 0 &&
+                  typeof (value as { isEqual?: unknown }).isEqual === "function";
+                if (isDeleteTransform) {
+                  delete next[key];
+                } else {
+                  next[key] = value;
+                }
+              }
+              mockDocs[path] = next;
             },
             delete: async () => {
               delete mockDocs[path];
@@ -193,6 +221,29 @@ describe("Test-admin access (owner-approved test bypass)", () => {
     expect(consumedRevived.releasesRemaining).toBe(TEST_ADMIN_MAX_RELEASES);
     expect(mockDocs[entitlementPath]?.status).toBe("AVAILABLE");
     expect(mockDocs[entitlementPath]?.releasesCount).toBe(0);
+  });
+
+  it("6b. Unbinds scopeCaseId so the unlimited test pack is usable on every working file", async () => {
+    const uid = "user-test-1";
+    const first = await ensureTestAdminEntitlement(mockDbTransaction as never, uid, "teb232@gmail.com");
+    const entitlementPath = `entitlements/${first.entitlementId}`;
+
+    // Simulate a completed seal: consumeEntitlement() binds the pack to the
+    // case it was used on (scopeCaseId set, count advanced).
+    mockDocs[entitlementPath] = {
+      ...mockDocs[entitlementPath],
+      status: "AVAILABLE",
+      scopeCaseId: "case_first_sealed_file",
+      releasesCount: 1,
+      releasesList: [{ reportId: "report_a", version: 1 }],
+    };
+
+    const nextRead = await ensureTestAdminEntitlement(mockDbTransaction as never, uid, "teb232@gmail.com");
+    expect(nextRead.releasesRemaining).toBe(TEST_ADMIN_MAX_RELEASES);
+    expect(mockDocs[entitlementPath]?.scopeCaseId).toBeUndefined();
+    expect(mockDocs[entitlementPath]?.status).toBe("AVAILABLE");
+    expect(mockDocs[entitlementPath]?.releasesCount).toBe(0);
+    expect(mockDocs[entitlementPath]?.releasesList).toEqual([]);
   });
 
   it("7. Idempotent read does not rewrite an AVAILABLE unlimited entitlement", async () => {

@@ -63,9 +63,21 @@ export async function ensureTestAdminEntitlement(
       releasesCount?: number;
       maxReleases?: number;
       status?: string;
+      scopeCaseId?: string;
+      reservedReportId?: string;
     };
     const status = String(data.status || "AVAILABLE").toUpperCase();
-    const needsRevive = status === "REVOKED" || status === "CONSUMED";
+    const scopedToCase =
+      typeof data.scopeCaseId === "string" && data.scopeCaseId.length > 0;
+    // consumeEntitlement() binds the pack to the case it was used on. For a
+    // test-admin entitlement that would lock the unlimited pack to a single
+    // working file, so on every read we unbind it and restore the AVAILABLE /
+    // unlimited state. This keeps the owner-approved test flow case-agnostic.
+    const needsRevive =
+      status === "REVOKED" ||
+      status === "CONSUMED" ||
+      scopedToCase ||
+      typeof data.reservedReportId === "string";
     const effectiveMax = Number(data.maxReleases || 0) < maxReleases ? maxReleases : Number(data.maxReleases || maxReleases);
     const effectiveCount = needsRevive ? 0 : Number(data.releasesCount || 0);
 
@@ -76,6 +88,9 @@ export async function ensureTestAdminEntitlement(
               status: "AVAILABLE",
               releasesCount: 0,
               releasesList: [],
+              scopeCaseId: admin.firestore.FieldValue.delete(),
+              reservedReportId: admin.firestore.FieldValue.delete(),
+              reservationExpiresAt: admin.firestore.FieldValue.delete(),
             }
           : {}),
         ...(effectiveMax !== Number(data.maxReleases || maxReleases)
