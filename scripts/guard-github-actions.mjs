@@ -48,16 +48,23 @@ for (const file of files) {
     /\n\s+(?:node|npm|npx)\s/.test(content);
 
   if (runsNodeCommands) {
-    if (!/uses:\s*actions\/setup-node@v4\b/.test(content)) {
-      failures.push(`${relativePath}: Node commands require actions/setup-node@v4`);
+    if (!/uses:\s*actions\/setup-node@v7\b/.test(content)) {
+      failures.push(`${relativePath}: Node commands require actions/setup-node@v7`);
     }
-    if (!/node-version:\s*["']?22["']?\s*$/m.test(content)) {
-      failures.push(`${relativePath}: Node commands must run on Node 22`);
+    if (!/node-version:\s*["']?24["']?\s*$/m.test(content)) {
+      failures.push(`${relativePath}: Node commands must run on Node 24`);
+    }
+    if (!/Verify Node 24 runtime/.test(content)) {
+      failures.push(`${relativePath}: Node 24 runtime verification step is required`);
     }
   }
 
-  if (/node-version:\s*["']?20["']?\s*$/m.test(content)) {
-    failures.push(`${relativePath}: Node 20 is prohibited; production runtime is Node 22`);
+  if (/node-version:\s*["']?(20|22)["']?\s*$/m.test(content)) {
+    failures.push(`${relativePath}: Node 20/22 is prohibited; production runtime is Node 24`);
+  }
+
+  if (/uses:\s*actions\/(checkout|setup-node|upload-artifact)@v[1-6]\b/.test(content)) {
+    failures.push(`${relativePath}: core GitHub actions must use Node 24-compatible v7 releases`);
   }
 }
 
@@ -74,4 +81,4 @@ if (failures.length > 0) {
 console.log("GITHUB_ACTIONS_GUARD=PASS");
 console.log(`WORKFLOW_COUNT=${files.length}`);
 console.log(`WORKFLOWS=${files.join(",")}`);
-console.log("WORKFLOW_NODE22_RUNTIME_CONTRACT=PASS");
+console.log("WORKFLOW_NODE24_RUNTIME_CONTRACT=PASS");
