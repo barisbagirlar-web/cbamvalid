@@ -7,6 +7,7 @@ const readSource = (relative: string): string =>
 
 describe("Step 8 premium release command center", () => {
   const client = readSource("app/(workspace)/cases/[caseId]/CaseWizardClient.tsx");
+  const globalCss = readSource("app/globals.css");
 
   it("renders one explicit, always-visible command center with immediate operation feedback", () => {
     expect(client).toContain('aria-label="Lock and download center"');
@@ -30,6 +31,22 @@ describe("Step 8 premium release command center", () => {
     expect(client).toContain("Independent verification");
     expect(client).toContain("POST-RELEASE");
     expect(client).toContain("does not block the operator working-file release");
+  });
+
+  it("keeps the fixed footer as the single visual action authority", () => {
+    expect(globalCss).toContain('section[aria-label="Lock and download center"] [data-testid="step8-primary-action"]');
+    expect(globalCss).toContain('main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0');
+    expect(globalCss).toContain("min-height: 60px !important");
+    expect(globalCss).toContain("var(--color-accent) !important");
+    expect(globalCss).toContain("color: #fff !important");
+  });
+
+  it("uses the emissions panel width and prevents metric values from escaping their card", () => {
+    expect(globalCss).toContain("container-name: emissions-summary");
+    expect(globalCss).toContain("container-type: inline-size");
+    expect(globalCss).toContain("overflow-wrap: anywhere");
+    expect(globalCss).toContain("grid-template-columns: repeat(6, minmax(0, 1fr)) !important");
+    expect(globalCss).toContain(":nth-child(n + 4)");
   });
 
   it("does not mount an actionable wizard from stale local cache", () => {
