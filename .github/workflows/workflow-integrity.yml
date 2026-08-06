@@ -28,14 +28,17 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version: "24"
+
+      - name: Verify Node 24 runtime
+        run: node --version | grep -E '^v24\.'
 
       - name: Enforce repository workflow policy
         run: node scripts/guard-github-actions.mjs
