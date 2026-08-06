@@ -154,103 +154,229 @@ h3 {
   text-wrap: balance;
 }
 
-/* Step 8: prevent long calculation states from colliding across cards. */
-section[aria-label="Emissions summary"] > div.mt-4.grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+/* --------------------------------------------------------------------------
+   STEP 8 PREMIUM VISUAL SYSTEM
+   The final action and metric layout are driven by stable semantic hooks
+   (aria-label / data-testid), never by generated Tailwind class order.
+   -------------------------------------------------------------------------- */
+
+main:has(section[aria-label="Final review status"]) {
+  padding-bottom: 10rem !important;
 }
 
-section[aria-label="Emissions summary"] > div.mt-4.grid > div {
+/* One action authority: the persistent footer is the only primary command. */
+section[aria-label="Lock and download center"] [data-testid="step8-primary-action"] {
+  display: none !important;
+}
+
+section[aria-label="Lock and download center"] {
+  border-color: rgba(189, 93, 58, 0.28) !important;
+  background:
+    linear-gradient(180deg, rgba(189, 93, 58, 0.045), rgba(189, 93, 58, 0.012)),
+    var(--color-surface) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 14px 36px rgba(26, 25, 21, 0.06) !important;
+}
+
+/* Header save is intentionally demoted on Step 8; save status remains visible. */
+main:has(section[aria-label="Final review status"]) > div > header > button {
+  display: none !important;
+}
+
+main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 {
+  border-top-color: rgba(26, 25, 21, 0.14) !important;
+  background: rgba(250, 249, 245, 0.96) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  backdrop-filter: blur(14px) saturate(1.15);
+  box-shadow: 0 -12px 34px rgba(26, 25, 21, 0.10) !important;
+}
+
+main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div {
+  display: grid !important;
+  grid-template-columns: max-content minmax(150px, 220px) minmax(360px, 760px);
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem 1rem;
+  max-width: 82rem;
+  padding-block: 0.75rem;
+}
+
+main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :first-child {
+  grid-column: 1;
+  justify-self: start;
+}
+
+main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :nth-child(2) {
+  grid-column: 2;
+  min-width: 0;
+  justify-self: stretch;
+}
+
+/* Supports both the current direct CTA and a future wrapper around it. */
+main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :last-child,
+main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :last-child > button,
+main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :last-child > a,
+main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 [data-testid="step8-primary-action"] {
+  grid-column: 3;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 60px !important;
+  margin: 0 !important;
+  justify-self: stretch;
+  border: 1px solid rgba(147, 68, 42, 0.92) !important;
+  border-radius: 12px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(0, 0, 0, 0.04)),
+    var(--color-accent) !important;
+  color: #fff !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.22) inset,
+    0 10px 24px rgba(189, 93, 58, 0.30),
+    0 2px 5px rgba(26, 25, 21, 0.12) !important;
+  font-size: 1rem !important;
+  font-weight: 750 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.005em;
+  text-align: center;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    background-color 140ms ease !important;
+}
+
+main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :last-child:hover,
+main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :last-child > button:hover,
+main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :last-child > a:hover,
+main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 [data-testid="step8-primary-action"]:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.06)),
+    var(--color-accent-hover) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 12px 28px rgba(169, 79, 49, 0.34),
+    0 3px 7px rgba(26, 25, 21, 0.14) !important;
+  transform: translateY(-1px);
+}
+
+main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 svg {
+  flex: 0 0 auto;
+}
+
+main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :nth-child(2),
+main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :nth-child(2) button {
+  color: rgba(26, 25, 21, 0.72) !important;
+}
+
+main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :nth-child(2) p,
+main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :nth-child(2) small {
+  max-width: 13rem;
+  margin-top: 0.25rem;
+  color: rgba(26, 25, 21, 0.58) !important;
+  font-size: 0.68rem !important;
+  line-height: 1.25 !important;
+}
+
+/* Emissions summary uses its actual content width, not the viewport width. */
+section[aria-label="Emissions summary"] {
+  container-name: emissions-summary;
+  container-type: inline-size;
+  overflow: hidden;
+}
+
+section[aria-label="Emissions summary"] > :is(div, dl)[class~="grid"] {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0.75rem !important;
+}
+
+section[aria-label="Emissions summary"] > :is(div, dl)[class~="grid"] > :is(div, article) {
   display: flex;
   min-width: 0;
   min-height: 112px;
+  overflow: hidden;
   flex-direction: column;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.65rem;
+  border-color: rgba(26, 25, 21, 0.12) !important;
+  background: rgba(26, 25, 21, 0.025) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.75) inset;
 }
 
-section[aria-label="Emissions summary"] > div.mt-4.grid > div > strong {
+section[aria-label="Emissions summary"] > :is(div, dl)[class~="grid"] > :is(div, article):first-child {
+  border-color: rgba(189, 93, 58, 0.28) !important;
+  background: rgba(189, 93, 58, 0.055) !important;
+}
+
+section[aria-label="Emissions summary"] > :is(div, dl)[class~="grid"] strong {
+  display: block;
+  min-width: 0;
   max-width: 100%;
   overflow-wrap: anywhere;
   word-break: break-word;
   white-space: normal;
-  font-size: clamp(0.95rem, 1.15vw, 1.125rem);
-  line-height: 1.25;
+  color: var(--color-text);
+  font-size: 1.05rem !important;
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+  line-height: 1.22;
+  letter-spacing: -0.015em;
 }
 
-@media (min-width: 1024px) {
-  section[aria-label="Emissions summary"] > div.mt-4.grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+@container emissions-summary (min-width: 31rem) {
+  section[aria-label="Emissions summary"] > :is(div, dl)[class~="grid"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
-@media (max-width: 639px) {
-  section[aria-label="Emissions summary"] > div.mt-4.grid {
-    grid-template-columns: minmax(0, 1fr) !important;
+@container emissions-summary (min-width: 48rem) {
+  section[aria-label="Emissions summary"] > :is(div, dl)[class~="grid"] {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  }
+
+  section[aria-label="Emissions summary"] > :is(div, dl)[class~="grid"] > :is(div, article):nth-child(-n + 3) {
+    grid-column: span 2;
+  }
+
+  section[aria-label="Emissions summary"] > :is(div, dl)[class~="grid"] > :is(div, article):nth-child(n + 4) {
+    grid-column: span 3;
   }
 }
 
-/* Step 8: one dominant, centred release command; draft actions cannot compete. */
-main:has(section[aria-label="Final review status"]) > div > header > button {
-  display: none;
-}
+@media (max-width: 720px) {
+  main:has(section[aria-label="Final review status"]) {
+    padding-bottom: 13rem !important;
+  }
 
-main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div {
-  display: grid;
-  grid-template-columns: minmax(96px, 1fr) minmax(320px, 560px) minmax(96px, 1fr);
-  align-items: center;
-  gap: 1rem;
-}
-
-main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > button:first-child {
-  justify-self: start;
-}
-
-main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > button:nth-child(2) {
-  display: none;
-}
-
-main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :last-child {
-  grid-column: 2;
-  width: 100%;
-  min-height: 56px;
-  justify-self: center;
-  border: 1px solid var(--color-accent) !important;
-  border-radius: 10px !important;
-  background: var(--color-accent) !important;
-  color: #fff !important;
-  box-shadow: 0 10px 28px rgba(189, 93, 58, 0.28);
-  font-size: 1rem !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.01em;
-}
-
-main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :last-child:hover {
-  background: var(--color-accent-hover) !important;
-}
-
-main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > button:last-child[class*="border-status-blocked"] {
-  font-size: 0 !important;
-}
-
-main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > button:last-child[class*="border-status-blocked"]::after {
-  content: "Complete requirements, then seal package";
-  font-size: 1rem;
-  line-height: 1.2;
-}
-
-@media (max-width: 639px) {
   main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div {
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 0.75rem;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    gap: 0.6rem 0.75rem;
+    padding-inline: 0.75rem;
   }
 
-  main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :last-child {
+  main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :last-child,
+  main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :last-child > button,
+  main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :last-child > a,
+  main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 [data-testid="step8-primary-action"] {
     grid-column: 1 / -1;
     grid-row: 1;
+    min-height: 56px !important;
   }
 
-  main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > button:first-child {
+  main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :first-child {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :nth-child(2) {
     grid-column: 1;
     grid-row: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 > div > :last-child,
+  main:has(section[aria-label="Final review status"]) > div.fixed.bottom-0 [data-testid="step8-primary-action"] {
+    transition: none !important;
   }
 }
