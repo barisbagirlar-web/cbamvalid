@@ -50,13 +50,14 @@ export function Teb232TargetCasePreparer() {
 
   useEffect(() => {
     if (!isTarget || !user) return;
+    const authenticatedUser = user;
     let cancelled = false;
 
     async function prepare(): Promise<void> {
       setState("RUNNING");
       setError("");
       try {
-        const token = await user.getIdToken(true);
+        const token = await authenticatedUser.getIdToken(true);
         const response = await fetch("/api/qa/reconcile-teb232", {
           method: "POST",
           cache: "no-store",
