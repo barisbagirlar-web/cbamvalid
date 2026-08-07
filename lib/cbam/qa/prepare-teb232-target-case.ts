@@ -1,8 +1,7 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
-import type { Bucket } from "@google-cloud/storage";
-import type { Firestore } from "firebase-admin/firestore";
+import { adminDb, getAdminStorageBucket } from "@/lib/firebase/admin";
 import { AuditReadyCaseSchema } from "../../../functions/src/cbam/schema";
 import { assessCaseReadiness } from "../../../functions/src/cbam/validation/readiness-assessor";
 import { buildFourDossierEvidenceFiles } from "../../../tests/fixtures/four-dossiers";
@@ -17,6 +16,7 @@ export const TEB232_TARGET_CASE_ID =
 export const TEB232_TARGET_FIXTURE = "STEEL_IN" as const;
 const TARGET_PREPARATION_VERSION = "TEB232_TARGET_SEAL_READY_V1";
 
+type AdminBucket = ReturnType<typeof getAdminStorageBucket>;
 type FileBackup = {
   name: string;
   bytes: Buffer;
@@ -41,7 +41,7 @@ function clone<T>(value: T): T {
 }
 
 async function evidenceFilesAreValid(
-  bucket: Bucket,
+  bucket: AdminBucket,
   data: ReturnType<typeof AuditReadyCaseSchema.parse>
 ): Promise<boolean> {
   for (const record of data.evidenceRegister) {
@@ -66,7 +66,7 @@ async function evidenceFilesAreValid(
 }
 
 async function currentTargetIsHealthy(
-  bucket: Bucket,
+  bucket: AdminBucket,
   stored: Record<string, unknown>
 ): Promise<boolean> {
   if (
@@ -108,7 +108,7 @@ async function currentTargetIsHealthy(
   }
 }
 
-async function captureFiles(bucket: Bucket, prefix: string): Promise<FileBackup[]> {
+async function captureFiles(bucket: AdminBucket, prefix: string): Promise<FileBackup[]> {
   const [files] = await bucket.getFiles({ prefix });
   const backups: FileBackup[] = [];
   for (const file of files) {
@@ -124,7 +124,7 @@ async function captureFiles(bucket: Bucket, prefix: string): Promise<FileBackup[
   return backups;
 }
 
-async function restoreFiles(bucket: Bucket, backups: FileBackup[]): Promise<void> {
+async function restoreFiles(bucket: AdminBucket, backups: FileBackup[]): Promise<void> {
   const prefix = `evidence/${TEB232_UID}/${TEB232_TARGET_CASE_ID}/`;
   const [current] = await bucket.getFiles({ prefix });
   for (const file of current) {
@@ -140,8 +140,6 @@ async function restoreFiles(bucket: Bucket, backups: FileBackup[]): Promise<void
 }
 
 export async function prepareTeb232TargetCase(params: {
-  db: Firestore;
-  bucket: Bucket;
   authenticatedUid: string;
   authenticatedEmail: string;
   emailVerified: boolean;
@@ -158,13 +156,15 @@ export async function prepareTeb232TargetCase(params: {
     throw new Error("TEB232_TARGET_CASE_REFUSED");
   }
 
-  const caseRef = params.db.collection("cbam_cases").doc(TEB232_TARGET_CASE_ID);
+  const db = adminDb;
+  const bucket = getAdminStorageBucket();
+  const caseRef = db.collection("cbam_cases").doc(TEB232_TARGET_CASE_ID);
   const caseSnapshot = await caseRef.get();
   if (!caseSnapshot.exists) throw new Error("TEB232_TARGET_CASE_NOT_FOUND");
   const stored = caseSnapshot.data() || {};
   if (stored.uid !== TEB232_UID) throw new Error("TEB232_TARGET_CASE_OWNER_MISMATCH");
 
-  const reportSnapshot = await params.db
+  const reportSnapshot = await db
     .collection("cbam_reports")
     .where("caseId", "==", TEB232_TARGET_CASE_ID)
     .limit(1)
@@ -173,7 +173,7 @@ export async function prepareTeb232TargetCase(params: {
     throw new Error("TEB232_TARGET_CASE_ALREADY_RELEASED");
   }
 
-  if (await currentTargetIsHealthy(params.bucket, stored)) {
+  if (await currentTargetIsHealthy(bucket, stored)) {
     return {
       changed: false,
       caseId: TEB232_TARGET_CASE_ID,
@@ -236,7 +236,7 @@ export async function prepareTeb232TargetCase(params: {
   }
 
   const prefix = `evidence/${TEB232_UID}/${TEB232_TARGET_CASE_ID}/`;
-  const fileBackups = await captureFiles(params.bucket, prefix);
+  const fileBackups = await captureFiles(bucket, prefix);
   const documentBackup = clone(stored);
   const createdPaths = new Set<string>();
 
@@ -246,7 +246,7 @@ export async function prepareTeb232TargetCase(params: {
         (item) => item.evidenceId === binary.evidenceId
       );
       if (!record) throw new Error(`TEB232_TARGET_EVIDENCE_RECORD_MISSING:${binary.evidenceId}`);
-      const file = params.bucket.file(record.storagePath);
+      const file = bucket.file(record.storagePath);
       await file.save(binary.bytes, {
         resumable: false,
         contentType: record.mimeType,
@@ -274,7 +274,7 @@ export async function prepareTeb232TargetCase(params: {
       }
     }
 
-    const [existingFiles] = await params.bucket.getFiles({ prefix });
+    const [existingFiles] = await bucket.getFiles({ prefix });
     for (const file of existingFiles) {
       if (!createdPaths.has(file.name)) {
         await file.delete({ ignoreNotFound: true });
@@ -309,7 +309,7 @@ export async function prepareTeb232TargetCase(params: {
       readbackReadiness.completenessPercentage !== 100 ||
       readbackReadiness.criticalBlockers.length !== 0 ||
       readbackReadiness.allGaps.length !== 0 ||
-      !(await evidenceFilesAreValid(params.bucket, readbackParsed))
+      !(await evidenceFilesAreValid(bucket, readbackParsed))
     ) {
       throw new Error("TEB232_TARGET_POSTWRITE_VERIFICATION_FAILED");
     }
@@ -322,7 +322,7 @@ export async function prepareTeb232TargetCase(params: {
       evidenceAssurance: 100,
     };
   } catch (error) {
-    await restoreFiles(params.bucket, fileBackups);
+    await restoreFiles(bucket, fileBackups);
     await caseRef.set(documentBackup);
     throw error;
   }
