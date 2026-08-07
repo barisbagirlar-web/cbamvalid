@@ -6,10 +6,13 @@ import { runQualityControls } from "../../functions/src/cbam/validation/quality-
 import { buildVerifierPackageModel } from "../../functions/src/cbam/report/verifier-model";
 import { buildVerifierWorkbook } from "../../functions/src/cbam/report/xlsx-builder";
 import {
+  assertCliGraphArtifactConsistency,
+  buildCliVerifiableCalculationGraph,
+} from "../../functions/src/cbam/report/canonical-calculation-graph";
+import {
   assertCarbonPriceSemantics,
   assertCalculationConsistency,
   assertEvidenceChronology,
-  buildCanonicalCalculationGraph,
   hardenVerifierWorkbook,
   prepareCaseForVerifierArtifacts,
 } from "../../functions/src/cbam/report/premium-package-hardening";
@@ -28,11 +31,11 @@ function buildFixture() {
 }
 
 describe("premium package verifier-grade hardening", () => {
-  it("derives Calculation Graph from the canonical Calculation Trace", () => {
+  it("derives Calculation Graph from Trace and satisfies shipped offline-verifier hashing", () => {
     const { calculation } = buildFixture();
-    const graph = buildCanonicalCalculationGraph(calculation);
+    const graph = buildCliVerifiableCalculationGraph(calculation);
 
-    expect(graph.rootHash).toBe(calculation.calculationRootHash);
+    expect(graph.rootHash).toMatch(/^[a-f0-9]{64}$/);
     expect(graph.nodes).toHaveLength(calculation.trace.length);
 
     for (const trace of calculation.trace) {
@@ -40,8 +43,41 @@ describe("premium package verifier-grade hardening", () => {
       expect(node, trace.formulaId).toBeTruthy();
       expect(node?.value.toString()).toBe(trace.outputValue);
       expect(node?.unit).toBe(trace.outputUnit);
-      expect(node?.hash).toBe(trace.calculationHash);
+      expect(node?.hash).toMatch(/^[a-f0-9]{64}$/);
     }
+
+    const graphBytes = Buffer.from(
+      JSON.stringify({
+        rootHash: graph.rootHash,
+        nodes: graph.nodes.map((node) => ({
+          id: node.id,
+          label: node.label,
+          formula: node.formula,
+          legalBasis: node.legalBasis,
+          inputNodes: node.inputNodes,
+          inputPaths: node.inputPaths,
+          value: node.value.toString(),
+          unit: node.unit,
+          hash: node.hash,
+        })),
+      }),
+      "utf8"
+    );
+    const traceBytes = Buffer.from(JSON.stringify({ calculation }), "utf8");
+    expect(() =>
+      assertCliGraphArtifactConsistency(
+        [
+          { path: "Calculation Trace.json", bytes: traceBytes, mediaType: "application/json" },
+          { path: "Calculation Graph.json", bytes: graphBytes, mediaType: "application/json" },
+          {
+            path: "Verifier Workspace.xlsx",
+            bytes: Buffer.from("present"),
+            mediaType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          },
+        ],
+        calculation
+      )
+    ).not.toThrow();
   });
 
   it("blocks future-dated evidence before a package can be signed", () => {
