@@ -1,0 +1,178 @@
+name: Deploy validated Step 8 release once
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cbamvalid-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.head_ref == 'ops/deploy-step8-premium-20260802'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      TARGET_SHA: 7045087dd0b27fe3a06f96c53e79a43b9f7cbb6b
+      FIREBASE_PROJECT: cbam-desk
+      FIREBASE_REGION: europe-west1
+      SSR_SERVICE: ssrcbamdesk
+      NEXT_PUBLIC_BASE_URL: https://cbamvalid.com
+      NEXT_PUBLIC_FIREBASE_API_KEY: AIzaSyD719QlNheW-iiRLbCU9TGk0yymm3QS90Q
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: cbam-desk.firebaseapp.com
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: cbam-desk
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: cbam-desk.firebasestorage.app
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: 89463138012
+      NEXT_PUBLIC_FIREBASE_APP_ID: 1:89463138012:web:88738908b8f9eb5659f619
+      NEXT_PUBLIC_PADDLE_SANDBOX: false
+      NEXT_PUBLIC_PADDLE_ENV: production
+      NEXT_PUBLIC_PADDLE_PRICE_ID: pri_01kz761bq48q2bvpt11r6ngexj
+      NEXT_PUBLIC_PADDLE_CLIENT_TOKEN: live_38b9e3fd2556b9534c430cc90fa
+      AUTH_ALLOWED_ORIGINS: https://cbamvalid.com
+      GCP_CREDENTIALS_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CBAM_DESK || secrets.FIREBASE_SERVICE_ACCOUNT || secrets.GCP_SERVICE_ACCOUNT_JSON || secrets.GOOGLE_SERVICE_ACCOUNT_JSON || secrets.GCP_SA_KEY || secrets.GOOGLE_CREDENTIALS }}
+      GCP_CREDENTIALS_B64: ${{ secrets.FIREBASE_ADMIN_SERVICE_ACCOUNT_B64 || secrets.GOOGLE_CREDENTIALS_B64 }}
+      FIREBASE_CI_TOKEN: ${{ secrets.FIREBASE_TOKEN || secrets.FIREBASE_CI_TOKEN }}
+    steps:
+      - name: Checkout exact validated main commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify immutable deployment target
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          git diff --exit-code
+
+      - name: Resolve deployment credential without exposing it
+        id: credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          credential_file="$RUNNER_TEMP/cbamvalid-deployer.json"
+          if [ -n "$GCP_CREDENTIALS_JSON" ]; then
+            printf '%s' "$GCP_CREDENTIALS_JSON" > "$credential_file"
+            echo "AUTH_SOURCE=json"
+          elif [ -n "$GCP_CREDENTIALS_B64" ]; then
+            printf '%s' "$GCP_CREDENTIALS_B64" | base64 --decode > "$credential_file"
+            echo "AUTH_SOURCE=base64"
+          elif [ -n "$FIREBASE_CI_TOKEN" ]; then
+            echo "A Firebase CI token exists, but service-account authentication is required for production deployment verification." >&2
+            exit 79
+          else
+            echo "No Google/Firebase deployment credential is configured in GitHub Actions." >&2
+            exit 78
+          fi
+
+          python - "$credential_file" "$FIREBASE_PROJECT" <<'PY'
+          import json, pathlib, sys
+          path = pathlib.Path(sys.argv[1])
+          expected = sys.argv[2]
+          data = json.loads(path.read_text())
+          if data.get("type") != "service_account":
+              raise SystemExit("Credential is not a service-account JSON document")
+          if data.get("project_id") != expected:
+              raise SystemExit(f"Credential project mismatch: expected {expected}")
+          for key in ("client_email", "private_key"):
+              if not data.get(key):
+                  raise SystemExit(f"Credential is missing {key}")
+          PY
+
+          chmod 600 "$credential_file"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$credential_file" >> "$GITHUB_ENV"
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: cbam-desk
+
+      - name: Authenticate service account
+        shell: bash
+        run: |
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS" --project="$FIREBASE_PROJECT"
+          gcloud auth list --filter=status:ACTIVE --format='value(account)' | grep -q '@'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Verify Node 24 runtime
+        shell: bash
+        run: node --version | grep -E '^v24\.'
+
+      - name: Install locked dependencies and Firebase CLI
+        shell: bash
+        run: |
+          npm ci --no-audit --no-fund
+          npm --prefix functions ci --no-audit --no-fund
+          npm install --global firebase-tools@15.24.0
+          firebase experiments:enable webframeworks
+
+      - name: Reconfirm production build before deployment
+        shell: bash
+        env:
+          CI: "true"
+          NEXT_TELEMETRY_DISABLED: "1"
+          NEXT_PUBLIC_FIREBASE_API_KEY: "ci-placeholder-not-a-secret"
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "cbamvalid-ci.invalid"
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: "cbamvalid-ci"
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "cbamvalid-ci.appspot.com"
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+          NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:0000000000000000000000"
+          ADMIN_USE_ADC: "true"
+          GCLOUD_PROJECT: "cbamvalid-ci"
+        run: npm run build
+
+      - name: Deploy Firebase atomic Hosting release
+        shell: bash
+        run: bash scripts/deploy-hosting-cutover.sh
+
+      - name: Verify custom-domain runtime and Firebase-pinned revision
+        shell: bash
+        run: |
+          LATEST_CREATED="$(gcloud run services describe "$SSR_SERVICE" --project="$FIREBASE_PROJECT" --region="$FIREBASE_REGION" --format='value(status.latestCreatedRevisionName)')"
+          LATEST_READY="$(gcloud run services describe "$SSR_SERVICE" --project="$FIREBASE_PROJECT" --region="$FIREBASE_REGION" --format='value(status.latestReadyRevisionName)')"
+          TRAFFIC_REVISION="$(gcloud run services describe "$SSR_SERVICE" --project="$FIREBASE_PROJECT" --region="$FIREBASE_REGION" --format='value(status.traffic[-1].revisionName)')"
+          echo "LATEST_CREATED=$LATEST_CREATED"
+          echo "LATEST_READY=$LATEST_READY"
+          echo "TRAFFIC_REVISION=$TRAFFIC_REVISION"
+          test -n "$LATEST_CREATED"
+          test "$LATEST_CREATED" = "$LATEST_READY"
+          test "$LATEST_CREATED" = "$TRAFFIC_REVISION"
+
+          for path in / /login /pricing '/cases/case_ci_guard_2026?step=8'; do
+            code="$(curl --retry 6 --retry-delay 5 --retry-all-errors -L -sS -o /tmp/cbamvalid-response.html -w '%{http_code}' "https://cbamvalid.com${path}")"
+            echo "SMOKE ${path} -> ${code}"
+            test "$code" -lt 500
+          done
+
+      - name: Record deployment evidence
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "TARGET_SHA=$TARGET_SHA"
+            echo "PROJECT=$FIREBASE_PROJECT"
+            echo "REGION=$FIREBASE_REGION"
+            echo "SERVICE=$SSR_SERVICE"
+            echo "COMPLETED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } | tee deployment-evidence.txt
+
+      - name: Upload deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: step8-production-deployment-${{ env.TARGET_SHA }}-${{ github.run_attempt }}
+          path: deployment-evidence.txt
+          if-no-files-found: error
+          retention-days: 30
