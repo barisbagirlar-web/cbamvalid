@@ -81,22 +81,42 @@ jobs:
             exit 78
           fi
 
-      - name: Deploy exact candidate to Firebase production
+      - name: Install Firebase CLI
         shell: bash
         run: |
           set -euo pipefail
-          npx --yes firebase-tools@latest --version
+          npm install --global firebase-tools@latest
+          firebase --version
+
+      - name: Verify Firebase project access
+        shell: bash
+        run: |
+          set -euo pipefail
           if [[ "${FIREBASE_AUTH_MODE:-}" == "token" ]]; then
-            npx --yes firebase-tools@latest deploy \
-              --only functions,hosting \
-              --project "${FIREBASE_PROJECT}" \
-              --non-interactive \
-              --token "${FIREBASE_DEPLOY_TOKEN}"
+            firebase projects:list --json --token "${FIREBASE_DEPLOY_TOKEN}" > "${RUNNER_TEMP}/firebase-projects.json"
           else
-            npx --yes firebase-tools@latest deploy \
-              --only functions,hosting \
-              --project "${FIREBASE_PROJECT}" \
-              --non-interactive
+            firebase projects:list --json > "${RUNNER_TEMP}/firebase-projects.json"
+          fi
+          node -e 'const fs=require("fs"); const text=fs.readFileSync(process.argv[1],"utf8"); const data=JSON.parse(text); if(!JSON.stringify(data).includes("cbam-desk")) process.exit(1);' "${RUNNER_TEMP}/firebase-projects.json"
+
+      - name: Deploy Cloud Functions production
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${FIREBASE_AUTH_MODE:-}" == "token" ]]; then
+            firebase deploy --only functions --project "${FIREBASE_PROJECT}" --non-interactive --token "${FIREBASE_DEPLOY_TOKEN}"
+          else
+            firebase deploy --only functions --project "${FIREBASE_PROJECT}" --non-interactive
+          fi
+
+      - name: Deploy framework-aware Hosting production
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${FIREBASE_AUTH_MODE:-}" == "token" ]]; then
+            firebase deploy --only hosting --project "${FIREBASE_PROJECT}" --non-interactive --token "${FIREBASE_DEPLOY_TOKEN}"
+          else
+            firebase deploy --only hosting --project "${FIREBASE_PROJECT}" --non-interactive
           fi
 
       - name: Verify live release assets and routes
@@ -112,6 +132,7 @@ jobs:
             printf '%s\n' "- deployed merge commit: ${TARGET_SHA}"
             printf '%s\n' "- Firebase project: ${FIREBASE_PROJECT}"
             printf '%s\n' "- live URL: ${LIVE_BASE_URL}"
-            printf '%s\n' '- functions + framework-aware hosting deployed'
+            printf '%s\n' '- Cloud Functions deployed'
+            printf '%s\n' '- framework-aware Hosting deployed'
             printf '%s\n' '- live Next.js asset integrity verified'
           } >> "${GITHUB_STEP_SUMMARY}"
