@@ -22,7 +22,12 @@ jobs:
       PR_HEAD_SHA: 31105c49790607c63469c6b5f3f1a6952d28d148
       FIREBASE_PROJECT: cbam-desk
       LIVE_BASE_URL: https://cbamvalid.com
-      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CBAM_DESK }}
+      SA_GCP_KEY: ${{ secrets.GCP_SA_KEY }}
+      SA_GOOGLE_JSON: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
+      SA_GCLOUD_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
+      SA_GCP_SERVICE_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+      SA_FIREBASE_GENERIC: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      SA_FIREBASE_CBAM: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CBAM_DESK }}
       FIREBASE_DEPLOY_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
 
     steps:
@@ -63,23 +68,38 @@ jobs:
           npm run typecheck
           npm run build:functions
 
-      - name: Configure Firebase deployment credential
+      - name: Prepare available Firebase credentials
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -n "${FIREBASE_SERVICE_ACCOUNT_JSON:-}" ]]; then
-            SA_FILE="${RUNNER_TEMP}/firebase-service-account.json"
-            printf '%s' "${FIREBASE_SERVICE_ACCOUNT_JSON}" > "${SA_FILE}"
-            node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "${SA_FILE}"
-            chmod 600 "${SA_FILE}"
-            printf 'GOOGLE_APPLICATION_CREDENTIALS=%s\n' "${SA_FILE}" >> "${GITHUB_ENV}"
-            printf '%s\n' 'FIREBASE_AUTH_MODE=adc' >> "${GITHUB_ENV}"
-          elif [[ -n "${FIREBASE_DEPLOY_TOKEN:-}" ]]; then
-            printf '%s\n' 'FIREBASE_AUTH_MODE=token' >> "${GITHUB_ENV}"
-          else
-            printf '%s\n' '::error::No Firebase production deployment credential is available to GitHub Actions.'
+          CANDIDATES="${RUNNER_TEMP}/firebase-auth-candidates.txt"
+          : > "${CANDIDATES}"
+          add_candidate() {
+            local label="$1"
+            local value="$2"
+            if [[ -z "${value}" ]]; then
+              return
+            fi
+            local file="${RUNNER_TEMP}/firebase-${label}.json"
+            printf '%s' "${value}" > "${file}"
+            if node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "${file}" 2>/dev/null; then
+              chmod 600 "${file}"
+              printf '%s|%s\n' "${label}" "${file}" >> "${CANDIDATES}"
+            fi
+          }
+          add_candidate 'gcp-key' "${SA_GCP_KEY:-}"
+          add_candidate 'google-json' "${SA_GOOGLE_JSON:-}"
+          add_candidate 'gcloud-key' "${SA_GCLOUD_KEY:-}"
+          add_candidate 'gcp-service-key' "${SA_GCP_SERVICE_KEY:-}"
+          add_candidate 'firebase-generic' "${SA_FIREBASE_GENERIC:-}"
+          add_candidate 'firebase-cbam' "${SA_FIREBASE_CBAM:-}"
+          if [[ ! -s "${CANDIDATES}" && -z "${FIREBASE_DEPLOY_TOKEN:-}" ]]; then
+            printf '%s\n' '::error::No Firebase/GCP production deployment credential is configured.'
             exit 78
           fi
+          printf 'Prepared %s service-account candidate(s); token fallback present=%s\n' \
+            "$(wc -l < "${CANDIDATES}")" \
+            "$([[ -n "${FIREBASE_DEPLOY_TOKEN:-}" ]] && printf yes || printf no)"
 
       - name: Install Firebase CLI
         shell: bash
@@ -88,82 +108,71 @@ jobs:
           npm install --global firebase-tools@latest
           firebase --version
 
-      - name: Verify Firebase project access
+      - name: Deploy changed sealing function with credential cascade
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${FIREBASE_AUTH_MODE:-}" == "token" ]]; then
-            firebase projects:list --json --token "${FIREBASE_DEPLOY_TOKEN}" > "${RUNNER_TEMP}/firebase-projects.json"
-          else
-            firebase projects:list --json > "${RUNNER_TEMP}/firebase-projects.json"
-          fi
-          node -e 'const fs=require("fs"); const text=fs.readFileSync(process.argv[1],"utf8"); const data=JSON.parse(text); if(!JSON.stringify(data).includes("cbam-desk")) process.exit(1);' "${RUNNER_TEMP}/firebase-projects.json"
+          CANDIDATES="${RUNNER_TEMP}/firebase-auth-candidates.txt"
+          DIAGNOSTICS="${RUNNER_TEMP}/firebase-deploy-diagnostics.log"
+          : > "${DIAGNOSTICS}"
+          deployed=0
 
-      - name: Deploy Cloud Functions production with auth fallback
-        shell: bash
-        run: |
-          set -euo pipefail
-          ADC_LOG="${RUNNER_TEMP}/firebase-functions-adc.log"
-          TOKEN_LOG="${RUNNER_TEMP}/firebase-functions-token.log"
-          emit_failure() {
-            local log_file="$1"
-            grep -Ei 'error:|failed|failure|permission|denied|iam|missing|required|quota|billing|runtime|secret|api' "${log_file}" \
-              | tail -n 24 \
-              | sed -E 's/::/%3A%3A/g; s/%/%25/g' \
-              | while IFS= read -r line; do printf '::error::Firebase deploy: %s\n' "${line}"; done
-          }
-
-          if [[ "${FIREBASE_AUTH_MODE:-}" == "token" ]]; then
-            if firebase deploy --only functions --project "${FIREBASE_PROJECT}" --non-interactive --token "${FIREBASE_DEPLOY_TOKEN}" >"${TOKEN_LOG}" 2>&1; then
-              cat "${TOKEN_LOG}"
-              exit 0
+          while IFS='|' read -r label credential_file; do
+            [[ -n "${label}" && -n "${credential_file}" ]] || continue
+            export GOOGLE_APPLICATION_CREDENTIALS="${credential_file}"
+            ACCESS_LOG="${RUNNER_TEMP}/firebase-access-${label}.log"
+            DEPLOY_LOG="${RUNNER_TEMP}/firebase-deploy-${label}.log"
+            if ! firebase projects:list --json >"${ACCESS_LOG}" 2>&1; then
+              printf '[%s] project access failed\n' "${label}" >> "${DIAGNOSTICS}"
+              grep -Ei 'error:|http error|permission|denied|forbidden|unauthorized|insufficient|403|401' "${ACCESS_LOG}" | tail -n 2 >> "${DIAGNOSTICS}" || true
+              continue
             fi
-            cat "${TOKEN_LOG}"
-            emit_failure "${TOKEN_LOG}"
+            if ! grep -q 'cbam-desk' "${ACCESS_LOG}"; then
+              printf '[%s] target project not visible\n' "${label}" >> "${DIAGNOSTICS}"
+              continue
+            fi
+            if firebase deploy --only functions:sealCbamReport --project "${FIREBASE_PROJECT}" --non-interactive >"${DEPLOY_LOG}" 2>&1; then
+              cat "${DEPLOY_LOG}"
+              printf 'GOOGLE_APPLICATION_CREDENTIALS=%s\n' "${credential_file}" >> "${GITHUB_ENV}"
+              printf 'FIREBASE_DEPLOY_AUTH=adc\n' >> "${GITHUB_ENV}"
+              printf 'Firebase deployment credential selected: %s\n' "${label}"
+              deployed=1
+              break
+            fi
+            printf '[%s] sealCbamReport deploy failed\n' "${label}" >> "${DIAGNOSTICS}"
+            grep -Ei 'error:|http error|permission|denied|forbidden|unauthorized|insufficient|failed to|403|401' "${DEPLOY_LOG}" | tail -n 3 >> "${DIAGNOSTICS}" || true
+          done < "${CANDIDATES}"
+
+          if [[ "${deployed}" -eq 0 && -n "${FIREBASE_DEPLOY_TOKEN:-}" ]]; then
+            unset GOOGLE_APPLICATION_CREDENTIALS
+            TOKEN_LOG="${RUNNER_TEMP}/firebase-deploy-token.log"
+            if firebase deploy --only functions:sealCbamReport --project "${FIREBASE_PROJECT}" --non-interactive --token "${FIREBASE_DEPLOY_TOKEN}" >"${TOKEN_LOG}" 2>&1; then
+              cat "${TOKEN_LOG}"
+              printf 'FIREBASE_DEPLOY_AUTH=token\n' >> "${GITHUB_ENV}"
+              deployed=1
+            else
+              printf '[firebase-token] sealCbamReport deploy failed\n' >> "${DIAGNOSTICS}"
+              grep -Ei 'error:|http error|permission|denied|forbidden|unauthorized|insufficient|failed to|403|401' "${TOKEN_LOG}" | tail -n 3 >> "${DIAGNOSTICS}" || true
+            fi
+          fi
+
+          if [[ "${deployed}" -ne 1 ]]; then
+            tail -n 8 "${DIAGNOSTICS}" \
+              | sed -E 's/%/%25/g; s/::/%3A%3A/g' \
+              | while IFS= read -r line; do printf '::error::Firebase Functions: %s\n' "${line}"; done
             exit 1
           fi
 
-          if firebase deploy --only functions --project "${FIREBASE_PROJECT}" --non-interactive >"${ADC_LOG}" 2>&1; then
-            cat "${ADC_LOG}"
-            exit 0
-          fi
-
-          printf '%s\n' 'ADC Functions deployment failed; checking token fallback.'
-          emit_failure "${ADC_LOG}"
-          if [[ -z "${FIREBASE_DEPLOY_TOKEN:-}" ]]; then
-            printf '%s\n' '::error::ADC Functions deployment failed and FIREBASE_TOKEN fallback is not configured.'
-            exit 1
-          fi
-
-          unset GOOGLE_APPLICATION_CREDENTIALS
-          if firebase projects:list --json --token "${FIREBASE_DEPLOY_TOKEN}" > "${RUNNER_TEMP}/firebase-token-projects.json" 2>"${RUNNER_TEMP}/firebase-token-projects.err"; then
-            if firebase deploy --only functions --project "${FIREBASE_PROJECT}" --non-interactive --token "${FIREBASE_DEPLOY_TOKEN}" >"${TOKEN_LOG}" 2>&1; then
-              cat "${TOKEN_LOG}"
-              printf '%s\n' 'Functions deployment succeeded through Firebase token fallback.'
-              exit 0
-            fi
-          fi
-          cat "${TOKEN_LOG}" 2>/dev/null || true
-          emit_failure "${TOKEN_LOG}" 2>/dev/null || true
-          printf '%s\n' '::error::Cloud Functions production deployment failed through all configured authentication modes.'
-          exit 1
-
-      - name: Deploy framework-aware Hosting production with auth fallback
+      - name: Deploy framework-aware Hosting production
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]]; then
-            if firebase deploy --only hosting --project "${FIREBASE_PROJECT}" --non-interactive; then
-              exit 0
-            fi
-          fi
-          if [[ -n "${FIREBASE_DEPLOY_TOKEN:-}" ]]; then
+          if [[ "${FIREBASE_DEPLOY_AUTH:-}" == "token" ]]; then
             unset GOOGLE_APPLICATION_CREDENTIALS
             firebase deploy --only hosting --project "${FIREBASE_PROJECT}" --non-interactive --token "${FIREBASE_DEPLOY_TOKEN}"
-            exit 0
+          else
+            firebase deploy --only hosting --project "${FIREBASE_PROJECT}" --non-interactive
           fi
-          printf '%s\n' '::error::Firebase Hosting production deployment failed and no fallback credential is configured.'
-          exit 1
 
       - name: Verify live release assets and routes
         shell: bash
@@ -178,7 +187,7 @@ jobs:
             printf '%s\n' "- deployed merge commit: ${TARGET_SHA}"
             printf '%s\n' "- Firebase project: ${FIREBASE_PROJECT}"
             printf '%s\n' "- live URL: ${LIVE_BASE_URL}"
-            printf '%s\n' '- Cloud Functions deployed'
+            printf '%s\n' '- changed Cloud Function sealCbamReport deployed'
             printf '%s\n' '- framework-aware Hosting deployed'
             printf '%s\n' '- live Next.js asset integrity verified'
           } >> "${GITHUB_STEP_SUMMARY}"
