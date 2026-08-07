@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
-      TARGET_SHA: 795025b96a8a6757a8f8756b6a9d33c00c37d4df
+      TARGET_SHA: 7045087dd0b27fe3a06f96c53e79a43b9f7cbb6b
       FIREBASE_PROJECT: cbam-desk
       FIREBASE_REGION: europe-west1
       SSR_SERVICE: ssrcbamdesk
@@ -28,7 +28,7 @@ jobs:
       FIREBASE_CI_TOKEN: ${{ secrets.FIREBASE_TOKEN || secrets.FIREBASE_CI_TOKEN }}
     steps:
       - name: Checkout exact validated main commit
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           ref: ${{ env.TARGET_SHA }}
           fetch-depth: 0
@@ -53,7 +53,7 @@ jobs:
             printf '%s' "$GCP_CREDENTIALS_B64" | base64 --decode > "$credential_file"
             echo "AUTH_SOURCE=base64"
           elif [ -n "$FIREBASE_CI_TOKEN" ]; then
-            echo "A Firebase CI token exists, but it cannot safely perform the required Cloud Run traffic cutover." >&2
+            echo "A Firebase CI token exists, but service-account authentication is required for production deployment verification." >&2
             exit 79
           else
             echo "No Google/Firebase deployment credential is configured in GitHub Actions." >&2
@@ -78,7 +78,7 @@ jobs:
           echo "GOOGLE_APPLICATION_CREDENTIALS=$credential_file" >> "$GITHUB_ENV"
 
       - name: Set up Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@v3
         with:
           project_id: cbam-desk
 
@@ -89,16 +89,20 @@ jobs:
           gcloud auth list --filter=status:ACTIVE --format='value(account)' | grep -q '@'
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version: "24"
           cache: npm
+
+      - name: Verify Node 24 runtime
+        shell: bash
+        run: node --version | grep -E '^v24\.'
 
       - name: Install locked dependencies and Firebase CLI
         shell: bash
         run: |
           npm ci --no-audit --no-fund
-          npm install --global firebase-tools@latest
+          npm install --global firebase-tools@15.24.0
           firebase experiments:enable webframeworks
 
       - name: Reconfirm production build before deployment
@@ -116,11 +120,11 @@ jobs:
           GCLOUD_PROJECT: "cbamvalid-ci"
         run: npm run build
 
-      - name: Deploy Hosting and cut Cloud Run traffic to the new revision
+      - name: Deploy Firebase atomic Hosting release
         shell: bash
         run: bash scripts/deploy-hosting-cutover.sh
 
-      - name: Verify custom-domain runtime and deployed traffic revision
+      - name: Verify custom-domain runtime and Firebase-pinned revision
         shell: bash
         run: |
           LATEST_CREATED="$(gcloud run services describe "$SSR_SERVICE" --project="$FIREBASE_PROJECT" --region="$FIREBASE_REGION" --format='value(status.latestCreatedRevisionName)')"
@@ -153,7 +157,7 @@ jobs:
 
       - name: Upload deployment evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: step8-production-deployment-${{ env.TARGET_SHA }}-${{ github.run_attempt }}
           path: deployment-evidence.txt
