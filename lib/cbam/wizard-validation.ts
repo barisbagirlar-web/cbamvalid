@@ -437,10 +437,13 @@ function deriveStepState(
   if (step === 8) {
     return missingEvidence > 0 || missingFields > 0 ? "NEEDS_DOCUMENTS" : "IN_PROGRESS";
   }
-  if (total === 0) return "COMPLETE";
+  // Evidence and review posture take precedence over the optional-field total.
+  // This prevents Step 7 from showing COMPLETE while material documents are
+  // still missing or awaiting review.
   if (missingFields > 0) return "NEEDS_INFORMATION";
   if (missingEvidence > 0) return "NEEDS_DOCUMENTS";
   if (awaitingReview > 0) return "AWAITING_REVIEW";
+  if (total === 0) return "COMPLETE";
   return completed >= total ? "COMPLETE" : "IN_PROGRESS";
 }
 
@@ -480,14 +483,16 @@ export function summarizeWizardCompletion(caseData: AuditReadyCase): {
 } {
   let completedFields = 0;
   let missingFields = 0;
-  let missingEvidence = 0;
+  const missingEvidencePaths = new Set<string>();
   for (let step = 1; step <= 7; step += 1) {
     const validation = validateWizardStep(step, caseData);
     completedFields += validation.completedFieldCount;
     missingFields += validation.missingFieldCount;
-    missingEvidence += validation.missingEvidenceCount;
+    for (const issue of validation.evidenceIssues) {
+      missingEvidencePaths.add(issue.fieldPath);
+    }
   }
-  return { completedFields, missingFields, missingEvidence };
+  return { completedFields, missingFields, missingEvidence: missingEvidencePaths.size };
 }
 
 /**
@@ -642,7 +647,8 @@ export function summarizeStep8Actions(
   caseData: AuditReadyCase,
   calculation?: Step8CalculationSummary | null
 ): Step8ActionItem[] {
-  const items: Step8ActionItem[] = [];
+  const items = new Map<string, Step8ActionItem>();
+  const missingDataPaths = new Set<string>();
 
   const push = (
     category: Step8ActionCategory,
@@ -652,12 +658,19 @@ export function summarizeStep8Actions(
     step: number,
     fieldPath: string
   ) => {
-    items.push({ category, fieldLabel, why, acceptedDocuments, step, fieldPath });
+    const key = `${category}:${fieldPath}`;
+    if (!items.has(key)) {
+      items.set(key, { category, fieldLabel, why, acceptedDocuments, step, fieldPath });
+    }
   };
 
-  for (let step = 1; step <= 8; step += 1) {
+  // Step 8 has no unique data/evidence fields; validating it repeats the
+  // Step 7 material-evidence aggregation. Stop at 7 and deduplicate by
+  // category + concrete input path so one requirement appears once.
+  for (let step = 1; step <= 7; step += 1) {
     const validation = validateWizardStep(step, caseData);
     for (const issue of validation.dataIssues) {
+      missingDataPaths.add(issue.fieldPath);
       const guidance = getFieldGuidanceForPath(issue.fieldPath);
       push(
         "Required information",
@@ -669,6 +682,10 @@ export function summarizeStep8Actions(
       );
     }
     for (const issue of validation.evidenceIssues) {
+      // Do not ask for a source document before the underlying required value
+      // exists; the evidence requirement will surface automatically once the
+      // data field is completed.
+      if (missingDataPaths.has(issue.fieldPath)) continue;
       const guidance = getFieldGuidanceForPath(issue.fieldPath);
       push(
         "Documents to upload",
@@ -735,7 +752,7 @@ export function summarizeStep8Actions(
     );
   }
 
-  return items;
+  return [...items.values()];
 }
 
 /**
