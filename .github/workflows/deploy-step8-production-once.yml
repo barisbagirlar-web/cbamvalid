@@ -102,6 +102,7 @@ jobs:
         shell: bash
         run: |
           npm ci --no-audit --no-fund
+          npm --prefix functions ci --no-audit --no-fund
           npm install --global firebase-tools@15.24.0
           firebase experiments:enable webframeworks
 
