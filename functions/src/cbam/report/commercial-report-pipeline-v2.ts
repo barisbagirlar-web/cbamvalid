@@ -9,6 +9,7 @@ import {
 } from "./verifier-package-builder";
 import type { KmsSignatureResult } from "./kms-signature";
 import type { HonestScoreboard } from "./honest-scoreboard";
+import { normalizeXlsxEntryTimestamps } from "./deterministic-xlsx";
 import {
   assertPremiumPackagePreconditions,
   assertTraceGraphArtifactConsistency,
@@ -106,6 +107,16 @@ export class CommercialReportPipelineV2 {
       calculation: params.calculation,
       graph: canonicalGraph,
     });
+
+    // Hardening adds workbook ZIP members; normalise every XLSX member back to
+    // the immutable release timestamp so equivalent releases remain byte-stable.
+    unsignedArtifacts = await Promise.all(
+      unsignedArtifacts.map(async (item) =>
+        item.path === "Verifier Workspace.xlsx"
+          ? { ...item, bytes: await normalizeXlsxEntryTimestamps(item.bytes, params.generatedAt) }
+          : item
+      )
+    );
 
     // The graph/trace/workbook contract is checked before the manifest exists.
     // A stale graph can therefore never be cryptographically blessed again.
