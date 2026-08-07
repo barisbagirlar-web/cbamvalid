@@ -177,7 +177,7 @@ jobs:
           grep -q 'sealCbamReport' "${FUNCTIONS_JSON}"
           node scripts/verify-live-next-assets.mjs "${LIVE_BASE_URL}"
           curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/" >/dev/null
-          curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/auth/login" >/dev/null
+          curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/login" >/dev/null
           {
             printf '%s\n' '## Production deployment PASS'
             printf '%s\n' "- PR head: ${PR_HEAD_SHA}"
@@ -186,5 +186,5 @@ jobs:
             printf '%s\n' "- live URL: ${LIVE_BASE_URL}"
             printf '%s\n' '- changed Cloud Function sealCbamReport deployed and listed in production'
             printf '%s\n' '- PR146 contains no frontend application changes; Hosting redeploy is intentionally not required'
-            printf '%s\n' '- existing live Next.js asset integrity and public routes verified healthy'
+            printf '%s\n' '- existing live Next.js asset integrity and canonical public routes verified healthy'
           } >> "${GITHUB_STEP_SUMMARY}"
