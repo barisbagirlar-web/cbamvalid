@@ -55,6 +55,7 @@ jobs:
           tests/reports/four-complete-dossiers.test.ts
           tests/reports/render-qa.test.ts
           tests/reports/editorial-quality-gate.test.ts
+          tests/reports/premium-package-hardening.test.ts
 
       - name: Generate and verify exact PDF and ZIP artifacts
         run: npx tsx scripts/guard-499-usd-release.ts
