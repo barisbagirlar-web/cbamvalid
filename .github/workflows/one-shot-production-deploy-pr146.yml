@@ -22,7 +22,7 @@ jobs:
       PR_HEAD_SHA: 31105c49790607c63469c6b5f3f1a6952d28d148
       FIREBASE_PROJECT: cbam-desk
       LIVE_BASE_URL: https://cbamvalid.com
-      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CBAM_DESK || secrets.FIREBASE_SERVICE_ACCOUNT || secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON || secrets.GCP_SA_KEY }}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CBAM_DESK }}
       FIREBASE_DEPLOY_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
 
     steps:
@@ -42,7 +42,6 @@ jobs:
           echo "TARGET_SHA=${TARGET_SHA}"
           echo "ACTUAL_SHA=${ACTUAL_SHA}"
           test "${ACTUAL_SHA}" = "${TARGET_SHA}"
-          git cat-file -e "${PR_HEAD_SHA}^{commit}"
 
       - name: Set up Node.js 24
         uses: actions/setup-node@v7
@@ -65,7 +64,6 @@ jobs:
           npm run build:functions
 
       - name: Configure Firebase deployment credential
-        id: firebase_auth
         shell: bash
         run: |
           set -euo pipefail
@@ -75,9 +73,9 @@ jobs:
             node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "${SA_FILE}"
             chmod 600 "${SA_FILE}"
             echo "GOOGLE_APPLICATION_CREDENTIALS=${SA_FILE}" >> "${GITHUB_ENV}"
-            echo "mode=adc" >> "${GITHUB_OUTPUT}"
+            echo "FIREBASE_AUTH_MODE=adc" >> "${GITHUB_ENV}"
           elif [[ -n "${FIREBASE_DEPLOY_TOKEN:-}" ]]; then
-            echo "mode=token" >> "${GITHUB_OUTPUT}"
+            echo "FIREBASE_AUTH_MODE=token" >> "${GITHUB_ENV}"
           else
             echo "::error::No Firebase production deployment credential is available to GitHub Actions."
             exit 78
@@ -88,7 +86,7 @@ jobs:
         run: |
           set -euo pipefail
           npx --yes firebase-tools@latest --version
-          if [[ "${{ steps.firebase_auth.outputs.mode }}" == "token" ]]; then
+          if [[ "${FIREBASE_AUTH_MODE}" == "token" ]]; then
             npx --yes firebase-tools@latest deploy \
               --only functions,hosting \
               --project "${FIREBASE_PROJECT}" \
