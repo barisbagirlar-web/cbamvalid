@@ -38,9 +38,9 @@ jobs:
         run: |
           set -euo pipefail
           ACTUAL_SHA="$(git rev-parse HEAD)"
-          echo "PR_HEAD_SHA=${PR_HEAD_SHA}"
-          echo "TARGET_SHA=${TARGET_SHA}"
-          echo "ACTUAL_SHA=${ACTUAL_SHA}"
+          printf 'PR_HEAD_SHA=%s\n' "${PR_HEAD_SHA}"
+          printf 'TARGET_SHA=%s\n' "${TARGET_SHA}"
+          printf 'ACTUAL_SHA=%s\n' "${ACTUAL_SHA}"
           test "${ACTUAL_SHA}" = "${TARGET_SHA}"
 
       - name: Set up Node.js 24
@@ -72,12 +72,12 @@ jobs:
             printf '%s' "${FIREBASE_SERVICE_ACCOUNT_JSON}" > "${SA_FILE}"
             node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "${SA_FILE}"
             chmod 600 "${SA_FILE}"
-            echo "GOOGLE_APPLICATION_CREDENTIALS=${SA_FILE}" >> "${GITHUB_ENV}"
-            echo "FIREBASE_AUTH_MODE=adc" >> "${GITHUB_ENV}"
+            printf 'GOOGLE_APPLICATION_CREDENTIALS=%s\n' "${SA_FILE}" >> "${GITHUB_ENV}"
+            printf '%s\n' 'FIREBASE_AUTH_MODE=adc' >> "${GITHUB_ENV}"
           elif [[ -n "${FIREBASE_DEPLOY_TOKEN:-}" ]]; then
-            echo "FIREBASE_AUTH_MODE=token" >> "${GITHUB_ENV}"
+            printf '%s\n' 'FIREBASE_AUTH_MODE=token' >> "${GITHUB_ENV}"
           else
-            echo "::error::No Firebase production deployment credential is available to GitHub Actions."
+            printf '%s\n' '::error::No Firebase production deployment credential is available to GitHub Actions.'
             exit 78
           fi
 
@@ -86,7 +86,7 @@ jobs:
         run: |
           set -euo pipefail
           npx --yes firebase-tools@latest --version
-          if [[ "${FIREBASE_AUTH_MODE}" == "token" ]]; then
+          if [[ "${FIREBASE_AUTH_MODE:-}" == "token" ]]; then
             npx --yes firebase-tools@latest deploy \
               --only functions,hosting \
               --project "${FIREBASE_PROJECT}" \
@@ -103,15 +103,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          LIVE_BASE_URL="${LIVE_BASE_URL}" node scripts/verify-live-next-assets.mjs "${LIVE_BASE_URL}"
+          node scripts/verify-live-next-assets.mjs "${LIVE_BASE_URL}"
           curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/" >/dev/null
           curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/auth/login" >/dev/null
           {
-            echo "## Production deployment PASS"
-            echo "- PR head: ${PR_HEAD_SHA}"
-            echo "- deployed merge commit: ${TARGET_SHA}"
-            echo "- Firebase project: ${FIREBASE_PROJECT}"
-            echo "- live URL: ${LIVE_BASE_URL}"
-            echo "- functions + framework-aware hosting deployed"
-            echo "- live Next.js asset integrity verified"
+            printf '%s\n' '## Production deployment PASS'
+            printf '%s\n' "- PR head: ${PR_HEAD_SHA}"
+            printf '%s\n' "- deployed merge commit: ${TARGET_SHA}"
+            printf '%s\n' "- Firebase project: ${FIREBASE_PROJECT}"
+            printf '%s\n' "- live URL: ${LIVE_BASE_URL}"
+            printf '%s\n' '- functions + framework-aware hosting deployed'
+            printf '%s\n' '- live Next.js asset integrity verified'
           } >> "${GITHUB_STEP_SUMMARY}"
