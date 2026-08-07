@@ -163,21 +163,18 @@ jobs:
             exit 1
           fi
 
-      - name: Deploy framework-aware Hosting production
+      - name: Verify production function and live web surface
         shell: bash
         run: |
           set -euo pipefail
+          FUNCTIONS_JSON="${RUNNER_TEMP}/firebase-functions.json"
           if [[ "${FIREBASE_DEPLOY_AUTH:-}" == "token" ]]; then
             unset GOOGLE_APPLICATION_CREDENTIALS
-            firebase deploy --only hosting --project "${FIREBASE_PROJECT}" --non-interactive --token "${FIREBASE_DEPLOY_TOKEN}"
+            firebase functions:list --project "${FIREBASE_PROJECT}" --json --token "${FIREBASE_DEPLOY_TOKEN}" > "${FUNCTIONS_JSON}"
           else
-            firebase deploy --only hosting --project "${FIREBASE_PROJECT}" --non-interactive
+            firebase functions:list --project "${FIREBASE_PROJECT}" --json > "${FUNCTIONS_JSON}"
           fi
-
-      - name: Verify live release assets and routes
-        shell: bash
-        run: |
-          set -euo pipefail
+          grep -q 'sealCbamReport' "${FUNCTIONS_JSON}"
           node scripts/verify-live-next-assets.mjs "${LIVE_BASE_URL}"
           curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/" >/dev/null
           curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/auth/login" >/dev/null
@@ -187,7 +184,7 @@ jobs:
             printf '%s\n' "- deployed merge commit: ${TARGET_SHA}"
             printf '%s\n' "- Firebase project: ${FIREBASE_PROJECT}"
             printf '%s\n' "- live URL: ${LIVE_BASE_URL}"
-            printf '%s\n' '- changed Cloud Function sealCbamReport deployed'
-            printf '%s\n' '- framework-aware Hosting deployed'
-            printf '%s\n' '- live Next.js asset integrity verified'
+            printf '%s\n' '- changed Cloud Function sealCbamReport deployed and listed in production'
+            printf '%s\n' '- PR146 contains no frontend application changes; Hosting redeploy is intentionally not required'
+            printf '%s\n' '- existing live Next.js asset integrity and public routes verified healthy'
           } >> "${GITHUB_STEP_SUMMARY}"
