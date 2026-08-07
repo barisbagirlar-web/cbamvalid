@@ -99,25 +99,71 @@ jobs:
           fi
           node -e 'const fs=require("fs"); const text=fs.readFileSync(process.argv[1],"utf8"); const data=JSON.parse(text); if(!JSON.stringify(data).includes("cbam-desk")) process.exit(1);' "${RUNNER_TEMP}/firebase-projects.json"
 
-      - name: Deploy Cloud Functions production
+      - name: Deploy Cloud Functions production with auth fallback
         shell: bash
         run: |
           set -euo pipefail
+          ADC_LOG="${RUNNER_TEMP}/firebase-functions-adc.log"
+          TOKEN_LOG="${RUNNER_TEMP}/firebase-functions-token.log"
+          emit_failure() {
+            local log_file="$1"
+            grep -Ei 'error:|failed|failure|permission|denied|iam|missing|required|quota|billing|runtime|secret|api' "${log_file}" \
+              | tail -n 24 \
+              | sed -E 's/::/%3A%3A/g; s/%/%25/g' \
+              | while IFS= read -r line; do printf '::error::Firebase deploy: %s\n' "${line}"; done
+          }
+
           if [[ "${FIREBASE_AUTH_MODE:-}" == "token" ]]; then
-            firebase deploy --only functions --project "${FIREBASE_PROJECT}" --non-interactive --token "${FIREBASE_DEPLOY_TOKEN}"
-          else
-            firebase deploy --only functions --project "${FIREBASE_PROJECT}" --non-interactive
+            if firebase deploy --only functions --project "${FIREBASE_PROJECT}" --non-interactive --token "${FIREBASE_DEPLOY_TOKEN}" >"${TOKEN_LOG}" 2>&1; then
+              cat "${TOKEN_LOG}"
+              exit 0
+            fi
+            cat "${TOKEN_LOG}"
+            emit_failure "${TOKEN_LOG}"
+            exit 1
           fi
 
-      - name: Deploy framework-aware Hosting production
+          if firebase deploy --only functions --project "${FIREBASE_PROJECT}" --non-interactive >"${ADC_LOG}" 2>&1; then
+            cat "${ADC_LOG}"
+            exit 0
+          fi
+
+          printf '%s\n' 'ADC Functions deployment failed; checking token fallback.'
+          emit_failure "${ADC_LOG}"
+          if [[ -z "${FIREBASE_DEPLOY_TOKEN:-}" ]]; then
+            printf '%s\n' '::error::ADC Functions deployment failed and FIREBASE_TOKEN fallback is not configured.'
+            exit 1
+          fi
+
+          unset GOOGLE_APPLICATION_CREDENTIALS
+          if firebase projects:list --json --token "${FIREBASE_DEPLOY_TOKEN}" > "${RUNNER_TEMP}/firebase-token-projects.json" 2>"${RUNNER_TEMP}/firebase-token-projects.err"; then
+            if firebase deploy --only functions --project "${FIREBASE_PROJECT}" --non-interactive --token "${FIREBASE_DEPLOY_TOKEN}" >"${TOKEN_LOG}" 2>&1; then
+              cat "${TOKEN_LOG}"
+              printf '%s\n' 'Functions deployment succeeded through Firebase token fallback.'
+              exit 0
+            fi
+          fi
+          cat "${TOKEN_LOG}" 2>/dev/null || true
+          emit_failure "${TOKEN_LOG}" 2>/dev/null || true
+          printf '%s\n' '::error::Cloud Functions production deployment failed through all configured authentication modes.'
+          exit 1
+
+      - name: Deploy framework-aware Hosting production with auth fallback
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${FIREBASE_AUTH_MODE:-}" == "token" ]]; then
-            firebase deploy --only hosting --project "${FIREBASE_PROJECT}" --non-interactive --token "${FIREBASE_DEPLOY_TOKEN}"
-          else
-            firebase deploy --only hosting --project "${FIREBASE_PROJECT}" --non-interactive
+          if [[ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]]; then
+            if firebase deploy --only hosting --project "${FIREBASE_PROJECT}" --non-interactive; then
+              exit 0
+            fi
           fi
+          if [[ -n "${FIREBASE_DEPLOY_TOKEN:-}" ]]; then
+            unset GOOGLE_APPLICATION_CREDENTIALS
+            firebase deploy --only hosting --project "${FIREBASE_PROJECT}" --non-interactive --token "${FIREBASE_DEPLOY_TOKEN}"
+            exit 0
+          fi
+          printf '%s\n' '::error::Firebase Hosting production deployment failed and no fallback credential is configured.'
+          exit 1
 
       - name: Verify live release assets and routes
         shell: bash
