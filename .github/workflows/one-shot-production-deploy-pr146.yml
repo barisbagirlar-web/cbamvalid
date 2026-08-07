@@ -1,0 +1,117 @@
+name: One-shot production deploy PR146
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/one-shot-production-deploy-pr146.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cbamvalid-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      TARGET_SHA: 07bb151e047bff38e1ca384eaedc227e7ccdb4f6
+      PR_HEAD_SHA: 31105c49790607c63469c6b5f3f1a6952d28d148
+      FIREBASE_PROJECT: cbam-desk
+      LIVE_BASE_URL: https://cbamvalid.com
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CBAM_DESK }}
+      FIREBASE_DEPLOY_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+
+    steps:
+      - name: Checkout exact merged production candidate
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          persist-credentials: false
+          fetch-depth: 2
+
+      - name: Prove exact deployment provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          printf 'PR_HEAD_SHA=%s\n' "${PR_HEAD_SHA}"
+          printf 'TARGET_SHA=%s\n' "${TARGET_SHA}"
+          printf 'ACTUAL_SHA=%s\n' "${ACTUAL_SHA}"
+          test "${ACTUAL_SHA}" = "${TARGET_SHA}"
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Verify Node 24 runtime
+        run: node --version | grep -E '^v24\.'
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Production preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run guard:hosting-architecture
+          npm run typecheck
+          npm run build:functions
+
+      - name: Configure Firebase deployment credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${FIREBASE_SERVICE_ACCOUNT_JSON:-}" ]]; then
+            SA_FILE="${RUNNER_TEMP}/firebase-service-account.json"
+            printf '%s' "${FIREBASE_SERVICE_ACCOUNT_JSON}" > "${SA_FILE}"
+            node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "${SA_FILE}"
+            chmod 600 "${SA_FILE}"
+            printf 'GOOGLE_APPLICATION_CREDENTIALS=%s\n' "${SA_FILE}" >> "${GITHUB_ENV}"
+            printf '%s\n' 'FIREBASE_AUTH_MODE=adc' >> "${GITHUB_ENV}"
+          elif [[ -n "${FIREBASE_DEPLOY_TOKEN:-}" ]]; then
+            printf '%s\n' 'FIREBASE_AUTH_MODE=token' >> "${GITHUB_ENV}"
+          else
+            printf '%s\n' '::error::No Firebase production deployment credential is available to GitHub Actions.'
+            exit 78
+          fi
+
+      - name: Deploy exact candidate to Firebase production
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes firebase-tools@latest --version
+          if [[ "${FIREBASE_AUTH_MODE:-}" == "token" ]]; then
+            npx --yes firebase-tools@latest deploy \
+              --only functions,hosting \
+              --project "${FIREBASE_PROJECT}" \
+              --non-interactive \
+              --token "${FIREBASE_DEPLOY_TOKEN}"
+          else
+            npx --yes firebase-tools@latest deploy \
+              --only functions,hosting \
+              --project "${FIREBASE_PROJECT}" \
+              --non-interactive
+          fi
+
+      - name: Verify live release assets and routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-live-next-assets.mjs "${LIVE_BASE_URL}"
+          curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/" >/dev/null
+          curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/auth/login" >/dev/null
+          {
+            printf '%s\n' '## Production deployment PASS'
+            printf '%s\n' "- PR head: ${PR_HEAD_SHA}"
+            printf '%s\n' "- deployed merge commit: ${TARGET_SHA}"
+            printf '%s\n' "- Firebase project: ${FIREBASE_PROJECT}"
+            printf '%s\n' "- live URL: ${LIVE_BASE_URL}"
+            printf '%s\n' '- functions + framework-aware hosting deployed'
+            printf '%s\n' '- live Next.js asset integrity verified'
+          } >> "${GITHUB_STEP_SUMMARY}"
