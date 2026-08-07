@@ -11,9 +11,11 @@ import type { KmsSignatureResult } from "./kms-signature";
 import type { HonestScoreboard } from "./honest-scoreboard";
 import { normalizeXlsxEntryTimestamps } from "./deterministic-xlsx";
 import {
+  assertCliGraphArtifactConsistency,
+  buildCliVerifiableCalculationGraph,
+} from "./canonical-calculation-graph";
+import {
   assertPremiumPackagePreconditions,
-  assertTraceGraphArtifactConsistency,
-  buildCanonicalCalculationGraph,
   hardenVerifierArtifacts,
   prepareCaseForVerifierArtifacts,
 } from "./premium-package-hardening";
@@ -67,8 +69,9 @@ export class CommercialReportPipelineV2 {
     const artifactCaseData = prepareCaseForVerifierArtifacts(params.caseData, params.calculation);
 
     // Calculation Graph has exactly one source of truth: Calculation Trace.
-    // Never trust dossierModel.calcGraph or another calculation engine here.
-    const canonicalGraph = buildCanonicalCalculationGraph(params.calculation);
+    // Its graph hashes/root also use the exact algorithm shipped in the offline
+    // verifier CLI so the customer can independently recompute the graph.
+    const canonicalGraph = buildCliVerifiableCalculationGraph(params.calculation);
 
     // --- Pass 1: Build Unsigned Artifacts (single pass) ---
     // Artifacts are rendered ONCE with placeholder hash values.
@@ -118,9 +121,9 @@ export class CommercialReportPipelineV2 {
       )
     );
 
-    // The graph/trace/workbook contract is checked before the manifest exists.
-    // A stale graph can therefore never be cryptographically blessed again.
-    assertTraceGraphArtifactConsistency(unsignedArtifacts, params.calculation);
+    // The graph must satisfy both cross-artifact Trace agreement and the exact
+    // offline-verifier node/root hashing algorithm before a manifest can exist.
+    assertCliGraphArtifactConsistency(unsignedArtifacts, params.calculation);
 
     // Build data integrity manifest using the hardened artifacts.
     const manifestResult = buildDataIntegrityManifest({
