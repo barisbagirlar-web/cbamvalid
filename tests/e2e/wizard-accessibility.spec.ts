@@ -92,7 +92,7 @@ test.describe("Accessibility — authenticated wizard (opt-in)", () => {
     const footer = page.locator("div.fixed.bottom-0");
     await expect(footer).toBeVisible({ timeout: 15000 });
     const footerActions = footer.locator("a, button").filter({ hasText: /\S/ });
-    await expect(footerActions).toHaveCount(3); // Previous · Save draft · CTA
+    await expect(footerActions).toHaveCount(3); // Previous · Save progress · seal CTA
     const reviewCtas = page.getByRole("button", { name: /Review remaining actions/i });
     expect(await reviewCtas.count()).toBeLessThanOrEqual(1);
   });
@@ -103,7 +103,7 @@ test.describe("Accessibility — authenticated wizard (opt-in)", () => {
 
     const footer = page.locator("div.fixed.bottom-0");
     await expect(footer).toBeVisible({ timeout: 15000 });
-    const primary = footer.locator("a, button").filter({ hasText: /Review|Pay|Lock|Open|Creating|Continue/ }).last();
+    const primary = footer.locator("a, button").filter({ hasText: /seal|Seal|Pay|Open|Complete \d+ requirements|Continue/i }).last();
     await primary.focus();
     await expect(primary).toBeFocused();
     const outlineVisible = await primary.evaluate((el) => {

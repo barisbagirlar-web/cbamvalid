@@ -260,7 +260,7 @@ test.describe("Wizard Step 8 UX — authenticated live regression (opt-in)", () 
       await reviewButton.first().click();
       // The blocker panel is revealed in place.
       await expect(page.getByLabel("Resolve evidence blockers")).toContainText("Remaining actions");
-      await expect(page.getByText(/open requirement.*must be resolved before locking|action item.*must be resolved before locking/i)).toBeVisible();
+      await expect(page.getByText(/must be resolved before (locking|sealing)/i)).toBeVisible();
       // The step did not move: still Step 8, no navigation to Step 7.
       await expect(stepText(page)).toContainText("Step 8 of 8");
       await expect(footerStepText(page)).toContainText("Step 8 of 8");
@@ -272,16 +272,16 @@ test.describe("Wizard Step 8 UX — authenticated live regression (opt-in)", () 
     await page.goto(wizardUrl());
     await expect(stepText(page)).toContainText("Step 8 of 8", { timeout: 30000 });
 
-    const lockButton = page.getByRole("button", { name: "Lock & download package" });
+    const lockButton = page.getByRole("button", { name: "Seal package and create downloads" });
     const blocked = (await lockButton.count()) === 0;
     if (blocked) {
       await page.getByRole("button", { name: "Review remaining actions" }).first().click();
       await expect(page.getByLabel("Resolve evidence blockers")).toBeVisible();
-      await expect(page.getByText(/open requirement.*must be resolved before locking/i)).toBeVisible();
+      await expect(page.getByText(/must be resolved before (locking|sealing)/i)).toBeVisible();
       await expect(stepText(page)).toContainText("Step 8 of 8");
       await expect(footerStepText(page)).toContainText("Step 8 of 8");
     } else {
-      // Ready case: the gate button is present and stays on Step 8.
+      // Ready case: the seal CTA is present and stays on Step 8.
       await expect(stepText(page)).toContainText("Step 8 of 8");
     }
   });
@@ -313,7 +313,7 @@ test.describe("Wizard Step 8 UX — authenticated live regression (opt-in)", () 
     await page.goto(wizardUrl());
     await expect(stepText(page)).toContainText("Step 8 of 8", { timeout: 30000 });
 
-    const lockButton = page.getByRole("button", { name: "Lock & download package" });
+    const lockButton = page.getByRole("button", { name: "Seal package and create downloads" });
     if (await lockButton.count()) {
       await lockButton.first().click();
       // Either the seal succeeds (allowed) or a failure banner appears — in

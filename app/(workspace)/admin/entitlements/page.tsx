@@ -4,7 +4,7 @@ import { fetchAllEntitlements } from "../actions";
 
 const STATUS_STYLES: Record<string, string> = {
   AVAILABLE: "bg-accent/10 text-accent border-accent/20",
-  RESERVED: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+  RESERVED: "bg-status-warning/10 text-status-warning border-status-warning/20",
   CONSUMED: "bg-surface border-border text-muted",
   REVOKED: "bg-status-blocked/10 text-status-blocked border-status-blocked/20",
 };

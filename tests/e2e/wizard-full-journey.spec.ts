@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { CBAM_WORKFLOW_STEPS } from "../../lib/cbam/workflow-definition";
 import {
+  STEP8_FINAL_TITLE,
   STEP8_FOOTER_CTA_LABELS,
   STEP8_PACKAGE_PREVIEW_HEADLINE,
 } from "../../lib/cbam/wizard-validation";
@@ -71,8 +72,10 @@ test.describe("Wizard full journey (authenticated, opt-in)", () => {
       await page.goto(`${WIZARD_BASE_URL}/cases/${WIZARD_CASE_ID}?step=${step.id}`);
       await expect(page).not.toHaveURL(/\/login/, { timeout: 15000 });
       await expect(workingStep(page)).toContainText(`Step ${step.id} of 8`, { timeout: 30000 });
-      // The step heading must match the SSOT title exactly.
-      await expect(page.getByRole("heading", { name: step.title })).toBeVisible({ timeout: 30000 });
+      // The step heading must match the SSOT title exactly (Step 8 uses the
+      // final-review-and-seal heading, not the workflow-definition label).
+      const expectedHeading = step.id === 8 ? STEP8_FINAL_TITLE : step.title;
+      await expect(page.getByRole("heading", { name: expectedHeading })).toBeVisible({ timeout: 30000 });
       // The mobile/desktop rail shows the SSOT short title.
       await expect(page.getByText(step.shortTitle).first()).toBeVisible({ timeout: 15000 });
     }
@@ -86,7 +89,7 @@ test.describe("Wizard full journey (authenticated, opt-in)", () => {
     await expect(page).not.toHaveURL(/\/login/, { timeout: 15000 });
     await expect(workingStep(page)).toContainText("Step 8 of 8", { timeout: 30000 });
     // Step 8 must not claim COMPLETE.
-    const heading = page.getByRole("heading", { name: CBAM_WORKFLOW_STEPS[7].title });
+    const heading = page.getByRole("heading", { name: STEP8_FINAL_TITLE });
     await expect(heading).toBeVisible({ timeout: 30000 });
     await expect(page.getByText("COMPLETE", { exact: true })).toHaveCount(0);
   });
@@ -106,10 +109,16 @@ test.describe("Wizard full journey (authenticated, opt-in)", () => {
     await expect(page.getByRole("button", { name: "Next", exact: true })).toHaveCount(0);
     const footer = page.locator("div.fixed.bottom-0");
     await expect(footer).toBeVisible({ timeout: 15000 });
-    const cta = footer.locator(
-      `a:has-text("${STEP8_FOOTER_CTA_LABELS.READY_TO_LOCK}"), a:has-text("${STEP8_FOOTER_CTA_LABELS.PAYMENT_REQUIRED}"), button:has-text("${STEP8_FOOTER_CTA_LABELS.BLOCKED}"), button:has-text("${STEP8_FOOTER_CTA_LABELS.LOCKING}")`
-    );
-    await expect(cta).toHaveCount(1);
+    const fixedLabels = [
+      STEP8_FOOTER_CTA_LABELS.READY_TO_LOCK,
+      STEP8_FOOTER_CTA_LABELS.PAYMENT_REQUIRED,
+      STEP8_FOOTER_CTA_LABELS.LOCKING,
+      STEP8_FOOTER_CTA_LABELS.LOCKED,
+      STEP8_FOOTER_CTA_LABELS.LOCK_FAILED,
+    ];
+    const fixedLabelCtas = footer.locator(fixedLabels.map((label) => `a:has-text("${label}"), button:has-text("${label}")`).join(", "));
+    const blockedCtas = footer.locator("button").filter({ hasText: /Complete \d+ requirements to seal/ });
+    expect(await fixedLabelCtas.count() + await blockedCtas.count()).toBe(1);
   });
 
   test("mobile 390px: case ID does not overflow and footer stays reachable", async ({ page }) => {

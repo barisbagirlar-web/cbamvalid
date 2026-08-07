@@ -1,9 +1,17 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { STEP8_FOOTER_CTA_LABELS } from "@/lib/cbam/wizard-validation";
 
 const readSource = (relative: string): string =>
   readFileSync(path.join(process.cwd(), relative), "utf8");
+
+/** Extracts a single `case "<status>":` branch from the renderFooterCta switch. */
+function footerCtaCase(source: string, status: string): string {
+  const renderFooter = source.match(/const renderFooterCta = \(\) => \{([\s\S]*?)\n  \};/)?.[1] || "";
+  const match = renderFooter.match(new RegExp(`case "${status}":([\\s\\S]*?)\\n      case |case "${status}":([\\s\\S]*)$`));
+  return (match?.[1] || match?.[2] || "").trim();
+}
 
 describe("Step 8 premium release command center", () => {
   const client = readSource("app/(workspace)/cases/[caseId]/CaseWizardClient.tsx");
@@ -19,8 +27,27 @@ describe("Step 8 premium release command center", () => {
   });
 
   it("makes a failed package attempt retryable instead of sending a zero-blocker user to requirements", () => {
-    expect(client).toMatch(/case "LOCK_FAILED":[\s\S]*?onClick=\{handleSeal\}[\s\S]*?STEP8_FOOTER_CTA_LABELS\.LOCK_FAILED/);
-    expect(client).toContain('step8Status === "LOCK_FAILED" ? STEP8_FOOTER_CTA_LABELS.LOCK_FAILED');
+    // The LOCK_FAILED footer CTA retries the same protected request.
+    const lockFailedCase = footerCtaCase(client, "LOCK_FAILED");
+    expect(lockFailedCase).toContain("onClick={handleSeal}");
+    // The footer renders the runtime label from the SSOT (no hardcoded copy).
+    expect(client).toContain("formatStep8CtaLabel(step8Status,");
+    expect(STEP8_FOOTER_CTA_LABELS.LOCK_FAILED).toBe("Retry sealing package");
+  });
+
+  it("the single primary seal CTA lives only in the fixed footer (not duplicated on the body)", () => {
+    // The release command center (body section) must not mount its own seal CTA.
+    const commandCenter = client.match(
+      /aria-label="Lock and download center"([\s\S]*?)<\/section>/
+    )?.[1] || "";
+    expect(commandCenter).not.toContain("step8-primary-action");
+    expect(commandCenter).not.toContain("onClick={handleSeal}");
+    // The footer switch is the only place that renders a Step 8 primary CTA.
+    const footerCta = client.match(/const renderFooterCta = \(\) => \{([\s\S]*?)\n  \};/)?.[1] || "";
+    expect(footerCta).toContain('data-testid="step8-primary-action"');
+    expect(footerCta).toContain("bg-seal");
+    expect(footerCta).toContain("min-h-[52px]");
+    expect(footerCta).toContain("sm:min-w-[300px]");
   });
 
   it("does not advertise a stale entitlement without its server identifier", () => {
