@@ -142,7 +142,7 @@ jobs:
         run: |
           LATEST_CREATED="$(gcloud run services describe "$SSR_SERVICE" --project="$FIREBASE_PROJECT" --region="$FIREBASE_REGION" --format='value(status.latestCreatedRevisionName)')"
           LATEST_READY="$(gcloud run services describe "$SSR_SERVICE" --project="$FIREBASE_PROJECT" --region="$FIREBASE_REGION" --format='value(status.latestReadyRevisionName)')"
-          TRAFFIC_REVISION="$(gcloud run services describe "$SSR_SERVICE" --project="$FIREBASE_PROJECT" --region="$FIREBASE_REGION" --format='value(status.traffic[0].revisionName)')"
+          TRAFFIC_REVISION="$(gcloud run services describe "$SSR_SERVICE" --project="$FIREBASE_PROJECT" --region="$FIREBASE_REGION" --format='value(status.traffic[-1].revisionName)')"
           echo "LATEST_CREATED=$LATEST_CREATED"
           echo "LATEST_READY=$LATEST_READY"
           echo "TRAFFIC_REVISION=$TRAFFIC_REVISION"
