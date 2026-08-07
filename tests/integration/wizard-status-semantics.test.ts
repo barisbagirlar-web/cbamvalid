@@ -16,6 +16,7 @@ import { describe, expect, it } from "vitest";
 import type { AuditReadyCase } from "@/lib/cbam/schema";
 import {
   deriveStep8Status,
+  formatStep8CtaLabel,
   STEP8_FOOTER_CTA_LABELS,
   validateWizardStep,
 } from "@/lib/cbam/wizard-validation";
@@ -185,14 +186,14 @@ describe("Step 8 status model", () => {
   });
 
   it("keeps blocked/payment states fail-closed and gives a failed attempt an explicit retry", () => {
-    expect(STEP8_FOOTER_CTA_LABELS.BLOCKED).toBe("Review remaining requirements");
-    expect(STEP8_FOOTER_CTA_LABELS.PAYMENT_REQUIRED).toBe("Pay to unlock this working file");
-    expect(STEP8_FOOTER_CTA_LABELS.READY_TO_LOCK).toBe("Create locked package");
-    expect(STEP8_FOOTER_CTA_LABELS.LOCK_FAILED).toBe("Retry package creation");
+    expect(STEP8_FOOTER_CTA_LABELS.BLOCKED).toBe("Complete {openItemCount} requirements to seal");
+    expect(STEP8_FOOTER_CTA_LABELS.PAYMENT_REQUIRED).toBe("Pay {price} and seal package");
+    expect(STEP8_FOOTER_CTA_LABELS.READY_TO_LOCK).toBe("Seal package and create downloads");
+    expect(STEP8_FOOTER_CTA_LABELS.LOCK_FAILED).toBe("Retry sealing package");
     expect(STEP8_FOOTER_CTA_LABELS.BLOCKED).not.toMatch(/create sealed|retry/i);
     expect(STEP8_FOOTER_CTA_LABELS.PAYMENT_REQUIRED).not.toMatch(/create sealed|retry/i);
-    expect(STEP8_FOOTER_CTA_LABELS.LOCKING).toMatch(/Creating package/i);
-    expect(STEP8_FOOTER_CTA_LABELS.LOCKED).toMatch(/Open locked package/i);
+    expect(STEP8_FOOTER_CTA_LABELS.LOCKING).toMatch(/Sealing package/i);
+    expect(STEP8_FOOTER_CTA_LABELS.LOCKED).toMatch(/Open sealed package/i);
   });
 
   it("marks an optional empty Step 7 as complete when no material gap remains", () => {
@@ -223,6 +224,7 @@ describe("Step 8 status model", () => {
     expect(readyStatus).not.toBe("COMPLETE");
     expect(validateWizardStep(8, ready).state).not.toBe("COMPLETE");
     expect(blockedStatus).toBe("BLOCKED");
-    expect(STEP8_FOOTER_CTA_LABELS[blockedStatus]).toContain("Review");
+    expect(formatStep8CtaLabel(blockedStatus, { openItemCount: 1, price: "$449" })).toContain("seal");
+    expect(formatStep8CtaLabel(blockedStatus, { openItemCount: 1, price: "$449" })).not.toContain("Review remaining requirements");
   });
 });

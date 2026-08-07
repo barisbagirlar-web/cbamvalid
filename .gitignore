@@ -49,6 +49,8 @@ artifacts/render-qa/
 scripts/firestore-rules-permissive.rules
 # Generated four-complete-dossier render output (reproducible via npm run render:four-complete-dossiers)
 artifacts/four-complete-dossiers/
+# Step 8 final-action screenshot harness output (reproducible via the local E2E harness)
+artifacts/step8-final-action/
 tsconfig.check.tsbuildinfo
 
 # Local SEO lab CWV scratch (baseline lives in docs/seo/)

@@ -69,7 +69,7 @@ export async function ensureTestAdminEntitlement(
     const status = String(data.status || "AVAILABLE").toUpperCase();
     const scopedToCase =
       typeof data.scopeCaseId === "string" && data.scopeCaseId.length > 0;
-    // consumeEntitlement() binds the pack to the case it was used on. For a
+    // A normal seal binds the pack to the case it was used on. For a
     // test-admin entitlement that would lock the unlimited pack to a single
     // working file, so on every read we unbind it and restore the AVAILABLE /
     // unlimited state. This keeps the owner-approved test flow case-agnostic.

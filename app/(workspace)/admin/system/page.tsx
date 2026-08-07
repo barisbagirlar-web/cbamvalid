@@ -45,7 +45,7 @@ export default async function AdminSystemHealthPage() {
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted mb-3">Launch Configuration</h2>
         <div className="flex items-center gap-3">
           <span
-            className={`w-2.5 h-2.5 rounded-full ${health.publicPaidLaunchEnabled ? "bg-accent" : "bg-amber-500"}`}
+            className={`w-2.5 h-2.5 rounded-full ${health.publicPaidLaunchEnabled ? "bg-accent" : "bg-status-warning"}`}
           />
           <span className="text-sm text-foreground">
             Public paid launch: <span className="font-semibold">{health.publicPaidLaunchEnabled ? "ENABLED" : "DISABLED (maintenance gate)"}</span>

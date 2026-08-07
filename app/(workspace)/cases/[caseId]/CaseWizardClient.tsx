@@ -39,8 +39,10 @@ import {
   deriveStep8Status,
   evaluateSealAttempt,
   firstDataIssuePath,
+  formatStep8CtaLabel,
   parseStepFromQuery,
-  STEP8_FOOTER_CTA_LABELS,
+  STEP8_FINAL_SUPPORTING_TEXT,
+  STEP8_FINAL_TITLE,
   STEP8_PACKAGE_PREVIEW_HEADLINE,
   STEP8_REVIEW_ACTIONS_LABEL,
   STEP8_SEALED_SUCCESS_HEADLINE,
@@ -458,12 +460,18 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   const revealSealBlockers = () => {
     setShowBlockers(true);
     setSealStatus(
-      `${readiness.criticalBlockers.length} open requirement${readiness.criticalBlockers.length === 1 ? "" : "s"} and ${readiness.allGaps.length} action item${readiness.allGaps.length === 1 ? "" : "s"} must be resolved before locking.`
+      `${readiness.criticalBlockers.length} open requirement${readiness.criticalBlockers.length === 1 ? "" : "s"} and ${readiness.allGaps.length} action item${readiness.allGaps.length === 1 ? "" : "s"} must be resolved before sealing.`
     );
     setSealTechnicalCode("");
     setSealTone("warning");
     requestAnimationFrame(() => {
-      blockerPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      requestAnimationFrame(() => {
+        blockerPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        const firstAction = blockerPanelRef.current?.querySelector<HTMLElement>(
+          '[data-testid="first-blocker-action"]'
+        );
+        firstAction?.focus();
+      });
     });
   };
 
@@ -504,12 +512,28 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   );
 
   // FAZ UX — Step 8 status uses its own model derived from readiness +
-  // entitlement + lock state; it can never be auto-COMPLETE.
+  // entitlement + lock state; it can never be auto-COMPLETE. LOCKED is derived
+  // from a real completed release (the entitlement bound to this case reports
+  // releasesCount > 0), never from client UI state.
+  const hasSealedRelease = currentReleasesCount > 0;
+  const lockedReportId = hasSealedRelease ? "SEALED_RELEASE" : null;
   const lockState: "IDLE" | "LOCKING" | "LOCKED" | "LOCK_FAILED" = sealing
     ? "LOCKING"
     : sealTone === "error" && sealStatus
       ? "LOCK_FAILED"
-      : "IDLE";
+      : hasSealedRelease
+        ? "LOCKED"
+        : "IDLE";
+
+  // Non-interactive header save indicator. It never performs a save itself;
+  // the single manual save control lives in the fixed footer.
+  const saveIndicatorText = saving
+    ? "Saving…"
+    : saveTone === "error" && saveStatus
+      ? "Save failed"
+      : saveTone === "success" && saveStatus
+        ? "Saved"
+        : "Unsaved changes";
 
   const step8Status = useMemo(
     () =>
@@ -518,8 +542,9 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         criticalBlockerCount: readiness.criticalBlockers.length,
         hasEntitlement: usableEntitlements.length > 0,
         lockState,
+        lockedReportId,
       }),
-    [readiness, usableEntitlements, lockState]
+    [readiness, usableEntitlements, lockState, lockedReportId]
   );
 
   const unlockablePacks = packsUnlockableFromCredits(availableCredits);
@@ -1172,8 +1197,8 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-bold">{getWorkflowStep(8).title}</h2>
-          <p className="mt-1 text-sm text-muted">Review the final checks, pay once if not already, and create your locked package in a single step. Every click shows an immediate result and the system always stays the authority on readiness, payment and locking.</p>
+          <h2 className="text-xl font-bold">{STEP8_FINAL_TITLE}</h2>
+          <p className="mt-1 text-sm text-muted">{STEP8_FINAL_SUPPORTING_TEXT}</p>
         </div>
 
         <section
@@ -1236,49 +1261,6 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
                 <p className="mt-1 text-[11px] leading-relaxed text-muted">{phase.detail}</p>
               </div>
             ))}
-          </div>
-
-          <div className="mt-5">
-            {step8Status === "BLOCKED" && (
-              <button
-                type="button"
-                data-testid="step8-primary-action"
-                onClick={revealSealBlockers}
-                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-status-blocked px-5 py-3 text-sm font-bold text-surface-elevated sm:w-auto"
-              >
-                <AlertTriangle className="h-5 w-5" /> {STEP8_FOOTER_CTA_LABELS.BLOCKED}
-              </button>
-            )}
-            {step8Status === "PAYMENT_REQUIRED" && (
-              <Link
-                data-testid="step8-primary-action"
-                href={`/credits/buy?caseId=${encodeURIComponent(caseData.caseId || "")}`}
-                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-accent px-5 py-3 text-sm font-bold text-surface sm:w-auto"
-              >
-                <LockKeyhole className="h-5 w-5" /> {STEP8_FOOTER_CTA_LABELS.PAYMENT_REQUIRED}
-              </Link>
-            )}
-            {(step8Status === "READY_TO_LOCK" || step8Status === "LOCK_FAILED") && (
-              <button
-                type="button"
-                data-testid="step8-primary-action"
-                onClick={handleSeal}
-                disabled={sealing}
-                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-accent px-5 py-3 text-sm font-bold text-surface shadow-sm transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-              >
-                <CheckCircle2 className="h-5 w-5" /> {step8Status === "LOCK_FAILED" ? STEP8_FOOTER_CTA_LABELS.LOCK_FAILED : STEP8_FOOTER_CTA_LABELS.READY_TO_LOCK}
-              </button>
-            )}
-            {step8Status === "LOCKING" && (
-              <button type="button" data-testid="step8-primary-action" disabled className="inline-flex min-h-12 w-full cursor-wait items-center justify-center gap-2 rounded-md bg-accent px-5 py-3 text-sm font-bold text-surface opacity-80 sm:w-auto">
-                <Loader2 className="h-5 w-5 animate-spin" /> {STEP8_FOOTER_CTA_LABELS.LOCKING}
-              </button>
-            )}
-            {step8Status === "LOCKED" && (
-              <Link data-testid="step8-primary-action" href="/reports" className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-status-pass px-5 py-3 text-sm font-bold text-surface-elevated sm:w-auto">
-                {STEP8_FOOTER_CTA_LABELS.LOCKED} <ArrowRight className="h-5 w-5" />
-              </Link>
-            )}
           </div>
 
           {sealStatus && <div className="mt-4"><StatusBanner status={sealStatus} tone={sealTone} /></div>}
@@ -1423,11 +1405,18 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
                 }
                 return (
                   <div className="max-h-[30rem] space-y-3 overflow-y-auto pr-1" aria-label="Seal blocker remediation plan">
-                    {remainingItems.map((item) => (
+                    {remainingItems.map((item, index) => (
                       <article key={item.id} className="rounded-lg border border-border bg-surface p-4">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <span className="rounded-full border border-border bg-neutral-soft px-2.5 py-0.5 text-[11px] font-bold">{item.category}</span>
-                          <button type="button" onClick={() => goToStep(item.step)} className="inline-flex items-center gap-1 text-xs font-semibold text-accent underline underline-offset-2">Go to step {item.step} <ArrowRight className="h-3 w-3" /></button>
+                          <button
+                            type="button"
+                            data-testid={index === 0 ? "first-blocker-action" : undefined}
+                            onClick={() => goToStep(item.step)}
+                            className="inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-accent underline underline-offset-2"
+                          >
+                            Go to step {item.step} <ArrowRight className="h-3 w-3" />
+                          </button>
                         </div>
                         <h4 className="mt-2 font-semibold">{item.fieldLabel}</h4>
                         <dl className="mt-2 grid gap-x-4 gap-y-1 text-xs text-muted sm:grid-cols-2">
@@ -1649,71 +1638,89 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         <button
           type="button"
           onClick={goToNext}
-          className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded bg-accent px-3 py-2 text-sm font-semibold text-surface sm:flex-none sm:px-4"
+          className="inline-flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded bg-accent px-3 py-2 text-sm font-semibold text-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground sm:flex-none sm:px-4"
         >
           Continue <ArrowRight className="h-4 w-4" />
         </button>
       );
     }
+    // FAZ UX — Step 8 has exactly one primary CTA, always in the fixed footer,
+    // in the same screen position for every state. BLOCKED stays clickable and
+    // reveals the blockers in place; payment and sealing are never invoked from
+    // the blocked path.
+    const ctaLabel = formatStep8CtaLabel(step8Status, {
+      openItemCount: readiness.criticalBlockers.length,
+      price: CANONICAL_PRICING.priceFormatted,
+    });
+    const ctaClass =
+      "inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-md bg-seal px-5 text-sm font-bold text-ink shadow-sm transition hover:bg-seal-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground disabled:cursor-not-allowed disabled:opacity-60 sm:min-w-[300px] sm:flex-1";
     switch (step8Status) {
       case "BLOCKED":
         return (
           <button
             type="button"
+            data-testid="step8-primary-action"
             onClick={revealSealBlockers}
-            className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded border border-status-blocked/50 bg-surface px-3 py-2 text-sm font-semibold text-status-blocked sm:flex-none sm:px-4"
+            aria-haspopup="true"
+            aria-expanded={showBlockers}
+            className={ctaClass}
           >
-            <AlertTriangle className="h-4 w-4 shrink-0" /> {STEP8_FOOTER_CTA_LABELS.BLOCKED}
-          </button>
-        );
-      case "LOCK_FAILED":
-        return (
-          <button
-            type="button"
-            onClick={handleSeal}
-            disabled={sealing}
-            className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded bg-accent px-3 py-2 text-sm font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-4"
-          >
-            <LockKeyhole className="h-4 w-4 shrink-0" /> {STEP8_FOOTER_CTA_LABELS.LOCK_FAILED}
+            <AlertTriangle className="h-5 w-5 shrink-0" aria-hidden="true" /> {ctaLabel}
           </button>
         );
       case "PAYMENT_REQUIRED":
         return (
           <Link
+            data-testid="step8-primary-action"
             href={`/credits/buy?caseId=${encodeURIComponent(caseData.caseId || "")}`}
-            className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded bg-accent px-3 py-2 text-sm font-semibold text-surface sm:flex-none sm:px-4"
+            className={ctaClass}
           >
-            <LockKeyhole className="h-4 w-4 shrink-0" /> {STEP8_FOOTER_CTA_LABELS.PAYMENT_REQUIRED}
+            <LockKeyhole className="h-5 w-5 shrink-0" aria-hidden="true" /> {ctaLabel}
           </Link>
         );
       case "READY_TO_LOCK":
         return (
           <button
             type="button"
+            data-testid="step8-primary-action"
             onClick={handleSeal}
             disabled={sealing}
-            className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded bg-status-pass px-3 py-2 text-sm font-semibold text-surface-elevated disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none sm:px-4"
+            aria-busy={sealing}
+            className={ctaClass}
           >
-            {sealing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4 shrink-0" />} {sealing ? STEP8_FOOTER_CTA_LABELS.LOCKING : STEP8_FOOTER_CTA_LABELS.READY_TO_LOCK}
+            <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden="true" /> {ctaLabel}
           </button>
         );
       case "LOCKING":
         return (
-          <button type="button" disabled className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded bg-neutral-soft px-3 py-2 text-sm font-semibold text-muted disabled:cursor-wait sm:flex-none sm:px-4">
-            <Loader2 className="h-4 w-4 animate-spin" /> {STEP8_FOOTER_CTA_LABELS.LOCKING}
+          <button type="button" data-testid="step8-primary-action" disabled aria-busy className={ctaClass}>
+            <Loader2 className="h-5 w-5 shrink-0 animate-spin" aria-hidden="true" /> {ctaLabel}
           </button>
         );
       case "LOCKED":
         return (
-          <Link href="/reports" className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded bg-status-pass px-3 py-2 text-sm font-semibold text-surface-elevated sm:flex-none sm:px-4">
-            {STEP8_FOOTER_CTA_LABELS.LOCKED} <ArrowRight className="h-4 w-4" />
+          <Link data-testid="step8-primary-action" href="/reports" className={ctaClass}>
+            {ctaLabel} <ArrowRight className="h-5 w-5 shrink-0" aria-hidden="true" />
           </Link>
+        );
+      case "LOCK_FAILED":
+        return (
+          <button
+            type="button"
+            data-testid="step8-primary-action"
+            onClick={handleSeal}
+            disabled={sealing}
+            aria-busy={sealing}
+            className={ctaClass}
+          >
+            <LockKeyhole className="h-5 w-5 shrink-0" aria-hidden="true" /> {ctaLabel}
+          </button>
         );
     }
   };
 
   return (
-    <main className="min-h-screen bg-background px-4 py-6 pb-32 text-foreground md:px-8">
+    <main className="min-h-screen bg-background px-4 py-6 pb-48 text-foreground md:px-8 md:pb-36">
       <div className="mx-auto max-w-6xl">
         <header className="flex flex-col justify-between gap-4 border-b border-border pb-4 md:flex-row md:items-center">
           <div className="min-w-0">
@@ -1722,15 +1729,14 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
               ID: {caseData.caseId || "UNASSIGNED"} · User: {sessionUser.email || sessionUser.uid} · One factory · one year
             </p>
           </div>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="inline-flex items-center justify-center gap-2 rounded border border-border bg-neutral-soft px-4 py-2 text-sm font-medium disabled:opacity-50"
+          <p
+            aria-live="polite"
+            aria-busy={saving}
+            className="inline-flex shrink-0 items-center gap-2 text-xs font-semibold text-muted"
           >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{" "}
-            {saving ? "Saving…" : "Save draft"}
-          </button>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
+            {saveIndicatorText}
+          </p>
         </header>
 
         <WorkingFileJourneyStrip
@@ -1747,7 +1753,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted">Step {currentStep} of 8</p>
-              <h2 className="mt-1 font-serif text-lg font-bold leading-tight break-words">{wizardStepTitle(currentStep)}</h2>
+              <h2 className="mt-1 font-serif text-lg font-bold leading-tight break-words">{currentStep === 8 ? STEP8_FINAL_TITLE : wizardStepTitle(currentStep)}</h2>
               <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
                 {currentStep === 8 ? (
                   <Step8StateBadge status={step8Status} />
@@ -1791,9 +1797,9 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
                   type="button"
                   onClick={() => void handleSave()}
                   disabled={saving}
-                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded border border-status-warning px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                  className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded border border-status-warning px-3 py-1.5 text-xs font-semibold disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
                 >
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save draft and continue later
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save and continue later
                 </button>
               </div>
             )}
@@ -1860,26 +1866,35 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
         </div>
       )}
 
-      {/* Fixed footer — Previous · Save draft · contextual CTA (never a disabled Next on step 8) */}
+      {/* Fixed footer — Previous · manual save · primary seal CTA (never a disabled Next on step 8) */}
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_8px_rgba(0,0,0,0.08)]">
-        <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-3 sm:px-4">
-          <button
-            type="button"
-            onClick={() => navigateToStep(currentStep - 1)}
-            disabled={currentStep === 1}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded border border-border px-3 py-2 text-sm disabled:opacity-40"
-          >
-            <ArrowLeft className="h-4 w-4" /> Previous
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleSave()}
-            disabled={saving}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded border border-border px-3 py-2 text-sm disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {saving ? "Saving…" : "Save draft"}
-          </button>
-          {renderFooterCta()}
+        <div className="mx-auto max-w-6xl px-3 py-3 sm:px-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigateToStep(currentStep - 1)}
+              disabled={currentStep === 1}
+              className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded border border-border px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground disabled:opacity-40"
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Previous
+            </button>
+            <div className="flex min-w-0 flex-1 flex-col items-start gap-0.5 sm:flex-none">
+              <button
+                type="button"
+                onClick={() => void handleSave()}
+                disabled={saving}
+                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded border border-border px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground disabled:opacity-50"
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />} Save progress
+              </button>
+              {currentStep === 8 && (
+                <p className="max-w-[240px] text-[10px] leading-tight text-muted" aria-live="polite">
+                  Saves the editable working file. No payment or sealing occurs.
+                </p>
+              )}
+            </div>
+            <div className="order-last w-full sm:order-none sm:w-auto sm:flex-1 sm:pl-2">{renderFooterCta()}</div>
+          </div>
         </div>
       </div>
     </main>

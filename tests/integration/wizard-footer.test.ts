@@ -11,6 +11,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  formatStep8CtaLabel,
   STEP8_FOOTER_CTA_LABELS,
   STEP8_PACKAGE_PREVIEW_HEADLINE,
   type Step8Status,
@@ -28,13 +29,26 @@ describe("wizard footer", () => {
     }
   });
 
-  it("labels match the mandate wording exactly", () => {
-    expect(STEP8_FOOTER_CTA_LABELS.BLOCKED).toBe("Review remaining requirements");
-    expect(STEP8_FOOTER_CTA_LABELS.PAYMENT_REQUIRED).toBe("Pay to unlock this working file");
-    expect(STEP8_FOOTER_CTA_LABELS.READY_TO_LOCK).toBe("Create locked package");
-    expect(STEP8_FOOTER_CTA_LABELS.LOCKING).toBe("Creating package…");
-    expect(STEP8_FOOTER_CTA_LABELS.LOCKED).toBe("Open locked package");
-    expect(STEP8_FOOTER_CTA_LABELS.LOCK_FAILED).toBe("Retry package creation");
+  it("labels match the mandate wording exactly and every pre-release label contains 'seal'", () => {
+    expect(STEP8_FOOTER_CTA_LABELS.BLOCKED).toBe("Complete {openItemCount} requirements to seal");
+    expect(STEP8_FOOTER_CTA_LABELS.PAYMENT_REQUIRED).toBe("Pay {price} and seal package");
+    expect(STEP8_FOOTER_CTA_LABELS.READY_TO_LOCK).toBe("Seal package and create downloads");
+    expect(STEP8_FOOTER_CTA_LABELS.LOCKING).toBe("Sealing package…");
+    expect(STEP8_FOOTER_CTA_LABELS.LOCKED).toBe("Open sealed package");
+    expect(STEP8_FOOTER_CTA_LABELS.LOCK_FAILED).toBe("Retry sealing package");
+
+    // Runtime rendering: BLOCKED carries the requirement count, PAYMENT_REQUIRED
+    // carries the canonical price (never hardcoded in the SSOT).
+    expect(formatStep8CtaLabel("BLOCKED", { openItemCount: 10, price: "$449" })).toBe("Complete 10 requirements to seal");
+    expect(formatStep8CtaLabel("PAYMENT_REQUIRED", { openItemCount: 0, price: "$449" })).toBe("Pay $449 and seal package");
+    expect(formatStep8CtaLabel("READY_TO_LOCK", { openItemCount: 0, price: "$449" })).toBe("Seal package and create downloads");
+    expect(formatStep8CtaLabel("LOCKING", { openItemCount: 0, price: "$449" })).toBe("Sealing package…");
+    expect(formatStep8CtaLabel("LOCKED", { openItemCount: 0, price: "$449" })).toBe("Open sealed package");
+    expect(formatStep8CtaLabel("LOCK_FAILED", { openItemCount: 0, price: "$449" })).toBe("Retry sealing package");
+
+    for (const preRelease of ["BLOCKED", "PAYMENT_REQUIRED", "READY_TO_LOCK", "LOCKING", "LOCK_FAILED"] as const) {
+      expect(formatStep8CtaLabel(preRelease, { openItemCount: 10, price: "$449" }).toLowerCase()).toContain("seal");
+    }
   });
 
   it("never renders a disabled Next on step 8 (STEP8_DISABLED_NEXT=0)", () => {
@@ -61,7 +75,7 @@ describe("wizard footer", () => {
 
   it("main content reserves footer height and the footer uses mobile safe-area", () => {
     const client = readSource("app/(workspace)/cases/[caseId]/CaseWizardClient.tsx");
-    expect(client).toContain("pb-32");
+    expect(client).toContain("pb-48");
     expect(client).toContain("fixed bottom-0");
     expect(client).toContain("pb-[env(safe-area-inset-bottom)]");
   });

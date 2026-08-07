@@ -9,8 +9,8 @@ const TEB232_EMAIL = "teb232@gmail.com";
 
 const RELEASE_STATUS_STYLES: Record<string, string> = {
   DRAFT: "bg-surface border-border text-muted",
-  INCOMPLETE: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-  REVIEW_REQUIRED: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+  INCOMPLETE: "bg-status-warning/10 text-status-warning border-status-warning/20",
+  REVIEW_REQUIRED: "bg-status-warning/10 text-status-warning border-status-warning/20",
   READY_WITH_WARNINGS: "bg-accent/10 text-accent border-accent/20",
   READY_FOR_INDEPENDENT_VERIFICATION_PREPARATION: "bg-accent/10 text-accent border-accent/20",
   SEALED: "bg-accent/10 text-accent border-accent/20",

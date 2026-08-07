@@ -64,20 +64,37 @@ export type Step8Status =
 /**
  * Step 8 wording SSOT. The pre-seal package preview never claims a sealed
  * release; the success headline is emitted only after a real reportId/SEALED
- * release exists. The footer shows exactly one contextual CTA per status and
- * a single remaining-actions CTA exists on the step body.
+ * release exists. The fixed footer shows exactly one contextual seal CTA per
+ * status and a single remaining-actions CTA exists on the step body.
  */
+export const STEP8_FINAL_TITLE = "Final review and seal";
+export const STEP8_FINAL_SUPPORTING_TEXT =
+  "Complete the remaining requirements, then pay once, seal the working file and create the verifier downloads.";
 export const STEP8_PACKAGE_PREVIEW_HEADLINE = "What your locked package will include";
 export const STEP8_SEALED_SUCCESS_HEADLINE = "Locked package created successfully";
 export const STEP8_REVIEW_ACTIONS_LABEL = "Review remaining actions";
 export const STEP8_FOOTER_CTA_LABELS: Record<Step8Status, string> = {
-  BLOCKED: "Review remaining requirements",
-  PAYMENT_REQUIRED: "Pay to unlock this working file",
-  READY_TO_LOCK: "Create locked package",
-  LOCKING: "Creating package…",
-  LOCKED: "Open locked package",
-  LOCK_FAILED: "Retry package creation",
+  BLOCKED: "Complete {openItemCount} requirements to seal",
+  PAYMENT_REQUIRED: "Pay {price} and seal package",
+  READY_TO_LOCK: "Seal package and create downloads",
+  LOCKING: "Sealing package…",
+  LOCKED: "Open sealed package",
+  LOCK_FAILED: "Retry sealing package",
 };
+
+/**
+ * Renders a Step 8 footer CTA label with its runtime values injected.
+ * BLOCKED carries the open-requirement count and PAYMENT_REQUIRED carries the
+ * canonical price, so the SSOT never hardcodes a number or an amount.
+ */
+export function formatStep8CtaLabel(
+  status: Step8Status,
+  values: { openItemCount: number; price: string }
+): string {
+  return STEP8_FOOTER_CTA_LABELS[status]
+    .replaceAll("{openItemCount}", String(values.openItemCount))
+    .replaceAll("{price}", values.price);
+}
 
 /** User-friendly short labels for the Step 8 status badge and step rail. */
 export const STEP8_STATUS_LABELS: Record<Step8Status, string> = {
