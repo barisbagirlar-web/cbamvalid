@@ -60,9 +60,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     const token = await requireFirebaseSession(request);
     const body = await request.json().catch(() => ({})) as ReconcileRequestBody;
-    const common = {
-      db: adminDb,
-      bucket: getAdminStorageBucket(),
+    const identity = {
       authenticatedUid: token.uid,
       authenticatedEmail: String(token.email || ""),
       emailVerified: token.email_verified === true,
@@ -70,10 +68,14 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     const result = body.targetCaseId
       ? await prepareTeb232TargetCase({
-          ...common,
+          ...identity,
           targetCaseId: body.targetCaseId,
         })
-      : await reconcileTeb232LiveCases(common);
+      : await reconcileTeb232LiveCases({
+          db: adminDb,
+          bucket: getAdminStorageBucket(),
+          ...identity,
+        });
 
     return NextResponse.json(
       {
