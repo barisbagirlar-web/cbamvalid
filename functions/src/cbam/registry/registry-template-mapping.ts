@@ -137,8 +137,8 @@ export function buildRegistryTemplateMapping(caseData: AuditReadyCase, assessmen
 
   fields.push(
     field("REG-DIRECT-EM", "Emissions", legalBasis.directEmissions, "directEmissions.value", String(caseData.directEmissions.value ?? ""), "OPERATOR", evidenceIdsFor("REQ-DIR-EM"), validationErrorsFor("REQ-DIR-EM")),
-    field("REG-ELECTRICITY", "Emissions", legalBasis.electricity, "electricityConsumed.value", String(caseData.electricityConsumed.value ?? ""), "OPERATOR", evidenceIdsFor("REQ-ELEC"), validationErrorsFor("REQ-ELEC")),
-    field("REG-GRID-FACTOR", "Emissions", legalBasis.electricity, "gridEmissionFactor.value", String(caseData.gridEmissionFactor.value ?? ""), "OPERATOR", evidenceIdsFor("REQ-GRID"), validationErrorsFor("REQ-GRID"))
+    field("REG-ELECTRICITY", "Emissions", legalBasis.electricity, "electricityConsumed.value", String(caseData.electricityConsumed.value ?? ""), "OPERATOR", evidenceIdsFor("REQ-ELEC-CON"), validationErrorsFor("REQ-ELEC-CON")),
+    field("REG-GRID-FACTOR", "Emissions", legalBasis.electricity, "gridEmissionFactor.value", String(caseData.gridEmissionFactor.value ?? ""), "OPERATOR", evidenceIdsFor("REQ-ELEC-FAC"), validationErrorsFor("REQ-ELEC-FAC"))
   );
 
   if (caseData.precursors.length === 0) {
