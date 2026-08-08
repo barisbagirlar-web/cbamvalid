@@ -1,4 +1,4 @@
-name: One-shot production deploy PR146
+name: One-shot production deploy TEB232 retry fix
 
 on:
   push:
@@ -18,8 +18,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      TARGET_SHA: 07bb151e047bff38e1ca384eaedc227e7ccdb4f6
-      PR_HEAD_SHA: 31105c49790607c63469c6b5f3f1a6952d28d148
+      TARGET_SHA: 363b3ecf0e7a51657f512c01bb3dec7a2fea20af
+      PR_HEAD_SHA: 94bdc8e317c4bfe48db75b8b7eb892b0744c376b
       FIREBASE_PROJECT: cbam-desk
       LIVE_BASE_URL: https://cbamvalid.com
       SA_GCP_KEY: ${{ secrets.GCP_SA_KEY }}
@@ -101,12 +101,13 @@ jobs:
             "$(wc -l < "${CANDIDATES}")" \
             "$([[ -n "${FIREBASE_DEPLOY_TOKEN:-}" ]] && printf yes || printf no)"
 
-      - name: Install Firebase CLI
+      - name: Install Firebase CLI and enable framework-aware Hosting
         shell: bash
         run: |
           set -euo pipefail
           npm install --global firebase-tools@latest
           firebase --version
+          firebase experiments:enable webframeworks
 
       - name: Deploy changed sealing function with credential cascade
         shell: bash
@@ -163,6 +164,17 @@ jobs:
             exit 1
           fi
 
+      - name: Deploy framework-aware Hosting production
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${FIREBASE_DEPLOY_AUTH:-}" == "token" ]]; then
+            unset GOOGLE_APPLICATION_CREDENTIALS
+            firebase deploy --only hosting --project "${FIREBASE_PROJECT}" --non-interactive --token "${FIREBASE_DEPLOY_TOKEN}"
+          else
+            firebase deploy --only hosting --project "${FIREBASE_PROJECT}" --non-interactive
+          fi
+
       - name: Verify production function and live web surface
         shell: bash
         run: |
@@ -178,13 +190,20 @@ jobs:
           node scripts/verify-live-next-assets.mjs "${LIVE_BASE_URL}"
           curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/" >/dev/null
           curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/login" >/dev/null
+          API_STATUS="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 30 -X POST "${LIVE_BASE_URL}/api/qa/reconcile-teb232" -H 'content-type: application/json' --data '{}')"
+          if [[ "${API_STATUS}" != "401" && "${API_STATUS}" != "403" ]]; then
+            printf 'Unexpected unauthenticated reconcile route status: %s\n' "${API_STATUS}"
+            exit 1
+          fi
           {
             printf '%s\n' '## Production deployment PASS'
             printf '%s\n' "- PR head: ${PR_HEAD_SHA}"
             printf '%s\n' "- deployed merge commit: ${TARGET_SHA}"
             printf '%s\n' "- Firebase project: ${FIREBASE_PROJECT}"
             printf '%s\n' "- live URL: ${LIVE_BASE_URL}"
-            printf '%s\n' '- changed Cloud Function sealCbamReport deployed and listed in production'
-            printf '%s\n' '- PR146 contains no frontend application changes; Hosting redeploy is intentionally not required'
-            printf '%s\n' '- existing live Next.js asset integrity and canonical public routes verified healthy'
+            printf '%s\n' '- sealCbamReport deployed and listed in production'
+            printf '%s\n' '- framework-aware Hosting deployed with webframeworks enabled'
+            printf '%s\n' '- live Next.js asset integrity verified'
+            printf '%s\n' '- canonical public routes healthy'
+            printf '%s\n' '- authenticated reconcile API route is present and rejects anonymous access'
           } >> "${GITHUB_STEP_SUMMARY}"
