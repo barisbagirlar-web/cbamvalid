@@ -115,15 +115,16 @@ export class CommercialReportPipelineV2 {
       graph: canonicalGraph,
     });
 
-    // Enterprise 1,000 USD mandate gate. V5 human-review PDFs are rebuilt into
-    // 11 non-overlapping workpapers, one authoritative readiness status is
-    // applied using real generatedAt, evidence grades receive independent-
-    // verifiability bases, corrective actions become closure-complete, and the
-    // scenario/materiality/first-meeting premium layers are generated. This
-    // runs BEFORE manifest hashing/KMS so a mandate failure cannot be signed.
+    // Enterprise 1,000 USD mandate gate. ALL legacy human-facing PDFs are
+    // removed first. The accepted package may foreground exactly 11 newly
+    // rendered non-overlapping decision/workpaper PDFs — no legacy duplicate or
+    // hidden compilation is allowed to survive alongside them.
     if (params.productCode === "pack_premium_dossier_v5" || params.releaseContractVersion === 5) {
+      const machineAndEvidenceArtifacts = unsignedArtifacts.filter(
+        (item) => !item.path.toLowerCase().endsWith(".pdf")
+      );
       const enterpriseUpgrade = upgradeArtifactsToEnterprise1000({
-        artifacts: unsignedArtifacts,
+        artifacts: machineAndEvidenceArtifacts,
         caseData: artifactCaseData,
         calculation: params.calculation,
         controls: params.controls,
