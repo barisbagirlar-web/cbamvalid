@@ -5,6 +5,9 @@ const TEB232_UID = "r3Sv0U5YqEcLLylbw5ndwK1Zg652";
 const TEB232_EMAIL = "teb232@gmail.com";
 const TEB232_REFRESH_SET = "TEB232_FOUR_COMPLETE_V1";
 const TEB232_ASSESSMENT_TIMESTAMP = "2027-01-31T00:00:00.000Z";
+const TEB232_TARGET_CASE_ID =
+  "case_80aeb60175ce08a0d3acb7bc46617f152f0442f97ee652435280a2f2dff5e7cc";
+const TEB232_TARGET_PREPARATION_VERSION = "TEB232_TARGET_SEAL_READY_V1";
 const TEB232_SECTOR_KEYS = [
   "STEEL_IN",
   "CEMENT_EG",
@@ -31,7 +34,7 @@ function tokenFromAuth(auth: unknown): Record<string, unknown> {
     : {};
 }
 
-function hasControlledTestMarker(caseData: AuditReadyCase): boolean {
+function hasControlledCanonicalMarker(caseData: AuditReadyCase): boolean {
   return caseData.auditEvents.some((event) => {
     if (event.action !== "CONTROLLED_TEST_CASE_PREPARED") return false;
     const metadata =
@@ -41,6 +44,22 @@ function hasControlledTestMarker(caseData: AuditReadyCase): boolean {
     return (
       metadata.refreshSet === TEB232_REFRESH_SET &&
       metadata.sectorKey !== undefined &&
+      metadata.syntheticTest === true &&
+      metadata.paymentBypass === false
+    );
+  });
+}
+
+function hasControlledTargetMarker(caseData: AuditReadyCase): boolean {
+  return caseData.auditEvents.some((event) => {
+    if (event.action !== "CONTROLLED_TEST_TARGET_PREPARED") return false;
+    const metadata =
+      event.metadata && typeof event.metadata === "object"
+        ? (event.metadata as Record<string, unknown>)
+        : {};
+    return (
+      metadata.targetPreparationVersion === TEB232_TARGET_PREPARATION_VERSION &&
+      metadata.fixtureKey === "STEEL_IN" &&
       metadata.syntheticTest === true &&
       metadata.paymentBypass === false
     );
@@ -61,10 +80,13 @@ function hasBoundControlledEvidence(caseData: AuditReadyCase): boolean {
 }
 
 function isExactControlledCase(caseData: AuditReadyCase): boolean {
+  const caseId = String(caseData.caseId || "");
+  const exactCanonicalCase = TEB232_CASE_IDS.has(caseId);
+  const exactTargetCase = caseId === TEB232_TARGET_CASE_ID;
   const exactCase =
     caseData.ownerId === TEB232_UID &&
-    Boolean(caseData.caseId) &&
-    TEB232_CASE_IDS.has(String(caseData.caseId));
+    Boolean(caseId) &&
+    (exactCanonicalCase || exactTargetCase);
   const exactPeriod =
     String(caseData.reportingPeriod.year.value) === "2026" &&
     String(caseData.reportingPeriod.quarter.value).toUpperCase() ===
@@ -73,11 +95,14 @@ function isExactControlledCase(caseData: AuditReadyCase): boolean {
       "2026-01-01" &&
     String(caseData.reportingPeriod.endDate?.value || "") ===
       "2026-12-31";
+  const exactMarker = exactTargetCase
+    ? hasControlledTargetMarker(caseData)
+    : hasControlledCanonicalMarker(caseData);
 
   return (
     exactCase &&
     exactPeriod &&
-    hasControlledTestMarker(caseData) &&
+    exactMarker &&
     hasBoundControlledEvidence(caseData)
   );
 }
