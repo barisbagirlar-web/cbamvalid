@@ -1,0 +1,197 @@
+/*
+ * Step 8 footer conflict hotfix.
+ *
+ * globals.css contains an older Step 8 selector that treats the footer's only
+ * inner flex/grid wrapper as the primary action because that wrapper is also
+ * :last-child. That legacy rule paints the whole action tray orange and breaks
+ * the three-column hierarchy. This file is loaded after both global visual
+ * layers and deliberately wins that collision without changing component logic.
+ */
+
+/* step8-footer-legacy-reset */
+main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 {
+  border-top: 1px solid rgba(26, 25, 21, 0.10) !important;
+  background: rgba(250, 249, 245, 0.985) !important;
+  box-shadow: 0 -12px 34px rgba(26, 25, 21, 0.10) !important;
+}
+
+/* The direct child is a layout wrapper, never an action button. */
+main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div,
+main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div:hover {
+  display: grid !important;
+  grid-template-columns: minmax(150px, 190px) minmax(190px, 240px) minmax(380px, 1fr) !important;
+  align-items: start !important;
+  gap: 0.85rem 1.25rem !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Previous = tertiary navigation. */
+main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > button:first-child {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  min-height: 52px !important;
+  width: 100% !important;
+  justify-content: center !important;
+  border: 1px solid rgba(26, 25, 21, 0.14) !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  color: rgba(26, 25, 21, 0.78) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Save progress = secondary neutral action. */
+main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :nth-child(2) {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: inherit !important;
+}
+
+main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :nth-child(2) > button {
+  min-height: 52px !important;
+  width: 100% !important;
+  justify-content: center !important;
+  border: 1px solid rgba(26, 25, 21, 0.14) !important;
+  border-radius: 12px !important;
+  background: rgba(26, 25, 21, 0.025) !important;
+  color: rgba(26, 25, 21, 0.82) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset !important;
+  transform: none !important;
+}
+
+main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :nth-child(2) > p {
+  margin: 0.35rem 0 0 !important;
+  max-width: none !important;
+  padding-inline: 0.25rem;
+  color: rgba(26, 25, 21, 0.58) !important;
+  font-size: 0.69rem !important;
+  line-height: 1.3 !important;
+  text-align: center !important;
+}
+
+/* Primary action wrapper: layout only. */
+main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :last-child,
+main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :last-child:hover {
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+  position: relative !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 0 2.15rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Ready/locked seal = enterprise green authority. Specificity intentionally
+   exceeds the old accent rule in globals.css. */
+main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 [data-testid="step8-primary-action"] {
+  min-height: 62px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  justify-content: center !important;
+  border: 1px solid #0a563e !important;
+  border-radius: 14px !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.045)), #0f6b4e !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.14) inset, 0 10px 24px rgba(15,107,78,0.22), 0 2px 5px rgba(26,25,21,0.10) !important;
+  font-size: 1rem !important;
+  font-weight: 760 !important;
+  line-height: 1.2 !important;
+  transform: none !important;
+}
+
+main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 [data-testid="step8-primary-action"]:hover:not(:disabled) {
+  border-color: #084a36 !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.06)), #0b5d44 !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.12) inset, 0 13px 28px rgba(11,93,68,0.28), 0 3px 7px rgba(26,25,21,0.12) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Preserve semantic state differentiation. */
+main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 a[data-testid="step8-primary-action"][href*="/credits/buy"] {
+  border-color: #9a6220 !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(0,0,0,0.04)), #b97827 !important;
+  box-shadow: 0 10px 24px rgba(185,120,39,0.22) !important;
+}
+
+main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 button[data-testid="step8-primary-action"][aria-haspopup="true"] {
+  border-color: #a24633 !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.04)), #b4513a !important;
+  box-shadow: 0 10px 24px rgba(180,81,58,0.18) !important;
+}
+
+/* Destructive-finality helper copy belongs below the primary action. */
+main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :last-child::after {
+  position: absolute !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  content: "Seals the package and opens the downloads page. This action cannot be undone." !important;
+  color: rgba(26, 25, 21, 0.60) !important;
+  font-size: 0.69rem !important;
+  line-height: 1.3 !important;
+  text-align: center !important;
+  pointer-events: none !important;
+}
+
+@media (max-width: 860px) {
+  main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 0.65rem 0.75rem !important;
+  }
+
+  main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :last-child {
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+  }
+
+  main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > button:first-child {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+  }
+
+  main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :nth-child(2) {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+  }
+}
+
+@media (max-width: 560px) {
+  main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :last-child,
+  main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :nth-child(2),
+  main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > button:first-child {
+    grid-column: 1 !important;
+  }
+
+  main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :last-child { grid-row: 1 !important; }
+  main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :nth-child(2) { grid-row: 2 !important; }
+  main:has(section[aria-label="Final review status"]):has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > button:first-child { grid-row: 3 !important; }
+}
