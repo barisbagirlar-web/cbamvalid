@@ -1,0 +1,100 @@
+name: Enterprise 1000 Acceptance
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  enterprise-1000-acceptance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+
+      - name: Prove clean candidate tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          test -z "$(git status --porcelain)"
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Verify Node 24 runtime
+        run: node --version | grep -E '^v24\.'
+
+      - name: Install exact locked dependencies
+        run: npm ci
+
+      - name: English-only product guard
+        run: npm run guard:english-only
+
+      - name: Zero HIGH or CRITICAL production dependency gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm audit --omit=dev --audit-level=high
+          npm --prefix functions audit --omit=dev --audit-level=high
+
+      - name: Typecheck and build Cloud Functions
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run typecheck
+          npm --prefix functions run build
+
+      - name: Enterprise mandate contract tests
+        run: npx vitest run tests/reports/enterprise-1000-mandate.test.ts
+
+      - name: Enterprise 1000 machine guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/enterprise-1000-acceptance
+          npx tsx scripts/guard-enterprise-1000-mandate.ts | tee artifacts/enterprise-1000-acceptance/acceptance.txt
+          grep -q '^ENTERPRISE_1000_STATUS_CONTRACT=PASS$' artifacts/enterprise-1000-acceptance/acceptance.txt
+          grep -q '^ENTERPRISE_1000_UNIQUE_DOCUMENTS=11$' artifacts/enterprise-1000-acceptance/acceptance.txt
+          grep -q '^ENTERPRISE_1000_EVIDENCE_VERIFIABILITY=PASS$' artifacts/enterprise-1000-acceptance/acceptance.txt
+          grep -q '^ENTERPRISE_1000_CORRECTIVE_CLOSURE=PASS$' artifacts/enterprise-1000-acceptance/acceptance.txt
+          grep -q '^ENTERPRISE_1000_HANDOVER_DRAFTS=7$' artifacts/enterprise-1000-acceptance/acceptance.txt
+          grep -q '^ENTERPRISE_1000_RELEASE_READY=YES$' artifacts/enterprise-1000-acceptance/acceptance.txt
+
+      - name: Record immutable acceptance evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            printf 'candidate_sha=%s\n' "$(git rev-parse HEAD)"
+            printf 'workflow=Enterprise 1000 Acceptance\n'
+            printf 'contract=docs/release/ENTERPRISE_1000_ACCEPTANCE_CONTRACT.md\n'
+            printf 'status=PASS\n'
+          } > artifacts/enterprise-1000-acceptance/provenance.txt
+          sha256sum \
+            artifacts/enterprise-1000-acceptance/acceptance.txt \
+            artifacts/enterprise-1000-acceptance/provenance.txt \
+            > artifacts/enterprise-1000-acceptance/SHA256SUMS
+
+      - name: Upload Enterprise 1000 acceptance evidence
+        uses: actions/upload-artifact@v6
+        with:
+          name: enterprise-1000-acceptance-${{ github.sha }}
+          path: artifacts/enterprise-1000-acceptance/
+          if-no-files-found: error
+          retention-days: 30
