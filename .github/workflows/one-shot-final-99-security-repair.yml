@@ -48,8 +48,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm audit fix --omit=dev
-          npm --prefix functions audit fix --omit=dev
+          npm audit fix --omit=dev --audit-level=high
+          npm --prefix functions audit fix --omit=dev --audit-level=high
           cp package-lock.json "${RUNNER_TEMP}/root-package-lock.json"
           cp functions/package-lock.json "${RUNNER_TEMP}/functions-package-lock.json"
           printf '%s\n' 'SECURITY_REPAIR_MODE=npm-audit-fix-non-force'
