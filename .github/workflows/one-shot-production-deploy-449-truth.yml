@@ -1,0 +1,109 @@
+name: One-shot production deploy 449 truth contract
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/one-shot-production-deploy-449-truth.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cbamvalid-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      TARGET_SHA: 59114ac9e5b62fa15bf18e33d3eb723b6fdd3b1e
+      FIREBASE_PROJECT: cbam-desk
+      LIVE_BASE_URL: https://cbamvalid.com
+      SA_FIREBASE_CBAM: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CBAM_DESK }}
+
+    steps:
+      - name: Checkout exact merged commercial-acceptance candidate
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          persist-credentials: false
+          fetch-depth: 2
+
+      - name: Prove exact deployment provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          printf 'TARGET_SHA=%s\n' "${TARGET_SHA}"
+          printf 'ACTUAL_SHA=%s\n' "${ACTUAL_SHA}"
+          test "${ACTUAL_SHA}" = "${TARGET_SHA}"
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Verify Node 24 runtime
+        run: node --version | grep -E '^v24\.'
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Commercial acceptance preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run typecheck
+          npm run build:functions
+          npx vitest run \
+            tests/reports/premium-dossier-truth-contract.test.ts \
+            tests/reports/premium-package-hardening.test.ts \
+            tests/reports/cross-format-consistency.test.ts \
+            tests/reports/verifier-status-single-truth.test.ts
+          npx tsx scripts/guard-499-usd-release.ts
+
+      - name: Prepare Firebase credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SA_FIREBASE_CBAM:-}" || { echo '::error::FIREBASE_SERVICE_ACCOUNT_CBAM_DESK is missing'; exit 78; }
+          CREDENTIAL_FILE="${RUNNER_TEMP}/firebase-cbam.json"
+          printf '%s' "${SA_FIREBASE_CBAM}" > "${CREDENTIAL_FILE}"
+          node -e 'const x=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")); if(x.type!=="service_account"||x.project_id!=="cbam-desk"||!x.client_email||!x.private_key) process.exit(1)' "${CREDENTIAL_FILE}"
+          chmod 600 "${CREDENTIAL_FILE}"
+          printf 'GOOGLE_APPLICATION_CREDENTIALS=%s\n' "${CREDENTIAL_FILE}" >> "${GITHUB_ENV}"
+
+      - name: Install Firebase CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global firebase-tools@15.24.0
+          firebase --version
+          firebase projects:list --json | grep -q 'cbam-desk'
+
+      - name: Deploy exact sealing function
+        shell: bash
+        run: |
+          set -euo pipefail
+          firebase deploy --only functions:sealCbamReport --project "${FIREBASE_PROJECT}" --non-interactive
+
+      - name: Verify production function and public surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          FUNCTIONS_JSON="${RUNNER_TEMP}/firebase-functions.json"
+          firebase functions:list --project "${FIREBASE_PROJECT}" --json > "${FUNCTIONS_JSON}"
+          grep -q 'sealCbamReport' "${FUNCTIONS_JSON}"
+          curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/" >/dev/null
+          curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/login" >/dev/null
+          {
+            printf '%s\n' '## 449 USD commercial truth production deployment PASS'
+            printf '%s\n' "- deployed application commit: ${TARGET_SHA}"
+            printf '%s\n' "- Firebase project: ${FIREBASE_PROJECT}"
+            printf '%s\n' '- 499 USD release artifact gate passed before deployment'
+            printf '%s\n' '- sealCbamReport deployed and listed in production'
+            printf '%s\n' '- public site routes remain healthy'
+          } >> "${GITHUB_STEP_SUMMARY}"
