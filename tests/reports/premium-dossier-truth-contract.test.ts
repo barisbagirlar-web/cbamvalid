@@ -48,10 +48,12 @@ describe("premium dossier truth and consistency contract", () => {
     expect(pdfBoundarySource).toContain("CONTROLLED SYNTHETIC DEMONSTRATION — NOT REAL OPERATOR DATA — NOT FOR REGULATORY RELIANCE");
   });
 
-  it("uses canonical V5 readiness as the operator preparation score and keeps verifier completion separate", () => {
+  it("uses canonical V5 readiness as operator preparation and never claims period eligibility is inside that score", () => {
     expect(pdfBoundarySource).toContain("const canonicalOperatorScore = Number(model.readiness.score)");
     expect(pdfBoundarySource).toContain("operatorPreparationScore:");
     expect(pdfBoundarySource).toContain("externalVerifierCompleted");
+    expect(pdfImplSource).toContain('"Operator-controlled data and calculation readiness"');
+    expect(pdfImplSource).not.toContain('"Automated readiness including period eligibility"');
     expect(pdfImplSource).toContain('"External verifier completion"');
   });
 
