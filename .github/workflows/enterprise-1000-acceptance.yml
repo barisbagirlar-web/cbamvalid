@@ -92,7 +92,7 @@ jobs:
             > artifacts/enterprise-1000-acceptance/SHA256SUMS
 
       - name: Upload Enterprise 1000 acceptance evidence
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: enterprise-1000-acceptance-${{ github.sha }}
           path: artifacts/enterprise-1000-acceptance/
