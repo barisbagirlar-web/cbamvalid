@@ -383,7 +383,7 @@ export function buildPremiumDossierPdf(
 
   y = 134;
   metricCards([
-    { label: "Operator preparation", value: `${formatNumber(operatorScore, 1)}%`, note: "Automated readiness including period eligibility", color: NAVY_2 },
+    { label: "Operator preparation", value: `${formatNumber(operatorScore, 1)}%`, note: "Operator-controlled data and calculation readiness", color: NAVY_2 },
     { label: "Evidence assurance", value: `${formatNumber(evidenceScore, 1)}%`, note: "Material support and quality", color: BLUE },
     { label: "Package integrity", value: humanize(packageIntegrity).toUpperCase(), note: "Manifest, signature and ZIP controls", color: statusColor(packageIntegrity) },
     { label: "External verifier completion", value: `${verifierCompleted}/${verifierTotal}`, note: "Reserved for accredited verifier", color: AMBER },
