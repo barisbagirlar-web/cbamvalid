@@ -76,7 +76,7 @@ async function main(): Promise<void> {
     },
   });
   const upgraded = upgradeArtifactsToEnterprise1000({
-    artifacts: rawArtifacts,
+    artifacts: rawArtifacts.filter((item) => !item.path.toLowerCase().endsWith(".pdf")),
     caseData,
     calculation,
     controls,
