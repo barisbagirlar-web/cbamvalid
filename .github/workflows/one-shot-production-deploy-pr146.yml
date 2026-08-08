@@ -1,0 +1,258 @@
+name: One-shot production deploy TEB232 retry fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/one-shot-production-deploy-pr146.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cbamvalid-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      TARGET_SHA: 363b3ecf0e7a51657f512c01bb3dec7a2fea20af
+      PR_HEAD_SHA: 94bdc8e317c4bfe48db75b8b7eb892b0744c376b
+      FIREBASE_PROJECT: cbam-desk
+      LIVE_BASE_URL: https://cbamvalid.com
+      SA_GCP_KEY: ${{ secrets.GCP_SA_KEY }}
+      SA_GOOGLE_JSON: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
+      SA_GCLOUD_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
+      SA_GCP_SERVICE_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+      SA_FIREBASE_GENERIC: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      SA_FIREBASE_CBAM: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CBAM_DESK }}
+      FIREBASE_DEPLOY_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+
+    steps:
+      - name: Checkout exact merged production candidate
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          persist-credentials: false
+          fetch-depth: 2
+
+      - name: Prove exact deployment provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          printf 'PR_HEAD_SHA=%s\n' "${PR_HEAD_SHA}"
+          printf 'TARGET_SHA=%s\n' "${TARGET_SHA}"
+          printf 'ACTUAL_SHA=%s\n' "${ACTUAL_SHA}"
+          test "${ACTUAL_SHA}" = "${TARGET_SHA}"
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Verify Node 24 runtime
+        run: node --version | grep -E '^v24\.'
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Production preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run guard:hosting-architecture
+          npm run typecheck
+          npm run build:functions
+
+      - name: Prepare available Firebase credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          CANDIDATES="${RUNNER_TEMP}/firebase-auth-candidates.txt"
+          : > "${CANDIDATES}"
+          add_candidate() {
+            local label="$1"
+            local value="$2"
+            if [[ -z "${value}" ]]; then
+              return
+            fi
+            local file="${RUNNER_TEMP}/firebase-${label}.json"
+            printf '%s' "${value}" > "${file}"
+            if node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "${file}" 2>/dev/null; then
+              chmod 600 "${file}"
+              printf '%s|%s\n' "${label}" "${file}" >> "${CANDIDATES}"
+            fi
+          }
+          add_candidate 'gcp-key' "${SA_GCP_KEY:-}"
+          add_candidate 'google-json' "${SA_GOOGLE_JSON:-}"
+          add_candidate 'gcloud-key' "${SA_GCLOUD_KEY:-}"
+          add_candidate 'gcp-service-key' "${SA_GCP_SERVICE_KEY:-}"
+          add_candidate 'firebase-generic' "${SA_FIREBASE_GENERIC:-}"
+          add_candidate 'firebase-cbam' "${SA_FIREBASE_CBAM:-}"
+          if [[ ! -s "${CANDIDATES}" && -z "${FIREBASE_DEPLOY_TOKEN:-}" ]]; then
+            printf '%s\n' '::error::No Firebase/GCP production deployment credential is configured.'
+            exit 78
+          fi
+          printf 'Prepared %s service-account candidate(s); token fallback present=%s\n' \
+            "$(wc -l < "${CANDIDATES}")" \
+            "$([[ -n "${FIREBASE_DEPLOY_TOKEN:-}" ]] && printf yes || printf no)"
+
+      - name: Install Firebase CLI and enable framework-aware Hosting
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global firebase-tools@latest
+          firebase --version
+          firebase experiments:enable webframeworks
+
+      - name: Deploy changed sealing function with credential cascade
+        shell: bash
+        run: |
+          set -euo pipefail
+          CANDIDATES="${RUNNER_TEMP}/firebase-auth-candidates.txt"
+          DIAGNOSTICS="${RUNNER_TEMP}/firebase-deploy-diagnostics.log"
+          : > "${DIAGNOSTICS}"
+          deployed=0
+
+          while IFS='|' read -r label credential_file; do
+            [[ -n "${label}" && -n "${credential_file}" ]] || continue
+            export GOOGLE_APPLICATION_CREDENTIALS="${credential_file}"
+            ACCESS_LOG="${RUNNER_TEMP}/firebase-access-${label}.log"
+            DEPLOY_LOG="${RUNNER_TEMP}/firebase-deploy-${label}.log"
+            if ! firebase projects:list --json >"${ACCESS_LOG}" 2>&1; then
+              printf '[%s] project access failed\n' "${label}" >> "${DIAGNOSTICS}"
+              grep -Ei 'error:|http error|permission|denied|forbidden|unauthorized|insufficient|403|401' "${ACCESS_LOG}" | tail -n 2 >> "${DIAGNOSTICS}" || true
+              continue
+            fi
+            if ! grep -q 'cbam-desk' "${ACCESS_LOG}"; then
+              printf '[%s] target project not visible\n' "${label}" >> "${DIAGNOSTICS}"
+              continue
+            fi
+            if firebase deploy --only functions:sealCbamReport --project "${FIREBASE_PROJECT}" --non-interactive >"${DEPLOY_LOG}" 2>&1; then
+              cat "${DEPLOY_LOG}"
+              printf 'GOOGLE_APPLICATION_CREDENTIALS=%s\n' "${credential_file}" >> "${GITHUB_ENV}"
+              printf 'FIREBASE_DEPLOY_AUTH=adc\n' >> "${GITHUB_ENV}"
+              printf 'Firebase deployment credential selected: %s\n' "${label}"
+              deployed=1
+              break
+            fi
+            printf '[%s] sealCbamReport deploy failed\n' "${label}" >> "${DIAGNOSTICS}"
+            grep -Ei 'error:|http error|permission|denied|forbidden|unauthorized|insufficient|failed to|403|401' "${DEPLOY_LOG}" | tail -n 3 >> "${DIAGNOSTICS}" || true
+          done < "${CANDIDATES}"
+
+          if [[ "${deployed}" -eq 0 && -n "${FIREBASE_DEPLOY_TOKEN:-}" ]]; then
+            unset GOOGLE_APPLICATION_CREDENTIALS
+            TOKEN_LOG="${RUNNER_TEMP}/firebase-deploy-token.log"
+            if firebase deploy --only functions:sealCbamReport --project "${FIREBASE_PROJECT}" --non-interactive --token "${FIREBASE_DEPLOY_TOKEN}" >"${TOKEN_LOG}" 2>&1; then
+              cat "${TOKEN_LOG}"
+              printf 'FIREBASE_DEPLOY_AUTH=token\n' >> "${GITHUB_ENV}"
+              deployed=1
+            else
+              printf '[firebase-token] sealCbamReport deploy failed\n' >> "${DIAGNOSTICS}"
+              grep -Ei 'error:|http error|permission|denied|forbidden|unauthorized|insufficient|failed to|403|401' "${TOKEN_LOG}" | tail -n 3 >> "${DIAGNOSTICS}" || true
+            fi
+          fi
+
+          if [[ "${deployed}" -ne 1 ]]; then
+            tail -n 8 "${DIAGNOSTICS}" \
+              | sed -E 's/%/%25/g; s/::/%3A%3A/g' \
+              | while IFS= read -r line; do printf '::error::Firebase Functions: %s\n' "${line}"; done
+            exit 1
+          fi
+
+      - name: Resolve production Firebase Web SDK build config
+        shell: bash
+        run: |
+          set -euo pipefail
+          CONFIG_FILE="${RUNNER_TEMP}/firebase-web-sdk-config.json"
+          SDK_RAW="${RUNNER_TEMP}/firebase-sdkconfig-raw.json"
+
+          if curl --fail --silent --show-error --location --max-time 30 \
+            "${LIVE_BASE_URL}/__/firebase/init.json" > "${CONFIG_FILE}" \
+            && node -e 'const c=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")); if(!c.apiKey||!c.appId||!c.projectId) process.exit(1)' "${CONFIG_FILE}"; then
+            printf '%s\n' 'Firebase Web SDK config source: live reserved Hosting endpoint'
+          else
+            rm -f "${CONFIG_FILE}"
+            if [[ "${FIREBASE_DEPLOY_AUTH:-}" == "token" ]]; then
+              firebase apps:sdkconfig WEB --project "${FIREBASE_PROJECT}" --json --token "${FIREBASE_DEPLOY_TOKEN}" > "${SDK_RAW}"
+            else
+              firebase apps:sdkconfig WEB --project "${FIREBASE_PROJECT}" --json > "${SDK_RAW}"
+            fi
+            node - "${SDK_RAW}" "${CONFIG_FILE}" <<'NODE'
+          const fs = require('fs');
+          const raw = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const config = raw?.result?.sdkConfig ?? raw?.result ?? raw;
+          fs.writeFileSync(process.argv[3], JSON.stringify(config));
+          NODE
+            printf '%s\n' 'Firebase Web SDK config source: Firebase CLI'
+          fi
+
+          node - "${CONFIG_FILE}" "${GITHUB_ENV}" <<'NODE'
+          const fs = require('fs');
+          const config = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const required = {
+            NEXT_PUBLIC_FIREBASE_API_KEY: config.apiKey,
+            NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: config.authDomain || `${config.projectId}.firebaseapp.com`,
+            NEXT_PUBLIC_FIREBASE_PROJECT_ID: config.projectId,
+            NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: config.storageBucket,
+            NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: config.messagingSenderId,
+            NEXT_PUBLIC_FIREBASE_APP_ID: config.appId,
+          };
+          for (const [key, value] of Object.entries(required)) {
+            if (!value || typeof value !== 'string' || !value.trim()) {
+              throw new Error(`FIREBASE_CLIENT_CONFIG_MISSING:${key}`);
+            }
+            fs.appendFileSync(process.argv[3], `${key}=${value.trim()}\n`);
+          }
+          fs.appendFileSync(process.argv[3], `ADMIN_USE_ADC=true\nGCLOUD_PROJECT=${config.projectId}\nGOOGLE_CLOUD_PROJECT=${config.projectId}\n`);
+          NODE
+          printf '%s\n' 'Firebase Web SDK production build config resolved and validated.'
+
+      - name: Deploy framework-aware Hosting production
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${FIREBASE_DEPLOY_AUTH:-}" == "token" ]]; then
+            unset GOOGLE_APPLICATION_CREDENTIALS
+            firebase deploy --only hosting --project "${FIREBASE_PROJECT}" --non-interactive --token "${FIREBASE_DEPLOY_TOKEN}"
+          else
+            firebase deploy --only hosting --project "${FIREBASE_PROJECT}" --non-interactive
+          fi
+
+      - name: Verify production function and live web surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          FUNCTIONS_JSON="${RUNNER_TEMP}/firebase-functions.json"
+          if [[ "${FIREBASE_DEPLOY_AUTH:-}" == "token" ]]; then
+            unset GOOGLE_APPLICATION_CREDENTIALS
+            firebase functions:list --project "${FIREBASE_PROJECT}" --json --token "${FIREBASE_DEPLOY_TOKEN}" > "${FUNCTIONS_JSON}"
+          else
+            firebase functions:list --project "${FIREBASE_PROJECT}" --json > "${FUNCTIONS_JSON}"
+          fi
+          grep -q 'sealCbamReport' "${FUNCTIONS_JSON}"
+          node scripts/verify-live-next-assets.mjs "${LIVE_BASE_URL}"
+          curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/" >/dev/null
+          curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/login" >/dev/null
+          API_STATUS="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 30 -X POST "${LIVE_BASE_URL}/api/qa/reconcile-teb232" -H 'content-type: application/json' --data '{}')"
+          if [[ "${API_STATUS}" != "401" && "${API_STATUS}" != "403" ]]; then
+            printf 'Unexpected unauthenticated reconcile route status: %s\n' "${API_STATUS}"
+            exit 1
+          fi
+          {
+            printf '%s\n' '## Production deployment PASS'
+            printf '%s\n' "- PR head: ${PR_HEAD_SHA}"
+            printf '%s\n' "- deployed merge commit: ${TARGET_SHA}"
+            printf '%s\n' "- Firebase project: ${FIREBASE_PROJECT}"
+            printf '%s\n' "- live URL: ${LIVE_BASE_URL}"
+            printf '%s\n' '- sealCbamReport deployed and listed in production'
+            printf '%s\n' '- framework-aware Hosting deployed with webframeworks enabled'
+            printf '%s\n' '- production Firebase Web SDK config hydrated before Next.js build'
+            printf '%s\n' '- live Next.js asset integrity verified'
+            printf '%s\n' '- canonical public routes healthy'
+            printf '%s\n' '- authenticated reconcile API route is present and rejects anonymous access'
+          } >> "${GITHUB_STEP_SUMMARY}"

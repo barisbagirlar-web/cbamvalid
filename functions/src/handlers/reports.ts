@@ -16,6 +16,7 @@ function sealError(error: unknown): HttpsError {
   if (message === "SEAL_REQUEST_IN_PROGRESS") return new HttpsError("aborted", message, details);
   if (message.includes("NOT_FOUND") || message.includes("MISSING")) return new HttpsError("not-found", message, details);
   if (
+    message.startsWith("PREMIUM_PACKAGE_") ||
     message.includes("REQUIRED") ||
     message.includes("BLOCKED") ||
     message.includes("MISMATCH") ||

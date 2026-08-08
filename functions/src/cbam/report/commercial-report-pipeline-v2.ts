@@ -9,6 +9,17 @@ import {
 } from "./verifier-package-builder";
 import type { KmsSignatureResult } from "./kms-signature";
 import type { HonestScoreboard } from "./honest-scoreboard";
+import { normalizeXlsxEntryTimestamps } from "./deterministic-xlsx";
+import {
+  assertCliGraphArtifactConsistency,
+  buildCliVerifiableCalculationGraph,
+} from "./canonical-calculation-graph";
+import {
+  assertPremiumPackagePreconditions,
+  hardenVerifierArtifacts,
+  prepareCaseForVerifierArtifacts,
+} from "./premium-package-hardening";
+import { resolveControlledCaseAssessmentTimestamp } from "./controlled-test-assessment";
 
 export class CommercialReportPipelineV2 {
   public static async executeSealingPipeline(params: {
@@ -23,6 +34,11 @@ export class CommercialReportPipelineV2 {
     productCode: string;
     releaseContractVersion: number;
     signManifest: (manifestBytes: Buffer) => Promise<KmsSignatureResult>;
+    /**
+     * @deprecated Production graph bytes are derived from Calculation Trace.
+     * Kept in the call contract temporarily so older callers compile, but the
+     * value is deliberately ignored to prevent parallel-engine drift.
+     */
     calcGraph?: {
       rootHash: string;
       nodes: ReadonlyArray<{
@@ -41,13 +57,38 @@ export class CommercialReportPipelineV2 {
     versionStamp?: { product: string; schema: string; rulesetId: string; releaseIteration: number };
     publicVerificationUrl?: string | null;
   }) {
+    // The exact TEB232 controlled QA cases deliberately model a completed
+    // 2026 annual dossier assessed on 2027-01-31. Normal production cases keep
+    // the immutable package creation time as their assessment clock.
+    const assessmentTimestamp = resolveControlledCaseAssessmentTimestamp(
+      params.caseData,
+      params.generatedAt
+    );
+
+    // Verifier-grade fail-closed gates run before any commercial artifact is
+    // rendered or KMS-signed. A failure here must leave no signed package.
+    assertPremiumPackagePreconditions({
+      caseData: params.caseData,
+      calculation: params.calculation,
+      generatedAt: assessmentTimestamp,
+    });
+
+    // linkedCalculations is deterministic derivative metadata. Enrich only the
+    // private artifact-generation copy; never mutate the operator source object.
+    const artifactCaseData = prepareCaseForVerifierArtifacts(params.caseData, params.calculation);
+
+    // Calculation Graph has exactly one source of truth: Calculation Trace.
+    // Its graph hashes/root also use the exact algorithm shipped in the offline
+    // verifier CLI so the customer can independently recompute the graph.
+    const canonicalGraph = buildCliVerifiableCalculationGraph(params.calculation);
+
     // --- Pass 1: Build Unsigned Artifacts (single pass) ---
     // Artifacts are rendered ONCE with placeholder hash values.
     // The PDF references the manifest/signature/Package receipt hash
     // by canonical location name only — never embedding the actual hash,
     // avoiding the cyclic hash dependency.
-    const unsignedArtifacts = await buildUnsignedVerifierArtifacts({
-      caseData: params.caseData,
+    let unsignedArtifacts = await buildUnsignedVerifierArtifacts({
+      caseData: artifactCaseData,
       calculation: params.calculation,
       controls: params.controls,
       reportId: params.reportId,
@@ -55,12 +96,12 @@ export class CommercialReportPipelineV2 {
       releaseVersion: params.releaseVersion,
       generatedAt: params.generatedAt,
       evidenceFiles: params.evidenceFiles,
-      calcGraph: params.calcGraph,
+      calcGraph: canonicalGraph,
       honestScoreboard: params.honestScoreboard,
       publicVerificationUrl: params.publicVerificationUrl,
       assessmentContext: {
         generatedAt: params.generatedAt,
-        assessmentTimestamp: params.generatedAt,
+        assessmentTimestamp,
         reportId: params.reportId,
         packageCode: params.packageCode,
         releaseVersion: params.releaseVersion,
@@ -70,10 +111,33 @@ export class CommercialReportPipelineV2 {
       },
     });
 
-    // Build data integrity manifest using these artifacts
+    // Materialise evidence→calculation lineage and add a formula-driven
+    // independent recomputation sheet before manifest hashing/signing.
+    unsignedArtifacts = await hardenVerifierArtifacts({
+      artifacts: unsignedArtifacts,
+      caseData: artifactCaseData,
+      calculation: params.calculation,
+      graph: canonicalGraph,
+    });
+
+    // Hardening adds workbook ZIP members; normalise every XLSX member back to
+    // the immutable release timestamp so equivalent releases remain byte-stable.
+    unsignedArtifacts = await Promise.all(
+      unsignedArtifacts.map(async (item) =>
+        item.path === "Verifier Workspace.xlsx"
+          ? { ...item, bytes: await normalizeXlsxEntryTimestamps(item.bytes, params.generatedAt) }
+          : item
+      )
+    );
+
+    // The graph must satisfy both cross-artifact Trace agreement and the exact
+    // offline-verifier node/root hashing algorithm before a manifest can exist.
+    assertCliGraphArtifactConsistency(unsignedArtifacts, params.calculation);
+
+    // Build data integrity manifest using the hardened artifacts.
     const manifestResult = buildDataIntegrityManifest({
       artifacts: unsignedArtifacts,
-      caseData: params.caseData,
+      caseData: artifactCaseData,
       calculation: params.calculation,
       reportId: params.reportId,
       releaseVersion: params.releaseVersion,

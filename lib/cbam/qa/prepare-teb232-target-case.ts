@@ -167,10 +167,13 @@ export async function prepareTeb232TargetCase(params: {
   const reportSnapshot = await db
     .collection("cbam_reports")
     .where("caseId", "==", TEB232_TARGET_CASE_ID)
-    .limit(1)
     .get();
-  if (!reportSnapshot.empty) {
+  const reportStatuses = reportSnapshot.docs.map((doc) => String(doc.data().status || ""));
+  if (reportStatuses.includes("SEALED")) {
     throw new Error("TEB232_TARGET_CASE_ALREADY_RELEASED");
+  }
+  if (reportStatuses.includes("PROCESSING")) {
+    throw new Error("TEB232_TARGET_CASE_SEAL_IN_PROGRESS");
   }
 
   if (await currentTargetIsHealthy(bucket, stored)) {
