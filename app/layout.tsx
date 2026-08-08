@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import "./step8-premium-actions.css";
+import "./step8-footer-hotfix.css";
 import { AnalyticsBeacon } from "@/components/seo/AnalyticsProvider";
 import { siteConfig } from "@/lib/site-config";
 
