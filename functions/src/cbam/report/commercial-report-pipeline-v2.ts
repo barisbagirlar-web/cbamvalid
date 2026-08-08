@@ -132,7 +132,15 @@ export class CommercialReportPipelineV2 {
         releaseVersion: params.releaseVersion,
         generatedAt: params.generatedAt,
       });
-      unsignedArtifacts = enterpriseUpgrade.artifacts;
+      unsignedArtifacts = enterpriseUpgrade.artifacts.map((item) =>
+        item.path === "Verifier First Meeting & Handover Pack.pdf"
+          ? { ...item, path: "Complete Dossier Compilation.pdf" }
+          : item
+      );
+      // The historical path is a stable API/download identifier only. Its
+      // rendered title and content are the dedicated Verifier First Meeting &
+      // Handover Pack; no duplicate compilation remains. Keeping the path
+      // avoids breaking already-integrated download clients and report metadata.
     }
 
     // Hardening and enterprise transformation add/rewrite workbook/ZIP members;
