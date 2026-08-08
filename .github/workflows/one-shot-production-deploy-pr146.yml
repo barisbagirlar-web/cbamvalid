@@ -164,6 +164,54 @@ jobs:
             exit 1
           fi
 
+      - name: Resolve production Firebase Web SDK build config
+        shell: bash
+        run: |
+          set -euo pipefail
+          CONFIG_FILE="${RUNNER_TEMP}/firebase-web-sdk-config.json"
+          SDK_RAW="${RUNNER_TEMP}/firebase-sdkconfig-raw.json"
+
+          if curl --fail --silent --show-error --location --max-time 30 \
+            "${LIVE_BASE_URL}/__/firebase/init.json" > "${CONFIG_FILE}" \
+            && node -e 'const c=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")); if(!c.apiKey||!c.appId||!c.projectId) process.exit(1)' "${CONFIG_FILE}"; then
+            printf '%s\n' 'Firebase Web SDK config source: live reserved Hosting endpoint'
+          else
+            rm -f "${CONFIG_FILE}"
+            if [[ "${FIREBASE_DEPLOY_AUTH:-}" == "token" ]]; then
+              firebase apps:sdkconfig WEB --project "${FIREBASE_PROJECT}" --json --token "${FIREBASE_DEPLOY_TOKEN}" > "${SDK_RAW}"
+            else
+              firebase apps:sdkconfig WEB --project "${FIREBASE_PROJECT}" --json > "${SDK_RAW}"
+            fi
+            node - "${SDK_RAW}" "${CONFIG_FILE}" <<'NODE'
+          const fs = require('fs');
+          const raw = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const config = raw?.result?.sdkConfig ?? raw?.result ?? raw;
+          fs.writeFileSync(process.argv[3], JSON.stringify(config));
+          NODE
+            printf '%s\n' 'Firebase Web SDK config source: Firebase CLI'
+          fi
+
+          node - "${CONFIG_FILE}" "${GITHUB_ENV}" <<'NODE'
+          const fs = require('fs');
+          const config = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const required = {
+            NEXT_PUBLIC_FIREBASE_API_KEY: config.apiKey,
+            NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: config.authDomain || `${config.projectId}.firebaseapp.com`,
+            NEXT_PUBLIC_FIREBASE_PROJECT_ID: config.projectId,
+            NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: config.storageBucket,
+            NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: config.messagingSenderId,
+            NEXT_PUBLIC_FIREBASE_APP_ID: config.appId,
+          };
+          for (const [key, value] of Object.entries(required)) {
+            if (!value || typeof value !== 'string' || !value.trim()) {
+              throw new Error(`FIREBASE_CLIENT_CONFIG_MISSING:${key}`);
+            }
+            fs.appendFileSync(process.argv[3], `${key}=${value.trim()}\n`);
+          }
+          fs.appendFileSync(process.argv[3], `ADMIN_USE_ADC=true\nGCLOUD_PROJECT=${config.projectId}\nGOOGLE_CLOUD_PROJECT=${config.projectId}\n`);
+          NODE
+          printf '%s\n' 'Firebase Web SDK production build config resolved and validated.'
+
       - name: Deploy framework-aware Hosting production
         shell: bash
         run: |
@@ -203,6 +251,7 @@ jobs:
             printf '%s\n' "- live URL: ${LIVE_BASE_URL}"
             printf '%s\n' '- sealCbamReport deployed and listed in production'
             printf '%s\n' '- framework-aware Hosting deployed with webframeworks enabled'
+            printf '%s\n' '- production Firebase Web SDK config hydrated before Next.js build'
             printf '%s\n' '- live Next.js asset integrity verified'
             printf '%s\n' '- canonical public routes healthy'
             printf '%s\n' '- authenticated reconcile API route is present and rejects anonymous access'
