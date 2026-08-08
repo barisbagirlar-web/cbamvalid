@@ -15,6 +15,16 @@ jobs:
     timeout-minutes: 75
     env:
       EXACT_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_FIREBASE_API_KEY: "ci-placeholder-not-a-secret"
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "cbamvalid-ci.invalid"
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: "cbamvalid-ci"
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "cbamvalid-ci.appspot.com"
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+      NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:0000000000000000000000"
+      ADMIN_USE_ADC: "true"
+      GCLOUD_PROJECT: "cbamvalid-ci"
 
     steps:
       - name: Checkout exact candidate
