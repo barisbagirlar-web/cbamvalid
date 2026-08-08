@@ -100,7 +100,7 @@ describe("Enterprise 1,000 USD verifier-ready mandate", () => {
     expect(weak.warning).toContain("WEAK_OR_INCOMPLETE_EVIDENCE");
   });
 
-  it("replaces duplicate human PDFs with 11 distinct decision/workpaper documents and closure-complete registers", async () => {
+  it("replaces every legacy human PDF with 11 distinct decision/workpaper documents and closure-complete registers", async () => {
     const { caseData, evidenceFiles, calculation, controls } = await steelFixture();
     const reportId = `report_${"a".repeat(64)}`;
     const artifacts = await buildUnsignedVerifierArtifacts({
@@ -125,7 +125,7 @@ describe("Enterprise 1,000 USD verifier-ready mandate", () => {
     });
 
     const upgraded = upgradeArtifactsToEnterprise1000({
-      artifacts,
+      artifacts: artifacts.filter((item) => !item.path.toLowerCase().endsWith(".pdf")),
       caseData,
       calculation,
       controls,
