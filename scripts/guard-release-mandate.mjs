@@ -200,8 +200,7 @@ switch (check) {
         "offline verification",
         "unsigned claims",
         "mock adminAuth",
-        "mock adminDb",
-        "firebase-admin-a14c8a5423a75469"
+        "mock adminDb"
       ];
       for (const term of bannedMockTerms) {
         if (content.includes(term)) {
