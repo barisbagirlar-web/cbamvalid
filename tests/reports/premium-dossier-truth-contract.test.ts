@@ -1,6 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { AuditReadyCaseSchema } from "../../functions/src/cbam/schema";
+import type { PremiumDossierViewModelV2 } from "../../functions/src/cbam/report/premium-dossier-schema";
+import { normalizePremiumDossierForCommercialPresentation } from "../../functions/src/cbam/report/premium-dossier-pdf";
+import { createVerifierGradeCase } from "../fixtures/verifier-grade-case";
 
 const pdfImplSource = fs.readFileSync(
   path.join(process.cwd(), "functions/src/cbam/report/premium-dossier-pdf-impl.ts"),
@@ -55,6 +59,41 @@ describe("premium dossier truth and consistency contract", () => {
     expect(pdfImplSource).toContain('"Operator-controlled data and calculation readiness"');
     expect(pdfImplSource).not.toContain('"Automated readiness including period eligibility"');
     expect(pdfImplSource).toContain('"External verifier completion"');
+  });
+
+  it("normalizes a controlled future-clock model to real package-time truth", () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    const model = {
+      generatedAt: "2026-08-08T12:10:17.541Z",
+      reportingPeriodAssessment: {
+        definitiveAnnualEligible: true,
+        completenessStatus: "PASSED",
+      },
+      readiness: { score: "100" },
+      findings: [],
+      legalBoundary: "Operator-prepared verifier preparation package.",
+      manifestSummary: {
+        requiredTopLevelComponentCount: 26,
+        evidenceFileCount: 11,
+        manifestFileCount: 26,
+      },
+      honestScoreboard: {
+        operatorReadiness: 60.8,
+        operatorPreparationScore: 60.8,
+        externalVerifierCompleted: 0,
+        externalVerifierTotal: 7,
+        scoreboardClaim: "STALE",
+        productTierLabel: "Premium Dossier",
+      },
+    } as unknown as PremiumDossierViewModelV2;
+
+    const normalized = normalizePremiumDossierForCommercialPresentation(model, caseData);
+    expect(normalized.reportingPeriodAssessment.definitiveAnnualEligible).toBe(false);
+    expect(normalized.honestScoreboard?.operatorPreparationScore).toBe(100);
+    expect(normalized.honestScoreboard?.externalVerifierCompleted).toBe(0);
+    expect(normalized.manifestSummary.manifestFileCount).toBe(37);
+    expect(normalized.legalBoundary).toContain("CONTROLLED SYNTHETIC DEMONSTRATION");
+    expect(normalized.legalBoundary).toContain("NOT FOR REGULATORY RELIANCE");
   });
 
   it("reports hashed manifest entries separately from the 26-component top-level contract", () => {
