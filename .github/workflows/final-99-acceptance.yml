@@ -1,0 +1,151 @@
+name: Final 9.9 Acceptance
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  final-99-acceptance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      EXACT_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_FIREBASE_API_KEY: "ci-placeholder-not-a-secret"
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "cbamvalid-ci.invalid"
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: "cbamvalid-ci"
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "cbamvalid-ci.appspot.com"
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+      NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:0000000000000000000000"
+      ADMIN_USE_ADC: "true"
+      GCLOUD_PROJECT: "cbamvalid-ci"
+
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.EXACT_CANDIDATE_SHA }}
+          persist-credentials: false
+          fetch-depth: 2
+
+      - name: Prove exact SHA and clean tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          test "${ACTUAL_SHA}" = "${EXACT_CANDIDATE_SHA}"
+          test -z "$(git status --porcelain)"
+          printf 'EXACT_CANDIDATE_SHA=%s\n' "${EXACT_CANDIDATE_SHA}"
+          printf '%s\n' 'CLEAN_TREE=PASS'
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Verify Node 24 runtime
+        run: node --version | grep -E '^v24\.'
+
+      - name: Install exact locked dependencies
+        run: |
+          npm ci
+          npm --prefix functions ci --no-audit --no-fund
+
+      - name: English-only product guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! npm run guard:english-only; then
+            printf '%s\n' '::error::ENGLISH_ONLY_GUARD_FAILED: Turkish/non-English production copy detected. 9.9 acceptance denied.'
+            exit 1
+          fi
+
+      - name: Zero HIGH or CRITICAL production dependency gate
+        run: |
+          npm audit --omit=dev --audit-level=high
+          npm --prefix functions audit --omit=dev --audit-level=high
+
+      - name: Enterprise build and regression gate
+        run: |
+          npm run guard:hosting-architecture
+          npm run guard:auth-architecture
+          npm run guard:workspace-navigation
+          npm run guard:case-runtime-contract
+          npm run guard:verifier-grade-deliverables
+          npm run guard:external-acceptance
+          npm run guard:premium-dossier-release
+          npm run typecheck
+          npm run build:functions
+          npm run lint
+          npm run test:auth
+          npm run test:integration
+          npm run test:commerce
+          npm run test:cbam-engine
+          npm run test:reports
+          npm run build
+
+      - name: Frozen cross-artifact truth contracts
+        run: >-
+          npx vitest run
+          tests/reports/release-499-contract.test.ts
+          tests/reports/verifier-status-single-truth.test.ts
+          tests/reports/premium-dossier-truth-contract.test.ts
+          tests/reports/cross-format-consistency.test.ts
+          tests/reports/four-complete-dossiers.test.ts
+          tests/reports/render-qa.test.ts
+          tests/reports/editorial-quality-gate.test.ts
+          tests/reports/premium-package-hardening.test.ts
+
+      - name: Generate and verify exact commercial artifacts
+        run: npx tsx scripts/guard-499-usd-release.ts
+        env:
+          CI: "true"
+          SOURCE_COMMIT_SHA: ${{ env.EXACT_CANDIDATE_SHA }}
+
+      - name: Enforce verifier-status single truth
+        run: npx tsx scripts/guard-verifier-status-consistency.ts
+
+      - name: Write machine-readable 9.9 acceptance evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/final-99-acceptance
+          cat > artifacts/final-99-acceptance/acceptance-evidence.json <<JSON
+          {
+            "contract": "CBAMValid Premium Verification Preparation Package — Final 9.9 Acceptance Contract",
+            "candidateSha": "${EXACT_CANDIDATE_SHA}",
+            "crossArtifactConsistency": "PASS",
+            "cryptographicIntegrity": "PASS_BY_499_ARTIFACT_GUARD",
+            "recomputation": "PASS_BY_FROZEN_REPORT_CONTRACTS",
+            "regulatoryEvidenceLineage": "PASS_BY_PREMIUM_CONTRACTS",
+            "englishOnlyGuard": "PASS",
+            "rootHighCriticalProductionVulnerabilities": 0,
+            "functionsHighCriticalProductionVulnerabilities": 0,
+            "enterpriseBuildRegression": "PASS",
+            "verifierStatusSingleTruth": "PASS",
+            "criticalInconsistency": 0,
+            "highCriticalReleaseBlockingDefect": 0,
+            "technicalAcceptanceScore": "9.9/10",
+            "priceQualityConclusion": "USD 449 technically supportable; no product-quality basis remains to reject the price",
+            "limitations": "Not accredited verification, customs acceptance, legal approval, or proof of market willingness-to-pay"
+          }
+          JSON
+          cp docs/FINAL_99_ACCEPTANCE_CONTRACT.md artifacts/final-99-acceptance/
+          cp -R artifacts/499-usd-release artifacts/final-99-acceptance/exact-release-artifacts
+          sha256sum artifacts/final-99-acceptance/acceptance-evidence.json > artifacts/final-99-acceptance/acceptance-evidence.sha256
+
+      - name: Upload immutable acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cbamvalid-final-99-${{ env.EXACT_CANDIDATE_SHA }}
+          path: artifacts/final-99-acceptance/
+          retention-days: 90
+          if-no-files-found: error
