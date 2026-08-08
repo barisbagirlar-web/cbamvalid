@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      TARGET_APP_SHA: 45d23f3d251a3986b3d531771be7c5c849c3056e
+      TARGET_APP_SHA: 68034d33565a92888eebaf2e92f4f57cbb8148b7
       FIREBASE_PROJECT: cbam-desk
       LIVE_BASE_URL: https://cbamvalid.com
       CI: "true"
@@ -63,7 +63,7 @@ jobs:
           npm run guard:hosting-architecture
           npm run guard:auth-architecture
           npm run typecheck
-          npx vitest run tests/integration/step8-premium-action-visual-contract.test.ts tests/integration/step8-final-action-hierarchy.test.ts
+          npx vitest run tests/integration/step8-premium-action-visual-contract.test.ts tests/integration/step8-final-action-hierarchy.test.ts tests/integration/step8-footer-conflict-regression.test.ts
 
       - name: Prepare Firebase production credential
         shell: bash
