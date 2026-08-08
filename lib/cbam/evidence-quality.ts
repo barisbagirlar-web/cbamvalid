@@ -1,33 +1,17 @@
 /**
- * Structured evidence quality grading (FAZ P0) — client-side mirror of
- * functions/src/cbam/validation/evidence-quality.ts.
- *
- * Quality grades are derived ONLY from structured metadata
- * (issuerCategory, documentAuthority, officialReference,
- * accreditationReference and server review state). The free-text issuer
- * string is never scanned for keywords, so a document grade cannot be
- * manipulated by wording an issuer name.
- *
- * Grade semantics:
- *   A — official authority, registry, grid operator, accredited body or
- *       independently verified primary document.
- *   B — operator-controlled primary record with internal control and
- *       reviewer approval.
- *   C — supplier declaration with supporting controls.
- *   D — secondary, estimated, or a record without sufficient authority trace.
- *   E — unsupported, rejected, malware uncleared or missing.
- *   PENDING — reassessment required; legacy records without structured
- *       metadata are never auto-graded A/B.
+ * Client-side mirror of the canonical evidence quality + independent-
+ * verifiability assessment. A-E grade and verifiability are separate axes.
  */
-
 import type { EvidenceRecord } from "./schema";
 
 export type EvidenceQualityGrade = "A" | "B" | "C" | "D" | "E" | "PENDING";
+export type EvidenceVerifiabilityState =
+  | "INDEPENDENTLY_VERIFIABLE"
+  | "STRUCTURALLY_VERIFIABLE"
+  | "WEAK"
+  | "UNVERIFIABLE";
 
 export interface EvidenceQualityInput {
-  /** Free-text issuer string. Accepted by the type for caller ergonomics but
-   * deliberately NEVER read by the grader — grades are derived exclusively
-   * from structured metadata so wording cannot influence quality. */
   issuer?: string | null;
   issuerCategory?: string | null;
   documentAuthority?: string | null;
@@ -42,10 +26,27 @@ export interface EvidenceQualityInput {
   qualityAssessedAt?: string | null;
 }
 
+export interface EvidenceVerifiabilityInput extends EvidenceQualityInput {
+  fileHash?: string | null;
+  sizeBytes?: number | null;
+  mimeType?: string | null;
+  issueDate?: string | null;
+  uploadTimestamp?: string | null;
+}
+
 export interface EvidenceQualityAssessment {
   grade: EvidenceQualityGrade;
   basis: string;
   reasons: string[];
+}
+
+export interface EvidenceVerifiabilityAssessment {
+  state: EvidenceVerifiabilityState;
+  basis: string;
+  metadataIntegrity: "PASS" | "FAIL";
+  authorityTrace: string;
+  externalCredentialReference: string;
+  warnings: string[];
 }
 
 const INDEPENDENT_AUTHORITY_CATEGORIES = new Set<string>([
@@ -66,38 +67,20 @@ export function assessEvidenceQuality(input: EvidenceQualityInput): EvidenceQual
   const supportStatus = String(input.supportStatus || "PENDING").toUpperCase();
   const malwareScanStatus = String(input.malwareScanStatus || "PENDING").toUpperCase();
   const issuerCategory = input.issuerCategory ? String(input.issuerCategory).toUpperCase() : "";
-  const documentAuthority = input.documentAuthority
-    ? String(input.documentAuthority).toUpperCase()
-    : "";
+  const documentAuthority = input.documentAuthority ? String(input.documentAuthority).toUpperCase() : "";
   const sourceType = input.sourceType ? String(input.sourceType).toUpperCase() : "";
 
-  // Fail-closed states.
   if (
     supportStatus === "UNSUPPORTED" ||
     supportStatus === "PENDING" ||
     reviewStatus !== "APPROVED" ||
     malwareScanStatus !== "CLEAN"
   ) {
-    return {
-      grade: "E",
-      basis: "UNSUPPORTED_REJECTED_OR_MALWARE_UNCLEARED",
-      reasons: ["SUPPORT_REJECTED_OR_MALWARE_UNCLEARED"],
-    };
+    return { grade: "E", basis: "UNSUPPORTED_REJECTED_OR_MALWARE_UNCLEARED", reasons: ["SUPPORT_REJECTED_OR_MALWARE_UNCLEARED"] };
   }
-
-  // Legacy record without structured metadata: never auto A/B.
   if (!issuerCategory || !documentAuthority) {
-    return {
-      grade: "PENDING",
-      basis: "STRUCTURED_METADATA_MISSING_REVIEW_REQUIRED",
-      reasons: ["LEGACY_RECORD_WITHOUT_STRUCTURED_METADATA"],
-    };
+    return { grade: "PENDING", basis: "STRUCTURED_METADATA_MISSING_REVIEW_REQUIRED", reasons: ["LEGACY_RECORD_WITHOUT_STRUCTURED_METADATA"] };
   }
-
-  // A server-assessed explicit grade with assessment provenance wins, but only
-  // when the grade is one of the defined values; an out-of-enum string is a
-  // caller defect and must never leak into the report, so it falls through to
-  // the structural grading instead.
   if (
     input.qualityGrade &&
     VALID_QUALITY_GRADES.has(String(input.qualityGrade).toUpperCase()) &&
@@ -105,47 +88,15 @@ export function assessEvidenceQuality(input: EvidenceQualityInput): EvidenceQual
     input.qualityAssessedBy &&
     input.qualityAssessedAt
   ) {
-    return {
-      grade: String(input.qualityGrade).toUpperCase() as EvidenceQualityGrade,
-      basis: "SERVER_ASSESSED_EXPLICIT_GRADE",
-      reasons: ["SERVER_ASSESSED_GRADE"],
-    };
+    return { grade: String(input.qualityGrade).toUpperCase() as EvidenceQualityGrade, basis: "SERVER_ASSESSED_EXPLICIT_GRADE", reasons: ["SERVER_ASSESSED_GRADE"] };
   }
-
-  // A record categorised as a secondary source can never out-grade D,
-  // regardless of the declared document authority.
-  if (issuerCategory === "SECONDARY_SOURCE") {
-    return {
-      grade: "D",
-      basis: "SECONDARY_SOURCE",
-      reasons: ["SECONDARY_SOURCE"],
-    };
-  }
-
+  if (issuerCategory === "SECONDARY_SOURCE") return { grade: "D", basis: "SECONDARY_SOURCE", reasons: ["SECONDARY_SOURCE"] };
   switch (documentAuthority) {
     case "OFFICIAL":
     case "INDEPENDENT":
-      if (INDEPENDENT_AUTHORITY_CATEGORIES.has(issuerCategory)) {
-        return {
-          grade: "A",
-          basis: "OFFICIAL_AUTHORITY_DOCUMENT",
-          reasons: ["OFFICIAL_AUTHORITY_DOCUMENT"],
-        };
-      }
-      if (issuerCategory === "OPERATOR_CONTROLLED") {
-        return {
-          grade: "B",
-          basis: "OPERATOR_PRIMARY_RECORD_WITH_INTERNAL_CONTROL",
-          reasons: ["OPERATOR_CONTROLLED_RECORD"],
-        };
-      }
-      if (issuerCategory === "SUPPLIER") {
-        return {
-          grade: "C",
-          basis: "SUPPLIER_DECLARATION_WITH_SUPPORTING_CONTROLS",
-          reasons: ["SUPPLIER_DECLARATION"],
-        };
-      }
+      if (INDEPENDENT_AUTHORITY_CATEGORIES.has(issuerCategory)) return { grade: "A", basis: "OFFICIAL_AUTHORITY_DOCUMENT", reasons: ["OFFICIAL_AUTHORITY_DOCUMENT"] };
+      if (issuerCategory === "OPERATOR_CONTROLLED") return { grade: "B", basis: "OPERATOR_PRIMARY_RECORD_WITH_INTERNAL_CONTROL", reasons: ["OPERATOR_CONTROLLED_RECORD"] };
+      if (issuerCategory === "SUPPLIER") return { grade: "C", basis: "SUPPLIER_DECLARATION_WITH_SUPPORTING_CONTROLS", reasons: ["SUPPLIER_DECLARATION"] };
       return { grade: "D", basis: "INSUFFICIENT_AUTHORITY_TRACE", reasons: ["INSUFFICIENT_AUTHORITY_TRACE"] };
     case "OPERATOR":
       return issuerCategory === "SUPPLIER"
@@ -156,14 +107,57 @@ export function assessEvidenceQuality(input: EvidenceQualityInput): EvidenceQual
     case "SECONDARY":
       return { grade: "D", basis: "SECONDARY_SOURCE", reasons: ["SECONDARY_SOURCE"] };
     default:
-      if (sourceType === "ESTIMATED") {
-        return { grade: "D", basis: "ESTIMATED_VALUE", reasons: ["ESTIMATED_VALUE"] };
-      }
+      if (sourceType === "ESTIMATED") return { grade: "D", basis: "ESTIMATED_VALUE", reasons: ["ESTIMATED_VALUE"] };
       return { grade: "D", basis: "INSUFFICIENT_AUTHORITY_TRACE", reasons: ["INSUFFICIENT_AUTHORITY_TRACE"] };
   }
 }
 
-/** Grade only (A-E/PENDING) for a full evidence record. */
+export function assessEvidenceVerifiability(input: EvidenceVerifiabilityInput): EvidenceVerifiabilityAssessment {
+  const issuerCategory = String(input.issuerCategory || "").toUpperCase();
+  const documentAuthority = String(input.documentAuthority || "").toUpperCase();
+  const externalCredentialReference = String(input.accreditationReference || input.officialReference || "").trim() || "NOT_RECORDED";
+  const hashOk = /^[a-f0-9]{64}$/i.test(String(input.fileHash || ""));
+  const bytesOk = Number.isFinite(Number(input.sizeBytes)) && Number(input.sizeBytes) > 0;
+  const mimeOk = Boolean(String(input.mimeType || "").trim());
+  const issuerOk = Boolean(String(input.issuer || "").trim());
+  const issueDateOk = Boolean(String(input.issueDate || "").trim());
+  const uploadTimeOk = Number.isFinite(Date.parse(String(input.uploadTimestamp || "")));
+  const metadataIntegrity = hashOk && bytesOk && mimeOk && issuerOk && issueDateOk && uploadTimeOk;
+  const authorityTrace = `${issuerCategory || "NOT_RECORDED"} / ${documentAuthority || "NOT_RECORDED"}`;
+  const independentAuthority = INDEPENDENT_AUTHORITY_CATEGORIES.has(issuerCategory);
+  const structuredAuthority = Boolean(issuerCategory && documentAuthority);
+  const serverAssessment = Boolean(input.qualityGrade && input.qualityAssessedBy && input.qualityAssessedAt);
+
+  let state: EvidenceVerifiabilityState;
+  if (metadataIntegrity && independentAuthority && externalCredentialReference !== "NOT_RECORDED") state = "INDEPENDENTLY_VERIFIABLE";
+  else if (metadataIntegrity && structuredAuthority && serverAssessment) state = "STRUCTURALLY_VERIFIABLE";
+  else if (metadataIntegrity) state = "WEAK";
+  else state = "UNVERIFIABLE";
+
+  const basis = [
+    `SHA256=${hashOk ? "PASS" : "FAIL"}`,
+    `BYTES=${bytesOk ? "PASS" : "FAIL"}`,
+    `MIME=${mimeOk ? "PASS" : "FAIL"}`,
+    `ISSUER=${issuerOk ? "PASS" : "FAIL"}`,
+    `ISSUE_DATE=${issueDateOk ? "PASS" : "FAIL"}`,
+    `UPLOAD_TIMESTAMP=${uploadTimeOk ? "PASS" : "FAIL"}`,
+    `AUTHORITY=${authorityTrace}`,
+    `EXTERNAL_REFERENCE=${externalCredentialReference}`,
+    `SERVER_QUALITY_ASSESSMENT=${serverAssessment ? "RECORDED" : "NOT_RECORDED"}`,
+  ].join("; ");
+
+  const warnings: string[] = [];
+  if (!metadataIntegrity) warnings.push("Evidence metadata integrity is incomplete; hash/size/type/issuer/date/timestamp must all be recorded.");
+  if (!structuredAuthority) warnings.push("Structured issuer category and document authority are missing; A/B authority cannot be independently justified.");
+  if (state === "WEAK") warnings.push("Evidence is hash-verifiable but authority provenance is weak; add structured authority metadata and an official/accreditation reference where available.");
+  if (state === "UNVERIFIABLE") warnings.push("Evidence is not independently reproducible from the recorded metadata and must be remediated before high-confidence reliance.");
+  return { state, basis, metadataIntegrity: metadataIntegrity ? "PASS" : "FAIL", authorityTrace, externalCredentialReference, warnings };
+}
+
+export function evidenceUploadWarnings(input: EvidenceVerifiabilityInput): string[] {
+  return assessEvidenceVerifiability(input).warnings;
+}
+
 export function gradeEvidenceRecord(record: EvidenceRecord | EvidenceQualityInput): EvidenceQualityGrade {
   return assessEvidenceQuality(record).grade;
 }
