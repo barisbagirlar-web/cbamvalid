@@ -59,6 +59,11 @@ jobs:
           npm audit --omit=dev --audit-level=high
           npm --prefix functions audit --omit=dev --audit-level=high
 
+      - name: Restore repaired dev toolchain for validation
+        run: |
+          npm ci
+          npm --prefix functions ci --no-audit --no-fund
+
       - name: English-only release guard
         shell: bash
         run: |
