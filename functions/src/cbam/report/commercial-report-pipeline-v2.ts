@@ -20,6 +20,7 @@ import {
   prepareCaseForVerifierArtifacts,
 } from "./premium-package-hardening";
 import { resolveControlledCaseAssessmentTimestamp } from "./controlled-test-assessment";
+import { upgradeArtifactsToEnterprise1000 } from "./enterprise-1000-value-layer";
 
 export class CommercialReportPipelineV2 {
   public static async executeSealingPipeline(params: {
@@ -57,9 +58,10 @@ export class CommercialReportPipelineV2 {
     versionStamp?: { product: string; schema: string; rulesetId: string; releaseIteration: number };
     publicVerificationUrl?: string | null;
   }) {
-    // The exact TEB232 controlled QA cases deliberately model a completed
-    // 2026 annual dossier assessed on 2027-01-31. Normal production cases keep
-    // the immutable package creation time as their assessment clock.
+    // Controlled QA cases may use a synthetic assessment clock for validating
+    // future-dated evidence. That clock is NEVER used as the customer-facing
+    // enterprise-readiness truth clock: the mandate uses the immutable real
+    // package generatedAt timestamp for reporting-period readiness.
     const assessmentTimestamp = resolveControlledCaseAssessmentTimestamp(
       params.caseData,
       params.generatedAt
@@ -78,15 +80,8 @@ export class CommercialReportPipelineV2 {
     const artifactCaseData = prepareCaseForVerifierArtifacts(params.caseData, params.calculation);
 
     // Calculation Graph has exactly one source of truth: Calculation Trace.
-    // Its graph hashes/root also use the exact algorithm shipped in the offline
-    // verifier CLI so the customer can independently recompute the graph.
     const canonicalGraph = buildCliVerifiableCalculationGraph(params.calculation);
 
-    // --- Pass 1: Build Unsigned Artifacts (single pass) ---
-    // Artifacts are rendered ONCE with placeholder hash values.
-    // The PDF references the manifest/signature/Package receipt hash
-    // by canonical location name only — never embedding the actual hash,
-    // avoiding the cyclic hash dependency.
     let unsignedArtifacts = await buildUnsignedVerifierArtifacts({
       caseData: artifactCaseData,
       calculation: params.calculation,
@@ -111,8 +106,8 @@ export class CommercialReportPipelineV2 {
       },
     });
 
-    // Materialise evidence→calculation lineage and add a formula-driven
-    // independent recomputation sheet before manifest hashing/signing.
+    // Materialise evidence→calculation lineage and add formula-driven
+    // independent recomputation before commercial package transformation.
     unsignedArtifacts = await hardenVerifierArtifacts({
       artifacts: unsignedArtifacts,
       caseData: artifactCaseData,
@@ -120,8 +115,28 @@ export class CommercialReportPipelineV2 {
       graph: canonicalGraph,
     });
 
-    // Hardening adds workbook ZIP members; normalise every XLSX member back to
-    // the immutable release timestamp so equivalent releases remain byte-stable.
+    // Enterprise 1,000 USD mandate gate. V5 human-review PDFs are rebuilt into
+    // 11 non-overlapping workpapers, one authoritative readiness status is
+    // applied using real generatedAt, evidence grades receive independent-
+    // verifiability bases, corrective actions become closure-complete, and the
+    // scenario/materiality/first-meeting premium layers are generated. This
+    // runs BEFORE manifest hashing/KMS so a mandate failure cannot be signed.
+    if (params.productCode === "pack_premium_dossier_v5" || params.releaseContractVersion === 5) {
+      const enterpriseUpgrade = upgradeArtifactsToEnterprise1000({
+        artifacts: unsignedArtifacts,
+        caseData: artifactCaseData,
+        calculation: params.calculation,
+        controls: params.controls,
+        reportId: params.reportId,
+        packageCode: params.packageCode,
+        releaseVersion: params.releaseVersion,
+        generatedAt: params.generatedAt,
+      });
+      unsignedArtifacts = enterpriseUpgrade.artifacts;
+    }
+
+    // Hardening and enterprise transformation add/rewrite workbook/ZIP members;
+    // pin XLSX member timestamps to the immutable release timestamp.
     unsignedArtifacts = await Promise.all(
       unsignedArtifacts.map(async (item) =>
         item.path === "Verifier Workspace.xlsx"
@@ -130,11 +145,10 @@ export class CommercialReportPipelineV2 {
       )
     );
 
-    // The graph must satisfy both cross-artifact Trace agreement and the exact
-    // offline-verifier node/root hashing algorithm before a manifest can exist.
+    // Graph/Trace/Workbook must still satisfy the exact offline-verifier
+    // hashing and cross-artifact value/unit contract after the mandate rewrite.
     assertCliGraphArtifactConsistency(unsignedArtifacts, params.calculation);
 
-    // Build data integrity manifest using the hardened artifacts.
     const manifestResult = buildDataIntegrityManifest({
       artifacts: unsignedArtifacts,
       caseData: artifactCaseData,
@@ -147,14 +161,9 @@ export class CommercialReportPipelineV2 {
       releaseContractVersion: 5,
     });
 
-    // --- KMS Signing ---
-    // Sign the exact canonical manifest bytes. These bytes MUST NOT change
-    // after signing — no re-render pass is permitted.
+    // Sign the exact canonical manifest bytes. These bytes never change after signing.
     const signature = await params.signManifest(manifestResult.bytes);
 
-    // --- Finalize (verify manifest/artifact contract, create ZIP, verify ZIP, verify signature) ---
-    // If any integrity check fails, finalizeVerifierPackage throws and the seal aborts,
-    // so a resolved package implies manifest hashes + KMS signature + ZIP readback PASS.
     const finalPackage = await finalizeVerifierPackage({
       artifacts: unsignedArtifacts,
       manifestBytes: manifestResult.bytes,
