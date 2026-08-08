@@ -16,6 +16,9 @@ concurrency:
   group: security-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db:2
+
 jobs:
   trivy:
     name: Trivy repository gate
@@ -95,7 +98,11 @@ jobs:
         run: node --version | grep -E '^v24\.'
 
       - name: Install locked dependencies
-        run: npm ci
+        run: |
+          npm ci
+          npm --prefix functions ci --no-audit --no-fund
 
       - name: Block high or critical production vulnerabilities
-        run: npm audit --omit=dev --audit-level=high
+        run: |
+          npm audit --omit=dev --audit-level=high
+          npm --prefix functions audit --omit=dev --audit-level=high
