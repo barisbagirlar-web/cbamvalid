@@ -2,6 +2,7 @@ import { deleteObject, ref, uploadBytes } from "firebase/storage";
 import { firebaseStorage } from "@/lib/firebase/client";
 import type { EvidenceRecord } from "@/lib/cbam/schema";
 import { isCaseId } from "@/lib/cbam/case-id";
+import { evidenceUploadWarnings } from "@/lib/cbam/evidence-quality";
 
 const MAX_EVIDENCE_BYTES = 20 * 1024 * 1024;
 const ALLOWED_TYPES = new Set([
@@ -13,6 +14,8 @@ const ALLOWED_TYPES = new Set([
   "image/jpeg",
   "text/plain",
 ]);
+
+export const EVIDENCE_QUALITY_WARNING_EVENT = "cbamvalid:evidence-quality-warning";
 
 function safeFileName(fileName: string): string {
   const base = fileName.split(/[\\/]/).pop() || "evidence.bin";
@@ -58,12 +61,7 @@ export async function uploadEvidenceFile(params: {
   const storageReference = ref(firebaseStorage, storagePath);
   await uploadBytes(storageReference, bytes, {
     contentType: params.file.type,
-    customMetadata: {
-      ownerId: uid,
-      caseId: params.caseId,
-      evidenceId,
-      sha256,
-    },
+    customMetadata: { ownerId: uid, caseId: params.caseId, evidenceId, sha256 },
   });
 
   const record: EvidenceRecord = {
@@ -86,6 +84,22 @@ export async function uploadEvidenceFile(params: {
     linkedInputs: [params.linkedInput.trim()],
     linkedCalculations: [],
   };
+
+  const warnings = evidenceUploadWarnings(record);
+  if (warnings.length > 0) {
+    record.qualityAssessmentBasis = `UPLOAD_WARNING: ${warnings.join(" ")}`.slice(0, 400);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent(EVIDENCE_QUALITY_WARNING_EVENT, {
+          detail: {
+            evidenceId,
+            fileName,
+            warnings,
+          },
+        })
+      );
+    }
+  }
 
   return {
     record,
