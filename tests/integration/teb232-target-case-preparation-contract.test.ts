@@ -17,9 +17,14 @@ describe("TEB232 exact target preparation", () => {
     expect(helper).toContain("TEB232_TARGET_CASE_OWNER_MISMATCH");
   });
 
-  it("refuses to overwrite a working file that already has a locked release", () => {
+  it("treats only a SEALED report as already released and protects an active PROCESSING seal", () => {
     expect(helper).toContain('.collection("cbam_reports")');
+    expect(helper).toContain('reportStatuses.includes("SEALED")');
     expect(helper).toContain("TEB232_TARGET_CASE_ALREADY_RELEASED");
+    expect(helper).toContain('reportStatuses.includes("PROCESSING")');
+    expect(helper).toContain("TEB232_TARGET_CASE_SEAL_IN_PROGRESS");
+    expect(helper).not.toContain("if (!reportSnapshot.empty)");
+    expect(route).toContain("TEB232_TARGET_CASE_SEAL_IN_PROGRESS");
   });
 
   it("requires 100 percent readiness and verified evidence before writing", () => {

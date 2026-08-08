@@ -24,18 +24,18 @@ function errorResponse(error: unknown): NextResponse {
   }
 
   const code = error instanceof Error ? error.message : "TEB232_RECONCILE_FAILED";
-  const status = code === "TEB232_RECONCILE_IN_PROGRESS"
+  const status = code === "TEB232_RECONCILE_IN_PROGRESS" ||
+    code === "TEB232_TARGET_CASE_ALREADY_RELEASED" ||
+    code === "TEB232_TARGET_CASE_SEAL_IN_PROGRESS"
     ? 409
-    : code === "TEB232_TARGET_CASE_ALREADY_RELEASED"
-      ? 409
-      : code === "TEB232_TARGET_CASE_NOT_FOUND"
-        ? 404
-        : code === "TEB232_RECONCILE_IDENTITY_REFUSED" ||
-            code === "TEB232_TARGET_PREPARE_IDENTITY_REFUSED" ||
-            code === "TEB232_TARGET_CASE_REFUSED" ||
-            code === "TEB232_TARGET_CASE_OWNER_MISMATCH"
-          ? 403
-          : 500;
+    : code === "TEB232_TARGET_CASE_NOT_FOUND"
+      ? 404
+      : code === "TEB232_RECONCILE_IDENTITY_REFUSED" ||
+          code === "TEB232_TARGET_PREPARE_IDENTITY_REFUSED" ||
+          code === "TEB232_TARGET_CASE_REFUSED" ||
+          code === "TEB232_TARGET_CASE_OWNER_MISMATCH"
+        ? 403
+        : 500;
   console.error("[TEB232_RECONCILE_ERROR]", code);
   return NextResponse.json(
     {
@@ -44,8 +44,10 @@ function errorResponse(error: unknown): NextResponse {
       message:
         status === 409
           ? code === "TEB232_TARGET_CASE_ALREADY_RELEASED"
-            ? "This controlled test working file already has a locked release and will not be overwritten."
-            : "The controlled test cases are already being prepared. Retry shortly."
+            ? "This controlled test working file already has a sealed release and will not be overwritten."
+            : code === "TEB232_TARGET_CASE_SEAL_IN_PROGRESS"
+              ? "This controlled test working file is currently being sealed. Preparation will not modify it while sealing is in progress."
+              : "The controlled test cases are already being prepared. Retry shortly."
           : status === 403
             ? "This endpoint is restricted to the verified Teb232 test identity and approved target working file."
             : status === 404

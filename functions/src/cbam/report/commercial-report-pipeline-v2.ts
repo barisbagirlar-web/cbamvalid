@@ -19,6 +19,7 @@ import {
   hardenVerifierArtifacts,
   prepareCaseForVerifierArtifacts,
 } from "./premium-package-hardening";
+import { resolveControlledCaseAssessmentTimestamp } from "./controlled-test-assessment";
 
 export class CommercialReportPipelineV2 {
   public static async executeSealingPipeline(params: {
@@ -56,12 +57,20 @@ export class CommercialReportPipelineV2 {
     versionStamp?: { product: string; schema: string; rulesetId: string; releaseIteration: number };
     publicVerificationUrl?: string | null;
   }) {
+    // The exact TEB232 controlled QA cases deliberately model a completed
+    // 2026 annual dossier assessed on 2027-01-31. Normal production cases keep
+    // the immutable package creation time as their assessment clock.
+    const assessmentTimestamp = resolveControlledCaseAssessmentTimestamp(
+      params.caseData,
+      params.generatedAt
+    );
+
     // Verifier-grade fail-closed gates run before any commercial artifact is
     // rendered or KMS-signed. A failure here must leave no signed package.
     assertPremiumPackagePreconditions({
       caseData: params.caseData,
       calculation: params.calculation,
-      generatedAt: params.generatedAt,
+      generatedAt: assessmentTimestamp,
     });
 
     // linkedCalculations is deterministic derivative metadata. Enrich only the
@@ -92,7 +101,7 @@ export class CommercialReportPipelineV2 {
       publicVerificationUrl: params.publicVerificationUrl,
       assessmentContext: {
         generatedAt: params.generatedAt,
-        assessmentTimestamp: params.generatedAt,
+        assessmentTimestamp,
         reportId: params.reportId,
         packageCode: params.packageCode,
         releaseVersion: params.releaseVersion,
