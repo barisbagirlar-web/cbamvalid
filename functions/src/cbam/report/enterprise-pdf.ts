@@ -9,9 +9,11 @@ export type EnterpriseReadinessStatus =
 
 export interface EnterprisePdfTable {
   headers: string[];
-  rows: Array<Array<string | number | null | undefined>>;
+  rows: unknown[][];
   widths?: number[];
 }
+
+export type EnterprisePdfTableInput = EnterprisePdfTable | unknown[][];
 
 export interface EnterprisePdfBarChart {
   unit: string;
@@ -21,7 +23,7 @@ export interface EnterprisePdfBarChart {
 export interface EnterprisePdfSection {
   heading: string;
   paragraphs?: string[];
-  table?: EnterprisePdfTable;
+  table?: EnterprisePdfTableInput;
   callout?: { label: string; value: string };
   barChart?: EnterprisePdfBarChart;
   pageBreakBefore?: boolean;
@@ -59,6 +61,15 @@ function normalizedWidths(count: number, requested?: number[]): number[] {
   }
   const total = requested.reduce((sum, value) => sum + value, 0);
   return requested.map((value) => (value / total) * CONTENT_WIDTH);
+}
+
+function normalizedTable(input: EnterprisePdfTableInput): EnterprisePdfTable {
+  if (!Array.isArray(input)) return input;
+  const columnCount = Math.max(1, ...input.map((row) => row.length));
+  const headers = columnCount === 5
+    ? ["Draft ID", "Title", "Purpose", "State", "Missing inputs"]
+    : Array.from({ length: columnCount }, (_, index) => `Column ${index + 1}`);
+  return { headers, rows: input };
 }
 
 function statusPalette(status: EnterpriseReadinessStatus): {
@@ -182,7 +193,8 @@ export function buildEnterprisePdf(input: EnterprisePdfInput): Buffer {
     y += height + 3;
   };
 
-  const drawTable = (table: EnterprisePdfTable) => {
+  const drawTable = (tableInput: EnterprisePdfTableInput) => {
+    const table = normalizedTable(tableInput);
     if (table.headers.length === 0) return;
     const widths = normalizedWidths(table.headers.length, table.widths);
     const drawHeader = () => {
@@ -236,7 +248,7 @@ export function buildEnterprisePdf(input: EnterprisePdfInput): Buffer {
     ensure(height + 3);
     document.setFont("helvetica", "normal");
     document.setFontSize(6.8);
-    chart.items.forEach((item, index) => {
+    chart.items.forEach((item) => {
       const raw = Number(item.value) || 0;
       const width = Math.max(0, Math.min(112, (Math.abs(raw) / max) * 112));
       document.setTextColor(45, 52, 61);
