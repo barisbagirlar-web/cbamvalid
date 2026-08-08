@@ -49,6 +49,9 @@ jobs:
           node-version: "24"
           cache: npm
 
+      - name: Verify Node 24 runtime
+        run: node --version | grep -E '^v24\.'
+
       - name: Install exact locked dependencies
         run: npm ci
 
