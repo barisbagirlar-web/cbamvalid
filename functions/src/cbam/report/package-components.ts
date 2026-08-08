@@ -32,9 +32,17 @@ export const REQUIRED_TOP_LEVEL_COMPONENTS = [
   "Supporting_Evidence/",
 ] as const;
 
+/**
+ * V5 keeps 26 top-level package components for backwards-compatible commercial
+ * packaging, but only 11 are foregrounded human-review PDFs. Every one of those
+ * PDFs has a distinct decision/workpaper role; the previous duplicate
+ * "Complete Dossier Compilation" is replaced by the operational verifier
+ * first-meeting and handover pack. The remaining components are machine-readable
+ * registers, reproducibility artifacts, integrity controls and evidence.
+ */
 export const REQUIRED_TOP_LEVEL_COMPONENTS_V5 = [
   "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf",
-  "Complete Dossier Compilation.pdf",
+  "Verifier First Meeting & Handover Pack.pdf",
   "Product Scope Assessment.pdf",
   "CN Code Reasoning.pdf",
   "Required Data Checklist.pdf",
