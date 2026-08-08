@@ -1,0 +1,245 @@
+/*
+ * Step 8 enterprise action hierarchy.
+ *
+ * Scope is deliberately limited to the final-review footer by the presence of
+ * the semantic step8-primary-action hook. The existing component remains the
+ * source of truth for behavior, loading/disabled states and accessibility.
+ */
+
+main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 {
+  border-top: 1px solid rgba(26, 25, 21, 0.10) !important;
+  background: rgba(250, 249, 245, 0.975) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.12);
+  backdrop-filter: blur(18px) saturate(1.12);
+  box-shadow:
+    0 -1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 -14px 36px rgba(26, 25, 21, 0.09) !important;
+}
+
+main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div {
+  max-width: 76rem !important;
+  padding: 0.9rem 1rem 0.8rem !important;
+}
+
+main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div {
+  display: grid !important;
+  grid-template-columns: minmax(150px, 190px) minmax(190px, 240px) minmax(380px, 1fr) !important;
+  align-items: start !important;
+  gap: 0.85rem 1.25rem !important;
+}
+
+/* Previous: tertiary/navigation-only treatment. */
+main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > button:first-child {
+  min-height: 52px !important;
+  align-self: start;
+  justify-content: center !important;
+  border: 1px solid rgba(26, 25, 21, 0.14) !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  color: rgba(26, 25, 21, 0.78) !important;
+  box-shadow: none !important;
+  font-weight: 650 !important;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease !important;
+}
+
+main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > button:first-child:hover:not(:disabled) {
+  border-color: rgba(26, 25, 21, 0.22) !important;
+  background: rgba(26, 25, 21, 0.035) !important;
+  color: var(--color-text) !important;
+}
+
+/* Save: secondary action. It is intentionally neutral and never uses the seal color. */
+main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :nth-child(2) {
+  width: 100% !important;
+  min-width: 0 !important;
+  align-items: stretch !important;
+  gap: 0.35rem !important;
+}
+
+main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :nth-child(2) > button {
+  min-height: 52px !important;
+  width: 100% !important;
+  justify-content: center !important;
+  border: 1px solid rgba(26, 25, 21, 0.14) !important;
+  border-radius: 12px !important;
+  background: rgba(26, 25, 21, 0.025) !important;
+  color: rgba(26, 25, 21, 0.82) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset !important;
+  font-weight: 650 !important;
+  transition: background-color 140ms ease, border-color 140ms ease !important;
+}
+
+main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :nth-child(2) > button:hover:not(:disabled) {
+  border-color: rgba(26, 25, 21, 0.22) !important;
+  background: rgba(26, 25, 21, 0.055) !important;
+}
+
+main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :nth-child(2) > p {
+  max-width: none !important;
+  margin: 0 !important;
+  padding-inline: 0.25rem;
+  color: rgba(26, 25, 21, 0.58) !important;
+  font-size: 0.69rem !important;
+  line-height: 1.3 !important;
+  text-align: center;
+}
+
+/* Primary seal action: distinct enterprise-green authority. */
+main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :last-child {
+  position: relative;
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 0 0 2.15rem !important;
+}
+
+main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 [data-testid="step8-primary-action"] {
+  min-height: 62px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  justify-content: center !important;
+  border: 1px solid #0a563e !important;
+  border-radius: 14px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.045)),
+    #0f6b4e !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.14) inset,
+    0 10px 24px rgba(15, 107, 78, 0.22),
+    0 2px 5px rgba(26, 25, 21, 0.10) !important;
+  font-size: 1rem !important;
+  font-weight: 760 !important;
+  letter-spacing: 0.004em;
+  transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease !important;
+}
+
+main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 [data-testid="step8-primary-action"]:hover:not(:disabled) {
+  border-color: #084a36 !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.06)),
+    #0b5d44 !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 13px 28px rgba(11, 93, 68, 0.28),
+    0 3px 7px rgba(26, 25, 21, 0.12) !important;
+  transform: translateY(-1px);
+}
+
+main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 [data-testid="step8-primary-action"]:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.10) inset,
+    0 6px 16px rgba(11, 93, 68, 0.22) !important;
+}
+
+main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 [data-testid="step8-primary-action"]:focus-visible {
+  outline-color: rgba(15, 107, 78, 0.48) !important;
+}
+
+main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 [data-testid="step8-primary-action"]:disabled {
+  border-color: rgba(15, 107, 78, 0.48) !important;
+  background: rgba(15, 107, 78, 0.66) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: none !important;
+}
+
+main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :last-child::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  content: "Seals the package and opens the downloads page. This action cannot be undone.";
+  color: rgba(26, 25, 21, 0.60);
+  font-size: 0.69rem;
+  line-height: 1.3;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Payment remains visually distinct from the final seal-ready state. */
+main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 a[data-testid="step8-primary-action"][href*="/credits/buy"] {
+  border-color: #9a6220 !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(0, 0, 0, 0.04)),
+    #b97827 !important;
+  box-shadow: 0 10px 24px rgba(185, 120, 39, 0.22) !important;
+}
+
+/* A blocked seal action is a remediation command, not a success state. */
+main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 button[data-testid="step8-primary-action"][aria-haspopup="true"] {
+  border-color: #a24633 !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.04)),
+    #b4513a !important;
+  box-shadow: 0 10px 24px rgba(180, 81, 58, 0.18) !important;
+}
+
+@media (max-width: 860px) {
+  main:has([data-testid="step8-primary-action"]) {
+    padding-bottom: 13.5rem !important;
+  }
+
+  main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 0.65rem 0.75rem !important;
+  }
+
+  main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :last-child {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    padding-bottom: 2rem !important;
+  }
+
+  main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > button:first-child {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :nth-child(2) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 560px) {
+  main:has([data-testid="step8-primary-action"]) {
+    padding-bottom: 16rem !important;
+  }
+
+  main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div {
+    padding-inline: 0.65rem !important;
+  }
+
+  main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :last-child,
+  main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > button:first-child,
+  main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :nth-child(2) {
+    grid-column: 1;
+  }
+
+  main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :last-child {
+    grid-row: 1;
+  }
+
+  main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :nth-child(2) {
+    grid-row: 2;
+  }
+
+  main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > button:first-child {
+    grid-row: 3;
+  }
+
+  main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div > :nth-child(2) > p {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 [data-testid="step8-primary-action"],
+  main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 button {
+    transition: none !important;
+  }
+}
