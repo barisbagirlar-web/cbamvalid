@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { MetadataRoute } from "next";
 import { buildRobotsPolicy } from "../../app/robots";
 
 const ROOT = resolve(fileURLToPath(new URL("../../", import.meta.url)));
@@ -11,24 +12,12 @@ const HEADER = [
   "",
 ] as const;
 
-type RobotsRule = {
-  userAgent: string | string[];
-  allow?: string | string[];
-  disallow?: string | string[];
-};
-
-type RobotsPolicy = {
-  rules: RobotsRule | RobotsRule[];
-  sitemap?: string | string[];
-  host?: string;
-};
-
 function list(value: string | string[] | undefined): string[] {
   if (value === undefined) return [];
   return Array.isArray(value) ? value : [value];
 }
 
-export function renderRobotsTxt(policy: RobotsPolicy = buildRobotsPolicy()): string {
+export function renderRobotsTxt(policy: MetadataRoute.Robots = buildRobotsPolicy()): string {
   const rules = Array.isArray(policy.rules) ? policy.rules : [policy.rules];
   const lines: string[] = [...HEADER];
   for (const rule of rules) {
