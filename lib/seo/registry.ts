@@ -1,3 +1,4 @@
+import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 import type { SeoRouteContract } from "./types";
 import { listIndexablePublicCnEntries } from "./cn-public-registry";
 import { SEO_REGULATORY_CONTENT_VERSION } from "./regulatory-sources";
@@ -11,18 +12,19 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     path: "/",
     pageType: "homepage",
     indexability: "index",
-    title: "CBAMValid — CBAM Evidence Validation and Report Preparation",
+    title: "CBAMValid — Self-Service Emissions Data Software",
     description:
-      "Prepare structured exporter evidence, identify documentation gaps, calculate embedded emissions, and generate an auditable CBAM evidence dossier.",
-    h1: "CBAM Exporter Final Evidence Report",
+      "B2B self-service software for customer-entered emissions data, deterministic calculations, automated quality controls, and automated PDF, JSON and XLSX delivery.",
+    h1: "Emissions Data Workspace and Document Generator",
     canonicalPath: "/",
-    primaryIntent: "CBAM verification preparation software",
+    primaryIntent: "self-service emissions data software",
     audience: ["non-EU producers", "exporters", "EU importers", "CBAM reporting teams"],
     sitemapEligible: true,
     schemaTypes: ["Organization", "WebSite", "WebPage", "WebApplication"],
     internalLinkTargets: [
       "/product",
       "/pricing",
+      "/product-classification",
       "/methodology",
       "/cn-code",
       "/cbam-2026-definitive-period",
@@ -44,7 +46,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     title: "Exporter Verification Preparation Pack | CBAMValid Product",
     description:
       "See the CBAMValid Exporter Verification Preparation Pack: deterministic calculations, evidence register, QC gates, and sealed verifier-ready deliverables.",
-    h1: "Exporter Verification Preparation Pack",
+    h1: "When spreadsheets fail under verifier questions",
     canonicalPath: "/product",
     primaryIntent: "CBAM verification preparation product",
     audience: ["exporters", "operators", "importers"],
@@ -58,18 +60,34 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     path: "/pricing",
     pageType: "pricing",
     indexability: "index",
-    title: "Pricing | Self-Service Software | USD 449 One-Time | CBAMValid",
-    description:
-      "One self-service software product at USD 449 one-time covering one working file — one operator, one installation and one reporting year. Draft free, deterministic calculations, automated QC, evidence linking, automated PDF/JSON/XLSX outputs and same-file correction re-locks.",
-    h1: "Self-Service Software",
+    title: `Pricing | Self-Service Software | ${CANONICAL_PRICING.currency} ${CANONICAL_PRICING.displayPrice} One-Time | CBAMValid`,
+    description: `One self-service software product at ${CANONICAL_PRICING.currency} ${CANONICAL_PRICING.displayPrice} one-time covering one working file — one operator, one installation and one reporting year. Draft free, deterministic calculations, automated QC, evidence linking, automated PDF/JSON/XLSX outputs and same-file correction re-locks.`,
+    h1: "Self-Service Emissions Data Software",
     canonicalPath: "/pricing",
     primaryIntent: "CBAMValid self-service pricing",
     audience: ["exporters", "procurement", "compliance managers"],
     sitemapEligible: true,
     schemaTypes: ["Product", "Offer", "WebPage", "BreadcrumbList"],
-    internalLinkTargets: ["/", "/product", "/sample-dossier", "/demo"],
+    internalLinkTargets: ["/", "/product", "/product-classification", "/sample-dossier", "/demo"],
     regulatorySourceIds: [],
     factualLastModified: LASTMOD_IA,
+  },
+  {
+    path: "/product-classification",
+    pageType: "product",
+    indexability: "index",
+    title: "Product Classification | Self-Service B2B Software | CBAMValid",
+    description:
+      "Plain-language product classification for CBAMValid: self-service B2B software and automated digital delivery, not government, filing, consulting, certification or verification services.",
+    h1: "Self-Service B2B Software",
+    canonicalPath: "/product-classification",
+    primaryIntent: "CBAMValid product classification",
+    audience: ["buyers", "procurement", "payment reviewers", "prospective customers"],
+    sitemapEligible: true,
+    schemaTypes: ["WebPage", "BreadcrumbList"],
+    internalLinkTargets: ["/demo", "/pricing", "/terms"],
+    regulatorySourceIds: [],
+    factualLastModified: "2026-08-04",
   },
   {
     path: "/how-it-works",
@@ -614,7 +632,6 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     regulatorySourceIds: ["REG_2023_956", "IMPL_2025_2547"],
     factualLastModified: LASTMOD_IA,
   }
-
 ];
 
 function buildCnDetailRoute(cnCode: string, description: string, sector: string, lastmod: string): RouteDraft {
