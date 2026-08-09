@@ -15,6 +15,34 @@ on:
       - "package.json"
       - ".github/workflows/seo-conformance.yml"
   workflow_dispatch:
+    inputs:
+      phase:
+        description: "V6 phase contract to validate"
+        required: true
+        default: "bootstrap"
+        type: choice
+        options:
+          - bootstrap
+          - faz-00
+          - faz-01
+          - faz-02
+          - faz-03
+          - faz-04
+          - faz-05
+          - faz-06
+          - faz-07
+          - faz-08
+          - faz-09
+          - faz-10
+          - faz-11
+          - faz-12
+          - faz-13
+          - faz-14
+          - faz-15
+          - faz-16
+          - faz-17
+          - faz-18
+          - faz-19
 
 permissions:
   contents: read
@@ -24,8 +52,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  bootstrap-conformance:
-    name: V6 preflight, build, guards, conformance
+  v6-conformance:
+    name: V6 phase-aware preflight, build, guards, conformance
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -55,11 +83,40 @@ jobs:
       - name: Verify Node 24 runtime
         run: node --version | grep -E '^v24\.'
 
+      - name: Resolve V6 phase contract
+        id: seo_phase
+        shell: bash
+        env:
+          DISPATCH_PHASE: ${{ inputs.phase }}
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            phase="${DISPATCH_PHASE}"
+          else
+            ref="${GITHUB_HEAD_REF:-}"
+            if [[ "$ref" == seo/bootstrap-* ]]; then
+              phase="bootstrap"
+            elif [[ "$ref" =~ ^seo/faz-([0-9]{2})- ]]; then
+              phase="faz-${BASH_REMATCH[1]}"
+            else
+              echo "Unable to resolve V6 phase from PR branch: $ref" >&2
+              exit 4
+            fi
+          fi
+
+          case "$phase" in
+            bootstrap|faz-00|faz-01|faz-02|faz-03|faz-04|faz-05|faz-06|faz-07|faz-08|faz-09|faz-10|faz-11|faz-12|faz-13|faz-14|faz-15|faz-16|faz-17|faz-18|faz-19) ;;
+            *) echo "Invalid V6 phase: $phase" >&2; exit 4 ;;
+          esac
+
+          echo "phase=$phase" >> "$GITHUB_OUTPUT"
+          echo "SEO_PHASE_RESOLVED=$phase"
+
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
       - name: V6 preflight
-        run: npm run seo:preflight -- --site cbamvalid --phase bootstrap --dry-run
+        run: npm run seo:preflight -- --site cbamvalid --phase "${{ steps.seo_phase.outputs.phase }}" --dry-run
 
       - name: Typecheck
         run: npm run typecheck
