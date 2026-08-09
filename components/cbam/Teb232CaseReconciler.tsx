@@ -21,6 +21,7 @@ const EXPECTED_CASE_IDS = Object.freeze([
   "case_b71ffdbd980f658cd5a738437c27cce4d82546698df12fc2bf7a0bd31e9c286d",
   "case_39474ac5ffe36f8df1853df51b3038085edf457cd0561fa1e501ca8231b8b892",
 ]);
+const EXPECTED_CASE_ID_SET = new Set(EXPECTED_CASE_IDS);
 
 type ReconcilePayload = {
   status?: string;
@@ -28,6 +29,8 @@ type ReconcilePayload = {
   code?: string;
   message?: string;
   caseIds?: string[];
+  preparedDraftCaseIds?: string[];
+  alreadyReadyDraftCaseIds?: string[];
   operatorPreparation?: number;
   evidenceAssurance?: number;
 };
@@ -75,6 +78,10 @@ function validateVisibleCases(
   }
 }
 
+function hasUserCreatedWorkingFiles(cases: CbamCaseRecord[]): boolean {
+  return cases.some((item) => !EXPECTED_CASE_ID_SET.has(item.caseId));
+}
+
 async function readReconcilePayload(response: Response): Promise<ReconcilePayload> {
   const contentType = response.headers.get("content-type")?.toLowerCase() || "";
   if (!contentType.includes("application/json")) {
@@ -108,6 +115,54 @@ export function Teb232CaseReconciler() {
     const authenticatedUser = user;
     let cancelled = false;
 
+    async function callRepairEndpoint(
+      body: Record<string, unknown>
+    ): Promise<ReconcilePayload> {
+      const token = await authenticatedUser.getIdToken(true);
+      let response: Response | undefined;
+      for (let retry = 0; retry < MAX_BUSY_RETRIES; retry += 1) {
+        response = await fetch("/api/qa/reconcile-teb232", {
+          method: "POST",
+          cache: "no-store",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        });
+        if (response.status !== 409) break;
+        await sleep(1500);
+      }
+      if (!response) throw new Error("TEST_CASE_RECONCILE_NO_RESPONSE");
+      const payload = await readReconcilePayload(response);
+      if (!response.ok || payload.status !== "success") {
+        throw new Error(
+          payload.code || payload.message || `TEST_CASE_RECONCILE_HTTP_${response.status}`
+        );
+      }
+      if (
+        payload.operatorPreparation !== 100 ||
+        payload.evidenceAssurance !== 100
+      ) {
+        throw new Error("TEST_CASE_SERVER_ACCEPTANCE_INCOMPLETE");
+      }
+      return payload;
+    }
+
+    async function bulkPrepareIfNeeded(
+      visibleCases: CbamCaseRecord[]
+    ): Promise<boolean> {
+      if (!hasUserCreatedWorkingFiles(visibleCases)) return false;
+      const payload = await callRepairEndpoint({ prepareAllDrafts: true });
+      if (
+        payload.preparedDraftCaseIds !== undefined &&
+        !Array.isArray(payload.preparedDraftCaseIds)
+      ) {
+        throw new Error("TEST_DRAFT_PREPARATION_RESPONSE_INVALID");
+      }
+      return payload.changed === true;
+    }
+
     async function acceptVisibleCases(
       visibleCases: CbamCaseRecord[],
       entitlements: PreparationPackEntitlement[],
@@ -138,14 +193,23 @@ export function Teb232CaseReconciler() {
       setState("RUNNING");
       setError("");
       try {
-        // The four canonical cases may coexist with user-created working files.
-        // Read the current state first so a one-time repair route is called only
-        // when a canonical case or the controlled entitlement is actually absent.
+        // The canonical cases may coexist with any number of Teb232 test drafts.
+        // If the canonical set is already healthy, independently upgrade every
+        // additional DRAFT to a complete controlled scenario before accepting.
         try {
           const [visibleCases, entitlements] = await Promise.all([
             getCases(),
             getEntitlements(),
           ]);
+          validateVisibleCases(visibleCases, EXPECTED_CASE_IDS);
+          if (!hasUsableTestEntitlement(entitlements)) {
+            throw new Error("TEST_ADMIN_ENTITLEMENT_NOT_READY");
+          }
+          const draftsChanged = await bulkPrepareIfNeeded(visibleCases);
+          if (draftsChanged && !cancelled) {
+            window.location.replace("/cases?controlledTestDrafts=ready");
+            return;
+          }
           await acceptVisibleCases(
             visibleCases,
             entitlements,
@@ -154,38 +218,13 @@ export function Teb232CaseReconciler() {
           );
           return;
         } catch {
-          // Fall through to the authenticated repair endpoint only when the
-          // canonical four-case subset or release entitlement is not ready.
+          // Fall through to the authenticated canonical repair endpoint when the
+          // four-case subset, release entitlement or bulk draft preparation is
+          // not ready. The server preserves extra drafts during canonical repair.
         }
 
-        const token = await authenticatedUser.getIdToken(true);
-        let response: Response | undefined;
-        for (let retry = 0; retry < MAX_BUSY_RETRIES; retry += 1) {
-          response = await fetch("/api/qa/reconcile-teb232", {
-            method: "POST",
-            cache: "no-store",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: "{}",
-          });
-          if (response.status !== 409) break;
-          await sleep(1500);
-        }
-
-        if (!response) throw new Error("TEST_CASE_RECONCILE_NO_RESPONSE");
-        const payload = await readReconcilePayload(response);
-        if (!response.ok || payload.status !== "success") {
-          throw new Error(
-            payload.code || payload.message || `TEST_CASE_RECONCILE_HTTP_${response.status}`
-          );
-        }
-        if (
-          payload.operatorPreparation !== 100 ||
-          payload.evidenceAssurance !== 100 ||
-          !Array.isArray(payload.caseIds)
-        ) {
+        const payload = await callRepairEndpoint({});
+        if (!Array.isArray(payload.caseIds)) {
           throw new Error("TEST_CASE_SERVER_ACCEPTANCE_INCOMPLETE");
         }
 
@@ -193,11 +232,12 @@ export function Teb232CaseReconciler() {
           getCases(),
           getEntitlements(),
         ]);
+        const draftsChanged = await bulkPrepareIfNeeded(visibleCases);
         await acceptVisibleCases(
           visibleCases,
           entitlements,
           payload.caseIds,
-          payload.changed === true
+          payload.changed === true || draftsChanged
         );
       } catch (reconcileError) {
         if (cancelled) return;
@@ -231,7 +271,7 @@ export function Teb232CaseReconciler() {
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">
         Existing working files, new working files and case detail pages remain
-        available. The controlled four-case refresh can be retried separately.
+        available. The controlled test refresh can be retried separately.
       </p>
       <p className="mt-3 break-words font-mono text-xs text-status-blocked">
         {error}

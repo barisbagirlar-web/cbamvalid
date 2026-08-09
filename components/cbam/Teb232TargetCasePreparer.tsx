@@ -1,14 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { CheckCircle2, Loader2, RefreshCw } from "lucide-react";
 import { useAuth } from "@/context/AuthProvider";
 
 const TEB232_EMAIL = "teb232@gmail.com";
-const TARGET_CASE_ID =
-  "case_80aeb60175ce08a0d3acb7bc46617f152f0442f97ee652435280a2f2dff5e7cc";
-const TARGET_PATH = `/cases/${TARGET_CASE_ID}`;
+const CASE_PATH_PATTERN = /^\/cases\/(case_[a-f0-9]{64})$/;
+const ALLOWED_FIXTURE_KEYS = new Set([
+  "STEEL_IN",
+  "CEMENT_EG",
+  "ALU_CN",
+  "FERTILISER_TR",
+]);
 
 type PreparePayload = {
   status?: string;
@@ -25,12 +29,12 @@ async function readPayload(response: Response): Promise<PreparePayload> {
   const contentType = response.headers.get("content-type")?.toLowerCase() || "";
   if (!contentType.includes("application/json")) {
     await response.text().catch(() => "");
-    throw new Error(`TEB232_TARGET_PREPARE_HTTP_${response.status}`);
+    throw new Error(`TEB232_DRAFT_PREPARE_HTTP_${response.status}`);
   }
   try {
     return (await response.json()) as PreparePayload;
   } catch {
-    throw new Error(`TEB232_TARGET_PREPARE_INVALID_JSON_${response.status}`);
+    throw new Error(`TEB232_DRAFT_PREPARE_INVALID_JSON_${response.status}`);
   }
 }
 
@@ -41,15 +45,20 @@ export function Teb232TargetCasePreparer() {
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
 
+  const targetCaseId = useMemo(() => {
+    const match = CASE_PATH_PATTERN.exec(pathname || "");
+    return match?.[1] || "";
+  }, [pathname]);
+
   const isTarget =
     !loading &&
     user != null &&
     user.email?.trim().toLowerCase() === TEB232_EMAIL &&
     user.emailVerified === true &&
-    pathname === TARGET_PATH;
+    Boolean(targetCaseId);
 
   useEffect(() => {
-    if (!isTarget || !user) return;
+    if (!isTarget || !user || !targetCaseId) return;
     const authenticatedUser = user;
     let cancelled = false;
 
@@ -65,27 +74,30 @@ export function Teb232TargetCasePreparer() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ targetCaseId: TARGET_CASE_ID }),
+          body: JSON.stringify({ targetCaseId }),
         });
         const payload = await readPayload(response);
         if (!response.ok || payload.status !== "success") {
           throw new Error(
-            payload.code || payload.message || `TEB232_TARGET_PREPARE_HTTP_${response.status}`
+            payload.code || payload.message || `TEB232_DRAFT_PREPARE_HTTP_${response.status}`
           );
         }
         if (
-          payload.caseId !== TARGET_CASE_ID ||
-          payload.fixtureKey !== "STEEL_IN" ||
+          payload.caseId !== targetCaseId ||
+          !payload.fixtureKey ||
+          !ALLOWED_FIXTURE_KEYS.has(payload.fixtureKey) ||
           payload.operatorPreparation !== 100 ||
           payload.evidenceAssurance !== 100
         ) {
-          throw new Error("TEB232_TARGET_PREPARE_ACCEPTANCE_INCOMPLETE");
+          throw new Error("TEB232_DRAFT_PREPARE_ACCEPTANCE_INCOMPLETE");
         }
         if (cancelled) return;
 
         if (payload.changed === true) {
           setState("DONE");
-          window.location.replace(`${TARGET_PATH}?step=8&controlledTestPrepared=1`);
+          window.location.replace(
+            `/cases/${targetCaseId}?step=8&controlledTestPrepared=1`
+          );
           return;
         }
         setState("DONE");
@@ -94,8 +106,8 @@ export function Teb232TargetCasePreparer() {
         const message =
           prepareError instanceof Error
             ? prepareError.message
-            : "TEB232_TARGET_PREPARE_FAILED";
-        console.error("[TEB232_TARGET_CASE_PREPARE]", prepareError);
+            : "TEB232_DRAFT_PREPARE_FAILED";
+        console.error("[TEB232_DRAFT_CASE_PREPARE]", prepareError);
         setError(message);
         setState("FAILED");
       }
@@ -105,7 +117,7 @@ export function Teb232TargetCasePreparer() {
     return () => {
       cancelled = true;
     };
-  }, [attempt, isTarget, user]);
+  }, [attempt, isTarget, targetCaseId, user]);
 
   if (!isTarget || state === "IDLE" || state === "DONE") return null;
 
@@ -121,7 +133,7 @@ export function Teb232TargetCasePreparer() {
         <div>
           <p className="text-sm font-semibold">Preparing controlled test working file</p>
           <p className="mt-1 text-xs leading-relaxed text-muted">
-            Completing the approved synthetic steel data, evidence files and readiness checks. No payment or locked release is being created.
+            Completing the selected test-sector scenario, evidence files and every sealing-readiness check. No payment or locked release is being created.
           </p>
         </div>
       </aside>
