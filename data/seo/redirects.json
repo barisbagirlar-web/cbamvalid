@@ -1,0 +1,113 @@
+{
+  "meta": {
+    "artifact": "redirects/cbamvalid_redirect_ledger",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-09T19:35:00Z",
+    "generatorScript": "scripts/seo/redirect-audit-v6.ts",
+    "inputWindow": {
+      "start": null,
+      "end": null
+    },
+    "confidence": "medium",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": [
+      "2025-09-11:num100-removal"
+    ]
+  },
+  "data": {
+    "canonicalOrigin": "https://cbamvalid.com",
+    "canonicalHost": "cbamvalid.com",
+    "runtimeOwners": {
+      "applicationRedirects": "next.config.js",
+      "applicationHeaders": "next.config.js",
+      "transportHttpsUpgrade": "Firebase custom-domain edge",
+      "transportHttpsUpgradeRepositoryMutable": false
+    },
+    "hsts": {
+      "expectedValue": "max-age=63072000; includeSubDomains",
+      "preload": false,
+      "preloadApprovalRecorded": false,
+      "decision": "KEEP_WITHOUT_PRELOAD"
+    },
+    "redirects": [
+      {
+        "id": "rd_001",
+        "source": "/credits",
+        "sourceHost": "*",
+        "destination": "https://cbamvalid.com/credits/buy",
+        "statusCode": 308,
+        "permanent": true,
+        "owner": "next.config.js",
+        "firstObservedAt": "2026-08-09T19:35:00Z",
+        "ageKnown": false,
+        "lastReviewedAt": "2026-08-09T19:35:00Z",
+        "reviewDecision": "KEEP",
+        "rationale": "Legacy purchase entrypoint is consolidated directly to the current purchase route on the canonical origin, avoiding an additional host-normalization hop."
+      },
+      {
+        "id": "rd_002",
+        "source": "/cbam-methodology",
+        "sourceHost": "*",
+        "destination": "https://cbamvalid.com/methodology",
+        "statusCode": 308,
+        "permanent": true,
+        "owner": "next.config.js",
+        "firstObservedAt": "2026-08-09T19:35:00Z",
+        "ageKnown": false,
+        "lastReviewedAt": "2026-08-09T19:35:00Z",
+        "reviewDecision": "KEEP",
+        "rationale": "Legacy thin methodology route is consolidated directly to the authority methodology route on the canonical origin."
+      },
+      {
+        "id": "rd_003",
+        "source": "/:path*",
+        "sourceHost": "www.cbamvalid.com",
+        "destination": "https://cbamvalid.com/:path*",
+        "statusCode": 308,
+        "permanent": true,
+        "owner": "next.config.js",
+        "firstObservedAt": "2026-08-09T19:35:00Z",
+        "ageKnown": false,
+        "lastReviewedAt": "2026-08-09T19:35:00Z",
+        "reviewDecision": "KEEP",
+        "rationale": "All application-reachable www requests collapse to the configured non-www canonical origin."
+      }
+    ],
+    "variantPolicy": {
+      "canonicalHttpsApex": "200_EXPECTED",
+      "httpsWww": "REDIRECT_TO_CANONICAL",
+      "httpApex": "FIREBASE_EDGE_HTTPS_UPGRADE",
+      "httpWww": "FIREBASE_EDGE_THEN_APPLICATION_IF_WWW_IS_CONFIGURED",
+      "trailingSlash": "NEXT_DEFAULT_REMOVE_TRAILING_SLASH",
+      "caseVariant": "MUST_NOT_RETURN_DUPLICATE_200",
+      "userAgentVariance": "MUST_NOT_CHANGE_CANONICAL_REDIRECT_POLICY"
+    },
+    "externalControls": [
+      {
+        "id": "ext_001",
+        "control": "HTTP-to-HTTPS custom-domain upgrade",
+        "owner": "Firebase custom-domain edge",
+        "repositoryMutable": false,
+        "codeScopeStatus": "EXCLUDED_NON_CODE",
+        "reason": "The protocol upgrade happens before the Next.js application and cannot be rewritten by repository routing code. Application redirects are nevertheless canonicalized to absolute HTTPS targets to minimize downstream hops."
+      },
+      {
+        "id": "ext_002",
+        "control": "www DNS/custom-domain attachment",
+        "owner": "DNS and Firebase custom-domain configuration",
+        "repositoryMutable": false,
+        "codeScopeStatus": "EXCLUDED_NON_CODE",
+        "reason": "Repository code can normalize www only after the hostname resolves and reaches the application. DNS/custom-domain attachment is outside repository code."
+      }
+    ],
+    "capacity": {
+      "redirectLimit": 2000,
+      "applicationRuleCount": 3,
+      "utilizationBasisPoints": 15,
+      "warningThresholdPct": 80,
+      "warning": false
+    }
+  }
+}
