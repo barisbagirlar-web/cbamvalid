@@ -9,6 +9,16 @@ const readSource = (relative: string): string =>
   readFileSync(path.join(process.cwd(), relative), "utf8");
 
 describe("TEB232 carbon-price sealing repair", () => {
+  it("fixture itself seals cleanly — certificate-equivalent reduction equals applicable emissions", () => {
+    const steel = createFourDossierCase("STEEL_IN");
+    const calculation = performDossierCalculations(steel);
+    expect(steel.carbonPriceRecords[0].amountPaid).toBe("1500000");
+    expect(steel.carbonPriceRecords[0].applicableEmissions).toBe("150000");
+    expect(steel.carbonPriceRecords[0].eligibleCertificateReduction).toBe("150000");
+    expect(calculation.eligibleCertificateReduction).toBe("150000");
+    expect(() => assertCarbonPriceSemantics(steel, calculation)).not.toThrow();
+  });
+
   it("keeps monetary amount and certificate-equivalent reduction in different units", () => {
     const steel = createFourDossierCase("STEEL_IN");
     steel.carbonPriceRecords[0].eligibleCertificateReduction = "150000";
