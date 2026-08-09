@@ -112,6 +112,14 @@ Permanent correction under AIP-21 and the explicit owner decision recorded on 20
 
 Phase completion rule: a phase may be completed when all non-measurement BLOCK invariants pass, every measurement-only unavailable input is explicitly `SKIP_NO_DATA`, no fabricated metric enters the artifact, and the phase's technical Gate-Out is otherwise evidenced. Measurement debt remains open in the findings queue until private reporting access is connected.
 
+## E-36 — PHASE 02 OMITTED THE ACTUAL NEXT.JS HEADER/REDIRECT OWNER
+
+[Kesin] CBAMValid's live application-level security headers and one canonical-host redirect are implemented in `next.config.js`. The source Phase 02 requires host/canonical redirects and HSTS state to be corrected, but the installed Phase-02 write contract originally authorized only `firebase.json` plus phase data/scripts/docs. That makes INV-2.3 impossible to remediate when the offending HSTS/preload directive is owned by Next.js rather than Firebase Hosting.
+
+[Kesin] The current `next.config.js` contains `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` while the source V6 prohibits HSTS preload without a separate irreversible A3 owner approval. No such preload approval is recorded.
+
+Permanent correction: `next.config.js` is added to the effective global runtime superset **only for Phase 02** and to `PHASE_CONTRACTS.json` `faz-02.writes`. Phase 02 may modify it only for host/canonical redirect and transport-header remediation required by INV-2.x. This does not authorize unrelated framework/application changes. Preload remains prohibited unless a later separate A3 owner decision is recorded.
+
 ## Decision record
 
 These corrections preserve the source mandate's intent: stricter write isolation, machine-verifiable evidence, no invented data, no unnecessary deployment and no weakening of any legal/ethical restriction.
