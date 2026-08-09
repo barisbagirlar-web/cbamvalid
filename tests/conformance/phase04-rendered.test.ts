@@ -2,10 +2,12 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CANONICAL_PRICING } from "../../lib/billing/pricing-config";
+import { generateSeoMetadata } from "../../lib/seo/build-metadata";
 import { SEO_ROUTE_REGISTRY } from "../../lib/seo/registry";
 import {
   PHASE4_CRITICAL_PATHS,
-  discoverStaticPublicRoutes,
+  discoverFailClosedNoindexUtilityRoutes,
+  discoverStaticPublicRouteRecords,
   validateCurrentPriceHtml,
   validatePublicStaticRegistryCoverage,
 } from "../../scripts/seo/crawl-rendered";
@@ -20,11 +22,26 @@ type InvariantResult = {
 const ROOT = resolve(process.cwd());
 
 describe("SEO V6 Phase 04 rendered/commercial contract", () => {
-  it("covers every static public route in the runtime SEO registry", () => {
-    const publicRoutes = discoverStaticPublicRoutes();
+  it("governs every static public route as registry identity or fail-closed noindex utility", () => {
+    const publicRecords = discoverStaticPublicRouteRecords();
+    const publicRoutes = publicRecords.map((record) => record.route);
     const registryPaths = SEO_ROUTE_REGISTRY.map((route) => route.path);
-    expect(validatePublicStaticRegistryCoverage(publicRoutes, registryPaths)).toEqual([]);
+    const noindexUtilities = discoverFailClosedNoindexUtilityRoutes(publicRecords, registryPaths);
+    expect(validatePublicStaticRegistryCoverage(publicRoutes, registryPaths, noindexUtilities)).toEqual([]);
     for (const path of PHASE4_CRITICAL_PATHS) expect(registryPaths, path).toContain(path);
+    expect(noindexUtilities).toContain("/verify/package");
+  });
+
+  it("keeps unregistered verify/package as explicit fail-closed noindex utility", () => {
+    const metadata = generateSeoMetadata("/verify/package");
+    expect(metadata.robots).toMatchObject({
+      index: false,
+      follow: false,
+      noarchive: true,
+      nosnippet: true,
+    });
+    expect(metadata.alternates).toBeUndefined();
+    expect(SEO_ROUTE_REGISTRY.some((route) => route.path === "/verify/package")).toBe(false);
   });
 
   it("has the current commercial SSOT on every critical money route fixture", () => {
