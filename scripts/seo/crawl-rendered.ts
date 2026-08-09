@@ -1,18 +1,61 @@
 /**
  * Production-build rendered HTML crawler for every sitemap URL + fail-closed unknowns.
+ * Phase 04 can additionally launch Chromium and compare raw server HTML with the
+ * hydrated DOM for critical commercial/authority routes.
  *
  * Prerequisites: `npm run build && npm run start` (or SEO_CRAWL_BASE_URL pointing at a live server).
  * Usage: SEO_CRAWL_BASE_URL=http://127.0.0.1:3000 npx tsx scripts/seo/crawl-rendered.ts
  */
 
-import { listSitemapRoutes, getSeoRoute } from "../../lib/seo/registry";
+import { readFileSync, readdirSync } from "node:fs";
+import { resolve, relative, sep } from "node:path";
+import { fileURLToPath } from "node:url";
+import { chromium, type Browser } from "@playwright/test";
+import { listSitemapRoutes, getSeoRoute, SEO_ROUTE_REGISTRY } from "../../lib/seo/registry";
 import { PRICE_CLAIM } from "../../lib/seo/claims";
 import { resolveCanonicalPath, buildCanonicalUrl } from "../../lib/seo/canonical";
 import { evaluateCnIndexability } from "../../lib/seo/indexability";
 
 const BASE = (process.env.SEO_CRAWL_BASE_URL ?? "http://127.0.0.1:3000").replace(/\/$/, "");
+const ROOT = resolve(fileURLToPath(new URL("../../", import.meta.url)));
+const PUBLIC_APP_ROOT = resolve(ROOT, "app/(public)");
+const BROWSER_ENABLED = process.env.SEO_RENDER_BROWSER === "1";
+
+export const PHASE4_CRITICAL_PATHS = [
+  "/",
+  "/pricing",
+  "/product",
+  "/product-classification",
+  "/methodology",
+  "/cn-code",
+] as const;
+
+const MONEY_PATHS = new Set<string>(["/", "/pricing", "/product", "/product-classification"]);
 
 type Check = { id: string; ok: boolean; detail: string };
+
+export type CriticalSnapshot = {
+  title: string | null;
+  description: string | null;
+  h1Texts: string[];
+  canonical: string | null;
+  hreflangs: string[];
+};
+
+export type StaticPublicRouteRecord = {
+  route: string;
+  file: string;
+  failClosedMetadata: boolean;
+};
+
+type PageFetch = {
+  status: number;
+  html: string;
+  contentType: string;
+  xRobots: string | null;
+  finalUrl: string;
+  redirectedToLogin: boolean;
+};
 
 function pass(id: string, detail: string): Check {
   return { id, ok: true, detail };
@@ -26,28 +69,68 @@ function extractMeta(html: string, name: string): string | null {
     `<meta[^>]*(?:name|property)=["']${name}["'][^>]*content=["']([^"']*)["'][^>]*>|<meta[^>]*content=["']([^"']*)["'][^>]*(?:name|property)=["']${name}["'][^>]*>`,
     "i",
   );
-  const m = html.match(re);
-  return m?.[1] ?? m?.[2] ?? null;
+  const match = html.match(re);
+  return match?.[1] ?? match?.[2] ?? null;
+}
+
+function attribute(tag: string, name: string): string | null {
+  const match = tag.match(new RegExp(`\\b${name}=["']([^"']+)["']`, "i"));
+  return match?.[1] ?? null;
 }
 
 function extractCanonical(html: string): string | null {
-  const m = html.match(/<link[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["'][^>]*>/i)
-    ?? html.match(/<link[^>]*href=["']([^"']+)["'][^>]*rel=["']canonical["'][^>]*>/i);
-  return m?.[1] ?? null;
+  for (const match of html.matchAll(/<link\b[^>]*>/gi)) {
+    const tag = match[0];
+    const rel = attribute(tag, "rel");
+    if (!rel?.split(/\s+/).some((token) => token.toLowerCase() === "canonical")) continue;
+    return attribute(tag, "href");
+  }
+  return null;
 }
 
 function extractTitle(html: string): string | null {
-  const m = html.match(/<title[^>]*>([^<]*)<\/title>/i);
-  return m?.[1]?.trim() ?? null;
+  const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  return match?.[1]?.trim() ?? null;
+}
+
+function decodeHtmlText(value: string): string {
+  return value
+    .replace(/<!--[^]*?-->/g, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;|&#160;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;|&#34;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractH1Texts(html: string): string[] {
+  return [...html.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)].map((match) => decodeHtmlText(match[1] ?? ""));
 }
 
 function countH1(html: string): number {
-  return (html.match(/<h1\b/gi) ?? []).length;
+  return extractH1Texts(html).length;
 }
 
 function extractLang(html: string): string | null {
-  const m = html.match(/<html[^>]*lang=["']([^"']+)["']/i);
-  return m?.[1] ?? null;
+  const match = html.match(/<html[^>]*lang=["']([^"']+)["']/i);
+  return match?.[1] ?? null;
+}
+
+function extractHreflangs(html: string): string[] {
+  const values: string[] = [];
+  for (const match of html.matchAll(/<link\b[^>]*>/gi)) {
+    const tag = match[0];
+    const rel = attribute(tag, "rel");
+    const hreflang = attribute(tag, "hreflang");
+    const href = attribute(tag, "href");
+    if (!rel?.split(/\s+/).some((token) => token.toLowerCase() === "alternate") || !hreflang || !href) continue;
+    values.push(`${hreflang.toLowerCase()}=${href}`);
+  }
+  return [...new Set(values)].sort();
 }
 
 function extractJsonLd(html: string): unknown[] {
@@ -67,25 +150,118 @@ function extractJsonLd(html: string): unknown[] {
 function robotsAllowsIndex(html: string, xRobots: string | null): boolean {
   const meta = (extractMeta(html, "robots") ?? "").toLowerCase();
   const header = (xRobots ?? "").toLowerCase();
-  const blob = `${meta} ${header}`;
-  if (blob.includes("noindex")) return false;
-  return true;
+  return !`${meta} ${header}`.includes("noindex");
 }
 
-async function fetchPage(path: string): Promise<{
-  status: number;
-  html: string;
-  contentType: string;
-  xRobots: string | null;
-  finalUrl: string;
-  redirectedToLogin: boolean;
-}> {
+export function extractCriticalSnapshot(html: string): CriticalSnapshot {
+  return {
+    title: extractTitle(html),
+    description: extractMeta(html, "description"),
+    h1Texts: extractH1Texts(html),
+    canonical: extractCanonical(html),
+    hreflangs: extractHreflangs(html),
+  };
+}
+
+export function validateCriticalContentParity(
+  raw: CriticalSnapshot,
+  rendered: CriticalSnapshot,
+  path: string,
+): string[] {
+  const blocks: string[] = [];
+  if (raw.title !== rendered.title) blocks.push(`INV-4.1 ${path} title changed after hydration`);
+  if (raw.description !== rendered.description) blocks.push(`INV-4.1 ${path} description changed after hydration`);
+  if (JSON.stringify(raw.h1Texts) !== JSON.stringify(rendered.h1Texts)) blocks.push(`INV-4.1 ${path} H1 content changed after hydration`);
+  return blocks;
+}
+
+export function validateCanonicalHreflangParity(
+  raw: CriticalSnapshot,
+  rendered: CriticalSnapshot,
+  path: string,
+): string[] {
+  const blocks: string[] = [];
+  if (raw.canonical !== rendered.canonical) blocks.push(`INV-4.2 ${path} canonical changed after hydration`);
+  if (JSON.stringify(raw.hreflangs) !== JSON.stringify(rendered.hreflangs)) blocks.push(`INV-4.2 ${path} hreflang set changed after hydration`);
+  return blocks;
+}
+
+export function validateCurrentPriceHtml(html: string, path: string): string[] {
+  if (!MONEY_PATHS.has(path)) return [];
+  const amount = PRICE_CLAIM.value.amount;
+  const tokens = [PRICE_CLAIM.value.formatted, `${PRICE_CLAIM.value.currency} ${amount}`];
+  return tokens.some((token) => html.includes(token))
+    ? []
+    : [`INV-4.1 ${path} current pricing SSOT not visible (${PRICE_CLAIM.value.currency} ${amount})`];
+}
+
+function publicRouteFromPageFile(file: string): string | null {
+  const rel = relative(PUBLIC_APP_ROOT, file).split(sep).join("/");
+  if (!rel.endsWith("/page.tsx") && rel !== "page.tsx") return null;
+  const routePart = rel === "page.tsx" ? "" : rel.slice(0, -"/page.tsx".length);
+  const segments = routePart.split("/").filter(Boolean);
+  if (segments.some((segment) => segment.includes("[") || segment.includes("]"))) return null;
+  const publicSegments = segments.filter((segment) => !(segment.startsWith("(") && segment.endsWith(")")));
+  return publicSegments.length === 0 ? "/" : `/${publicSegments.join("/")}`;
+}
+
+function walkPages(directory: string): string[] {
+  const files: string[] = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const path = resolve(directory, entry.name);
+    if (entry.isDirectory()) files.push(...walkPages(path));
+    else if (entry.isFile() && entry.name === "page.tsx") files.push(path);
+  }
+  return files;
+}
+
+export function discoverStaticPublicRouteRecords(): StaticPublicRouteRecord[] {
+  return walkPages(PUBLIC_APP_ROOT)
+    .map((file) => {
+      const route = publicRouteFromPageFile(file);
+      if (!route) return null;
+      const source = readFileSync(file, "utf8");
+      const failClosedMetadata =
+        source.includes(`generateSeoMetadata("${route}")`) || source.includes(`generateSeoMetadata('${route}')`);
+      return { route, file, failClosedMetadata };
+    })
+    .filter((record): record is StaticPublicRouteRecord => record !== null)
+    .sort((left, right) => left.route.localeCompare(right.route));
+}
+
+export function discoverStaticPublicRoutes(): string[] {
+  return discoverStaticPublicRouteRecords().map((record) => record.route);
+}
+
+export function discoverFailClosedNoindexUtilityRoutes(
+  records: readonly StaticPublicRouteRecord[] = discoverStaticPublicRouteRecords(),
+  registryPaths: readonly string[] = SEO_ROUTE_REGISTRY.map((route) => route.path),
+): string[] {
+  const registry = new Set(registryPaths);
+  return records
+    .filter((record) => !registry.has(record.route) && record.failClosedMetadata)
+    .map((record) => record.route)
+    .sort();
+}
+
+export function validatePublicStaticRegistryCoverage(
+  publicRoutes: readonly string[],
+  registryPaths: readonly string[],
+  failClosedNoindexRoutes: readonly string[] = [],
+): string[] {
+  const registry = new Set(registryPaths);
+  const noindexUtilities = new Set(failClosedNoindexRoutes);
+  return publicRoutes
+    .filter((route) => !registry.has(route) && !noindexUtilities.has(route))
+    .map((route) => `INV-4.1 static public route missing from SEO governance ${route}`);
+}
+
+async function fetchPage(path: string): Promise<PageFetch> {
   const url = `${BASE}${path}`;
   const res = await fetch(url, {
     redirect: "manual",
-    headers: { "user-agent": "CBAMValid-SEO-Rendered-Crawler/1.0" },
+    headers: { "user-agent": "CBAMValid-SEO-Rendered-Crawler/2.0" },
   });
-  // Sitemap URLs must not bounce to auth.
   if (res.status >= 300 && res.status < 400) {
     const loc = res.headers.get("location") ?? "";
     return {
@@ -122,108 +298,77 @@ async function crawlSitemapUrl(path: string): Promise<Check[]> {
   }
   checks.push(pass("RC01", `${path} HTTP 200`));
 
-  if (!page.contentType.includes("text/html")) {
-    checks.push(fail("RC02", `${path} content-type ${page.contentType}`));
-  } else {
-    checks.push(pass("RC02", `${path} text/html`));
-  }
+  checks.push(page.contentType.includes("text/html") ? pass("RC02", `${path} text/html`) : fail("RC02", `${path} content-type ${page.contentType}`));
 
   const canonical = extractCanonical(page.html);
   const expectedCanonical = buildCanonicalUrl(path);
   if (!canonical || resolveCanonicalPath(new URL(canonical).pathname) !== path) {
     checks.push(fail("RC03", `${path} canonical mismatch got=${canonical}`));
-  } else if (canonical !== expectedCanonical && !canonical.endsWith(path === "/" ? "/" : path)) {
-    // accept absolute expected or path-equivalent
+  } else {
     const norm = canonical.replace(/\/$/, "") || "https://cbamvalid.com";
     const exp = expectedCanonical.replace(/\/$/, "") || "https://cbamvalid.com";
-    if (norm !== exp) {
-      checks.push(fail("RC03", `${path} canonical ${canonical} != ${expectedCanonical}`));
-    } else {
-      checks.push(pass("RC03", `${path} canonical OK`));
-    }
-  } else {
-    checks.push(pass("RC03", `${path} canonical OK`));
+    checks.push(norm === exp ? pass("RC03", `${path} canonical OK`) : fail("RC03", `${path} canonical ${canonical} != ${expectedCanonical}`));
   }
 
-  if (!robotsAllowsIndex(page.html, page.xRobots)) {
-    checks.push(fail("RC04", `${path} robots noindex on sitemap URL`));
-  } else {
-    checks.push(pass("RC04", `${path} robots indexable`));
-  }
+  checks.push(robotsAllowsIndex(page.html, page.xRobots) ? pass("RC04", `${path} robots indexable`) : fail("RC04", `${path} robots noindex on sitemap URL`));
 
   const title = extractTitle(page.html);
-  if (!title || (route && title !== route.title && !title.includes("CBAMValid"))) {
-    // Next may append site name — require non-empty and CBAMValid or registry title substring
-    if (!title || title.trim().length < 8) {
-      checks.push(fail("RC05", `${path} missing/weak title`));
-    } else {
-      checks.push(pass("RC05", `${path} title present`));
-    }
-  } else {
-    checks.push(pass("RC05", `${path} title present`));
-  }
+  checks.push(title && title.trim().length >= 8 ? pass("RC05", `${path} title present`) : fail("RC05", `${path} missing/weak title`));
 
   const desc = extractMeta(page.html, "description");
-  if (!desc || desc.trim().length < 20) {
-    checks.push(fail("RC06", `${path} missing description`));
-  } else {
-    checks.push(pass("RC06", `${path} description present`));
-  }
+  checks.push(desc && desc.trim().length >= 20 ? pass("RC06", `${path} description present`) : fail("RC06", `${path} missing description`));
 
   const h1Count = countH1(page.html);
-  if (h1Count !== 1) {
-    checks.push(fail("RC07", `${path} H1 count=${h1Count}`));
-  } else {
-    checks.push(pass("RC07", `${path} single H1`));
-  }
+  checks.push(h1Count === 1 ? pass("RC07", `${path} single H1`) : fail("RC07", `${path} H1 count=${h1Count}`));
 
   const lang = extractLang(page.html);
-  if (lang !== "en") {
-    checks.push(fail("RC08", `${path} lang=${lang}`));
-  } else {
-    checks.push(pass("RC08", `${path} lang=en`));
-  }
+  checks.push(lang === "en" ? pass("RC08", `${path} lang=en`) : fail("RC08", `${path} lang=${lang}`));
 
   const jsonLd = extractJsonLd(page.html);
-  if (jsonLd.some((b) => b && typeof b === "object" && "__parseError" in (b as object))) {
-    checks.push(fail("RC09", `${path} JSON-LD parse error`));
-  } else {
-    checks.push(pass("RC09", `${path} JSON-LD parse OK (${jsonLd.length} blocks)`));
-  }
+  checks.push(
+    jsonLd.some((block) => block && typeof block === "object" && "__parseError" in block)
+      ? fail("RC09", `${path} JSON-LD parse error`)
+      : pass("RC09", `${path} JSON-LD parse OK (${jsonLd.length} blocks)`),
+  );
 
-  // UTM must not change canonical identity
   const utmPath = `${path}${path.includes("?") ? "&" : "?"}utm_source=test&utm_campaign=test&fbclid=test`;
   const utmPage = await fetchPage(utmPath.startsWith("/") ? utmPath : `/${utmPath}`);
   const utmCanonical = extractCanonical(utmPage.html);
   const baseCanonical = extractCanonical(page.html);
-  if (utmCanonical && baseCanonical && utmCanonical !== baseCanonical) {
-    checks.push(fail("RC10", `${path} UTM changed canonical ${baseCanonical} -> ${utmCanonical}`));
-  } else {
-    checks.push(pass("RC10", `${path} UTM canonical stable`));
+  checks.push(
+    utmCanonical && baseCanonical && utmCanonical !== baseCanonical
+      ? fail("RC10", `${path} UTM changed canonical ${baseCanonical} -> ${utmCanonical}`)
+      : pass("RC10", `${path} UTM canonical stable`),
+  );
+
+  const priceBlocks = validateCurrentPriceHtml(page.html, path);
+  if (MONEY_PATHS.has(path)) {
+    checks.push(priceBlocks.length === 0 ? pass("RC11", `${path} current pricing SSOT visible`) : fail("RC11", priceBlocks.join("; ")));
   }
 
-  // Price parity on money pages
-  if (path === "/" || path === "/pricing" || path === "/product") {
-    const visiblePrice = page.html.includes(PRICE_CLAIM.value.formatted) || page.html.includes("149");
-    const schemaHasPrice = JSON.stringify(jsonLd).includes(`"price":"${PRICE_CLAIM.value.amount}"`)
-      || JSON.stringify(jsonLd).includes('"price":"149"');
-    if (!visiblePrice) {
-      checks.push(fail("RC11", `${path} visible price missing`));
-    } else if (path !== "/" && !schemaHasPrice && jsonLd.length > 0) {
-      // homepage may use WebApplication; still check 149 somewhere in schema if present
-      checks.push(pass("RC11", `${path} visible price present (schema optional)`));
-    } else {
-      checks.push(pass("RC11", `${path} price parity OK`));
-    }
-  }
-
-  // Server-returned text: must contain brand or route H1 fragment
   if (route && !page.html.includes("CBAM") && !page.html.includes(route.h1.slice(0, 12))) {
     checks.push(fail("RC12", `${path} body missing brand/H1 text (JS-empty?)`));
   } else {
     checks.push(pass("RC12", `${path} server HTML has content`));
   }
 
+  return checks;
+}
+
+async function crawlFailClosedNoindexUtility(path: string): Promise<Check[]> {
+  const page = await fetchPage(path);
+  const checks: Check[] = [];
+  if (page.status !== 200) return [fail("INV-4.1", `${path} fail-closed utility HTTP ${page.status}`)];
+  if (robotsAllowsIndex(page.html, page.xRobots)) {
+    checks.push(fail("INV-4.1", `${path} unregistered utility is indexable instead of fail-closed noindex`));
+  } else {
+    checks.push(pass("INV-4.1", `${path} unregistered utility remains fail-closed noindex`));
+  }
+  if (listSitemapRoutes().some((route) => route.path === path)) {
+    checks.push(fail("INV-4.1", `${path} fail-closed utility leaked into sitemap`));
+  } else {
+    checks.push(pass("INV-4.1", `${path} fail-closed utility excluded from sitemap`));
+  }
   return checks;
 }
 
@@ -236,85 +381,153 @@ async function crawlUnknownCn(): Promise<Check[]> {
   const lookup = await fetchPage(lookupPath);
   const checks: Check[] = [];
 
-  if (coverage.indexable) {
-    checks.push(fail("RC13", `${code} must not be indexable in registry logic`));
-  }
+  if (coverage.indexable) checks.push(fail("RC13", `${code} must not be indexable in registry logic`));
+  checks.push(
+    detail.status === 404
+      ? pass("RC13", `${detailPath} HTTP 404 hard fail-closed`)
+      : fail("RC13", `${detailPath} expected HTTP 404, got status=${detail.status} robots_indexable=${robotsAllowsIndex(detail.html, detail.xRobots)}`),
+  );
 
-  // Hard entity 404 — soft-404 (200+noindex) is FAIL
-  if (detail.status === 404) {
-    checks.push(pass("RC13", `${detailPath} HTTP 404 hard fail-closed`));
-  } else {
-    checks.push(
-      fail(
-        "RC13",
-        `${detailPath} expected HTTP 404, got status=${detail.status} robots_indexable=${robotsAllowsIndex(detail.html, detail.xRobots)}`,
-      ),
-    );
-  }
-
-  // Arbitrary lookup utility must be 200 + noindex, canonical stays hub
   if (lookup.status !== 200) {
     checks.push(fail("RC14", `${lookupPath} expected HTTP 200 utility, got ${lookup.status}`));
   } else if (robotsAllowsIndex(lookup.html, lookup.xRobots)) {
     checks.push(fail("RC14", `${lookupPath} must be noindex`));
   } else {
     const canonical = extractCanonical(lookup.html);
-    if (canonical && !canonical.endsWith("/cn-code") && canonical !== "https://cbamvalid.com/cn-code") {
-      checks.push(fail("RC14", `${lookupPath} canonical must remain /cn-code, got ${canonical}`));
-    } else {
-      checks.push(pass("RC14", `${lookupPath} utility 200 + noindex`));
-    }
+    checks.push(
+      canonical && !canonical.endsWith("/cn-code") && canonical !== "https://cbamvalid.com/cn-code"
+        ? fail("RC14", `${lookupPath} canonical must remain /cn-code, got ${canonical}`)
+        : pass("RC14", `${lookupPath} utility 200 + noindex`),
+    );
   }
   return checks;
 }
 
 async function crawlHomepageG25(): Promise<Check[]> {
   const page = await fetchPage("/");
+  if (!page.html.includes("CBAM")) return [fail("G25", "Homepage HTML missing CBAM (client-empty?)")];
+  if (!/Frequently Asked Questions|FAQ/i.test(page.html) && !page.html.includes("CBAM Exporter") && !page.html.includes("Emissions Data Workspace")) {
+    return [fail("G25", "Homepage HTML missing hero/authority signals")];
+  }
+  return [pass("G25", "Homepage initial HTML contains brand and key copy")];
+}
+
+async function browserNoindexUtilityParity(browser: Browser, paths: readonly string[]): Promise<Check[]> {
   const checks: Check[] = [];
-  if (!page.html.includes("CBAM")) {
-    checks.push(fail("G25", "Homepage HTML missing CBAM (client-empty?)"));
-  } else if (!/Frequently Asked Questions|FAQ/i.test(page.html) && !page.html.includes("CBAM Exporter")) {
-    checks.push(fail("G25", "Homepage HTML missing FAQ/hero signals"));
-  } else {
-    checks.push(pass("G25", "Homepage initial HTML contains brand and key copy"));
+  const page = await browser.newPage();
+  try {
+    for (const path of paths) {
+      const raw = await fetchPage(path);
+      if (raw.status !== 200 || robotsAllowsIndex(raw.html, raw.xRobots)) {
+        checks.push(fail("INV-4.1", `${path} raw fail-closed noindex proof failed`));
+        continue;
+      }
+      const response = await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => undefined);
+      const renderedHtml = await page.content();
+      const renderedXRobots = response?.headers()["x-robots-tag"] ?? null;
+      checks.push(
+        response?.status() === 200 && !robotsAllowsIndex(renderedHtml, renderedXRobots)
+          ? pass("INV-4.1", `${path} raw/render fail-closed noindex parity`)
+          : fail("INV-4.1", `${path} became indexable after hydration`),
+      );
+    }
+  } finally {
+    await page.close();
   }
   return checks;
 }
 
-async function main() {
+async function browserParity(browser: Browser): Promise<Check[]> {
+  const checks: Check[] = [];
+  const page = await browser.newPage();
+  try {
+    for (const path of PHASE4_CRITICAL_PATHS) {
+      const raw = await fetchPage(path);
+      if (raw.status !== 200) {
+        checks.push(fail("INV-4.1", `${path} raw HTTP ${raw.status}; browser comparison impossible`));
+        continue;
+      }
+      const pageErrors: string[] = [];
+      const onPageError = (error: Error) => pageErrors.push(error.message);
+      page.on("pageerror", onPageError);
+      const response = await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => undefined);
+      await page.waitForTimeout(100);
+      const renderedHtml = await page.content();
+      page.off("pageerror", onPageError);
+
+      if (!response || response.status() !== 200) {
+        checks.push(fail("INV-4.1", `${path} browser HTTP ${response?.status() ?? "none"}`));
+        continue;
+      }
+      const rawSnapshot = extractCriticalSnapshot(raw.html);
+      const renderedSnapshot = extractCriticalSnapshot(renderedHtml);
+      const contentBlocks = validateCriticalContentParity(rawSnapshot, renderedSnapshot, path);
+      const canonicalBlocks = validateCanonicalHreflangParity(rawSnapshot, renderedSnapshot, path);
+      const priceBlocks = validateCurrentPriceHtml(renderedHtml, path);
+
+      checks.push(contentBlocks.length === 0 ? pass("INV-4.1", `${path} raw/render critical content parity`) : fail("INV-4.1", contentBlocks.join("; ")));
+      checks.push(canonicalBlocks.length === 0 ? pass("INV-4.2", `${path} canonical/hreflang parity`) : fail("INV-4.2", canonicalBlocks.join("; ")));
+      if (MONEY_PATHS.has(path)) checks.push(priceBlocks.length === 0 ? pass("INV-4.1", `${path} hydrated current price SSOT`) : fail("INV-4.1", priceBlocks.join("; ")));
+      if (pageErrors.length > 0) checks.push(fail("INV-4.1", `${path} browser pageerror: ${pageErrors.join(" | ")}`));
+    }
+  } finally {
+    await page.close();
+  }
+  return checks;
+}
+
+export async function runRenderedCrawl(): Promise<Check[]> {
   const results: Check[] = [];
-  // Health check
+  const publicRecords = discoverStaticPublicRouteRecords();
+  const publicRoutes = publicRecords.map((record) => record.route);
+  const registryPaths = SEO_ROUTE_REGISTRY.map((route) => route.path);
+  const noindexUtilities = discoverFailClosedNoindexUtilityRoutes(publicRecords, registryPaths);
+  const coverageBlocks = validatePublicStaticRegistryCoverage(publicRoutes, registryPaths, noindexUtilities);
+  results.push(
+    coverageBlocks.length === 0
+      ? pass("INV-4.1", `Static public SEO governance ${publicRoutes.length}/${publicRoutes.length}; failClosedNoindex=${noindexUtilities.length}`)
+      : fail("INV-4.1", coverageBlocks.join("; ")),
+  );
+
   try {
     const health = await fetch(`${BASE}/`, { method: "GET" });
-    if (!health.ok && health.status !== 200) {
-      console.error(`Server not reachable at ${BASE} (status ${health.status})`);
-      process.exit(2);
-    }
-  } catch (err) {
-    console.error(`Server not reachable at ${BASE}: ${err}`);
-    console.error("Start with: npm run build && npm run start");
-    process.exit(2);
+    if (!health.ok && health.status !== 200) throw new Error(`status ${health.status}`);
+  } catch (error) {
+    throw new Error(`Server not reachable at ${BASE}: ${error instanceof Error ? error.message : String(error)}`);
   }
 
-  const sitemapPaths = listSitemapRoutes().map((r) => r.path);
-  console.log(`RENDERED_CRAWL base=${BASE} urls=${sitemapPaths.length}`);
-
-  for (const path of sitemapPaths) {
-    const checks = await crawlSitemapUrl(path);
-    results.push(...checks);
-  }
+  const sitemapPaths = listSitemapRoutes().map((route) => route.path);
+  console.log(`RENDERED_CRAWL base=${BASE} urls=${sitemapPaths.length} staticPublic=${publicRoutes.length} failClosedNoindex=${noindexUtilities.length} browser=${BROWSER_ENABLED}`);
+  for (const path of sitemapPaths) results.push(...(await crawlSitemapUrl(path)));
+  for (const path of noindexUtilities) results.push(...(await crawlFailClosedNoindexUtility(path)));
   results.push(...(await crawlUnknownCn()));
   results.push(...(await crawlHomepageG25()));
 
-  const failed = results.filter((r) => !r.ok);
-  for (const r of results) {
-    console.log(`${r.ok ? "PASS" : "FAIL"} ${r.id}: ${r.detail}`);
+  if (BROWSER_ENABLED) {
+    const browser = await chromium.launch({ headless: true });
+    try {
+      results.push(...(await browserParity(browser)));
+      results.push(...(await browserNoindexUtilityParity(browser, noindexUtilities)));
+    } finally {
+      await browser.close();
+    }
   }
+  return results;
+}
+
+async function main(): Promise<void> {
+  const results = await runRenderedCrawl();
+  const failed = results.filter((result) => !result.ok);
+  for (const result of results) console.log(`${result.ok ? "PASS" : "FAIL"} ${result.id}: ${result.detail}`);
   console.log(`\nRENDERED_CRAWL_SUMMARY total=${results.length} fail=${failed.length}`);
   if (failed.length > 0) process.exit(1);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+}
