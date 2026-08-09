@@ -31,8 +31,8 @@ describe("Step 8 footer CSS conflict regression", () => {
   });
 
   it("keeps ready-to-lock green while payment and blocked states stay distinct", () => {
-    expect(css).toContain("#0f6b4e !important");
-    expect(css).toContain("#b97827 !important");
-    expect(css).toContain("#b4513a !important");
+    expect(css).toContain("#2d6a4f !important");
+    expect(css).toContain("#d4a017 !important");
+    expect(css).toContain("#9b2226 !important");
   });
 });

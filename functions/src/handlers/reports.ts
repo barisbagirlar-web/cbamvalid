@@ -5,7 +5,7 @@ import { adminDb, getStorageBucket } from "../firebase-admin";
 import { getCase } from "../cbam/storage/case-repository";
 import { CaseIdSchema } from "../cbam/case-id";
 import { assertKmsSigningConfigured } from "../cbam/report/kms-signature";
-import { toSealedReportView } from "../cbam/report/report-contract";
+import { toSealedReportView, type SealedReportView } from "../cbam/report/report-contract";
 
 function sealError(error: unknown): HttpsError {
   if (error instanceof HttpsError) return error;
@@ -125,6 +125,15 @@ const DOWNLOADS = {
   snapshot: { file: "case-snapshot.json", downloadName: "Immutable-Case-Snapshot.json" },
 } as const;
 
+export function resolveDownloadName(report: SealedReportView, format: keyof typeof DOWNLOADS): string {
+  const target = DOWNLOADS[format];
+  if (format !== "pdf") return target.downloadName;
+  // V5 packages store the Enterprise-1000 main dossier under dossier.pdf; only
+  // legacy V4 packages keep the legacy Operator Emissions Report label.
+  const isV5 = report.packageMetadata?.schemaVersion === "CBAMVALID-DOSSIER-5.0";
+  return isV5 ? "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf" : target.downloadName;
+}
+
 export const getReportDownloadUrl = createCallable(
   {
     schema: z.object({
@@ -139,6 +148,7 @@ export const getReportDownloadUrl = createCallable(
     if (report.uid !== auth.uid) throw new HttpsError("not-found", "Report not found or access denied.");
 
     const target = DOWNLOADS[format];
+    const downloadName = resolveDownloadName(report, format);
     const entry = report.storage[target.file];
     const expectedPath = `reports/${auth.uid}/${reportId}/${target.file}`;
     if (!entry || entry.path !== expectedPath) {
@@ -158,8 +168,8 @@ export const getReportDownloadUrl = createCallable(
       version: "v4",
       action: "read",
       expires: Date.now() + 15 * 60 * 1000,
-      responseDisposition: `attachment; filename="${target.downloadName}"`,
+      responseDisposition: `attachment; filename="${downloadName}"`,
     });
-    return { url, fileName: target.downloadName, sha256: entry.sha256, sizeBytes: entry.sizeBytes, status: "success" };
+    return { url, fileName: downloadName, sha256: entry.sha256, sizeBytes: entry.sizeBytes, status: "success" };
   }
 );

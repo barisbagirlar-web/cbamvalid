@@ -75,6 +75,7 @@ export const SealedReportViewSchema = z.object({
   manifestHash: HashSchema,
   packageHash: HashSchema,
   status: z.literal("SEALED"),
+  reportingYear: z.number().int().min(2020).max(2099).optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   calculation: CalculationSchema,

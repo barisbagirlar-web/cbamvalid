@@ -656,6 +656,7 @@ export async function sealReport(params: {
       signatureBase64: signature.signatureBase64,
       storage: Object.fromEntries(storageEntries.map((entry) => [entry.path.split("/").at(-1) || entry.path, entry])),
       installationName: caseData.installation.name.value || "Sealed dossier",
+      reportingYear: year,
     };
 
     let publicVerificationToken: string | undefined;
