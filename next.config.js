@@ -1,3 +1,19 @@
+const seoConfig = require('./sites/cbamvalid/seo.config.json');
+
+const canonicalUrl = new URL(seoConfig.site.rootUrl);
+if (
+  canonicalUrl.protocol !== 'https:' ||
+  canonicalUrl.pathname !== '/' ||
+  canonicalUrl.search ||
+  canonicalUrl.hash
+) {
+  throw new Error('SEO canonical rootUrl must be an origin-only HTTPS URL');
+}
+
+const canonicalOrigin = canonicalUrl.origin;
+const canonicalHost = canonicalUrl.hostname;
+const wwwHost = `www.${canonicalHost}`;
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -33,7 +49,9 @@ const nextConfig = {
           },
           {
             key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload',
+            // HSTS remains strong, but preload is deliberately excluded until a
+            // separate irreversible-action approval is recorded.
+            value: 'max-age=63072000; includeSubDomains',
           },
           {
             key: 'Content-Security-Policy',
@@ -83,17 +101,18 @@ const nextConfig = {
     ];
   },
   async redirects() {
-    // Handling www redirect. (Requires App Hosting / Cloudflare to properly resolve www.cbamvalid.com first)
     return [
       {
+        // Absolute canonical target prevents a second host-normalization hop.
         source: '/credits',
-        destination: '/credits/buy',
+        destination: `${canonicalOrigin}/credits/buy`,
         permanent: true,
       },
       {
-        // Canonical consolidation: thin /cbam-methodology → authority /methodology
+        // Canonical consolidation: thin /cbam-methodology → authority /methodology.
+        // Absolute target also collapses legacy-path + www variants in one hop.
         source: '/cbam-methodology',
-        destination: '/methodology',
+        destination: `${canonicalOrigin}/methodology`,
         permanent: true,
       },
       {
@@ -101,10 +120,10 @@ const nextConfig = {
         has: [
           {
             type: 'host',
-            value: 'www.cbamvalid.com',
+            value: wwwHost,
           },
         ],
-        destination: 'https://cbamvalid.com/:path*',
+        destination: `${canonicalOrigin}/:path*`,
         permanent: true,
       },
     ];
