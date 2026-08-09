@@ -1,0 +1,183 @@
+name: One-shot production deploy Enterprise 1000
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/one-shot-production-deploy-enterprise-1000.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cbamvalid-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      TARGET_APP_SHA: 017e918f6ffcac47a653a1b29ed532a1086462f1
+      FIREBASE_PROJECT: cbam-desk
+      LIVE_BASE_URL: https://cbamvalid.com
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      SA_FIREBASE_CBAM: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CBAM_DESK }}
+
+    steps:
+      - name: Checkout exact merged Enterprise 1000 application candidate
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TARGET_APP_SHA }}
+          persist-credentials: false
+          fetch-depth: 2
+
+      - name: Prove exact deployment provenance and clean tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          printf 'TARGET_APP_SHA=%s\n' "${TARGET_APP_SHA}"
+          printf 'ACTUAL_SHA=%s\n' "${ACTUAL_SHA}"
+          test "${ACTUAL_SHA}" = "${TARGET_APP_SHA}"
+          test -z "$(git status --porcelain)"
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Verify Node 24 runtime
+        run: node --version | grep -E '^v24\.'
+
+      - name: Install exact locked dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm --prefix functions ci --no-audit --no-fund
+
+      - name: Enterprise 1000 production acceptance preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run guard:english-only
+          npm audit --omit=dev --audit-level=high
+          npm --prefix functions audit --omit=dev --audit-level=high
+          npm run guard:hosting-architecture
+          npm run guard:auth-architecture
+          npm run guard:verifier-grade-deliverables
+          npm run guard:external-acceptance
+          npm run guard:premium-dossier-release
+          npm run typecheck
+          npm run build:functions
+          npx vitest run \
+            tests/reports/enterprise-1000-mandate.test.ts \
+            tests/reports/release-499-contract.test.ts \
+            tests/reports/verifier-status-single-truth.test.ts \
+            tests/reports/premium-dossier-truth-contract.test.ts \
+            tests/reports/cross-format-consistency.test.ts \
+            tests/reports/premium-package-hardening.test.ts
+          SOURCE_COMMIT_SHA="${TARGET_APP_SHA}" npx tsx scripts/guard-499-usd-release.ts
+          npx tsx scripts/guard-verifier-status-consistency.ts
+          npx tsx scripts/guard-enterprise-1000-mandate.ts
+
+      - name: Prepare Firebase production credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SA_FIREBASE_CBAM:-}" || { echo '::error::FIREBASE_SERVICE_ACCOUNT_CBAM_DESK is missing'; exit 78; }
+          CREDENTIAL_FILE="${RUNNER_TEMP}/firebase-cbam.json"
+          printf '%s' "${SA_FIREBASE_CBAM}" > "${CREDENTIAL_FILE}"
+          node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "${CREDENTIAL_FILE}"
+          chmod 600 "${CREDENTIAL_FILE}"
+          printf 'GOOGLE_APPLICATION_CREDENTIALS=%s\n' "${CREDENTIAL_FILE}" >> "${GITHUB_ENV}"
+
+      - name: Install Firebase CLI and verify project access
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global firebase-tools@latest
+          firebase --version
+          firebase experiments:enable webframeworks
+          firebase projects:list --json | grep -q 'cbam-desk'
+
+      - name: Deploy only changed Cloud Function
+        shell: bash
+        run: |
+          set -euo pipefail
+          firebase deploy --only functions:sealCbamReport --project "${FIREBASE_PROJECT}" --non-interactive
+
+      - name: Resolve production Firebase Web SDK build config
+        shell: bash
+        run: |
+          set -euo pipefail
+          CONFIG_FILE="${RUNNER_TEMP}/firebase-web-sdk-config.json"
+          SDK_RAW="${RUNNER_TEMP}/firebase-sdkconfig-raw.json"
+          if curl --fail --silent --show-error --location --max-time 30 \
+            "${LIVE_BASE_URL}/__/firebase/init.json" > "${CONFIG_FILE}" \
+            && node -e 'const c=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")); if(!c.apiKey||!c.appId||!c.projectId) process.exit(1)' "${CONFIG_FILE}"; then
+            printf '%s\n' 'Firebase Web SDK config source: live reserved Hosting endpoint'
+          else
+            rm -f "${CONFIG_FILE}"
+            firebase apps:sdkconfig WEB --project "${FIREBASE_PROJECT}" --json > "${SDK_RAW}"
+            node - "${SDK_RAW}" "${CONFIG_FILE}" <<'NODE'
+          const fs = require('fs');
+          const raw = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const config = raw?.result?.sdkConfig ?? raw?.result ?? raw;
+          fs.writeFileSync(process.argv[3], JSON.stringify(config));
+          NODE
+          fi
+          node - "${CONFIG_FILE}" "${GITHUB_ENV}" <<'NODE'
+          const fs = require('fs');
+          const config = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const required = {
+            NEXT_PUBLIC_FIREBASE_API_KEY: config.apiKey,
+            NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: config.authDomain || `${config.projectId}.firebaseapp.com`,
+            NEXT_PUBLIC_FIREBASE_PROJECT_ID: config.projectId,
+            NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: config.storageBucket,
+            NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: config.messagingSenderId,
+            NEXT_PUBLIC_FIREBASE_APP_ID: config.appId,
+          };
+          for (const [key, value] of Object.entries(required)) {
+            if (!value || typeof value !== 'string' || !value.trim()) throw new Error(`FIREBASE_CLIENT_CONFIG_MISSING:${key}`);
+            fs.appendFileSync(process.argv[3], `${key}=${value.trim()}\n`);
+          }
+          fs.appendFileSync(process.argv[3], `ADMIN_USE_ADC=true\nGCLOUD_PROJECT=${config.projectId}\nGOOGLE_CLOUD_PROJECT=${config.projectId}\n`);
+          NODE
+
+      - name: Deploy framework-aware Hosting atomically
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/deploy-hosting-cutover.sh
+
+      - name: Verify Enterprise 1000 production runtime and live surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          FUNCTIONS_JSON="${RUNNER_TEMP}/firebase-functions.json"
+          firebase functions:list --project "${FIREBASE_PROJECT}" --json > "${FUNCTIONS_JSON}"
+          grep -q 'sealCbamReport' "${FUNCTIONS_JSON}"
+          node scripts/verify-live-next-assets.mjs "${LIVE_BASE_URL}"
+          curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/" >/dev/null
+          curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/login" >/dev/null
+          API_STATUS="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 30 -X POST "${LIVE_BASE_URL}/api/qa/reconcile-teb232" -H 'content-type: application/json' --data '{}')"
+          if [[ "${API_STATUS}" != "401" && "${API_STATUS}" != "403" ]]; then
+            printf 'Unexpected unauthenticated reconcile route status: %s\n' "${API_STATUS}"
+            exit 1
+          fi
+          {
+            printf '%s\n' '## Enterprise 1000 production deployment PASS'
+            printf '%s\n' "- deployed exact application SHA: ${TARGET_APP_SHA}"
+            printf '%s\n' "- Firebase project: ${FIREBASE_PROJECT}"
+            printf '%s\n' "- live URL: ${LIVE_BASE_URL}"
+            printf '%s\n' '- Enterprise 1000 mandate guard PASS'
+            printf '%s\n' '- English-only and HIGH/CRITICAL production dependency gates PASS'
+            printf '%s\n' '- sealCbamReport targeted deploy PASS'
+            printf '%s\n' '- framework-aware Hosting atomic deploy PASS'
+            printf '%s\n' '- live Next.js asset integrity and public-route health PASS'
+            printf '%s\n' '- reconcile API remains authentication-protected'
+          } >> "${GITHUB_STEP_SUMMARY}"
