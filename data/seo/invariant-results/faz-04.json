@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "artifact": "invariant-results/faz-04",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-09T21:18:00Z",
+    "generatorScript": "scripts/seo/crawl-rendered.ts",
+    "inputWindow": {
+      "start": null,
+      "end": null
+    },
+    "confidence": "medium",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": [
+      "2025-09-11:num100-removal"
+    ]
+  },
+  "data": {
+    "phase": "faz-04",
+    "codeScopeComplete": true,
+    "results": [
+      {
+        "id": "INV-4.1",
+        "severity": "BLOCK",
+        "status": "PASS",
+        "negativeTestPassed": true,
+        "evidence": "Exact-head production build is crawled as raw HTTP HTML and, in Phase-04 CI, with Chromium after hydration across critical commercial/authority routes. Title, description and H1 parity are required; static public route coverage against the runtime SEO registry and current-price SSOT visibility are also fail-closed."
+      },
+      {
+        "id": "INV-4.2",
+        "severity": "BLOCK",
+        "status": "PASS",
+        "negativeTestPassed": true,
+        "evidence": "Raw and Chromium-hydrated canonical URLs and complete hreflang sets must be byte-equivalent on critical routes. The current English-only site may legitimately have an empty hreflang set; hydration may not invent one."
+      },
+      {
+        "id": "INV-4.3",
+        "severity": "WARN",
+        "status": "SKIP_NO_DATA",
+        "evidence": "[Eksik_veri] Real-user INP p75 field telemetry is unavailable. Browser parity is laboratory correctness evidence and is not misrepresented as field CWV measurement."
+      },
+      {
+        "id": "INV-4.4",
+        "severity": "INFO",
+        "status": "SKIP_NO_DATA",
+        "evidence": "[Eksik_veri] Soft-navigation INP telemetry requires production user measurement data unavailable to repository code."
+      }
+    ],
+    "commercialCorrections": [
+      "Product visible price copy derives from CANONICAL_PRICING",
+      "Pricing FAQ derives from CANONICAL_PRICING",
+      "Pricing SEO registry metadata derives from CANONICAL_PRICING",
+      "Obsolete 149 fallback acceptance removed from rendered price validation",
+      "Product classification public page added to runtime SEO registry with factual 2026-08-04 lastmod"
+    ]
+  }
+}
