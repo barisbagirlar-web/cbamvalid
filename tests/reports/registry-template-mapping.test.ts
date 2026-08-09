@@ -9,6 +9,7 @@ import {
   REGISTRY_TEMPLATE_MAPPING_DATASET_NAME,
   buildRegistryTemplateMapping,
   buildRegistryTemplateMappingDataset,
+  buildRegistrySubmissionPreparationXml,
 } from "../../functions/src/cbam/registry/registry-template-mapping";
 import { createVerifierGradeCase } from "../fixtures/verifier-grade-case";
 import { FIXTURE_REPORT_ID, FIXTURE_PACKAGE_CODE, FIXTURE_GENERATED_AT } from "../fixtures/verifier-grade-case";
@@ -113,5 +114,58 @@ describe("FAZ 12 registry template mapping dataset", () => {
     expect(allSheetXml).toContain("REG-OP-LEGAL-NAME");
     expect(allSheetXml).toContain("COMPLETE_OPERATOR");
     expect(allSheetXml).toContain("PENDING_VERIFIER");
+  }, 30_000);
+
+  it("builds well-formed Registry submission preparation XML that never claims official status", () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    const xml = buildRegistrySubmissionPreparationXml(caseData, "2026-07-31T00:00:00.000Z");
+    expect(xml).toContain("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+    expect(xml).toContain("<CBAMRegistrySubmissionPreparation");
+    expect(xml).toContain("OfficialRegistryXml>false</OfficialRegistryXml>");
+    expect(xml).toContain("not an official European Commission CBAM Registry submission file");
+    expect(xml).toContain("<Section name=\"Operator\">");
+    expect(xml).toContain("<Section name=\"Installation\">");
+    expect(xml).toContain("<Section name=\"Goods\">");
+    expect(xml).toContain("<Section name=\"Verifier\">");
+    expect(xml).toContain("registryFieldId=\"REG-OP-LEGAL-NAME\"");
+    expect(xml).toContain("registryFieldId=\"REG-VER-OPINION\"");
+    // The dataset SSOT drives the XML: every section must originate from mapped fields.
+    const fields = buildRegistryTemplateMapping(caseData, "2026-07-31T00:00:00.000Z");
+    for (const field of fields) {
+      expect(xml).toContain(`registryFieldId="${field.registryFieldId}"`);
+    }
+  });
+
+  it("embeds the Registry submission preparation XML inside the sealed package under Supporting_Evidence", async () => {
+    const caseData = AuditReadyCaseSchema.parse(createVerifierGradeCase());
+    const controls = runQualityControls(caseData);
+    const calculation = performDossierCalculations(caseData);
+    const { buildUnsignedVerifierArtifacts } = await import("../../functions/src/cbam/report/verifier-package-builder");
+    const artifacts = await buildUnsignedVerifierArtifacts({
+      caseData,
+      controls,
+      calculation,
+      reportId: FIXTURE_REPORT_ID,
+      packageCode: FIXTURE_PACKAGE_CODE,
+      releaseVersion: 1,
+      generatedAt: FIXTURE_GENERATED_AT,
+      evidenceFiles: [],
+      assessmentContext: {
+        generatedAt: FIXTURE_GENERATED_AT,
+        assessmentTimestamp: FIXTURE_GENERATED_AT,
+        reportId: FIXTURE_REPORT_ID,
+        packageCode: FIXTURE_PACKAGE_CODE,
+        releaseVersion: 1,
+        rulesetVersion: "test",
+        productCode: "pack_premium_dossier_v5",
+        releaseContractVersion: 5,
+      },
+    });
+    const xmlArtifact = artifacts.find((item) => item.path === "Supporting_Evidence/CBAM Registry Submission Preparation.xml");
+    expect(xmlArtifact).toBeDefined();
+    expect(xmlArtifact!.mediaType).toBe("application/xml");
+    const xml = xmlArtifact!.bytes.toString("utf8");
+    expect(xml).toContain("<CBAMRegistrySubmissionPreparation");
+    expect(xml).toContain("OfficialRegistryXml>false</OfficialRegistryXml>");
   }, 30_000);
 });
