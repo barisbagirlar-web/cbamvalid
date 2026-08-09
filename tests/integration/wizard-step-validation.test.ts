@@ -333,6 +333,7 @@ describe("wizard step validation", () => {
       "precursors.0.indirectEmissions",
       "carbonPriceRecords.0.amountPaid",
       "carbonPriceRecords.0.applicableEmissions",
+      "carbonPriceRecords.0.eligibleCertificateReduction",
     ]) {
       expect(values).toContain(required);
     }

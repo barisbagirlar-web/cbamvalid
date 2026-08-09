@@ -140,6 +140,26 @@ export const fieldHelpData = {
     evidence: "Carbon-price assessment and calculation tying payment to the covered emissions.",
     format: "Non-negative tCO2e; it must reconcile to the payment evidence.",
   },
+  carbonPriceEligibleCertificateReduction: {
+    source: "Enter the certificate/emissions-equivalent quantity eligible for the carbon-price deduction under Art. 9(2).",
+    evidence: "Certificate register, official carbon-price assessment or verifier-accepted conversion record.",
+    format: "Non-negative tCO2e; must never exceed the applicable emissions of the same record.",
+  },
+  carbonPriceRebateInformation: {
+    source: "Describe any rebate, refund or compensation that reduces the carbon price actually paid.",
+    evidence: "Rebate/refund decision or official compensation record.",
+    format: "Free text; if none was claimed, leave empty.",
+  },
+  carbonPriceConversionMethod: {
+    source: "Describe the method used to convert the paid amount into the certificate-equivalent quantity.",
+    evidence: "Official exchange or conversion rule applied by the carbon-pricing authority.",
+    format: "Free text describing the conversion basis.",
+  },
+  carbonPriceIndependentCertification: {
+    source: "Optionally select evidence of independent certification of the certificate-equivalent reduction.",
+    evidence: "Independent verification statement or third-party certification report.",
+    format: "Select an uploaded evidence file, or leave empty.",
+  },
   carbonPriceCurrency: {
     source: "Use the currency shown on the official payment record.",
     evidence: "Payment receipt or official carbon-price assessment.",

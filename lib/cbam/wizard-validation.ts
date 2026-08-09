@@ -245,6 +245,7 @@ const STEP_FIELD_SPECS: WizardFieldSpec[][] = [
   [
     { fieldPath: "carbonPriceRecords.*.amountPaid", label: "Carbon price amount paid", required: false, evidenceRequired: true },
     { fieldPath: "carbonPriceRecords.*.applicableEmissions", label: "Carbon price applicable emissions", required: false, evidenceRequired: true },
+    { fieldPath: "carbonPriceRecords.*.eligibleCertificateReduction", label: "Carbon price eligible certificate reduction", required: false, evidenceRequired: true },
   ],
   // Step 8 — Lock & download (no data fields; aggregated evidence posture)
   [],
@@ -830,6 +831,7 @@ export function buildEvidenceLinkOptions(caseData: AuditReadyCase): EvidenceLink
     const index = caseData.carbonPriceRecords.indexOf(record);
     push(`carbonPriceRecords.${index}.amountPaid`, `Carbon price ${index + 1} amount paid`, true);
     push(`carbonPriceRecords.${index}.applicableEmissions`, `Carbon price ${index + 1} applicable emissions`, true);
+    push(`carbonPriceRecords.${index}.eligibleCertificateReduction`, `Carbon price ${index + 1} eligible certificate reduction`, true);
     push(`carbonPriceRecords.${index}.proofOfPaymentEvidenceId`, `Carbon price ${index + 1} payment evidence`, true);
   }
 
