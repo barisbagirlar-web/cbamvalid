@@ -1,82 +1,90 @@
 # FAZ 00 TESLİM RAPORU — cbamvalid
 
-Status: **BLOCKED / MISSING_DATA (exit 3 path)**  
-Generated at: `2026-08-09T13:14:24Z`  
-Branch: `seo/faz-00-kesif-baz`  
-Base main: `6ca16a4b992249541b0191d014f0978f7a138a16`
+Status: **COMPLETED / PUBLIC_PROXY / PARTIAL**  
+Generated at: `2026-08-09T14:27:00Z`  
+Branch: `seo/faz-00-public-proxy-completion`  
+Base main: `0b0fb539d42ef68915eddc33bccfcee11e4af011`
 
 ## 1. GATE-IN Doğrulaması
 
 | Gate | Evidence | Status |
 |---|---|---|
-| V6 configuration exists | `sites/cbamvalid/seo.config.json` on main | PASS |
-| Decision ledger exists | `docs/seo/KARAR_DEFTERI.md` on main | PASS |
-| Root URL is reachable and renders public content | live `https://cbamvalid.com/` fetch succeeded on 2026-08-09 | PASS |
-| Phase write-lock is executable | Phase-aware CI merged in `6ca16a4b992249541b0191d014f0978f7a138a16`; this PR must resolve `faz-00` | PASS pending CI re-proof |
+| V6 configuration exists | `sites/cbamvalid/seo.config.json` | PASS |
+| Owner continuation authority recorded | `docs/seo/KARAR_DEFTERI.md` 2026-08-09T14:12:00Z | PASS |
+| E-35 public-proxy fallback exists | `docs/seo/MANDATE_ERRATA.md` | PASS |
+| Root URL reachable | live `https://cbamvalid.com/` public page | PASS |
+| Phase write-lock | phase-aware CI branch convention `seo/faz-00-*` | PASS pending PR CI re-proof |
+| GSC reporting dataset | unavailable | SKIP_NO_DATA |
+| GA4 reporting dataset | unavailable | SKIP_NO_DATA |
 
 ## 2. Yapılan Değişiklikler
 
-Phase 00 has not changed runtime/site files. This report and the progress ledger are the only intended writes before the missing-data stop.
+- Created `data/seo/tam_map.json` using repository truth, live-site evidence, official public sources and public SERP/competitor observations.
+- Created `data/seo/invariant-results/faz-00.json`.
+- Reclassified measurement debt from a permanent execution blocker to explicit `SKIP_NO_DATA` under owner-authorized E-35.
+- Identified ten commercial/problem-intent clusters without inventing volume, ranking, traffic or revenue metrics.
+- Identified a high-severity homepage registry/live positioning drift for Phase 01.
+- No runtime, sitemap, robots, metadata, schema, redirect or Firebase configuration was changed.
 
 ## 3. INVARIANT Sonuçları
 
-No Phase 00 invariant is declared complete in this blocked state. Measurement-dependent checks are not converted into PASS claims.
+| Code | Expected | Result | Status |
+|---|---|---|---|
+| INV-0.1 | historical-break isolation | no private pre-floor trend data used | PASS |
+| INV-0.2 | Phase 00 runtime write ban | only allowed discovery/docs artifacts changed | PASS |
+| INV-0.3 | crawl-waste evaluation | private crawl/GSC data unavailable | SKIP_NO_DATA |
+| INV-0.4 | measured cold-start state | GSC history length unavailable; `coldStart=null` | SKIP_NO_DATA |
 
-| Code | Expected | Measured | Status | Evidence |
-|---|---|---|---|---|
-| INV-0.1 | pre-2025-09-11 data must not enter trend logic | no GSC trend dataset available | SKIP_NO_DATA | measurement access missing |
-| INV-0.2 | Phase 00 must not modify runtime | branch contains only Phase 00 evidence/progress writes | PASS | GitHub PR diff + phase preflight |
-| INV-0.3 | crawl-waste threshold evaluation | not reached because Step 2 is a stop gate | SKIP_NO_DATA | AIP stop order |
-| INV-0.4 | cold-start state must be measured | `coldStart = null`; GSC history length unavailable | SKIP_NO_DATA | E-30: missing access is not cold-start evidence |
+Machine-readable evidence: `data/seo/invariant-results/faz-00.json`.
 
-## 4. Kanıtlar
+## 4. Public-Proxy Opportunity Map
 
-### Root reachability
+Highest-value observed families, without volume claims:
 
-Public homepage fetch succeeded and returned the CBAMValid public B2B software page on 2026-08-09.
+1. `cbam-software` — owner `/`; strengthen commercial category clarity.
+2. `cbam-verification-preparation` — owner `/cbam-verification-preparation`.
+3. `cbam-exporter-evidence` — owner `/cbam-exporter-evidence-requirements`.
+4. `cbam-embedded-emissions-calculation` — owner `/cbam-embedded-emissions-calculation`.
+5. `cbam-calculator` — visible public-market acquisition pattern; validate before creating any new route.
+6. `cbam-certificate-price` — current-regime information owner `/cbam-certificate-price`.
+7. `cbam-default-values` — owner `/cbam-default-values`.
+8. `cbam-cn-code-scope` — owner `/cn-code`, with Stage-1 verified detail pages.
+9. `cbam-non-eu-producer` — owner `/cbam-non-eu-producer-guide`.
+10. `cbam-2026-definitive-regime` — owner `/cbam-2026-definitive-period`.
 
-### GA4 instrumentation exists, but GA4 data access is not proven
+Full artifact: `data/seo/tam_map.json`.
 
-`components/seo/AnalyticsProvider.tsx` conditionally loads Google Analytics using `NEXT_PUBLIC_GA_MEASUREMENT_ID` after consent. This proves client instrumentation capability only. It does **not** prove GA4 Reporting/Data API access.
+## 5. Somut Kusurlar
 
-### Search Console verification exists, but GSC data access is not proven
+### D00-01 — Homepage registry/live positioning drift — HIGH
 
-The application metadata contains a Google site-verification token. This proves ownership-verification plumbing only. No Search Console data connector/API credential is available to the current execution agent.
+Live runtime metadata/visible copy positions CBAMValid as self-service emissions data software, while `lib/seo/registry.ts` retains the older homepage title/H1 contract centered on evidence validation / exporter final evidence report. Phase 01 owns registry persistence; runtime alignment is deferred to an authorized runtime phase.
 
-### Repository/tool access audit
+### D00-02 — Private measurement debt — MEDIUM
 
-Repository search found no executable GSC or GA4 reporting client, warehouse export, or CI credential contract that can supply the required Phase 00 measurement dataset. The current connected-tool set likewise exposes no Search Console or Google Analytics data connector.
+GSC/GA4 reporting data is not accessible to this execution environment. It remains an open measurement debt, not a reason to fabricate values.
 
-## 5. Negatif Test Sonuçları
+### D00-03 — Calculator-led acquisition gap — MEDIUM
 
-The merged V6 control plane already proves that `seo:coldstart-check` returns exit `3` when GSC history length is absent. Phase 00 therefore fails closed rather than guessing `coldStart`.
+Public competitors visibly use calculator-led acquisition. CBAMValid already has an authoritative deterministic calculation engine, but no dedicated public calculator landing route exists in the current SEO registry. No new route is approved merely from this observation: accuracy, cannibalization and product-boundary gates must pass first.
 
-## 6. Açık Kalanlar / Riskler
-
-- `[Eksik_veri]` Google Search Console query/page/index coverage data access.
-- `[Eksik_veri]` GA4 sessions/conversions data access.
-- `[Eksik_veri]` GSC history length needed to measure `coldStart`.
-- No `tam_map.json` is generated because Phase 00 Step 2 explicitly requires stop when GSC + GA4 access cannot be verified.
-- No crawl-budget, index-bloat, SERP-feature or economic baseline conclusion is produced after the stop gate.
-
-## 7. GATE-OUT Tablosu
+## 6. GATE-OUT
 
 | Gate-out | Status | Evidence |
 |---|---|---|
-| Baseline table | SKIP_NO_DATA | GSC/GA4 access missing |
-| Cold-start flag | SKIP_NO_DATA | must not be inferred |
-| 2026 data-ground violations list | SKIP_NO_DATA | source measurement data missing |
-| Findings queue | PASS | `docs/seo/BULGULAR_KUYRUGU.md` already exists |
+| Technical/public baseline | PASS | live route + repo registry + public-source map |
+| Commercial cluster ownership seed | PASS | `data/seo/tam_map.json` |
+| Measurement-dependent baseline | SKIP_NO_DATA | GSC/GA4 unavailable |
+| Cold-start flag | SKIP_NO_DATA | `coldStart=null`; no inference |
+| Findings queue | PASS | `docs/seo/BULGULAR_KUYRUGU.md` |
+| No fabricated metrics | PASS | artifact contains no measured-volume/ranking/uplift claims |
 
-Phase 00 is **not completed** and Phase 01 must not start.
+Under E-35, Phase 00 is complete with `partial: true` / `confidence: low`; measurement debt remains open and Phase 01 may start.
 
-## 8. Rollback Notu
+## 7. Rollback
 
-ROLLBACK: revert/delete this Phase 00 evidence PR. No runtime rollback and no deployment are required.
+ROLLBACK: revert the Phase 00 public-proxy PR. No runtime rollback or deployment is required.
 
-## 9. Onay / Eksik Veri İsteği
+## 8. Deployment
 
-DURDUM — Faz 00  
-Neden: Mandate Phase 00 Step 2 requires verified GSC + GA4 access; the current execution environment has neither reporting dataset/API access. Missing access follows exit-code `3`, not PASS and not cold-start inference.
-
-Required input to resume: provide/enable read access to the CBAMValid Google Search Console property and GA4 property, or provide exports covering the configured measurement window. Until then, Phase 01 is blocked.
+**NO DEPLOY** — Phase 00 changes only discovery/control evidence.
