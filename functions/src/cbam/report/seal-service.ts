@@ -574,7 +574,7 @@ export async function sealReport(params: {
       premiumNameVisible: isPremiumProduct ? premiumContract.premiumNameVisible : undefined,
       productTierLabel,
     });
-    const { artifacts, manifestBytes, signature, packageResult, scoreboard: sealedScoreboard } = await CommercialReportPipelineV2.executeSealingPipeline({
+    const { artifacts, manifestBytes, signature, packageResult, scoreboard: sealedScoreboard, enterprise: enterpriseModel } = await CommercialReportPipelineV2.executeSealingPipeline({
       caseData,
       calculation,
       controls,
@@ -691,8 +691,12 @@ export async function sealReport(params: {
         releaseContractVersion: 5,
         dossierSchemaVersion: "CBAMVALID-DOSSIER-5.0",
         premiumModelSemanticHash: sha256(canonical(reportRecord.calculation)),
-        operatorReadinessStatus: readinessV5.operatorStatus,
-        readinessScore: readinessV5.score,
+        operatorReadinessStatus: enterpriseModel?.status ?? readinessV5.operatorStatus,
+        readinessScore: enterpriseModel?.preparationScore ?? readinessV5.score,
+        enterpriseReadinessStatus: enterpriseModel?.status,
+        enterprisePreparationScore: enterpriseModel?.preparationScore,
+        enterpriseScoreFormula: enterpriseModel?.scoreFormula,
+        enterpriseStatusReasons: enterpriseModel?.statusReasons,
         criticalBlockerCount: readinessV5.criticalBlockerCount,
         materialFindingCount: readinessV5.materialFindingCount,
         openFindingCount: readinessV5.openFindingCount,

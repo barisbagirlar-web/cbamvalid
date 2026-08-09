@@ -83,6 +83,8 @@ export const PersistedSealedReportSchema = z.object({
 export const SealedReportViewSchema = PersistedSealedReportSchema.extend({
   packageCode: PackageCodeSchema,
   packageTopLevelComponentCount: z.number(),
+  readinessScore: z.string().optional(),
+  operatorReadinessStatus: z.string().optional(),
   automatedReadiness: z.enum([
     "READY_FOR_INDEPENDENT_VERIFICATION",
     "BLOCKED_BEFORE_INDEPENDENT_VERIFICATION",
@@ -128,8 +130,9 @@ export function toSealedReportView(value: unknown): SealedReportView {
     storedStatus === "INCOMPLETE_ASSESSMENT" ||
     storedStatus === "NOT_READY" ||
     storedStatus === "CONDITIONAL" ||
-    storedStatus === "READY_FOR_VERIFIER_REVIEW"
-    ? storedStatus === "READY_FOR_VERIFIER_REVIEW"
+    storedStatus === "READY_FOR_VERIFIER_REVIEW" ||
+    storedStatus === "READY_FOR_VERIFICATION"
+    ? storedStatus === "READY_FOR_VERIFIER_REVIEW" || storedStatus === "READY_FOR_VERIFICATION"
       ? "OPERATOR_PREPARATION_COMPLETE"
       : storedStatus
     : isV5
@@ -140,6 +143,8 @@ export function toSealedReportView(value: unknown): SealedReportView {
     ...report,
     packageCode: resolvePackageCode({ packageCode: report.packageCode, reportId: report.reportId }),
     packageTopLevelComponentCount: manifestCount !== undefined ? manifestCount : defaultCount,
+    readinessScore: typeof raw.readinessScore === "string" ? raw.readinessScore : undefined,
+    operatorReadinessStatus: storedStatus,
     automatedReadiness,
     independentVerifierStatus: "NOT_REVIEWED",
     verificationMaterialityRate: VERIFICATION_MATERIALITY_RATE,
