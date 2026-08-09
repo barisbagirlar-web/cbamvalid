@@ -582,8 +582,19 @@ function validateRegulatoryAndLlm(): GateResult[] {
       results.push(fail("G32", "/cbam-methodology still indexable — must consolidate to /methodology"));
     }
   }
-  if (!/source:\s*'\/cbam-methodology'/.test(nextCfg) || !/destination:\s*'\/methodology'/.test(nextCfg)) {
-    results.push(fail("G32", "Missing permanent redirect /cbam-methodology → /methodology"));
+  const hasMethodologySource = /source:\s*'\/cbam-methodology'/.test(nextCfg);
+  const hasRelativeMethodologyTarget = /destination:\s*'\/methodology'/.test(nextCfg);
+  const hasCanonicalOriginMethodologyTarget = /destination:\s*`\$\{canonicalOrigin\}\/methodology`/.test(nextCfg);
+  const canonicalOriginComesFromSiteConfig =
+    /require\(['"]\.\/sites\/cbamvalid\/seo\.config\.json['"]\)/.test(nextCfg) &&
+    /const\s+canonicalOrigin\s*=\s*canonicalUrl\.origin/.test(nextCfg);
+  const hasPermanentMethodologyRedirect =
+    /source:\s*'\/cbam-methodology'[\s\S]{0,500}?permanent:\s*true/.test(nextCfg);
+  const methodologyTargetValid =
+    hasRelativeMethodologyTarget ||
+    (hasCanonicalOriginMethodologyTarget && canonicalOriginComesFromSiteConfig);
+  if (!hasMethodologySource || !methodologyTargetValid || !hasPermanentMethodologyRedirect) {
+    results.push(fail("G32", "Missing permanent canonical redirect /cbam-methodology → /methodology"));
   } else if (
     !/id:\s*"decision-tree"/.test(cnHub) ||
     !/CN_CODE_SCOPE_SECTIONS/.test(cnHub) ||
