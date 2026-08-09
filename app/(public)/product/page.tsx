@@ -5,6 +5,7 @@ import { CountUp, useClassReveal } from "@/components/marketing/MarketingUi";
 import { HeroDossierNarrative } from "@/components/marketing/HeroDossierNarrative";
 import { AuthorityRail } from "@/components/marketing/AuthorityRail";
 import { AeoPageChrome } from "@/components/seo/AnswerEvidenceSection";
+import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 import { HOMEPAGE_STATS } from "@/lib/marketing/homepage-stats";
 
 const CAPABILITIES = [
@@ -63,14 +64,14 @@ export default function Page() {
               <p className="aeo-lead">
                 <strong>Direct answer:</strong>{" "}
                 <span className="speakable-answer">
-                  Start a free draft, close the blockers you can see, then pay USD 449 once to lock
-                  that working file. Same-file corrections stay included. A new file needs a new
-                  payment. You are preparing for independent review — not buying a fake “verified”
-                  stamp.
+                  Start a free draft, close the blockers you can see, then pay {CANONICAL_PRICING.currency}{" "}
+                  {CANONICAL_PRICING.displayPrice} once to lock that working file. Same-file corrections stay
+                  included. A new file needs a new payment. You are preparing for independent review — not
+                  buying a fake “verified” stamp.
                 </span>
               </p>
               <p className="price-line">
-                USD 449 per working file at lock.{" "}
+                {CANONICAL_PRICING.currency} {CANONICAL_PRICING.displayPrice} per working file at lock.{" "}
                 <span>No subscription. Drafts free. Same-file corrections included.</span>
               </p>
               <div className="hero-ctas">
@@ -304,8 +305,8 @@ export default function Page() {
             Build your first case <span className="serif-i">free of charge</span>
           </h2>
           <p>
-            Draft free. Pay USD 449 once to lock this working file — same-file corrections included,
-            no subscription. A new file needs a new payment.
+            Draft free. Pay {CANONICAL_PRICING.currency} {CANONICAL_PRICING.displayPrice} once to lock this
+            working file — same-file corrections included, no subscription. A new file needs a new payment.
           </p>
           <a className="btn btn-primary btn-lg" href="/register?next=/cases/new">
             Start Free Draft <span className="arr">→</span>
