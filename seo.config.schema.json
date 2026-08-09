@@ -54,7 +54,7 @@
         "consentTrackingRequired", "concentrationWarnPct", "divestPendingMaxDays", "programmaticIndexMinPct", "programmaticEvalDays",
         "brandSerpOwnershipWarnPct", "crawlWasteWarnPct", "orphanPageWarnPct", "anchorConcentrationWarnPct", "cohortIndexWarnPct",
         "redirectCapacityWarnPct", "productionCostMissingWarnPct", "programmaticShareWarnPct", "contentDebtWarnPct", "sitemapUrlLimit",
-        "incrementalityMinDays", "calibrationMaxAgeDays", "calibrationMinSample", "calibrationMinRho", "croMinWeeks",
+        "incrementalityMinDays", "coldStartMinDataDays", "calibrationMaxAgeDays", "calibrationMinSample", "calibrationMinRho", "croMinWeeks",
         "consentValidationMaxAgeDays", "decisionEscalationDays", "programmaticReviewSampleMin", "programmaticPilotMinPages",
         "programmaticPilotMaxPages", "growthCoverageNewPct", "growthCoverageStrengthenPct", "contentLoopObservationDays",
         "toolLoopObservationDays", "ugcLoopObservationDays", "paybackCalibrationDays", "migrationMonitoringHours", "portfolioMinHistoryMonths",
