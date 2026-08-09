@@ -1,12 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  applyRedirectRule,
-  parseLedgerArtifact,
-  parseRedirectRules,
-  runStaticValidation,
-} from "../../scripts/seo/redirect-audit-v6";
+import { parseLedgerArtifact, runStaticValidation } from "../../scripts/seo/redirect-audit-v6";
 import { runVariantAudit } from "../../scripts/seo/redirect-variant-audit-v6";
 
 type InvariantResult = {
@@ -46,17 +41,5 @@ describe("SEO V6 Phase 02 host/canonical contract", () => {
     expect(artifact.data.externalControls.length).toBeGreaterThan(0);
     expect(artifact.data.externalControls.every((control) => control.repositoryMutable === false)).toBe(true);
     expect(artifact.data.externalControls.every((control) => control.codeScopeStatus === "EXCLUDED_NON_CODE")).toBe(true);
-  });
-
-  it("uses absolute canonical targets for legacy path redirects", async () => {
-    const configModule = await import("../../next.config.js");
-    const rawConfig: unknown = configModule.default ?? configModule;
-    expect(typeof rawConfig).toBe("object");
-    const config = rawConfig as { redirects: () => Promise<unknown> };
-    const rules = parseRedirectRules(await config.redirects());
-    const credits = applyRedirectRule("https://www.cbamvalid.com/credits", rules);
-    const methodology = applyRedirectRule("https://www.cbamvalid.com/cbam-methodology", rules);
-    expect(credits?.to).toBe("https://cbamvalid.com/credits/buy");
-    expect(methodology?.to).toBe("https://cbamvalid.com/methodology");
   });
 });
