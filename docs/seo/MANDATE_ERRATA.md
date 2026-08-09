@@ -134,6 +134,14 @@ Permanent correction: add `tests/conformance/**` to `faz-02.writes`. This is lim
 
 Permanent correction: add only `scripts/seo/validate-all.ts` to `faz-02.writes` so Phase 02 can update G32 to accept the configured canonical-origin absolute target while retaining the existing relative target as a legacy-compatible accepted form if encountered. The gate must continue to require the exact `/cbam-methodology` source and a permanent redirect; it may not be weakened to arbitrary destinations.
 
+## E-39 — FUTURE PHASE CONTRACTS OMIT MANDATORY BLOCK NEGATIVE-FIXTURE WRITES
+
+[Kesin] AIP-08 and C-09 require every completed-phase BLOCK invariant to have executable negative coverage. `data/seo/invariants.json` assigns Phase-specific fixture paths under `tests/conformance/**`, but multiple installed phase contracts omitted that path. Phase 03 was the first immediate failure: INV-3.1, INV-3.2, INV-3.3 and INV-3.4a all require new `tests/conformance/inv-3-*.test.ts` files, while `faz-03.writes` did not authorize them.
+
+[Kesin] The same mechanical defect existed prospectively for Phases 07, 08, 09, 10, 12, 13, 16, 17 and 19, each of which contains at least one BLOCK invariant with a declared `tests/conformance/**` negative fixture.
+
+Permanent correction: add `tests/conformance/**` to every affected future phase contract now, rather than repeating one-off bootstrap repairs later. The permission is limited by the active phase write lock and does not authorize application/runtime changes. This removes a systemic execution blocker while preserving AIP-03 isolation.
+
 ## Decision record
 
 These corrections preserve the source mandate's intent: stricter write isolation, machine-verifiable evidence, no invented data, no unnecessary deployment and no weakening of any legal/ethical restriction.
