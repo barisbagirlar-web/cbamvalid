@@ -4,10 +4,15 @@ import { createHash } from "node:crypto";
 import { adminDb, getAdminStorageBucket } from "@/lib/firebase/admin";
 import { AuditReadyCaseSchema } from "../../../functions/src/cbam/schema";
 import { assessCaseReadiness } from "../../../functions/src/cbam/validation/readiness-assessor";
-import type { FourDossierKey } from "../../../tests/fixtures/four-dossiers";
+import {
+  FOUR_DOSSIER_KEYS,
+  type FourDossierKey,
+} from "../../../tests/fixtures/four-dossiers";
 import {
   TEB232_EMAIL,
+  TEB232_REFRESH_SET,
   TEB232_UID,
+  teb232CaseId,
 } from "../../../scripts/refresh-teb232-four-complete-cases";
 import {
   TEB232_TARGET_CASE_ID,
@@ -52,6 +57,10 @@ export type Teb232AllDraftsPrepareResult = {
   evidenceAssurance: 100;
 };
 
+const CANONICAL_CASE_KEY_BY_ID = new Map<string, FourDossierKey>(
+  FOUR_DOSSIER_KEYS.map((key) => [teb232CaseId(key), key])
+);
+
 function assertIdentity(identity: Identity): void {
   if (
     identity.authenticatedUid !== TEB232_UID ||
@@ -95,6 +104,32 @@ async function evidenceFilesAreValid(
   return true;
 }
 
+async function parsedCaseIsSealReady(
+  bucket: AdminBucket,
+  caseId: string,
+  stored: Record<string, unknown>
+): Promise<boolean> {
+  try {
+    const parsed = AuditReadyCaseSchema.parse({
+      ...((stored.data || {}) as Record<string, unknown>),
+      caseId,
+      ownerId: TEB232_UID,
+    });
+    const readiness = assessCaseReadiness(parsed);
+    if (
+      readiness.isEligibleForSealing !== true ||
+      readiness.completenessPercentage !== 100 ||
+      readiness.criticalBlockers.length !== 0 ||
+      readiness.allGaps.length !== 0
+    ) {
+      return false;
+    }
+    return evidenceFilesAreValid(bucket, parsed);
+  } catch {
+    return false;
+  }
+}
+
 async function currentDraftIsHealthy(
   bucket: AdminBucket,
   caseId: string,
@@ -113,19 +148,24 @@ async function currentDraftIsHealthy(
       ownerId: TEB232_UID,
     });
     if (!hasTeb232DraftPreparedMarker(parsed)) return false;
-    const readiness = assessCaseReadiness(parsed);
-    if (
-      readiness.isEligibleForSealing !== true ||
-      readiness.completenessPercentage !== 100 ||
-      readiness.criticalBlockers.length !== 0 ||
-      readiness.allGaps.length !== 0
-    ) {
-      return false;
-    }
-    return evidenceFilesAreValid(bucket, parsed);
+    return parsedCaseIsSealReady(bucket, caseId, stored);
   } catch {
     return false;
   }
+}
+
+async function currentCanonicalIsHealthy(
+  bucket: AdminBucket,
+  caseId: string,
+  stored: Record<string, unknown>,
+  fixtureKey: FourDossierKey
+): Promise<boolean> {
+  return (
+    stored.uid === TEB232_UID &&
+    stored.refreshSet === TEB232_REFRESH_SET &&
+    stored.sectorKey === fixtureKey &&
+    await parsedCaseIsSealReady(bucket, caseId, stored)
+  );
 }
 
 async function captureFiles(
@@ -202,8 +242,31 @@ export async function prepareTeb232DraftCaseForSeal(params: Identity & {
     throw new Error("TEB232_DRAFT_CASE_SEAL_IN_PROGRESS");
   }
 
-  const fixtureKey = inferTeb232FixtureKey(stored.data);
-  if (await currentDraftIsHealthy(bucket, params.targetCaseId, stored)) {
+  const canonicalFixtureKey = CANONICAL_CASE_KEY_BY_ID.get(params.targetCaseId);
+  const fixtureKey = canonicalFixtureKey || inferTeb232FixtureKey(stored.data);
+
+  if (
+    canonicalFixtureKey &&
+    await currentCanonicalIsHealthy(
+      bucket,
+      params.targetCaseId,
+      stored,
+      canonicalFixtureKey
+    )
+  ) {
+    return {
+      changed: false,
+      caseId: params.targetCaseId,
+      fixtureKey,
+      operatorPreparation: 100,
+      evidenceAssurance: 100,
+    };
+  }
+
+  if (
+    !canonicalFixtureKey &&
+    await currentDraftIsHealthy(bucket, params.targetCaseId, stored)
+  ) {
     return {
       changed: false,
       caseId: params.targetCaseId,
@@ -278,26 +341,43 @@ export async function prepareTeb232DraftCaseForSeal(params: Identity & {
     }
 
     const now = new Date().toISOString();
-    await caseRef.set({
-      caseId: params.targetCaseId,
-      uid: TEB232_UID,
-      data: prepared.data,
-      status: "DRAFT",
-      createdAt: stored.createdAt || now,
-      updatedAt: now,
-      syntheticTest: true,
-      teb232DraftPreparationVersion: TEB232_ALL_DRAFTS_PREPARATION_VERSION,
-      targetFixtureKey: fixtureKey,
-      testOwnerEmail: TEB232_EMAIL,
-    });
+    await caseRef.set(
+      {
+        caseId: params.targetCaseId,
+        uid: TEB232_UID,
+        data: prepared.data,
+        status: "DRAFT",
+        createdAt: stored.createdAt || now,
+        updatedAt: now,
+        syntheticTest: true,
+        teb232DraftPreparationVersion: TEB232_ALL_DRAFTS_PREPARATION_VERSION,
+        targetFixtureKey: fixtureKey,
+        testOwnerEmail: TEB232_EMAIL,
+        ...(canonicalFixtureKey
+          ? {
+              refreshSet: TEB232_REFRESH_SET,
+              sectorKey: canonicalFixtureKey,
+            }
+          : {}),
+      },
+      { merge: true }
+    );
 
     const readback = await caseRef.get();
     const readbackStored = (readback.data() || {}) as Record<string, unknown>;
-    if (!(await currentDraftIsHealthy(
-      bucket,
-      params.targetCaseId,
-      readbackStored
-    ))) {
+    const healthy = canonicalFixtureKey
+      ? await currentCanonicalIsHealthy(
+          bucket,
+          params.targetCaseId,
+          readbackStored,
+          canonicalFixtureKey
+        )
+      : await currentDraftIsHealthy(
+          bucket,
+          params.targetCaseId,
+          readbackStored
+        );
+    if (!healthy) {
       throw new Error(
         `TEB232_DRAFT_POSTWRITE_VERIFICATION_FAILED:${params.targetCaseId}`
       );
@@ -336,6 +416,10 @@ export async function prepareAllTeb232DraftCasesForSeal(
     const status = String(stored.status || "DRAFT").toUpperCase();
     if (status !== "DRAFT") {
       skippedNonDraftCaseIds.push(caseId);
+      continue;
+    }
+    if (CANONICAL_CASE_KEY_BY_ID.has(caseId)) {
+      alreadyReadyDraftCaseIds.push(caseId);
       continue;
     }
 
