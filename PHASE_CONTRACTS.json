@@ -1,105 +1,27 @@
 {
   "schemaVersion": "6.1",
   "bootstrap": {
-    "writes": [
-      "docs/seo/MANDATE.md",
-      "docs/seo/MANDATE_ERRATA.md",
-      "docs/seo/KARAR_DEFTERI.md",
-      "docs/seo/BULGULAR_KUYRUGU.md",
-      "docs/seo/YORUM_KAYDI.md",
-      "docs/seo/YETKI_IHLALI.md",
-      "docs/seo/PROGRESS.md",
-      "seo.config.defaults.json",
-      "seo.config.schema.json",
-      "sites/cbamvalid/seo.config.json",
-      "PHASE_CONTRACTS.json",
-      "data/seo/invariants.json",
-      "scripts/seo/preflight.ts",
-      "scripts/seo/coldstart-check.ts",
-      "tests/conformance/**",
-      ".github/workflows/seo-conformance.yml",
-      "package.json"
-    ],
+    "writes": ["docs/seo/MANDATE.md", "docs/seo/MANDATE_ERRATA.md", "docs/seo/KARAR_DEFTERI.md", "docs/seo/BULGULAR_KUYRUGU.md", "docs/seo/YORUM_KAYDI.md", "docs/seo/YETKI_IHLALI.md", "docs/seo/PROGRESS.md", "seo.config.defaults.json", "seo.config.schema.json", "sites/cbamvalid/seo.config.json", "PHASE_CONTRACTS.json", "data/seo/invariants.json", "scripts/seo/preflight.ts", "scripts/seo/coldstart-check.ts", "tests/conformance/**", ".github/workflows/seo-conformance.yml", "package.json"],
     "forbidsWrites": ["app/**", "components/**", "lib/**", "public/**", "firebase.json", "functions/**"]
   },
-  "faz-00": {
-    "writes": ["data/seo/tam_map.json", "data/seo/invariant-results/faz-00.json", "docs/seo/raporlar/faz00_baz.md", "docs/seo/BULGULAR_KUYRUGU.md", "docs/seo/PROGRESS.md"],
-    "forbidsWrites": ["app/**", "components/**", "lib/**", "public/**", "firebase.json", "functions/**", "data/seo/registry/**"]
-  },
-  "faz-01": {
-    "writes": ["data/seo/registry/**", "scripts/seo/registry-*.ts", "tests/conformance/**", "data/seo/invariant-results/faz-01.json", "docs/seo/raporlar/faz01_*.md", "docs/seo/PROGRESS.md"],
-    "forbidsWrites": ["app/**", "components/**", "lib/seo/**", "public/**", "firebase.json"]
-  },
-  "faz-02": {
-    "writes": ["data/seo/redirects.json", "scripts/seo/redirect-*.ts", "scripts/seo/validate-all.ts", "tests/conformance/**", "firebase.json", "next.config.js", "data/seo/invariant-results/faz-02.json", "docs/seo/raporlar/faz02_*.md", "docs/seo/PROGRESS.md"],
-    "forbidsWrites": ["data/seo/registry/**", "app/(public)/**", "components/**", "lib/seo/**"]
-  },
-  "faz-03": {
-    "writes": ["app/sitemap*.ts", "app/robots.ts", "public/robots.txt", "data/seo/parameter_decisions.json", "scripts/seo/sitemap-*.ts", "tests/conformance/**", "data/seo/invariant-results/faz-03.json", "docs/seo/raporlar/faz03_*.md", "docs/seo/PROGRESS.md"],
-    "forbidsWrites": ["data/seo/registry/**"]
-  },
-  "faz-04": {
-    "writes": ["scripts/seo/crawl-rendered.ts", "scripts/seo/run-rendered-gate.sh", "tests/conformance/**", "app/(public)/**", "components/seo/**", "lib/seo/**", "data/seo/invariant-results/faz-04.json", "docs/seo/raporlar/faz04_*.md", "docs/seo/PROGRESS.md"],
-    "forbidsWrites": ["data/seo/registry/**"]
-  },
-  "faz-05": {
-    "writes": ["data/seo/content_assets.json", "data/seo/data_asset_plan.json", "scripts/seo/content-*.ts", "tests/conformance/**", "app/(public)/**", "components/marketing/**", "lib/seo/**", "data/seo/invariant-results/faz-05.json", "docs/seo/raporlar/faz05_*.md", "docs/seo/PROGRESS.md", "docs/seo/KARAR_DEFTERI.md"],
-    "forbidsWrites": ["data/seo/registry/**"]
-  },
-  "faz-06": {
-    "writes": ["lib/seo/schema.ts", "lib/seo/claims.ts", "components/seo/**", "app/(public)/**", "tests/conformance/**", "data/seo/invariant-results/faz-06.json", "docs/seo/raporlar/faz06_*.md", "docs/seo/PROGRESS.md"],
-    "forbidsWrites": ["data/seo/registry/**"]
-  },
-  "faz-07": {
-    "writes": ["scripts/seo/link-*.ts", "scripts/seo/cwv-*.ts", "tests/conformance/**", "app/(public)/**", "components/**", "public/assets/**", "lib/seo/**", "data/seo/link_equity.json", "data/seo/invariant-results/faz-07.json", "docs/seo/raporlar/faz07_*.md", "docs/seo/PROGRESS.md"],
-    "forbidsWrites": ["data/seo/registry/**"]
-  },
-  "faz-08": {
-    "writes": ["scripts/seo/crawl-*.ts", "scripts/seo/bot-*.ts", "tests/conformance/**", "app/robots.ts", "public/robots.txt", "data/seo/crawl_economy.json", "data/seo/slo_history.json", "data/seo/invariant-results/faz-08.json", "docs/seo/raporlar/faz08_*.md", "docs/seo/PROGRESS.md", "docs/seo/KARAR_DEFTERI.md"],
-    "forbidsWrites": ["data/seo/registry/**"]
-  },
-  "faz-09": {
-    "writes": ["scripts/seo/warehouse-*.ts", "scripts/seo/seo-pnl.ts", "tests/conformance/**", "data/seo/pnl.json", "data/seo/warehouse/**", "data/seo/invariant-results/faz-09.json", "docs/seo/raporlar/faz09_*.md", "docs/seo/PROGRESS.md"],
-    "forbidsWrites": ["app/**", "components/**", "public/**", "data/seo/registry/**"]
-  },
-  "faz-10": {
-    "writes": ["docs/seo/runbooks/**", "docs/seo/KARAR_DEFTERI.md", "tests/conformance/**", "data/seo/invariant-results/faz-10.json", "docs/seo/raporlar/faz10_*.md", "docs/seo/PROGRESS.md"],
-    "forbidsWrites": ["app/**", "components/**", "public/**", "firebase.json", "data/seo/registry/**"]
-  },
-  "faz-11": {
-    "writes": ["data/seo/kac/**", "scripts/seo/kac-*.ts", "tests/conformance/**", "docs/seo/KARAR_DEFTERI.md", "data/seo/invariant-results/faz-11.json", "docs/seo/raporlar/faz11_*.md", "docs/seo/PROGRESS.md"],
-    "forbidsWrites": ["public/**", "app/**", "components/**", "lib/**", "data/seo/registry/**"]
-  },
-  "faz-12": {
-    "writes": ["data/seo/slo_history.json", "scripts/seo/seo-slo-check.ts", "tests/conformance/**", ".github/workflows/seo-sre.yml", "data/seo/invariant-results/faz-12.json", "docs/seo/raporlar/faz12_*.md", "docs/seo/PROGRESS.md", "docs/seo/KARAR_DEFTERI.md"],
-    "forbidsWrites": ["data/seo/registry/**"]
-  },
-  "faz-13": {
-    "writes": ["data/seo/linkable_assets.json", "data/seo/brand_demand.json", "data/seo/backlink_audit.json", "scripts/seo/audit-*.ts", "scripts/seo/track-mentions.ts", "tests/conformance/**", "docs/seo/KARAR_DEFTERI.md", "data/seo/invariant-results/faz-13.json", "docs/seo/raporlar/faz13_*.md", "docs/seo/PROGRESS.md"],
-    "forbidsWrites": ["public/**", "data/seo/registry/**"]
-  },
-  "faz-14": {
-    "writes": ["data/seo/cro_experiments.json", "scripts/seo/cro-*.ts", "tests/conformance/**", "app/(public)/**", "components/marketing/**", "docs/seo/KARAR_DEFTERI.md", "data/seo/invariant-results/faz-14.json", "docs/seo/raporlar/faz14_*.md", "docs/seo/PROGRESS.md"],
-    "forbidsWrites": ["data/seo/registry/**"]
-  },
-  "faz-15": {
-    "writes": ["scripts/seo/audit-vertical-*.ts", "tests/conformance/**", "app/(public)/**", "components/seo/**", "lib/seo/**", "data/seo/invariant-results/faz-15.json", "docs/seo/raporlar/faz15_*.md", "docs/seo/PROGRESS.md"],
-    "forbidsWrites": ["data/seo/registry/**"]
-  },
-  "faz-16": {
-    "writes": ["data/seo/tam_map.json", "data/seo/growth_loops.json", "scripts/seo/tam-*.ts", "tests/conformance/**", "data/seo/invariant-results/faz-16.json", "docs/seo/raporlar/faz16_*.md", "docs/seo/PROGRESS.md", "docs/seo/KARAR_DEFTERI.md"],
-    "forbidsWrites": ["data/seo/registry/**"]
-  },
-  "faz-17": {
-    "writes": ["data/seo/pnl.json", "data/seo/portfolio_board.json", "portfolio/portfolio_sites.json", "scripts/seo/*pnl*.ts", "scripts/seo/portfolio-*.ts", "tests/conformance/**", "docs/seo/KARAR_DEFTERI.md", "data/seo/invariant-results/faz-17.json", "docs/seo/raporlar/faz17_*.md", "docs/seo/PROGRESS.md"],
-    "forbidsWrites": ["public/**", "app/**", "components/**", "lib/**", "data/seo/registry/**"]
-  },
-  "faz-18": {
-    "writes": ["scripts/seo/templates.ts", "scripts/seo/programmatic-*.ts", "tests/conformance/**", "app/(public)/**", "data/seo/programmatic/**", "docs/seo/KARAR_DEFTERI.md", "data/seo/invariant-results/faz-18.json", "docs/seo/raporlar/faz18_*.md", "docs/seo/PROGRESS.md"],
-    "forbidsWrites": ["data/seo/registry/**"]
-  },
-  "faz-19": {
-    "writes": ["data/seo/valuation.json", "data/seo/calibration_report.json", "scripts/seo/valuation.ts", "scripts/seo/calibration.ts", "scripts/seo/board-report.ts", "tests/conformance/**", "docs/seo/DD_PAKETI/**", "docs/seo/raporlar/faz19_*.md", "docs/seo/PROGRESS.md", "docs/seo/KARAR_DEFTERI.md", "data/seo/invariant-results/faz-19.json"],
-    "forbidsWrites": ["public/**", "app/**", "components/**", "lib/**", "data/seo/registry/**"]
-  }
+  "faz-00": {"writes": ["data/seo/tam_map.json", "data/seo/invariant-results/faz-00.json", "docs/seo/raporlar/faz00_baz.md", "docs/seo/BULGULAR_KUYRUGU.md", "docs/seo/PROGRESS.md"], "forbidsWrites": ["app/**", "components/**", "lib/**", "public/**", "firebase.json", "functions/**", "data/seo/registry/**"]},
+  "faz-01": {"writes": ["data/seo/registry/**", "scripts/seo/registry-*.ts", "tests/conformance/**", "data/seo/invariant-results/faz-01.json", "docs/seo/raporlar/faz01_*.md", "docs/seo/PROGRESS.md"], "forbidsWrites": ["app/**", "components/**", "lib/seo/**", "public/**", "firebase.json"]},
+  "faz-02": {"writes": ["data/seo/redirects.json", "scripts/seo/redirect-*.ts", "scripts/seo/validate-all.ts", "tests/conformance/**", "firebase.json", "next.config.js", "data/seo/invariant-results/faz-02.json", "docs/seo/raporlar/faz02_*.md", "docs/seo/PROGRESS.md"], "forbidsWrites": ["data/seo/registry/**", "app/(public)/**", "components/**", "lib/seo/**"]},
+  "faz-03": {"writes": ["app/sitemap*.ts", "app/robots.ts", "public/robots.txt", "data/seo/parameter_decisions.json", "scripts/seo/sitemap-*.ts", "tests/conformance/**", "data/seo/invariant-results/faz-03.json", "docs/seo/raporlar/faz03_*.md", "docs/seo/PROGRESS.md"], "forbidsWrites": ["data/seo/registry/**"]},
+  "faz-04": {"writes": ["scripts/seo/crawl-rendered.ts", "scripts/seo/run-rendered-gate.sh", "tests/conformance/**", "app/(public)/**", "components/seo/**", "lib/seo/**", "data/seo/invariant-results/faz-04.json", "docs/seo/raporlar/faz04_*.md", "docs/seo/PROGRESS.md"], "forbidsWrites": ["data/seo/registry/**"]},
+  "faz-05": {"writes": ["data/seo/content_assets.json", "data/seo/data_asset_plan.json", "scripts/seo/content-*.ts", "tests/conformance/**", "app/(public)/**", "components/marketing/**", "lib/seo/**", "data/seo/invariant-results/faz-05.json", "docs/seo/raporlar/faz05_*.md", "docs/seo/PROGRESS.md", "docs/seo/KARAR_DEFTERI.md"], "forbidsWrites": ["data/seo/registry/**"]},
+  "faz-06": {"writes": ["lib/seo/schema.ts", "lib/seo/claims.ts", "lib/seo/breadcrumbs.ts", "lib/seo/schema-validation.ts", "components/seo/**", "app/(public)/**", "tests/conformance/**", "data/seo/invariant-results/faz-06.json", "docs/seo/raporlar/faz06_*.md", "docs/seo/PROGRESS.md"], "forbidsWrites": ["data/seo/registry/**"]},
+  "faz-07": {"writes": ["scripts/seo/link-*.ts", "scripts/seo/cwv-*.ts", "tests/conformance/**", "app/(public)/**", "components/**", "public/assets/**", "lib/seo/**", "data/seo/link_equity.json", "data/seo/invariant-results/faz-07.json", "docs/seo/raporlar/faz07_*.md", "docs/seo/PROGRESS.md"], "forbidsWrites": ["data/seo/registry/**"]},
+  "faz-08": {"writes": ["scripts/seo/crawl-*.ts", "scripts/seo/bot-*.ts", "tests/conformance/**", "app/robots.ts", "public/robots.txt", "data/seo/crawl_economy.json", "data/seo/slo_history.json", "data/seo/invariant-results/faz-08.json", "docs/seo/raporlar/faz08_*.md", "docs/seo/PROGRESS.md", "docs/seo/KARAR_DEFTERI.md"], "forbidsWrites": ["data/seo/registry/**"]},
+  "faz-09": {"writes": ["scripts/seo/warehouse-*.ts", "scripts/seo/seo-pnl.ts", "tests/conformance/**", "data/seo/pnl.json", "data/seo/warehouse/**", "data/seo/invariant-results/faz-09.json", "docs/seo/raporlar/faz09_*.md", "docs/seo/PROGRESS.md"], "forbidsWrites": ["app/**", "components/**", "public/**", "data/seo/registry/**"]},
+  "faz-10": {"writes": ["docs/seo/runbooks/**", "docs/seo/KARAR_DEFTERI.md", "tests/conformance/**", "data/seo/invariant-results/faz-10.json", "docs/seo/raporlar/faz10_*.md", "docs/seo/PROGRESS.md"], "forbidsWrites": ["app/**", "components/**", "public/**", "firebase.json", "data/seo/registry/**"]},
+  "faz-11": {"writes": ["data/seo/kac/**", "scripts/seo/kac-*.ts", "tests/conformance/**", "docs/seo/KARAR_DEFTERI.md", "data/seo/invariant-results/faz-11.json", "docs/seo/raporlar/faz11_*.md", "docs/seo/PROGRESS.md"], "forbidsWrites": ["public/**", "app/**", "components/**", "lib/**", "data/seo/registry/**"]},
+  "faz-12": {"writes": ["data/seo/slo_history.json", "scripts/seo/seo-slo-check.ts", "tests/conformance/**", ".github/workflows/seo-sre.yml", "data/seo/invariant-results/faz-12.json", "docs/seo/raporlar/faz12_*.md", "docs/seo/PROGRESS.md", "docs/seo/KARAR_DEFTERI.md"], "forbidsWrites": ["data/seo/registry/**"]},
+  "faz-13": {"writes": ["data/seo/linkable_assets.json", "data/seo/brand_demand.json", "data/seo/backlink_audit.json", "scripts/seo/audit-*.ts", "scripts/seo/track-mentions.ts", "tests/conformance/**", "docs/seo/KARAR_DEFTERI.md", "data/seo/invariant-results/faz-13.json", "docs/seo/raporlar/faz13_*.md", "docs/seo/PROGRESS.md"], "forbidsWrites": ["public/**", "data/seo/registry/**"]},
+  "faz-14": {"writes": ["data/seo/cro_experiments.json", "scripts/seo/cro-*.ts", "tests/conformance/**", "app/(public)/**", "components/marketing/**", "docs/seo/KARAR_DEFTERI.md", "data/seo/invariant-results/faz-14.json", "docs/seo/raporlar/faz14_*.md", "docs/seo/PROGRESS.md"], "forbidsWrites": ["data/seo/registry/**"]},
+  "faz-15": {"writes": ["scripts/seo/audit-vertical-*.ts", "tests/conformance/**", "app/(public)/**", "components/seo/**", "lib/seo/**", "data/seo/invariant-results/faz-15.json", "docs/seo/raporlar/faz15_*.md", "docs/seo/PROGRESS.md"], "forbidsWrites": ["data/seo/registry/**"]},
+  "faz-16": {"writes": ["data/seo/tam_map.json", "data/seo/growth_loops.json", "scripts/seo/tam-*.ts", "tests/conformance/**", "data/seo/invariant-results/faz-16.json", "docs/seo/raporlar/faz16_*.md", "docs/seo/PROGRESS.md", "docs/seo/KARAR_DEFTERI.md"], "forbidsWrites": ["data/seo/registry/**"]},
+  "faz-17": {"writes": ["data/seo/pnl.json", "data/seo/portfolio_board.json", "portfolio/portfolio_sites.json", "scripts/seo/*pnl*.ts", "scripts/seo/portfolio-*.ts", "tests/conformance/**", "docs/seo/KARAR_DEFTERI.md", "data/seo/invariant-results/faz-17.json", "docs/seo/raporlar/faz17_*.md", "docs/seo/PROGRESS.md"], "forbidsWrites": ["public/**", "app/**", "components/**", "lib/**", "data/seo/registry/**"]},
+  "faz-18": {"writes": ["scripts/seo/templates.ts", "scripts/seo/programmatic-*.ts", "tests/conformance/**", "app/(public)/**", "data/seo/programmatic/**", "docs/seo/KARAR_DEFTERI.md", "data/seo/invariant-results/faz-18.json", "docs/seo/raporlar/faz18_*.md", "docs/seo/PROGRESS.md"], "forbidsWrites": ["data/seo/registry/**"]},
+  "faz-19": {"writes": ["data/seo/valuation.json", "data/seo/calibration_report.json", "scripts/seo/valuation.ts", "scripts/seo/calibration.ts", "scripts/seo/board-report.ts", "tests/conformance/**", "docs/seo/DD_PAKETI/**", "docs/seo/raporlar/faz19_*.md", "docs/seo/PROGRESS.md", "docs/seo/KARAR_DEFTERI.md", "data/seo/invariant-results/faz-19.json"], "forbidsWrites": ["public/**", "app/**", "components/**", "lib/**", "data/seo/registry/**"]}
 }
