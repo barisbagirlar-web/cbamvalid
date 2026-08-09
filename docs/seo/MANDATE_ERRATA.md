@@ -86,6 +86,12 @@ Permanent correction: artifact envelope allows `coldStart: null` only while the 
 
 Permanent correction: BOOTSTRAP and pure data/control phases are merge-only. Runtime phases may deploy only after merge of the exact reviewed SHA and only when the changed runtime is not already live.
 
+## E-32 — SECRET NEGATIVE FIXTURES CAN SELF-BLOCK P-04
+
+[Kesin] The first live V6 CI run failed at P-04 because the negative conformance test contained a contiguous fake private-key marker. A correct secret scanner cannot distinguish that raw marker from an accidentally committed real marker by intent alone.
+
+Permanent correction: security scanning remains strict for all changed text files; negative fixtures construct credential-shaped markers at test runtime from non-matching source fragments. Tests therefore still prove the detector while committed source never contains a credential marker that P-04 must reject.
+
 ## Decision record
 
 These corrections preserve the source mandate's intent: stricter write isolation, machine-verifiable evidence, no invented data, no unnecessary deployment and no weakening of any legal/ethical restriction.
