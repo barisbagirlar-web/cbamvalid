@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadRegistryArtifact, validateRecords } from "../../scripts/seo/registry/validate-v6-registry";
+import { loadRegistryArtifact, validateRecords } from "../../scripts/seo/registry-validate-v6";
 
 describe("INV-1.3 negative fixture", () => {
   it("blocks cluster ownership without ownerRoute", () => {
