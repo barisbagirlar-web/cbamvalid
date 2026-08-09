@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "artifact": "invariant-results/faz-03",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-09T20:27:00Z",
+    "generatorScript": "scripts/seo/sitemap-audit-v6.ts",
+    "inputWindow": {
+      "start": null,
+      "end": null
+    },
+    "confidence": "medium",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": [
+      "2025-09-11:num100-removal"
+    ]
+  },
+  "data": {
+    "phase": "faz-03",
+    "codeScopeComplete": true,
+    "results": [
+      {
+        "id": "INV-3.1",
+        "severity": "BLOCK",
+        "status": "PASS",
+        "negativeTestPassed": true,
+        "evidence": "Sitemap entries are deterministically derived from listSitemapRoutes(), canonicalized, de-duplicated and compared byte-for-identity at URL-set level against the indexable sitemap registry projection."
+      },
+      {
+        "id": "INV-3.2",
+        "severity": "BLOCK",
+        "status": "PASS",
+        "negativeTestPassed": true,
+        "evidence": "Every sitemap URL is checked against every configured crawler disallow rule; robots declares only the canonical sitemap; public/robots.txt is generated/validated against app/robots.ts SSOT."
+      },
+      {
+        "id": "INV-3.3",
+        "severity": "BLOCK",
+        "status": "PASS",
+        "negativeTestPassed": true,
+        "evidence": "No route marked noindex in the runtime SEO registry may appear in generated sitemap entries; conflict fixture is rejected."
+      },
+      {
+        "id": "INV-3.4a",
+        "severity": "BLOCK",
+        "status": "PASS",
+        "negativeTestPassed": true,
+        "evidence": "lastModified is emitted only from factualLastModified, normalized at UTC midnight, must match the factual date exactly and may not be in the future."
+      },
+      {
+        "id": "INV-3.4b",
+        "severity": "WARN",
+        "status": "SKIP_NO_DATA",
+        "evidence": "[Eksik_veri] Private GSC cohort indexation data is unavailable; no cohort indexation percentage is fabricated."
+      },
+      {
+        "id": "INV-3.5",
+        "severity": "WARN",
+        "status": "PASS",
+        "evidence": "Nine known attribution/click parameters plus unknown parameters are explicitly path-only canonical identities and are never sitemap identities."
+      },
+      {
+        "id": "INV-3.6",
+        "severity": "INFO",
+        "status": "SKIP_NO_DATA",
+        "evidence": "[Eksik_veri] Cohort discovery/indexation SLO observation requires private measurement history not available to repository code."
+      }
+    ]
+  }
+}
