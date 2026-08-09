@@ -20,12 +20,14 @@ describe("Teb232 live reconciliation and translation-safety contract", () => {
   it("requires the exact authenticated verified Teb232 identity", () => {
     const route = read("app/api/qa/reconcile-teb232/route.ts");
     const reconciler = read("lib/cbam/qa/reconcile-teb232.ts");
+    const live = read("lib/cbam/qa/reconcile-teb232-live.ts");
     expect(route).toContain("requireFirebaseSession(request)");
     expect(route).toContain("token.email_verified === true");
     expect(route).toContain("reconcileTeb232LiveCases");
     expect(reconciler).toContain("TEB232_RECONCILE_IDENTITY_REFUSED");
-    expect(reconciler).toContain("params.authenticatedUid !== TEB232_UID");
-    expect(reconciler).toContain("params.authenticatedEmail.trim().toLowerCase() !== TEB232_EMAIL");
+    expect(live).toContain("TEB232_RECONCILE_IDENTITY_REFUSED");
+    expect(live).toContain("params.authenticatedUid !== TEB232_UID");
+    expect(live).toContain("params.authenticatedEmail.trim().toLowerCase() !== TEB232_EMAIL");
   });
 
   it("routes the controlled account away from tenant-wide admin cases", () => {
@@ -39,16 +41,21 @@ describe("Teb232 live reconciliation and translation-safety contract", () => {
     }
   });
 
-  it("removes the fifth observed legacy case through an exact allowlist path", () => {
+  it("removes only the observed obsolete legacy case while preserving additional Teb232 drafts", () => {
     const live = read("lib/cbam/qa/reconcile-teb232-live.ts");
     expect(live).toContain(
       "case_3d17c39de6e8780fceb0da2f5459455d06c62399eb91be48d83980c7f90ae9c8"
     );
-    expect(live).toContain("discoverLegacyExtraState");
-    expect(live).toContain("restore(params.db, params.bucket, state)");
+    expect(live).toContain("discoverUserDraftCaseIds");
+    expect(live).toContain("userDraftState");
+    expect(live).toContain("legacyState");
+    expect(live).toContain("await remove(params.db, userDraftState)");
+    expect(live).toContain("await restore(params.db, params.bucket, userDraftState)");
+    expect(live).toContain("prepareAllTeb232DraftCasesForSeal");
+    expect(live).not.toContain("await restore(params.db, params.bucket, legacyState);\n\n  // User-created test drafts");
   });
 
-  it("accepts the canonical four-case subset before repair and allows additional working files", () => {
+  it("accepts the canonical four-case subset and bulk-prepares additional working files", () => {
     const client = read("components/cbam/Teb232CaseReconciler.tsx");
     expect(client).toContain("EXPECTED_CASE_IDS");
     expect(client).toContain("EXPECTED_CANONICAL_CASE_COUNT = 4");
@@ -60,9 +67,11 @@ describe("Teb232 live reconciliation and translation-safety contract", () => {
     expect(client).toContain("case_a70c36b5348782cc69c7a2c9863bec28f8bb2ad8ac1bff1c6afe7a62966d4c62");
     expect(client).toContain("case_b71ffdbd980f658cd5a738437c27cce4d82546698df12fc2bf7a0bd31e9c286d");
     expect(client).toContain("case_39474ac5ffe36f8df1853df51b3038085edf457cd0561fa1e501ca8231b8b892");
-    expect(client.indexOf("getCases()"))
-      .toBeLessThan(client.indexOf('fetch("/api/qa/reconcile-teb232"'));
-    expect(client).toContain("canonical four-case subset or release entitlement");
+    expect(client).toContain("hasUserCreatedWorkingFiles");
+    expect(client).toContain("bulkPrepareIfNeeded");
+    expect(client).toContain("prepareAllDrafts: true");
+    expect(client).toContain("validateVisibleCases(visibleCases, EXPECTED_CASE_IDS)");
+    expect(client).toContain("server preserves extra drafts during canonical repair");
   });
 
   it("does not parse a 404 HTML response as JSON", () => {
@@ -74,7 +83,7 @@ describe("Teb232 live reconciliation and translation-safety contract", () => {
     expect(client).toContain("await response.text().catch");
   });
 
-  it("keeps reconciliation off new and detail routes and never blocks the workspace", () => {
+  it("keeps canonical reconciliation off new and detail routes and never blocks the workspace", () => {
     const client = read("components/cbam/Teb232CaseReconciler.tsx");
     expect(client).toContain('pathname === "/cases"');
     expect(client).not.toContain('pathname.startsWith("/cases")');
@@ -97,11 +106,15 @@ describe("Teb232 live reconciliation and translation-safety contract", () => {
 
   it("validates readiness, evidence object bytes and rollback before success", () => {
     const reconciler = read("lib/cbam/qa/reconcile-teb232.ts");
+    const draftPreparer = read("lib/cbam/qa/prepare-teb232-drafts-for-seal.ts");
     expect(reconciler).toContain("readiness.completenessPercentage !== 100");
     expect(reconciler).toContain("readiness.criticalBlockers.length !== 0");
     expect(reconciler).toContain("sha256(bytes) !== record.fileHash");
     expect(reconciler).toContain('String(metadata.contentType || "") !== record.mimeType');
     expect(reconciler).toContain("await restoreState(params.db, params.bucket, cleanupState)");
     expect(reconciler).toContain("TEB232_FINAL_STATE_INVALID");
+    expect(draftPreparer).toContain("readiness.allGaps.length !== 0");
+    expect(draftPreparer).toContain("await restoreFiles(bucket, prefix, fileBackups)");
+    expect(draftPreparer).toContain("await caseRef.set(documentBackup)");
   });
 });
