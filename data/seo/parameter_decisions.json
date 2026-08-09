@@ -1,0 +1,94 @@
+{
+  "meta": {
+    "artifact": "parameter-decisions/cbamvalid",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-09T20:24:00Z",
+    "generatorScript": "scripts/seo/sitemap-audit-v6.ts",
+    "inputWindow": {
+      "start": null,
+      "end": null
+    },
+    "confidence": "high",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": [
+      "2025-09-11:num100-removal"
+    ]
+  },
+  "data": {
+    "canonicalIdentity": "PATH_ONLY",
+    "sitemapQueryStringsAllowed": false,
+    "decisions": [
+      {
+        "parameter": "utm_source",
+        "class": "marketing_attribution",
+        "canonicalTreatment": "STRIP",
+        "indexIdentity": "NO_SEPARATE_IDENTITY",
+        "sitemapEligible": false
+      },
+      {
+        "parameter": "utm_medium",
+        "class": "marketing_attribution",
+        "canonicalTreatment": "STRIP",
+        "indexIdentity": "NO_SEPARATE_IDENTITY",
+        "sitemapEligible": false
+      },
+      {
+        "parameter": "utm_campaign",
+        "class": "marketing_attribution",
+        "canonicalTreatment": "STRIP",
+        "indexIdentity": "NO_SEPARATE_IDENTITY",
+        "sitemapEligible": false
+      },
+      {
+        "parameter": "utm_term",
+        "class": "marketing_attribution",
+        "canonicalTreatment": "STRIP",
+        "indexIdentity": "NO_SEPARATE_IDENTITY",
+        "sitemapEligible": false
+      },
+      {
+        "parameter": "utm_content",
+        "class": "marketing_attribution",
+        "canonicalTreatment": "STRIP",
+        "indexIdentity": "NO_SEPARATE_IDENTITY",
+        "sitemapEligible": false
+      },
+      {
+        "parameter": "fbclid",
+        "class": "click_identifier",
+        "canonicalTreatment": "STRIP",
+        "indexIdentity": "NO_SEPARATE_IDENTITY",
+        "sitemapEligible": false
+      },
+      {
+        "parameter": "gclid",
+        "class": "click_identifier",
+        "canonicalTreatment": "STRIP",
+        "indexIdentity": "NO_SEPARATE_IDENTITY",
+        "sitemapEligible": false
+      },
+      {
+        "parameter": "msclkid",
+        "class": "click_identifier",
+        "canonicalTreatment": "STRIP",
+        "indexIdentity": "NO_SEPARATE_IDENTITY",
+        "sitemapEligible": false
+      },
+      {
+        "parameter": "ref",
+        "class": "referral_attribution",
+        "canonicalTreatment": "STRIP",
+        "indexIdentity": "NO_SEPARATE_IDENTITY",
+        "sitemapEligible": false
+      }
+    ],
+    "unknownParameterPolicy": {
+      "canonicalTreatment": "PATH_ONLY",
+      "indexIdentity": "NO_SEPARATE_IDENTITY",
+      "sitemapEligible": false,
+      "rationale": "Current public SEO architecture exposes no facet, pagination or query-parameter content family that is intended to create a distinct search identity."
+    }
+  }
+}

@@ -2,74 +2,46 @@ import type { MetadataRoute } from "next";
 import { siteConfig } from "@/lib/site-config";
 
 /**
- * Central robots contract. Do not block /_next/static or other render assets.
- * OAI-SearchBot is explicit for ChatGPT Search; GPTBot is a separate training crawler.
+ * Public crawl policy SSOT. The static Firebase fallback is generated/validated
+ * from this contract by scripts/seo/sitemap-robots-sync-v6.ts.
+ *
+ * Do not replace /cbam/ with /cbam: public authority pages use /cbam-* and
+ * must remain crawlable.
  */
-export default function robots(): MetadataRoute.Robots {
+export const PRIVATE_ROBOTS_DISALLOW = [
+  "/dashboard/",
+  "/admin/",
+  "/api/",
+  "/cases/",
+  "/reports/",
+  "/account/",
+  "/credits/",
+  "/cbam/",
+  "/login",
+  "/register",
+] as const;
+
+export const PUBLIC_CRAWLER_USER_AGENTS = [
+  "*",
+  "OAI-SearchBot",
+  "Googlebot",
+  "GPTBot",
+  "ClaudeBot",
+  "Google-Extended",
+] as const;
+
+export function buildRobotsPolicy(): MetadataRoute.Robots {
   return {
-    rules: [
-      {
-        userAgent: "*",
-        allow: "/",
-        disallow: [
-          "/dashboard/",
-          "/admin/",
-          "/api/",
-          "/cases/",
-          "/reports/",
-          "/account/",
-          "/credits/",
-          "/cbam/",
-          "/login",
-          "/register",
-        ],
-      },
-      {
-        userAgent: "OAI-SearchBot",
-        allow: "/",
-        disallow: [
-          "/dashboard/",
-          "/admin/",
-          "/api/",
-          "/cases/",
-          "/reports/",
-          "/account/",
-          "/credits/",
-          "/cbam/",
-          "/login",
-          "/register",
-        ],
-      },
-      {
-        userAgent: "Googlebot",
-        allow: "/",
-        disallow: [
-          "/dashboard/",
-          "/admin/",
-          "/api/",
-          "/cases/",
-          "/reports/",
-          "/account/",
-          "/credits/",
-          "/cbam/",
-          "/login",
-          "/register",
-        ],
-      },
-      {
-        userAgent: "GPTBot",
-        allow: "/",
-      },
-      {
-        userAgent: "ClaudeBot",
-        allow: "/",
-      },
-      {
-        userAgent: "Google-Extended",
-        allow: "/",
-      },
-    ],
+    rules: PUBLIC_CRAWLER_USER_AGENTS.map((userAgent) => ({
+      userAgent,
+      allow: "/",
+      disallow: [...PRIVATE_ROBOTS_DISALLOW],
+    })),
     sitemap: `${siteConfig.canonicalOrigin}/sitemap.xml`,
     host: siteConfig.canonicalOrigin,
   };
+}
+
+export default function robots(): MetadataRoute.Robots {
+  return buildRobotsPolicy();
 }
