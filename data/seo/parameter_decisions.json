@@ -9,7 +9,7 @@
       "end": null
     },
     "confidence": "high",
-    "partial": false,
+    "partial": true,
     "siteId": "cbamvalid",
     "coldStart": null,
     "structuralBreaksApplied": [
