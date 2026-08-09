@@ -32,6 +32,7 @@ import {
   type CbamCaseRecord,
 } from "@/lib/functions/client";
 import { UnlockPreparationPackPanel } from "@/components/billing/UnlockPreparationPackPanel";
+import { ComplianceCalendarPanel } from "@/components/cbam/ComplianceCalendarPanel";
 import { packsUnlockableFromCredits } from "@/lib/billing/credit-contract";
 import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 import {
@@ -798,6 +799,8 @@ export default function CbamLandingPage() {
                   </ul>
                 </div>
               </div>
+
+              <ComplianceCalendarPanel />
 
               <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
                 <h4 className="font-bold text-sm uppercase tracking-wider text-muted mb-3">Resources</h4>
