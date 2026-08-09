@@ -32,6 +32,7 @@ describe("TEB232 carbon-price sealing repair", () => {
 
   it("bypasses sealed-history blocking only for the exact controlled target and still blocks PROCESSING", () => {
     const wrapper = readSource("lib/cbam/qa/prepare-teb232-target-case-for-seal.ts");
+    const generic = readSource("lib/cbam/qa/prepare-teb232-drafts-for-seal.ts");
     const route = readSource("app/api/qa/reconcile-teb232/route.ts");
 
     expect(wrapper).toContain('statuses.includes("PROCESSING")');
@@ -40,6 +41,8 @@ describe("TEB232 carbon-price sealing repair", () => {
     expect(wrapper).toContain("hasSealedHistory && !isExactControlledTarget(initialStored)");
     expect(wrapper).toContain('TARGET_ELIGIBLE_CERTIFICATE_REDUCTION = "150000"');
     expect(wrapper).toContain("assertCarbonPriceSemantics(validated, calculation)");
-    expect(route).toContain("prepareTeb232TargetCaseForSeal");
+    expect(route).toContain("prepareTeb232DraftCaseForSeal");
+    expect(generic).toContain("params.targetCaseId === TEB232_TARGET_CASE_ID");
+    expect(generic).toContain("prepareTeb232TargetCaseForSeal(params)");
   });
 });
