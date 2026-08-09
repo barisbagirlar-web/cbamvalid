@@ -97,15 +97,15 @@ main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 [data-testid
   width: 100% !important;
   min-width: 0 !important;
   justify-content: center !important;
-  border: 1px solid #0a563e !important;
+  border: 1px solid #14532d !important;
   border-radius: 14px !important;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.045)),
-    #0f6b4e !important;
+    #2d6a4f !important;
   color: #ffffff !important;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.14) inset,
-    0 10px 24px rgba(15, 107, 78, 0.22),
+    0 10px 24px rgba(45, 106, 79, 0.22),
     0 2px 5px rgba(26, 25, 21, 0.10) !important;
   font-size: 1rem !important;
   font-weight: 760 !important;
@@ -114,13 +114,13 @@ main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 [data-testid
 }
 
 main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 [data-testid="step8-primary-action"]:hover:not(:disabled) {
-  border-color: #084a36 !important;
+  border-color: #1b4332 !important;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.06)),
-    #0b5d44 !important;
+    #1b4332 !important;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.12) inset,
-    0 13px 28px rgba(11, 93, 68, 0.28),
+    0 13px 28px rgba(27, 67, 50, 0.28),
     0 3px 7px rgba(26, 25, 21, 0.12) !important;
   transform: translateY(-1px);
 }
@@ -129,16 +129,16 @@ main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 [data-testid
   transform: translateY(0);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.10) inset,
-    0 6px 16px rgba(11, 93, 68, 0.22) !important;
+    0 6px 16px rgba(27, 67, 50, 0.22) !important;
 }
 
 main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 [data-testid="step8-primary-action"]:focus-visible {
-  outline-color: rgba(15, 107, 78, 0.48) !important;
+  outline-color: rgba(45, 106, 79, 0.48) !important;
 }
 
 main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 [data-testid="step8-primary-action"]:disabled {
-  border-color: rgba(15, 107, 78, 0.48) !important;
-  background: rgba(15, 107, 78, 0.66) !important;
+  border-color: rgba(45, 106, 79, 0.48) !important;
+  background: rgba(45, 106, 79, 0.66) !important;
   color: rgba(255, 255, 255, 0.92) !important;
   box-shadow: none !important;
 }
@@ -158,20 +158,20 @@ main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 > div > div 
 
 /* Payment remains visually distinct from the final seal-ready state. */
 main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 a[data-testid="step8-primary-action"][href*="/credits/buy"] {
-  border-color: #9a6220 !important;
+  border-color: #bb6b00 !important;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(0, 0, 0, 0.04)),
-    #b97827 !important;
-  box-shadow: 0 10px 24px rgba(185, 120, 39, 0.22) !important;
+    #d4a017 !important;
+  box-shadow: 0 10px 24px rgba(212, 160, 23, 0.22) !important;
 }
 
 /* A blocked seal action is a remediation command, not a success state. */
 main:has([data-testid="step8-primary-action"]) > div.fixed.bottom-0 button[data-testid="step8-primary-action"][aria-haspopup="true"] {
-  border-color: #a24633 !important;
+  border-color: #9b2226 !important;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.04)),
-    #b4513a !important;
-  box-shadow: 0 10px 24px rgba(180, 81, 58, 0.18) !important;
+    #9b2226 !important;
+  box-shadow: 0 10px 24px rgba(155, 34, 38, 0.18) !important;
 }
 
 @media (max-width: 860px) {
