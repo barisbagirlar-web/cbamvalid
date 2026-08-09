@@ -49,7 +49,7 @@ export interface SeoPageRecord {
   linkableAsset: boolean;
 }
 
-type RegistryArtifact = {
+export type RegistryArtifact = {
   meta: {
     artifact: string;
     siteId: string;
@@ -67,16 +67,22 @@ export type RegistryValidation = {
   stats: {
     recordCount: number;
     liveRecordCount: number;
-    publicStaticRouteCount: number;
-    publicStaticGapRatePct: number;
+    expectedConcreteRouteCount: number;
+    routeGapRatePct: number;
     productionCostGapPct: number;
     templateConcentrationPct: number;
   };
 };
 
+type RegistryThresholds = {
+  productionCostMissingWarnPct: number;
+  programmaticShareWarnPct: number;
+};
+
 const ROOT = resolve(fileURLToPath(new URL("../../../", import.meta.url)));
 const PUBLIC_APP_ROOT = resolve(ROOT, "app/(public)");
 const REGISTRY_PATH = resolve(ROOT, "data/seo/registry/cbamvalid_seo_registry.json");
+const CONFIG_PATH = resolve(ROOT, "sites/cbamvalid/seo.config.json");
 const MINOR_FIELDS = [
   "conversionValueMinor",
   "firstTouchValueMinor",
@@ -103,6 +109,19 @@ function isNullableString(value: unknown): value is string | null {
 
 function isNullableNumber(value: unknown): value is number | null {
   return value === null || typeof value === "number";
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
+}
+
+function requireThresholds(): RegistryThresholds {
+  const parsed = JSON.parse(readFileSync(CONFIG_PATH, "utf8")) as unknown;
+  if (!isObject(parsed) || !isObject(parsed.thresholds)) throw new Error("SEO config thresholds missing");
+  const cost = parsed.thresholds.productionCostMissingWarnPct;
+  const template = parsed.thresholds.programmaticShareWarnPct;
+  if (!isNonNegativeInteger(cost) || !isNonNegativeInteger(template)) throw new Error("Phase 1 registry thresholds must be non-negative integers");
+  return { productionCostMissingWarnPct: cost, programmaticShareWarnPct: template };
 }
 
 export function assertRegistryWriterPhase(phase: string): string[] {
@@ -150,14 +169,15 @@ export function validateRecordShape(record: unknown, index: number): string[] {
   if (!Array.isArray(record.serpFeatureTargets) || !record.serpFeatureTargets.every((value) => typeof value === "string")) errors.push(`record[${index}] invalid serpFeatureTargets`);
   if (!isNullableString(record.canonical)) errors.push(`record[${index}] invalid canonical`);
   if (!isNullableString(record.hreflangGroup)) errors.push(`record[${index}] invalid hreflangGroup`);
-  if (!Number.isInteger(record.internalLinksIn) || (record.internalLinksIn as number) < 0) errors.push(`record[${index}] invalid internalLinksIn`);
-  if (!Number.isInteger(record.internalLinksOut) || (record.internalLinksOut as number) < 0) errors.push(`record[${index}] invalid internalLinksOut`);
+  if (!isNonNegativeInteger(record.internalLinksIn)) errors.push(`record[${index}] invalid internalLinksIn`);
+  if (!isNonNegativeInteger(record.internalLinksOut)) errors.push(`record[${index}] invalid internalLinksOut`);
   for (const metric of ["impressions28d", "clicks28d", "conversions28d"] as const) {
-    if (!isNullableNumber(record[metric]) || (typeof record[metric] === "number" && (!Number.isInteger(record[metric]) || record[metric] < 0))) errors.push(`record[${index}] invalid ${metric}`);
+    const value = record[metric];
+    if (!isNullableNumber(value) || (value !== null && !isNonNegativeInteger(value))) errors.push(`record[${index}] invalid ${metric}`);
   }
   for (const field of MINOR_FIELDS) {
     const value = record[field];
-    if (value !== null && (!Number.isInteger(value) || (value as number) < 0)) errors.push(`INV-1.2 record[${index}] ${field} must be integer minor units or null`);
+    if (value !== null && !isNonNegativeInteger(value)) errors.push(`INV-1.2 record[${index}] ${field} must be integer minor units or null`);
   }
   if (record.primaryQueryClusterId !== null && !isRoute(record.ownerRoute)) errors.push(`INV-1.3 record[${index}] cluster requires ownerRoute`);
   if (record.primaryQueryClusterId === null && record.ownerRoute !== null && !isRoute(record.ownerRoute)) errors.push(`record[${index}] invalid ownerRoute`);
@@ -170,13 +190,14 @@ export function validateRecordShape(record: unknown, index: number): string[] {
 
 export function validateRecords(
   records: SeoPageRecord[],
-  options: { expectedRoutes?: string[]; sitemapRoutes?: string[]; phase?: string } = {},
+  options: { expectedRoutes?: string[]; sitemapRoutes?: string[]; phase?: string; thresholds?: RegistryThresholds } = {},
 ): RegistryValidation {
   const blocks: string[] = [];
   const warnings: string[] = [];
   const pageIds = new Set<string>();
   const routes = new Set<string>();
   const phase = options.phase ?? "faz-01";
+  const thresholds = options.thresholds ?? requireThresholds();
 
   blocks.push(...assertRegistryWriterPhase(phase));
 
@@ -208,15 +229,19 @@ export function validateRecords(
   const liveRecords = records.filter((record) => record.status === "live");
   const costGapCount = liveRecords.filter((record) => record.productionCostMinor === null).length;
   const productionCostGapPct = liveRecords.length === 0 ? 0 : (costGapCount / liveRecords.length) * 100;
-  if (productionCostGapPct > 30) warnings.push(`INV-1.4 production cost gap ${productionCostGapPct.toFixed(2)}% > 30%; portfolio remains partial`);
+  if (productionCostGapPct > thresholds.productionCostMissingWarnPct) {
+    warnings.push(`INV-1.4 production cost gap ${productionCostGapPct.toFixed(2)}% > config threshold ${thresholds.productionCostMissingWarnPct}%; portfolio remains partial`);
+  }
 
   const templated = liveRecords.filter((record) => record.templateId !== null).length;
   const templateConcentrationPct = liveRecords.length === 0 ? 0 : (templated / liveRecords.length) * 100;
-  if (templateConcentrationPct > 50) warnings.push(`INV-1.6 template concentration ${templateConcentrationPct.toFixed(2)}% > 50%`);
+  if (templateConcentrationPct > thresholds.programmaticShareWarnPct) {
+    warnings.push(`INV-1.6 template concentration ${templateConcentrationPct.toFixed(2)}% > config threshold ${thresholds.programmaticShareWarnPct}%`);
+  }
 
-  const publicStaticRouteCount = expectedRoutes.length;
+  const expectedConcreteRouteCount = expectedRoutes.length;
   const missingCount = expectedRoutes.filter((route) => !routes.has(route)).length;
-  const publicStaticGapRatePct = publicStaticRouteCount === 0 ? 0 : (missingCount / publicStaticRouteCount) * 100;
+  const routeGapRatePct = expectedConcreteRouteCount === 0 ? 0 : (missingCount / expectedConcreteRouteCount) * 100;
 
   return {
     blocks: [...new Set(blocks)].sort(),
@@ -224,8 +249,8 @@ export function validateRecords(
     stats: {
       recordCount: records.length,
       liveRecordCount: liveRecords.length,
-      publicStaticRouteCount,
-      publicStaticGapRatePct,
+      expectedConcreteRouteCount,
+      routeGapRatePct,
       productionCostGapPct,
       templateConcentrationPct,
     },
@@ -254,8 +279,8 @@ function main(): void {
   const result = runRegistryValidation();
   console.log(`REGISTRY_RECORDS=${result.stats.recordCount}`);
   console.log(`REGISTRY_LIVE_RECORDS=${result.stats.liveRecordCount}`);
-  console.log(`REGISTRY_EXPECTED_PUBLIC_ROUTES=${result.stats.publicStaticRouteCount}`);
-  console.log(`REGISTRY_GAP_RATE_PCT=${result.stats.publicStaticGapRatePct.toFixed(2)}`);
+  console.log(`REGISTRY_EXPECTED_CONCRETE_ROUTES=${result.stats.expectedConcreteRouteCount}`);
+  console.log(`REGISTRY_GAP_RATE_PCT=${result.stats.routeGapRatePct.toFixed(2)}`);
   console.log(`REGISTRY_PRODUCTION_COST_GAP_PCT=${result.stats.productionCostGapPct.toFixed(2)}`);
   console.log(`REGISTRY_TEMPLATE_CONCENTRATION_PCT=${result.stats.templateConcentrationPct.toFixed(2)}`);
   for (const warning of result.warnings) console.warn(`WARN ${warning}`);
