@@ -142,13 +142,13 @@ Permanent correction: add only `scripts/seo/validate-all.ts` to `faz-02.writes` 
 
 Permanent correction: add `tests/conformance/**` to every affected future phase contract now, rather than repeating one-off bootstrap repairs later. The permission is limited by the active phase write lock and does not authorize application/runtime changes. This removes a systemic execution blocker while preserving AIP-03 isolation.
 
-## E-40 — PHASE 04 RENDER GATE EXISTED BUT V6 CI NEVER EXECUTED IT
+## E-40 — V6 CI DID NOT EXECUTE PHASE-SPECIFIC RUNTIME GATES
 
-[Kesin] The repository already had `scripts/seo/run-rendered-gate.sh` and `scripts/seo/crawl-rendered.ts`, but `.github/workflows/seo-conformance.yml` executed only preflight, typecheck, production build, generic release guards and Vitest conformance. A Phase-04 PR could therefore add or modify the rendered-crawl gate, record INV-4.x evidence, and still pass V6 CI without that runtime gate ever running.
+[Kesin] The V6 workflow performed preflight, typecheck, production build, generic repository guards and conformance tests, but it did not invoke the existing rendered runtime gate required by Phase 04. A Phase-04 PR could therefore contain `scripts/seo/run-rendered-gate.sh` and rendered-crawl logic while CI still marked the V6 job green without ever starting the production build or exercising the rendered page contract.
 
-[Kesin] Phase 04 contains BLOCK invariants for raw/render critical-content parity and rendered canonical/hreflang parity. Static unit fixtures are necessary but are not sufficient evidence that a production build survives browser hydration.
+[Kesin] The V6 workflow path filter also omitted runtime SEO families such as `app/**`, `components/**`, `lib/seo/**`, `public/**`, `firebase.json` and `next.config.js`. A runtime-only SEO change could therefore avoid the V6 workflow entirely when no script/data/test file changed in the same PR.
 
-Permanent correction: V6 CI now has a Phase-04-only browser-render step. For `faz-04`, it installs the already-declared Playwright Chromium runtime and executes `scripts/seo/run-rendered-gate.sh` with `SEO_RENDER_BROWSER=1`. `SEO_SKIP_BUILD=1` is supplied because the same workflow has already completed an exact-head production build; the Phase-04 script must honor that flag while retaining standalone build behavior outside CI. Other phases are unaffected. Phase 04 cannot be marked completed unless this executable browser gate is green on the exact PR head.
+Permanent correction: V6 CI now watches the runtime SEO families and has an explicit phase-specific runtime-gate step after production build. `faz-04` must run `scripts/seo/run-rendered-gate.sh` with `SEO_SKIP_BUILD=1`, reusing the exact build already produced by CI rather than rebuilding unnecessarily. Future phases that require distinct runtime gates must be added explicitly to this fail-visible phase map; absence is logged as `SEO_PHASE_RUNTIME_GATE=NONE`, never silently inferred as evidence.
 
 ## Decision record
 
