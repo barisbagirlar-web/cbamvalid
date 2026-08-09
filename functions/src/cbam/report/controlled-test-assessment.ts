@@ -8,6 +8,10 @@ const TEB232_ASSESSMENT_TIMESTAMP = "2027-01-31T00:00:00.000Z";
 const TEB232_TARGET_CASE_ID =
   "case_80aeb60175ce08a0d3acb7bc46617f152f0442f97ee652435280a2f2dff5e7cc";
 const TEB232_TARGET_PREPARATION_VERSION = "TEB232_TARGET_SEAL_READY_V1";
+const TEB232_ALL_DRAFTS_PREPARATION_VERSION =
+  "TEB232_ALL_DRAFTS_SEAL_READY_V1";
+const TEB232_DRAFT_PREPARED_ACTION = "CONTROLLED_TEST_DRAFT_PREPARED";
+const CASE_ID_PATTERN = /^case_[a-f0-9]{64}$/;
 const TEB232_SECTOR_KEYS = [
   "STEEL_IN",
   "CEMENT_EG",
@@ -66,6 +70,24 @@ function hasControlledTargetMarker(caseData: AuditReadyCase): boolean {
   });
 }
 
+function hasControlledDraftMarker(caseData: AuditReadyCase): boolean {
+  return caseData.auditEvents.some((event) => {
+    if (event.action !== TEB232_DRAFT_PREPARED_ACTION) return false;
+    const metadata =
+      event.metadata && typeof event.metadata === "object"
+        ? (event.metadata as Record<string, unknown>)
+        : {};
+    return (
+      metadata.preparationVersion === TEB232_ALL_DRAFTS_PREPARATION_VERSION &&
+      TEB232_SECTOR_KEYS.includes(
+        String(metadata.fixtureKey || "") as (typeof TEB232_SECTOR_KEYS)[number]
+      ) &&
+      metadata.syntheticTest === true &&
+      metadata.paymentBypass === false
+    );
+  });
+}
+
 function hasBoundControlledEvidence(caseData: AuditReadyCase): boolean {
   if (!caseData.caseId || caseData.evidenceRegister.length < 9) return false;
   const requiredPrefix = `evidence/${TEB232_UID}/${caseData.caseId}/`;
@@ -83,10 +105,12 @@ function isExactControlledCase(caseData: AuditReadyCase): boolean {
   const caseId = String(caseData.caseId || "");
   const exactCanonicalCase = TEB232_CASE_IDS.has(caseId);
   const exactTargetCase = caseId === TEB232_TARGET_CASE_ID;
+  const exactPreparedDraft =
+    CASE_ID_PATTERN.test(caseId) && hasControlledDraftMarker(caseData);
   const exactCase =
     caseData.ownerId === TEB232_UID &&
     Boolean(caseId) &&
-    (exactCanonicalCase || exactTargetCase);
+    (exactCanonicalCase || exactTargetCase || exactPreparedDraft);
   const exactPeriod =
     String(caseData.reportingPeriod.year.value) === "2026" &&
     String(caseData.reportingPeriod.quarter.value).toUpperCase() ===
@@ -97,7 +121,9 @@ function isExactControlledCase(caseData: AuditReadyCase): boolean {
       "2026-12-31";
   const exactMarker = exactTargetCase
     ? hasControlledTargetMarker(caseData)
-    : hasControlledCanonicalMarker(caseData);
+    : exactCanonicalCase
+      ? hasControlledCanonicalMarker(caseData)
+      : hasControlledDraftMarker(caseData);
 
   return (
     exactCase &&
