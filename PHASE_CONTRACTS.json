@@ -47,7 +47,7 @@
     "forbidsWrites": ["data/seo/registry/**"]
   },
   "faz-06": {
-    "writes": ["lib/seo/schema.ts", "lib/seo/claims.ts", "components/seo/**", "app/(public)/**", "tests/conformance/**", "data/seo/invariant-results/faz-06.json", "docs/seo/raporlar/faz06_*.md", "docs/seo/PROGRESS.md"],
+    "writes": ["lib/seo/schema.ts", "lib/seo/claims.ts", "lib/seo/breadcrumbs.ts", "lib/seo/schema-validation.ts", "components/seo/**", "app/(public)/**", "tests/conformance/**", "data/seo/invariant-results/faz-06.json", "docs/seo/raporlar/faz06_*.md", "docs/seo/PROGRESS.md"],
     "forbidsWrites": ["data/seo/registry/**"]
   },
   "faz-07": {
