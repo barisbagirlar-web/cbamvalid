@@ -6,12 +6,12 @@ Owner public-proxy override merged after PR #179 checks.
 
 | Phase | Status | Evidence |
 |---|---|---|
-| BOOTSTRAP | completed | PR #175 control plane; PR #177 phase-aware CI; PR #179 owner public-proxy override; PR #185 AIP-25 Phase-02 contract hotfix; all merged after repository workflow gates |
+| BOOTSTRAP | completed | PR #175 control plane; PR #177 phase-aware CI; PR #179 owner public-proxy override; PR #185 Phase-02 runtime-owner contract fix; PR #189 legacy G32 contract fix; PR #190 systemic future negative-fixture contract fix; all merged after repository workflow gates |
 | FAZ 00 | completed | `data/seo/tam_map.json` + `data/seo/invariant-results/faz-00.json` + `docs/seo/raporlar/faz00_baz.md`; public-proxy partial baseline; private GSC/GA4 fields SKIP_NO_DATA |
-| FAZ 01 | completed | 45-record `data/seo/registry/cbamvalid_seo_registry.json`; config-driven validator; all five Phase-01 BLOCK invariants have executable negative tests; economics partial because production cost/private measurement data is unavailable |
-| FAZ 02 | completed | canonical origin derived from site config; legacy redirects use absolute canonical targets; HSTS preload removed; 3-rule redirect ledger; chain/variant/capacity guards; all four Phase-02 BLOCK invariants have executable negative tests; non-code Firebase/DNS edge controls explicitly excluded |
-| FAZ 03 | pending | sitemap/robots/index-state next |
-| FAZ 04 | pending | — |
+| FAZ 01 | completed | PR #182; 45-record `data/seo/registry/cbamvalid_seo_registry.json`; config-driven validator; all five Phase-01 BLOCK invariants have executable negative tests; economics partial because production cost/private measurement data is unavailable |
+| FAZ 02 | completed | PR #187, merge `29992892afd33e66b846d6fe166883c7a9106fe5`; canonical origin derived from site config; absolute canonical legacy redirects; HSTS preload removed; redirect ledger and chain/variant/capacity guards; all four Phase-02 BLOCK invariants have executable negative tests; external Firebase/DNS controls excluded from code scope |
+| FAZ 03 | completed | deterministic registry-derived sitemap; one robots SSOT plus generated Firebase fallback; all named crawler groups inherit private disallows; parameter decision ledger; truthful-lastmod guard; all four Phase-03 BLOCK invariants have executable negative tests; GSC cohort metrics SKIP_NO_DATA |
+| FAZ 04 | pending | rendered parity + runtime registry drift (`/product-classification`) next |
 | FAZ 05 | pending | — |
 | FAZ 06 | pending | — |
 | FAZ 07 | pending | — |
@@ -36,6 +36,7 @@ Deployment decisions:
 - BOOTSTRAP/control overrides: **NO DEPLOY** — control-plane only.
 - FAZ 00: **NO DEPLOY** — discovery/data/docs only.
 - FAZ 01: **NO DEPLOY** — registry/data/scripts/tests/docs only; runtime SEO code is unchanged.
-- FAZ 02: **DEPLOY AFTER MERGE** — `next.config.js` changes runtime HSTS/redirect behavior; deploy exact merged `main` SHA through the approved Firebase production path, then perform live redirect/header smoke.
+- FAZ 02: **DEPLOY AFTER MERGE / EXTERNAL RELEASE EXECUTION** — runtime `next.config.js` change merged; current connected tools expose no safe exact-SHA production dispatcher and existing one-shot deploy workflows are pinned to older releases.
+- FAZ 03: **DEPLOY AFTER MERGE / EXTERNAL RELEASE EXECUTION** — sitemap/robots runtime changes require production publish after merge; same exact-SHA dispatcher limitation applies.
 
 Measurement debt: GSC/GA4 reporting access remains unavailable; E-35 requires measurement-dependent fields to stay `SKIP_NO_DATA`, `partial: true`, `confidence: low`, and `coldStart: null` until measured.
