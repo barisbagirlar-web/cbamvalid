@@ -1,0 +1,69 @@
+{
+  "meta": {
+    "artifact": "invariant-results/faz-02",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-09T19:37:00Z",
+    "generatorScript": "scripts/seo/redirect-audit-v6.ts",
+    "inputWindow": {
+      "start": null,
+      "end": null
+    },
+    "confidence": "medium",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": [
+      "2025-09-11:num100-removal"
+    ]
+  },
+  "data": {
+    "phase": "faz-02",
+    "codeScopeComplete": true,
+    "externalNonCodeExcluded": [
+      "Firebase custom-domain HTTP-to-HTTPS edge behavior",
+      "DNS/custom-domain attachment for www.cbamvalid.com"
+    ],
+    "results": [
+      {
+        "id": "INV-2.1",
+        "severity": "BLOCK",
+        "status": "PASS",
+        "negativeTestPassed": true,
+        "evidence": "Application-owned redirects are ledgered one-to-one and representative canonical host/path combinations resolve in exactly one application hop; legacy path targets are absolute canonical-origin URLs."
+      },
+      {
+        "id": "INV-2.2",
+        "severity": "BLOCK",
+        "status": "PASS",
+        "negativeTestPassed": true,
+        "evidence": "Static redirect tracing rejects chains/loops; www + /credits and www + /cbam-methodology collapse directly to canonical final targets instead of path-then-host chains."
+      },
+      {
+        "id": "INV-2.3",
+        "severity": "BLOCK",
+        "status": "PASS",
+        "negativeTestPassed": true,
+        "evidence": "HSTS remains max-age=63072000; includeSubDomains and the preload token is removed because no explicit irreversible HSTS-preload approval is recorded."
+      },
+      {
+        "id": "INV-2.4",
+        "severity": "WARN",
+        "status": "PASS",
+        "evidence": "All three application-owned redirect rules are explicitly reviewed with KEEP decisions, rationale and UTC review timestamps. Historical creation age is not fabricated; ageKnown remains false."
+      },
+      {
+        "id": "INV-2.5",
+        "severity": "BLOCK",
+        "status": "PASS",
+        "negativeTestPassed": true,
+        "evidence": "Live registry routes are case-fold unique, lowercase and non-trailing; Next trailing-slash normalization is not disabled; non-canonical 2xx response fixtures are rejected."
+      },
+      {
+        "id": "INV-2.6",
+        "severity": "INFO",
+        "status": "PASS",
+        "evidence": "3 application redirect rules use 15 basis points of the configured 2000-rule capacity; configured warning threshold is 80%."
+      }
+    ]
+  }
+}
