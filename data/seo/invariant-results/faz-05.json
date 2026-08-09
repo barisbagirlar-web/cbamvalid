@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "artifact": "invariant-results/faz-05",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-09T21:46:00Z",
+    "generatorScript": "scripts/seo/content-governance-v6.ts",
+    "inputWindow": {"start": null, "end": null},
+    "confidence": "medium",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+  },
+  "data": {
+    "phase": "faz-05",
+    "codeScopeComplete": true,
+    "results": [
+      {
+        "id": "INV-5.1",
+        "severity": "BLOCK",
+        "status": "PASS",
+        "negativeTestPassed": true,
+        "evidence": "Automatic AI publication is disabled. Any AI-assisted/generated/programmatic asset marked published must carry explicit human approval plus matching APPROVE_AI_CONTENT_PUBLICATION:<assetId> decision-ledger evidence; negative fixture proves fail-closed behavior."
+      },
+      {
+        "id": "INV-5.2",
+        "severity": "BLOCK",
+        "status": "PASS",
+        "negativeTestPassed": true,
+        "evidence": "All indexable runtime SEO registry records are pairwise compared with deterministic phrase-aware unigram+bigram Jaccard similarity using thresholds.similarityMax from site config. This preserves the configured 0.70 gate while avoiding template-vocabulary false positives across distinct CN intents; above-threshold near-duplicate fixture is still rejected."
+      },
+      {
+        "id": "INV-5.3",
+        "severity": "WARN",
+        "status": "PASS",
+        "evidence": "Managed published assets are evaluated against thresholds.decayDays and thresholds.contentDebtWarnPct; current managed set has no stale post-change review debt as of 2026-08-09."
+      },
+      {
+        "id": "INV-5.4",
+        "severity": "WARN",
+        "status": "PASS",
+        "evidence": "Five high-regulatory-risk assets explicitly record missing expert-review evidence. No reviewer identity or endorsement is fabricated; gaps remain visible warnings for later human evidence."
+      },
+      {
+        "id": "INV-5.5",
+        "severity": "BLOCK",
+        "status": "PASS",
+        "negativeTestPassed": true,
+        "evidence": "Official public and synthetic sample datasets may be public; user-derived data defaults to deny pending approved privacy review; private customer evidence is prohibited from public data-asset publication."
+      },
+      {
+        "id": "INV-5.6",
+        "severity": "INFO",
+        "status": "PASS",
+        "evidence": "Managed assets carry explicit date-only meaningful-change/review records; invalid, future or review-before-change dates are rejected and unmanaged paths cannot masquerade as governed assets."
+      }
+    ]
+  }
+}

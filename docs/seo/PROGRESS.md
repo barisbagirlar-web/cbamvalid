@@ -6,14 +6,14 @@ Owner public-proxy override merged after PR #179 checks.
 
 | Phase | Status | Evidence |
 |---|---|---|
-| BOOTSTRAP | completed | PR #175 control plane; PR #177 phase-aware CI; PR #179 owner public-proxy override; PR #185 Phase-02 runtime-owner contract fix; PR #189 legacy G32 contract fix; PR #190 systemic future negative-fixture contract fix; all merged after repository workflow gates |
+| BOOTSTRAP | completed | PR #175 control plane; PR #177 phase-aware CI; PR #179 owner public-proxy override; PR #185 Phase-02 runtime-owner contract fix; PR #189 legacy G32 contract fix; PR #190 systemic future negative-fixture contract fix; PR #194 executable Phase-04 browser gate; all merged after repository workflow gates |
 | FAZ 00 | completed | `data/seo/tam_map.json` + `data/seo/invariant-results/faz-00.json` + `docs/seo/raporlar/faz00_baz.md`; public-proxy partial baseline; private GSC/GA4 fields SKIP_NO_DATA |
 | FAZ 01 | completed | PR #182; 45-record `data/seo/registry/cbamvalid_seo_registry.json`; config-driven validator; all five Phase-01 BLOCK invariants have executable negative tests; economics partial because production cost/private measurement data is unavailable |
 | FAZ 02 | completed | PR #187, merge `29992892afd33e66b846d6fe166883c7a9106fe5`; canonical origin derived from site config; absolute canonical legacy redirects; HSTS preload removed; redirect ledger and chain/variant/capacity guards; all four Phase-02 BLOCK invariants have executable negative tests; external Firebase/DNS controls excluded from code scope |
-| FAZ 03 | completed | deterministic registry-derived sitemap; one robots SSOT plus generated Firebase fallback; all named crawler groups inherit private disallows; parameter decision ledger; truthful-lastmod guard; all four Phase-03 BLOCK invariants have executable negative tests; GSC cohort metrics SKIP_NO_DATA |
-| FAZ 04 | pending | rendered parity + runtime registry drift (`/product-classification`) next |
-| FAZ 05 | pending | — |
-| FAZ 06 | pending | — |
+| FAZ 03 | completed | PR #191, merge `2fab097c798074498545febd3072f2cf9e1754cb`; deterministic registry-derived sitemap; one robots SSOT plus generated Firebase fallback; all named crawler groups inherit private disallows; parameter decision ledger; truthful-lastmod guard; all four Phase-03 BLOCK invariants have executable negative tests; GSC cohort metrics SKIP_NO_DATA |
+| FAZ 04 | completed | PR #195, merge `46262995cc8d73bbe35a7afebcf57125428599d3`; exact-head raw↔Chromium title/description/H1/canonical/hreflang parity gate; every static public route is either registry-governed or exact fail-closed noindex utility; `/product-classification` registry/sitemap alignment; product/pricing/metadata price SSOT; obsolete 149 rendered-price escape removed; INV-4.1/4.2 negative fixtures; field INP metrics SKIP_NO_DATA |
+| FAZ 05 | completed | managed high-value content ledger; automatic AI publication disabled; config-driven similarity/cannibalization gate; decay debt control; explicit expert-review evidence gaps; public-data privacy firewall; INV-5.1/5.2/5.5 negative fixtures |
+| FAZ 06 | pending | structured data / entity claim parity next |
 | FAZ 07 | pending | — |
 | FAZ 08 | pending | — |
 | FAZ 09 | pending | — |
@@ -38,5 +38,7 @@ Deployment decisions:
 - FAZ 01: **NO DEPLOY** — registry/data/scripts/tests/docs only; runtime SEO code is unchanged.
 - FAZ 02: **DEPLOY AFTER MERGE / EXTERNAL RELEASE EXECUTION** — runtime `next.config.js` change merged; current connected tools expose no safe exact-SHA production dispatcher and existing one-shot deploy workflows are pinned to older releases.
 - FAZ 03: **DEPLOY AFTER MERGE / EXTERNAL RELEASE EXECUTION** — sitemap/robots runtime changes require production publish after merge; same exact-SHA dispatcher limitation applies.
+- FAZ 04: **DEPLOY AFTER MERGE / EXTERNAL RELEASE EXECUTION** — public commercial content + runtime registry/render governance changed; exact-SHA production dispatcher remains unavailable through current connected tools.
+- FAZ 05: **NO DEPLOY** — data/scripts/tests/docs only; public runtime behavior unchanged.
 
 Measurement debt: GSC/GA4 reporting access remains unavailable; E-35 requires measurement-dependent fields to stay `SKIP_NO_DATA`, `partial: true`, `confidence: low`, and `coldStart: null` until measured.

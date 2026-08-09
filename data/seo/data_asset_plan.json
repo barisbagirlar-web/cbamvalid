@@ -1,0 +1,63 @@
+{
+  "meta": {
+    "artifact": "data-asset-plan/cbamvalid",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-09T21:42:00Z",
+    "generatorScript": "scripts/seo/content-governance-v6.ts",
+    "inputWindow": {"start": null, "end": null},
+    "confidence": "high",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+  },
+  "data": {
+    "assets": [
+      {
+        "id": "official_regulatory_sources",
+        "sourceClass": "official_public",
+        "purpose": "Regulatory source citations and methodology evidence",
+        "containsPersonalData": false,
+        "privacyReview": {"required": false, "status": "not_required", "decisionId": null},
+        "publicPublicationAllowed": true
+      },
+      {
+        "id": "public_cn_scope_registry",
+        "sourceClass": "official_public",
+        "purpose": "Public CN-code scope decision support",
+        "containsPersonalData": false,
+        "privacyReview": {"required": false, "status": "not_required", "decisionId": null},
+        "publicPublicationAllowed": true
+      },
+      {
+        "id": "public_sample_dossier",
+        "sourceClass": "synthetic_sample",
+        "purpose": "Demonstrate software output structure without customer records",
+        "containsPersonalData": false,
+        "privacyReview": {"required": false, "status": "not_required", "decisionId": null},
+        "publicPublicationAllowed": true
+      },
+      {
+        "id": "customer_case_aggregates",
+        "sourceClass": "user_derived",
+        "purpose": "Potential future aggregate benchmarks",
+        "containsPersonalData": "unknown",
+        "privacyReview": {"required": true, "status": "pending", "decisionId": null},
+        "publicPublicationAllowed": false
+      },
+      {
+        "id": "customer_evidence_files",
+        "sourceClass": "user_private",
+        "purpose": "Private evidence supporting customer working files",
+        "containsPersonalData": "possible",
+        "privacyReview": {"required": true, "status": "not_publishable", "decisionId": null},
+        "publicPublicationAllowed": false
+      }
+    ],
+    "policy": {
+      "userDerivedPublicDataRequiresApprovedPrivacyReview": true,
+      "privateCustomerEvidencePublicPublicationAllowed": false,
+      "aggregatePublicationDefault": "deny"
+    }
+  }
+}

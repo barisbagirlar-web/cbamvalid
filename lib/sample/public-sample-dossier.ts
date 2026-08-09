@@ -1,6 +1,6 @@
 import integrityManifest from "@/public/sample-dossier/integrity-manifest.json";
 
-export type PublicSampleFileRole = "sample-pdf" | "sample-json" | "sample-xlsx";
+export type PublicSampleFileRole = "sample-pdf" | "sample-json" | "sample-xlsx" | "sample-xml";
 
 export const PUBLIC_SAMPLE_NOTICE =
   "Fictional demonstration data. Not a customs declaration, official CBAM Registry submission, or accredited verifier opinion.";
@@ -16,6 +16,7 @@ export const PUBLIC_SAMPLE_DOSSIER = {
     pdf: "/sample-dossier/CBAMValid-Sample-Dossier.pdf",
     json: "/sample-dossier/CBAMValid-Sample-Dossier.json",
     xlsx: "/sample-dossier/CBAMValid-Sample-Dossier.xlsx",
+    registryXml: "/sample-dossier/CBAMValid-Sample-Dossier-registry-xml.xml",
     manifest: "/sample-dossier/integrity-manifest.json",
   },
 } as const;

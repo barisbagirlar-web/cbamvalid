@@ -1,0 +1,122 @@
+{
+  "meta": {
+    "artifact": "content-assets/cbamvalid",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-09T21:42:00Z",
+    "generatorScript": "scripts/seo/content-governance-v6.ts",
+    "inputWindow": {"start": null, "end": null},
+    "confidence": "medium",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+  },
+  "data": {
+    "publicationPolicy": {
+      "automaticAiPublicationAllowed": false,
+      "humanApprovalRequiredForAiPublication": true,
+      "unverifiedExpertIdentityAllowed": false
+    },
+    "assets": [
+      {
+        "id": "content_home",
+        "path": "/",
+        "origin": "human_existing",
+        "publicationStatus": "published",
+        "lastMeaningfulChangeAt": "2026-07-26",
+        "lastReviewAt": "2026-08-09",
+        "regulatoryRisk": "low",
+        "expertReview": {"required": false, "status": "not_required", "reviewerEvidence": null},
+        "humanApproval": {"required": false, "approved": null, "decisionId": null}
+      },
+      {
+        "id": "content_product",
+        "path": "/product",
+        "origin": "human_existing",
+        "publicationStatus": "published",
+        "lastMeaningfulChangeAt": "2026-07-26",
+        "lastReviewAt": "2026-08-09",
+        "regulatoryRisk": "medium",
+        "expertReview": {"required": false, "status": "not_required", "reviewerEvidence": null},
+        "humanApproval": {"required": false, "approved": null, "decisionId": null}
+      },
+      {
+        "id": "content_pricing",
+        "path": "/pricing",
+        "origin": "human_existing",
+        "publicationStatus": "published",
+        "lastMeaningfulChangeAt": "2026-07-26",
+        "lastReviewAt": "2026-08-09",
+        "regulatoryRisk": "low",
+        "expertReview": {"required": false, "status": "not_required", "reviewerEvidence": null},
+        "humanApproval": {"required": false, "approved": null, "decisionId": null}
+      },
+      {
+        "id": "content_product_classification",
+        "path": "/product-classification",
+        "origin": "human_existing",
+        "publicationStatus": "published",
+        "lastMeaningfulChangeAt": "2026-08-04",
+        "lastReviewAt": "2026-08-09",
+        "regulatoryRisk": "medium",
+        "expertReview": {"required": false, "status": "not_required", "reviewerEvidence": null},
+        "humanApproval": {"required": false, "approved": null, "decisionId": null}
+      },
+      {
+        "id": "content_methodology",
+        "path": "/methodology",
+        "origin": "human_existing",
+        "publicationStatus": "published",
+        "lastMeaningfulChangeAt": "2026-07-26",
+        "lastReviewAt": "2026-08-09",
+        "regulatoryRisk": "high",
+        "expertReview": {"required": true, "status": "missing", "reviewerEvidence": null},
+        "humanApproval": {"required": false, "approved": null, "decisionId": null}
+      },
+      {
+        "id": "content_definitive_period",
+        "path": "/cbam-2026-definitive-period",
+        "origin": "human_existing",
+        "publicationStatus": "published",
+        "lastMeaningfulChangeAt": "2026-07-26",
+        "lastReviewAt": "2026-08-09",
+        "regulatoryRisk": "high",
+        "expertReview": {"required": true, "status": "missing", "reviewerEvidence": null},
+        "humanApproval": {"required": false, "approved": null, "decisionId": null}
+      },
+      {
+        "id": "content_embedded_emissions",
+        "path": "/cbam-embedded-emissions-calculation",
+        "origin": "human_existing",
+        "publicationStatus": "published",
+        "lastMeaningfulChangeAt": "2026-07-26",
+        "lastReviewAt": "2026-08-09",
+        "regulatoryRisk": "high",
+        "expertReview": {"required": true, "status": "missing", "reviewerEvidence": null},
+        "humanApproval": {"required": false, "approved": null, "decisionId": null}
+      },
+      {
+        "id": "content_default_values",
+        "path": "/cbam-default-values",
+        "origin": "human_existing",
+        "publicationStatus": "published",
+        "lastMeaningfulChangeAt": "2026-07-26",
+        "lastReviewAt": "2026-08-09",
+        "regulatoryRisk": "high",
+        "expertReview": {"required": true, "status": "missing", "reviewerEvidence": null},
+        "humanApproval": {"required": false, "approved": null, "decisionId": null}
+      },
+      {
+        "id": "content_verification_prep",
+        "path": "/cbam-verification-preparation",
+        "origin": "human_existing",
+        "publicationStatus": "published",
+        "lastMeaningfulChangeAt": "2026-07-26",
+        "lastReviewAt": "2026-08-09",
+        "regulatoryRisk": "high",
+        "expertReview": {"required": true, "status": "missing", "reviewerEvidence": null},
+        "humanApproval": {"required": false, "approved": null, "decisionId": null}
+      }
+    ]
+  }
+}

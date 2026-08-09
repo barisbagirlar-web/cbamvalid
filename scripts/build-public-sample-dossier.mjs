@@ -44,10 +44,13 @@ async function main() {
 
   const jsonSrc = path.join(root, "artifacts", "sample-v5", "Calculation Trace.json");
   const xlsxSrc = path.join(root, "artifacts", "sample-v5", "Verifier Workspace.xlsx");
+  const xmlSrc = path.join(root, "artifacts", "sample-v5", "Supporting_Evidence", "CBAM Registry Submission Preparation.xml");
   const jsonPath = path.join(outDir, "CBAMValid-Sample-Dossier.json");
   const xlsxPath = path.join(outDir, "CBAMValid-Sample-Dossier.xlsx");
+  const xmlPath = path.join(outDir, "CBAMValid-Sample-Dossier-registry-xml.xml");
   fs.copyFileSync(jsonSrc, jsonPath);
   fs.copyFileSync(xlsxSrc, xlsxPath);
+  fs.copyFileSync(xmlSrc, xmlPath);
 
   const files = [
     {
@@ -73,6 +76,14 @@ async function main() {
       href: "/sample-dossier/CBAMValid-Sample-Dossier.xlsx",
       sizeBytes: fs.statSync(xlsxPath).size,
       sha256: sha256File(xlsxPath),
+    },
+    {
+      path: "CBAMValid-Sample-Dossier-registry-xml.xml",
+      mediaType: "application/xml",
+      role: "sample-xml",
+      href: "/sample-dossier/CBAMValid-Sample-Dossier-registry-xml.xml",
+      sizeBytes: fs.statSync(xmlPath).size,
+      sha256: sha256File(xmlPath),
     },
   ];
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Build, start Next on a free port, crawl all sitemap URLs, tear down.
+# Build (unless already built), start Next on a free port, crawl critical/sitemap URLs,
+# optionally prove browser-hydrated parity, then tear down.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
@@ -16,15 +17,22 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "RENDERED_GATE: building..."
-npm run build
+if [[ "${SEO_SKIP_BUILD:-0}" == "1" ]]; then
+  if [[ ! -d .next ]]; then
+    echo "RENDERED_GATE: SEO_SKIP_BUILD=1 but .next is missing" >&2
+    exit 4
+  fi
+  echo "RENDERED_GATE: reusing exact-head production build"
+else
+  echo "RENDERED_GATE: building..."
+  npm run build
+fi
 
 echo "RENDERED_GATE: starting next on ${PORT}..."
 npx next start --port "$PORT" >"$LOG" 2>&1 &
 SERVER_PID=$!
 
-# Wait for ready
-for i in $(seq 1 60); do
+for _ in $(seq 1 60); do
   if curl -sf "$BASE/" >/dev/null 2>&1; then
     break
   fi
@@ -42,5 +50,5 @@ if ! curl -sf "$BASE/" >/dev/null 2>&1; then
   exit 2
 fi
 
-echo "RENDERED_GATE: crawling..."
-SEO_CRAWL_BASE_URL="$BASE" npx tsx scripts/seo/crawl-rendered.ts
+echo "RENDERED_GATE: crawling; browser=${SEO_RENDER_BROWSER:-0}"
+SEO_CRAWL_BASE_URL="$BASE" SEO_RENDER_BROWSER="${SEO_RENDER_BROWSER:-0}" npx tsx scripts/seo/crawl-rendered.ts

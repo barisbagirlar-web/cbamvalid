@@ -3,32 +3,40 @@
   "title": "CBAMValid Public Sample Dossier",
   "notice": "Fictional demonstration data. Not a customs declaration, official CBAM Registry submission, or accredited verifier opinion.",
   "pageCount": 16,
-  "generatedAt": "2026-07-28T10:37:58.960Z",
-  "primaryDocumentSha256": "2b13f3eb53c33d791899ebaf5daa7c2701bd6219b306e9c347f3e49d9a01b314",
+  "generatedAt": "2026-08-09T21:20:55.662Z",
+  "primaryDocumentSha256": "02dd9bf8d8539b8bfba34d65c3cb81d5b00573c210ed1d019bb3f9d1e50235ba",
   "files": [
     {
       "path": "CBAMValid-Sample-Dossier.pdf",
       "mediaType": "application/pdf",
       "role": "sample-pdf",
       "href": "/sample-dossier/CBAMValid-Sample-Dossier.pdf",
-      "sizeBytes": 5146064,
-      "sha256": "2b13f3eb53c33d791899ebaf5daa7c2701bd6219b306e9c347f3e49d9a01b314"
+      "sizeBytes": 5146189,
+      "sha256": "02dd9bf8d8539b8bfba34d65c3cb81d5b00573c210ed1d019bb3f9d1e50235ba"
     },
     {
       "path": "CBAMValid-Sample-Dossier.json",
       "mediaType": "application/json",
       "role": "sample-json",
       "href": "/sample-dossier/CBAMValid-Sample-Dossier.json",
-      "sizeBytes": 20701,
-      "sha256": "8f4e5388a117108bf69ad9ce65046377729449f1e25cfafcd7d40cfd41f53d79"
+      "sizeBytes": 56476,
+      "sha256": "0afd21b29beb08da4016b9b876d685079e743449701b3ee05e4c6b57bcbc1cc0"
     },
     {
       "path": "CBAMValid-Sample-Dossier.xlsx",
       "mediaType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "role": "sample-xlsx",
       "href": "/sample-dossier/CBAMValid-Sample-Dossier.xlsx",
-      "sizeBytes": 23676,
-      "sha256": "59fcf9d383f5235996b51f76631507cd2d0e0c9ba60717eed5ce94365b4fa3a1"
+      "sizeBytes": 59238,
+      "sha256": "ed82437d2bfa1ac040058eaf87bb064926939448ce28cf0edbe48340a64cf452"
+    },
+    {
+      "path": "CBAMValid-Sample-Dossier-registry-xml.xml",
+      "mediaType": "application/xml",
+      "role": "sample-xml",
+      "href": "/sample-dossier/CBAMValid-Sample-Dossier-registry-xml.xml",
+      "sizeBytes": 13961,
+      "sha256": "17a2f3d25217ced8ed8e33056fd1d804498585037e4d33993ab6f9fe0c03d0c1"
     }
   ],
   "spreads": {
