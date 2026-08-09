@@ -16,9 +16,11 @@ Normal phase rule: one phase = one branch = one PR. Runtime deployment is a sepa
 
 The source requires X.1–X.8 before Phase 0 but originally gives no legal write contract for installing X.1–X.8. V6.1 execution therefore defines a single non-runtime `BOOTSTRAP` phase. Branch: `seo/faz-00-v6-bootstrap-kesif`. It may install only the execution/control-plane files enumerated by `PHASE_CONTRACTS.json`. It MUST NOT modify public runtime application behavior.
 
+Post-bootstrap contract defects that make a later phase mechanically impossible are corrected only as reviewed non-runtime control-plane hotfixes under AIP-25. Such a hotfix may modify only existing BOOTSTRAP-owned control files, must carry an explicit errata record, must pass the BOOTSTRAP write lock, and must merge before the affected runtime phase starts. It may never be used to modify production runtime behavior.
+
 ## 2. AIP-01…27 — binding
 
-- **AIP-01** One phase = one branch = one PR; BOOTSTRAP is the sole pre-phase exception defined above.
+- **AIP-01** One phase = one branch = one PR; BOOTSTRAP is the sole pre-phase exception defined above. Reviewed AIP-25 control-plane hotfixes are permitted only under the narrow post-bootstrap rule above and do not authorize runtime writes.
 - **AIP-02** No assumptions. Missing decision data must be labeled and execution must stop when the phase requires it.
 - **AIP-03** File manifest is binding. Effective write permission is the intersection of the global manifest and active phase contract.
 - **AIP-04** Scripts are idempotent.
@@ -66,7 +68,7 @@ Global manifest is a superset; phase contracts are the restrictive layer. Allowe
 - `data/seo/**`, `portfolio/**`
 - `scripts/seo/**`, `tests/conformance/**`, `.github/workflows/seo-conformance.yml`
 - `package.json` when only V6 script wiring changes and no dependency is added
-- existing SEO runtime surfaces only in a phase that explicitly authorizes them: `lib/seo/**`, `components/seo/**`, selected `app/**`, `public/robots.txt`, `firebase.json`
+- existing SEO runtime surfaces only in a phase that explicitly authorizes them: `lib/seo/**`, `components/seo/**`, selected `app/**`, `public/robots.txt`, `firebase.json`, `next.config.js`
 
 Files outside the active phase contract are BLOCK even if they are in this global superset.
 
