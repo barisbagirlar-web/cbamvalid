@@ -27,7 +27,7 @@
         "severity": "BLOCK",
         "status": "PASS",
         "negativeTestPassed": true,
-        "evidence": "All indexable runtime SEO registry records are pairwise compared with deterministic token/Jaccard similarity using thresholds.similarityMax from site config; above-threshold fixture is rejected."
+        "evidence": "All indexable runtime SEO registry records are pairwise compared with deterministic phrase-aware unigram+bigram Jaccard similarity using thresholds.similarityMax from site config. This preserves the configured 0.70 gate while avoiding template-vocabulary false positives across distinct CN intents; above-threshold near-duplicate fixture is still rejected."
       },
       {
         "id": "INV-5.3",
