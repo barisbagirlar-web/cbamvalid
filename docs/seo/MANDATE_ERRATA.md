@@ -120,6 +120,12 @@ Phase completion rule: a phase may be completed when all non-measurement BLOCK i
 
 Permanent correction: `next.config.js` is added to the effective global runtime superset **only for Phase 02** and to `PHASE_CONTRACTS.json` `faz-02.writes`. Phase 02 may modify it only for host/canonical redirect and transport-header remediation required by INV-2.x. This does not authorize unrelated framework/application changes. Preload remains prohibited unless a later separate A3 owner decision is recorded.
 
+## E-37 — PHASE 02 OMITTED ITS REQUIRED BLOCK NEGATIVE-TEST WRITE PATH
+
+[Kesin] `data/seo/invariants.json` defines Phase-02 BLOCK invariants INV-2.1, INV-2.2, INV-2.3 and INV-2.5 with mandatory negative fixtures under `tests/conformance/inv-2-*.test.ts`, while the installed `faz-02.writes` originally omitted `tests/conformance/**`.
+
+Permanent correction: add `tests/conformance/**` to `faz-02.writes`. This is limited to Phase-02 conformance/negative fixtures and does not expand runtime scope. A Phase-02 completion claim remains invalid unless each BLOCK invariant is executable and records `negativeTestPassed: true` in its machine result artifact.
+
 ## Decision record
 
 These corrections preserve the source mandate's intent: stricter write isolation, machine-verifiable evidence, no invented data, no unnecessary deployment and no weakening of any legal/ethical restriction.
