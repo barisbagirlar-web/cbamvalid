@@ -1,7 +1,12 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { runContentGovernance } from "../../scripts/seo/content-governance-v6";
+import { SEO_ROUTE_REGISTRY } from "../../lib/seo/registry";
+import {
+  buildRegistrySimilarityDocuments,
+  runContentGovernance,
+  validateSimilarityPairs,
+} from "../../scripts/seo/content-governance-v6";
 
 type InvariantResult = {
   id: string;
@@ -19,6 +24,16 @@ describe("SEO V6 Phase 05 content risk firewall", () => {
     expect(result.stats.similarityPairsChecked).toBeGreaterThan(0);
     expect(result.stats.maxSimilarity).toBeLessThanOrEqual(0.7);
     expect(result.stats.staleAssets).toBe(0);
+  });
+
+  it("does not misclassify distinct CN intents just because metadata uses a shared template", () => {
+    const documents = buildRegistrySimilarityDocuments(SEO_ROUTE_REGISTRY).filter(
+      (document) => document.id === "/cn-code/25231000" || document.id === "/cn-code/28041000",
+    );
+    expect(documents).toHaveLength(2);
+    const result = validateSimilarityPairs(documents, 0.7);
+    expect(result.blocks).toEqual([]);
+    expect(result.maxSimilarity).toBeLessThanOrEqual(0.7);
   });
 
   it("surfaces missing expert-review evidence without inventing reviewers", () => {
