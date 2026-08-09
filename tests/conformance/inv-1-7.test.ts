@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertRegistryWriterPhase } from "../../scripts/seo/registry/validate-v6-registry";
+import { assertRegistryWriterPhase } from "../../scripts/seo/registry-validate-v6";
 
 describe("INV-1.7 negative fixture", () => {
   it("blocks registry writers outside Phase 1", () => {
