@@ -44,7 +44,11 @@ Missing any condition is BLOCK.
 
 `scripts/seo/content-governance-v6.ts` constructs deterministic documents from every indexable runtime registry page using title + H1 + description + primary intent.
 
-All pairs are compared using normalized-token Jaccard similarity. The maximum permitted score comes only from `sites/cbamvalid/seo.config.json` → `thresholds.similarityMax`.
+All pairs are compared using phrase-aware Jaccard features: normalized unigram tokens plus adjacent-token bigrams. The maximum permitted score comes only from `sites/cbamvalid/seo.config.json` → `thresholds.similarityMax`.
+
+The first CI run exposed a measurement-model false positive: two distinct CN intents (`/cn-code/25231000` Cement clinkers and `/cn-code/28041000` Hydrogen) scored `0.7059` under unigram-only Jaccard because their metadata shares a deliberate CN-page template. The production threshold was **not** relaxed. Adding adjacent phrase features reduced template dominance while preserving near-duplicate sensitivity; the dedicated negative fixture still exceeds the same `0.70` threshold.
+
+A positive regression test now pins that distinct CN pair below the configured threshold so a future simplification cannot reintroduce the false positive.
 
 No hard-coded production similarity threshold exists in the implementation.
 
@@ -96,7 +100,7 @@ Mitigation: publication requires explicit human approval plus matching decision-
 
 ### B — Two pages drift into the same intent/content
 
-Mitigation: pairwise registry similarity uses the configured threshold and fails before merge.
+Mitigation: pairwise phrase-aware registry similarity uses the configured threshold and fails before merge. Template-heavy page families retain phrase/order evidence so shared boilerplate does not dominate the score.
 
 ### C — Old regulated page keeps a recent build timestamp
 
