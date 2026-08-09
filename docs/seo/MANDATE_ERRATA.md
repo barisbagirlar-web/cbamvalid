@@ -98,6 +98,12 @@ Permanent correction: security scanning remains strict for all changed text file
 
 Permanent correction: every V6 workflow that runs Node adds the repository-standard `node --version | grep -E '^v24\\.'` proof immediately after setup. The GitHub Actions guard remains unchanged and therefore continues to detect silent runtime drift.
 
+## E-34 — CI WAS HARD-CODED TO THE BOOTSTRAP WRITE CONTRACT
+
+[Kesin] After BOOTSTRAP merged, the installed SEO workflow still invoked preflight with `--phase bootstrap`. A legal Phase 0 change such as `docs/seo/raporlar/faz00_baz.md` would therefore be tested against the wrong write contract and blocked before Phase 0 could run. The same defect would have broken every later phase.
+
+Permanent correction: PR CI deterministically resolves the active phase from the mandatory branch convention (`seo/bootstrap-*` → `bootstrap`, `seo/faz-NN-*` → `faz-NN`) and passes that exact value into preflight. Manual workflow dispatch requires an explicit phase choice from `bootstrap` or `faz-00`…`faz-19`; unknown branches/phases fail closed with exit 4. This keeps branch naming, phase contract and write-lock mechanically coupled.
+
 ## Decision record
 
 These corrections preserve the source mandate's intent: stricter write isolation, machine-verifiable evidence, no invented data, no unnecessary deployment and no weakening of any legal/ethical restriction.
