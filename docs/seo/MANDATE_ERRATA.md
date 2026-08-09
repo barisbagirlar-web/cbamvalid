@@ -150,6 +150,12 @@ Permanent correction: add `tests/conformance/**` to every affected future phase 
 
 Permanent correction: V6 CI now watches the runtime SEO families and has an explicit phase-specific runtime-gate step after production build. `faz-04` must run `scripts/seo/run-rendered-gate.sh` with `SEO_SKIP_BUILD=1`, reusing the exact build already produced by CI rather than rebuilding unnecessarily. Future phases that require distinct runtime gates must be added explicitly to this fail-visible phase map; absence is logged as `SEO_PHASE_RUNTIME_GATE=NONE`, never silently inferred as evidence.
 
+## E-41 — PHASE 06 OMITTED ITS ENTITY/BREADCRUMB VALIDATION HELPERS
+
+[Kesin] Phase 06 requires a single Organization identity, schema-visible claim parity and visible BreadcrumbList parity. The implementation isolates these reusable rules into `lib/seo/breadcrumbs.ts` and `lib/seo/schema-validation.ts`, but the installed Phase-06 contract authorized only `lib/seo/schema.ts` and `lib/seo/claims.ts` under `lib/seo/**`. Preflight therefore blocked the Phase-06 PR before typecheck even though the new files are exact Phase-06 SEO control surfaces.
+
+Permanent correction: add only `lib/seo/breadcrumbs.ts` and `lib/seo/schema-validation.ts` to `faz-06.writes`. This does not broaden Phase 06 to arbitrary `lib/seo/**` changes; registry writes remain forbidden. Breadcrumb hierarchy and schema/entity validation can therefore be shared rather than duplicated across UI, JSON-LD and tests.
+
 ## Decision record
 
 These corrections preserve the source mandate's intent: stricter write isolation, machine-verifiable evidence, no invented data, no unnecessary deployment and no weakening of any legal/ethical restriction.
