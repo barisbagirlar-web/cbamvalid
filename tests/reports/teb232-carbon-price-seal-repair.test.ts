@@ -55,4 +55,21 @@ describe("TEB232 carbon-price sealing repair", () => {
     expect(generic).toContain("params.targetCaseId === TEB232_TARGET_CASE_ID");
     expect(generic).toContain("prepareTeb232TargetCaseForSeal(params)");
   });
+
+  it("exposes an eligible-certificate-reduction input in the wizard carbon-price record", () => {
+    const wizard = readSource("app/(workspace)/cases/[caseId]/CaseWizardClient.tsx");
+    const help = readSource("lib/cbam/field-help.ts");
+    const validation = readSource("lib/cbam/wizard-validation.ts");
+
+    expect(wizard).toContain("carbonPriceRecords.${index}.eligibleCertificateReduction");
+    expect(wizard).toContain("Eligible certificate reduction (tCO2e)");
+    expect(wizard).toContain("fieldHelpData.carbonPriceEligibleCertificateReduction.source");
+    expect(wizard).toContain("carbonPriceRecords.${index}.independentCertificationEvidenceId");
+    expect(help).toContain("carbonPriceEligibleCertificateReduction");
+    expect(help).toContain("carbonPriceRebateInformation");
+    expect(help).toContain("carbonPriceConversionMethod");
+    expect(help).toContain("carbonPriceIndependentCertification");
+    expect(validation).toContain("carbonPriceRecords.*.eligibleCertificateReduction");
+    expect(validation).toContain("carbonPriceRecords.${index}.eligibleCertificateReduction");
+  });
 });
