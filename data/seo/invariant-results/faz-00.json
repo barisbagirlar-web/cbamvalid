@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "artifact": "invariant-results/faz-00",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-09T14:26:00Z",
+    "generatorScript": "owner-authorized public-proxy discovery",
+    "inputWindow": { "start": "2025-09-11", "end": "2026-08-09" },
+    "confidence": "low",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+  },
+  "data": {
+    "phase": "faz-00",
+    "measurementMode": "public_proxy",
+    "results": [
+      {
+        "id": "INV-0.1",
+        "status": "PASS",
+        "evidence": "No pre-2025-09-11 private trend data or historical metric is used; private performance data is absent rather than joined across the break."
+      },
+      {
+        "id": "INV-0.2",
+        "status": "PASS",
+        "evidence": "Phase 00 writes are limited to discovery artifacts, report, findings queue and progress ledger; no runtime path is modified."
+      },
+      {
+        "id": "INV-0.3",
+        "status": "SKIP_NO_DATA",
+        "evidence": "Crawl-log/search-console crawl statistics are unavailable; no crawl-waste percentage is invented."
+      },
+      {
+        "id": "INV-0.4",
+        "status": "SKIP_NO_DATA",
+        "evidence": "Actual GSC history length is unavailable; coldStart remains null under E-30/E-35."
+      }
+    ]
+  }
+}
