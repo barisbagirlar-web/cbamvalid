@@ -24,4 +24,15 @@ All timestamps are UTC. A record is evidence of a human decision only when scope
 - Deployment: this decision-record change is control-plane-only and therefore **NO DEPLOY**.
 - Rationale: remove an unavailable private-data dependency from technical execution while retaining evidence integrity and commercial prioritization.
 
+## 2026-08-09T19:24:00Z — Owner instruction: complete all code-doable beneficial work
+
+- Approver: repository owner / user (`barisbagirlar-web`)
+- Source, verbatim-by-reference from the current project conversation: “kodlar ıle yapamayacaklarını dısarıda tut ama kodlarda yapabılcegın ve bana fayda getırecek adımları TAMAMLA..ASLA eksık bırakma borc bırakmadan %100 tamamla.”
+- Decision: exclude only actions that genuinely cannot be completed through repository code/configuration/CI or the available connected deployment tooling; complete all reversible, beneficial code-doable SEO contract work without intentionally leaving implementation debt.
+- Scope: CBAMValid SEO V6 technical implementation, including necessary control-plane corrections that make a contracted runtime phase executable.
+- Merge authority: code/config/data changes may be merged only after the exact current head passes the required phase-aware CI/guards and the branch is current with `main`.
+- Deployment authority: when a merged runtime/configuration change is required to make the approved technical correction live and it is not already live, deploy the exact merged `main` SHA through the repository-approved path and verify live smoke. Non-runtime changes remain no-deploy.
+- Limitation: this instruction does not authorize irreversible actions explicitly excluded by prior records, including HSTS preload, domain migration, destructive bulk 410, disavow, or prohibited off-page schemes.
+- Rationale: remove avoidable technical debt while preserving evidence, reversibility and the existing release discipline.
+
 ROLLBACK: decisions are append-only; supersede with a later dated record rather than deleting history.
