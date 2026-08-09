@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SEO Master Mandate V6 Site Configuration",
+  "type": "object",
+  "required": ["version", "site", "deployment", "measurement", "thresholds", "economics", "policy", "business"],
+  "properties": {
+    "version": { "const": "6.0" },
+    "executionRevision": { "type": "string", "minLength": 1 },
+    "site": {
+      "type": "object",
+      "required": ["siteId", "rootUrl", "language", "currency", "region", "industry", "hasEcommerce", "hasBlog", "maxConcurrentKacActions", "allowedEnvironments"],
+      "properties": {
+        "siteId": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "rootUrl": { "type": "string", "pattern": "^https://[a-z0-9.-]+\\.[a-z]{2,}(/[a-z0-9-]+)?$" },
+        "language": { "enum": ["tr", "en"] },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "region": { "type": "string", "minLength": 2 },
+        "industry": { "enum": ["ecommerce", "saas", "media", "local", "other"] },
+        "hasEcommerce": { "type": "boolean" },
+        "hasBlog": { "type": "boolean" },
+        "maxConcurrentKacActions": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "allowedEnvironments": { "type": "array", "items": { "enum": ["staging", "production"] }, "minItems": 1, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "deployment": {
+      "type": "object",
+      "required": ["target", "supportsHeaders", "supportsEdgeRedirects", "redirectLimit"],
+      "properties": {
+        "target": { "enum": ["vercel", "netlify", "cloudflare_pages", "static_host", "firebase_hosting"] },
+        "supportsHeaders": { "type": "boolean" },
+        "supportsEdgeRedirects": { "type": "boolean" },
+        "redirectLimit": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "measurement": {
+      "type": "object",
+      "required": ["defaultWindowDays", "dataWindowStart", "calendarYearEnabled", "gscGenerativeAiReportAvailable", "gscGenerativeAiInFormula", "confidenceMode"],
+      "properties": {
+        "defaultWindowDays": { "type": "integer", "minimum": 28 },
+        "dataWindowStart": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "calendarYearEnabled": { "type": "boolean" },
+        "gscGenerativeAiReportAvailable": { "type": "boolean" },
+        "gscGenerativeAiInFormula": { "const": false },
+        "confidenceMode": { "enum": ["strict", "lenient"] }
+      },
+      "additionalProperties": false
+    },
+    "thresholds": {
+      "type": "object",
+      "required": [
+        "lcpP75Ms", "inpP75Ms", "clsP75", "decayDays", "highTrafficThreshold", "similarityMax", "intentScoreMin",
+        "consentTrackingRequired", "concentrationWarnPct", "divestPendingMaxDays", "programmaticIndexMinPct", "programmaticEvalDays",
+        "brandSerpOwnershipWarnPct", "crawlWasteWarnPct", "orphanPageWarnPct", "anchorConcentrationWarnPct", "cohortIndexWarnPct",
+        "redirectCapacityWarnPct", "productionCostMissingWarnPct", "programmaticShareWarnPct", "contentDebtWarnPct", "sitemapUrlLimit",
+        "incrementalityMinDays", "calibrationMaxAgeDays", "calibrationMinSample", "calibrationMinRho", "croMinWeeks",
+        "consentValidationMaxAgeDays", "decisionEscalationDays", "programmaticReviewSampleMin", "programmaticPilotMinPages",
+        "programmaticPilotMaxPages", "growthCoverageNewPct", "growthCoverageStrengthenPct", "contentLoopObservationDays",
+        "toolLoopObservationDays", "ugcLoopObservationDays", "paybackCalibrationDays", "migrationMonitoringHours", "portfolioMinHistoryMonths",
+        "valuationMinHistoryMonths", "valuationCashflowMinHistoryMonths"
+      ],
+      "additionalProperties": { "type": ["integer", "number", "boolean"] }
+    },
+    "economics": {
+      "type": "object",
+      "required": ["defaultValuePerConversionMinor", "ltvModel", "paybackMaxMonths", "budgetSplit", "valuationMultiples"],
+      "properties": {
+        "defaultValuePerConversionMinor": { "type": "integer", "minimum": 0 },
+        "ltvModel": { "enum": ["none", "cohort", "blended"] },
+        "paybackMaxMonths": { "type": "integer", "minimum": 1 },
+        "budgetSplit": {
+          "type": "object",
+          "required": ["investPct", "holdPct", "harvestPct", "divestPct"],
+          "properties": {
+            "investPct": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "holdPct": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "harvestPct": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "divestPct": { "type": "integer", "minimum": 0, "maximum": 100 }
+          },
+          "additionalProperties": false
+        },
+        "valuationMultiples": {
+          "type": "object",
+          "required": ["low", "high"],
+          "properties": {
+            "low": { "type": "number", "minimum": 0 },
+            "high": { "type": "number", "minimum": 0 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "policy": {
+      "type": "object",
+      "required": ["aiBots", "blockedSections", "perplexityQuery"],
+      "properties": {
+        "aiBots": {
+          "type": "object",
+          "required": ["aiTraining", "aiSearch", "custom"],
+          "properties": {
+            "aiTraining": { "enum": ["block", "allow"] },
+            "aiSearch": { "enum": ["allow", "block"] },
+            "custom": { "type": "object", "additionalProperties": { "enum": ["allow", "block"] } }
+          },
+          "additionalProperties": false
+        },
+        "blockedSections": { "type": "array", "items": { "type": "string", "pattern": "^/" }, "uniqueItems": true },
+        "perplexityQuery": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "business": {
+      "type": "object",
+      "required": ["verticals", "revenueModel"],
+      "properties": {
+        "verticals": { "type": "array", "items": { "enum": ["ecommerce", "local", "saas", "media", "i18n"] }, "uniqueItems": true },
+        "revenueModel": { "enum": ["ecommerce", "leadgen", "ads", "affiliate", "paywall", "mixed"] }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$comment": "P-08 enforces dataWindowStart >= 2025-09-11 explicitly; Draft-07 minimum is not valid for string ordering. P-02 rejects any string containing a pipe placeholder."
+}
