@@ -414,10 +414,12 @@ export function buildPremiumDossierPdf(
   const tocEntries = [
     "Executive assurance dashboard",
     "Controlled identity and reporting period",
+    "Compliance calendar",
     "Emissions result and A-H reconciliation",
     "Goods allocation and materiality",
     "Evidence assurance and data provenance",
     "Calculation reproducibility and audit trail",
+    "Scenario analysis and materiality simulation",
     "Findings and corrective actions",
     "Regulatory and registry crosswalk",
     "Premium chapter contract",
@@ -482,6 +484,35 @@ export function buildPremiumDossierPdf(
     definitivePeriod ? "green" : "red"
   );
 
+  const calendar = model.complianceCalendar;
+  if (calendar) {
+    section("Compliance calendar", "Definitive-period CBAM milestones from certificate sales to annual declaration and surplus repurchase");
+    metricCards([
+      { label: "Reference year", value: calendar.referenceYear, note: "Cycle covered by this milestone calendar", color: NAVY_2 },
+      { label: "First declaration deadline", value: calendar.firstDeclarationDeadline, note: "Annual declaration + certificate surrender", color: GOLD },
+      { label: "Days until declaration", value: `${calendar.daysUntilFirstDeclaration}`, note: calendar.daysUntilFirstDeclaration >= 0 ? "Remaining calendar days" : "Deadline passed", color: calendar.daysUntilFirstDeclaration >= 0 ? GREEN : RED },
+      { label: "Milestones tracked", value: String(calendar.milestones.length), note: "Certificate, holding and declaration events", color: BLUE },
+    ]);
+    table(["Milestone", "Date", "Type", "State", "Calendar position"],
+      calendar.milestones.map((milestone) => [
+        milestone.label,
+        milestone.date,
+        humanize(milestone.kind),
+        humanize(milestone.state),
+        milestone.state === "passed"
+          ? `${-milestone.daysUntil} day(s) ago`
+          : milestone.state === "due"
+            ? `${milestone.daysUntil} day(s) to go — act now`
+            : `In ${milestone.daysUntil} day(s)`,
+      ]),
+      [34, 13, 12, 13, 28], 6.3);
+    callout(
+      "Calendar boundary",
+      "Milestone dates follow the 2026 definitive-period cycle published for CBAM (Regulation (EU) 2023/956 and implementing acts). This calendar is preparation guidance; the competent authority and the CBAM registry remain authoritative for submission timing and certificate obligations.",
+      "navy"
+    );
+  }
+
   section("Emissions result and A-H reconciliation", "Transparent bridge from installation activity through certificate-relevant and informational totals");
   table(["Code", "Result category", "Value (tCO2e)", "Role"], [
     ["A", "Installation direct emissions", model.totals.installationDirectEmissions, "Measured/calculated at installation"],
@@ -545,6 +576,50 @@ export function buildPremiumDossierPdf(
     ["Data Integrity Manifest.json", "Package file hashes, sizes and media types"],
   ], [34, 66], 7);
   callout("Root-of-trust", `Calculation root hash: ${clean(model.calculationRootHash).slice(0, 48)}. Case-data hash: ${clean(model.caseDataHash).slice(0, 48)}. Full values are preserved in machine-readable package files.`);
+
+  const scenarios = model.scenarioAnalysis;
+  if (scenarios) {
+    section("Scenario analysis and materiality simulation", "Deterministic what-if sensitivity and per-good 5% planning-materiality reference");
+    metricCards([
+      { label: "Scenarios modelled", value: String(scenarios.rows.length), note: "Grid-factor and production-volume moves at +/-10%", color: NAVY_2 },
+      { label: "Base aggregate intensity", value: `${formatNumber(model.totals.aggregateSpecificEmbeddedEmissions, 6)}`, note: "tCO2e per tonne before scenario moves", color: BLUE },
+      { label: "Worst-case intensity", value: scenarios.bars.reduce((max, item) => Math.max(max, numberValue(item.value)), 0).toFixed(6), note: "Highest tCO2e/t across modelled scenarios", color: RED },
+      { label: "Best-case intensity", value: scenarios.bars.reduce((min, item) => Math.min(min, numberValue(item.value)), Infinity).toFixed(6), note: "Lowest tCO2e/t across modelled scenarios", color: GREEN },
+    ]);
+    barChart("Scenario intensity (tCO2e/t)", scenarios.bars.map((item) => ({
+      label: item.label,
+      value: numberValue(item.value),
+      display: formatNumber(item.value, 6),
+      color: item.color,
+    })));
+    table(["Scenario", "Total tCO2e", "Intensity tCO2e/t", "Intensity delta"],
+      scenarios.rows.map((row) => [row[0], row[1], row[2], row[3]]),
+      [42, 22, 22, 14], 6.4);
+    callout(
+      "Scenario discipline",
+      "Each scenario is a deterministic mechanical recomputation: one sealed input moves by +/-10% while every other input stays constant. It isolates arithmetic exposure; it is not a statistical uncertainty or probability statement.",
+      "navy"
+    );
+    barChart("Materiality simulation (specific vs 5% reference, tCO2e/t)", model.goods.map((good, index) => ({
+      label: `Good ${good.goodIndex} · ${good.cnCode}`,
+      value: numberValue(good.specificEmbeddedEmissions),
+      display: formatNumber(good.specificEmbeddedEmissions, 6),
+      color: index % 2 === 0 ? NAVY_2 : BLUE,
+    })));
+    table(["Good", "CN code", "Specific tCO2e/t", "5% materiality reference", "Proximity to 5%"],
+      model.goods.map((good) => {
+        const specific = numberValue(good.specificEmbeddedEmissions);
+        const threshold = numberValue(good.materialityThresholdSpecific);
+        const proximity = threshold > 0 ? Math.min(100, Math.round((specific / threshold) * 100)) : 0;
+        return [good.goodIndex, good.cnCode, formatNumber(good.specificEmbeddedEmissions, 6), formatNumber(good.materialityThresholdSpecific, 6), `${proximity}% of the 5% reference`];
+      }),
+      [10, 15, 22, 26, 27], 6.4);
+    callout(
+      "Materiality simulation",
+      "The 5% values are verifier planning references calculated per good from total specific embedded emissions. Materiality below the threshold requires expert judgement; the simulation shows how close each good sits to that reference, it does not replace the independent verifier's materiality determination.",
+      "amber"
+    );
+  }
 
   section("Findings and corrective actions", "Deterministic exceptions, impact statements and accountable closure requirements");
   table(["Finding", "Severity", "Category", "Status", "Impact", "Remediation"],

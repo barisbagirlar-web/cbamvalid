@@ -450,6 +450,36 @@ export const PremiumDossierViewModelV2Schema = PremiumDossierViewModelSchema.ext
     }))
     .optional(),
   verifierPreparation: z.any().optional(),
+  scenarioAnalysis: z
+    .object({
+      rows: z.array(z.tuple([z.string(), z.string(), z.string(), z.string()])),
+      bars: z.array(
+        z.object({
+          label: z.string(),
+          value: z.string(),
+          color: z.tuple([z.number(), z.number(), z.number()]),
+        })
+      ),
+    })
+    .optional(),
+  complianceCalendar: z
+    .object({
+      referenceYear: z.string(),
+      firstDeclarationDeadline: z.string(),
+      daysUntilFirstDeclaration: z.number(),
+      milestones: z.array(
+        z.object({
+          id: z.string(),
+          label: z.string(),
+          date: z.string(),
+          description: z.string(),
+          kind: z.enum(["certificate", "holding", "declaration"]),
+          daysUntil: z.number(),
+          state: z.enum(["passed", "due", "upcoming"]),
+        })
+      ),
+    })
+    .optional(),
   versionStamp: z
     .object({
       product: z.string(),
