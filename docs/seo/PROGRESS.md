@@ -1,13 +1,14 @@
 # SEO V6 PROGRESS — cbamvalid
 
-Source branch: `seo/faz-00-v6-bootstrap-kesif`
-Base main SHA at bootstrap start: `49947001398332e2c26f6a6f1f989ab7800ebf0f`
+Initial V6 bootstrap branch: `seo/faz-00-v6-bootstrap-kesif`  
+Bootstrap base main SHA: `49947001398332e2c26f6a6f1f989ab7800ebf0f`  
+Current control-plane main after phase-aware hotfix: `6ca16a4b992249541b0191d014f0978f7a138a16`
 
 | Phase | Status | Evidence |
 |---|---|---|
-| BOOTSTRAP | completed | PR #175 candidate `e03a0cf61733d16cd5e0b66e7085ffa1ce2b4f81`: SEO V6 Conformance run `31314511415` PASS; PR Quality Gate `31314511438` PASS; Regression Guard `31314511436` PASS; Security `31314511411` PASS; Final 9.9 `31314511434` PASS; all other head workflows PASS |
-| FAZ 00 | pending | GSC/GA4 Gate-In not yet proven; missing measurement access is not classified as cold-start |
-| FAZ 01 | pending | — |
+| BOOTSTRAP | completed | PR #175 V6 control plane merged as `d0e517e8f48cec588add7b13208c4af8afc5b08f`; PR #177 phase-aware CI hotfix merged as `6ca16a4b992249541b0191d014f0978f7a138a16`; both merged only after repository workflow sets passed |
+| FAZ 00 | blocked | `docs/seo/raporlar/faz00_baz.md`: root reachable; GSC + GA4 reporting access unavailable; `coldStart` must remain unknown; exit-3 missing-data path; Phase 01 prohibited |
+| FAZ 01 | pending | blocked by FAZ 00 |
 | FAZ 02 | pending | — |
 | FAZ 03 | pending | — |
 | FAZ 04 | pending | — |
@@ -31,4 +32,6 @@ Allowed statuses: `pending | in_progress | blocked | completed`.
 
 A phase is `completed` only after required machine checks, negative coverage and approval conditions are evidenced. Runtime deployment state is tracked separately and is not implied by this ledger.
 
-BOOTSTRAP deployment decision: **NO DEPLOY** — the branch changes only SEO execution/control-plane files and does not alter application runtime output.
+Deployment decisions:
+- BOOTSTRAP: **NO DEPLOY** — control-plane only.
+- FAZ 00 blocked evidence: **NO DEPLOY** — documentation/progress only.
