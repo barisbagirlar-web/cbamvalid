@@ -40,6 +40,7 @@ import { evaluatePremiumChapterContract } from "./premium-chapter-contract";
 import { generateFindingsAndActions } from "../validation/findings-engine";
 import { assessReadiness, getReportingPeriodAssessment } from "../validation/readiness-score";
 import { buildPremiumDossierPdf } from "./premium-dossier-pdf";
+import { getComplianceCalendarState } from "../compliance/compliance-calendar";
 import type { PremiumDossierViewModel, PremiumDossierViewModelV2, SealAssessmentContext } from "./premium-dossier-schema";
 import type { HonestScoreboard } from "./honest-scoreboard";
 import {
@@ -337,6 +338,11 @@ function buildPdfArtifacts(params: {
       premiumChapters: premiumContractResult.evaluations.map((entry) => ({ ...entry })),
       premiumNameVisible: premiumContractResult.premiumNameVisible,
       verifierPreparation: model.verifierPreparation,
+      scenarioAnalysis: {
+        rows: sensitivity.rows as unknown as [string, string, string, string][],
+        bars: sensitivity.bars,
+      },
+      complianceCalendar: getComplianceCalendarState(new Date(params.generatedAt)),
     };
 
     return [

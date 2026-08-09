@@ -3,8 +3,8 @@
   "title": "CBAMValid Public Sample Dossier",
   "notice": "Fictional demonstration data. Not a customs declaration, official CBAM Registry submission, or accredited verifier opinion.",
   "pageCount": 16,
-  "generatedAt": "2026-08-09T21:20:55.662Z",
-  "primaryDocumentSha256": "02dd9bf8d8539b8bfba34d65c3cb81d5b00573c210ed1d019bb3f9d1e50235ba",
+  "generatedAt": "2026-08-09T23:10:21.664Z",
+  "primaryDocumentSha256": "2f4a565856ae20c6c0517bb983b5d49b75277c79731a610bb94b0517c5c6fe0f",
   "files": [
     {
       "path": "CBAMValid-Sample-Dossier.pdf",
@@ -12,7 +12,7 @@
       "role": "sample-pdf",
       "href": "/sample-dossier/CBAMValid-Sample-Dossier.pdf",
       "sizeBytes": 5146189,
-      "sha256": "02dd9bf8d8539b8bfba34d65c3cb81d5b00573c210ed1d019bb3f9d1e50235ba"
+      "sha256": "2f4a565856ae20c6c0517bb983b5d49b75277c79731a610bb94b0517c5c6fe0f"
     },
     {
       "path": "CBAMValid-Sample-Dossier.json",
