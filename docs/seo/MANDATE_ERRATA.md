@@ -142,6 +142,14 @@ Permanent correction: add only `scripts/seo/validate-all.ts` to `faz-02.writes` 
 
 Permanent correction: add `tests/conformance/**` to every affected future phase contract now, rather than repeating one-off bootstrap repairs later. The permission is limited by the active phase write lock and does not authorize application/runtime changes. This removes a systemic execution blocker while preserving AIP-03 isolation.
 
+## E-40 — PHASE 04 RENDER GATE EXISTED BUT V6 CI NEVER EXECUTED IT
+
+[Kesin] The repository already had `scripts/seo/run-rendered-gate.sh` and `scripts/seo/crawl-rendered.ts`, but `.github/workflows/seo-conformance.yml` executed only preflight, typecheck, production build, generic release guards and Vitest conformance. A Phase-04 PR could therefore add or modify the rendered-crawl gate, record INV-4.x evidence, and still pass V6 CI without that runtime gate ever running.
+
+[Kesin] Phase 04 contains BLOCK invariants for raw/render critical-content parity and rendered canonical/hreflang parity. Static unit fixtures are necessary but are not sufficient evidence that a production build survives browser hydration.
+
+Permanent correction: V6 CI now has a Phase-04-only browser-render step. For `faz-04`, it installs the already-declared Playwright Chromium runtime and executes `scripts/seo/run-rendered-gate.sh` with `SEO_RENDER_BROWSER=1`. `SEO_SKIP_BUILD=1` is supplied because the same workflow has already completed an exact-head production build; the Phase-04 script must honor that flag while retaining standalone build behavior outside CI. Other phases are unaffected. Phase 04 cannot be marked completed unless this executable browser gate is green on the exact PR head.
+
 ## Decision record
 
 These corrections preserve the source mandate's intent: stricter write isolation, machine-verifiable evidence, no invented data, no unnecessary deployment and no weakening of any legal/ethical restriction.

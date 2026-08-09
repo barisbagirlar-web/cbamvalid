@@ -134,6 +134,14 @@ jobs:
       - name: V6 conformance and negative fixtures
         run: npm run seo:conformance
 
+      - name: Phase 04 browser-render gate
+        if: steps.seo_phase.outputs.phase == 'faz-04'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx playwright install --with-deps chromium
+          SEO_SKIP_BUILD=1 SEO_RENDER_BROWSER=1 bash scripts/seo/run-rendered-gate.sh
+
       - name: Prove cold-start fails closed without GSC history
         shell: bash
         run: |
