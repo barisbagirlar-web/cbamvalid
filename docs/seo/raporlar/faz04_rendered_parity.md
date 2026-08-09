@@ -77,11 +77,15 @@ Browser page errors are BLOCK.
 
 English-only behavior is explicit: an empty hreflang set is valid; browser hydration may not invent a locale cluster.
 
-## 4. Public Route Coverage Guard
+## 4. Static Public Route Governance
 
-The crawler recursively discovers static `app/(public)/**/page.tsx` routes, excludes dynamic `[segment]` pages, and requires every static public route to exist in `SEO_ROUTE_REGISTRY`.
+The crawler recursively discovers static `app/(public)/**/page.tsx` routes and excludes dynamic `[segment]` pages.
 
-This permanently prevents a new public landing page from silently missing the registry/sitemap/render governance chain.
+An index-capable public route must exist in `SEO_ROUTE_REGISTRY`. One narrow exception is permitted for utility surfaces that deliberately use the exact `generateSeoMetadata("<same-path>")` fallback while remaining outside the registry. Those routes are not silently trusted: the crawler must prove both raw HTTP and Chromium-hydrated output remain `noindex`, and the route must stay outside the sitemap.
+
+This rule correctly classifies `/verify/package`: it is a thin package-integrity utility, not a search landing page. Its source uses `generateSeoMetadata("/verify/package")`; because no registry identity exists, the metadata factory fails closed to `noindex,nofollow,noarchive,nosnippet`. Git history shows the utility was introduced on `2026-07-28`; no artificial sitemap/index identity is created.
+
+Any new static public page that is neither registry-governed nor an exact fail-closed metadata utility is BLOCK.
 
 ## 5. Build Reuse Without Double Compilation
 
@@ -97,7 +101,7 @@ This removes redundant build time without weakening evidence.
 
 | Invariant | Severity | Result | Evidence |
 |---|---|---|---|
-| INV-4.1 | BLOCK | PASS candidate | raw↔hydrated title/description/H1 parity + current-price SSOT + static-public registry coverage; exact negative fixtures |
+| INV-4.1 | BLOCK | PASS candidate | raw↔hydrated title/description/H1 parity + current-price SSOT + registry-or-fail-closed-noindex static-public governance; exact negative fixtures |
 | INV-4.2 | BLOCK | PASS candidate | raw↔hydrated canonical/hreflang equality; exact negative fixtures |
 | INV-4.3 | WARN | SKIP_NO_DATA | [Eksik_veri] real-user INP p75 unavailable; no lab→field substitution |
 | INV-4.4 | INFO | SKIP_NO_DATA | [Eksik_veri] soft-navigation INP telemetry unavailable |
@@ -117,19 +121,23 @@ Positive suite: `tests/conformance/phase04-rendered.test.ts`.
 
 Mitigation: public product/pricing/registry copy derives from `CANONICAL_PRICING`; rendered gate requires the current SSOT token.
 
-### B — A new public page is launched but never enters sitemap governance
+### B — A new public landing page is launched but never enters sitemap governance
 
-Mitigation: filesystem static-public discovery compared against the runtime registry. Missing route is BLOCK.
+Mitigation: filesystem static-public discovery requires registry membership unless the source uses the exact fail-closed metadata fallback. Unknown/unclassified routes are BLOCK.
 
-### C — Client hydration mutates canonical or injects fake hreflang
+### C — A thin utility accidentally becomes indexable
+
+Mitigation: any unregistered utility accepted by the source-pattern rule is crawled in raw HTML and Chromium; either becoming indexable or leaking into the sitemap is BLOCK.
+
+### D — Client hydration mutates canonical or injects fake hreflang
 
 Mitigation: Chromium exact parity against raw HTML on critical routes. Any canonical/hreflang set difference is BLOCK.
 
-### D — Client-only rendering removes critical H1/title/description
+### E — Client-only rendering removes critical H1/title/description
 
 Mitigation: raw/hydrated critical snapshot equality. Page-level browser exceptions are also BLOCK.
 
-### E — CI appears green without actually running the browser gate
+### F — CI appears green without actually running the browser gate
 
 Mitigation: E-40 Phase-04-only workflow step invokes Playwright + `run-rendered-gate.sh`; Phase 04 is not complete without that job step succeeding on exact head.
 
