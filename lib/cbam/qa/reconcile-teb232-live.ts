@@ -6,6 +6,16 @@ import type {
   Firestore,
   Query,
 } from "firebase-admin/firestore";
+import { FOUR_DOSSIER_KEYS } from "../../../tests/fixtures/four-dossiers";
+import {
+  TEB232_EMAIL,
+  TEB232_OLD_CASE_IDS,
+  TEB232_UID,
+  teb232CaseId,
+} from "../../../scripts/refresh-teb232-four-complete-cases";
+import {
+  prepareAllTeb232DraftCasesForSeal,
+} from "./prepare-teb232-drafts-for-seal";
 import {
   reconcileTeb232Cases,
   type Teb232ReconcileResult,
@@ -13,8 +23,6 @@ import {
 
 export const TEB232_LEGACY_EXTRA_CASE_ID =
   "case_3d17c39de6e8780fceb0da2f5459455d06c62399eb91be48d83980c7f90ae9c8";
-
-const TEB232_UID = "r3Sv0U5YqEcLLylbw5ndwK1Zg652";
 
 type DocumentBackup = {
   path: string;
@@ -32,6 +40,20 @@ type ExactState = {
   documentBackups: DocumentBackup[];
   fileBackups: FileBackup[];
 };
+
+function assertIdentity(params: {
+  authenticatedUid: string;
+  authenticatedEmail: string;
+  emailVerified: boolean;
+}): void {
+  if (
+    params.authenticatedUid !== TEB232_UID ||
+    params.authenticatedEmail.trim().toLowerCase() !== TEB232_EMAIL ||
+    params.emailVerified !== true
+  ) {
+    throw new Error("TEB232_RECONCILE_IDENTITY_REFUSED");
+  }
+}
 
 function createState(): ExactState {
   return {
@@ -66,18 +88,21 @@ async function addFiles(
   for (const file of files) state.files.set(file.name, file);
 }
 
-async function discoverLegacyExtraState(
+async function discoverCaseState(
   db: Firestore,
-  bucket: Bucket
+  bucket: Bucket,
+  caseIds: readonly string[]
 ): Promise<ExactState> {
   const state = createState();
-  const caseId = TEB232_LEGACY_EXTRA_CASE_ID;
-  await addDocument(state, db.collection("cbam_cases").doc(caseId));
-  await addQuery(state, db.collection("cbam_cases").where("caseId", "==", caseId));
-  await addQuery(state, db.collection("cbam_reports").where("caseId", "==", caseId));
-  await addQuery(state, db.collection("document_seals").where("caseId", "==", caseId));
-  await addQuery(state, db.collection("report_requests").where("caseId", "==", caseId));
-  await addFiles(state, bucket, `evidence/${TEB232_UID}/${caseId}/`);
+
+  for (const caseId of caseIds) {
+    await addDocument(state, db.collection("cbam_cases").doc(caseId));
+    await addQuery(state, db.collection("cbam_cases").where("caseId", "==", caseId));
+    await addQuery(state, db.collection("cbam_reports").where("caseId", "==", caseId));
+    await addQuery(state, db.collection("document_seals").where("caseId", "==", caseId));
+    await addQuery(state, db.collection("report_requests").where("caseId", "==", caseId));
+    await addFiles(state, bucket, `evidence/${TEB232_UID}/${caseId}/`);
+  }
 
   const reports = [...state.documents.values()].filter(
     (reference) => reference.parent.id === "cbam_reports"
@@ -100,6 +125,32 @@ async function discoverLegacyExtraState(
     await addFiles(state, bucket, `reports/${TEB232_UID}/${reportId}/`);
   }
   return state;
+}
+
+async function discoverUserDraftCaseIds(db: Firestore): Promise<string[]> {
+  const canonical = new Set(FOUR_DOSSIER_KEYS.map(teb232CaseId));
+  const excluded = new Set([
+    ...TEB232_OLD_CASE_IDS,
+    TEB232_LEGACY_EXTRA_CASE_ID,
+    ...canonical,
+  ]);
+  const snapshot = await db
+    .collection("cbam_cases")
+    .where("uid", "==", TEB232_UID)
+    .get();
+
+  return snapshot.docs
+    .map((document) => {
+      const data = document.data() || {};
+      return {
+        caseId: String(data.caseId || document.id),
+        status: String(data.status || "DRAFT").toUpperCase(),
+      };
+    })
+    .filter(
+      ({ caseId, status }) => status === "DRAFT" && !excluded.has(caseId)
+    )
+    .map(({ caseId }) => caseId);
 }
 
 async function capture(state: ExactState): Promise<void> {
@@ -167,17 +218,54 @@ export async function reconcileTeb232LiveCases(params: {
   authenticatedEmail: string;
   emailVerified: boolean;
 }): Promise<Teb232ReconcileResult> {
-  const state = await discoverLegacyExtraState(params.db, params.bucket);
-  if (state.documents.size === 0 && state.files.size === 0) {
-    return reconcileTeb232Cases(params);
-  }
+  assertIdentity(params);
 
-  await capture(state);
-  await remove(params.db, state);
+  const userDraftCaseIds = await discoverUserDraftCaseIds(params.db);
+  const userDraftState = await discoverCaseState(
+    params.db,
+    params.bucket,
+    userDraftCaseIds
+  );
+  const legacyState = await discoverCaseState(
+    params.db,
+    params.bucket,
+    [TEB232_LEGACY_EXTRA_CASE_ID]
+  );
+
+  await capture(userDraftState);
+  await capture(legacyState);
+
+  // The historical canonical reconciler intentionally operates on an exact
+  // four-case set. Temporarily isolate user-created Teb232 drafts so canonical
+  // repair cannot delete or reject them; restore them byte-for-byte afterwards.
+  await remove(params.db, userDraftState);
+  await remove(params.db, legacyState);
+
+  let canonical: Teb232ReconcileResult;
   try {
-    return await reconcileTeb232Cases(params);
+    canonical = await reconcileTeb232Cases(params);
   } catch (error) {
-    await restore(params.db, params.bucket, state);
+    await restore(params.db, params.bucket, userDraftState);
+    await restore(params.db, params.bucket, legacyState);
     throw error;
   }
+
+  // User-created test drafts are preserved, then upgraded independently to a
+  // complete controlled scenario. The one obsolete legacy extra remains removed.
+  await restore(params.db, params.bucket, userDraftState);
+
+  const draftPreparation = await prepareAllTeb232DraftCasesForSeal({
+    authenticatedUid: params.authenticatedUid,
+    authenticatedEmail: params.authenticatedEmail,
+    emailVerified: params.emailVerified,
+  });
+
+  return {
+    ...canonical,
+    changed:
+      canonical.changed ||
+      legacyState.documents.size > 0 ||
+      legacyState.files.size > 0 ||
+      draftPreparation.changed,
+  };
 }
