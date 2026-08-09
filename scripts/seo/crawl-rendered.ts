@@ -7,7 +7,7 @@
  * Usage: SEO_CRAWL_BASE_URL=http://127.0.0.1:3000 npx tsx scripts/seo/crawl-rendered.ts
  */
 
-import { readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium, type Browser } from "@playwright/test";
@@ -40,6 +40,12 @@ export type CriticalSnapshot = {
   h1Texts: string[];
   canonical: string | null;
   hreflangs: string[];
+};
+
+export type StaticPublicRouteRecord = {
+  route: string;
+  file: string;
+  failClosedMetadata: boolean;
 };
 
 type PageFetch = {
@@ -209,19 +215,45 @@ function walkPages(directory: string): string[] {
   return files;
 }
 
-export function discoverStaticPublicRoutes(): string[] {
+export function discoverStaticPublicRouteRecords(): StaticPublicRouteRecord[] {
   return walkPages(PUBLIC_APP_ROOT)
-    .map(publicRouteFromPageFile)
-    .filter((route): route is string => route !== null)
+    .map((file) => {
+      const route = publicRouteFromPageFile(file);
+      if (!route) return null;
+      const source = readFileSync(file, "utf8");
+      const failClosedMetadata =
+        source.includes(`generateSeoMetadata("${route}")`) || source.includes(`generateSeoMetadata('${route}')`);
+      return { route, file, failClosedMetadata };
+    })
+    .filter((record): record is StaticPublicRouteRecord => record !== null)
+    .sort((left, right) => left.route.localeCompare(right.route));
+}
+
+export function discoverStaticPublicRoutes(): string[] {
+  return discoverStaticPublicRouteRecords().map((record) => record.route);
+}
+
+export function discoverFailClosedNoindexUtilityRoutes(
+  records: readonly StaticPublicRouteRecord[] = discoverStaticPublicRouteRecords(),
+  registryPaths: readonly string[] = SEO_ROUTE_REGISTRY.map((route) => route.path),
+): string[] {
+  const registry = new Set(registryPaths);
+  return records
+    .filter((record) => !registry.has(record.route) && record.failClosedMetadata)
+    .map((record) => record.route)
     .sort();
 }
 
 export function validatePublicStaticRegistryCoverage(
   publicRoutes: readonly string[],
   registryPaths: readonly string[],
+  failClosedNoindexRoutes: readonly string[] = [],
 ): string[] {
   const registry = new Set(registryPaths);
-  return publicRoutes.filter((route) => !registry.has(route)).map((route) => `INV-4.1 static public route missing from SEO registry ${route}`);
+  const noindexUtilities = new Set(failClosedNoindexRoutes);
+  return publicRoutes
+    .filter((route) => !registry.has(route) && !noindexUtilities.has(route))
+    .map((route) => `INV-4.1 static public route missing from SEO governance ${route}`);
 }
 
 async function fetchPage(path: string): Promise<PageFetch> {
@@ -323,6 +355,23 @@ async function crawlSitemapUrl(path: string): Promise<Check[]> {
   return checks;
 }
 
+async function crawlFailClosedNoindexUtility(path: string): Promise<Check[]> {
+  const page = await fetchPage(path);
+  const checks: Check[] = [];
+  if (page.status !== 200) return [fail("INV-4.1", `${path} fail-closed utility HTTP ${page.status}`)];
+  if (robotsAllowsIndex(page.html, page.xRobots)) {
+    checks.push(fail("INV-4.1", `${path} unregistered utility is indexable instead of fail-closed noindex`));
+  } else {
+    checks.push(pass("INV-4.1", `${path} unregistered utility remains fail-closed noindex`));
+  }
+  if (listSitemapRoutes().some((route) => route.path === path)) {
+    checks.push(fail("INV-4.1", `${path} fail-closed utility leaked into sitemap`));
+  } else {
+    checks.push(pass("INV-4.1", `${path} fail-closed utility excluded from sitemap`));
+  }
+  return checks;
+}
+
 async function crawlUnknownCn(): Promise<Check[]> {
   const code = "72019999";
   const detailPath = `/cn-code/${code}`;
@@ -361,6 +410,32 @@ async function crawlHomepageG25(): Promise<Check[]> {
     return [fail("G25", "Homepage HTML missing hero/authority signals")];
   }
   return [pass("G25", "Homepage initial HTML contains brand and key copy")];
+}
+
+async function browserNoindexUtilityParity(browser: Browser, paths: readonly string[]): Promise<Check[]> {
+  const checks: Check[] = [];
+  const page = await browser.newPage();
+  try {
+    for (const path of paths) {
+      const raw = await fetchPage(path);
+      if (raw.status !== 200 || robotsAllowsIndex(raw.html, raw.xRobots)) {
+        checks.push(fail("INV-4.1", `${path} raw fail-closed noindex proof failed`));
+        continue;
+      }
+      const response = await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => undefined);
+      const renderedHtml = await page.content();
+      const renderedXRobots = response?.headers()["x-robots-tag"] ?? null;
+      checks.push(
+        response?.status() === 200 && !robotsAllowsIndex(renderedHtml, renderedXRobots)
+          ? pass("INV-4.1", `${path} raw/render fail-closed noindex parity`)
+          : fail("INV-4.1", `${path} became indexable after hydration`),
+      );
+    }
+  } finally {
+    await page.close();
+  }
+  return checks;
 }
 
 async function browserParity(browser: Browser): Promise<Check[]> {
@@ -405,12 +480,14 @@ async function browserParity(browser: Browser): Promise<Check[]> {
 
 export async function runRenderedCrawl(): Promise<Check[]> {
   const results: Check[] = [];
-  const publicRoutes = discoverStaticPublicRoutes();
+  const publicRecords = discoverStaticPublicRouteRecords();
+  const publicRoutes = publicRecords.map((record) => record.route);
   const registryPaths = SEO_ROUTE_REGISTRY.map((route) => route.path);
-  const coverageBlocks = validatePublicStaticRegistryCoverage(publicRoutes, registryPaths);
+  const noindexUtilities = discoverFailClosedNoindexUtilityRoutes(publicRecords, registryPaths);
+  const coverageBlocks = validatePublicStaticRegistryCoverage(publicRoutes, registryPaths, noindexUtilities);
   results.push(
     coverageBlocks.length === 0
-      ? pass("INV-4.1", `Static public registry coverage ${publicRoutes.length}/${publicRoutes.length}`)
+      ? pass("INV-4.1", `Static public SEO governance ${publicRoutes.length}/${publicRoutes.length}; failClosedNoindex=${noindexUtilities.length}`)
       : fail("INV-4.1", coverageBlocks.join("; ")),
   );
 
@@ -422,8 +499,9 @@ export async function runRenderedCrawl(): Promise<Check[]> {
   }
 
   const sitemapPaths = listSitemapRoutes().map((route) => route.path);
-  console.log(`RENDERED_CRAWL base=${BASE} urls=${sitemapPaths.length} staticPublic=${publicRoutes.length} browser=${BROWSER_ENABLED}`);
+  console.log(`RENDERED_CRAWL base=${BASE} urls=${sitemapPaths.length} staticPublic=${publicRoutes.length} failClosedNoindex=${noindexUtilities.length} browser=${BROWSER_ENABLED}`);
   for (const path of sitemapPaths) results.push(...(await crawlSitemapUrl(path)));
+  for (const path of noindexUtilities) results.push(...(await crawlFailClosedNoindexUtility(path)));
   results.push(...(await crawlUnknownCn()));
   results.push(...(await crawlHomepageG25()));
 
@@ -431,6 +509,7 @@ export async function runRenderedCrawl(): Promise<Check[]> {
     const browser = await chromium.launch({ headless: true });
     try {
       results.push(...(await browserParity(browser)));
+      results.push(...(await browserNoindexUtilityParity(browser, noindexUtilities)));
     } finally {
       await browser.close();
     }
