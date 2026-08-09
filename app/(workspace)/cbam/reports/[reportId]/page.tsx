@@ -327,7 +327,7 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
               </div>
               <div>
                 <p className="text-xs text-muted font-semibold uppercase tracking-wider">Reporting Year & Period</p>
-                <p className="text-sm font-semibold text-foreground mt-1">Calendar Year {report.calculation.ruleset.substring(0, 4)}</p>
+                <p className="text-sm font-semibold text-foreground mt-1">Calendar Year {report.reportingYear ?? report.calculation.ruleset.match(/\d{4}$/)?.[0] ?? "—"}</p>
               </div>
               <div>
                 <p className="text-xs text-muted font-semibold uppercase tracking-wider">Automated Readiness</p>
@@ -446,7 +446,7 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 mt-4">
                 {DOWNLOADS.map((item) => {
                   const Icon = item.icon;
-                  const fileKey = item.format === "pdf" ? "Product Scope Assessment.pdf" : item.format === "xlsx" ? "Verifier Workspace.xlsx" : item.format === "manifest" ? "Data Integrity Manifest.json" : item.format === "signature" ? "Manifest Signature.sig" : "Calculation Trace.json";
+                  const fileKey = item.format === "pdf" ? "dossier.pdf" : item.format === "xlsx" ? "Verifier Workspace.xlsx" : item.format === "manifest" ? "Data Integrity Manifest.json" : item.format === "signature" ? "Manifest Signature.sig" : "case-snapshot.json";
                   const storage = storageByFile[fileKey];
                   return (
                     <button

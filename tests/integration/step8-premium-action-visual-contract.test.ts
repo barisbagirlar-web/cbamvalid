@@ -19,17 +19,17 @@ describe("Step 8 premium final-action visual contract", () => {
   });
 
   it("uses a differentiated enterprise hierarchy", () => {
-    expect(css).toContain("#0f6b4e");
-    expect(css).toContain("#0b5d44");
+    expect(css).toContain("#2d6a4f");
+    expect(css).toContain("#1b4332");
     expect(css).toContain("background: transparent !important;");
     expect(css).toContain("background: rgba(26, 25, 21, 0.025) !important;");
   });
 
   it("keeps blocked and payment states distinct from seal-ready green", () => {
     expect(css).toContain('a[data-testid="step8-primary-action"][href*="/credits/buy"]');
-    expect(css).toContain("#b97827");
+    expect(css).toContain("#d4a017");
     expect(css).toContain('button[data-testid="step8-primary-action"][aria-haspopup="true"]');
-    expect(css).toContain("#b4513a");
+    expect(css).toContain("#9b2226");
   });
 
   it("preserves responsive and reduced-motion behavior", () => {

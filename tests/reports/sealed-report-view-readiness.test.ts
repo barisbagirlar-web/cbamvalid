@@ -67,4 +67,14 @@ describe("sealed report view readiness mapping (Enterprise 1000 mandate)", () =>
     const view = toSealedReportView(baseRecord({}));
     expect(view.automatedReadiness).toBe("OPERATOR_PREPARATION_COMPLETE");
   });
+
+  it("carries the persisted reporting year to the sealed report view", () => {
+    const view = toSealedReportView(baseRecord({ reportingYear: 2026 }));
+    expect(view.reportingYear).toBe(2026);
+  });
+
+  it("keeps reportingYear absent on legacy records without the field", () => {
+    const view = toSealedReportView(baseRecord({}));
+    expect(view.reportingYear).toBeUndefined();
+  });
 });
