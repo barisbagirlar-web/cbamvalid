@@ -8,9 +8,60 @@ import { useAuth } from "@/context/AuthProvider";
 import { createNewCaseDraft } from "@/lib/cbam/new-case";
 import { saveCase } from "@/lib/functions/client";
 
+const TEB232_EMAIL = "teb232@gmail.com";
+
+type Teb232PreparationResponse = {
+  status?: string;
+  caseId?: string;
+  operatorPreparation?: number;
+  evidenceAssurance?: number;
+  code?: string;
+  message?: string;
+};
+
 function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
-  return "The new case could not be created. No existing dossier was changed.";
+  return "The new working file could not be prepared safely. No existing dossier was overwritten.";
+}
+
+async function prepareTeb232CaseBeforeOpen(params: {
+  user: NonNullable<ReturnType<typeof useAuth>["user"]>;
+  caseId: string;
+}): Promise<void> {
+  const email = params.user.email?.trim().toLowerCase() || "";
+  if (email !== TEB232_EMAIL || params.user.emailVerified !== true) return;
+
+  const token = await params.user.getIdToken(true);
+  const response = await fetch("/api/qa/reconcile-teb232", {
+    method: "POST",
+    cache: "no-store",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ targetCaseId: params.caseId }),
+  });
+
+  const contentType = response.headers.get("content-type")?.toLowerCase() || "";
+  if (!contentType.includes("application/json")) {
+    await response.text().catch(() => "");
+    throw new Error(`TEB232_NEW_CASE_PREPARE_HTTP_${response.status}`);
+  }
+
+  const payload = (await response.json()) as Teb232PreparationResponse;
+  if (
+    !response.ok ||
+    payload.status !== "success" ||
+    payload.caseId !== params.caseId ||
+    payload.operatorPreparation !== 100 ||
+    payload.evidenceAssurance !== 100
+  ) {
+    throw new Error(
+      payload.code ||
+        payload.message ||
+        "TEB232_NEW_CASE_PREPARATION_INCOMPLETE"
+    );
+  }
 }
 
 export default function NewCasePage() {
@@ -34,7 +85,18 @@ export default function NewCasePage() {
     const createAndOpenCase = async () => {
       try {
         const draft = createNewCaseDraft(user.uid);
-        const newCaseId = await saveCase(draft, undefined, creationRequestId.current ?? undefined);
+        const newCaseId = await saveCase(
+          draft,
+          undefined,
+          creationRequestId.current ?? undefined
+        );
+
+        // The verified Teb232 account is a controlled QA identity. Its test
+        // working files must never be opened as the intentionally incomplete
+        // illustrative draft used for normal customers. Prepare and verify the
+        // complete synthetic scenario before the first workspace render.
+        await prepareTeb232CaseBeforeOpen({ user, caseId: newCaseId });
+
         router.replace(`/cases/${newCaseId}`);
       } catch (creationError) {
         console.error("Failed to create and open a new case", creationError);
@@ -58,7 +120,7 @@ export default function NewCasePage() {
               <h1 className="font-serif text-2xl font-bold">New working file could not be opened</h1>
               <p className="mt-3 text-sm leading-relaxed text-muted">{error}</p>
               <p className="mt-2 text-xs leading-relaxed text-muted">
-                Retry uses the same protected creation request, so a lost network response cannot create another duplicate working file.
+                Retry uses the same protected creation request. For the controlled Teb232 test identity, the workspace is not opened until the complete synthetic scenario and evidence set pass server-side sealing-readiness checks.
               </p>
             </div>
           </div>
@@ -92,7 +154,7 @@ export default function NewCasePage() {
         <Loader2 className="h-8 w-8 animate-spin text-accent" aria-hidden="true" />
         <h1 className="mt-5 font-serif text-2xl font-bold">Creating your working file</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          CBAMValid is creating one idempotent working file and opening the eight plain steps.
+          CBAMValid is creating one idempotent working file and validating its opening state before the workspace is shown.
         </p>
       </section>
     </main>
