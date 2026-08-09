@@ -21,9 +21,9 @@ describe("INV-4.1 negative fixtures", () => {
     expect(validateCurrentPriceHtml("<main>Legacy amount only</main>", "/pricing").some((block) => block.includes("INV-4.1"))).toBe(true);
   });
 
-  it("blocks an unregistered static public route", () => {
+  it("blocks an ungoverned static public route", () => {
     expect(validatePublicStaticRegistryCoverage(["/", "/new-public"], ["/"])).toEqual([
-      "INV-4.1 static public route missing from SEO registry /new-public",
+      "INV-4.1 static public route missing from SEO governance /new-public",
     ]);
   });
 });
