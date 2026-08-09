@@ -136,23 +136,37 @@ export function validateAiPublicationApprovals(assets: readonly ContentAsset[], 
   return uniqueSorted(blocks);
 }
 
-function tokenize(text: string): Set<string> {
-  const tokens = text
+function normalizedTokens(text: string): string[] {
+  return text
     .toLowerCase()
     .normalize("NFKD")
     .replace(/[^a-z0-9]+/g, " ")
     .trim()
     .split(/\s+/)
     .filter((token) => token.length >= 3 && !STOP_WORDS.has(token));
-  return new Set(tokens);
+}
+
+/**
+ * Similarity uses both lexical tokens and adjacent token bigrams. Unigram-only
+ * Jaccard over-weights shared template vocabulary on structured CN pages and can
+ * falsely classify different product intents as duplicates. Bigrams preserve
+ * phrase/order evidence while near-duplicate copy still scores high.
+ */
+function similarityFeatures(text: string): Set<string> {
+  const tokens = normalizedTokens(text);
+  const features = new Set(tokens);
+  for (let index = 0; index + 1 < tokens.length; index += 1) {
+    features.add(`${tokens[index]}::${tokens[index + 1]}`);
+  }
+  return features;
 }
 
 export function jaccardSimilarity(left: string, right: string): number {
-  const a = tokenize(left);
-  const b = tokenize(right);
+  const a = similarityFeatures(left);
+  const b = similarityFeatures(right);
   if (a.size === 0 || b.size === 0) return 0;
   let intersection = 0;
-  for (const token of a) if (b.has(token)) intersection += 1;
+  for (const feature of a) if (b.has(feature)) intersection += 1;
   const union = a.size + b.size - intersection;
   return union === 0 ? 0 : intersection / union;
 }
