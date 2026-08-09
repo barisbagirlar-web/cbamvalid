@@ -90,6 +90,11 @@ jobs:
           node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "${CREDENTIAL_FILE}"
           chmod 600 "${CREDENTIAL_FILE}"
           printf 'GOOGLE_APPLICATION_CREDENTIALS=%s\n' "${CREDENTIAL_FILE}" >> "${GITHUB_ENV}"
+          CLIENT_EMAIL="$(node -e 'const c=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")); console.log(c.client_email||"")' "${CREDENTIAL_FILE}")"
+          test -n "${CLIENT_EMAIL}" || { echo '::error::credential has no client_email'; exit 78; }
+          printf 'DEPLOY_SA_CLIENT_EMAIL=%s\n' "${CLIENT_EMAIL}"
+          test "${CLIENT_EMAIL}" = "github-cbamvalid-deployer@cbam-desk.iam.gserviceaccount.com" \
+            || { echo "::error::unexpected deploy service account: ${CLIENT_EMAIL}"; exit 78; }
 
       - name: Install Firebase CLI and verify project access
         shell: bash
