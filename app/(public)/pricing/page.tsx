@@ -51,8 +51,7 @@ const FAQS: { question: string; answer: string }[] = [
   },
   {
     question: "Is this a subscription?",
-    answer:
-      "No. The software purchase is a one-time USD 449 payment covering one working file — one operator, one installation and one reporting year. There is no renewal.",
+    answer: `No. The software purchase is a one-time ${CANONICAL_PRICING.currency} ${CANONICAL_PRICING.displayPrice} payment covering one working file — one operator, one installation and one reporting year. There is no renewal.`,
   },
   {
     question: "Can I evaluate before paying?",
