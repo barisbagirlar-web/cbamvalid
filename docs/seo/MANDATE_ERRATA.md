@@ -104,6 +104,14 @@ Permanent correction: every V6 workflow that runs Node adds the repository-stand
 
 Permanent correction: PR CI deterministically resolves the active phase from the mandatory branch convention (`seo/bootstrap-*` → `bootstrap`, `seo/faz-NN-*` → `faz-NN`) and passes that exact value into preflight. Manual workflow dispatch requires an explicit phase choice from `bootstrap` or `faz-00`…`faz-19`; unknown branches/phases fail closed with exit 4. This keeps branch naming, phase contract and write-lock mechanically coupled.
 
+## E-35 — PRIVATE MEASUREMENT ACCESS MAY BE UNAVAILABLE WHILE TECHNICAL EXECUTION REMAINS POSSIBLE
+
+[Kesin] The execution environment can prove repository state, live public routes and public sources but currently has no connected Google Search Console or GA4 reporting data provider. Treating that tooling limitation as a permanent stop would prevent technical SEO work whose correctness does not depend on private traffic metrics.
+
+Permanent correction under AIP-21 and the explicit owner decision recorded on 2026-08-09: technical/public-data phases may proceed in **public-proxy mode**. In this mode unavailable GSC/GA4 fields are `SKIP_NO_DATA`; artifacts using proxy/public evidence are `partial: true` and `confidence: "low"`; `coldStart` stays `null` until actual GSC history is measured. Public SERP observations may establish topic/competitor presence but never search volume, ranking, conversion, traffic-lift or revenue-lift claims. Money metrics remain unknown/zero-confidence when conversion value data is absent. Legal/ethical rules and Ek E prohibitions are not relaxed.
+
+Phase completion rule: a phase may be completed when all non-measurement BLOCK invariants pass, every measurement-only unavailable input is explicitly `SKIP_NO_DATA`, no fabricated metric enters the artifact, and the phase's technical Gate-Out is otherwise evidenced. Measurement debt remains open in the findings queue until private reporting access is connected.
+
 ## Decision record
 
 These corrections preserve the source mandate's intent: stricter write isolation, machine-verifiable evidence, no invented data, no unnecessary deployment and no weakening of any legal/ethical restriction.
