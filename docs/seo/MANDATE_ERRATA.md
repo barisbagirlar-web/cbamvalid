@@ -92,6 +92,12 @@ Permanent correction: BOOTSTRAP and pure data/control phases are merge-only. Run
 
 Permanent correction: security scanning remains strict for all changed text files; negative fixtures construct credential-shaped markers at test runtime from non-matching source fragments. Tests therefore still prove the detector while committed source never contains a credential marker that P-04 must reject.
 
+## E-33 — NEW WORKFLOWS MUST PROVE THE PINNED NODE RUNTIME
+
+[Kesin] The next live V6 run passed preflight, typecheck and production build, then the repository's existing `guard:github-actions` correctly blocked the new SEO workflow because it configured Node 24 without an explicit runtime verification step.
+
+Permanent correction: every V6 workflow that runs Node adds the repository-standard `node --version | grep -E '^v24\\.'` proof immediately after setup. The GitHub Actions guard remains unchanged and therefore continues to detect silent runtime drift.
+
 ## Decision record
 
 These corrections preserve the source mandate's intent: stricter write isolation, machine-verifiable evidence, no invented data, no unnecessary deployment and no weakening of any legal/ethical restriction.
