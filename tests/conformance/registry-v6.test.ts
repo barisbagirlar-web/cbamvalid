@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { runRegistryValidation } from "../../scripts/seo/registry/validate-v6-registry";
+import { runRegistryValidation } from "../../scripts/seo/registry-validate-v6";
 
 describe("SEO V6 Phase 1 registry", () => {
   it("covers the concrete public SEO inventory with no BLOCK violations", () => {
