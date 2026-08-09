@@ -1,0 +1,71 @@
+{
+  "version": "6.0",
+  "measurement": {
+    "defaultWindowDays": 90,
+    "dataWindowStart": "2025-09-11",
+    "calendarYearEnabled": false,
+    "gscGenerativeAiReportAvailable": true,
+    "gscGenerativeAiInFormula": false,
+    "confidenceMode": "strict"
+  },
+  "thresholds": {
+    "lcpP75Ms": 2500,
+    "inpP75Ms": 200,
+    "clsP75": 0.1,
+    "decayDays": 60,
+    "highTrafficThreshold": 1000,
+    "similarityMax": 0.7,
+    "intentScoreMin": 5,
+    "consentTrackingRequired": true,
+    "concentrationWarnPct": 60,
+    "divestPendingMaxDays": 90,
+    "programmaticIndexMinPct": 50,
+    "programmaticEvalDays": 60,
+    "brandSerpOwnershipWarnPct": 80,
+    "crawlWasteWarnPct": 20,
+    "orphanPageWarnPct": 10,
+    "anchorConcentrationWarnPct": 30,
+    "cohortIndexWarnPct": 70,
+    "redirectCapacityWarnPct": 80,
+    "productionCostMissingWarnPct": 30,
+    "programmaticShareWarnPct": 50,
+    "contentDebtWarnPct": 25,
+    "sitemapUrlLimit": 50000,
+    "incrementalityMinDays": 28,
+    "coldStartMinDataDays": 28,
+    "calibrationMaxAgeDays": 120,
+    "calibrationMinSample": 20,
+    "calibrationMinRho": 0.3,
+    "croMinWeeks": 14,
+    "consentValidationMaxAgeDays": 30,
+    "decisionEscalationDays": 7,
+    "programmaticReviewSampleMin": 5,
+    "programmaticPilotMinPages": 3,
+    "programmaticPilotMaxPages": 5,
+    "growthCoverageNewPct": 15,
+    "growthCoverageStrengthenPct": 60,
+    "contentLoopObservationDays": 90,
+    "toolLoopObservationDays": 60,
+    "ugcLoopObservationDays": 90,
+    "paybackCalibrationDays": 90,
+    "migrationMonitoringHours": 72,
+    "portfolioMinHistoryMonths": 2,
+    "valuationMinHistoryMonths": 6,
+    "valuationCashflowMinHistoryMonths": 12
+  },
+  "economics": {
+    "defaultValuePerConversionMinor": 0,
+    "ltvModel": "none",
+    "paybackMaxMonths": 12,
+    "budgetSplit": {
+      "investPct": 60,
+      "holdPct": 20,
+      "harvestPct": 10,
+      "divestPct": 10
+    },
+    "valuationMultiples": {
+      "low": 2.5,
+      "high": 3.5
+    }
+  }
+}
