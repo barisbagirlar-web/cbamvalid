@@ -86,6 +86,8 @@ export const SealedReportViewSchema = z.object({
   signatureBase64: z.string().min(32),
   storage: z.record(z.string(), StorageEntrySchema),
   packageTopLevelComponentCount: z.number(),
+  readinessScore: z.string().optional(),
+  operatorReadinessStatus: z.string().optional(),
   automatedReadiness: z.enum([
     "READY_FOR_INDEPENDENT_VERIFICATION",
     "BLOCKED_BEFORE_INDEPENDENT_VERIFICATION",

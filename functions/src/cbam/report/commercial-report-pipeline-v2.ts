@@ -20,7 +20,7 @@ import {
   prepareCaseForVerifierArtifacts,
 } from "./premium-package-hardening";
 import { resolveControlledCaseAssessmentTimestamp } from "./controlled-test-assessment";
-import { upgradeArtifactsToEnterprise1000 } from "./enterprise-1000-value-layer";
+import { type Enterprise1000Model, upgradeArtifactsToEnterprise1000 } from "./enterprise-1000-value-layer";
 
 export class CommercialReportPipelineV2 {
   public static async executeSealingPipeline(params: {
@@ -119,6 +119,7 @@ export class CommercialReportPipelineV2 {
     // removed first. The accepted package may foreground exactly 11 newly
     // rendered non-overlapping decision/workpaper PDFs — no legacy duplicate or
     // hidden compilation is allowed to survive alongside them.
+    let enterpriseModel: Enterprise1000Model | undefined;
     if (params.productCode === "pack_premium_dossier_v5" || params.releaseContractVersion === 5) {
       const machineAndEvidenceArtifacts = unsignedArtifacts.filter(
         (item) => !item.path.toLowerCase().endsWith(".pdf")
@@ -133,6 +134,7 @@ export class CommercialReportPipelineV2 {
         releaseVersion: params.releaseVersion,
         generatedAt: params.generatedAt,
       });
+      enterpriseModel = enterpriseUpgrade.enterprise;
       unsignedArtifacts = enterpriseUpgrade.artifacts.map((item) =>
         item.path === "Verifier First Meeting & Handover Pack.pdf"
           ? { ...item, path: "Complete Dossier Compilation.pdf" }
@@ -190,6 +192,7 @@ export class CommercialReportPipelineV2 {
       signature,
       packageResult: finalPackage,
       scoreboard: sealedScoreboard,
+      enterprise: enterpriseModel,
     };
   }
 }

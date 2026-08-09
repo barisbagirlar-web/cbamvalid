@@ -188,11 +188,19 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
   const storageByFile = report.storage || {};
   
   // Successful automated readiness state is OPERATOR_PREPARATION_COMPLETE in V5
-  const isV5 = report.dossierSchemaVersion === "CBAMVALID-DOSSIER-5.0";
   const ready =
     report.automatedReadiness === "READY_FOR_INDEPENDENT_VERIFICATION" ||
     report.automatedReadiness === "OPERATOR_PREPARATION_COMPLETE" ||
     report.automatedReadiness === "READY_FOR_VERIFIER_REVIEW";
+
+  const readinessLabel = ready
+    ? "Automated preparation checks passed"
+    : report.automatedReadiness === "NOT_READY"
+      ? "Not ready for independent verification"
+      : report.automatedReadiness === "CONDITIONAL"
+        ? "Conditional — findings require closure"
+        : "Preparation checks not complete";
+  const readinessScoreLabel = report.readinessScore ? `Preparation score ${report.readinessScore}/100` : undefined;
   
   const componentCount = report.packageTopLevelComponentCount;
   const zipFileIndex = storageByFile["dossier.zip"] || storageByFile["Complete signed dossier package.zip"];
@@ -269,7 +277,7 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-3.5 w-3.5 text-accent shrink-0" />
-                Technical compilation (Complete Dossier Compilation PDF)
+                Verifier First Meeting &amp; Handover Pack (Complete Dossier Compilation PDF)
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-3.5 w-3.5 text-accent shrink-0" />
@@ -307,7 +315,7 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
             <h2 className="font-serif text-xl font-bold">Report Summary</h2>
             <div className={`rounded-full px-3 py-1 text-xs font-bold flex items-center gap-1.5 ${ready ? "bg-accent-soft text-accent border border-accent/20" : "bg-[color:var(--status-blocked-soft)] text-status-blocked border border-status-blocked/30"}`}>
               <CheckCircle2 className="h-3.5 w-3.5" />
-              {isV5 ? "Automated preparation checks passed" : "Automated preparation checks passed"}
+              {readinessLabel}
             </div>
           </div>
 
@@ -323,7 +331,10 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
               </div>
               <div>
                 <p className="text-xs text-muted font-semibold uppercase tracking-wider">Automated Readiness</p>
-                <p className="text-sm font-semibold text-foreground mt-1">Ready for independent verifier review</p>
+                <p className={`text-sm font-semibold mt-1 ${ready ? "text-foreground" : "text-status-blocked"}`}>{readinessLabel}</p>
+                {readinessScoreLabel && (
+                  <p className="text-[11px] text-muted">{readinessScoreLabel}</p>
+                )}
                 <p className="text-[11px] text-muted">Independent verifier status: Not reviewed</p>
               </div>
               <div>
