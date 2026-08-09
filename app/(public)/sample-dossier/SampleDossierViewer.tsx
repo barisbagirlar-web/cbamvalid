@@ -135,6 +135,11 @@ export default function SampleDossierViewer() {
               </a>
             </li>
             <li>
+              <a href={PUBLIC_SAMPLE_DOSSIER.downloads.registryXml} download>
+                Registry XML <span className="mono">(preparation)</span>
+              </a>
+            </li>
+            <li>
               <a href={PUBLIC_SAMPLE_DOSSIER.downloads.manifest} download>
                 Integrity manifest
               </a>

@@ -35,6 +35,7 @@ function loadVerifyCliBytes(): Buffer {
 import { runEvidenceSufficiency } from "../validation/evidence-sufficiency";
 import { buildVerificationCrosswalk } from "../registry/verification-template-2025-2546";
 import { buildRegistryTemplateMapping } from "../registry/registry-template-mapping";
+import { buildRegistrySubmissionPreparationXml } from "../registry/registry-template-mapping";
 import { evaluatePremiumChapterContract } from "./premium-chapter-contract";
 import { generateFindingsAndActions } from "../validation/findings-engine";
 import { assessReadiness, getReportingPeriodAssessment } from "../validation/readiness-score";
@@ -516,6 +517,7 @@ function buildCsvArtifacts(params: {
   calculation: DossierCalculationResult;
   controls: QualityControlResult[];
   model: VerifierPackageModel;
+  assessmentTimestamp?: string;
 }): PackageArtifact[] {
   const { caseData, calculation, controls, model } = params;
 
@@ -534,7 +536,7 @@ function buildCsvArtifacts(params: {
       artifact("Misstatement and Non-Conformity Register.csv", csv([["Rule", "Issue", "Status", "Message", "Materiality reference"], ...controls.filter((item) => item.status !== "PASS" && item.status !== "NOT_APPLICABLE").map((item) => [item.ruleId, item.name, item.status, item.message, `${model.ruleset.materialityRate}% per-good specific emissions plus expert judgement`])]), "text/csv"),
       artifact("Corrective Action Log.csv", csv([["Rule", "Remediation code", "Required action", "State", "Responsible party", "Target date", "Closure evidence"], ...controls.filter((item) => item.status === "BLOCKER" || item.status === "WARNING").map((item) => [item.ruleId, item.remediationCode, item.message, "OPEN", "OPERATOR", "", ""])]), "text/csv"),
       artifact("O3CI Field Mapping.csv", csv([["Dossier field", "O3CI concept", "Value / reference"], ["caseId", "CASE_IDENTIFIER", caseData.caseId], ["reportingPeriod", "REPORTING_PERIOD", model.identity.reportingPeriod], ["installation", "INSTALLATION", model.identity.installation], ["goods[].cnCode", "GOODS_CLASSIFICATION", model.goods.map((item) => item.cnCode).join(" | ")], ["totalEmbeddedEmissions", "TOTAL_EMBEDDED_EMISSIONS", model.totals.totalEmbeddedEmissions], ["calculationRootHash", "CALCULATION_PROVENANCE", calculation.calculationRootHash], ["legalSourceRegistryHash", "LEGAL_SOURCE_PROVENANCE", model.ruleset.sourceHash]]), "text/csv"),
-    ];
+      artifact("Supporting_Evidence/CBAM Registry Submission Preparation.xml", Buffer.from(buildRegistrySubmissionPreparationXml(caseData, params.assessmentTimestamp), "utf8"), "application/xml"),    ];
   }
 
   return [
@@ -547,6 +549,7 @@ function buildCsvArtifacts(params: {
     artifact("Misstatement Register.csv", csv([["Rule", "Issue", "Status", "Message", "Materiality reference"], ...controls.filter((item) => item.status !== "PASS" && item.status !== "NOT_APPLICABLE").map((item) => [item.ruleId, item.name, item.status, item.message, `${model.ruleset.materialityRate}% per-good specific emissions plus expert judgement`])]), "text/csv"),
     artifact("Corrective Action Log.csv", csv([["Rule", "Remediation code", "Required action", "State", "Responsible party", "Target date", "Closure evidence"], ...controls.filter((item) => item.status === "BLOCKER" || item.status === "WARNING").map((item) => [item.ruleId, item.remediationCode, item.message, "OPEN", "OPERATOR", "", ""])]), "text/csv"),
     artifact("O3CI Field Mapping.csv", csv([["Dossier field", "O3CI concept", "Value / reference"], ["caseId", "CASE_IDENTIFIER", caseData.caseId], ["reportingPeriod", "REPORTING_PERIOD", model.identity.reportingPeriod], ["installation", "INSTALLATION", model.identity.installation], ["goods[].cnCode", "GOODS_CLASSIFICATION", model.goods.map((item) => item.cnCode).join(" | ")], ["totalEmbeddedEmissions", "TOTAL_EMBEDDED_EMISSIONS", model.totals.totalEmbeddedEmissions], ["calculationRootHash", "CALCULATION_PROVENANCE", calculation.calculationRootHash], ["legalSourceRegistryHash", "LEGAL_SOURCE_PROVENANCE", model.ruleset.sourceHash]]), "text/csv"),
+    artifact("Supporting_Evidence/CBAM Registry Submission Preparation.xml", Buffer.from(buildRegistrySubmissionPreparationXml(caseData, params.assessmentTimestamp), "utf8"), "application/xml"),
     artifact("Units and Conversions Register.csv", csv([["Field", "Raw unit", "Canonical unit", "Conversion", "Precision policy"], ...caseData.goods.map((good, index) => [`goods.${index}.productionVolume`, good.productionVolume.rawUnit, good.productionVolume.canonicalUnit, good.productionVolume.rawUnit === "kg" ? "divide by 1000" : "identity", "Decimal.js precision 34; presentation rounding only except per-good six decimals" ]), ["directEmissions", caseData.directEmissions.rawUnit, caseData.directEmissions.canonicalUnit, "identity", "No intermediate binary floating-point arithmetic"], ["electricityConsumed", caseData.electricityConsumed.rawUnit, caseData.electricityConsumed.canonicalUnit, "identity", "No intermediate binary floating-point arithmetic"], ["gridEmissionFactor", caseData.gridEmissionFactor.rawUnit, caseData.gridEmissionFactor.canonicalUnit, "identity", "No intermediate binary floating-point arithmetic"]]), "text/csv"),
     artifact("Carbon Price Register.csv", csv([["ID", "Amount paid", "Applicable emissions", "Currency", "Period", "Legislation", "Payment evidence", "Certification evidence", "Conversion method", "Eligible reduction"], ...caseData.carbonPriceRecords.map((item) => [item.id, item.amountPaid, item.applicableEmissions, item.currency, item.paymentPeriod, item.legislationReference, item.proofOfPaymentEvidenceId, item.independentCertificationEvidenceId, item.conversionMethod, item.eligibleCertificateReduction])]), "text/csv"),
   ];
@@ -595,7 +598,7 @@ export async function buildUnsignedVerifierArtifacts(params: {
 
   const artifacts = [
     ...buildPdfArtifacts({ ...params, model, publicVerificationUrl: params.publicVerificationUrl }),
-    ...buildCsvArtifacts({ ...params, model }),
+    ...buildCsvArtifacts({ ...params, model, assessmentTimestamp: params.assessmentContext?.assessmentTimestamp ?? params.generatedAt }),
     artifact("Calculation Trace.json", Buffer.from(canonical({ reportId: params.reportId, packageCode: params.packageCode, caseId: params.caseData.caseId, generatedAt: params.generatedAt, verifierModel: model, calculation: params.calculation, readiness: { operatorStatus: readinessSnapshot.operatorStatus, recommendedDecision: readinessSnapshot.recommendedDecision, score: readinessSnapshot.score, assessedCoveragePercent: readinessSnapshot.assessedCoveragePercent, criticalBlockerCount: readinessSnapshot.criticalBlockerCount, missingMaterialEvidenceCount: readinessSnapshot.missingMaterialEvidenceCount, openFindingCount: readinessSnapshot.openFindingCount } }), "utf8"), "application/json"),
     ...(params.calcGraph
       ? [
