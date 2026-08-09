@@ -602,7 +602,7 @@ function steelInDossier(): AuditReadyCase {
         legislationReference: "Regulation (EU) 2023/956, Art. 9(2) carbon price deduction; national carbon levy settlement",
         proofOfPaymentEvidenceId: EV_CARBON,
         rebateInformation: "No rebate claimed for the reporting period",
-        eligibleCertificateReduction: "1500000",
+        eligibleCertificateReduction: "150000",
       },
     ],
     evidenceRegister: [
