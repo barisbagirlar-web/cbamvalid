@@ -8,6 +8,7 @@ import { generateFindingsAndActions } from "../validation/findings-engine";
 import { assessReadiness, getReportingPeriodAssessment } from "../validation/readiness-score";
 import { buildRegistryTemplateMapping } from "../registry/registry-template-mapping";
 import { VERIFICATION_MATERIALITY_RATE } from "../registry/rulesets";
+import { getComplianceCalendarState } from "../compliance/compliance-calendar";
 import { buildVerifierPackageModel } from "./verifier-model";
 import { buildEnterprisePdf, type EnterprisePdfSection, type EnterpriseReadinessStatus } from "./enterprise-pdf";
 import type { PackageArtifact } from "./verifier-package-builder";
@@ -584,6 +585,13 @@ function enterprisePdfArtifacts(params: {
     rows: params.enterprise.materialitySimulation.map((row) => [`${row.goodIndex} / ${row.cnCode}`, row.planningThreshold, row.gridFactorPlus10DeltaSpecific, `${row.gridFactorThresholdUtilizationPercent}%`, row.productionMinus10DeltaSpecific, `${row.productionThresholdUtilizationPercent}%`, row.proximityState]),
   };
 
+  const calendarState = getComplianceCalendarState(new Date(params.generatedAt));
+  const complianceTable = {
+    headers: ["Milestone", "Date", "Kind", "State", "Days"],
+    widths: [62, 24, 22, 22, 20],
+    rows: calendarState.milestones.map((milestone) => [milestone.label, milestone.date, milestone.kind, milestone.state, milestone.daysUntil]),
+  };
+
   const methodologyRows = params.caseData.methodologyDecisions.map((decision) => [decision.topic, decision.selectedMethod, decision.reason, decision.legalOrTechnicalBasis, decision.reviewStatus, decision.evidenceIds.join(" | ") || "NONE"]);
   const registryRows = buildRegistryTemplateMapping(params.caseData).map((entry) => [entry.registryFieldId, entry.section, entry.legalBasis, entry.sourcePath, entry.status, entry.owner, entry.evidenceIds.join(" | ") || "NONE"]);
   const handoverRows = params.enterprise.handoverDrafts.map((draft) => [draft.draftId, draft.title, draft.purpose, draft.completionState, draft.missingInputs.join(" | ") || "NONE"]);
@@ -594,6 +602,9 @@ function enterprisePdfArtifacts(params: {
       { heading: "Preparation score", paragraphs: [params.enterprise.scoreFormula], table: statusTable },
       { heading: "Evidence assurance", paragraphs: ["A-E evidence grades are accompanied by a separate independent-verifiability field and a machine-checkable basis. A high grade does not by itself create an independent verification conclusion."], table: evidenceTable },
       { heading: "Findings and closure", table: actionTable },
+      { heading: "Scenario analysis and materiality simulation", paragraphs: ["Deterministic scenarios isolate arithmetic sensitivity; they are not probability forecasts or verification opinions. Per-good threshold utilization compares deterministic scenario impact with the operator-prepared 5% planning threshold. Independent verifier judgement remains controlling."], table: scenarioTable, barChart: { unit: "% intensity delta", items: params.enterprise.scenarios.filter((row) => row.scenarioId !== "BASE").map((row) => ({ label: row.label, value: row.intensityDeltaPercent })) } },
+      { heading: "Materiality proximity", paragraphs: ["Threshold utilization compares deterministic scenario impact with the operator-prepared 5% planning threshold."], table: materialityTable },
+      { heading: "Compliance calendar", paragraphs: ["Definitive-period CBAM milestones derived from the regulation. The first annual declaration and certificate surrender deadline for 2026 imports is 2027-09-30."], table: complianceTable, callout: { label: "Calendar boundary", value: `${calendarState.daysUntilFirstDeclaration} days remain until the first annual declaration deadline (${calendarState.firstDeclarationDeadline}).` } },
       { heading: "Primary-document architecture", paragraphs: ["The sealed package contains 11 foregrounded human-review documents with non-overlapping roles. Remaining components are machine-readable registers, cryptographic trust files, the verifier workbook and immutable supporting evidence."], table: documentRoleTable },
       { heading: "Professional boundary", callout: { label: "No verification opinion", value: "CBAMValid prepares and structures the operator dossier. An appropriately accredited independent verifier remains responsible for independent verification work, materiality judgement, site-visit decisions and any final opinion." } },
     ]),
@@ -680,7 +691,11 @@ export function assertEnterprise1000Contract(params: {
   goodsCount: number;
 }): void {
   const expectedPdfs = new Set(PRIMARY_DOCUMENT_ROLES.map((entry) => entry.fileName));
-  const pdfs = params.artifacts.filter((item) => item.path.endsWith(".pdf"));
+  // Primary human-review documents live at the package root. Supporting_Evidence
+  // contains immutable copies of operator files whose format is not controlled by
+  // the product (PDFs there are evidence, not primary documents), so the 11-document
+  // contract must only count root-level PDFs.
+  const pdfs = params.artifacts.filter((item) => item.path.endsWith(".pdf") && !item.path.includes("/"));
   const actualPdfPaths = new Set(pdfs.map((item) => item.path));
   if (expectedPdfs.size !== 11 || actualPdfPaths.size !== 11) {
     throw new Error(`ENTERPRISE_1000_PRIMARY_DOCUMENT_COUNT_INVALID:${actualPdfPaths.size}`);

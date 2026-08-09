@@ -4,6 +4,7 @@ import { AuditReadyCaseSchema } from "../../functions/src/cbam/schema";
 import { performDossierCalculations } from "../../functions/src/cbam/calculator";
 import { runQualityControls } from "../../functions/src/cbam/validation/quality-controls";
 import { buildUnsignedVerifierArtifacts } from "../../functions/src/cbam/report/verifier-package-builder";
+import { upgradeArtifactsToEnterprise1000 } from "../../functions/src/cbam/report/enterprise-1000-value-layer";
 import { createVerifierEvidenceFiles, createVerifierGradeCase, FIXTURE_GENERATED_AT, FIXTURE_REPORT_ID, FIXTURE_PACKAGE_CODE } from "../fixtures/verifier-grade-case";
 import * as clientCalendar from "../../lib/cbam/compliance-calendar";
 import * as serverCalendar from "../../functions/src/cbam/compliance/compliance-calendar";
@@ -64,7 +65,7 @@ async function extractDossierPdfText(): Promise<string> {
   const controls = runQualityControls(caseData);
   const calculation = performDossierCalculations(caseData);
   const calcGraph = buildTestCalcGraph(calculation.calculationRootHash);
-  const artifacts = await buildUnsignedVerifierArtifacts({
+  const unsignedArtifacts = await buildUnsignedVerifierArtifacts({
     caseData,
     controls,
     calculation,
@@ -85,8 +86,23 @@ async function extractDossierPdfText(): Promise<string> {
       releaseContractVersion: 5,
     },
   });
-  const pdfArtifact = artifacts.find((a) => a.path === PDF_PATH);
-  expect(pdfArtifact, `main dossier artifact ${PDF_PATH} must exist`).toBeDefined();
+
+  // The production pipeline replaces every legacy PDF with the Enterprise 1000
+  // document set. Asserting against the pre-upgrade intermediate artifact would
+  // prove content that never reaches the sealed package, so apply the same
+  // transformation the live seal path applies before reading the PDF.
+  const upgraded = upgradeArtifactsToEnterprise1000({
+    artifacts: unsignedArtifacts,
+    caseData,
+    calculation,
+    controls,
+    reportId: FIXTURE_REPORT_ID,
+    packageCode: FIXTURE_PACKAGE_CODE,
+    releaseVersion: 5,
+    generatedAt: FIXTURE_GENERATED_AT,
+  });
+  const pdfArtifact = upgraded.artifacts.find((a) => a.path === PDF_PATH);
+  expect(pdfArtifact, `main dossier artifact ${PDF_PATH} must exist after enterprise upgrade`).toBeDefined();
 
   const document = await pdfjsLib.getDocument({
     data: new Uint8Array(pdfArtifact!.bytes),
@@ -109,15 +125,16 @@ describe("premium dossier — complete results in the sealed main report", () =>
     expect(text).toContain("grid emission factor +10%");
     expect(text).toContain("production volume -10%");
     expect(text).toContain("production volume +10%");
-    expect(text).toContain("scenario discipline");
+    expect(text).toContain("% intensity delta");
   });
 
   it("renders the materiality simulation with per-good 5% proximity", async () => {
     const text = (await extractDossierPdfText()).toLowerCase();
-    expect(text).toContain("materiality simulation");
-    expect(text).toContain("5% materiality reference");
-    expect(text).toContain("proximity to 5%");
-    expect(text).toContain("% of the 5% reference");
+    expect(text).toContain("materiality");
+    expect(text).toContain("5% planning threshold");
+    expect(text).toContain("grid utilization");
+    expect(text).toContain("production utilization");
+    expect(text).toContain("proximity");
   });
 
   it("renders the compliance calendar with the definitive-period deadline", async () => {
