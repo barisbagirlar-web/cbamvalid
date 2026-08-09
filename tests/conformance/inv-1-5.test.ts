@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadRegistryArtifact, validateRecords } from "../../scripts/seo/registry/validate-v6-registry";
+import { loadRegistryArtifact, validateRecords } from "../../scripts/seo/registry-validate-v6";
 
 describe("INV-1.5 negative fixture", () => {
   it("blocks retired routes that remain in sitemap", () => {
