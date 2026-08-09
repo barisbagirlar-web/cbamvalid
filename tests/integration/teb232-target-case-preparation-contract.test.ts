@@ -19,8 +19,8 @@ describe("TEB232 controlled draft preparation", () => {
     expect(targetHelper).toContain("TEB232_TARGET_CASE_OWNER_MISMATCH");
     expect(genericHelper).toContain("TEB232_DRAFT_PREPARE_IDENTITY_REFUSED");
     expect(genericHelper).toContain("TEB232_DRAFT_CASE_OWNER_MISMATCH");
-    expect(genericHelper).toContain('authenticatedEmail.trim().toLowerCase() !== TEB232_EMAIL');
-    expect(genericHelper).toContain("params.authenticatedUid !== TEB232_UID");
+    expect(genericHelper).toContain('identity.authenticatedEmail.trim().toLowerCase() !== TEB232_EMAIL');
+    expect(genericHelper).toContain("identity.authenticatedUid !== TEB232_UID");
   });
 
   it("protects active PROCESSING seals and delegates the historical target to its stricter repair path", () => {
