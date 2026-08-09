@@ -71,6 +71,13 @@ describe("SEO V6 Phase 04 rendered/commercial contract", () => {
     expect(route?.factualLastModified).toBe("2026-08-04");
   });
 
+  it("runs Chromium hydration parity by default in the Phase-04 runtime gate", () => {
+    const gate = readFileSync(resolve(ROOT, "scripts/seo/run-rendered-gate.sh"), "utf8");
+    expect(gate).toContain('BROWSER_MODE="${SEO_RENDER_BROWSER:-1}"');
+    expect(gate).toContain("npx playwright install --with-deps chromium");
+    expect(gate).toContain('SEO_RENDER_BROWSER="$BROWSER_MODE"');
+  });
+
   it("requires passing negative coverage for every Phase-04 BLOCK result", () => {
     const artifact = JSON.parse(
       readFileSync(resolve(ROOT, "data/seo/invariant-results/faz-04.json"), "utf8"),

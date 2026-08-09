@@ -12,6 +12,12 @@ on:
       - "PHASE_CONTRACTS.json"
       - "scripts/seo/**"
       - "tests/conformance/**"
+      - "app/**"
+      - "components/**"
+      - "lib/seo/**"
+      - "public/**"
+      - "firebase.json"
+      - "next.config.js"
       - "package.json"
       - ".github/workflows/seo-conformance.yml"
   workflow_dispatch:
@@ -124,6 +130,23 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Phase-specific runtime gate
+        shell: bash
+        env:
+          SEO_PHASE: ${{ steps.seo_phase.outputs.phase }}
+          SEO_SKIP_BUILD: "1"
+        run: |
+          set -euo pipefail
+          case "$SEO_PHASE" in
+            faz-04)
+              echo "SEO_PHASE_RUNTIME_GATE=scripts/seo/run-rendered-gate.sh"
+              bash scripts/seo/run-rendered-gate.sh
+              ;;
+            *)
+              echo "SEO_PHASE_RUNTIME_GATE=NONE"
+              ;;
+          esac
+
       - name: Existing release guards
         run: |
           npm run guard:hosting-architecture
@@ -133,14 +156,6 @@ jobs:
 
       - name: V6 conformance and negative fixtures
         run: npm run seo:conformance
-
-      - name: Phase 04 browser-render gate
-        if: steps.seo_phase.outputs.phase == 'faz-04'
-        shell: bash
-        run: |
-          set -euo pipefail
-          npx playwright install --with-deps chromium
-          SEO_SKIP_BUILD=1 SEO_RENDER_BROWSER=1 bash scripts/seo/run-rendered-gate.sh
 
       - name: Prove cold-start fails closed without GSC history
         shell: bash
