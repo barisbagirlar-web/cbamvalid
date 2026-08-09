@@ -25,7 +25,7 @@
         "severity": "BLOCK",
         "status": "PASS",
         "negativeTestPassed": true,
-        "evidence": "Exact-head production build is crawled as raw HTTP HTML and, in Phase-04 CI, with Chromium after hydration across critical commercial/authority routes. Title, description and H1 parity are required; static public route coverage against the runtime SEO registry and current-price SSOT visibility are also fail-closed."
+        "evidence": "Exact-head production build is crawled as raw HTTP HTML and, in Phase-04 CI, with Chromium after hydration across critical commercial/authority routes. Title, description and H1 parity are required; every static public route must either be a governed SEO registry identity or an exact generateSeoMetadata(path) fail-closed noindex utility whose raw and hydrated responses remain noindex and sitemap-excluded. Current-price SSOT visibility is also fail-closed."
       },
       {
         "id": "INV-4.2",
@@ -52,7 +52,8 @@
       "Pricing FAQ derives from CANONICAL_PRICING",
       "Pricing SEO registry metadata derives from CANONICAL_PRICING",
       "Obsolete 149 fallback acceptance removed from rendered price validation",
-      "Product classification public page added to runtime SEO registry with factual 2026-08-04 lastmod"
+      "Product classification public page added to runtime SEO registry with factual 2026-08-04 lastmod",
+      "Thin /verify/package utility remains deliberately outside search identity and is accepted only while exact metadata fallback proves raw/render noindex and sitemap exclusion"
     ]
   }
 }
