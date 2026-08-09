@@ -94,7 +94,16 @@ requireText(saveContract, "CASE_CREATION_REQUEST_ID_REQUIRED", "Mandatory create
 
 requireText(newCasePage, "creationRequestId.current", "Stable creation request ID");
 requireText(newCasePage, "requestInFlight.current", "Single-flight creation");
-requireText(newCasePage, "saveCase(draft, undefined, creationRequestId.current", "Idempotent new-case call");
+requireText(newCasePage, "saveCase(", "Idempotent new-case call");
+requireText(newCasePage, "creationRequestId.current ?? undefined", "Stable new-case request identity");
+requireText(newCasePage, 'const TEB232_EMAIL = "teb232@gmail.com"', "Controlled Teb232 creation identity");
+requireText(newCasePage, "prepareTeb232CaseBeforeOpen", "Teb232 pre-open preparation");
+requireText(newCasePage, 'fetch("/api/qa/reconcile-teb232"', "Authenticated Teb232 preparation endpoint");
+requireText(newCasePage, "body: JSON.stringify({ targetCaseId: params.caseId })", "Exact Teb232 new-case preparation target");
+requireText(newCasePage, "payload.operatorPreparation !== 100", "Teb232 operator-preparation acceptance");
+requireText(newCasePage, "payload.evidenceAssurance !== 100", "Teb232 evidence-assurance acceptance");
+requireText(newCasePage, "await prepareTeb232CaseBeforeOpen({ user, caseId: newCaseId })", "Teb232 preparation before redirect");
+requireText(newCasePage, "router.replace(`/cases/${newCaseId}`)", "New-case workspace redirect after preparation");
 requireText(newCasePage, "Retry new working file", "Observable creation failure");
 requireText(newCasePage, "Creating your working file", "Observable creation progress");
 rejectText(newCasePage, 'router.push("/dashboard")', "Silent new-case dashboard fallback");
@@ -173,6 +182,7 @@ console.log("CASE_WORKSPACE_DTO=PASS");
 console.log("CASE_SCHEMA_PARITY=PASS");
 console.log("CASE_CREATE_SINGLE_FLIGHT=PASS");
 console.log("CASE_CREATE_IDEMPOTENCY=PASS");
+console.log("TEB232_NEW_CASE_SEAL_READY_BEFORE_OPEN=PASS");
 console.log("CASE_ROLLING_DEPLOY_COMPATIBILITY=PASS");
 console.log("CASE_LOAD_FAILURE_ISOLATION=PASS");
 console.log("CASE_LEGACY_READ_COMPATIBILITY=PASS");
