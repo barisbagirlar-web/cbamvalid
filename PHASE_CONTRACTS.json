@@ -31,7 +31,7 @@
     "forbidsWrites": ["app/**", "components/**", "lib/seo/**", "public/**", "firebase.json"]
   },
   "faz-02": {
-    "writes": ["data/seo/redirects.json", "scripts/seo/redirect-*.ts", "tests/conformance/**", "firebase.json", "next.config.js", "data/seo/invariant-results/faz-02.json", "docs/seo/raporlar/faz02_*.md", "docs/seo/PROGRESS.md"],
+    "writes": ["data/seo/redirects.json", "scripts/seo/redirect-*.ts", "scripts/seo/validate-all.ts", "tests/conformance/**", "firebase.json", "next.config.js", "data/seo/invariant-results/faz-02.json", "docs/seo/raporlar/faz02_*.md", "docs/seo/PROGRESS.md"],
     "forbidsWrites": ["data/seo/registry/**", "app/(public)/**", "components/**", "lib/seo/**"]
   },
   "faz-03": {

@@ -126,6 +126,14 @@ Permanent correction: `next.config.js` is added to the effective global runtime 
 
 Permanent correction: add `tests/conformance/**` to `faz-02.writes`. This is limited to Phase-02 conformance/negative fixtures and does not expand runtime scope. A Phase-02 completion claim remains invalid unless each BLOCK invariant is executable and records `negativeTestPassed: true` in its machine result artifact.
 
+## E-38 — LEGACY G32 REDIRECT GATE REJECTS A SAFER ABSOLUTE CANONICAL TARGET
+
+[Kesin] Phase-02 runtime correctly changed `/cbam-methodology` from a relative destination to the absolute canonical target `https://cbamvalid.com/methodology` so a `www` request does not require path consolidation followed by a second host-normalization hop.
+
+[Kesin] Existing `scripts/seo/validate-all.ts` G32 checks raw source text for exactly `destination: '/methodology'`. It therefore reported “Missing permanent redirect” even though the redirect existed and production build/typecheck passed. The same false failure blocked both SEO V6 Conformance and PR Quality Gate.
+
+Permanent correction: add only `scripts/seo/validate-all.ts` to `faz-02.writes` so Phase 02 can update G32 to accept the configured canonical-origin absolute target while retaining the existing relative target as a legacy-compatible accepted form if encountered. The gate must continue to require the exact `/cbam-methodology` source and a permanent redirect; it may not be weakened to arbitrary destinations.
+
 ## Decision record
 
 These corrections preserve the source mandate's intent: stricter write isolation, machine-verifiable evidence, no invented data, no unnecessary deployment and no weakening of any legal/ethical restriction.
