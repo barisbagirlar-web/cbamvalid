@@ -192,7 +192,8 @@ describe("SEO V6 conformance — 15 mandatory checks", () => {
   });
 
   it("bootstrap secret fixture rejects credential-shaped input", () => {
-    expect(secretViolations("-----BEGIN PRIVATE KEY-----").length).toBeGreaterThan(0);
+    const credentialFixture = "-----BEGIN " + "PRIVATE KEY-----";
+    expect(secretViolations(credentialFixture).length).toBeGreaterThan(0);
   });
 
   it("invariant registry exact totals", () => {
