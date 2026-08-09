@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 # Build (unless already built), start Next on a free port, crawl critical/sitemap URLs,
-# optionally prove browser-hydrated parity, then tear down.
+# prove browser-hydrated parity by default, then tear down.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 PORT="${SEO_CRAWL_PORT:-3010}"
 BASE="http://127.0.0.1:${PORT}"
 LOG="$(mktemp -t seo-crawl-server.XXXXXX)"
+BROWSER_MODE="${SEO_RENDER_BROWSER:-1}"
+
+if [[ "$BROWSER_MODE" != "0" && "$BROWSER_MODE" != "1" ]]; then
+  echo "RENDERED_GATE: SEO_RENDER_BROWSER must be 0 or 1, got '$BROWSER_MODE'" >&2
+  exit 4
+fi
 
 cleanup() {
   if [[ -n "${SERVER_PID:-}" ]] && kill -0 "$SERVER_PID" 2>/dev/null; then
@@ -26,6 +32,11 @@ if [[ "${SEO_SKIP_BUILD:-0}" == "1" ]]; then
 else
   echo "RENDERED_GATE: building..."
   npm run build
+fi
+
+if [[ "$BROWSER_MODE" == "1" ]]; then
+  echo "RENDERED_GATE: ensuring Chromium runtime is installed..."
+  npx playwright install --with-deps chromium
 fi
 
 echo "RENDERED_GATE: starting next on ${PORT}..."
@@ -50,5 +61,5 @@ if ! curl -sf "$BASE/" >/dev/null 2>&1; then
   exit 2
 fi
 
-echo "RENDERED_GATE: crawling; browser=${SEO_RENDER_BROWSER:-0}"
-SEO_CRAWL_BASE_URL="$BASE" SEO_RENDER_BROWSER="${SEO_RENDER_BROWSER:-0}" npx tsx scripts/seo/crawl-rendered.ts
+echo "RENDERED_GATE: crawling; browser=${BROWSER_MODE}"
+SEO_CRAWL_BASE_URL="$BASE" SEO_RENDER_BROWSER="$BROWSER_MODE" npx tsx scripts/seo/crawl-rendered.ts
