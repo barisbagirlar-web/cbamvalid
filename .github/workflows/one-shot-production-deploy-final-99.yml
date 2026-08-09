@@ -147,6 +147,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          GLOBAL_ROOT="$(npm root -g)"
+          node - "${GLOBAL_ROOT}" <<'NODE'
+          const globalRoot = process.argv[2];
+          const fs = require('fs');
+          const cred = JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, 'utf8'));
+          console.log(`CRED_CLIENT_EMAIL=${cred.client_email}`);
+          console.log(`CRED_PROJECT=${cred.project_id}`);
+          try {
+            const { getSecretVersion } = require(require.resolve('firebase-tools/lib/gcp/secretManager.js', { paths: [globalRoot] }));
+            getSecretVersion('cbam-desk', 'PADDLE_API_KEY', 'latest')
+              .then((sv) => console.log(`SECRET_VALIDATION_OK version=${sv.versionId}`))
+              .catch((e) => { console.log(`SECRET_VALIDATION_ERR=${e.message}`); process.exit(1); });
+          } catch (e) {
+            console.log(`LOAD_ERR=${e.message}`);
+            process.exit(1);
+          }
+          NODE
           firebase deploy --only functions,hosting --project "${FIREBASE_PROJECT}" --non-interactive
 
       - name: Verify deployed production runtime and live surface
