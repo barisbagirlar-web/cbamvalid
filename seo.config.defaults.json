@@ -32,6 +32,7 @@
     "contentDebtWarnPct": 25,
     "sitemapUrlLimit": 50000,
     "incrementalityMinDays": 28,
+    "coldStartMinDataDays": 28,
     "calibrationMaxAgeDays": 120,
     "calibrationMinSample": 20,
     "calibrationMinRho": 0.3,
