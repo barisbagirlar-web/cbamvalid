@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "artifact": "portfolio_board",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T13:05:00Z",
+    "generatorScript": "scripts/seo/portfolio-governance.ts",
+    "inputWindow": {"start": "2025-09-11", "end": "2026-08-10"},
+    "confidence": "low",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal", "2026-08-10:consent-mode-v2-candidate"]
+  },
+  "data": {
+    "decisionGate": "SKIP_NO_DATA",
+    "decisionReason": "The repository has no monthly P&L series meeting thresholds.portfolioMinHistoryMonths and Phase-11 KAC recommendations are null. Portfolio decisions are therefore prohibited.",
+    "inputs": {
+      "pnlHistoryMonths": 0,
+      "requiredPnlHistoryMonthsSource": "thresholds.portfolioMinHistoryMonths",
+      "pnlStatus": "SKIP_NO_DATA",
+      "kacRecommendationCount": 0,
+      "killQueueCount": 0
+    },
+    "decisions": [],
+    "budgetLock": {
+      "configuredSplit": {"investPct":60,"holdPct":20,"harvestPct":10,"divestPct":10},
+      "executedSplit": null,
+      "approvalRecordId": null,
+      "status": "NOT_EXECUTED"
+    },
+    "concentration": {
+      "pagePct": null,
+      "clusterPct": null,
+      "thresholdSource": "thresholds.concentrationWarnPct",
+      "diversificationPlan": null,
+      "status": "SKIP_NO_DATA"
+    },
+    "divestQueue": [],
+    "paybackCalibration": {"status":"SKIP_NO_DATA","projectedMonths":null,"actualMonths":null,"deviationPct":null},
+    "harvestInvestmentFindings": [],
+    "a3DecisionState": "NO_DECISION_REQUESTED"
+  }
+}
