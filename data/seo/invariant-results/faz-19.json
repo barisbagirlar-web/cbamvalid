@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "artifact": "invariant-results/faz-19",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T13:50:00Z",
+    "generatorScript": "scripts/seo/valuation.ts",
+    "inputWindow": {"start":"2025-09-11","end":"2026-08-10"},
+    "confidence": "low",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal", "2026-08-10:consent-mode-v2-candidate"]
+  },
+  "data": {
+    "phase": "faz-19",
+    "codeScopeComplete": true,
+    "results": [
+      {"id":"INV-19.1","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Valuation methodology requires a finite low/high range sourced from config; point and inverted ranges fail closed. Current financial history is insufficient, so no monetary range is emitted."},
+      {"id":"INV-19.2","severity":"WARN","status":"PASS","negativeTestPassed":null,"evidence":"Board-report parity comparator covers valuation status and low/high minor-unit values. Current board/valuation state is consistently SKIP_NO_DATA/null."},
+      {"id":"INV-19.3","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"DD package requires index, measurement boundary, governance controls, risks/limitations and valuation methodology; missing-section fixture fails closed."},
+      {"id":"INV-19.4","severity":"INFO","status":"PASS","negativeTestPassed":null,"evidence":"Cashflow valuation eligibility is false until thresholds.valuationCashflowMinHistoryMonths and measured cashflow exist; current history is 0 months."},
+      {"id":"INV-K.1","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Calibration evidence older than thresholds.calibrationMaxAgeDays is rejected; current state is SKIP_NO_DATA because no calibration sample exists."},
+      {"id":"INV-K.2","severity":"INFO","status":"PASS","negativeTestPassed":null,"evidence":"Calibration sample size is 0 and explicitly unavailable; no correlation quality claim is made."}
+    ]
+  }
+}
