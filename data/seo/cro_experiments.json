@@ -2,7 +2,7 @@
   "meta": {
     "artifact": "cro_experiments",
     "schemaVersion": "6.1",
-    "generatedAt": "2026-08-10T10:42:00Z",
+    "generatedAt": "2026-08-10T11:58:00Z",
     "generatorScript": "scripts/seo/cro-governance.ts",
     "inputWindow": {"start": "2025-09-11", "end": "2026-08-10"},
     "confidence": "medium",
@@ -46,12 +46,16 @@
     "experiments": [],
     "experimentExecutionState": "NOT_STARTED_A3_REQUIRED",
     "consentValidation": {
-      "validatedAt": "2026-08-10T10:42:00Z",
+      "validatedAt": "2026-08-10T11:58:00Z",
       "validationScope": "exact Phase-14 candidate source + conformance tests",
       "defaultDenied": true,
       "defaultKeys": ["analytics_storage","ad_storage","ad_user_data","ad_personalization"],
       "updateKeys": ["analytics_storage","ad_storage","ad_user_data","ad_personalization"],
       "publicChoiceManager": true,
+      "firstPartyApiGated": true,
+      "acquisitionStorageGated": true,
+      "dataLayerEventGated": true,
+      "ga4EventGated": true,
       "structuralBreakRecorded": true,
       "liveValidationPendingDeployment": true
     },
@@ -60,7 +64,7 @@
         "id": "2026-08-10:consent-mode-v2-candidate",
         "type": "measurement-consent",
         "status": "PENDING_DEPLOYMENT",
-        "reason": "Public analytics consent changes from simple local grant gating to Consent Mode v2 default-denied + explicit update signals.",
+        "reason": "Public analytics changes from partial GA4 consent gating to full Consent Mode v2 default-denied gating for acquisition storage, dataLayer analytics events, first-party /api/seo/track delivery and GA4.",
         "effectiveAt": null
       }
     ],
