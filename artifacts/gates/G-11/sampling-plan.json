@@ -1,0 +1,21 @@
+{
+  "assessments": [
+    {
+      "populationDomain": "CALCULATION_TRACE",
+      "state": "ASSESSED_NOT_SAMPLED_WITH_BASIS",
+      "rationale": "Population CALCULATION_TRACE is deliberately not sampled because it has no assessable entries in this package. Revisit when the population becomes non-empty."
+    },
+    {
+      "populationDomain": "SOURCE_STREAMS",
+      "state": "OPERATOR_PROPOSED",
+      "rationale": "Population assessed and proposed for independent-verifier sampling."
+    },
+    {
+      "populationDomain": "EVIDENCE",
+      "state": "OPERATOR_PROPOSED",
+      "rationale": "Population assessed and proposed for independent-verifier sampling."
+    }
+  ],
+  "validationErrors": [],
+  "notAssessedCount": 0
+}

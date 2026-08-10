@@ -51,7 +51,7 @@ describe("FAZ 12 registry template mapping dataset", () => {
       expect(entry.section).toBeTruthy();
       expect(entry.legalBasis).toContain("(EU)");
       expect(entry.sourcePath).toBeTruthy();
-      expect(["COMPLETE_OPERATOR", "PENDING_VERIFIER", "MISSING_OPERATOR", "NOT_APPLICABLE_WITH_BASIS"]).toContain(entry.status);
+      expect(["COMPLETE_OPERATOR", "INCOMPLETE_EVIDENCE_MISSING", "PENDING_VERIFIER", "MISSING_OPERATOR", "NOT_APPLICABLE_WITH_BASIS"]).toContain(entry.status);
       expect(["OPERATOR", "CBAMVALID_SYSTEM", "INDEPENDENT_VERIFIER"]).toContain(entry.owner);
     }
   });

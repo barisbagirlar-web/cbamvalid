@@ -71,9 +71,9 @@ function title(value: string): Cell[] {
 }
 
 function statusStyle(status: string): number {
-  if (["PASS", "DOCUMENTED", "ACCEPTED", "READY_FOR_INDEPENDENT_VERIFICATION"].includes(status)) return 5;
-  if (["WARNING", "IN_REVIEW", "REVIEW_REQUIRED"].includes(status)) return 6;
-  if (["BLOCKER", "GAP", "REJECTED", "BLOCKED_BEFORE_INDEPENDENT_VERIFICATION"].includes(status)) return 7;
+  if (["PASS", "DOCUMENTED", "ACCEPTED", "READY_FOR_INDEPENDENT_VERIFICATION", "ON_TRACK_PERIOD_OPEN"].includes(status)) return 5;
+  if (["WARNING", "IN_REVIEW", "REVIEW_REQUIRED", "ACTION_REQUIRED"].includes(status)) return 6;
+  if (["BLOCKER", "GAP", "REJECTED", "BLOCKED_BEFORE_INDEPENDENT_VERIFICATION", "BLOCKED"].includes(status)) return 7;
   return 1;
 }
 
@@ -86,8 +86,9 @@ function buildSheets(params: {
   generatedAt: string;
   model: VerifierPackageModel;
   assessmentContext?: SealAssessmentContext;
+  packageReadinessState?: string;
 }): Sheet[] {
-  const { caseData, calculation, controls, reportId, releaseVersion, generatedAt, model, assessmentContext } = params;
+  const { caseData, calculation, controls, reportId, releaseVersion, generatedAt, model, assessmentContext, packageReadinessState } = params;
   const qcLastRow = Math.max(2, controls.length + 1);
   const evidenceLastRow = Math.max(2, caseData.evidenceRegister.length + 1);
   const monitoringLastRow = Math.max(2, model.monitoringPlan.length + 1);
@@ -462,7 +463,7 @@ function buildSheets(params: {
         header(["Registry field ID", "Section", "Legal basis", "Source path", "Value", "Owner", "Status", "Evidence IDs", "Validation errors"]),
         ...model.registryTemplateMapping.map((entry) => [
           c(entry.registryFieldId), c(entry.section), c(entry.legalBasis), c(entry.sourcePath), c(entry.value),
-          c(entry.owner), c(entry.status, statusStyle(entry.status === "COMPLETE_OPERATOR" ? "PASS" : entry.status === "PENDING_VERIFIER" ? "WARNING" : entry.status === "MISSING_OPERATOR" ? "BLOCKER" : "DOCUMENTED")),
+          c(entry.owner), c(entry.status, statusStyle(entry.status === "COMPLETE_OPERATOR" ? "PASS" : entry.status === "INCOMPLETE_EVIDENCE_MISSING" ? "GAP" : entry.status === "PENDING_VERIFIER" ? "WARNING" : entry.status === "MISSING_OPERATOR" ? "BLOCKER" : "DOCUMENTED")),
           c(entry.evidenceIds.join(" | ")), c(entry.validationErrors.join(" | ")),
         ]),
       ],
@@ -556,7 +557,7 @@ function buildSheets(params: {
       ],
       rows: [
         header(["Verifier-controlled field", "Value", "Control", "Value"]),
-        [c("Review status", 4), c("NOT_REVIEWED", 10), c("Package automated readiness", 4), c(model.automatedReadiness, statusStyle(model.automatedReadiness))],
+        [c("Review status", 4), c("NOT_REVIEWED", 10), c("Package automated readiness", 4), c(packageReadinessState ?? model.automatedReadiness, statusStyle(packageReadinessState ?? model.automatedReadiness))],
         [c("Verifier legal entity", 4), c("", 10), c("Accreditation body", 4), c("", 10)],
         [c("Lead verifier", 4), c("", 10), c("Accreditation number", 4), c("", 10)],
         [c("Review start date", 4), c("", 10), c("Review completion date", 4), c("", 10)],
@@ -704,6 +705,7 @@ export async function buildVerifierWorkbook(params: {
   generatedAt: string;
   model?: VerifierPackageModel;
   assessmentContext?: SealAssessmentContext;
+  packageReadinessState?: string;
 }): Promise<Buffer> {
   const model = params.model || buildVerifierPackageModel(params);
   const sheets = buildSheets({ ...params, model }).map((sheet) => ({ ...sheet, name: safeSheetName(sheet.name) }));

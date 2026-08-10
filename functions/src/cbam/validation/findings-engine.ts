@@ -4,7 +4,6 @@ import type { Finding, CorrectiveAction } from "../report/premium-dossier-schema
 import { runQualityControls } from "./quality-controls";
 import { runEvidenceSufficiency, isEvidenceSupportedState } from "./evidence-sufficiency";
 import { getReportingPeriodAssessment } from "./readiness-score";
-import { applyWorkingFileReviewPolicy } from "./working-file-review-policy";
 
 function stableHashPrefix(subject: string): string {
   return crypto.createHash("sha256").update(subject).digest("hex").slice(0, 8);
@@ -20,13 +19,14 @@ export function generateFindingsAndActions(
 } {
   const findings: Finding[] = [];
   const correctiveActions: CorrectiveAction[] = [];
-  const workingFileCase = applyWorkingFileReviewPolicy(caseData);
 
   // 1. Process working-file quality controls. Pending organisation review is
   // not a file-integrity defect and therefore cannot block operator package
-  // generation. Rejected review, malware, ownership, linkage, support and
-  // calculation defects remain fail-closed.
-  const qcs = runQualityControls(workingFileCase);
+  // generation. The stored review status is never rewritten; the working-file
+  // view only treats PENDING as present-but-unreviewed. Rejected review,
+  // malware, ownership, linkage, support and calculation defects remain
+  // fail-closed.
+  const qcs = runQualityControls(caseData, { pendingReviewIsPresent: true });
   for (const qc of qcs) {
     if (qc.status === "PASS" || qc.status === "NOT_APPLICABLE") {
       continue;
@@ -88,8 +88,9 @@ export function generateFindingsAndActions(
   // issue is disclosed as verifier-handover pending but cannot block sealing.
   const sufficiencies = runEvidenceSufficiency(caseData, assessmentTimestamp);
   const workingFileSufficiencies = runEvidenceSufficiency(
-    workingFileCase,
-    assessmentTimestamp
+    caseData,
+    assessmentTimestamp,
+    { pendingReviewIsPresent: true }
   );
   for (const row of sufficiencies) {
     if (isEvidenceSupportedState(row.state)) {

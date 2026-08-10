@@ -219,7 +219,11 @@ function calculateIntervalUnionCoverage(
   };
 }
 
-export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimestamp?: string): EvidenceSufficiencyRow[] {
+export function runEvidenceSufficiency(
+  caseData: AuditReadyCase,
+  assessmentTimestamp?: string,
+  options?: { pendingReviewIsPresent?: boolean }
+): EvidenceSufficiencyRow[] {
   void assessmentTimestamp;
   const requirements = deriveMaterialRequirements(caseData);
   const rows: EvidenceSufficiencyRow[] = [];
@@ -275,7 +279,8 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
         // zero-evidence requirement; otherwise the row is not supported.
         const acceptedDecision = caseData.methodologyDecisions.find(
           (decision) =>
-            decision.reviewStatus === "ACCEPTED" &&
+            (decision.reviewStatus === "ACCEPTED" ||
+              (options?.pendingReviewIsPresent === true && decision.reviewStatus === "PENDING")) &&
             (decision.topic.includes(req.inputPath) ||
               decision.topic.includes(req.requirementId) ||
               decision.topic.includes(req.displayName))
@@ -383,10 +388,19 @@ export function runEvidenceSufficiency(caseData: AuditReadyCase, assessmentTimes
         recordReasons.push("MALWARE_SCAN_INFECTED");
       }
 
-      // Check review status
-      if (record.reviewStatus !== "APPROVED") {
+      // Check review status. PENDING review means the record is present and
+      // awaiting organisation review: in a working-file view it is accepted,
+      // never silently promoted to APPROVED. REJECTED always fails closed.
+      if (record.reviewStatus === "REJECTED") {
         recordState = "UNAPPROVED";
-        recordReasons.push("EVIDENCE_NOT_APPROVED_BY_OPERATOR");
+        recordReasons.push("EVIDENCE_REJECTED_BY_OPERATOR");
+      } else if (record.reviewStatus !== "APPROVED") {
+        if (options?.pendingReviewIsPresent === true) {
+          recordReasons.push("EVIDENCE_PENDING_OPERATOR_REVIEW");
+        } else {
+          recordState = "UNAPPROVED";
+          recordReasons.push("EVIDENCE_NOT_APPROVED_BY_OPERATOR");
+        }
       }
 
       // Parse dates for this specific evidence record

@@ -1,0 +1,29 @@
+{
+  "caseId": "case_fertiliser_tr_fixture",
+  "runs": [
+    {
+      "label": "period_10_pct",
+      "timestamp": "2026-02-10T00:00:00.000Z",
+      "dataEvidenceReadiness": 22.5,
+      "periodClosure": 11.2,
+      "dataReadinessReasonCodes": [],
+      "periodEnded": false
+    },
+    {
+      "label": "period_60_pct",
+      "timestamp": "2026-07-19T00:00:00.000Z",
+      "dataEvidenceReadiness": 22.5,
+      "periodClosure": 54.8,
+      "dataReadinessReasonCodes": [],
+      "periodEnded": false
+    },
+    {
+      "label": "period_100_pct",
+      "timestamp": "2027-01-31T00:00:00.000Z",
+      "dataEvidenceReadiness": 22.5,
+      "periodClosure": 100,
+      "dataReadinessReasonCodes": [],
+      "periodEnded": true
+    }
+  ]
+}

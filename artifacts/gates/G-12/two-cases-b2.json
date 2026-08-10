@@ -1,0 +1,112 @@
+{
+  "caseA": {
+    "key": "STEEL_IN",
+    "valueStatement": [
+      {
+        "metric": "Registry fields mapped with legal basis, source path, owner and evidence lineage",
+        "value": "47",
+        "source": "buildRegistryTemplateMapping"
+      },
+      {
+        "metric": "Evidence documents graded, hashed and classified for independent verifiability",
+        "value": "11",
+        "source": "evidenceRegister"
+      },
+      {
+        "metric": "Calculation nodes sealed with formula ID, input set, unit and hash",
+        "value": "11",
+        "source": "calculation.trace"
+      },
+      {
+        "metric": "Quality-control rules executed",
+        "value": "24",
+        "source": "quality-controls"
+      },
+      {
+        "metric": "Quality-control rules passed",
+        "value": "23",
+        "source": "quality-controls"
+      },
+      {
+        "metric": "Quality-control findings recorded",
+        "value": "0",
+        "source": "quality-controls"
+      },
+      {
+        "metric": "Methodology decisions recorded with rationale and legal basis",
+        "value": "2",
+        "source": "methodologyDecisions"
+      },
+      {
+        "metric": "Legal sources logged with CELEX reference",
+        "value": "6",
+        "source": "verifier-model.legalSources"
+      },
+      {
+        "metric": "Risk domains assessed for inherent and control risk",
+        "value": "7",
+        "source": "verifierPreparation risk registers"
+      },
+      {
+        "metric": "Verifier handover agenda and closure conditions prepared",
+        "value": "1",
+        "source": "verifierPreparation (runtime-derived handover pack)"
+      }
+    ]
+  },
+  "caseB": {
+    "key": "ALU_CN",
+    "valueStatement": [
+      {
+        "metric": "Registry fields mapped with legal basis, source path, owner and evidence lineage",
+        "value": "41",
+        "source": "buildRegistryTemplateMapping"
+      },
+      {
+        "metric": "Evidence documents graded, hashed and classified for independent verifiability",
+        "value": "10",
+        "source": "evidenceRegister"
+      },
+      {
+        "metric": "Calculation nodes sealed with formula ID, input set, unit and hash",
+        "value": "9",
+        "source": "calculation.trace"
+      },
+      {
+        "metric": "Quality-control rules executed",
+        "value": "18",
+        "source": "quality-controls"
+      },
+      {
+        "metric": "Quality-control rules passed",
+        "value": "16",
+        "source": "quality-controls"
+      },
+      {
+        "metric": "Quality-control findings recorded",
+        "value": "0",
+        "source": "quality-controls"
+      },
+      {
+        "metric": "Methodology decisions recorded with rationale and legal basis",
+        "value": "3",
+        "source": "methodologyDecisions"
+      },
+      {
+        "metric": "Legal sources logged with CELEX reference",
+        "value": "6",
+        "source": "verifier-model.legalSources"
+      },
+      {
+        "metric": "Risk domains assessed for inherent and control risk",
+        "value": "7",
+        "source": "verifierPreparation risk registers"
+      },
+      {
+        "metric": "Verifier handover agenda and closure conditions prepared",
+        "value": "1",
+        "source": "verifierPreparation (runtime-derived handover pack)"
+      }
+    ]
+  }
+}

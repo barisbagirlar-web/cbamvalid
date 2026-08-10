@@ -1,6 +1,5 @@
 import type { AuditReadyCase, GapRecord, GapSeverity } from "../schema";
 import { runQualityControls, type QualityControlResult } from "./quality-controls";
-import { applyWorkingFileReviewPolicy } from "./working-file-review-policy";
 
 export type VerificationReadinessStatus =
   | "NOT_READY"
@@ -84,7 +83,7 @@ function assessControls(controls: QualityControlResult[]): ControlAssessment {
 export function assessCaseReadiness(caseData: AuditReadyCase): VerificationReadinessAssessment {
   const verification = assessControls(runQualityControls(caseData));
   const workingFile = assessControls(
-    runQualityControls(applyWorkingFileReviewPolicy(caseData))
+    runQualityControls(caseData, { pendingReviewIsPresent: true })
   );
 
   const status: VerificationReadinessStatus = verification.isComplete

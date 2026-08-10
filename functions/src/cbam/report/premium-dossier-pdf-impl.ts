@@ -649,11 +649,13 @@ export function buildPremiumDossierPdf(
       row.sourcePath,
       row.status === "PENDING_VERIFIER"
         ? "Verifier action pending"
-        : row.validationErrors.length
-          ? row.validationErrors.map((error) => humanize(error)).join("; ")
-          : row.status === "NOT_APPLICABLE_WITH_BASIS"
-            ? "Not applicable with basis"
-            : "Passed",
+        : row.status === "INCOMPLETE_EVIDENCE_MISSING"
+          ? "Evidence missing for a mandatory field"
+          : row.validationErrors.length
+            ? row.validationErrors.map((error) => humanize(error)).join("; ")
+            : row.status === "NOT_APPLICABLE_WITH_BASIS"
+              ? "Not applicable with basis"
+              : "Passed",
     ]),
     [15, 16, 14, 18, 20, 17], 5.6);
   callout("Definitive legal basis", "The controlled legal sources are listed row by row in the regulatory crosswalk, including Regulation (EU) 2023/956 and the applicable implementing acts. The package supports preparation and field mapping; it does not constitute a customs decision, registry acceptance or independent verification opinion.");

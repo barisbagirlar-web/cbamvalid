@@ -1,0 +1,47 @@
+{
+  "baseIntensity": "1.288046",
+  "scenarios": [
+    {
+      "scenarioId": "GRID_FACTOR_MINUS_10",
+      "totalEmissionsDelta": "-12163.2",
+      "interpretationNote": "Grid emission factor is operator-selectable. A -10% factor change lowers total embedded emissions and may approach or cross the 5% intensity planning threshold; the threshold label is a planning flag for the verifier, not a finding.",
+      "labels": [
+        "ABOVE_PLANNING_THRESHOLD",
+        "OPERATOR_CONTROLLED_PARAMETER"
+      ]
+    },
+    {
+      "scenarioId": "BASE_CASE",
+      "totalEmissionsDelta": "0",
+      "interpretationNote": "Sealed base case; no scenario deviation.",
+      "labels": []
+    },
+    {
+      "scenarioId": "GRID_FACTOR_PLUS_10",
+      "totalEmissionsDelta": "12163.2",
+      "interpretationNote": "Grid emission factor is operator-selectable. A +10% factor change raises total embedded emissions and exceeds the 5% intensity planning threshold; the threshold label is a planning flag for the verifier, not a finding.",
+      "labels": [
+        "ABOVE_PLANNING_THRESHOLD",
+        "OPERATOR_CONTROLLED_PARAMETER"
+      ]
+    },
+    {
+      "scenarioId": "PRODUCTION_VOLUME_MINUS_10",
+      "totalEmissionsDelta": "0",
+      "interpretationNote": "Production-volume changes do not change total embedded emissions; they change only the specific intensity. A +/-10% volume change exceeds the 5% intensity planning threshold by definition and is not a finding. Intensity is a planning diagnostic for independent-verifier materiality work, not an operator-controllable gap.",
+      "labels": [
+        "INTENSITY_ONLY",
+        "NOT_A_FINDING"
+      ]
+    },
+    {
+      "scenarioId": "PRODUCTION_VOLUME_PLUS_10",
+      "totalEmissionsDelta": "0",
+      "interpretationNote": "Production-volume changes do not change total embedded emissions; they change only the specific intensity. A +/-10% volume change exceeds the 5% intensity planning threshold by definition and is not a finding. Intensity is a planning diagnostic for independent-verifier materiality work, not an operator-controllable gap.",
+      "labels": [
+        "INTENSITY_ONLY",
+        "NOT_A_FINDING"
+      ]
+    }
+  ]
+}

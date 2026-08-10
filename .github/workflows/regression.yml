@@ -35,6 +35,9 @@ jobs:
       - name: Vitest Unit Tests
         run: npx vitest run
 
+      - name: CBAMValid 6.0 mandatory gates (G-09 test-data leak, G-14 boundary protection)
+        run: npm run gate:release-6
+
       - name: Render current four-sector dossier artifacts
         if: startsWith(github.head_ref, 'refresh/four-sector-dossiers-')
         run: |
