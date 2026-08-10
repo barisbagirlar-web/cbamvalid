@@ -118,6 +118,51 @@ async function extractDossierPdfText(): Promise<string> {
 }
 
 describe("premium dossier — complete results in the sealed main report", () => {
+  it("renders a report contents section covering the complete result set", async () => {
+    const text = (await extractDossierPdfText()).toLowerCase();
+    expect(text).toContain("report contents");
+    expect(text).toContain("scope and identity");
+    expect(text).toContain("goods population");
+    expect(text).toContain("calculation summary");
+    expect(text).toContain("calculation provenance");
+    expect(text).toContain("methodology decisions");
+    expect(text).toContain("registry template mapping");
+    expect(text).toContain("operator sign-offs");
+    expect(text).toContain("verifier handover");
+  });
+
+  it("renders scope and identity with the reporting period", async () => {
+    const text = (await extractDossierPdfText()).toLowerCase();
+    expect(text).toContain("scope and identity");
+    expect(text).toContain("importer");
+    expect(text).toContain("eori");
+    expect(text).toContain("exporter/operator");
+    expect(text).toContain("installation");
+    expect(text).toContain("reporting period");
+    expect(text).toContain("2026-01-01");
+    expect(text).toContain("2026-12-31");
+  });
+
+  it("renders the calculation summary with emissions metrics and units", async () => {
+    const text = (await extractDossierPdfText()).toLowerCase();
+    expect(text).toContain("calculation summary");
+    expect(text).toContain("installation direct emissions");
+    expect(text).toContain("electricity indirect emissions");
+    expect(text).toContain("total embedded emissions");
+    expect(text).toContain("eligible certificate reduction");
+    expect(text).toContain("tco2e/t");
+  });
+
+  it("renders calculation provenance with ruleset, engine and root hash", async () => {
+    const text = (await extractDossierPdfText()).toLowerCase();
+    expect(text).toContain("calculation provenance");
+    expect(text).toContain("ruleset");
+    expect(text).toContain("engine version");
+    expect(text).toContain("calculation root");
+    expect(text).toContain("allocation share total");
+    expect(text).toContain("allocation reconciliation delta");
+  });
+
   it("renders the scenario analysis section with deterministic +/-10% scenarios", async () => {
     const text = (await extractDossierPdfText()).toLowerCase();
     expect(text).toContain("scenario analysis and materiality simulation");
@@ -145,6 +190,22 @@ describe("premium dossier — complete results in the sealed main report", () =>
     expect(text).toContain("certificate holding check");
     expect(text).toContain("surplus certificate repurchase window opens");
     expect(text).toContain("calendar boundary");
+  });
+
+  it("renders methodology decisions and registry template mapping", async () => {
+    const text = (await extractDossierPdfText()).toLowerCase();
+    expect(text).toContain("methodology decisions");
+    expect(text).toContain("registry template mapping");
+    expect(text).toContain("selected method");
+    expect(text).toContain("legal / technical basis");
+  });
+
+  it("renders operator sign-offs and the verifier handover agenda", async () => {
+    const text = (await extractDossierPdfText()).toLowerCase();
+    expect(text).toContain("operator sign-offs");
+    expect(text).toContain("verifier handover");
+    expect(text).toContain("open questions");
+    expect(text).toContain("closure conditions");
   });
 
   it("keeps the server compliance calendar mirror in parity with the client SSOT", () => {
