@@ -1,0 +1,41 @@
+{
+  "meta": {
+    "artifact": "invariant-results/faz-10",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T09:10:00Z",
+    "generatorScript": null,
+    "inputWindow": {"start": null, "end": null},
+    "confidence": "medium",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+  },
+  "data": {
+    "phase": "faz-10",
+    "codeScopeComplete": true,
+    "results": [
+      {
+        "id": "INV-10.1",
+        "severity": "BLOCK",
+        "status": "PASS",
+        "negativeTestPassed": true,
+        "evidence": "Migration runbook requires exact SHA controls, human approval boundaries, no-go conditions, rollback triggers/procedure and closure evidence. Synthetic missing-rollback fixture fails closed."
+      },
+      {
+        "id": "INV-10.2",
+        "severity": "BLOCK",
+        "status": "PASS",
+        "negativeTestPassed": true,
+        "evidence": "Governed runbooks are scanned for destructive/unsafe executable shortcuts; synthetic force-push and auto-merge fixtures are rejected."
+      },
+      {
+        "id": "INV-10.3",
+        "severity": "INFO",
+        "status": "SKIP_NO_DATA",
+        "negativeTestPassed": null,
+        "evidence": "Annual crisis-drill procedure is defined, but no independently evidenced completed annual drill is available; no completion date is fabricated."
+      }
+    ]
+  }
+}
