@@ -138,6 +138,35 @@ describe("premium dossier — complete results in the sealed main report", () =>
     expect(text).toContain("18. professional boundary");
   });
 
+  it("keeps the report contents table numbered in step with the actual sections", async () => {
+    const text = (await extractDossierPdfText()).toLowerCase();
+    const tocEntries: Array<[string, string]> = [
+      ["1", "report contents"],
+      ["2", "scope and identity"],
+      ["3", "goods population"],
+      ["4", "calculation summary"],
+      ["5", "calculation provenance"],
+      ["6", "authoritative readiness state"],
+      ["7", "preparation score"],
+      ["8", "evidence assurance"],
+      ["9", "findings and closure"],
+      ["10", "methodology decisions"],
+      ["11", "registry template mapping"],
+      ["12", "scenario analysis and materiality simulation"],
+      ["13", "materiality proximity"],
+      ["14", "compliance calendar"],
+      ["15", "operator sign-offs"],
+      ["16", "verifier handover"],
+      ["17", "primary-document architecture"],
+      ["18", "professional boundary"],
+    ];
+    // Her TOC satırı "N Section" biçiminde render edilmeli; bölüm başlıkları da "N. Section".
+    for (const [number, heading] of tocEntries) {
+      expect(text, `TOC must list section ${number} ${heading}`).toContain(`${number}   ${heading}`);
+      expect(text, `section ${number} heading must match TOC`).toContain(`${number}. ${heading}`);
+    }
+  });
+
   it("renders a report contents section covering the complete result set", async () => {
     const text = (await extractDossierPdfText()).toLowerCase();
     expect(text).toContain("report contents");

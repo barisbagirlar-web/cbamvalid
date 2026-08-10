@@ -69,6 +69,20 @@ function asText(value: unknown): string {
   return result || "Not supplied";
 }
 
+function formatGeneratedAt(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return asText(value);
+  return parsed.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "UTC",
+  }).replace(",", "") + " UTC";
+}
+
 function normalizedWidths(count: number, requested?: number[]): number[] {
   if (!requested || requested.length !== count || requested.some((value) => !Number.isFinite(value) || value <= 0)) {
     return Array.from({ length: count }, () => CONTENT_WIDTH / count);
@@ -254,7 +268,7 @@ export function buildEnterprisePdf(input: EnterprisePdfInput): Buffer {
         ["Report ID", cover.reportId],
         ["Package code", cover.packageCode],
         ["Release", String(cover.releaseVersion)],
-        ["Generated at", cover.generatedAt],
+        ["Generated at", formatGeneratedAt(cover.generatedAt)],
         ["Reporting period", cover.reportingPeriod],
       ],
     };
