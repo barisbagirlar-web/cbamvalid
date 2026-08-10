@@ -1,0 +1,24 @@
+{
+  "meta": {
+    "artifact": "warehouse/source_state",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T06:50:00Z",
+    "generatorScript": "scripts/seo/warehouse-contract.ts",
+    "inputWindow": {"start": null, "end": null},
+    "confidence": "low",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+  },
+  "data": {
+    "structuralBreakDate": "2025-09-11",
+    "requiredSegments": ["pre-num100-removal", "post-num100-removal"],
+    "gscConnected": false,
+    "ga4Connected": false,
+    "productionCostConnected": false,
+    "conversionValueConfiguredMinor": 0,
+    "incrementalityEvidenceAvailable": false,
+    "generativeAiMetricPolicy": "isolated-not-in-formula"
+  }
+}
