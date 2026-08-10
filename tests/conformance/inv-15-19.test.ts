@@ -1,0 +1,2 @@
+import { describe,expect,it } from "vitest";import { assertVerticalDoesNotWeakenGlobal } from "../../scripts/seo/audit-vertical-modules";
+describe("INV-15.19",()=>{it("blocks vertical WARN replacing global BLOCK",()=>expect(()=>assertVerticalDoesNotWeakenGlobal("BLOCK","WARN")).toThrow(/INV-15\.19/));it("allows stricter vertical rule",()=>expect(()=>assertVerticalDoesNotWeakenGlobal("WARN","BLOCK")).not.toThrow())});
