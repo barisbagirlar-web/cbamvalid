@@ -4,7 +4,6 @@ import type { ReadinessAssessment, ReadinessDimension, ReadinessDimensionId, Ope
 import { runEvidenceSufficiency, isEvidenceSupportedState } from "./evidence-sufficiency";
 import { generateFindingsAndActions } from "./findings-engine";
 import { runQualityControls } from "./quality-controls";
-import { applyWorkingFileReviewPolicy } from "./working-file-review-policy";
 import { resolveControlledCaseAssessmentTimestamp } from "../report/controlled-test-assessment";
 
 const TOTAL_WEIGHT = new Decimal(100);
@@ -238,8 +237,9 @@ export function assessReadiness(params: {
       : assessmentTimestamp;
   const sufficiency = runEvidenceSufficiency(caseData, effectiveAssessmentTimestamp);
   const workingFileSufficiency = runEvidenceSufficiency(
-    applyWorkingFileReviewPolicy(caseData),
-    effectiveAssessmentTimestamp
+    caseData,
+    effectiveAssessmentTimestamp,
+    { pendingReviewIsPresent: true }
   );
   const { findings } = generateFindingsAndActions(
     caseData,

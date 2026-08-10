@@ -1,0 +1,28 @@
+{
+  "state": "ON_TRACK_PERIOD_OPEN",
+  "sources": [
+    {
+      "surface": "packageReadinessState (state decision)",
+      "value": "ON_TRACK_PERIOD_OPEN"
+    },
+    {
+      "surface": "master record badge",
+      "value": "ON_TRACK_PERIOD_OPEN"
+    },
+    {
+      "surface": "xlsx package automated readiness",
+      "value": "ON_TRACK_PERIOD_OPEN"
+    }
+  ],
+  "forbidden": [
+    "NOT_READY"
+  ],
+  "scanned": {
+    "masterRecordPdfBytes": 76289,
+    "scannedOutputs": [
+      "Enterprise Compliance Master Record.pdf",
+      "Calculation Trace.json",
+      "Data Integrity Manifest.json"
+    ]
+  }
+}

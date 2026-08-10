@@ -1,5 +1,6 @@
 import type { AuditReadyCase } from "../schema";
 import { runEvidenceSufficiency, isEvidenceSupportedState } from "../validation/evidence-sufficiency";
+import { evidenceRequirementFor } from "../report/v6/evidence-gap";
 
 /**
  * Registry Verification Template Mapping Dataset (FAZ 12).
@@ -13,6 +14,7 @@ export const REGISTRY_TEMPLATE_MAPPING_DATASET_NAME = "Registry Verification Tem
 
 export const RegistryTemplateMappingFieldStatus = {
   COMPLETE_OPERATOR: "COMPLETE_OPERATOR",
+  INCOMPLETE_EVIDENCE_MISSING: "INCOMPLETE_EVIDENCE_MISSING",
   PENDING_VERIFIER: "PENDING_VERIFIER",
   MISSING_OPERATOR: "MISSING_OPERATOR",
   NOT_APPLICABLE_WITH_BASIS: "NOT_APPLICABLE_WITH_BASIS",
@@ -116,22 +118,33 @@ export function buildRegistryTemplateMapping(caseData: AuditReadyCase, assessmen
     field("REG-INST-LONGITUDE", "Installation", legalBasis.installationIdentity, "installation.longitude.value", String(installation.longitude?.value ?? ""), "OPERATOR", [], []),
     field("REG-INST-COUNTRY", "Installation", legalBasis.installationIdentity, "installation.country.value", String(installation.country.value ?? ""), "OPERATOR", evidenceIdsFor("REQ-INST-NAME"), []),
     field("REG-INST-PRODUCTION-ROUTE", "Installation", legalBasis.installationIdentity, "installation.productionRoute.value", String(installation.productionRoute.value ?? ""), "OPERATOR", evidenceIdsFor("REQ-INST-NAME"), []),
-    field("REG-INST-SYSTEM-BOUNDARY", "Installation", legalBasis.installationIdentity, "installation.systemBoundaries", installation.systemBoundaries ?? "", "OPERATOR", evidenceIdsFor("REQ-INST-BOUNDARY"), []),
+    field("REG-INST-SYSTEM-BOUNDARY", "Installation", legalBasis.installationIdentity, "installation.systemBoundaries", installation.systemBoundaries ?? "", "OPERATOR", evidenceIdsFor("REQ-INST-BOUNDS"), []),
     field("REG-INST-EXCLUDED-PROCESSES", "Installation", legalBasis.installationIdentity, "installation.excludedProcesses", installation.excludedProcesses ?? "", "OPERATOR", [], []),
-    field("REG-INST-MONITORING-PLAN", "Installation", legalBasis.installationIdentity, "installation.monitoringPlanId.value", String(installation.monitoringPlanId?.value ?? ""), "OPERATOR", evidenceIdsFor("REQ-MON-PLAN"), [])
+    field("REG-INST-MONITORING-PLAN", "Installation", legalBasis.installationIdentity, "installation.monitoringPlanId.value", String(installation.monitoringPlanId?.value ?? ""), "OPERATOR", evidenceIdsFor("REQ-INST-BOUNDS"), [])
   );
 
   fields.push(
-    field("REG-PERIOD-YEAR", "Reporting period", legalBasis.reportingPeriod, "reportingPeriod.year.value", String(caseData.reportingPeriod.year.value ?? ""), "CBAMVALID_SYSTEM", evidenceIdsFor("REQ-REP-PERIOD"), []),
-    field("REG-PERIOD-START", "Reporting period", legalBasis.reportingPeriod, "reportingPeriod.startDate.value", String(caseData.reportingPeriod.startDate?.value ?? ""), "CBAMVALID_SYSTEM", evidenceIdsFor("REQ-REP-PERIOD"), []),
-    field("REG-PERIOD-END", "Reporting period", legalBasis.reportingPeriod, "reportingPeriod.endDate.value", String(caseData.reportingPeriod.endDate?.value ?? ""), "CBAMVALID_SYSTEM", evidenceIdsFor("REQ-REP-PERIOD"), [])
+    field("REG-PERIOD-YEAR", "Reporting period", legalBasis.reportingPeriod, "reportingPeriod.year.value", String(caseData.reportingPeriod.year.value ?? ""), "CBAMVALID_SYSTEM", evidenceIdsFor("REQ-PERIOD-YEAR"), []),
+    field("REG-PERIOD-START", "Reporting period", legalBasis.reportingPeriod, "reportingPeriod.startDate.value", String(caseData.reportingPeriod.startDate?.value ?? ""), "CBAMVALID_SYSTEM", evidenceIdsFor("REQ-PERIOD-YEAR"), []),
+    field("REG-PERIOD-END", "Reporting period", legalBasis.reportingPeriod, "reportingPeriod.endDate.value", String(caseData.reportingPeriod.endDate?.value ?? ""), "CBAMVALID_SYSTEM", evidenceIdsFor("REQ-PERIOD-YEAR"), [])
   );
 
   caseData.goods.forEach((good, index) => {
     fields.push(
       field(`REG-GOOD-CN-${index}`, "Goods", legalBasis.goods, `goods.${index}.cnCode.value`, String(good.cnCode.value ?? ""), "OPERATOR", evidenceIdsFor(`REQ-GOOD-CN-${index}`), validationErrorsFor(`REQ-GOOD-CN-${index}`)),
       field(`REG-GOOD-PROD-${index}`, "Goods", legalBasis.goods, `goods.${index}.productionVolume.value`, String(good.productionVolume.value ?? ""), "OPERATOR", evidenceIdsFor(`REQ-GOOD-VOL-${index}`), validationErrorsFor(`REQ-GOOD-VOL-${index}`)),
-      field(`REG-GOOD-ALLOC-${index}`, "Goods", legalBasis.allocation, `goods.${index}.allocationShare.value`, String(good.allocationShare?.value ?? ""), "OPERATOR", evidenceIdsFor(`REQ-GOOD-ALLOC-${index}`), [])
+      field(
+        `REG-GOOD-ALLOC-${index}`,
+        "Goods",
+        legalBasis.allocation,
+        caseData.goods.length <= 1
+          ? "N/A - single good; allocation share is 100% and allocation evidence is not required"
+          : `goods.${index}.allocationShare.value`,
+        String(good.allocationShare?.value ?? ""),
+        "OPERATOR",
+        evidenceIdsFor(`REQ-GOOD-ALLOC-${index}`),
+        []
+      )
     );
   });
 
@@ -155,7 +168,7 @@ export function buildRegistryTemplateMapping(caseData: AuditReadyCase, assessmen
   }
 
   fields.push(
-    field("REG-ALLOC-METHOD", "Allocation", legalBasis.allocation, "methodologyDecisions.allocationMethod", caseData.methodologyDecisions.find((item) => item.topic.toLowerCase().includes("llocat"))?.selectedMethod ?? "", "OPERATOR", evidenceIdsFor("REQ-GOOD-ALLOC-0"), [])
+    field("REG-ALLOC-METHOD", "Allocation", legalBasis.allocation, caseData.goods.length <= 1 ? "N/A - single good; no allocation between multiple goods is performed" : "methodologyDecisions.allocationMethod", caseData.methodologyDecisions.find((item) => item.topic.toLowerCase().includes("llocat"))?.selectedMethod ?? "", "OPERATOR", evidenceIdsFor("REQ-GOOD-ALLOC-0"), [])
   );
 
   if (caseData.carbonPriceRecords.length === 0) {
@@ -183,6 +196,23 @@ export function buildRegistryTemplateMapping(caseData: AuditReadyCase, assessmen
     field("REG-VER-OPINION", "Verifier", legalBasis.opinion, "verifierReserved.finalOpinion", verifier?.finalOpinion ?? "", "INDEPENDENT_VERIFIER", [], []),
     field("REG-VER-CERT-REF", "Verifier", legalBasis.opinion, "verifierReserved.certificateReference", verifier?.certificateReference ?? "", "INDEPENDENT_VERIFIER", [], [])
   );
+
+  // G-08 / INV-05: a MANDATORY field with a present value but no linked
+  // evidence can never be reported COMPLETE_OPERATOR. It is reclassified to
+  // INCOMPLETE_EVIDENCE_MISSING so the evidence-gap gate counts it and the
+  // consumer never mistakes "value present" for "evidence complete". This
+  // applies to every owner: CBAMVALID_SYSTEM-derived period fields are covered
+  // by period-basis evidence and are just as gated as operator fields.
+  for (let index = 0; index < fields.length; index += 1) {
+    const entry = fields[index]!;
+    if (
+      entry.status === RegistryTemplateMappingFieldStatus.COMPLETE_OPERATOR &&
+      evidenceRequirementFor(entry.registryFieldId, entry.sourcePath) === "MANDATORY" &&
+      entry.evidenceIds.length === 0
+    ) {
+      fields[index] = { ...entry, status: RegistryTemplateMappingFieldStatus.INCOMPLETE_EVIDENCE_MISSING };
+    }
+  }
 
   return fields;
 }

@@ -1,0 +1,293 @@
+{
+  "mandatoryWithoutEvidence": [
+    {
+      "id": "REG-OP-LEGAL-NAME",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    },
+    {
+      "id": "REG-OP-REG-NO",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    },
+    {
+      "id": "REG-OP-ADDRESS",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    },
+    {
+      "id": "REG-OP-COUNTRY",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    },
+    {
+      "id": "REG-INST-NAME",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    },
+    {
+      "id": "REG-INST-COUNTRY",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    },
+    {
+      "id": "REG-INST-PRODUCTION-ROUTE",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    },
+    {
+      "id": "REG-INST-SYSTEM-BOUNDARY",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    },
+    {
+      "id": "REG-INST-MONITORING-PLAN",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    },
+    {
+      "id": "REG-PERIOD-YEAR",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    },
+    {
+      "id": "REG-PERIOD-START",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    },
+    {
+      "id": "REG-PERIOD-END",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    },
+    {
+      "id": "REG-GOOD-CN-0",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    },
+    {
+      "id": "REG-GOOD-PROD-0",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    },
+    {
+      "id": "REG-GOOD-ALLOC-0",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    },
+    {
+      "id": "REG-DIRECT-EM",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    },
+    {
+      "id": "REG-ELECTRICITY",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    },
+    {
+      "id": "REG-GRID-FACTOR",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    },
+    {
+      "id": "REG-ALLOC-METHOD",
+      "status": "INCOMPLETE_EVIDENCE_MISSING"
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-OP-LEGAL-NAME",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-OP-LEGAL-NAME",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-OP-LEGAL-NAME requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-OP-LEGAL-NAME.",
+      "targetDate": "NOT_YET_SET"
+    },
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-OP-REG-NO",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-OP-REG-NO",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-OP-REG-NO requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-OP-REG-NO.",
+      "targetDate": "NOT_YET_SET"
+    },
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-OP-ADDRESS",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-OP-ADDRESS",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-OP-ADDRESS requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-OP-ADDRESS.",
+      "targetDate": "NOT_YET_SET"
+    },
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-OP-COUNTRY",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-OP-COUNTRY",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-OP-COUNTRY requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-OP-COUNTRY.",
+      "targetDate": "NOT_YET_SET"
+    },
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-INST-NAME",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-INST-NAME",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-INST-NAME requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-INST-NAME.",
+      "targetDate": "NOT_YET_SET"
+    },
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-INST-COUNTRY",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-INST-COUNTRY",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-INST-COUNTRY requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-INST-COUNTRY.",
+      "targetDate": "NOT_YET_SET"
+    },
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-INST-PRODUCTION-ROUTE",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-INST-PRODUCTION-ROUTE",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-INST-PRODUCTION-ROUTE requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-INST-PRODUCTION-ROUTE.",
+      "targetDate": "NOT_YET_SET"
+    },
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-INST-SYSTEM-BOUNDARY",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-INST-SYSTEM-BOUNDARY",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-INST-SYSTEM-BOUNDARY requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-INST-SYSTEM-BOUNDARY.",
+      "targetDate": "NOT_YET_SET"
+    },
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-INST-MONITORING-PLAN",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-INST-MONITORING-PLAN",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-INST-MONITORING-PLAN requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-INST-MONITORING-PLAN.",
+      "targetDate": "NOT_YET_SET"
+    },
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-PERIOD-YEAR",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-PERIOD-YEAR",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-PERIOD-YEAR requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-PERIOD-YEAR.",
+      "targetDate": "NOT_YET_SET"
+    },
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-PERIOD-START",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-PERIOD-START",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-PERIOD-START requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-PERIOD-START.",
+      "targetDate": "NOT_YET_SET"
+    },
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-PERIOD-END",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-PERIOD-END",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-PERIOD-END requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-PERIOD-END.",
+      "targetDate": "NOT_YET_SET"
+    },
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-GOOD-CN-0",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-GOOD-CN-0",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-GOOD-CN-0 requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-GOOD-CN-0.",
+      "targetDate": "NOT_YET_SET"
+    },
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-GOOD-PROD-0",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-GOOD-PROD-0",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-GOOD-PROD-0 requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-GOOD-PROD-0.",
+      "targetDate": "NOT_YET_SET"
+    },
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-GOOD-ALLOC-0",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-GOOD-ALLOC-0",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-GOOD-ALLOC-0 requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-GOOD-ALLOC-0.",
+      "targetDate": "NOT_YET_SET"
+    },
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-DIRECT-EM",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-DIRECT-EM",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-DIRECT-EM requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-DIRECT-EM.",
+      "targetDate": "NOT_YET_SET"
+    },
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-ELECTRICITY",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-ELECTRICITY",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-ELECTRICITY requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-ELECTRICITY.",
+      "targetDate": "NOT_YET_SET"
+    },
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-GRID-FACTOR",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-GRID-FACTOR",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-GRID-FACTOR requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-GRID-FACTOR.",
+      "targetDate": "NOT_YET_SET"
+    },
+    {
+      "findingId": "FND-EVIDENCE-GAP-REG-ALLOC-METHOD",
+      "severity": "P2",
+      "responsibleRole": "OPERATOR",
+      "category": "EVIDENCE_GAP",
+      "registryFieldId": "REG-ALLOC-METHOD",
+      "state": "INCOMPLETE_EVIDENCE_MISSING",
+      "title": "Registry field REG-ALLOC-METHOD requires evidence and none is linked.",
+      "closureCondition": "Link one or more approved evidence records to registry field REG-ALLOC-METHOD.",
+      "targetDate": "NOT_YET_SET"
+    }
+  ],
+  "completeWithoutEvidenceCount": 0,
+  "basisErrors": []
+}

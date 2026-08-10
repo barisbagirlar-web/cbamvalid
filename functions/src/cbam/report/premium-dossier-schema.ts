@@ -443,7 +443,7 @@ export const PremiumDossierViewModelV2Schema = PremiumDossierViewModelSchema.ext
       legalBasis: z.string(),
       sourcePath: z.string(),
       value: z.string(),
-      status: z.enum(["COMPLETE_OPERATOR", "PENDING_VERIFIER", "MISSING_OPERATOR", "NOT_APPLICABLE_WITH_BASIS"]),
+      status: z.enum(["COMPLETE_OPERATOR", "INCOMPLETE_EVIDENCE_MISSING", "PENDING_VERIFIER", "MISSING_OPERATOR", "NOT_APPLICABLE_WITH_BASIS"]),
       owner: z.enum(["OPERATOR", "CBAMVALID_SYSTEM", "INDEPENDENT_VERIFIER"]),
       evidenceIds: z.array(z.string()),
       validationErrors: z.array(z.string()),

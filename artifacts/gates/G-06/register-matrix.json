@@ -1,0 +1,22 @@
+{
+  "matrix": {
+    "Evidence Register": {
+      "csv": 11,
+      "xlsx": 11,
+      "pdf": 11,
+      "errors": []
+    },
+    "Precursors": {
+      "csv": 1,
+      "xlsx": 1,
+      "pdf": 1,
+      "errors": []
+    },
+    "Carbon Price": {
+      "csv": 1,
+      "xlsx": 1,
+      "pdf": 1,
+      "errors": []
+    }
+  }
+}

@@ -46,13 +46,15 @@ describe("operator working-file readiness", () => {
       sealMode: "PRODUCTION",
     });
 
-    expect(serverAssessment.operatorStatus).not.toBe("NOT_READY");
-    expect(serverAssessment.criticalBlockerCount).toBe(0);
-    expect(serverAssessment.missingMaterialEvidenceCount).toBe(0);
-    expect(serverAssessment.canSeal).toBe(true);
+    // G-14 fail-closed: a production seal must never treat PENDING reviews as
+    // accepted. The working file may lock a conditional package for internal
+    // review, but the server seal assessment holds the package back until the
+    // operator accepts every decision and evidence record.
+    expect(serverAssessment.operatorStatus).toBe("NOT_READY");
+    expect(serverAssessment.canSeal).toBe(false);
+    expect(serverAssessment.missingMaterialEvidenceCount).toBeGreaterThan(0);
     expect(serverAssessment.recommendedDecision).toBe("DO_NOT_SUBMIT");
     expect(serverAssessment.decisionReasonCodes).toContain("FUTURE_REPORTING_PERIOD_END");
-    expect(serverAssessment.decisionReasonCodes).toContain("CONDITIONAL_WORKING_FILE_ONLY");
 
     const { findings } = generateFindingsAndActions(caseData, MID_YEAR_ASSESSMENT);
     const futurePeriod = findings.find(

@@ -1,0 +1,9 @@
+{
+  "evidenceCount": 11,
+  "eligibleFieldCount": 37,
+  "cartesianUpperBound": 407,
+  "actualFieldEvidencePairs": 34,
+  "meaningfulPairs": 29,
+  "unmeaningfulPairs": 5,
+  "reductionRatio": 0.0835
+}

@@ -71,5 +71,16 @@ export const REQUIRED_TOP_LEVEL_COMPONENTS_V5 = [
   "Supporting_Evidence/",
 ] as const;
 
+/**
+ * V6 (CBAMVALID-DOSSIER-6.0) keeps the V5 package surface and adds the
+ * Enterprise Compliance Master Record as the mandatory 27th top-level
+ * component (RM-CBAMVALID-006 G-13).
+ */
+export const REQUIRED_TOP_LEVEL_COMPONENTS_V6 = [
+  ...REQUIRED_TOP_LEVEL_COMPONENTS_V5,
+  "Enterprise Compliance Master Record.pdf",
+] as const;
+
 export const REQUIRED_TOP_LEVEL_COMPONENT_COUNT = REQUIRED_TOP_LEVEL_COMPONENTS.length;
 export const REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5 = REQUIRED_TOP_LEVEL_COMPONENTS_V5.length;
+export const REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6 = REQUIRED_TOP_LEVEL_COMPONENTS_V6.length;

@@ -1,0 +1,195 @@
+{
+  "packageReadinessState": "ON_TRACK_PERIOD_OPEN",
+  "cellMappings": [
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "A1",
+      "value": "Verifier-controlled field"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "B1",
+      "value": "Value"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "C1",
+      "value": "Control"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "D1",
+      "value": "Value"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "A2",
+      "value": "Review status"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "B2",
+      "value": "NOT_REVIEWED"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "C2",
+      "value": "Package automated readiness"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "D2",
+      "value": "ON_TRACK_PERIOD_OPEN"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "A3",
+      "value": "Verifier legal entity"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "B3",
+      "value": ""
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "C3",
+      "value": "Accreditation body"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "D3",
+      "value": ""
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "A4",
+      "value": "Lead verifier"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "B4",
+      "value": ""
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "C4",
+      "value": "Accreditation number"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "D4",
+      "value": ""
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "A5",
+      "value": "Review start date"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "B5",
+      "value": ""
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "C5",
+      "value": "Review completion date"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "D5",
+      "value": ""
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "A6",
+      "value": "Physical / virtual site visit"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "B6",
+      "value": ""
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "C6",
+      "value": "Site visit date"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "D6",
+      "value": ""
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "A7",
+      "value": "Materiality rate"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "B7",
+      "value": "5% per good (PROVISIONAL_FOR_VERIFIER_PLANNING)"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "C7",
+      "value": "Reasonable assurance"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "D7",
+      "value": "NOT_ASSESSED"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "A8",
+      "value": "Independent opinion"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "B8",
+      "value": "NO_OPINION"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "C8",
+      "value": "Findings closure"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "D8",
+      "value": "OPEN"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "A9",
+      "value": "Verifier conclusion"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "B9",
+      "value": ""
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "C9",
+      "value": "Verifier signature reference"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "D9",
+      "value": ""
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "A10",
+      "value": "Boundary notice"
+    },
+    {
+      "sheet": "xl/worksheets/sheet34.xml",
+      "cell": "B10",
+      "value": "CBAMValid does not populate or assert verifier-controlled fields. Completion requires an independent accredited verifier."
+    }
+  ]
+}

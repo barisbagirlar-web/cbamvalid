@@ -153,6 +153,7 @@ function acceptedDecision(
     reason,
     legalOrTechnicalBasis,
     evidenceIds,
+    rejectedAlternativeReason: `Alternative approaches were considered and rejected: a simpler single-factor estimate was rejected because it omits the reconciled mass balance; a fully industry-average default was rejected because the controlled installation holds primary measurements for the reporting period.`,
     reviewStatus: "ACCEPTED",
     rulesetVersion: FOUR_DOSSIER_RULESET,
     approverName: FOUR_DOSSIER_REVIEWER_NAME,
@@ -574,7 +575,7 @@ function steelInDossier(): AuditReadyCase {
       systemBoundaries:
         "Boundary includes coke preparation, sinter plant, blast furnace, basic oxygen furnace, casting and finishing operations. Excludes downstream rolling mills and on-site power export.",
       excludedProcesses: "Downstream rolling mills and exported by-product power",
-      functionalUnits: "t of semi-finished, flat-rolled and bar/rod steel",
+      functionalUnits: "t of semi-finished and flat-rolled steel products",
       installationDiagramEvidenceId: EV_BOUNDARY,
       monitoringPlanId: datum("MP-JSP-2026-v3", { evidenceId: EV_BOUNDARY }),
       monitoringPlanVersion: datum("v3", { evidenceId: EV_BOUNDARY }),
