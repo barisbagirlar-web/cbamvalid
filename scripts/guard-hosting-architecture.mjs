@@ -52,7 +52,10 @@ if (!fs.existsSync(deployScriptPath)) {
   fail("scripts/deploy-hosting-cutover.sh is required");
 } else {
   const deployScript = fs.readFileSync(deployScriptPath, "utf8");
-  if (!deployScript.includes("firebase deploy --only hosting")) {
+  // Accepts both the bare `firebase deploy --only hosting` invocation and a
+  // wrapper binary (FIREBASE_CMD, e.g. `npx firebase-tools`); the required
+  // Framework-Aware Hosting flags stay mandatory either way.
+  if (!deployScript.includes("deploy --only hosting --project")) {
     fail("hosting deploy script must use Firebase Framework-Aware Hosting deployment");
   }
   if (!deployScript.includes("verify-live-next-assets.mjs")) {
