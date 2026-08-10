@@ -1,0 +1,2 @@
+import { describe,expect,it } from "vitest";import { assertReciprocalHreflang,type HreflangEntry } from "../../scripts/seo/audit-vertical-modules";
+describe("INV-15.13",()=>{it("blocks one-way hreflang",()=>{const rows:HreflangEntry[]=[{route:"/en",language:"en",canonical:"https://x.test/en",xDefault:true,alternates:{tr:"https://x.test/tr"}},{route:"/tr",language:"tr",canonical:"https://x.test/tr",xDefault:false,alternates:{}}];expect(()=>assertReciprocalHreflang(rows)).toThrow(/INV-15\.13/)});});
