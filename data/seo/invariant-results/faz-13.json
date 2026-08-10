@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "artifact": "invariant-results/faz-13",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T10:28:00Z",
+    "generatorScript": "scripts/seo/audit-offpage.ts",
+    "inputWindow": {"start": "2025-09-11", "end": "2026-08-10"},
+    "confidence": "low",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+  },
+  "data": {
+    "phase": "faz-13",
+    "codeScopeComplete": true,
+    "results": [
+      {"id":"INV-13.1","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Disavow is blocked unless manual-action/proven-negative-SEO evidence, A3 approval and KARAR_DEFTERI decision are all present. No disavow file/action was generated."},
+      {"id":"INV-13.2","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Paid links, PBN, link exchange, mass guest-post and cross-site link-network tactics are rejected with YETKI_IHLALI; earned PR and draft-only mention outreach remain permitted."},
+      {"id":"INV-13.3","severity":"WARN","status":"PASS","negativeTestPassed":null,"evidence":"Exact registry dry-run found 18 live records explicitly marked linkableAsset:true. Any real PR campaign remains REQUIRES_A3_APPROVAL; no campaign was executed."},
+      {"id":"INV-13.4","severity":"INFO","status":"SKIP_NO_DATA","negativeTestPassed":null,"evidence":"GSC brand/non-brand, Ads brand volume and direct-traffic share are unavailable; brand-demand values are not fabricated."},
+      {"id":"INV-13.5","severity":"WARN","status":"SKIP_NO_DATA","negativeTestPassed":null,"evidence":"First-10 brand SERP ownership observation is unavailable; thresholds.brandSerpOwnershipWarnPct is configured but no ownership percentage is invented."},
+      {"id":"INV-13.6","severity":"INFO","status":"SKIP_NO_DATA","negativeTestPassed":null,"evidence":"No permitted AI-citation query/sample dataset is configured; AI-citation rate remains unavailable rather than estimated."}
+    ]
+  }
+}
