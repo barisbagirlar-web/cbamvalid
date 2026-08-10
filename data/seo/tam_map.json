@@ -2,146 +2,66 @@
   "meta": {
     "artifact": "tam_map",
     "schemaVersion": "6.1",
-    "generatedAt": "2026-08-09T14:25:00Z",
-    "generatorScript": "owner-authorized public-proxy discovery",
-    "inputWindow": { "start": "2025-09-11", "end": "2026-08-09" },
+    "generatedAt": "2026-08-10T12:51:00Z",
+    "generatorScript": "scripts/seo/tam-growth.ts",
+    "inputWindow": {"start": "2025-09-11", "end": "2026-08-10"},
     "confidence": "low",
     "partial": true,
     "siteId": "cbamvalid",
     "coldStart": null,
-    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+    "structuralBreaksApplied": ["2025-09-11:num100-removal", "2026-08-10:consent-mode-v2-candidate"]
   },
   "data": {
-    "measurementMode": "public_proxy",
+    "measurementMode": "public_proxy_plus_governed_inventory",
+    "marketTamStatus": "SKIP_NO_DATA",
+    "marketTamReason": "A complete evidence-backed query-cluster universe and search-volume dataset are unavailable. The 36 governed clusters are an internal ownership inventory, not a claim about total market demand.",
     "privateMeasurement": {
       "gsc": "SKIP_NO_DATA",
       "ga4": "SKIP_NO_DATA",
+      "adsKeywordVolume": "SKIP_NO_DATA",
       "searchVolume": "NOT_INFERRED",
       "ranking": "NOT_INFERRED",
       "conversionRate": "NOT_INFERRED",
       "revenueLift": "NOT_INFERRED"
     },
     "evidenceSources": [
-      "repository SEO route registry and runtime code",
-      "live cbamvalid.com public pages",
-      "Google Search Central public guidance",
-      "European Commission CBAM public guidance",
-      "public search-result and competitor-page observations"
+      "Phase 0 public-proxy discovery",
+      "Phase 11 governed 36-cluster owner inventory",
+      "SEO registry owner-route records",
+      "Phase 13 linkable-asset registry"
     ],
-    "commercialClusters": [
-      {
-        "clusterId": "cbam-software",
-        "intent": "commercial",
-        "ownerRoute": "/",
-        "supportRoutes": ["/product", "/pricing", "/demo"],
-        "status": "STRENGTHEN",
-        "evidence": "Live homepage is positioned as self-service emissions data software while the SEO registry retains an older evidence-validation title/H1 contract.",
-        "nextPhase": "faz-01"
-      },
-      {
-        "clusterId": "cbam-verification-preparation",
-        "intent": "commercial_informational",
-        "ownerRoute": "/cbam-verification-preparation",
-        "supportRoutes": ["/product", "/sample-dossier", "/how-it-works"],
-        "status": "STRENGTHEN",
-        "evidence": "Existing product and guide coverage aligns with independent accredited-verification preparation without claiming accredited verification.",
-        "nextPhase": "faz-05"
-      },
-      {
-        "clusterId": "cbam-exporter-evidence",
-        "intent": "commercial_informational",
-        "ownerRoute": "/cbam-exporter-evidence-requirements",
-        "supportRoutes": ["/product", "/sample-dossier", "/trust"],
-        "status": "STRENGTHEN",
-        "evidence": "Evidence-register and traceability concepts are existing product differentiators.",
-        "nextPhase": "faz-05"
-      },
-      {
-        "clusterId": "cbam-embedded-emissions-calculation",
-        "intent": "problem_solution",
-        "ownerRoute": "/cbam-embedded-emissions-calculation",
-        "supportRoutes": ["/methodology", "/cbam-actual-vs-default-values", "/product"],
-        "status": "STRENGTHEN",
-        "evidence": "Calculation intent is covered by a dedicated guide and deterministic product engine.",
-        "nextPhase": "faz-05"
-      },
-      {
-        "clusterId": "cbam-calculator",
-        "intent": "tool_commercial",
-        "ownerRoute": "/product",
-        "supportRoutes": ["/cbam-embedded-emissions-calculation", "/demo"],
-        "status": "VALIDATE_BEFORE_NEW_PAGE",
-        "evidence": "Public competitors visibly use calculator-led acquisition; CBAMValid has a deterministic calculation engine but no dedicated public calculator landing route in the current SEO registry.",
-        "nextPhase": "faz-05"
-      },
-      {
-        "clusterId": "cbam-certificate-price",
-        "intent": "informational_financial",
-        "ownerRoute": "/cbam-certificate-price",
-        "supportRoutes": ["/cbam-2026-definitive-period", "/methodology"],
-        "status": "HOLD",
-        "evidence": "Dedicated current-regime guide exists; official Commission source publishes 2026 quarterly price information.",
-        "nextPhase": "faz-05"
-      },
-      {
-        "clusterId": "cbam-default-values",
-        "intent": "informational_decision",
-        "ownerRoute": "/cbam-default-values",
-        "supportRoutes": ["/cbam-actual-vs-default-values", "/methodology"],
-        "status": "HOLD",
-        "evidence": "Dedicated guide plus actual-vs-default decision page already cover the entity relationship.",
-        "nextPhase": "faz-05"
-      },
-      {
-        "clusterId": "cbam-cn-code-scope",
-        "intent": "tool_informational",
-        "ownerRoute": "/cn-code",
-        "supportRoutes": ["/cbam-cn-code-scope"],
-        "status": "STRENGTHEN",
-        "evidence": "Hub and nine verified Stage-1 CN detail routes exist; full official scope resolution is explicitly not implemented.",
-        "nextPhase": "faz-16"
-      },
-      {
-        "clusterId": "cbam-non-eu-producer",
-        "intent": "audience_problem_solution",
-        "ownerRoute": "/cbam-non-eu-producer-guide",
-        "supportRoutes": ["/cbam-verification-preparation", "/product"],
-        "status": "STRENGTHEN",
-        "evidence": "Non-EU operator/exporter audience is central to the product workflow and EU verification chain.",
-        "nextPhase": "faz-05"
-      },
-      {
-        "clusterId": "cbam-2026-definitive-regime",
-        "intent": "regulatory_current",
-        "ownerRoute": "/cbam-2026-definitive-period",
-        "supportRoutes": ["/cbam-certificate-price", "/cbam-verification-preparation"],
-        "status": "STRENGTHEN",
-        "evidence": "Definitive regime and first declaration cycle are current user-problem drivers; dedicated guide exists.",
-        "nextPhase": "faz-05"
-      }
+    "phase0CommercialClusters": [
+      {"clusterId":"cbam-software","intent":"commercial","ownerRoute":"/","supportRoutes":["/product","/pricing","/demo"],"status":"STRENGTHEN"},
+      {"clusterId":"cbam-verification-preparation","intent":"commercial_informational","ownerRoute":"/cbam-verification-preparation","supportRoutes":["/product","/sample-dossier","/how-it-works"],"status":"STRENGTHEN"},
+      {"clusterId":"cbam-exporter-evidence","intent":"commercial_informational","ownerRoute":"/cbam-exporter-evidence-requirements","supportRoutes":["/product","/sample-dossier","/trust"],"status":"STRENGTHEN"},
+      {"clusterId":"cbam-embedded-emissions-calculation","intent":"problem_solution","ownerRoute":"/cbam-embedded-emissions-calculation","supportRoutes":["/methodology","/cbam-actual-vs-default-values","/product"],"status":"STRENGTHEN"},
+      {"clusterId":"cbam-calculator","intent":"tool_commercial","ownerRoute":"/product","supportRoutes":["/cbam-embedded-emissions-calculation","/demo"],"status":"VALIDATE_BEFORE_NEW_PAGE"},
+      {"clusterId":"cbam-certificate-price","intent":"informational_financial","ownerRoute":"/cbam-certificate-price","supportRoutes":["/cbam-2026-definitive-period","/methodology"],"status":"HOLD"},
+      {"clusterId":"cbam-default-values","intent":"informational_decision","ownerRoute":"/cbam-default-values","supportRoutes":["/cbam-actual-vs-default-values","/methodology"],"status":"HOLD"},
+      {"clusterId":"cbam-cn-code-scope","intent":"tool_informational","ownerRoute":"/cn-code","supportRoutes":["/cbam-cn-code-scope"],"status":"STRENGTHEN"},
+      {"clusterId":"cbam-non-eu-producer","intent":"audience_problem_solution","ownerRoute":"/cbam-non-eu-producer-guide","supportRoutes":["/cbam-verification-preparation","/product"],"status":"STRENGTHEN"},
+      {"clusterId":"cbam-2026-definitive-regime","intent":"regulatory_current","ownerRoute":"/cbam-2026-definitive-period","supportRoutes":["/cbam-certificate-price","/cbam-verification-preparation"],"status":"STRENGTHEN"}
     ],
+    "phase16": {
+      "tamCells": [
+        {"cellId":"cbam-global-commercial","vertical":"saas","intent":"commercial","geography":"GLOBAL","evidenceIds":["phase00-public-proxy","phase11-governed-cluster-inventory"]},
+        {"cellId":"cbam-global-informational","vertical":"saas","intent":"informational","geography":"GLOBAL","evidenceIds":["phase00-public-proxy","phase11-governed-cluster-inventory"]},
+        {"cellId":"cbam-global-tool","vertical":"saas","intent":"tool","geography":"GLOBAL","evidenceIds":["phase00-public-proxy","phase11-governed-cluster-inventory"]}
+      ],
+      "knownGovernedClusterCount": 36,
+      "ownedKnownClusterCount": 36,
+      "knownInventoryCoveragePct": 100,
+      "knownInventoryCoverageDefinition": "owner-assigned clusters / Phase-11 governed cluster inventory",
+      "marketCoveragePct": null,
+      "marketCoverageBand": "SKIP_NO_DATA",
+      "marketCoverageDefinition": "owner-assigned clusters / complete evidence-backed market query-cluster universe",
+      "growthDecisionFromMarketCoverage": null,
+      "reasonNoMarketBand": "The denominator for total market query-cluster universe is unavailable; config coverage thresholds are not applied to the internal 36-cluster inventory.",
+      "growthLoopArtifact": "data/seo/growth_loops.json"
+    },
     "priorityDefects": [
-      {
-        "id": "D00-01",
-        "severity": "high",
-        "type": "registry_live_drift",
-        "owner": "faz-01",
-        "detail": "Homepage runtime metadata and visible H1/product classification differ materially from the SEO registry contract."
-      },
-      {
-        "id": "D00-02",
-        "severity": "medium",
-        "type": "measurement_debt",
-        "owner": "external",
-        "detail": "GSC and GA4 reporting access is unavailable; private performance conclusions remain SKIP_NO_DATA."
-      },
-      {
-        "id": "D00-03",
-        "severity": "medium",
-        "type": "tool_acquisition_gap",
-        "owner": "faz-05",
-        "detail": "Calculator-led acquisition is visible in the public market, but a new calculator route must reuse the authoritative deterministic engine and pass cannibalization/accuracy gates before publication."
-      }
+      {"id":"D00-02","severity":"medium","type":"measurement_debt","owner":"external","detail":"GSC, GA4 and market-volume feeds remain unavailable; private performance and total-market conclusions stay SKIP_NO_DATA."},
+      {"id":"D00-03","severity":"medium","type":"tool_acquisition_gap","owner":"faz-18-gated","detail":"Calculator/programmatic expansion cannot start without measured demand, Phase-18 eligibility and publication approval."}
     ]
   }
 }
