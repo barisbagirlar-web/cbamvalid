@@ -306,7 +306,7 @@ export const PreviousReleaseSchema = z.object({
 export type PreviousRelease = z.infer<typeof PreviousReleaseSchema>;
 
 export const PremiumDossierViewModelSchema = z.object({
-  schemaVersion: z.union([z.literal("CBAMVALID-DOSSIER-5.0"), z.literal("CBAMVALID-DOSSIER-6.0")]),
+  schemaVersion: z.union([z.literal("CBAMVALID-DOSSIER-5.0"), z.literal("CBAMVALID-DOSSIER-6.0"), z.literal("CBAMVALID-DOSSIER-7.0")]),
   reportingPeriodAssessment: ReportingPeriodAssessmentSchema,
   reportId: z.string().min(1),
   packageCode: z.string().regex(/^[A-Z][0-9]{4}$/).optional(),
@@ -383,8 +383,8 @@ export type PremiumDossierViewModel = z.infer<typeof PremiumDossierViewModelSche
 
 export const PremiumDossierViewModelV2Schema = PremiumDossierViewModelSchema.extend({
   productCode: z.literal("pack_premium_dossier_v5"),
-  releaseContractVersion: z.union([z.literal(5), z.literal(6)]),
-  dossierSchemaVersion: z.union([z.literal("CBAMVALID-DOSSIER-5.0"), z.literal("CBAMVALID-DOSSIER-6.0")]),
+  releaseContractVersion: z.union([z.literal(5), z.literal(6), z.literal(7)]),
+  dossierSchemaVersion: z.union([z.literal("CBAMVALID-DOSSIER-5.0"), z.literal("CBAMVALID-DOSSIER-6.0"), z.literal("CBAMVALID-DOSSIER-7.0")]),
   manifestSummary: z.object({
     totalFiles: z.number().int(),
     manifestHash: z.string(),
@@ -501,8 +501,8 @@ export const SealAssessmentContextSchema = z.object({
   rulesetVersion: z.string(),
   /** Server-trusted product code from reserved entitlement — never client-supplied. */
   productCode: z.string().optional(),
-  /** Explicit V5/V6 contract marker derived from entitlement.productCode only. */
-  releaseContractVersion: z.union([z.literal(5), z.literal(6)]).optional(),
+  /** Explicit V5/V6/V7 contract marker derived from entitlement.productCode only. */
+  releaseContractVersion: z.union([z.literal(5), z.literal(6), z.literal(7)]).optional(),
   previousReleases: z.array(PreviousReleaseSchema).optional(),
 });
 export type SealAssessmentContext = z.infer<typeof SealAssessmentContextSchema>;

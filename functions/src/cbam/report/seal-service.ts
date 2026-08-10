@@ -17,6 +17,7 @@ import type { SealAssessmentContext } from "./premium-dossier-schema";
 import { CommercialReportPipelineV2 } from "./commercial-report-pipeline-v2";
 import { allocatePackageCode } from "./allocate-package-code";
 import { resolvePackageCode } from "./package-code";
+import { canonicalJcs } from "./v6/jcs";
 import { assembleDossier } from "../../dossier/50-model/assembleDossier";
 import { auditReadyCaseToRawCaseInput } from "./to-raw-case-input";
 import { bindEvidence } from "../../dossier/30-evidence/bindEvidence";
@@ -95,11 +96,7 @@ function sha256(content: Buffer | string): string {
 }
 
 function canonical(value: unknown): string {
-  if (value === undefined) return "null";
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
-  const record = value as Record<string, unknown>;
-  return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${canonical(record[key])}`).join(",")}}`;
+  return canonicalJcs(value);
 }
 
 function assertRequestId(requestId: string): string {
@@ -396,7 +393,7 @@ export async function sealReport(params: {
         releaseVersion,
         rulesetVersion: ruleset.version,
         productCode: entitlement.productCode,
-        releaseContractVersion: isV5 ? 5 : 6,
+        releaseContractVersion: isV5 ? 5 : 7,
         previousReleases,
       };
 
@@ -579,7 +576,7 @@ export async function sealReport(params: {
       generatedAt: lease.generatedAt,
       evidenceFiles,
       productCode: entitlement.productCode,
-      releaseContractVersion: isV5 ? 5 : 6,
+      releaseContractVersion: isV5 ? 5 : 7,
       calcGraph: dossierModel.calcGraph,
       honestScoreboard: scoreboard,
       versionStamp: {
@@ -741,8 +738,8 @@ export async function sealReport(params: {
 
       Object.assign(reportRecord, {
         productCode: entitlement.productCode,
-        releaseContractVersion: 6,
-        dossierSchemaVersion: "CBAMVALID-DOSSIER-6.0",
+        releaseContractVersion: 7,
+        dossierSchemaVersion: "CBAMVALID-DOSSIER-7.0",
         packageReadinessState: stateDecision.state,
         stateReasonCodes: stateDecision.reasonCodes,
         dataEvidenceReadiness: scores.dataEvidenceReadiness,

@@ -11,6 +11,7 @@ import type { KmsSignatureResult } from "./kms-signature";
 import { buildProfessionalPdf, type PdfSection } from "./professional-pdf";
 import { buildVerifierPackageModel, type VerifierPackageModel } from "./verifier-model";
 import { buildVerifierWorkbook } from "./xlsx-builder";
+import { canonicalJcs } from "./v6/jcs";
 
 function cleanSmokeText(val: string): string {
   if (!val) return "";
@@ -65,7 +66,7 @@ export type PackageArtifact = { path: string; bytes: Buffer; mediaType: string }
 
 type ManifestFile = { path: string; sha256: string; sizeBytes: number; mediaType: string };
 export type DataIntegrityManifest = {
-  schemaVersion: "CBAMVALID-DOSSIER-4.0" | "CBAMVALID-DOSSIER-5.0" | "CBAMVALID-DOSSIER-6.0";
+  schemaVersion: "CBAMVALID-DOSSIER-4.0" | "CBAMVALID-DOSSIER-5.0" | "CBAMVALID-DOSSIER-6.0" | "CBAMVALID-DOSSIER-7.0";
   reportId: string;
   caseId: string;
   releaseVersion: number;
@@ -85,11 +86,7 @@ function hash(bytes: Buffer): string {
 }
 
 function canonical(value: unknown): string {
-  if (value === undefined) return "null";
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
-  const record = value as Record<string, unknown>;
-  return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${canonical(record[key])}`).join(",")}}`;
+  return canonicalJcs(value);
 }
 
 function csvCell(value: unknown): string {
@@ -252,6 +249,7 @@ function buildPdfArtifacts(params: {
     assessmentContext?.productCode === "pack_premium_dossier_v5" ||
     (assessmentContext?.releaseContractVersion ?? 0) >= 5;
   const isV6 = (assessmentContext?.releaseContractVersion ?? 0) === 6;
+  const isV7 = (assessmentContext?.releaseContractVersion ?? 0) >= 7;
   if (isV5) {
     // V5 PDFs
     const timestamp = assessmentContext?.assessmentTimestamp || generatedAt;
@@ -262,10 +260,10 @@ function buildPdfArtifacts(params: {
     const periodAssessment = getReportingPeriodAssessment(caseData, timestamp);
     const premiumContractResult = evaluatePremiumChapterContract({ caseData, calculation: params.calculation, model });
     const dossierModel: PremiumDossierViewModelV2 = {
-      schemaVersion: isV6 ? "CBAMVALID-DOSSIER-6.0" : "CBAMVALID-DOSSIER-5.0",
+      schemaVersion: isV6 ? "CBAMVALID-DOSSIER-6.0" : isV7 ? "CBAMVALID-DOSSIER-7.0" : "CBAMVALID-DOSSIER-5.0",
       productCode: "pack_premium_dossier_v5",
-      releaseContractVersion: isV6 ? 6 : 5,
-      dossierSchemaVersion: isV6 ? "CBAMVALID-DOSSIER-6.0" : "CBAMVALID-DOSSIER-5.0",
+      releaseContractVersion: isV6 ? 6 : isV7 ? 7 : 5,
+      dossierSchemaVersion: isV6 ? "CBAMVALID-DOSSIER-6.0" : isV7 ? "CBAMVALID-DOSSIER-7.0" : "CBAMVALID-DOSSIER-5.0",
       reportingPeriodAssessment: periodAssessment,
       reportId: params.reportId,
       packageCode: params.packageCode,
@@ -670,14 +668,21 @@ export function buildDataIntegrityManifest(params: {
   generatedAt: string;
   evidenceCount: number;
   productCode?: string;
-  releaseContractVersion?: 5 | 6;
+  releaseContractVersion?: 5 | 6 | 7;
 }): { manifest: DataIntegrityManifest; bytes: Buffer } {
   const isV5 =
     params.productCode === "pack_premium_dossier_v5" ||
     params.releaseContractVersion === 5;
   const isV6 = params.releaseContractVersion === 6;
+  const isV7 = params.releaseContractVersion === 7;
   const manifest: DataIntegrityManifest = {
-    schemaVersion: isV6 ? "CBAMVALID-DOSSIER-6.0" : isV5 ? "CBAMVALID-DOSSIER-5.0" : "CBAMVALID-DOSSIER-4.0",
+    schemaVersion: isV7
+      ? "CBAMVALID-DOSSIER-7.0"
+      : isV6
+        ? "CBAMVALID-DOSSIER-6.0"
+        : isV5
+          ? "CBAMVALID-DOSSIER-5.0"
+          : "CBAMVALID-DOSSIER-4.0",
     reportId: params.reportId,
     caseId: params.caseData.caseId || "",
     releaseVersion: params.releaseVersion,
@@ -687,12 +692,12 @@ export function buildDataIntegrityManifest(params: {
     calculationRootHash: params.calculation.calculationRootHash,
     legalSourceRegistryHash: DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT,
     componentContract: {
-      requiredTopLevelComponents: isV6
+      requiredTopLevelComponents: isV6 || isV7
         ? REQUIRED_TOP_LEVEL_COMPONENTS_V6
         : isV5
           ? REQUIRED_TOP_LEVEL_COMPONENTS_V5
           : REQUIRED_TOP_LEVEL_COMPONENTS,
-      requiredCount: isV6
+      requiredCount: isV6 || isV7
         ? REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6
         : isV5
           ? REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5
@@ -704,7 +709,7 @@ export function buildDataIntegrityManifest(params: {
       .sort((left, right) => left.path.localeCompare(right.path)),
     evidenceCount: params.evidenceCount,
     signatureScope: "EXACT_UTF8_BYTES_OF_THIS_MANIFEST",
-    ...(isV5 || isV6 ? { manifestExclusions: ["Data Integrity Manifest.json", "Manifest Signature.sig"] } : {}),
+    ...(isV5 || isV6 || isV7 ? { manifestExclusions: ["Data Integrity Manifest.json", "Manifest Signature.sig"] } : {}),
   };
   return { manifest, bytes: Buffer.from(canonical(manifest), "utf8") };
 }
@@ -746,10 +751,11 @@ export async function finalizeVerifierPackage(params: {
   const manifest = JSON.parse(params.manifestBytes.toString("utf8")) as DataIntegrityManifest;
   const isV5 = manifest.schemaVersion === "CBAMVALID-DOSSIER-5.0";
   const isV6 = manifest.schemaVersion === "CBAMVALID-DOSSIER-6.0";
+  const isV7 = manifest.schemaVersion === "CBAMVALID-DOSSIER-7.0";
 
   // ---- Patch 5: Strengthened component contract diagnostics ----
   const topLevel = topLevelComponents(allArtifacts.map((item) => item.path));
-  const expected: string[] = isV6
+  const expected: string[] = isV6 || isV7
     ? [...REQUIRED_TOP_LEVEL_COMPONENTS_V6].sort()
     : isV5
       ? [...REQUIRED_TOP_LEVEL_COMPONENTS_V5].sort()
@@ -911,13 +917,13 @@ export async function finalizeVerifierPackage(params: {
   // Regulatory provenance check
   if (
     manifest.schemaVersion !==
-      (isV6 ? "CBAMVALID-DOSSIER-6.0" : isV5 ? "CBAMVALID-DOSSIER-5.0" : "CBAMVALID-DOSSIER-4.0") ||
+      (isV7 ? "CBAMVALID-DOSSIER-7.0" : isV6 ? "CBAMVALID-DOSSIER-6.0" : isV5 ? "CBAMVALID-DOSSIER-5.0" : "CBAMVALID-DOSSIER-4.0") ||
     manifest.legalSourceRegistryHash !== DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT
   ) {
     throw new Error("PACKAGE_MANIFEST_REGULATORY_PROVENANCE_INVALID");
   }
 
-  const primaryPdfPath = isV5 || isV6 ? "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf" : "Operator Emissions Report.pdf";
+  const primaryPdfPath = isV5 || isV6 || isV7 ? "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf" : "Operator Emissions Report.pdf";
   const primaryPdf = allArtifacts.find((item) => item.path === primaryPdfPath)?.bytes;
   const workbook = allArtifacts.find((item) => item.path === "Verifier Workspace.xlsx")?.bytes;
   if (!primaryPdf || !workbook || primaryPdf.byteLength < 5000 || workbook.byteLength < 5000) {
