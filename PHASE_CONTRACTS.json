@@ -79,7 +79,7 @@
     "forbidsWrites": ["public/**", "data/seo/registry/**"]
   },
   "faz-14": {
-    "writes": ["data/seo/cro_experiments.json", "scripts/seo/cro-*.ts", "tests/conformance/**", "app/(public)/**", "components/marketing/**", "docs/seo/KARAR_DEFTERI.md", "data/seo/invariant-results/faz-14.json", "docs/seo/raporlar/faz14_*.md", "docs/seo/PROGRESS.md"],
+    "writes": ["data/seo/cro_experiments.json", "scripts/seo/cro-*.ts", "tests/conformance/**", "app/(public)/**", "components/marketing/**", "lib/seo/analytics-events.ts", "docs/seo/KARAR_DEFTERI.md", "data/seo/invariant-results/faz-14.json", "docs/seo/raporlar/faz14_*.md", "docs/seo/PROGRESS.md"],
     "forbidsWrites": ["data/seo/registry/**"]
   },
   "faz-15": {
