@@ -20,6 +20,14 @@ export type IntentScores = {
   N7: number;
 };
 
+export type IntentAssessment = {
+  route: string;
+  assessedAt: string;
+  method: "source-evidence-review";
+  scores: IntentScores;
+  evidence: Record<keyof IntentScores, string>;
+};
+
 export type ExperimentVariant = {
   id: string;
   url: string;
@@ -163,16 +171,22 @@ export function loadCroConfig(): CroConfig {
 
 function main() {
   const config = loadCroConfig();
-  const experiments = JSON.parse(
+  const state = JSON.parse(
     readFileSync(resolve(process.cwd(), "data/seo/cro_experiments.json"), "utf8"),
-  ) as { data: { experiments: CroExperiment[]; consentValidation: ConsentEvidence } };
-  for (const experiment of experiments.data.experiments) {
+  ) as { data: { intentAssessments: IntentAssessment[]; experiments: CroExperiment[]; consentValidation: ConsentEvidence } };
+
+  const assessed = state.data.intentAssessments.map((assessment) => ({
+    route: assessment.route,
+    total: assertIntentEligible(assessment.scores, config.thresholds.intentScoreMin),
+  }));
+
+  for (const experiment of state.data.experiments) {
     assertExperimentLocked(experiment, config);
     assertNoPeeking(experiment);
     assertVariantIndexSafety(experiment);
   }
-  const consent = validateConsentModeV2(experiments.data.consentValidation, config);
-  console.log(`SEO_CRO_RESULT=${JSON.stringify({ experiments: experiments.data.experiments.length, consent })}`);
+  const consent = validateConsentModeV2(state.data.consentValidation, config);
+  console.log(`SEO_CRO_RESULT=${JSON.stringify({ assessed, experiments: state.data.experiments.length, consent })}`);
 }
 
 if (process.argv[1]?.endsWith("cro-governance.ts")) main();
