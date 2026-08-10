@@ -1,0 +1,23 @@
+{
+  "meta": {
+    "artifact": "programmatic/factory_state",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T13:34:00Z",
+    "generatorScript": "scripts/seo/programmatic-factory.ts",
+    "inputWindow": {"start":"2025-09-11","end":"2026-08-10"},
+    "confidence": "high",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal", "2026-08-10:consent-mode-v2-candidate"]
+  },
+  "data": {
+    "gateIn": "BLOCKED_NO_INVEST_PROGRAMMATIC_CLUSTER",
+    "eligibleClusterIds": [],
+    "activeBatches": [],
+    "publicationState": "NO_PUBLICATION",
+    "candidateTemplateIds": ["cn-code-detail-v1"],
+    "currentKillSwitch": {"status":"SKIP_NO_DATA","escalation":false},
+    "reason": "Phase 17 contains no INVEST decision and Phase 16 contains no programmatic_longtail assignment eligible for publication. Existing CN pages are preserved; no new programmatic batch is published."
+  }
+}
