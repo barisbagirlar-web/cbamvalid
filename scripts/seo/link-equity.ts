@@ -20,7 +20,13 @@ export type LinkEquityResult = {
   orphanRoutes: string[];
   anchorMeasurementScope: "contextual links excluding header/nav/footer chrome";
   anchorConcentrationThresholdPct: number;
-  anchorWarnings: Array<{ target: string; anchor: string; concentrationPct: number; samples: number }>;
+  anchorWarnings: Array<{
+    target: string;
+    anchor: string;
+    concentrationPct: number;
+    samples: number;
+    sources: string[];
+  }>;
   pageRank: Array<{ path: string; before: number; simulatedAfter: number; delta: number }>;
   missingGovernedEdges: Array<{ source: string; target: string }>;
   simulationOnly: true;
@@ -191,11 +197,18 @@ export function evaluateLinkGraph(params: {
   const orphanRatioPct = paths.length === 0 ? 0 : (orphanRoutes.length / paths.length) * 100;
 
   const anchorCounts = new Map<string, Map<string, number>>();
+  const anchorSources = new Map<string, Map<string, Set<string>>>();
   for (const edge of params.anchorEdges ?? params.edges) {
     if (!allowed.has(edge.source) || !allowed.has(edge.target)) continue;
     const counts = anchorCounts.get(edge.target) ?? new Map<string, number>();
     counts.set(edge.anchor, (counts.get(edge.anchor) ?? 0) + 1);
     anchorCounts.set(edge.target, counts);
+
+    const byAnchor = anchorSources.get(edge.target) ?? new Map<string, Set<string>>();
+    const sources = byAnchor.get(edge.anchor) ?? new Set<string>();
+    sources.add(edge.source);
+    byAnchor.set(edge.anchor, sources);
+    anchorSources.set(edge.target, byAnchor);
   }
 
   const anchorWarnings: LinkEquityResult["anchorWarnings"] = [];
@@ -206,7 +219,13 @@ export function evaluateLinkGraph(params: {
     if (!top) continue;
     const concentrationPct = (top[1] / total) * 100;
     if (concentrationPct > params.thresholds.anchorConcentrationWarnPct) {
-      anchorWarnings.push({ target, anchor: top[0], concentrationPct, samples: total });
+      anchorWarnings.push({
+        target,
+        anchor: top[0],
+        concentrationPct,
+        samples: total,
+        sources: [...(anchorSources.get(target)?.get(top[0]) ?? new Set<string>())].sort(),
+      });
     }
   }
   anchorWarnings.sort((a, b) => b.concentrationPct - a.concentrationPct || a.target.localeCompare(b.target));
