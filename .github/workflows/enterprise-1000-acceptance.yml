@@ -63,6 +63,12 @@ jobs:
       - name: Enterprise mandate contract tests
         run: npx vitest run tests/reports/enterprise-1000-mandate.test.ts
 
+      - name: CBAMValid 6.0 mandatory gate tests (G-01..G-14, 17 tests)
+        run: npm run test:gates
+
+      - name: CBAMValid 6.0 release gates (G-09 leak scan on rendered V6 package, G-14 boundary protection)
+        run: npm run gate:release-6
+
       - name: Enterprise 1000 machine guard
         shell: bash
         run: |

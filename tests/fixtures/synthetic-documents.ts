@@ -6,7 +6,7 @@
  *   - title, issuer, document reference, issue date, reporting period, case ID
  *   - the supported input paths and controlled sample values
  *   - a mandatory per-page watermark/footer:
- *       SYNTHETIC TEST EVIDENCE — NOT FOR SUBMISSION
+ *       SYNTHETIC DOCUMENT — NOT FOR SUBMISSION
  *
  * Determinism: the same spec always yields the same bytes (fixed creation and
  * modification timestamps, standard fonts, no random UUIDs), so a fixture's
@@ -16,7 +16,7 @@
 import { createHash } from "node:crypto";
 import { PDFDocument, PDFFont, PDFPage, rgb, StandardFonts } from "pdf-lib";
 
-export const SYNTHETIC_WATERMARK = "SYNTHETIC TEST EVIDENCE - NOT FOR SUBMISSION";
+export const SYNTHETIC_WATERMARK = "SYNTHETIC DOCUMENT - NOT FOR SUBMISSION";
 
 const SYNTHETIC_EVIDENCE_MIN_BYTES = 20480;
 const SYNTHETIC_EVIDENCE_MAX_PAGES = 24;
