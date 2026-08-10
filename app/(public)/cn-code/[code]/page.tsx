@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JsonLdForRoute } from "@/components/seo/JsonLdForRoute";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
+import { getRelatedCnEntries } from "@/lib/seo/cn-related-links";
 import { evaluateCnIndexability } from "@/lib/seo/indexability";
 import { listIndexablePublicCnEntries } from "@/lib/seo/cn-public-registry";
 import { SEO_LEGAL_SOURCE_INDEX } from "@/lib/seo/regulatory-sources";
@@ -25,11 +26,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { code } = await params;
   const result = evaluateCnIndexability(code);
   if (!result.indexable || !result.entry) {
-    // Should not normally run when dynamicParams=false; keep fail-closed.
     notFound();
   }
-  const entry = result.entry;
-  return generateSeoMetadata(`/cn-code/${entry.cnCode}`);
+  return generateSeoMetadata(`/cn-code/${result.entry.cnCode}`);
 }
 
 export default async function CNCodeLandingPage({ params }: PageProps) {
@@ -40,6 +39,7 @@ export default async function CNCodeLandingPage({ params }: PageProps) {
   }
 
   const entry = result.entry;
+  const relatedEntries = getRelatedCnEntries(entry.cnCode);
   const legal = SEO_LEGAL_SOURCE_INDEX.REG_2023_956;
 
   return (
@@ -119,6 +119,27 @@ export default async function CNCodeLandingPage({ params }: PageProps) {
           <ul className="list-disc pl-5 space-y-2 text-sm text-muted">
             {entry.evidenceConsiderations.map((item) => (
               <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="mb-10 space-y-3">
+          <h2 className="text-2xl font-serif">Related CBAM CN codes</h2>
+          <p className="text-sm text-muted leading-relaxed">
+            Review adjacent in-scope goods to compare sector context, producer-data requirements,
+            and evidence expectations before starting a working file.
+          </p>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {relatedEntries.map((related) => (
+              <li key={related.cnCode}>
+                <Link
+                  href={`/cn-code/${related.cnCode}`}
+                  className="block rounded-md border border-border bg-surface p-4 text-sm hover:border-accent"
+                >
+                  <span className="block font-mono text-accent">CN {related.cnCode}</span>
+                  <span className="mt-1 block text-muted">{related.description}</span>
+                </Link>
+              </li>
             ))}
           </ul>
         </section>
