@@ -1,0 +1,29 @@
+{
+  "meta": {
+    "artifact": "brand_demand",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T10:24:00Z",
+    "generatorScript": "scripts/seo/audit-offpage.ts",
+    "inputWindow": {"start": "2025-09-11", "end": "2026-08-10"},
+    "confidence": "low",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+  },
+  "data": {
+    "brandNonBrandSeparation": "SKIP_NO_DATA",
+    "gscBrandQueries": null,
+    "gscNonBrandQueries": null,
+    "adsBrandVolume": null,
+    "directTrafficSharePct": null,
+    "brandSerpOwnershipPct": null,
+    "brandSerpStatus": "SKIP_NO_DATA",
+    "brandSerpThresholdRef": "thresholds.brandSerpOwnershipWarnPct",
+    "aiCitationSamplePct": null,
+    "aiCitationMethod": null,
+    "aiCitationStatus": "SKIP_NO_DATA",
+    "perplexityQueryConfigured": false,
+    "reason": "GSC/Ads/direct-traffic, first-10 brand SERP ownership and permitted AI-citation sample data are not connected. No brand-demand or AI-citation rate is fabricated."
+  }
+}
