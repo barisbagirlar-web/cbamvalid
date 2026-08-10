@@ -42,23 +42,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          node <<'NODE'
-          const fs = require('node:fs');
-          const result = JSON.parse(fs.readFileSync('.seo-evidence/slo-check.json', 'utf8'));
-          fs.writeFileSync('.seo-evidence/issue-required.txt', String(Boolean(result.issueRequired)));
-          fs.writeFileSync('.seo-evidence/issue-title.txt', result.issueTitle ?? '');
-          fs.writeFileSync('.seo-evidence/issue-body.md', result.issueBody ?? '');
-          NODE
-
+          node -e "const fs=require('node:fs');const r=JSON.parse(fs.readFileSync('.seo-evidence/slo-check.json','utf8'));fs.writeFileSync('.seo-evidence/issue-required.txt',String(Boolean(r.issueRequired)));fs.writeFileSync('.seo-evidence/issue-title.txt',r.issueTitle??'');fs.writeFileSync('.seo-evidence/issue-body.md',r.issueBody??'');"
           if [ "$(cat .seo-evidence/issue-required.txt)" = "true" ]; then
             gh issue list --state open --limit 100 --json number,title > .seo-evidence/open-issues.json
-            node <<'NODE'
-            const fs = require('node:fs');
-            const title = fs.readFileSync('.seo-evidence/issue-title.txt', 'utf8');
-            const issues = JSON.parse(fs.readFileSync('.seo-evidence/open-issues.json', 'utf8'));
-            const match = issues.find((issue) => issue.title === title);
-            fs.writeFileSync('.seo-evidence/existing-issue.txt', match ? String(match.number) : '');
-            NODE
+            node -e "const fs=require('node:fs');const title=fs.readFileSync('.seo-evidence/issue-title.txt','utf8');const issues=JSON.parse(fs.readFileSync('.seo-evidence/open-issues.json','utf8'));const match=issues.find((issue)=>issue.title===title);fs.writeFileSync('.seo-evidence/existing-issue.txt',match?String(match.number):'');"
             existing="$(cat .seo-evidence/existing-issue.txt)"
             if [ -z "$existing" ]; then
               gh issue create --title "$(cat .seo-evidence/issue-title.txt)" --body-file .seo-evidence/issue-body.md
