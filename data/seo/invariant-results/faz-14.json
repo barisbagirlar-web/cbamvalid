@@ -2,7 +2,7 @@
   "meta": {
     "artifact": "invariant-results/faz-14",
     "schemaVersion": "6.1",
-    "generatedAt": "2026-08-10T10:45:00Z",
+    "generatedAt": "2026-08-10T11:59:00Z",
     "generatorScript": "scripts/seo/cro-governance.ts",
     "inputWindow": {"start": "2025-09-11", "end": "2026-08-10"},
     "confidence": "medium",
@@ -19,7 +19,7 @@
       {"id":"INV-14.2","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Experiment start requires locked primary metric, guardrails, sample size, MDE, decision rule, config minimum duration, lock timestamp and A3 approval. No experiment is started in the current state."},
       {"id":"INV-14.3","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Running experiments with interim analysis are rejected as peeking. Current experiment list is empty."},
       {"id":"INV-14.4","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Experiment variants must be non-indexable, absent from sitemap, canonical to control and bot-content equivalent; unsafe synthetic variants fail closed."},
-      {"id":"INV-14.5","severity":"WARN","status":"PASS","negativeTestPassed":null,"evidence":"Consent Mode v2 candidate validation is current under thresholds.consentValidationMaxAgeDays; all four required signals default denied and explicit public grant/deny controls exist. Live validation is pending exact merged-SHA deployment."},
+      {"id":"INV-14.5","severity":"WARN","status":"PASS","negativeTestPassed":null,"evidence":"Consent Mode v2 candidate validation is current under thresholds.consentValidationMaxAgeDays. All four signals default denied; acquisition session storage, analytics dataLayer events, first-party /api/seo/track requests and GA4 events are all blocked until explicit grant. Denied/unset and granted delivery states have executable conformance coverage. Live validation remains pending exact merged-SHA deployment."},
       {"id":"INV-14.6","severity":"INFO","status":"PASS","negativeTestPassed":null,"evidence":"Experiment closure uses thresholds.croMinWeeks; shorter observations are INCONCLUSIVE and cannot become a declared winner/loser."}
     ]
   }
