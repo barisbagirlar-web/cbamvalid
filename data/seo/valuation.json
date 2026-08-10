@@ -1,0 +1,30 @@
+{
+  "meta": {
+    "artifact": "valuation",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T13:50:00Z",
+    "generatorScript": "scripts/seo/valuation.ts",
+    "inputWindow": {"start":"2025-09-11","end":"2026-08-10"},
+    "confidence": "low",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal", "2026-08-10:consent-mode-v2-candidate"]
+  },
+  "data": {
+    "currency": "USD",
+    "status": "SKIP_NO_DATA",
+    "method": "revenue_multiple_range",
+    "historyMonths": 0,
+    "requiredHistoryMonthsSource": "thresholds.valuationMinHistoryMonths",
+    "cashflowRequiredHistoryMonthsSource": "thresholds.valuationCashflowMinHistoryMonths",
+    "multipleLowSource": "economics.valuationMultiples.low",
+    "multipleHighSource": "economics.valuationMultiples.high",
+    "trailingRevenueMinor": null,
+    "trailingCashflowMinor": null,
+    "valueLowMinor": null,
+    "valueHighMinor": null,
+    "cashflowMethodEligible": false,
+    "reason": "Measured monthly SEO P&L history and trailing revenue/cashflow are unavailable. A valuation number or range is not inferred."
+  }
+}
