@@ -7,13 +7,12 @@ import { performDossierCalculations } from "../calculator";
 import { runQualityControls } from "../validation/quality-controls";
 import { deriveInstrumentation } from "./instrumentation-derivation";
 import { runEvidenceSufficiency } from "../validation/evidence-sufficiency";
-import { assessCaseReadiness } from "../validation/readiness-assessor";
 import { getActiveRuleset } from "../registry/rulesets";
 import { assertKmsSigningConfigured, signManifestWithKms } from "./kms-signature";
 import {
   type EvidenceBinary,
 } from "./verifier-package-builder";
-import { REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5 } from "./package-components";
+import { REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5, REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6 } from "./package-components";
 import type { SealAssessmentContext } from "./premium-dossier-schema";
 import { CommercialReportPipelineV2 } from "./commercial-report-pipeline-v2";
 import { allocatePackageCode } from "./allocate-package-code";
@@ -331,11 +330,9 @@ export async function sealReport(params: {
   auth?: unknown;
 }): Promise<SealingResult> {
   assertKmsSigningConfigured();
-  const configDoc = await adminDb.collection("system").doc("config").get();
-  const disableV5Sealing = configDoc.exists ? configDoc.data()?.disableV5Sealing !== false : true;
-  if (disableV5Sealing) {
-    throw new Error("V5_SEALING_DISABLED_BY_FEATURE_FLAG");
-  }
+  // CBAMVALID-DOSSIER-6.0 is the production seal contract (RM-CBAMVALID-006).
+  // The v6 package-state gate (G-02) replaces the former V5 operator-status
+  // gate; NOT_READY is no longer part of the production path.
   let isV5 = false;
   const caseData = AuditReadyCaseSchema.parse(params.inputData);
   if (caseData.caseId !== params.caseId || caseData.ownerId !== params.uid) throw new Error("SEAL_CASE_IDENTITY_MISMATCH");
@@ -380,8 +377,9 @@ export async function sealReport(params: {
       }));
       reserved = true;
       const releaseVersion = entitlement.releasesCount + 1;
-      // All CBAMValid Exporter Verification Preparation Packs use V5 release contract
-      isV5 = true;
+      // All CBAMValid sealed packs use the V6 release contract
+      // (CBAMVALID-DOSSIER-6.0, RM-CBAMVALID-006).
+      isV5 = false;
       if (releaseVersion > 1 && !params.correctionReason?.trim()) throw new Error("CORRECTION_REASON_REQUIRED_AFTER_FIRST_RELEASE");
 
       const packageCode = await allocatePackageCode({
@@ -398,7 +396,7 @@ export async function sealReport(params: {
         releaseVersion,
         rulesetVersion: ruleset.version,
         productCode: entitlement.productCode,
-        releaseContractVersion: isV5 ? 5 : undefined,
+        releaseContractVersion: isV5 ? 5 : 6,
         previousReleases,
       };
 
@@ -512,32 +510,29 @@ export async function sealReport(params: {
       uncertaintyState: uncertainty.state,
     });
 
-    if (isV5) {
-      const { assessReadiness } = await import("../validation/readiness-score");
-      const readinessV5 = assessReadiness({ caseData, isDraft: false, assessmentTimestamp: assessmentContext.assessmentTimestamp, sealMode: "PRODUCTION" });
-      if (readinessV5.operatorStatus === "NOT_READY" || readinessV5.criticalBlockerCount > 0 || readinessV5.missingMaterialEvidenceCount > 0) {
-        const { runEvidenceSufficiency, isEvidenceSupportedState } = await import("../validation/evidence-sufficiency");
-        const { generateFindingsAndActions } = await import("../validation/findings-engine");
-        const sufficiency = runEvidenceSufficiency(caseData, assessmentContext.assessmentTimestamp);
-        const { findings } = generateFindingsAndActions(caseData, assessmentContext.assessmentTimestamp);
-        const err = new Error("SEALING_BLOCKED_BY_V5_READINESS_GATES") as Error & {
+    // G-02 single authoritative package state. Sealing is permitted only for
+    // READY_FOR_INDEPENDENT_VERIFICATION or ON_TRACK_PERIOD_OPEN (an open
+    // reporting period alone never blocks a seal). ACTION_REQUIRED and BLOCKED
+    // refuse sealing with the operator-facing reason codes.
+    {
+      const { computeTwoAxisScores } = await import("./v6/two-axis-score");
+      const { derivePackageReadinessState } = await import("./v6/package-state");
+      const assessmentTimestamp = assessmentContext.assessmentTimestamp;
+      const scores = computeTwoAxisScores({ caseData, assessmentTimestamp });
+      const stateDecision = derivePackageReadinessState({ caseData, assessmentTimestamp, scores });
+      const sealable = stateDecision.state === "READY_FOR_INDEPENDENT_VERIFICATION" || stateDecision.state === "ON_TRACK_PERIOD_OPEN";
+      if (!sealable) {
+        const err = new Error("SEALING_BLOCKED_BY_PACKAGE_STATE") as Error & {
           details?: Record<string, unknown>;
         };
         err.details = {
-          operatorStatus: readinessV5.operatorStatus,
-          criticalBlockerCount: readinessV5.criticalBlockerCount,
-          missingMaterialEvidenceCount: readinessV5.missingMaterialEvidenceCount,
-          decisionReasonCodes: readinessV5.decisionReasonCodes,
-          findings: findings.filter((f) => f.status === "OPEN"),
-          sufficiency: sufficiency.filter((r) => !isEvidenceSupportedState(r.state))
+          packageReadinessState: stateDecision.state,
+          stateReasonCodes: stateDecision.reasonCodes,
+          dataEvidenceReadiness: scores.dataEvidenceReadiness,
+          periodClosure: scores.periodClosure,
+          periodEnded: scores.periodEnded,
         };
         throw err;
-      }
-    } else {
-      const readiness = assessCaseReadiness(caseData);
-      if (!readiness.isEligibleForSealing) {
-        const blockers = controls.filter((control) => control.status === "BLOCKER").map((control) => control.ruleId);
-        throw new Error(`SEALING_BLOCKED_BY_QUALITY_CONTROLS:${blockers.join(",")}`);
       }
     }
 
@@ -584,7 +579,7 @@ export async function sealReport(params: {
       generatedAt: lease.generatedAt,
       evidenceFiles,
       productCode: entitlement.productCode,
-      releaseContractVersion: isV5 ? 5 : 4,
+      releaseContractVersion: isV5 ? 5 : 6,
       calcGraph: dossierModel.calcGraph,
       honestScoreboard: scoreboard,
       versionStamp: {
@@ -710,8 +705,55 @@ export async function sealReport(params: {
         scoreboard: sealedScoreboard ?? scoreboard,
       });
     } else {
+      // V6 (CBAMVALID-DOSSIER-6.0, RM-CBAMVALID-006): two-axis readiness and
+      // the single package state are recorded. The combined preparationScore is
+      // intentionally absent (G-01). The manifest's own hash is not repeated
+      // here; the signed manifest record inside the package is the source.
+      const { computeTwoAxisScores } = await import("./v6/two-axis-score");
+      const { derivePackageReadinessState } = await import("./v6/package-state");
+      const assessmentTimestamp = lease.generatedAt;
+      const scores = computeTwoAxisScores({ caseData, assessmentTimestamp });
+      const stateDecision = derivePackageReadinessState({ caseData, assessmentTimestamp, scores });
+      publicVerificationToken = crypto.randomBytes(32).toString("hex");
+      const publicVerificationTokenHash = crypto.createHash("sha256").update(publicVerificationToken).digest("hex");
+
+      const manifestObj = manifest.manifest;
+      const evidenceFiles = manifestObj.files.filter((f: { path: string }) => f.path.startsWith("Supporting_Evidence/"));
+
+      const components = new Set<string>();
+      manifestObj.files.forEach((f: { path: string }) => {
+        const slash = f.path.indexOf("/");
+        components.add(slash >= 0 ? `${f.path.slice(0, slash)}/` : f.path);
+      });
+      const actualTopLevelComponentCount = components.size;
+
+      const packageMetadata = {
+        schemaVersion: manifestObj.schemaVersion,
+        requiredTopLevelComponentCount: REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6,
+        actualTopLevelComponentCount,
+        manifestFileCount: manifestObj.files.length,
+        evidenceFileCount: evidenceFiles.length,
+        primaryDossierFileName: "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf",
+        technicalCompilationFileName: "Complete Dossier Compilation.pdf",
+        operatorEmissionsReportFileName: "Operator Emissions Report.pdf",
+        masterRecordFileName: "Enterprise Compliance Master Record.pdf",
+      };
+
       Object.assign(reportRecord, {
         productCode: entitlement.productCode,
+        releaseContractVersion: 6,
+        dossierSchemaVersion: "CBAMVALID-DOSSIER-6.0",
+        packageReadinessState: stateDecision.state,
+        stateReasonCodes: stateDecision.reasonCodes,
+        dataEvidenceReadiness: scores.dataEvidenceReadiness,
+        periodClosure: scores.periodClosure,
+        periodEnded: scores.periodEnded,
+        operatorReadinessStatus: stateDecision.state,
+        publicVerificationTokenHash,
+        publicVerificationState: "ACTIVE",
+        isCurrentRelease: true,
+        packageMetadata,
+        scoreboard: sealedScoreboard ?? scoreboard,
       });
     }
 
@@ -730,40 +772,27 @@ export async function sealReport(params: {
       if (marker.status !== "IN_PROGRESS" || marker.leaseOwner !== leaseOwner || marker.inputHash !== caseDataHash) throw new Error("SEAL_FINALIZATION_LEASE_LOST");
       if (sealSnapshot.exists) throw new Error("DOCUMENT_HASH_ALREADY_SEALED");
 
-      if (isV5) {
-        const prevReports = await transaction.get(
-          adminDb.collection("cbam_reports")
-            .where("caseId", "==", params.caseId)
-        );
-        await consumeEntitlement(transaction, {
-          entitlementId: params.entitlementId,
-          uid: params.uid,
-          reportId: identity.reportId,
-          caseId: params.caseId,
-          reportHash: documentHash,
-          version: releaseVersion,
-          correctionReason: params.correctionReason,
-          auth: params.auth,
-        });
-        for (const doc of prevReports.docs) {
-          if (doc.id !== identity.reportId) {
-            transaction.update(doc.ref, {
-              isCurrentRelease: false,
-              publicVerificationState: "SUPERSEDED",
-            });
-          }
+      const prevReports = await transaction.get(
+        adminDb.collection("cbam_reports")
+          .where("caseId", "==", params.caseId)
+      );
+      await consumeEntitlement(transaction, {
+        entitlementId: params.entitlementId,
+        uid: params.uid,
+        reportId: identity.reportId,
+        caseId: params.caseId,
+        reportHash: documentHash,
+        version: releaseVersion,
+        correctionReason: params.correctionReason,
+        auth: params.auth,
+      });
+      for (const doc of prevReports.docs) {
+        if (doc.id !== identity.reportId) {
+          transaction.update(doc.ref, {
+            isCurrentRelease: false,
+            publicVerificationState: "SUPERSEDED",
+          });
         }
-      } else {
-        await consumeEntitlement(transaction, {
-          entitlementId: params.entitlementId,
-          uid: params.uid,
-          reportId: identity.reportId,
-          caseId: params.caseId,
-          reportHash: documentHash,
-          version: releaseVersion,
-          correctionReason: params.correctionReason,
-          auth: params.auth,
-        });
       }
       transaction.create(sealRef, {
         valid: true,

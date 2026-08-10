@@ -21,6 +21,16 @@ import {
 } from "./premium-package-hardening";
 import { resolveControlledCaseAssessmentTimestamp } from "./controlled-test-assessment";
 import { type Enterprise1000Model, upgradeArtifactsToEnterprise1000 } from "./enterprise-1000-value-layer";
+import { buildVerifierPackageModel } from "./verifier-model";
+import { computeTwoAxisScores } from "./v6/two-axis-score";
+import { derivePackageReadinessState } from "./v6/package-state";
+import {
+  buildMasterRecordModel,
+  MASTER_RECORD_FILE_NAME,
+  MASTER_RECORD_MANIFEST_REFERENCE,
+  MASTER_RECORD_SIGNATURE_REFERENCE,
+} from "./v6/master-record-model";
+import { buildMasterRecordPdf } from "./v6/master-record-pdf";
 
 export class CommercialReportPipelineV2 {
   public static async executeSealingPipeline(params: {
@@ -33,7 +43,7 @@ export class CommercialReportPipelineV2 {
     generatedAt: string;
     evidenceFiles: EvidenceBinary[];
     productCode: string;
-    releaseContractVersion: number;
+    releaseContractVersion: 5 | 6;
     signManifest: (manifestBytes: Buffer) => Promise<KmsSignatureResult>;
     /**
      * @deprecated Production graph bytes are derived from Calculation Trace.
@@ -102,7 +112,7 @@ export class CommercialReportPipelineV2 {
         releaseVersion: params.releaseVersion,
         rulesetVersion: params.calculation.ruleset,
         productCode: params.productCode,
-        releaseContractVersion: 5,
+        releaseContractVersion: params.releaseContractVersion,
       },
     });
 
@@ -120,7 +130,7 @@ export class CommercialReportPipelineV2 {
     // rendered non-overlapping decision/workpaper PDFs — no legacy duplicate or
     // hidden compilation is allowed to survive alongside them.
     let enterpriseModel: Enterprise1000Model | undefined;
-    if (params.productCode === "pack_premium_dossier_v5" || params.releaseContractVersion === 5) {
+    if (params.productCode === "pack_premium_dossier_v5" || params.releaseContractVersion >= 5) {
       const machineAndEvidenceArtifacts = unsignedArtifacts.filter(
         (item) => !item.path.toLowerCase().endsWith(".pdf")
       );
@@ -156,6 +166,57 @@ export class CommercialReportPipelineV2 {
       )
     );
 
+    // V6 (CBAMVALID-DOSSIER-6.0): the Enterprise Compliance Master Record is
+    // the mandatory 27th top-level component (G-13). It is rendered after the
+    // enterprise transformation so it never duplicates or replaces the
+    // verifier-dossier PDFs, and before the manifest so it is sealed into the
+    // signed package. Its control key records the signed manifest instead of
+    // embedding the manifest hash (a self-referential cycle is impossible).
+    if (params.releaseContractVersion === 6) {
+      const scores = computeTwoAxisScores({ caseData: artifactCaseData, assessmentTimestamp });
+      const stateDecision = derivePackageReadinessState({ caseData: artifactCaseData, assessmentTimestamp, scores });
+      const masterRecordModel = buildMasterRecordModel({
+        caseData: artifactCaseData,
+        calculation: params.calculation,
+        controls: params.controls,
+        model: buildVerifierPackageModel({
+          caseData: artifactCaseData,
+          calculation: params.calculation,
+          controls: params.controls,
+          reportId: params.reportId,
+          packageCode: params.packageCode,
+          releaseVersion: params.releaseVersion,
+          generatedAt: params.generatedAt,
+          assessmentTimestamp,
+          productCode: params.productCode,
+          releaseContractVersion: 6,
+        }),
+        reportId: params.reportId,
+        packageCode: params.packageCode,
+        releaseVersion: params.releaseVersion,
+        schemaVersion: "CBAMVALID-DOSSIER-6.0",
+        engineVersion: params.calculation.engineVersion,
+        generatedAt: params.generatedAt,
+        manifestReference: MASTER_RECORD_MANIFEST_REFERENCE,
+        signatureAlgorithm: "RSA_SIGN_PKCS1_2048_SHA256",
+        signatureReference: MASTER_RECORD_SIGNATURE_REFERENCE,
+        signatureProtectionLevel: "FULL",
+        scores,
+        state: stateDecision.state,
+        stateReasonCodes: stateDecision.reasonCodes,
+        graphRootHash: params.calculation.calculationRootHash,
+        graphNodeHashes: params.calculation.trace.map((item) => ({ formulaId: item.formulaId, hash: item.calculationHash })),
+      });
+      unsignedArtifacts = [
+        ...unsignedArtifacts,
+        {
+          path: MASTER_RECORD_FILE_NAME,
+          bytes: buildMasterRecordPdf(masterRecordModel),
+          mediaType: "application/pdf",
+        },
+      ];
+    }
+
     // Graph/Trace/Workbook must still satisfy the exact offline-verifier
     // hashing and cross-artifact value/unit contract after the mandate rewrite.
     assertCliGraphArtifactConsistency(unsignedArtifacts, params.calculation);
@@ -169,7 +230,7 @@ export class CommercialReportPipelineV2 {
       generatedAt: params.generatedAt,
       evidenceCount: params.evidenceFiles.length,
       productCode: params.productCode,
-      releaseContractVersion: 5,
+      releaseContractVersion: params.releaseContractVersion,
     });
 
     // Sign the exact canonical manifest bytes. These bytes never change after signing.

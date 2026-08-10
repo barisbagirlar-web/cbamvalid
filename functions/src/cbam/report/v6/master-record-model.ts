@@ -34,6 +34,18 @@ export interface MasterRecordCalendar {
 export const MASTER_RECORD_FOOTER =
   "Operator record. No independent verification opinion is implied.";
 export const MASTER_RECORD_FILE_NAME = "Enterprise Compliance Master Record.pdf";
+/**
+ * Signed-record references for the control key. The manifest's own hash and
+ * the KMS key version are only known after the manifest is signed, which
+ * happens after this PDF is rendered — embedding the value would create a
+ * self-referential cycle (manifest → PDF → manifest). The PDF therefore names
+ * the signed manifest record; the hash is verified from the manifest file
+ * inside the package (G-04 reproduction step).
+ */
+export const MASTER_RECORD_MANIFEST_REFERENCE =
+  "Data Integrity Manifest.json — signed manifest record (verify via the manifest file inside the package)";
+export const MASTER_RECORD_SIGNATURE_REFERENCE =
+  "Manifest Signature.sig — signed manifest record (key version recorded at signing time)";
 
 export interface MasterRecordControlKey {
   readonly reportId: string;
@@ -45,10 +57,21 @@ export interface MasterRecordControlKey {
   readonly ruleset: string;
   readonly generatedAt: string;
   readonly calculationRootHash: string;
-  readonly manifestHash: string;
+  /**
+   * The manifest is sealed by the KMS signature and lists every component
+   * (including this PDF) with its SHA-256. Its own hash cannot be embedded in
+   * this PDF without a self-referential cycle (manifest → PDF → manifest), so
+   * this record names the signed manifest file instead; the hash value is
+   * verified from the manifest file inside the package (G-04 reproduction).
+   */
+  readonly manifestReference: string;
   readonly legalSourceRegistryHash: string;
   readonly signatureAlgorithm: string;
-  readonly signatureKeyVersion: string;
+  /**
+   * The KMS key version is chosen at signing time, after this PDF is rendered.
+   * It is therefore recorded in the signed manifest record, not embedded here.
+   */
+  readonly signatureReference: string;
   readonly signatureProtectionLevel: string;
   readonly componentCount: number;
   readonly evidenceCount: number;
@@ -95,9 +118,9 @@ export function buildMasterRecordModel(params: {
   schemaVersion: string;
   engineVersion: string;
   generatedAt: string;
-  manifestHash: string;
+  manifestReference: string;
   signatureAlgorithm: string;
-  signatureKeyVersion: string;
+  signatureReference: string;
   signatureProtectionLevel: string;
   scores: TwoAxisScores;
   state: PackageReadinessState;
@@ -107,8 +130,8 @@ export function buildMasterRecordModel(params: {
 }): MasterRecordModel {
   const {
     caseData, calculation, controls, model, reportId, packageCode, releaseVersion,
-    schemaVersion, engineVersion, generatedAt, manifestHash, signatureAlgorithm,
-    signatureKeyVersion, signatureProtectionLevel, scores, state, stateReasonCodes,
+    schemaVersion, engineVersion, generatedAt, manifestReference, signatureAlgorithm,
+    signatureReference, signatureProtectionLevel, scores, state, stateReasonCodes,
     graphRootHash, graphNodeHashes,
   } = params;
 
@@ -125,7 +148,6 @@ export function buildMasterRecordModel(params: {
   const elapsed = elapsedPeriodDays({ caseData, assessmentTimestamp: generatedAt });
   const valueStatement = buildValueStatement({ caseData, calculation, controls, model, evidenceCount: model.evidenceSummary.totalEvidenceFiles });
   const { rows: hashArchitecture, inconsistencies: hashInconsistencies } = buildHashArchitecture({
-    manifestHash,
     calculationRootHash: calculation.calculationRootHash,
     graphRootHash,
     legalSourceRegistryHash: model.ruleset.sourceHash,
@@ -153,10 +175,10 @@ export function buildMasterRecordModel(params: {
       ruleset: model.ruleset.version,
       generatedAt,
       calculationRootHash: calculation.calculationRootHash,
-      manifestHash,
+      manifestReference,
       legalSourceRegistryHash: model.ruleset.sourceHash,
       signatureAlgorithm,
-      signatureKeyVersion,
+      signatureReference,
       signatureProtectionLevel,
       componentCount: REQUIRED_TOP_LEVEL_COMPONENTS_V6.length,
       evidenceCount: model.evidenceSummary.totalEvidenceFiles,

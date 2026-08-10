@@ -61,7 +61,7 @@ export const PersistedSealedReportSchema = z.object({
   caseId: z.string().min(1),
   entitlementId: z.string().min(1),
   requestId: z.string().uuid(),
-  releaseVersion: z.number().int().min(1).max(5),
+  releaseVersion: z.number().int().min(1).max(6),
   reportingYear: z.number().int().min(2020).max(2099).optional(),
   documentHash: HashSchema,
   manifestHash: HashSchema,

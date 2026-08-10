@@ -221,10 +221,10 @@ function section(model: MasterRecordModel): MasterRecordSection[] {
               ["ruleset", ck.ruleset],
               ["generatedAt", ck.generatedAt],
               ["calculationRootHash", ck.calculationRootHash],
-              ["manifestHash", ck.manifestHash],
+              ["manifestReference", ck.manifestReference],
               ["legalSourceRegistryHash", ck.legalSourceRegistryHash],
               ["signatureAlgorithm", ck.signatureAlgorithm],
-              ["signatureKeyVersion", ck.signatureKeyVersion],
+              ["signatureReference", ck.signatureReference],
               ["signatureProtectionLevel", ck.signatureProtectionLevel],
               ["componentCount", String(ck.componentCount)],
               ["evidenceCount", String(ck.evidenceCount)],
@@ -921,7 +921,7 @@ function section(model: MasterRecordModel): MasterRecordSection[] {
         {
           kind: "steps",
           steps: [
-            "Open the package and verify the manifest hash: the manifest value for Data Integrity Manifest.json must equal the value shown on this page (A2).",
+            "Open the package and verify the manifest hash: compare the manifest entry for Data Integrity Manifest.json with the value stored in the signed manifest record inside the package (A2).",
             "Verify the detached signature: node Supporting_Evidence/verify/cli.js --package <path> --strict reports signature verification.",
             "Compare file hashes: each component's SHA-256 in the manifest must equal the hash of the stored file.",
             "If verification fails, the package has been altered or corrupted. Do not use it as evidence; request a fresh sealed release from the operator's records.",

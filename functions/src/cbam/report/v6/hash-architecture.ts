@@ -47,7 +47,6 @@ export function reproduceHashFromBytes(bytes: Buffer): string {
 }
 
 export function buildHashArchitecture(params: {
-  manifestHash: string;
   calculationRootHash: string;
   graphRootHash?: string;
   legalSourceRegistryHash: string;
