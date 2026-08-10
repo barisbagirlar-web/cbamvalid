@@ -83,7 +83,7 @@ export function AnalyticsConsentManager() {
           borderRadius: 999,
           padding: "8px 12px",
           background: "rgba(12,18,26,.94)",
-          color: "#fff",
+          color: "#ffffff",
           fontSize: 12,
           cursor: "pointer",
         }}
@@ -110,7 +110,7 @@ export function AnalyticsConsentManager() {
         borderRadius: 16,
         padding: 16,
         background: "rgba(12,18,26,.98)",
-        color: "#fff",
+        color: "#ffffff",
         boxShadow: "0 18px 60px rgba(0,0,0,.35)",
       }}
     >
@@ -131,7 +131,7 @@ export function AnalyticsConsentManager() {
         <button
           type="button"
           onClick={() => select("denied")}
-          style={{ border: "1px solid rgba(255,255,255,.28)", borderRadius: 10, padding: "9px 14px", background: "transparent", color: "#fff", fontWeight: 700, cursor: "pointer" }}
+          style={{ border: "1px solid rgba(255,255,255,.28)", borderRadius: 10, padding: "9px 14px", background: "transparent", color: "#ffffff", fontWeight: 700, cursor: "pointer" }}
         >
           Decline
         </button>

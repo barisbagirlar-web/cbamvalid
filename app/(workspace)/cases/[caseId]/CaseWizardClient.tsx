@@ -26,7 +26,9 @@ import {
 } from "lucide-react";
 import { DecimalInput } from "@/components/cbam/DecimalInput";
 import { FieldHelp } from "@/components/cbam/FieldHelp";
+import { QcInspectorRail } from "@/components/cbam/QcInspectorRail";
 import { WorkingFileJourneyStrip } from "@/components/cbam/WorkingFileJourneyStrip";
+import { gapResolution } from "@/lib/cbam/gap-resolution";
 import { packsUnlockableFromCredits } from "@/lib/billing/credit-contract";
 import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 import { assessCaseReadiness } from "@/lib/cbam/validation/readiness-assessor";
@@ -71,7 +73,6 @@ import {
   createEmptyInput,
   type AuditReadyCase,
   type EvidenceSupportStatus,
-  type GapRecord,
   type InputDatum,
   type UnitCode,
 } from "@/lib/cbam/schema";
@@ -160,19 +161,7 @@ function humanizeEvidenceStatus(
   return `${review} · ${support} · ${malware}`;
 }
 
-function gapResolution(gap: GapRecord): { step: number; action: string; evidence: string } {
-  const code = String(gap.requiredEvidence || "");
-  const requirement = gap.requirement.toLowerCase();
-  if (code.includes("SCENARIO")) return { step: 1, action: "Remove the illustrative scenario and enter the real operator and reporting scope.", evidence: "Case-specific records must replace every demonstration value." };
-  if (code.includes("EORI") || requirement.includes("eori")) return { step: 1, action: "Enter the active declarant EORI, then upload and link the registration evidence.", evidence: "EORI registration record or importer-issued evidence." };
-  if (code.includes("IDENTITY")) return { step: 3, action: "Complete the importer, exporter, installation, country, route and explicit system boundary.", evidence: "Company records, operating permit, monitoring plan and process map." };
-  if (code.includes("CN_") || code.includes("PRODUCTION") || code.includes("ALLOCATION") || requirement.includes("good")) return { step: 2, action: "Correct the goods row and reconcile all allocation shares to exactly 1 before linking source records.", evidence: "Customs classification, production ledger and allocation workbook." };
-  if (requirement.includes("directemissions") || code.includes("QC_06")) return { step: 4, action: "Enter period-total direct emissions and link the approved monitoring calculation.", evidence: "Fuel/activity ledger, meter/lab records and emissions workbook." };
-  if (requirement.includes("electricity") || requirement.includes("gridemissionfactor") || code.includes("QC_07") || code.includes("QC_08")) return { step: 5, action: "Enter electricity and a correctly scaled grid factor, then link each value to approved evidence.", evidence: "Meter/invoice records and the official or supplier-specific factor source with period/version." };
-  if (requirement.includes("precursor") || code.includes("PRECURSOR")) return { step: 6, action: "Complete each precursor quantity and emissions field, or document an evidenced no-precursor decision.", evidence: "Bill of materials, mass balance and supplier/operator emissions communication." };
-  if (requirement.includes("carbon") || code.includes("CARBON_PRICE")) return { step: 7, action: "Link the carbon-price record to approved proof of assessment and payment, or remove an unsupported deduction.", evidence: "Official assessment, receipt, applicable-emissions reconciliation and rebate documentation." };
-  return { step: 7, action: "Upload the source document, link it to the exact input and complete malware and support review.", evidence: "Original source file with issuer, issue date, reporting period and SHA-256 integrity record." };
-}
+
 
 function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
@@ -455,6 +444,20 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
   // sealing remains fail-closed regardless.
   const goToStep = (step: number) => {
     navigateToStep(step);
+  };
+
+  // QC inspector navigation — jumping to another step resets transient
+  // guidance by design, but re-selecting the current step must never wipe
+  // the error panels the operator is reading. In that case we only bring
+  // the first field of the step back into view.
+  const handleInspectorGoToStep = (step: number) => {
+    if (step === currentStep) {
+      document
+        .querySelector<HTMLElement>("[data-field-path]")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    goToStep(step);
   };
 
   const revealSealBlockers = () => {
@@ -1736,14 +1739,23 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
               ID: {caseData.caseId || "UNASSIGNED"} · User: {sessionUser.email || sessionUser.uid} · One factory · one year
             </p>
           </div>
-          <p
-            aria-live="polite"
-            aria-busy={saving}
-            className="inline-flex shrink-0 items-center gap-2 text-xs font-semibold text-muted"
-          >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
-            {saveIndicatorText}
-          </p>
+          <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
+            <p
+              aria-live="polite"
+              aria-busy={saving}
+              className="inline-flex items-center gap-2 text-xs font-semibold text-muted"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
+              {saveIndicatorText}
+            </p>
+            {/* Command chips — file state at a glance, same model as step 8 */}
+            <div className="flex flex-wrap items-center gap-1.5" aria-label="Working file state">
+              <Step8StateBadge status={step8Status} />
+              <span className="rounded-full border border-border bg-neutral-soft px-2.5 py-0.5 font-mono text-[11px] font-bold text-muted">
+                {caseData.methodologyDecisions[0]?.rulesetVersion || "EU-CBAM-DEFINITIVE-2026"}
+              </span>
+            </div>
+          </div>
         </header>
 
         <WorkingFileJourneyStrip
@@ -1856,6 +1868,16 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
 
             <section className="py-2 md:py-4">{stepContent()}</section>
           </div>
+
+          {/* ERP command layer — persistent QC inspector, re-evaluated on every edit */}
+          <QcInspectorRail
+            gaps={readiness.allGaps}
+            completenessPercentage={readiness.completenessPercentage}
+            passedControls={readiness.passedControls}
+            applicableControls={readiness.applicableControls}
+            currentStep={currentStep}
+            onGoToStep={handleInspectorGoToStep}
+          />
         </div>
       </div>
 

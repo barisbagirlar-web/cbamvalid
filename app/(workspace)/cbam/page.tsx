@@ -207,6 +207,27 @@ export default function CbamLandingPage() {
     }
   }, [sortedCases]);
 
+  // ERP command layer — per-file readiness, computed from the same
+  // deterministic QC engine the wizard uses. One badge per row tells the
+  // operator exactly which file needs attention and why.
+  const readinessByCaseId = useMemo(() => {
+    const map: Record<string, { completeness: number; blockers: number; eligible: boolean }> = {};
+    for (const cbamCase of cases) {
+      if (!cbamCase.data) continue;
+      try {
+        const assessment = assessCaseReadiness(cbamCase.data);
+        map[cbamCase.caseId] = {
+          completeness: assessment.completenessPercentage,
+          blockers: assessment.criticalBlockers.length,
+          eligible: assessment.isEligibleForSealing,
+        };
+      } catch (assessmentError) {
+        console.warn(`Readiness assessment failed for ${cbamCase.caseId}`, assessmentError);
+      }
+    }
+    return map;
+  }, [cases]);
+
   const journey = useMemo(
     () =>
       resolveJourneyState({
@@ -667,7 +688,53 @@ export default function CbamLandingPage() {
                               Not locked yet
                             </span>
                           )}
+                          {(() => {
+                            const readiness = readinessByCaseId[cbamCase.caseId];
+                            if (!readiness || cbamCase.latestReleaseVersion) return null;
+                            if (readiness.eligible) {
+                              return (
+                                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-forest-pale text-forest border border-forest-light">
+                                  Ready to lock
+                                </span>
+                              );
+                            }
+                            if (readiness.blockers > 0) {
+                              return (
+                                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-[color:var(--status-blocked-soft)] text-status-blocked border border-status-blocked/40">
+                                  {readiness.blockers} open item{readiness.blockers === 1 ? "" : "s"}
+                                </span>
+                              );
+                            }
+                            return (
+                              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-[color:var(--status-warning-soft)] text-status-warning border border-status-warning/40">
+                                In preparation
+                              </span>
+                            );
+                          })()}
                         </div>
+                        {(() => {
+                          const readiness = readinessByCaseId[cbamCase.caseId];
+                          if (!readiness || cbamCase.latestReleaseVersion) return null;
+                          return (
+                            <div className="mt-2 flex items-center gap-2" aria-label={`${readiness.completeness}% of automated controls passed`}>
+                              <div
+                                className="h-1.5 w-40 max-w-full overflow-hidden rounded-full bg-neutral-soft"
+                                role="progressbar"
+                                aria-valuenow={readiness.completeness}
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                              >
+                                <div
+                                  className={`h-full rounded-full transition-all ${readiness.eligible ? "bg-forest" : readiness.blockers > 0 ? "bg-status-blocked" : "bg-accent"}`}
+                                  style={{ width: `${readiness.completeness}%` }}
+                                />
+                              </div>
+                              <span className="font-mono text-[10px] font-semibold text-muted">
+                                {readiness.completeness}% controls passed
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </div>
                       <Link
                         href={`/cases/${cbamCase.caseId}`}
