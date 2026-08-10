@@ -69,6 +69,7 @@ export default function ProductClassificationPage() {
           <div className="pricing-assurance-item">
             <p className="pricing-assurance-label">Product</p>
             <p className="pricing-assurance-text">Self-Service Emissions Data Software</p>
+            <p className="pricing-assurance-text">{CANONICAL_PRICING.description}</p>
           </div>
           <div className="pricing-assurance-item">
             <p className="pricing-assurance-label">Price</p>

@@ -3,7 +3,7 @@ import { siteConfig } from "@/lib/site-config";
 import { assertVerifiedClaim, FORBIDDEN_SOCIAL_PROOF, PRICE_CLAIM } from "./claims";
 import { buildCanonicalUrl } from "./canonical";
 
-type JsonLdNode = Record<string, unknown>;
+export type JsonLdNode = Record<string, unknown>;
 
 function organizationNode(): JsonLdNode {
   return {
@@ -113,8 +113,7 @@ export function generateProductOfferSchema(): JsonLdNode {
         "@type": "Product",
         "@id": `${siteConfig.canonicalOrigin}/#product`,
         name: price.packName,
-        description:
-          "Professional dossier and evidence package prepared for independent accredited verifier review of CBAM emissions reports.",
+        description: price.description,
         brand: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
         offers: {
           "@type": "Offer",
@@ -153,14 +152,42 @@ export function generateWebPageSchema(params: {
   };
 }
 
+function normalizeGraphNode(node: JsonLdNode): JsonLdNode {
+  const copy = { ...node };
+  delete copy["@context"];
+  return copy;
+}
+
+/**
+ * Deduplicate graph identities at the schema layer, not only at one component call site.
+ * Conflicting nodes with the same @id are BLOCK-worthy because silently choosing one
+ * would make the entity graph depend on insertion order.
+ */
+export function dedupeGraphNodes(nodes: readonly JsonLdNode[]): JsonLdNode[] {
+  const byId = new Map<string, JsonLdNode>();
+  const anonymous: JsonLdNode[] = [];
+  for (const raw of nodes) {
+    const node = normalizeGraphNode(raw);
+    const id = typeof node["@id"] === "string" ? node["@id"] : null;
+    if (!id) {
+      anonymous.push(node);
+      continue;
+    }
+    const previous = byId.get(id);
+    if (!previous) {
+      byId.set(id, node);
+      continue;
+    }
+    if (JSON.stringify(previous) !== JSON.stringify(node)) {
+      throw new Error(`SEO schema gate: conflicting duplicate @id ${id}`);
+    }
+  }
+  return [...byId.values(), ...anonymous];
+}
+
 export function buildPageGraph(nodes: JsonLdNode[]): JsonLdNode {
-  const normalized = nodes.map((node) => {
-    const copy = { ...node };
-    delete copy["@context"];
-    return copy;
-  });
   return {
     "@context": "https://schema.org",
-    "@graph": normalized,
+    "@graph": dedupeGraphNodes(nodes),
   };
 }

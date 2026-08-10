@@ -1,3 +1,5 @@
+import { buildSeoBreadcrumbItems } from "@/lib/seo/breadcrumbs";
+import { requireSeoRoute } from "@/lib/seo/registry";
 import {
   buildPageGraph,
   generateBreadcrumbSchema,
@@ -6,39 +8,17 @@ import {
   generateWebApplicationSchema,
   generateWebPageSchema,
   generateWebSiteSchema,
+  type JsonLdNode,
 } from "@/lib/seo/schema";
-import { requireSeoRoute } from "@/lib/seo/registry";
 
-const PUBLIC_ROUTE_OVERRIDES: Readonly<
-  Record<string, { title: string; description: string; h1: string }>
-> = {
-  "/": {
-    title: "CBAMValid — Self-Service Emissions Data Software",
-    description:
-      "B2B self-service software for customer-entered emissions data, deterministic calculations, automated quality controls, and automated PDF, JSON and XLSX delivery.",
-    h1: "Self-Service Emissions Data Software",
-  },
-  "/product": {
-    title: "CBAMValid Product | Self-Service Emissions Data Software",
-    description:
-      "Customer-controlled B2B software for emissions data, deterministic calculations, automated quality controls, and automated PDF, JSON and XLSX delivery.",
-    h1: "Software Product and Capabilities",
-  },
-  "/sample-dossier": {
-    title: "Sample Automated Digital Output | CBAMValid Software",
-    description:
-      "Preview an automated CBAMValid software output with PDF, structured data, workbook, integrity manifest and customer-controlled evidence links.",
-    h1: "Sample Automated Digital Output",
-  },
-};
-
+/**
+ * JSON-LD is derived from the runtime SEO registry and shared commercial claims.
+ * No route-specific copy overrides are allowed here: visible/metadata/schema copy
+ * must converge on the same governed sources instead of drifting independently.
+ */
 export function JsonLdForRoute({ path }: { path: string }) {
   const route = requireSeoRoute(path);
-  const override = PUBLIC_ROUTE_OVERRIDES[path];
-  const publicTitle = override?.title ?? route.title;
-  const publicDescription = override?.description ?? route.description;
-  const publicH1 = override?.h1 ?? route.h1;
-  const nodes: Record<string, unknown>[] = [];
+  const nodes: JsonLdNode[] = [];
 
   if (route.schemaTypes.includes("Organization") || path === "/") {
     nodes.push(generateOrganizationSchema());
@@ -47,16 +27,14 @@ export function JsonLdForRoute({ path }: { path: string }) {
     nodes.push(generateWebSiteSchema());
   }
   if (route.schemaTypes.includes("WebApplication")) {
-    nodes.push(generateWebApplicationSchema(publicDescription));
+    nodes.push(generateWebApplicationSchema(route.description));
   }
   if (route.schemaTypes.includes("Product") || route.schemaTypes.includes("Offer")) {
     const productDoc = generateProductOfferSchema();
     const graph = productDoc["@graph"];
     if (Array.isArray(graph)) {
       for (const node of graph) {
-        if (node && typeof node === "object") {
-          nodes.push(node as Record<string, unknown>);
-        }
+        if (node && typeof node === "object") nodes.push(node as JsonLdNode);
       }
     }
   }
@@ -77,32 +55,17 @@ export function JsonLdForRoute({ path }: { path: string }) {
     nodes.push(
       generateWebPageSchema({
         path: route.canonicalPath,
-        name: publicTitle,
-        description: publicDescription,
+        name: route.title,
+        description: route.description,
         type,
       }),
     );
   }
   if (route.schemaTypes.includes("BreadcrumbList") && route.canonicalPath !== "/") {
-    const crumbs = [{ name: "Home", item: "/" }];
-    if (route.pageType === "cn-detail") {
-      crumbs.push({ name: "CN Codes", item: "/cn-code" });
-    }
-    crumbs.push({ name: publicH1, item: route.canonicalPath });
-    nodes.push(generateBreadcrumbSchema(crumbs));
+    nodes.push(generateBreadcrumbSchema(buildSeoBreadcrumbItems(route)));
   }
 
-  const seen = new Set<string>();
-  const deduped: Record<string, unknown>[] = [];
-  for (const node of nodes) {
-    const id = typeof node["@id"] === "string" ? node["@id"] : undefined;
-    if (id && seen.has(id)) continue;
-    if (id) seen.add(id);
-    deduped.push(node);
-  }
-
-  const payload = deduped.length === 1 ? deduped[0] : buildPageGraph(deduped);
-
+  const payload = nodes.length === 1 ? nodes[0] : buildPageGraph(nodes);
   return (
     <script
       type="application/ld+json"

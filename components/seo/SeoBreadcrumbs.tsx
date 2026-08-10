@@ -1,22 +1,14 @@
 import Link from "next/link";
+import { buildSeoBreadcrumbItems } from "@/lib/seo/breadcrumbs";
 import { requireSeoRoute } from "@/lib/seo/registry";
 
 /**
- * Visible breadcrumb trail — mirrors BreadcrumbList JSON-LD.
- * Enterprise AEO: crawlers + humans share the same hierarchy.
+ * Visible breadcrumb trail and BreadcrumbList JSON-LD consume the same SSOT.
  */
 export function SeoBreadcrumbs({ path }: { path: string }) {
   const route = requireSeoRoute(path);
-  if (route.canonicalPath === "/") return null;
-
-  const crumbs: { name: string; href: string }[] = [{ name: "Home", href: "/" }];
-  if (route.pageType === "cn-detail") {
-    crumbs.push({ name: "CN code scope", href: "/cn-code" });
-  }
-  if (route.path.startsWith("/cbam-") || route.path === "/glossary" || route.path === "/answers") {
-    crumbs.push({ name: "CBAM resources", href: "/methodology" });
-  }
-  crumbs.push({ name: route.h1, href: route.canonicalPath });
+  const crumbs = buildSeoBreadcrumbItems(route);
+  if (crumbs.length === 0) return null;
 
   return (
     <nav className="seo-breadcrumbs" aria-label="Breadcrumb">
@@ -26,7 +18,7 @@ export function SeoBreadcrumbs({ path }: { path: string }) {
             const isLast = index === crumbs.length - 1;
             return (
               <li
-                key={crumb.href + crumb.name}
+                key={crumb.item + crumb.name}
                 className="seo-breadcrumb-item"
                 itemProp="itemListElement"
                 itemScope
@@ -37,7 +29,7 @@ export function SeoBreadcrumbs({ path }: { path: string }) {
                     {crumb.name}
                   </span>
                 ) : (
-                  <Link href={crumb.href} itemProp="item">
+                  <Link href={crumb.item} itemProp="item">
                     <span itemProp="name">{crumb.name}</span>
                   </Link>
                 )}
