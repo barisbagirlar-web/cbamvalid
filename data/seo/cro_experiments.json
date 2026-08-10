@@ -1,0 +1,73 @@
+{
+  "meta": {
+    "artifact": "cro_experiments",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T10:42:00Z",
+    "generatorScript": "scripts/seo/cro-governance.ts",
+    "inputWindow": {"start": "2025-09-11", "end": "2026-08-10"},
+    "confidence": "medium",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal", "2026-08-10:consent-mode-v2-candidate"]
+  },
+  "data": {
+    "rubric": {
+      "scale": "1..7",
+      "dimensions": {
+        "N1": "query-title-intent match",
+        "N2": "first-screen promise clarity",
+        "N3": "content depth/completeness",
+        "N4": "trust/evidence strength",
+        "N5": "actionability",
+        "N6": "friction/barrier handling",
+        "N7": "next-step clarity"
+      },
+      "gateFormula": "total > thresholds.intentScoreMin * 7"
+    },
+    "intentAssessments": [
+      {
+        "route": "/product",
+        "assessedAt": "2026-08-10T10:42:00Z",
+        "method": "source-evidence-review",
+        "scores": {"N1":6,"N2":7,"N3":7,"N4":6,"N5":7,"N6":5,"N7":6},
+        "total": 44,
+        "evidence": {
+          "N1": "Product page H1, direct answer and CBAM software/product registry intent are aligned around verifier-preparation software.",
+          "N2": "Hero lede, direct answer, one-time price and Start Free Draft CTA are visible before deeper capability sections.",
+          "N3": "Page covers six core capabilities, six workflow steps, workspace readiness and evidence-backed answer content.",
+          "N4": "Authority rail, EU regulation reference, versioned rulesets, deterministic engine, SHA-256 integrity and explicit no-fake-verification claim provide trust evidence.",
+          "N5": "Start Free Draft and View Sample Dossier give direct executable next actions.",
+          "N6": "Draft is free and pricing/no-subscription/correction terms are explicit, while registration remains a necessary workflow step.",
+          "N7": "Primary draft CTA, sample-dossier path and answer-evidence section provide clear next steps."
+        }
+      }
+    ],
+    "experiments": [],
+    "experimentExecutionState": "NOT_STARTED_A3_REQUIRED",
+    "consentValidation": {
+      "validatedAt": "2026-08-10T10:42:00Z",
+      "validationScope": "exact Phase-14 candidate source + conformance tests",
+      "defaultDenied": true,
+      "defaultKeys": ["analytics_storage","ad_storage","ad_user_data","ad_personalization"],
+      "updateKeys": ["analytics_storage","ad_storage","ad_user_data","ad_personalization"],
+      "publicChoiceManager": true,
+      "structuralBreakRecorded": true,
+      "liveValidationPendingDeployment": true
+    },
+    "structuralBreaks": [
+      {
+        "id": "2026-08-10:consent-mode-v2-candidate",
+        "type": "measurement-consent",
+        "status": "PENDING_DEPLOYMENT",
+        "reason": "Public analytics consent changes from simple local grant gating to Consent Mode v2 default-denied + explicit update signals.",
+        "effectiveAt": null
+      }
+    ],
+    "measurementResults": {
+      "conversionLift": null,
+      "winner": null,
+      "status": "SKIP_NO_EXPERIMENT"
+    }
+  }
+}

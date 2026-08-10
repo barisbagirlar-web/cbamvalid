@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "artifact": "invariant-results/faz-14",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T10:45:00Z",
+    "generatorScript": "scripts/seo/cro-governance.ts",
+    "inputWindow": {"start": "2025-09-11", "end": "2026-08-10"},
+    "confidence": "medium",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal", "2026-08-10:consent-mode-v2-candidate"]
+  },
+  "data": {
+    "phase": "faz-14",
+    "codeScopeComplete": true,
+    "results": [
+      {"id":"INV-14.1","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Seven-dimension source-evidence intent rubric applied to /product: 44/49 versus config gate 35; synthetic at-gate fixture is rejected."},
+      {"id":"INV-14.2","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Experiment start requires locked primary metric, guardrails, sample size, MDE, decision rule, config minimum duration, lock timestamp and A3 approval. No experiment is started in the current state."},
+      {"id":"INV-14.3","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Running experiments with interim analysis are rejected as peeking. Current experiment list is empty."},
+      {"id":"INV-14.4","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Experiment variants must be non-indexable, absent from sitemap, canonical to control and bot-content equivalent; unsafe synthetic variants fail closed."},
+      {"id":"INV-14.5","severity":"WARN","status":"PASS","negativeTestPassed":null,"evidence":"Consent Mode v2 candidate validation is current under thresholds.consentValidationMaxAgeDays; all four required signals default denied and explicit public grant/deny controls exist. Live validation is pending exact merged-SHA deployment."},
+      {"id":"INV-14.6","severity":"INFO","status":"PASS","negativeTestPassed":null,"evidence":"Experiment closure uses thresholds.croMinWeeks; shorter observations are INCONCLUSIVE and cannot become a declared winner/loser."}
+    ]
+  }
+}
