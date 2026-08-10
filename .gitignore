@@ -51,6 +51,9 @@ scripts/firestore-rules-permissive.rules
 artifacts/four-complete-dossiers/
 # Step 8 final-action screenshot harness output (reproducible via the local E2E harness)
 artifacts/step8-final-action/
+# G-09 rendered V6 package byproduct (reproducible via npm run render:v6-gate-package);
+# the gate evidence itself (scan-result.txt / scan-report.json) is committed.
+artifacts/gates/G-09/package/
 tsconfig.check.tsbuildinfo
 
 # Local SEO lab CWV scratch (baseline lives in docs/seo/)

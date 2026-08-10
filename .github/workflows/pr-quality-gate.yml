@@ -138,6 +138,18 @@ jobs:
           set -o pipefail
           npm run test:reports 2>&1 | tee artifacts/ci/test-reports.log
 
+      - name: CBAMValid 6.0 mandatory gate tests (G-01..G-14, 17 tests)
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:gates 2>&1 | tee artifacts/ci/test-gates.log
+
+      - name: CBAMValid 6.0 release gates (G-09 leak scan on rendered V6 package, G-14 boundary protection)
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run gate:release-6 2>&1 | tee artifacts/ci/gate-release-6.log
+
       - name: Production build
         shell: bash
         run: |
