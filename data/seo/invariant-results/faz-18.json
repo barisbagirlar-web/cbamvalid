@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "artifact": "invariant-results/faz-18",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T13:34:00Z",
+    "generatorScript": "scripts/seo/programmatic-factory.ts",
+    "inputWindow": {"start":"2025-09-11","end":"2026-08-10"},
+    "confidence": "high",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal", "2026-08-10:consent-mode-v2-candidate"]
+  },
+  "data": {
+    "phase": "faz-18",
+    "codeScopeComplete": true,
+    "publicationState": "NO_PUBLICATION",
+    "results": [
+      {"id":"INV-18.1","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"cn-code-detail-v1 is explicitly registered; unknown templates fail closed."},
+      {"id":"INV-18.2","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Eligibility requires Phase-17 INVEST, programmatic_longtail assignment, refreshable structured data, unique intent, config-sized pilot, full indexation and positive impressions. Current gate is blocked because no qualifying INVEST cluster exists."},
+      {"id":"INV-18.3","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Programmatic execution accepts zero invariant exemptions; synthetic exemption fails closed."},
+      {"id":"INV-18.4","severity":"WARN","status":"PASS","negativeTestPassed":null,"evidence":"Kill-switch evaluation is config-driven; current state is SKIP_NO_DATA. Any under-indexing outcome proposes noindex and escalation, never auto-removal."},
+      {"id":"INV-18.5","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Publication rollback requires batch routes, revert commit availability, noindex fallback and pre-batch route restoration proof."},
+      {"id":"INV-18.6","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Batch median similarity must stay strictly below config.thresholds.similarityMax; at-threshold synthetic batch is rejected."}
+    ]
+  }
+}
