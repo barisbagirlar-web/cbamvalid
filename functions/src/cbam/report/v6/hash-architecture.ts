@@ -8,13 +8,14 @@
  * between Calculation Trace and Calculation Graph.
  */
 import crypto from "node:crypto";
+import { canonicalJcs } from "./jcs";
 import type { HashArchitectureRow } from "./types";
 
 export const HASH_CANONICAL_RULE = [
   "CANONICAL_SERIALISATION:1.0",
   "Encoding: UTF-8, no BOM.",
-  "Field order: object keys sorted lexicographically (localeCompare, byte order).",
-  "Strings: JSON.stringify escaping (double quotes).",
+  "Object keys sorted by Unicode code point (RFC 8785 JSON Canonicalization Scheme).",
+  "Strings: JSON escaping plus \\u2028/\\u2029 escapes (RFC 8785).",
   "Numbers: canonical decimal representation; integers without exponent.",
   "Arrays: elements in declared order.",
   "null/undefined/missing: serialised as the literal null.",
@@ -24,15 +25,7 @@ export const HASH_CANONICAL_RULE = [
 
 /** Canonical serialisation identical to the sealed-package manifest writer. */
 export function canonicalSerialization(value: unknown): string {
-  if (value === undefined || value === null || typeof value !== "object") {
-    return value === undefined ? "null" : JSON.stringify(value);
-  }
-  if (Array.isArray(value)) return `[${value.map(canonicalSerialization).join(",")}]`;
-  const record = value as Record<string, unknown>;
-  return `{${Object.keys(record)
-    .sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))
-    .map((key) => `${JSON.stringify(key)}:${canonicalSerialization(record[key])}`)
-    .join(",")}}`;
+  return canonicalJcs(value);
 }
 
 export function reproduceHash(value: unknown): string {
