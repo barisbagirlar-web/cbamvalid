@@ -1,0 +1,31 @@
+{
+  "allowedCurrencies": [
+    "EUR",
+    "USD",
+    "GBP",
+    "TRY"
+  ],
+  "emissionCanonicalUnits": [
+    "tCO2e",
+    "tCO2e/MWh"
+  ],
+  "fixtures": [
+    {
+      "caseKey": "STEEL_IN",
+      "findings": []
+    },
+    {
+      "caseKey": "CEMENT_EG",
+      "findings": []
+    },
+    {
+      "caseKey": "ALU_CN",
+      "findings": []
+    },
+    {
+      "caseKey": "FERTILISER_TR",
+      "findings": []
+    }
+  ],
+  "allClean": true
+}

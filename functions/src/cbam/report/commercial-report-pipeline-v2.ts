@@ -43,7 +43,7 @@ export class CommercialReportPipelineV2 {
     generatedAt: string;
     evidenceFiles: EvidenceBinary[];
     productCode: string;
-    releaseContractVersion: 5 | 6;
+    releaseContractVersion: 5 | 6 | 7;
     signManifest: (manifestBytes: Buffer) => Promise<KmsSignatureResult>;
     /**
      * @deprecated Production graph bytes are derived from Calculation Trace.
@@ -172,7 +172,7 @@ export class CommercialReportPipelineV2 {
     // verifier-dossier PDFs, and before the manifest so it is sealed into the
     // signed package. Its control key records the signed manifest instead of
     // embedding the manifest hash (a self-referential cycle is impossible).
-    if (params.releaseContractVersion === 6) {
+    if (params.releaseContractVersion >= 6) {
       const scores = computeTwoAxisScores({ caseData: artifactCaseData, assessmentTimestamp });
       const stateDecision = derivePackageReadinessState({ caseData: artifactCaseData, assessmentTimestamp, scores });
       const masterRecordModel = buildMasterRecordModel({
@@ -189,16 +189,16 @@ export class CommercialReportPipelineV2 {
           generatedAt: params.generatedAt,
           assessmentTimestamp,
           productCode: params.productCode,
-          releaseContractVersion: 6,
+          releaseContractVersion: params.releaseContractVersion,
         }),
         reportId: params.reportId,
         packageCode: params.packageCode,
         releaseVersion: params.releaseVersion,
-        schemaVersion: "CBAMVALID-DOSSIER-6.0",
+        schemaVersion: "CBAMVALID-DOSSIER-7.0",
         engineVersion: params.calculation.engineVersion,
         generatedAt: params.generatedAt,
         manifestReference: MASTER_RECORD_MANIFEST_REFERENCE,
-        signatureAlgorithm: "RSA_SIGN_PKCS1_2048_SHA256",
+        signatureAlgorithm: "RSA_SIGN_PSS_4096_SHA256",
         signatureReference: MASTER_RECORD_SIGNATURE_REFERENCE,
         signatureProtectionLevel: "FULL",
         scores,

@@ -1,0 +1,20 @@
+{
+  "attachments": [
+    {
+      "fileName": "Data_Integrity_Manifest.json",
+      "sha256": "eda65d62a53095812dc4a92527ec91b491a3d8c68c5e67a3ba364267d1999b3d",
+      "embeddedHashMatches": true
+    },
+    {
+      "fileName": "Calculation_Trace.json",
+      "sha256": "635448328d696f3b4e3fe57b5402f04e2d62cb3369ed4545cd1e0c3f14e450a3",
+      "embeddedHashMatches": true
+    },
+    {
+      "fileName": "verify/cli.js",
+      "sha256": "bc54f4f397c70af545d9ef0d9c7037bcafe29a1e4339cca3856fd1b67e2e6712",
+      "embeddedHashMatches": true
+    }
+  ],
+  "allMatch": true
+}

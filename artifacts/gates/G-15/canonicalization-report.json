@@ -1,0 +1,55 @@
+{
+  "rule": "RFC8785:JCS:1.0",
+  "vectors": 8,
+  "allPassed": true,
+  "results": [
+    {
+      "vector": "IETF Example",
+      "canonical": "{\"Numbers\":{\"A\":[1,\"a\"],\"K\":\"\\\\\",\"M\":1,\"N\":null,\"S\":\"a b\",\"T\":true,\"X\":\"\\u2028\"}}",
+      "sha256": "2881a6bfea35e894d37de477c6edc1474ed4714d7815631569f3795ee7bd7a5e",
+      "pass": true
+    },
+    {
+      "vector": "Unicode duplicate keys (last wins)",
+      "canonical": "{\"Φ\":\"Φ\",\"Ω\":\"Ω\"}",
+      "sha256": "3035901985b576bf315f5fb3a4190431292215297e9a498cbe3eb02238464021",
+      "pass": true
+    },
+    {
+      "vector": "Key ordering by Unicode code point",
+      "canonical": "{\"1\":\"one\",\"2\":\"two\",\"A\":\"A\",\"a\":\"a\",\"aa\":\"aa\",\"ä\":\"ä\",\"ä\":\"ä\",\"ẞ\":\"ẞ\",\"𝄞\":\"G-CLEF\"}",
+      "sha256": "020a4871ec48ab167904b5811995d98b95bc5b5f6a1601e4690b71ddb0c7f367",
+      "pass": true
+    },
+    {
+      "vector": "Big number normalisation",
+      "canonical": "{\"big\":10000000000}",
+      "sha256": "c435e8c3206613ec6eaa28a4c6108689be282a82116aeb539e443992a567c488",
+      "pass": true
+    },
+    {
+      "vector": "Big number exponential form",
+      "canonical": "{\"big\":1.234567890123456e+100}",
+      "sha256": "96fbbc7943228390d9e6d72a40cd690dc7574de64aac440ea59f091227443ef7",
+      "pass": true
+    },
+    {
+      "vector": "true, false, null ordering",
+      "canonical": "{\"b\":false,\"n\":null,\"t\":true}",
+      "sha256": "4b834dea30f242228b2535485165a4754fad79a098a105137dcfa29fad1940fb",
+      "pass": true
+    },
+    {
+      "vector": "Array with object",
+      "canonical": "[{\"a\":\"b\"}]",
+      "sha256": "915af007afcbfc6a0f54037264d68e5fa775c75812e8daeef5c6f476c28b0433",
+      "pass": true
+    },
+    {
+      "vector": "fixed-point decimal string",
+      "canonical": "{\"totalEmbedded\":\"780000.000000\"}",
+      "sha256": "b498d2be0acdefc33980839c1954459fe7632d6051ce11ac9f41860b4d8f199a",
+      "pass": true
+    }
+  ]
+}

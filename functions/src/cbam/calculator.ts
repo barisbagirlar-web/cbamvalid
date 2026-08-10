@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { Decimal } from "decimal.js";
 import { AuditReadyCase, CalculationTraceNode, InputDatum } from "./schema";
 import {
@@ -9,11 +8,12 @@ import { getSectorRule } from "../dossier/01-ruleset/sectors.rules";
 import { computePricedSeeFromStrings } from "../dossier/20-kernel/allocation";
 import { nodeId } from "../dossier/00-schema/ids";
 import { assessOrigin } from "../dossier/01-ruleset/origin.rules";
+import { assertNoFloatFieldsInHash, reproduceJcsHash } from "./report/v6/jcs";
 
 Decimal.set({ precision: 34, rounding: Decimal.ROUND_HALF_UP });
 
 export const CALCULATION_RULESET = "EU-CBAM-DEFINITIVE-2026";
-export const CALCULATION_ENGINE_VERSION = "4.0.0";
+export const CALCULATION_ENGINE_VERSION = "4.1.0";
 export const CALCULATION_SOURCE = "Regulation (EU) 2023/956, Annex IV; active definitive-period implementing rules";
 export const ALLOCATION_TOLERANCE = new Decimal("0.000001");
 
@@ -32,7 +32,8 @@ function canonicalize(value: unknown): JsonValue {
 }
 
 function hashObject(value: unknown): string {
-  return crypto.createHash("sha256").update(JSON.stringify(canonicalize(value))).digest("hex");
+  assertNoFloatFieldsInHash(value);
+  return reproduceJcsHash(value);
 }
 
 function calculationId(formulaId: string, inputs: Record<string, unknown>): string {

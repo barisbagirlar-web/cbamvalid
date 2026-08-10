@@ -1,0 +1,126 @@
+{
+  "mandate": "G-20 multi-runtime reproducibility",
+  "runtimes": [
+    "node v22.23.2",
+    "python3"
+  ],
+  "scenarios": [
+    {
+      "caseName": "PSS sealed package",
+      "identical": true,
+      "nodeExit": 0,
+      "pythonExit": 0,
+      "nodeStdout": [
+        "PASS: Re-hashed 1 manifest components",
+        "PASS: Manifest detached signature verified (embedded public key, scheme=PSS)",
+        "PASS: Calculation Trace present with 1 nodes; root=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "VERIFICATION_REPORT: PASS"
+      ],
+      "pythonStdout": [
+        "PASS: Re-hashed 1 manifest components",
+        "PASS: Manifest detached signature verified (embedded public key, scheme=PSS)",
+        "PASS: Calculation Trace present with 1 nodes; root=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "VERIFICATION_REPORT: PASS"
+      ]
+    },
+    {
+      "caseName": "Legacy PKCS1 sealed package",
+      "identical": true,
+      "nodeExit": 0,
+      "pythonExit": 0,
+      "nodeStdout": [
+        "PASS: Re-hashed 1 manifest components",
+        "PASS: Manifest detached signature verified (embedded public key, scheme=PKCS1v1.5)",
+        "PASS: Calculation Trace present with 1 nodes; root=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "VERIFICATION_REPORT: PASS"
+      ],
+      "pythonStdout": [
+        "PASS: Re-hashed 1 manifest components",
+        "PASS: Manifest detached signature verified (embedded public key, scheme=PKCS1v1.5)",
+        "PASS: Calculation Trace present with 1 nodes; root=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "VERIFICATION_REPORT: PASS"
+      ]
+    },
+    {
+      "caseName": "Tampered component hash",
+      "identical": true,
+      "nodeExit": 1,
+      "pythonExit": 1,
+      "nodeStdout": [
+        "PASS: Manifest detached signature verified (embedded public key, scheme=PSS)",
+        "PASS: Calculation Trace present with 1 nodes; root=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "VERIFICATION_REPORT: FAIL"
+      ],
+      "pythonStdout": [
+        "PASS: Manifest detached signature verified (embedded public key, scheme=PSS)",
+        "PASS: Calculation Trace present with 1 nodes; root=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "VERIFICATION_REPORT: FAIL"
+      ]
+    },
+    {
+      "caseName": "Empty calculation trace",
+      "identical": true,
+      "nodeExit": 1,
+      "pythonExit": 1,
+      "nodeStdout": [
+        "PASS: Re-hashed 1 manifest components",
+        "PASS: Manifest detached signature verified (embedded public key, scheme=PSS)",
+        "VERIFICATION_REPORT: FAIL"
+      ],
+      "pythonStdout": [
+        "PASS: Re-hashed 1 manifest components",
+        "PASS: Manifest detached signature verified (embedded public key, scheme=PSS)",
+        "VERIFICATION_REPORT: FAIL"
+      ]
+    },
+    {
+      "caseName": "Missing signature (strict)",
+      "identical": true,
+      "nodeExit": 1,
+      "pythonExit": 1,
+      "nodeStdout": [
+        "PASS: Re-hashed 1 manifest components",
+        "PASS: Calculation Trace present with 1 nodes; root=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "VERIFICATION_REPORT: FAIL"
+      ],
+      "pythonStdout": [
+        "PASS: Re-hashed 1 manifest components",
+        "PASS: Calculation Trace present with 1 nodes; root=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "VERIFICATION_REPORT: FAIL"
+      ]
+    },
+    {
+      "caseName": "Signature from wrong key",
+      "identical": true,
+      "nodeExit": 1,
+      "pythonExit": 1,
+      "nodeStdout": [
+        "PASS: Re-hashed 1 manifest components",
+        "PASS: Calculation Trace present with 1 nodes; root=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "VERIFICATION_REPORT: FAIL"
+      ],
+      "pythonStdout": [
+        "PASS: Re-hashed 1 manifest components",
+        "PASS: Calculation Trace present with 1 nodes; root=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "VERIFICATION_REPORT: FAIL"
+      ]
+    },
+    {
+      "caseName": "Missing Calculation Trace (strict)",
+      "identical": true,
+      "nodeExit": 1,
+      "pythonExit": 1,
+      "nodeStdout": [
+        "PASS: Re-hashed 1 manifest components",
+        "PASS: Manifest detached signature verified (embedded public key, scheme=PSS)",
+        "VERIFICATION_REPORT: FAIL"
+      ],
+      "pythonStdout": [
+        "PASS: Re-hashed 1 manifest components",
+        "PASS: Manifest detached signature verified (embedded public key, scheme=PSS)",
+        "VERIFICATION_REPORT: FAIL"
+      ]
+    }
+  ],
+  "allIdentical": true
+}

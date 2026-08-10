@@ -1,6 +1,10 @@
 export type LegalSourceType = "REGULATION" | "IMPLEMENTING_ACT" | "DELEGATED_ACT" | "STANDARD";
 export type CbamPeriod = "TRANSITIONAL" | "DEFINITIVE";
 export type LegalStatus = "IN_FORCE" | "TRANSITIONAL_ONLY" | "REFERENCE_ONLY";
+export type LegalSourceStatus = "IN_FORCE" | "AMENDED" | "SUPERSEDED";
+
+/** G-21 — a legal source older than this many days is not "active". */
+export const LEGAL_SOURCE_MAX_AGE_DAYS = 90;
 
 /**
  * Full metadata record for a CBAM regulatory source or referenced standard.
@@ -41,6 +45,13 @@ export interface LegalSourceRecord {
   /** SHA-256 of the latest verified official document text (at verifiedAt). */
   contentHash: string;
   lastReviewedAt: string;
+  /**
+   * G-21 — freshness bookkeeping. Records carry `lastReviewedAt`; `lastVerifiedAt`
+   * overrides it when a monitoring pass re-verifies a source independently.
+   */
+  lastVerifiedAt?: string;
+  /** G-21 — lifecycle state detected by the freshness monitor. */
+  sourceStatus?: LegalSourceStatus;
 }
 
 export const LEGAL_SOURCE_REGISTRY_VERSION = "CBAM-EU-2026.07.31";
@@ -420,6 +431,53 @@ export function getReferenceStandards(): readonly LegalSourceRecord[] {
  * that the system cannot legitimately claim. Returns the first forbidden match
  * or null.
  */
+/**
+ * G-21 — source freshness assessment. A source counts as active only if its
+ * last verification is not older than `maxAgeDays` relative to `asOfIso`.
+ */
+export interface LegalSourceFreshness {
+  readonly id: string;
+  readonly celexId: string;
+  readonly lastVerifiedAt: string;
+  readonly ageInDays: number;
+  readonly fresh: boolean;
+}
+
+export function assessLegalSourceFreshness(
+  asOfIso: string,
+  maxAgeDays = LEGAL_SOURCE_MAX_AGE_DAYS
+): LegalSourceFreshness[] {
+  const asOf = Date.parse(asOfIso);
+  if (Number.isNaN(asOf)) throw new Error(`LEGAL_SOURCE_INVALID_DATE:${asOfIso}`);
+  return getDefinitiveLegalSources().map((record) => {
+    const lastVerifiedAt = record.lastVerifiedAt ?? record.lastReviewedAt ?? record.verifiedAt;
+    const lastVerified = Date.parse(lastVerifiedAt);
+    if (Number.isNaN(lastVerified)) throw new Error(`LEGAL_SOURCE_INVALID_VERIFIED_AT:${record.id}`);
+    const ageInDays = Math.floor((asOf - lastVerified) / 86_400_000);
+    return {
+      id: record.id,
+      celexId: record.celexId,
+      lastVerifiedAt,
+      ageInDays,
+      fresh: ageInDays >= 0 && ageInDays <= maxAgeDays,
+    };
+  });
+}
+
+/**
+ * G-21 — fail-closed staleness gate. Throws listing every stale definitive
+ * source; an active status is never claimed for a stale source.
+ */
+export function assertLegalSourcesFresh(
+  asOfIso: string,
+  maxAgeDays = LEGAL_SOURCE_MAX_AGE_DAYS
+): void {
+  const stale = assessLegalSourceFreshness(asOfIso, maxAgeDays).filter((entry) => !entry.fresh);
+  if (stale.length > 0) {
+    throw new Error(`LEGAL_SOURCE_STALE:${stale.map((entry) => entry.id).join(",")}`);
+  }
+}
+
 export function detectForbiddenClaims(text: string): string | null {
   const forbidden = [
     "EU approved",

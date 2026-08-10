@@ -1,0 +1,14 @@
+{
+  "rfc": "RFC 3161 Time-Stamp Protocol",
+  "hashAlgorithm": "SHA-256",
+  "tsa": "local OpenSSL 3 TSA (timeStamping critical EKU)",
+  "steps": [
+    "TimeStampReq (ASN.1 DER) posted to TSA over HTTP",
+    "TimeStampResp received and parsed (Status: Granted)",
+    "TSR verified by independent openssl ts -verify (Verification: OK)",
+    "embedded timestamp within ±60s of manifest generatedAt",
+    "fail-closed on unreachable / 500 / empty TSA responses"
+  ],
+  "tsrFileName": "timestamp-response.tsr",
+  "tsrSha256": "6a858f29b9ed7a477d6fb357084e50c0abe020526b40f7189f4dd2c0207b8b93"
+}

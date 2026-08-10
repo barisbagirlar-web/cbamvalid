@@ -40,10 +40,45 @@ async function kmsRequest<T>(url: string, init: RequestInit, token: string): Pro
   return payload;
 }
 
+const DETERMINISTIC_ALGORITHMS: readonly RegExp[] = [
+  // PKCS#1 v1.5 (legacy) remains verifiable for packages sealed before the
+  // G-19 PSS migration.
+  /^RSA_SIGN_PKCS1_(2048|3072|4096)_SHA256$/,
+  // G-19: RSA-4096 PSS (RFC 8017 §8.1). Google Cloud KMS produces PSS
+  // signatures with a fixed salt (digest length) so the signature is
+  // deterministic, which keeps idempotent sealing intact.
+  /^RSA_SIGN_PSS_4096_SHA256$/,
+];
+
 function assertDeterministicAlgorithm(algorithm: string): void {
-  if (!/^RSA_SIGN_PKCS1_(2048|3072|4096)_SHA256$/.test(algorithm)) {
+  if (!DETERMINISTIC_ALGORITHMS.some((pattern) => pattern.test(algorithm))) {
     throw new Error(`KMS_ALGORITHM_NOT_DETERMINISTIC_FOR_IDEMPOTENT_SEALING:${algorithm}`);
   }
+}
+
+const PSS_SALT_LENGTH = 32;
+
+/**
+ * Schema-aware manifest signature verification. The manifest records the KMS
+ * algorithm; PKCS#1 v1.5 packages sealed before the G-19 migration keep
+ * verifying under the legacy path while new packages verify under PSS.
+ */
+export function verifyManifestSignature(params: {
+  algorithm: string;
+  manifest: Buffer;
+  publicKeyPem: string;
+  signatureBase64: string;
+}): boolean {
+  const signature = Buffer.from(params.signatureBase64, "base64");
+  if (/^RSA_SIGN_PSS_/.test(params.algorithm)) {
+    return crypto.verify(
+      "sha256",
+      params.manifest,
+      { key: params.publicKeyPem, padding: crypto.constants.RSA_PKCS1_PSS_PADDING, saltLength: PSS_SALT_LENGTH },
+      signature
+    );
+  }
+  return crypto.verify("sha256", params.manifest, params.publicKeyPem, signature);
 }
 
 export function assertKmsSigningConfigured(): string {
@@ -65,8 +100,12 @@ export async function signManifestWithKms(manifest: Buffer): Promise<KmsSignatur
   }, token);
   if (!signed.signature) throw new Error("KMS_SIGNATURE_MISSING");
 
-  const signature = Buffer.from(signed.signature, "base64");
-  if (!crypto.verify("sha256", manifest, publicKey.pem, signature)) {
+  if (!verifyManifestSignature({
+    algorithm: publicKey.algorithm,
+    manifest,
+    publicKeyPem: publicKey.pem,
+    signatureBase64: signed.signature,
+  })) {
     throw new Error("KMS_SIGNATURE_VERIFICATION_FAILED");
   }
 
