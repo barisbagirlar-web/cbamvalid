@@ -596,15 +596,105 @@ function enterprisePdfArtifacts(params: {
   const registryRows = buildRegistryTemplateMapping(params.caseData).map((entry) => [entry.registryFieldId, entry.section, entry.legalBasis, entry.sourcePath, entry.status, entry.owner, entry.evidenceIds.join(" | ") || "NONE"]);
   const handoverRows = params.enterprise.handoverDrafts.map((draft) => [draft.draftId, draft.title, draft.purpose, draft.completionState, draft.missingInputs.join(" | ") || "NONE"]);
 
+  const identityScopeTable = {
+    headers: ["Field", "Value"],
+    widths: [55, 125],
+    rows: identityRows(params.caseData),
+  };
+
+  const emissionsSummaryTable = {
+    headers: ["Metric", "Value", "Unit"],
+    widths: [90, 45, 45],
+    rows: [
+      ["Installation direct emissions", params.calculation.installationDirectEmissions, "tCO2e"],
+      ["Electricity indirect emissions", params.calculation.electricityIndirectEmissions, "tCO2e"],
+      ["Precursor direct emissions", params.calculation.precursorDirectEmissions, "tCO2e"],
+      ["Precursor indirect emissions", params.calculation.precursorIndirectEmissions, "tCO2e"],
+      ["Total embedded emissions", params.calculation.totalEmbeddedEmissions, "tCO2e"],
+      ["Production volume", params.calculation.productionVolume, "t"],
+      ["Aggregate specific embedded emissions", params.calculation.specificEmbeddedEmissions, "tCO2e/t"],
+      ["Eligible certificate reduction", params.calculation.eligibleCertificateReduction, "tCO2e"],
+    ],
+  };
+
+  const provenanceTable = {
+    headers: ["Control", "Value"],
+    widths: [55, 125],
+    rows: [
+      ["Ruleset", params.calculation.ruleset],
+      ["Engine version", params.calculation.engineVersion],
+      ["Calculation root", params.calculation.calculationRootHash],
+      ["Allocation share total", params.calculation.allocationShareTotal],
+      ["Allocation reconciliation delta", params.calculation.allocationReconciliationDelta],
+    ],
+  };
+
+  const methodologyDecisionTable = {
+    headers: ["Topic", "Selected method", "Reason", "Legal / technical basis", "Review", "Evidence"],
+    widths: [28, 38, 36, 42, 18, 18],
+    rows: methodologyRows.length > 0 ? methodologyRows : [["NO DECISION", "NOT SUPPLIED", "No methodology decision recorded", "NOT SUPPLIED", "REVIEW_REQUIRED", "NONE"]],
+  };
+
+  const registryMappingTable = {
+    headers: ["Field", "Section", "Legal basis", "Source path", "Status", "Owner", "Evidence"],
+    widths: [27, 28, 34, 34, 22, 23, 32],
+    rows: registryRows,
+  };
+
+  const signOffTable = {
+    headers: ["Role", "Name", "Title", "Signed at"],
+    widths: [42, 45, 45, 48],
+    rows: params.caseData.operatorSignOffs.length > 0 ? params.caseData.operatorSignOffs.map((signoff) => [signoff.role, signoff.name, signoff.title, signoff.signedAt]) : [["NOT SUPPLIED", "NOT SUPPLIED", "NOT SUPPLIED", "NOT SUPPLIED"]],
+  };
+
+  const openQuestionsTable = {
+    headers: ["#", "Question"],
+    widths: [12, 168],
+    rows: params.enterprise.openQuestions.map((question, index) => [index + 1, question]),
+  };
+
+  const tocTable = {
+    headers: ["#", "Report section", "Purpose"],
+    widths: [12, 78, 90],
+    rows: [
+      [1, "Scope and identity", "Parties, installation, production route and reporting period"],
+      [2, "Goods population", "Per-good CN codes, allocation shares and allocated emissions"],
+      [3, "Calculation summary", "Reported embedded-emissions totals and specific intensities"],
+      [4, "Calculation provenance", "Ruleset, engine version, allocation reconciliation and root hash"],
+      [5, "Authoritative readiness state", "Single enterprise readiness field and its reasons"],
+      [6, "Preparation score", "Automated preparation score and scoring formula"],
+      [7, "Evidence assurance", "A-E grades with independent-verifiability and metadata checks"],
+      [8, "Findings and closure", "Open findings with priority, owner, state and closure conditions"],
+      [9, "Methodology decisions", "Selected methods, rejected alternatives and legal basis"],
+      [10, "Registry template mapping", "CBAM registry field mapping with status and evidence lineage"],
+      [11, "Scenario analysis and materiality simulation", "Deterministic +/-10% scenarios and % intensity deltas"],
+      [12, "Materiality proximity", "Per-good 5% planning-threshold utilization"],
+      [13, "Compliance calendar", "Definitive-period certificate, holding and declaration milestones"],
+      [14, "Operator sign-offs", "Operator roles, names and signed-at timestamps"],
+      [15, "Verifier handover", "First-meeting open questions and closure conditions"],
+      [16, "Primary-document architecture", "11 non-overlapping human-review documents"],
+      [17, "Professional boundary", "Scope of CBAMValid preparation versus verifier-reserved work"],
+    ],
+  };
+
   return [
-    pdf("CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf", "CBAMValid Verification Readiness & Evidence Assurance Dossier", "Enterprise verifier-preparation decision dossier with one authoritative readiness state", [
+    pdf("CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf", "CBAMValid Verification Readiness & Evidence Assurance Dossier", "Enterprise verifier-preparation dossier with one authoritative readiness state and the complete workpaper result set", [
+      { heading: "Report contents", paragraphs: ["This dossier consolidates the complete result set of the sealed package: scope, goods population, calculation summary and provenance, readiness state, preparation score, evidence assurance, findings, methodology decisions, registry template mapping, scenario and materiality simulation, compliance calendar, operator sign-offs and the verifier handover agenda."], table: tocTable },
+      { heading: "Scope and identity", table: identityScopeTable },
+      { heading: "Goods population", table: goodsTable },
+      { heading: "Calculation summary", paragraphs: ["Reported embedded-emissions totals, production volume and aggregate specific emissions as calculated by the CBAMValid engine."], table: emissionsSummaryTable },
+      { heading: "Calculation provenance", table: provenanceTable },
       { heading: "Authoritative readiness state", callout: { label: "Single status field", value: `${params.enterprise.status} — ${params.enterprise.statusReasons.join(" ")}` } },
       { heading: "Preparation score", paragraphs: [params.enterprise.scoreFormula], table: statusTable },
       { heading: "Evidence assurance", paragraphs: ["A-E evidence grades are accompanied by a separate independent-verifiability field and a machine-checkable basis. A high grade does not by itself create an independent verification conclusion."], table: evidenceTable },
-      { heading: "Findings and closure", table: actionTable },
+      { heading: "Findings and closure", paragraphs: ["Every finding carries Action, Priority, Responsible role, State and Closure condition. Missing fields are a pre-signing contract failure."], table: actionTable },
+      { heading: "Methodology decisions", table: methodologyDecisionTable },
+      { heading: "Registry template mapping", paragraphs: ["Mapping of dossier fields to the CBAM registry template with legal basis, source path, completeness status, owner and linked evidence."], table: registryMappingTable },
       { heading: "Scenario analysis and materiality simulation", paragraphs: ["Deterministic scenarios isolate arithmetic sensitivity; they are not probability forecasts or verification opinions. Per-good threshold utilization compares deterministic scenario impact with the operator-prepared 5% planning threshold. Independent verifier judgement remains controlling."], table: scenarioTable, barChart: { unit: "% intensity delta", items: params.enterprise.scenarios.filter((row) => row.scenarioId !== "BASE").map((row) => ({ label: row.label, value: row.intensityDeltaPercent })) } },
       { heading: "Materiality proximity", paragraphs: ["Threshold utilization compares deterministic scenario impact with the operator-prepared 5% planning threshold."], table: materialityTable },
       { heading: "Compliance calendar", paragraphs: ["Definitive-period CBAM milestones derived from the regulation. The first annual declaration and certificate surrender deadline for 2026 imports is 2027-09-30."], table: complianceTable, callout: { label: "Calendar boundary", value: `${calendarState.daysUntilFirstDeclaration} days remain until the first annual declaration deadline (${calendarState.firstDeclarationDeadline}).` } },
+      { heading: "Operator sign-offs", table: signOffTable },
+      { heading: "Verifier handover", paragraphs: ["Prepared first-meeting agenda: open questions the verifier should challenge and the closure conditions that define a handover-ready dossier."], table: openQuestionsTable, callout: { label: "Closure conditions", value: params.enterprise.closureConditions.join(" | ") } },
       { heading: "Primary-document architecture", paragraphs: ["The sealed package contains 11 foregrounded human-review documents with non-overlapping roles. Remaining components are machine-readable registers, cryptographic trust files, the verifier workbook and immutable supporting evidence."], table: documentRoleTable },
       { heading: "Professional boundary", callout: { label: "No verification opinion", value: "CBAMValid prepares and structures the operator dossier. An appropriately accredited independent verifier remains responsible for independent verification work, materiality judgement, site-visit decisions and any final opinion." } },
     ]),
