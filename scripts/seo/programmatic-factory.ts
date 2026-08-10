@@ -28,8 +28,6 @@ export type EligibilityInput = {
   pilotImpressions: number | null;
 };
 
-const SOURCE_PILOT_OBSERVATION_DAYS = 28;
-
 export function assertProgrammaticEligibility(input: EligibilityInput, config: Phase18Config): void {
   assertRegisteredTemplate(input.templateId);
   if (input.portfolioDecision !== "INVEST") throw new Error("INV-18.2 eligibility requires a Phase-17 INVEST decision");
@@ -40,8 +38,8 @@ export function assertProgrammaticEligibility(input: EligibilityInput, config: P
   if (input.pilotPageCount < config.thresholds.programmaticPilotMinPages || input.pilotPageCount > config.thresholds.programmaticPilotMaxPages) {
     throw new Error("INV-18.2 pilot page count is outside configured bounds");
   }
-  if (input.pilotObservedDays < SOURCE_PILOT_OBSERVATION_DAYS || input.pilotIndexedCount !== input.pilotPageCount || input.pilotImpressions === null || input.pilotImpressions <= 0) {
-    throw new Error("INV-18.2 pilot evidence has not met the source observation/indexation/impression gate");
+  if (input.pilotObservedDays < config.thresholds.programmaticEvalDays || input.pilotIndexedCount !== input.pilotPageCount || input.pilotImpressions === null || input.pilotImpressions <= 0) {
+    throw new Error("INV-18.2 pilot evidence has not met the configured observation/indexation/impression gate");
   }
 }
 
@@ -69,7 +67,7 @@ export function assertBatchDiscipline(input: {
   config: Phase18Config;
 }): void {
   if (input.batchPageCount <= 0 || input.batchPageCount > input.config.thresholds.programmaticPilotMaxPages) {
-    throw new Error("Programmatic batch exceeds the conservative configured page limit");
+    throw new Error("Programmatic batch exceeds the configured page limit");
   }
   if (input.humanReviewCount < input.config.thresholds.programmaticReviewSampleMin) {
     throw new Error("Programmatic batch lacks the configured minimum human review sample");
