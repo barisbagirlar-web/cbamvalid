@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "artifact": "invariant-results/faz-11",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T09:40:00Z",
+    "generatorScript": "scripts/seo/kac-prioritize.ts",
+    "inputWindow": {"start": "2025-09-11", "end": "2026-08-10"},
+    "confidence": "low",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+  },
+  "data": {
+    "phase": "faz-11",
+    "codeScopeComplete": true,
+    "results": [
+      {"id":"INV-11.1","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Exact registry dry-run produced 36 unique primary clusters with one owner each; duplicate-owner fixture fails closed."},
+      {"id":"INV-11.2","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"CTR source firewall permits only first-party site_gsc or unavailable state; industry benchmark fixture is rejected."},
+      {"id":"INV-11.3","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"New owner similarity is checked against config.thresholds.similarityMax; duplicate-owner-text fixture is rejected."},
+      {"id":"INV-11.4","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Portfolio registry writes require KARAR_DEFTERI evidence and the Phase-01 single writer. Phase 11 performs no registry decision write."},
+      {"id":"INV-11.5","severity":"WARN","status":"PASS","negativeTestPassed":null,"evidence":"DIVEST pending age evaluator reads config.thresholds.divestPendingMaxDays. No DIVEST recommendation exists in the current partial state."},
+      {"id":"INV-11.6","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Any missing score input produces partial:true and null score; partial INVEST is rejected. Current 36/36 clusters are partial."},
+      {"id":"INV-11.7","severity":"WARN","status":"SKIP_NO_DATA","negativeTestPassed":null,"evidence":"No first-party position/CTR series is connected, so no striking-distance list is emitted; classifier rejects any future untyped POSITION/CTR row."},
+      {"id":"INV-11.8","severity":"INFO","status":"PASS","negativeTestPassed":null,"evidence":"Priority formula, confidence policy and config-driven payback rule are explicit; no black-box score is produced."}
+    ]
+  }
+}
