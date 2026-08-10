@@ -28,6 +28,16 @@ describe("SEO V6 Phase 07 link economy", () => {
     }
   });
 
+  it("renders governed related-route H1 labels instead of raw path anchors", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "components/seo/RegulatoryGuidePage.tsx"),
+      "utf8",
+    );
+    expect(source).toContain("const targetRoute = requireSeoRoute(target)");
+    expect(source).toContain("{targetRoute.h1}");
+    expect(source).not.toContain('{target === "/" ? "Home" : target}');
+  });
+
   it("excludes repeated site chrome from contextual anchor concentration samples", () => {
     const html = `
       <header><a href="/target">Global target</a></header>
