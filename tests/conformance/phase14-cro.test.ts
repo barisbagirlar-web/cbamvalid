@@ -3,17 +3,19 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildConsentModeBootstrapScript, CONSENT_MODE_V2_KEYS } from "../../components/marketing/consent-mode";
 import {
+  assertIntentEligible,
   classifyExperimentClosure,
   loadCroConfig,
   validateConsentModeV2,
   type ConsentEvidence,
   type CroExperiment,
+  type IntentAssessment,
 } from "../../scripts/seo/cro-governance";
 
 const config = loadCroConfig();
 const state = JSON.parse(
   readFileSync(resolve(process.cwd(), "data/seo/cro_experiments.json"), "utf8"),
-) as { data: { experiments: CroExperiment[]; consentValidation: ConsentEvidence; intentAssessments: unknown[] } };
+) as { data: { experiments: CroExperiment[]; consentValidation: ConsentEvidence; intentAssessments: IntentAssessment[] } };
 
 describe("SEO V6 Phase 14 CRO / Consent Mode v2", () => {
   it("boots Consent Mode v2 default-denied with all four required signals before public hydration", () => {
@@ -35,9 +37,17 @@ describe("SEO V6 Phase 14 CRO / Consent Mode v2", () => {
     expect(result.status).toBe("PASS");
   });
 
+  it("applies the seven-dimension intent rubric to the current product conversion page", () => {
+    expect(state.data.intentAssessments).toHaveLength(1);
+    const assessment = state.data.intentAssessments[0];
+    expect(assessment?.route).toBe("/product");
+    const total = assertIntentEligible(assessment!.scores, config.thresholds.intentScoreMin);
+    expect(total).toBe(44);
+    expect(Object.keys(assessment!.evidence)).toEqual(expect.arrayContaining(["N1","N2","N3","N4","N5","N6","N7"]));
+  });
+
   it("keeps experiments stopped without A3 instead of inventing a winner", () => {
     expect(state.data.experiments).toEqual([]);
-    expect(state.data.intentAssessments.length).toBeGreaterThan(0);
   });
 
   it("classifies a short closed experiment as inconclusive using config.croMinWeeks", () => {
