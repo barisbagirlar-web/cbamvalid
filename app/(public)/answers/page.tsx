@@ -5,10 +5,15 @@ import { JsonLdForRoute } from "@/components/seo/JsonLdForRoute";
 import { SeoBreadcrumbs } from "@/components/seo/SeoBreadcrumbs";
 import { CitationRail, LastReviewed } from "@/components/seo/CitationRail";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
+import { requireSeoRoute } from "@/lib/seo/registry";
 
 export const metadata = generateSeoMetadata("/answers");
 
 const PUBLIC_ANSWERS = AEO_ANSWER_BANK.map(toPublicAnswerRecord);
+
+function routeLabel(path: string): string {
+  return path === "/" ? "Home" : requireSeoRoute(path).h1;
+}
 
 /**
  * HTML answer hub — crawlable public product and regulatory answers.
@@ -83,7 +88,7 @@ export default function AnswersHubPage() {
                   {answer.routes.map((route, i) => (
                     <span key={route}>
                       {i > 0 ? " · " : null}
-                      <Link href={route}>{route === "/" ? "Home" : route}</Link>
+                      <Link href={route}>{routeLabel(route)}</Link>
                     </span>
                   ))}
                 </p>
