@@ -3,7 +3,11 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { getRelatedCnEntries } from "../../lib/seo/cn-related-links";
 import { listIndexablePublicCnEntries } from "../../lib/seo/cn-public-registry";
-import { computePageRank, evaluateLinkGraph } from "../../scripts/seo/link-equity";
+import {
+  computePageRank,
+  evaluateLinkGraph,
+  extractContextualInternalEdges,
+} from "../../scripts/seo/link-equity";
 
 type Config = { thresholds: { orphanPageWarnPct: number; anchorConcentrationWarnPct: number } };
 const config = JSON.parse(
@@ -24,6 +28,24 @@ describe("SEO V6 Phase 07 link economy", () => {
     }
   });
 
+  it("excludes repeated site chrome from contextual anchor concentration samples", () => {
+    const html = `
+      <header><a href="/target">Global target</a></header>
+      <nav><a href="/target">Global target</a></nav>
+      <main><p><a href="/target">Contextual target guide</a></p></main>
+      <footer><a href="/target">Global target</a></footer>
+    `;
+    const edges = extractContextualInternalEdges(
+      "/source",
+      html,
+      "https://example.test",
+      new Set(["/source", "/target"]),
+    );
+    expect(edges).toEqual([
+      { source: "/source", target: "/target", anchor: "contextual target guide" },
+    ]);
+  });
+
   it("WARNs on an artificial orphan using the configured orphan threshold", () => {
     const result = evaluateLinkGraph({
       siteId: "fixture",
@@ -40,7 +62,7 @@ describe("SEO V6 Phase 07 link economy", () => {
     expect(result.warnings.some((warning) => warning.includes("INV-7.1"))).toBe(true);
   });
 
-  it("WARNs when one anchor dominates a target beyond the configured threshold", () => {
+  it("WARNs when one contextual anchor dominates a target beyond the configured threshold", () => {
     const result = evaluateLinkGraph({
       siteId: "fixture",
       baseUrl: "https://example.test",
