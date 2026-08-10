@@ -156,6 +156,12 @@ Permanent correction: V6 CI now watches the runtime SEO families and has an expl
 
 Permanent correction: add only `lib/seo/breadcrumbs.ts` and `lib/seo/schema-validation.ts` to `faz-06.writes`. This does not broaden Phase 06 to arbitrary `lib/seo/**` changes; registry writes remain forbidden. Breadcrumb hierarchy and schema/entity validation can therefore be shared rather than duplicated across UI, JSON-LD and tests.
 
+## E-42 — PHASE 12 MACHINE THRESHOLDS WERE STILL ABSENT FROM CONFIG
+
+[Kesin] INV-12.2 and AIP-23 require SRE/kill thresholds to come from config, but the effective V6.1 config still lacked named values for organic-value decline, kill evaluation age, failed refresh attempts, consecutive SLO breaches before a freeze proposal, and repeated alarm calibration before reopening. Encoding those numbers directly in `seo-slo-check.ts` would violate INV-X.5 even though E-25 already established the general correction.
+
+Permanent correction: add `organicValueDropWarnPct`, `killEvaluationDays`, `killRefreshAttempts`, `deployFreezeConsecutiveBreaches`, and `alarmReopenCalibrationCount` to defaults, CBAMValid site config and the required threshold schema. Phase 12 may only consume these configured keys; it may not embed equivalent business thresholds in source code. This is control-plane only and does not change runtime application behavior.
+
 ## Decision record
 
 These corrections preserve the source mandate's intent: stricter write isolation, machine-verifiable evidence, no invented data, no unnecessary deployment and no weakening of any legal/ethical restriction.
