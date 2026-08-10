@@ -2,9 +2,9 @@
   "meta": {
     "artifact": "slo_history",
     "schemaVersion": "6.1",
-    "generatedAt": "2026-08-10T06:34:45Z",
-    "generatorScript": "phase-08-public-proxy",
-    "inputWindow": {"start": null, "end": null},
+    "generatedAt": "2026-08-10T10:02:00Z",
+    "generatorScript": "scripts/seo/seo-slo-check.ts",
+    "inputWindow": {"start": "2025-09-11", "end": "2026-08-10"},
     "confidence": "low",
     "partial": true,
     "siteId": "cbamvalid",
@@ -21,7 +21,49 @@
         "verifiedBotTrafficPct": null,
         "status": "SKIP_NO_DATA",
         "reason": "Production request logs and GSC discovery timestamps are unavailable; public-proxy mode forbids invented SLO values."
+      },
+      {
+        "slo": "cwv-p75",
+        "measured": null,
+        "thresholdRef": "thresholds.lcpP75Ms|thresholds.inpP75Ms|thresholds.clsP75",
+        "status": "SKIP_NO_DATA",
+        "ts": "2026-08-10T10:02:00Z"
+      },
+      {
+        "slo": "cohort-indexation",
+        "measured": null,
+        "thresholdRef": "thresholds.cohortIndexWarnPct",
+        "status": "SKIP_NO_DATA",
+        "ts": "2026-08-10T10:02:00Z"
+      },
+      {
+        "slo": "discovery-lag",
+        "measured": null,
+        "thresholdRef": "INV-8.2:observational",
+        "status": "SKIP_NO_DATA",
+        "ts": "2026-08-10T10:02:00Z"
+      },
+      {
+        "slo": "organic-value",
+        "measured": null,
+        "thresholdRef": "thresholds.organicValueDropWarnPct",
+        "status": "SKIP_NO_DATA",
+        "ts": "2026-08-10T10:02:00Z"
+      },
+      {
+        "slo": "evidence-freshness",
+        "measured": {
+          "latestConformanceAt": "2026-08-10T09:40:00Z",
+          "latestPnlAt": "2026-08-10T06:50:00Z"
+        },
+        "thresholdRef": "thresholds.evidenceSloMaxAgeDays",
+        "status": "PASS",
+        "ts": "2026-08-10T10:02:00Z"
       }
-    ]
+    ],
+    "issueLinks": [],
+    "freezeProposalRequired": false,
+    "alarmFatigue": {"reopenCount": 0, "calibrationRequired": false},
+    "killQueue": []
   }
 }
