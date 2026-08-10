@@ -5,8 +5,13 @@ import { JsonLdForRoute } from "@/components/seo/JsonLdForRoute";
 import { SeoBreadcrumbs } from "@/components/seo/SeoBreadcrumbs";
 import { CitationRail, LastReviewed } from "@/components/seo/CitationRail";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
+import { requireSeoRoute } from "@/lib/seo/registry";
 
 export const metadata = generateSeoMetadata("/glossary");
+
+function routeLabel(path: string): string {
+  return path === "/" ? "Home" : requireSeoRoute(path).h1;
+}
 
 /**
  * Entity glossary hub — DefinedTerm HTML surface for Knowledge Graph / AEO.
@@ -72,7 +77,7 @@ export default function GlossaryPage() {
                   {term.relatedPaths.map((path, i) => (
                     <span key={path}>
                       {i > 0 ? " · " : null}
-                      <Link href={path}>{path === "/" ? "Home" : path}</Link>
+                      <Link href={path}>{routeLabel(path)}</Link>
                     </span>
                   ))}
                 </p>
