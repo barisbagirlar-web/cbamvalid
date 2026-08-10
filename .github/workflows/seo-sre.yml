@@ -51,10 +51,17 @@ jobs:
           NODE
 
           if [ "$(cat .seo-evidence/issue-required.txt)" = "true" ]; then
-            title="$(cat .seo-evidence/issue-title.txt)"
-            existing="$(gh issue list --state open --search "$title in:title" --json number,title --jq '[.[] | select(.title == env.title)][0].number // empty' 2>/dev/null || true)"
+            gh issue list --state open --limit 100 --json number,title > .seo-evidence/open-issues.json
+            node <<'NODE'
+            const fs = require('node:fs');
+            const title = fs.readFileSync('.seo-evidence/issue-title.txt', 'utf8');
+            const issues = JSON.parse(fs.readFileSync('.seo-evidence/open-issues.json', 'utf8'));
+            const match = issues.find((issue) => issue.title === title);
+            fs.writeFileSync('.seo-evidence/existing-issue.txt', match ? String(match.number) : '');
+            NODE
+            existing="$(cat .seo-evidence/existing-issue.txt)"
             if [ -z "$existing" ]; then
-              gh issue create --title "$title" --body-file .seo-evidence/issue-body.md
+              gh issue create --title "$(cat .seo-evidence/issue-title.txt)" --body-file .seo-evidence/issue-body.md
             else
               gh issue comment "$existing" --body-file .seo-evidence/issue-body.md
             fi
