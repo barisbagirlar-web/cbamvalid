@@ -18,6 +18,7 @@ export type LinkEquityResult = {
   orphanCount: number;
   orphanRatioPct: number;
   orphanRoutes: string[];
+  anchorMeasurementScope: "contextual links excluding header/nav/footer chrome";
   anchorConcentrationThresholdPct: number;
   anchorWarnings: Array<{ target: string; anchor: string; concentrationPct: number; samples: number }>;
   pageRank: Array<{ path: string; before: number; simulatedAfter: number; delta: number }>;
@@ -78,6 +79,15 @@ function normalizeAnchor(html: string): string {
     .toLowerCase();
 }
 
+/**
+ * Anchor-spam discipline applies to editorial/contextual links, not repeated site chrome.
+ * All links still count for inbound/orphan/PageRank; only header/nav/footer blocks are removed
+ * from the anchor-concentration sample so legitimate global navigation cannot self-trigger INV-7.3.
+ */
+export function stripSiteChrome(html: string): string {
+  return html.replace(/<(header|nav|footer)\b[^>]*>[\s\S]*?<\/\1>/gi, " ");
+}
+
 export function extractInternalEdges(
   sourcePath: string,
   html: string,
@@ -108,6 +118,15 @@ export function extractInternalEdges(
     edges.push({ source: sourcePath, target, anchor });
   }
   return edges;
+}
+
+export function extractContextualInternalEdges(
+  sourcePath: string,
+  html: string,
+  baseUrl: string,
+  allowedPaths: ReadonlySet<string>,
+): LinkEdge[] {
+  return extractInternalEdges(sourcePath, stripSiteChrome(html), baseUrl, allowedPaths);
 }
 
 export function computePageRank(
@@ -152,6 +171,7 @@ export function evaluateLinkGraph(params: {
   baseUrl: string;
   paths: readonly string[];
   edges: readonly LinkEdge[];
+  anchorEdges?: readonly LinkEdge[];
   intendedEdges?: readonly { source: string; target: string }[];
   thresholds: Thresholds;
   measuredAt?: string;
@@ -159,20 +179,24 @@ export function evaluateLinkGraph(params: {
   const paths = [...new Set(params.paths.map(normalizePath))].sort();
   const allowed = new Set(paths);
   const distinctInboundSources = new Map(paths.map((path) => [path, new Set<string>()]));
-  const anchorCounts = new Map<string, Map<string, number>>();
   const actualPairs = new Set<string>();
 
   for (const edge of params.edges) {
     if (!allowed.has(edge.source) || !allowed.has(edge.target)) continue;
     distinctInboundSources.get(edge.target)?.add(edge.source);
     actualPairs.add(`${edge.source}\u0000${edge.target}`);
-    const counts = anchorCounts.get(edge.target) ?? new Map<string, number>();
-    counts.set(edge.anchor, (counts.get(edge.anchor) ?? 0) + 1);
-    anchorCounts.set(edge.target, counts);
   }
 
   const orphanRoutes = paths.filter((path) => (distinctInboundSources.get(path)?.size ?? 0) < 2);
   const orphanRatioPct = paths.length === 0 ? 0 : (orphanRoutes.length / paths.length) * 100;
+
+  const anchorCounts = new Map<string, Map<string, number>>();
+  for (const edge of params.anchorEdges ?? params.edges) {
+    if (!allowed.has(edge.source) || !allowed.has(edge.target)) continue;
+    const counts = anchorCounts.get(edge.target) ?? new Map<string, number>();
+    counts.set(edge.anchor, (counts.get(edge.anchor) ?? 0) + 1);
+    anchorCounts.set(edge.target, counts);
+  }
 
   const anchorWarnings: LinkEquityResult["anchorWarnings"] = [];
   for (const [target, counts] of anchorCounts) {
@@ -192,7 +216,10 @@ export function evaluateLinkGraph(params: {
   );
   const missingGovernedEdges = intended
     .filter((edge) => !actualPairs.has(`${edge.source}\u0000${edge.target}`))
-    .filter((edge, index, all) => all.findIndex((candidate) => candidate.source === edge.source && candidate.target === edge.target) === index)
+    .filter(
+      (edge, index, all) =>
+        all.findIndex((candidate) => candidate.source === edge.source && candidate.target === edge.target) === index,
+    )
     .sort((a, b) => a.source.localeCompare(b.source) || a.target.localeCompare(b.target));
 
   const before = computePageRank(paths, params.edges);
@@ -217,7 +244,7 @@ export function evaluateLinkGraph(params: {
     );
   }
   if (anchorWarnings.length > 0) {
-    warnings.push(`INV-7.3 ${anchorWarnings.length} target(s) exceed anchor concentration threshold`);
+    warnings.push(`INV-7.3 ${anchorWarnings.length} target(s) exceed contextual anchor concentration threshold`);
   }
 
   return {
@@ -231,6 +258,7 @@ export function evaluateLinkGraph(params: {
     orphanCount: orphanRoutes.length,
     orphanRatioPct,
     orphanRoutes,
+    anchorMeasurementScope: "contextual links excluding header/nav/footer chrome",
     anchorConcentrationThresholdPct: params.thresholds.anchorConcentrationWarnPct,
     anchorWarnings,
     pageRank,
@@ -244,7 +272,9 @@ async function runCommand(command: string, args: string[]): Promise<void> {
   await new Promise<void>((resolvePromise, reject) => {
     const child = spawn(command, args, { stdio: "inherit", env: process.env });
     child.on("error", reject);
-    child.on("exit", (code) => (code === 0 ? resolvePromise() : reject(new Error(`${command} exited ${code}`))));
+    child.on("exit", (code) =>
+      code === 0 ? resolvePromise() : reject(new Error(`${command} exited ${code}`)),
+    );
   });
 }
 
@@ -273,9 +303,13 @@ function startServer(port: number): ChildProcess {
   });
 }
 
-async function fetchEdges(baseUrl: string, paths: readonly string[]): Promise<LinkEdge[]> {
+async function fetchEdges(
+  baseUrl: string,
+  paths: readonly string[],
+): Promise<{ allEdges: LinkEdge[]; contextualEdges: LinkEdge[] }> {
   const allowed = new Set(paths.map(normalizePath));
   const allEdges: LinkEdge[] = [];
+  const contextualEdges: LinkEdge[] = [];
   const batches: string[][] = [];
   for (let index = 0; index < paths.length; index += 8) batches.push(paths.slice(index, index + 8));
   for (const batch of batches) {
@@ -287,12 +321,18 @@ async function fetchEdges(baseUrl: string, paths: readonly string[]): Promise<Li
         });
         if (!response.ok) throw new Error(`Phase 07 crawl failed ${path}: HTTP ${response.status}`);
         const html = await response.text();
-        return extractInternalEdges(path, html, baseUrl, allowed);
+        return {
+          all: extractInternalEdges(path, html, baseUrl, allowed),
+          contextual: extractContextualInternalEdges(path, html, baseUrl, allowed),
+        };
       }),
     );
-    for (const edges of results) allEdges.push(...edges);
+    for (const result of results) {
+      allEdges.push(...result.all);
+      contextualEdges.push(...result.contextual);
+    }
   }
-  return allEdges;
+  return { allEdges, contextualEdges };
 }
 
 async function main() {
@@ -301,7 +341,10 @@ async function main() {
   const routes = listSitemapRoutes();
   const paths = routes.map((route) => normalizePath(route.canonicalPath));
   const intendedEdges = routes.flatMap((route) =>
-    route.internalLinkTargets.map((target) => ({ source: normalizePath(route.canonicalPath), target: normalizePath(target) })),
+    route.internalLinkTargets.map((target) => ({
+      source: normalizePath(route.canonicalPath),
+      target: normalizePath(target),
+    })),
   );
 
   let server: ChildProcess | undefined;
@@ -312,12 +355,13 @@ async function main() {
       server = startServer(DEFAULT_PORT);
       await waitForServer(baseUrl);
     }
-    const edges = await fetchEdges(baseUrl, paths);
+    const { allEdges, contextualEdges } = await fetchEdges(baseUrl, paths);
     const result = evaluateLinkGraph({
       siteId: args.site,
       baseUrl: config.site.rootUrl,
       paths,
-      edges,
+      edges: allEdges,
+      anchorEdges: contextualEdges,
       intendedEdges,
       thresholds: config.thresholds,
     });
