@@ -17,8 +17,8 @@ Owner public-proxy override merged after PR #179 checks.
 | FAZ 07 | completed | PR #209, merge `ba71dca41663241364e0efb247549bf3f33ee93c`; exact production-build crawl 43/43; orphan ratio 0%; missing governed edges 0; deterministic related-CN ring links + CN-scope edge; raw route anchors replaced by governed labels on regulatory guide/answers/glossary; contextual anchor WARN inventory persisted without synonym gaming; `data/seo/link_equity.json`; `data/seo/invariant-results/faz-07.json`; field CWV `SKIP_NO_DATA` with executable fail-closed INV-7.2 coverage |
 | FAZ 08 | completed | PR #210, merge `9b5e4a37aa35b7aa19b68e9d2bd2b2c06bcd32a4`; no-fabrication crawl-economy evaluator; production logs/discovery lag `SKIP_NO_DATA`; Google reverse+forward DNS verification; OAI-SearchBot/OAI-AdsBot/Perplexity official-manifest CIDR verification; UA-only GPTBot/ClaudeBot remain unverified; portable Node BlockList IPv4/IPv6 CIDR coverage; INV-8.3 spoof fixture; `data/seo/crawl_economy.json`; `data/seo/slo_history.json`; `data/seo/invariant-results/faz-08.json` |
 | FAZ 09 | completed | PR #211, merge `6003221784888ecc71c8f3d9a84f73f219726aa8`; integer minor-unit SEO P&L; 2025-09-11 structural-break cohort isolation; incrementality confidence-interval contract; Generative AI metric excluded from money formula; zero conversion value leaves revenue/profit/ROI unknown; `data/seo/pnl.json`; `data/seo/warehouse/source_state.json`; `data/seo/invariant-results/faz-09.json` |
-| FAZ 10 | completed | migration/incident runbooks; exact-SHA + rollback + human-approval boundaries; prohibited-action scanner with force-push/auto-merge negative fixtures; annual drill procedure defined but completion evidence `SKIP_NO_DATA`; `data/seo/invariant-results/faz-10.json` |
-| FAZ 11 | pending | — |
+| FAZ 10 | completed | PR #212, merge `ff20bcd8015574a028e8741f96f964baee58ca5d`; four crisis scenario cards; migration/incident runbooks; exact-SHA + rollback + human-approval boundaries; PR-level prohibited-action scanner; annual drill procedure defined but completion evidence `SKIP_NO_DATA`; `data/seo/invariant-results/faz-10.json` |
+| FAZ 11 | completed | PR #213 candidate; exact registry dry-run found 36 unique primary clusters / 36 unique owners; all clusters `partial:true` because first-party position/CTR/CVR/value/cost evidence is unavailable; no fabricated score/9-state/INVEST; industry CTR firewall; config-driven similarity/DIVEST/payback controls; Phase-01 decision single-writer; all BLOCK negative fixtures; `data/seo/kac/state.json`; `data/seo/invariant-results/faz-11.json` |
 | FAZ 12 | pending | — |
 | FAZ 13 | pending | — |
 | FAZ 14 | pending | — |
@@ -45,5 +45,6 @@ Deployment decisions:
 - FAZ 08: **NO DEPLOY** — scripts/tests/data/docs only; robots and public runtime behavior unchanged.
 - FAZ 09: **NO DEPLOY** — warehouse/P&L scripts, tests, data and docs only.
 - FAZ 10: **NO DEPLOY** — runbooks/tests/data/docs only.
+- FAZ 11: **NO DEPLOY** — read-only KAC scripts/tests/data/docs only; registry and runtime unchanged.
 
 Measurement debt: GSC/GA4/CrUX field reporting, production request-log access, conversion attribution and production-cost feeds remain unavailable; E-35 requires measurement-dependent fields to stay `SKIP_NO_DATA`, `partial: true`, `confidence: low`, and `coldStart: null` until measured.
