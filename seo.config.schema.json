@@ -58,7 +58,8 @@
         "consentValidationMaxAgeDays", "decisionEscalationDays", "programmaticReviewSampleMin", "programmaticPilotMinPages",
         "programmaticPilotMaxPages", "growthCoverageNewPct", "growthCoverageStrengthenPct", "contentLoopObservationDays",
         "toolLoopObservationDays", "ugcLoopObservationDays", "paybackCalibrationDays", "migrationMonitoringHours", "portfolioMinHistoryMonths",
-        "valuationMinHistoryMonths", "valuationCashflowMinHistoryMonths"
+        "valuationMinHistoryMonths", "valuationCashflowMinHistoryMonths", "organicValueDropWarnPct", "killEvaluationDays",
+        "killRefreshAttempts", "deployFreezeConsecutiveBreaches", "alarmReopenCalibrationCount", "evidenceSloMaxAgeDays", "killDecisionMaxDays"
       ],
       "additionalProperties": { "type": ["integer", "number", "boolean"] }
     },

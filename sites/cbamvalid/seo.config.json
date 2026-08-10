@@ -70,7 +70,14 @@
     "migrationMonitoringHours": 72,
     "portfolioMinHistoryMonths": 2,
     "valuationMinHistoryMonths": 6,
-    "valuationCashflowMinHistoryMonths": 12
+    "valuationCashflowMinHistoryMonths": 12,
+    "organicValueDropWarnPct": 30,
+    "killEvaluationDays": 90,
+    "killRefreshAttempts": 2,
+    "deployFreezeConsecutiveBreaches": 2,
+    "alarmReopenCalibrationCount": 3,
+    "evidenceSloMaxAgeDays": 35,
+    "killDecisionMaxDays": 30
   },
   "economics": {
     "defaultValuePerConversionMinor": 0,
