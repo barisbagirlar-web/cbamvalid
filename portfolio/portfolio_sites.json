@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "artifact": "portfolio_sites",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T13:05:00Z",
+    "generatorScript": "scripts/seo/portfolio-governance.ts",
+    "inputWindow": {"start": "2025-09-11", "end": "2026-08-10"},
+    "confidence": "low",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal", "2026-08-10:consent-mode-v2-candidate"]
+  },
+  "data": {
+    "connectedRepositorySites": ["cbamvalid"],
+    "connectedSiteCount": 1,
+    "totalOwnerPortfolioSiteCount": null,
+    "organicValueBySiteMinor": null,
+    "siteConcentrationPct": null,
+    "concentrationThresholdSource": "thresholds.concentrationWarnPct",
+    "crossSiteCannibalization": "SKIP_NO_DATA",
+    "status": "SKIP_NO_DATA",
+    "reason": "This repository exposes only cbamvalid data; cross-site revenue/query ownership data for the owner's wider portfolio is not connected and is not inferred."
+  }
+}
