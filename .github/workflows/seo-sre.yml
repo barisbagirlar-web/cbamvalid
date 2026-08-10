@@ -1,0 +1,70 @@
+name: SEO SRE
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: seo-sre-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact main
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Verify Node 24 runtime
+        run: node --version | grep -E '^v24\.'
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run governed SEO SRE check
+        run: |
+          mkdir -p .seo-evidence
+          npx tsx scripts/seo/seo-slo-check.ts --site cbamvalid --out .seo-evidence/slo-check.json
+
+      - name: Open or update SLO breach issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const result = JSON.parse(fs.readFileSync('.seo-evidence/slo-check.json', 'utf8'));
+          fs.writeFileSync('.seo-evidence/issue-required.txt', String(Boolean(result.issueRequired)));
+          fs.writeFileSync('.seo-evidence/issue-title.txt', result.issueTitle ?? '');
+          fs.writeFileSync('.seo-evidence/issue-body.md', result.issueBody ?? '');
+          NODE
+
+          if [ "$(cat .seo-evidence/issue-required.txt)" = "true" ]; then
+            title="$(cat .seo-evidence/issue-title.txt)"
+            existing="$(gh issue list --state open --search "$title in:title" --json number,title --jq '[.[] | select(.title == env.title)][0].number // empty' 2>/dev/null || true)"
+            if [ -z "$existing" ]; then
+              gh issue create --title "$title" --body-file .seo-evidence/issue-body.md
+            else
+              gh issue comment "$existing" --body-file .seo-evidence/issue-body.md
+            fi
+          fi
+
+      - name: Upload SRE evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-sre-${{ github.run_id }}
+          path: .seo-evidence/slo-check.json
+          if-no-files-found: error
+          retention-days: 30
