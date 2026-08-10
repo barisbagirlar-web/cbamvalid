@@ -12,9 +12,9 @@ Owner public-proxy override merged after PR #179 checks.
 | FAZ 02 | completed | PR #187, merge `29992892afd33e66b846d6fe166883c7a9106fe5`; canonical origin derived from site config; absolute canonical legacy redirects; HSTS preload removed; redirect ledger and chain/variant/capacity guards; all four Phase-02 BLOCK invariants have executable negative tests; external Firebase/DNS controls excluded from code scope |
 | FAZ 03 | completed | PR #191, merge `2fab097c798074498545febd3072f2cf9e1754cb`; deterministic registry-derived sitemap; one robots SSOT plus generated Firebase fallback; all named crawler groups inherit private disallows; parameter decision ledger; truthful-lastmod guard; all four Phase-03 BLOCK invariants have executable negative tests; GSC cohort metrics SKIP_NO_DATA |
 | FAZ 04 | completed | PR #195, merge `46262995cc8d73bbe35a7afebcf57125428599d3`; exact-head raw↔Chromium title/description/H1/canonical/hreflang parity gate; every static public route is either registry-governed or exact fail-closed noindex utility; `/product-classification` registry/sitemap alignment; product/pricing/metadata price SSOT; obsolete 149 rendered-price escape removed; INV-4.1/4.2 negative fixtures; field INP metrics SKIP_NO_DATA |
-| FAZ 05 | completed | managed high-value content ledger; automatic AI publication disabled; config-driven similarity/cannibalization gate; decay debt control; explicit expert-review evidence gaps; public-data privacy firewall; INV-5.1/5.2/5.5 negative fixtures |
-| FAZ 06 | pending | structured data / entity claim parity next |
-| FAZ 07 | pending | — |
+| FAZ 05 | completed | PR #197, merge `2a1f83fd2593faf992905355b2020041844a1158`; managed high-value content ledger; AI publication lock; phrase-aware config-driven similarity gate without threshold weakening; decay debt; explicit expert-review gaps; public-data privacy firewall; INV-5.1/5.2/5.5 negative fixtures |
+| FAZ 06 | completed | verified commercial Product JSON-LD SSOT; schema-level entity-id conflict gate; shared visible/schema breadcrumb hierarchy; schema-only route copy overrides removed; FAQ schema measurement independence; INV-6.1/6.2 negative fixtures |
+| FAZ 07 | pending | internal links / CWV controls next |
 | FAZ 08 | pending | — |
 | FAZ 09 | pending | — |
 | FAZ 10 | pending | — |
@@ -40,5 +40,6 @@ Deployment decisions:
 - FAZ 03: **DEPLOY AFTER MERGE / EXTERNAL RELEASE EXECUTION** — sitemap/robots runtime changes require production publish after merge; same exact-SHA dispatcher limitation applies.
 - FAZ 04: **DEPLOY AFTER MERGE / EXTERNAL RELEASE EXECUTION** — public commercial content + runtime registry/render governance changed; exact-SHA production dispatcher remains unavailable through current connected tools.
 - FAZ 05: **NO DEPLOY** — data/scripts/tests/docs only; public runtime behavior unchanged.
+- FAZ 06: **DEPLOY AFTER MERGE / EXTERNAL RELEASE EXECUTION** — visible product classification, JSON-LD and breadcrumb behavior change; exact-SHA dispatcher remains unavailable through current connected tools.
 
 Measurement debt: GSC/GA4 reporting access remains unavailable; E-35 requires measurement-dependent fields to stay `SKIP_NO_DATA`, `partial: true`, `confidence: low`, and `coldStart: null` until measured.
