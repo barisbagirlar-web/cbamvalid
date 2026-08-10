@@ -94,6 +94,13 @@ export default async function CNCodeLandingPage({ params }: PageProps) {
               and are not collapsed into a single CN-level number on this page.
             </li>
           </ul>
+          <p className="text-sm text-muted leading-relaxed">
+            For the classification boundary and scope method, see the{" "}
+            <Link href="/cbam-cn-code-scope" className="text-accent underline underline-offset-4">
+              CBAM CN code scope guide
+            </Link>
+            .
+          </p>
         </section>
 
         <section className="mb-10 space-y-3">
