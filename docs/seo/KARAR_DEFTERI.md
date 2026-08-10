@@ -35,4 +35,15 @@ All timestamps are UTC. A record is evidence of a human decision only when scope
 - Limitation: this instruction does not authorize irreversible actions explicitly excluded by prior records, including HSTS preload, domain migration, destructive bulk 410, disavow, or prohibited off-page schemes.
 - Rationale: remove avoidable technical debt while preserving evidence, reversibility and the existing release discipline.
 
+## 2026-08-10T10:02:00Z — A2 approval: read-only Phase 12 SEO SRE schedule
+
+- Approver: repository owner / user (`barisbagirlar-web`)
+- Source: current instruction to close all code-doable work at the highest quality without stopping before completion.
+- Decision: approve a scheduled SEO SRE monitor for Phase 12.
+- Allowed actions: read repository evidence, evaluate config-driven SLOs, upload machine evidence, and open or comment on a GitHub issue when a governed SLO breach is detected.
+- Forbidden automatic actions: deploy, merge, noindex, redirect, content publication, portfolio decision, deploy freeze, rollback, or other runtime/destructive mutation.
+- Schedule: daily GitHub Actions cron; manual workflow dispatch remains available.
+- Escalation: repeated SLO breaches may only create a deploy-freeze proposal; execution still requires a separate A3 decision.
+- Deployment: **NO DEPLOY** — control/monitoring workflow only.
+
 ROLLBACK: decisions are append-only; supersede with a later dated record rather than deleting history.
