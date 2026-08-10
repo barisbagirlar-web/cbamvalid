@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-type CwvConfig = {
-  thresholds: { lcpP75Ms: number; inpP75Ms: number; clsP75: number };
-};
+type CwvThresholds = { lcpP75Ms: number; inpP75Ms: number; clsP75: number };
+type RawSeoConfig = { thresholds?: Partial<CwvThresholds> & Record<string, unknown> };
+type CwvConfig = { thresholds: CwvThresholds };
 
 export type FieldCwvInput = {
   sourceType: "field" | "lab";
@@ -21,7 +21,7 @@ export type FieldCwvResult = {
   partial: boolean;
   confidence: "high" | "low";
   reason: string;
-  thresholds: CwvConfig["thresholds"];
+  thresholds: CwvThresholds;
   field: FieldCwvInput | null;
   breaches: string[];
 };
@@ -39,13 +39,18 @@ function parseArgs(argv: string[]) {
 
 function loadConfig(site: string): CwvConfig {
   const path = resolve(process.cwd(), "sites", site, "seo.config.json");
-  const config = JSON.parse(readFileSync(path, "utf8")) as CwvConfig;
-  for (const [name, value] of Object.entries(config.thresholds ?? {})) {
-    if (typeof value !== "number" || !Number.isFinite(value)) {
-      throw new Error(`Phase 07 CWV config error: ${name} must be finite`);
+  const raw = JSON.parse(readFileSync(path, "utf8")) as RawSeoConfig;
+  const thresholds = {
+    lcpP75Ms: raw.thresholds?.lcpP75Ms,
+    inpP75Ms: raw.thresholds?.inpP75Ms,
+    clsP75: raw.thresholds?.clsP75,
+  };
+  for (const [name, value] of Object.entries(thresholds)) {
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+      throw new Error(`Phase 07 CWV config error: ${name} must be a non-negative finite number`);
     }
   }
-  return config;
+  return { thresholds: thresholds as CwvThresholds };
 }
 
 function parseFieldInput(path?: string): FieldCwvInput | null {
@@ -61,7 +66,7 @@ function validFinite(value: unknown): value is number {
 }
 
 export function evaluateFieldCwv(
-  thresholds: CwvConfig["thresholds"],
+  thresholds: CwvThresholds,
   field: FieldCwvInput | null,
 ): FieldCwvResult {
   if (!field) {
