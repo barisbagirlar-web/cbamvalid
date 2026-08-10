@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "artifact": "growth_loops",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T12:51:00Z",
+    "generatorScript": "scripts/seo/tam-growth.ts",
+    "inputWindow": {"start": "2025-09-11", "end": "2026-08-10"},
+    "confidence": "low",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal", "2026-08-10:consent-mode-v2-candidate"]
+  },
+  "data": {
+    "assignmentPolicy": "At most one growth loop per cluster. Assignment is a strategy label only; no A3 investment or publication is started by this artifact.",
+    "activeRevenueModel": "ecommerce",
+    "contentCompoundingObservationDaysSource": "thresholds.contentLoopObservationDays",
+    "toolViralityObservationDaysSource": "thresholds.toolLoopObservationDays",
+    "ugcObservationDaysSource": "thresholds.ugcLoopObservationDays",
+    "assignments": [
+      {"clusterId":"cbam-2026-definitive-regime","growthLoop":"content_compounding","ownerRoute":"/cbam-2026-definitive-period","state":"ASSIGNED_NOT_STARTED","evidence":"registry linkableAsset=true"},
+      {"clusterId":"cbam-actual-vs-default-values","growthLoop":"content_compounding","ownerRoute":"/cbam-actual-vs-default-values","state":"ASSIGNED_NOT_STARTED","evidence":"registry linkableAsset=true"},
+      {"clusterId":"cbam-answers","growthLoop":"content_compounding","ownerRoute":"/answers","state":"ASSIGNED_NOT_STARTED","evidence":"registry linkableAsset=true"},
+      {"clusterId":"cbam-calculation-methodology","growthLoop":"content_compounding","ownerRoute":"/methodology","state":"ASSIGNED_NOT_STARTED","evidence":"registry linkableAsset=true"},
+      {"clusterId":"cbam-case-studies","growthLoop":"content_compounding","ownerRoute":"/case-studies","state":"ASSIGNED_NOT_STARTED","evidence":"registry linkableAsset=true"},
+      {"clusterId":"cbam-certificate-price","growthLoop":"content_compounding","ownerRoute":"/cbam-certificate-price","state":"ASSIGNED_NOT_STARTED","evidence":"registry linkableAsset=true"},
+      {"clusterId":"cbam-cn-code-scope","growthLoop":"content_compounding","ownerRoute":"/cn-code","state":"ASSIGNED_NOT_STARTED","evidence":"registry linkableAsset=true"},
+      {"clusterId":"cbam-cn-code-scope-guide","growthLoop":"content_compounding","ownerRoute":"/cbam-cn-code-scope","state":"ASSIGNED_NOT_STARTED","evidence":"registry linkableAsset=true"},
+      {"clusterId":"cbam-default-values","growthLoop":"content_compounding","ownerRoute":"/cbam-default-values","state":"ASSIGNED_NOT_STARTED","evidence":"registry linkableAsset=true"},
+      {"clusterId":"cbam-embedded-emissions-calculation","growthLoop":"content_compounding","ownerRoute":"/cbam-embedded-emissions-calculation","state":"ASSIGNED_NOT_STARTED","evidence":"registry linkableAsset=true"},
+      {"clusterId":"cbam-exporter-evidence","growthLoop":"content_compounding","ownerRoute":"/cbam-exporter-evidence-requirements","state":"ASSIGNED_NOT_STARTED","evidence":"registry linkableAsset=true"},
+      {"clusterId":"cbam-glossary","growthLoop":"content_compounding","ownerRoute":"/glossary","state":"ASSIGNED_NOT_STARTED","evidence":"registry linkableAsset=true"},
+      {"clusterId":"cbam-non-eu-producer","growthLoop":"content_compounding","ownerRoute":"/cbam-non-eu-producer-guide","state":"ASSIGNED_NOT_STARTED","evidence":"registry linkableAsset=true"},
+      {"clusterId":"cbam-rulesets","growthLoop":"content_compounding","ownerRoute":"/rulesets","state":"ASSIGNED_NOT_STARTED","evidence":"registry linkableAsset=true"},
+      {"clusterId":"cbam-sample-dossier","growthLoop":"content_compounding","ownerRoute":"/sample-dossier","state":"ASSIGNED_NOT_STARTED","evidence":"registry linkableAsset=true"},
+      {"clusterId":"cbam-security","growthLoop":"content_compounding","ownerRoute":"/security","state":"ASSIGNED_NOT_STARTED","evidence":"registry linkableAsset=true"},
+      {"clusterId":"cbam-trust","growthLoop":"content_compounding","ownerRoute":"/trust","state":"ASSIGNED_NOT_STARTED","evidence":"registry linkableAsset=true"},
+      {"clusterId":"cbam-verification-preparation","growthLoop":"content_compounding","ownerRoute":"/cbam-verification-preparation","state":"ASSIGNED_NOT_STARTED","evidence":"registry linkableAsset=true"}
+    ],
+    "unassignedClusterCount": 18,
+    "blockedLoopTypes": [
+      {"growthLoop":"tool_virality","status":"BLOCKED_MISSING_SHARE_METRIC","reason":"No connected share/referral metric exists; no virality claim or investment is allowed."},
+      {"growthLoop":"ugc_loop","status":"BLOCKED_NO_MODERATION","reason":"No UGC moderation script exists; INV-16.3 blocks assignment."},
+      {"growthLoop":"programmatic_longtail","status":"BLOCKED_PHASE18_GATE","reason":"Phase 18 eligibility has not passed; assignment is prohibited before that gate."}
+    ],
+    "observationState": "NOT_STARTED",
+    "investmentState": "NO_A3_INVESTMENT_STARTED",
+    "affiliateDisclosureAudit": "SKIP_NOT_ACTIVE",
+    "adsCwvBudget": "SKIP_NOT_ACTIVE"
+  }
+}
