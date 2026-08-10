@@ -1,0 +1,31 @@
+{
+  "meta": {
+    "artifact": "pnl",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T06:50:00Z",
+    "generatorScript": "scripts/seo/seo-pnl.ts",
+    "inputWindow": {"start": null, "end": null},
+    "confidence": "low",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+  },
+  "data": {
+    "currency": "USD",
+    "moneyUnit": "minor-unit-integer",
+    "directRevenueMinor": null,
+    "assistedRevenueMinor": null,
+    "productionCostMinor": null,
+    "toolingCostMinor": null,
+    "conversions": null,
+    "conversionValueMinor": 0,
+    "revenueMinor": null,
+    "profitMinor": null,
+    "roiBps": null,
+    "generativeAiClicks": null,
+    "generativeAiInFormula": false,
+    "status": "SKIP_NO_DATA",
+    "reason": "Private conversion attribution, production cost and non-zero conversion-value data are unavailable. Revenue, profit and ROI are not inferred."
+  }
+}
