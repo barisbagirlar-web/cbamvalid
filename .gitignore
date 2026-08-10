@@ -63,3 +63,7 @@ tsconfig.check.tsbuildinfo
 
 # Paddle credentials handoff file — contains live API keys; never commit.
 CBAM-PADDLE-*.txt
+
+# Kimi agent ERP görünümü/kullanıcı arayüzü teslimat paketi
+# (patch bundle'ı + Vite prototipi — RM-CBAMVALID-008 teslim artefaktı, repo'ya girmez)
+Kimi_Agent_ERP Görünümü ve Kullanıcı Arayüzü/

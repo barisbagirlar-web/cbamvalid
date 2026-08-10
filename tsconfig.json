@@ -33,6 +33,7 @@
   "exclude": [
     "node_modules",
     "functions",
+    "**/Kimi_Agent_ERP*/**",
     "scripts/s4-test-admin-concurrency.ts",
     "scripts/s8-audit-detail.ts",
     "scripts/s8-commerce-ledger-audit.ts"
