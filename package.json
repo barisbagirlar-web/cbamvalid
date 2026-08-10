@@ -104,6 +104,7 @@
     "gate:dossier-all": "node scripts/gates/run-all.mjs",
     "gate:release-6": "bash scripts/guard-no-auto-attestation.sh && npm run render:v6-gate-package && bash scripts/gate-no-test-artifacts.sh artifacts/gates/G-09/package",
     "render:v6-gate-package": "npx tsx scripts/render-v6-gate-package.ts",
+    "render:layout-template": "npx tsx scripts/render-layout-template.ts",
     "gate:crypto-claims": "node scripts/gates/crypto-claims.mjs",
     "gate:no-render-math": "node scripts/gates/no-render-math.mjs",
     "render:qa": "npx tsx scripts/render-qa/analyze-render-qa.ts \"artifacts/sample-v5/CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf\" --out artifacts/render-qa",

@@ -82,7 +82,7 @@ export function buildHashArchitecture(params: {
       reproduction: "Recompute the closed-form trace from the register values, then canonical-serialise and SHA-256 (HASH_CANONICAL_RULE 1.0).",
     },
     {
-      hashName: params.graphRootHash === undefined ? "calculationGraphRootHash" : "calculationGraphRootHash",
+      hashName: "calculationGraphRootHash",
       covers: "Calculation Graph.json root: canonical aggregation of graph node hashes and their dependency edges.",
       notCovered: "Node values rendered in human PDFs (presentation rounding).",
       reproduction: "Aggregate node hashes in the documented topological order, canonical-serialise the node set, SHA-256.",

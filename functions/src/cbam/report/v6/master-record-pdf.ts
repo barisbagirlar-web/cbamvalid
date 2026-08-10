@@ -69,6 +69,57 @@ function normalizedWidths(count: number, requested?: number[]): number[] {
   return requested.map((w) => (w / total) * CONTENT_WIDTH);
 }
 
+/**
+ * C2 — score breakdown rows from the readiness assessment. Every dimension row
+ * carries the assessed weight, achieved score, lost points and the loss reason
+ * from the sealed assessment; integrity penalties that further reduce the data
+ * axis are appended so every lost point is explained (mandate C2).
+ */
+const C2_COMPONENTS: ReadonlyArray<{ dimensionId: string; name: string; action: string }> = [
+  { dimensionId: "IDENTITY", name: "Identity and installation", action: "Keep records current" },
+  { dimensionId: "SCOPE_AND_METHODOLOGY", name: "Scope and methodology", action: "Keep methodology decisions complete" },
+  { dimensionId: "ACTIVITY_DATA", name: "Activity data", action: "Maintain measurement evidence" },
+  { dimensionId: "EVIDENCE", name: "Evidence completeness", action: "Link evidence to every mandatory field" },
+  { dimensionId: "CALCULATION_INTEGRITY", name: "Calculation integrity", action: "Recompute after any input change" },
+  { dimensionId: "ALLOCATION_AND_RECONCILIATION", name: "Allocation and reconciliation", action: "Keep allocation shares reconciled" },
+  { dimensionId: "DATA_QUALITY_AND_UNCERTAINTY", name: "Data quality and uncertainty", action: "Document measurement methods" },
+  { dimensionId: "PACKAGE_INTEGRITY", name: "Package integrity", action: "Seal after all checks pass" },
+];
+
+function scoreBreakdownRows(model: MasterRecordModel): Array<Array<string | number | null | undefined>> {
+  const rows: Array<Array<string | number | null | undefined>> = [];
+  for (const component of C2_COMPONENTS) {
+    const dimension = model.readiness.dimensions.find((d) => d.dimensionId === component.dimensionId);
+    if (!dimension) {
+      rows.push([component.name, "—", "N/A", "—", "NOT_ASSESSED", component.action]);
+      continue;
+    }
+    const raw = Number(dimension.rawScore);
+    const assessed = dimension.assessmentState === "ASSESSED" && Number.isFinite(raw);
+    const lossReasons = [...dimension.blockerFindingIds, ...dimension.materialFindingIds];
+    rows.push([
+      component.name,
+      dimension.weight,
+      assessed ? raw.toFixed(2) : "N/A",
+      assessed ? (100 - raw).toFixed(2) : "—",
+      assessed ? (lossReasons.length > 0 ? [...new Set(lossReasons)].join(" · ") : "None") : "NOT_ASSESSED",
+      component.action,
+    ]);
+  }
+  for (const code of model.scores.dataReadinessReasonCodes) {
+    const [label, countText] = code.split(":");
+    const count = Number(countText) || 0;
+    if (label === "EVIDENCE_GAPS") {
+      rows.push(["Integrity penalty — evidence gaps", "—", "—", String(count * 5), `${count} mandatory evidence gap(s) × 5 pts`, "Link evidence to every mandatory field"]);
+    } else if (label === "METHODOLOGY_WITHOUT_ALTERNATIVE") {
+      rows.push(["Integrity penalty — methodology", "—", "—", String(count * 2), `${count} decision(s) without rejected alternative × 2 pts`, "Record a rejected alternative for every decision"]);
+    } else {
+      rows.push(["Integrity penalty", "—", "—", countText ?? "0", code, "Close the underlying gap"]);
+    }
+  }
+  return rows;
+}
+
 function section(model: MasterRecordModel): MasterRecordSection[] {
   const m = model.model;
   const ck = model.controlKey;
@@ -233,13 +284,13 @@ function section(model: MasterRecordModel): MasterRecordSection[] {
               ["Production volume", m.totals.productionVolume, "t"],
               ["Aggregate specific embedded emissions", m.totals.aggregateSpecificEmbeddedEmissions, "tCO2e/t"],
               ["Evidence files", String(model.controlKey.evidenceCount), "files"],
-              ["Open findings", String(model.caseData.auditEvents?.length ?? 0), "count"],
+              ["Open findings", String(model.evidenceGaps.length), "count"],
               ["Data & evidence readiness", `${model.scores.dataEvidenceReadiness}/100`, "score"],
               ["Period closure", `${model.scores.periodClosure}%`, "percent"],
             ],
           },
         },
-        { kind: "callout", label: "Next legal date", value: "Refer to section H2 for the definitive-period compliance calendar and remaining days." },
+        { kind: "callout", label: "Next legal date", value: `Reporting period closes on ${model.calendar.endDate}; ${model.calendar.remainingDays} day(s) remaining${model.calendar.periodEnded ? " (period closed)" : ""}. Section H2 carries the full compliance calendar.` },
       ],
     },
     {
@@ -357,19 +408,11 @@ function section(model: MasterRecordModel): MasterRecordSection[] {
           kind: "table",
           table: {
             headers: ["Component", "Weight", "Achieved", "Lost", "Loss reason", "Recovery action"],
-            widths: [46, 16, 18, 16, 44, 38],
-            rows: [
-              ["Identity and installation", "10", "as assessed", "0", "None", "Keep records current"],
-              ["Scope and methodology", "15", "as assessed", "0", "None", "Keep methodology decisions complete"],
-              ["Activity data", "15", "as assessed", "0", "None", "Maintain measurement evidence"],
-              ["Evidence completeness", "20", "as assessed", "evidence gaps", String(model.evidenceGaps.length), "Link evidence to every mandatory field"],
-              ["Calculation integrity", "15", "as assessed", "0", "None", "Recompute after any input change"],
-              ["Allocation and reconciliation", "10", "as assessed", "0", "None", "Keep allocation shares reconciled"],
-              ["Data quality and uncertainty", "10", "as assessed", "0", "None", "Document measurement methods"],
-              ["Package integrity", "5", "as assessed", "0", "None", "Seal after all checks pass"],
-            ],
+            widths: [44, 16, 20, 16, 44, 38],
+            rows: scoreBreakdownRows(model),
           },
         },
+        { kind: "paragraph", text: "Every lost point is explained: each component shows the score and loss reason from the sealed assessment, and integrity penalties below explain any further reduction of the data & evidence readiness axis." },
       ],
     },
     {
@@ -650,11 +693,11 @@ function section(model: MasterRecordModel): MasterRecordSection[] {
           type: "dag",
           boxes: model.calculation.trace.map((item) => ({
             label: item.formulaId,
-            sub: `${item.outputValue} ${item.outputUnit}`,
+            sub: `${item.outputValue} ${item.outputUnit} · #${item.calculationHash.slice(0, 8)}`,
           })),
           edges: model.calculation.trace.slice(1).map((_, index) => ({ from: index, to: index + 1 })),
         },
-        { kind: "paragraph", text: "The graph is a dependency DAG. Each node carries value, unit and hash prefix; edges show data flow. The root hash seals the whole graph." },
+        { kind: "paragraph", text: "The graph is a dependency DAG. Every node carries value, unit and hash prefix; edges show data flow. The root hash seals the whole graph." },
       ],
     },
     {
@@ -838,17 +881,18 @@ function section(model: MasterRecordModel): MasterRecordSection[] {
         {
           kind: "table",
           table: {
-            headers: ["Milestone", "Type", "State"],
-            widths: [110, 40, 28],
+            headers: ["Milestone", "Date", "Type", "State", "Remaining days"],
+            widths: [62, 30, 32, 30, 24],
             rows: [
-              ["Reporting period close", "Definitive period", model.scores.periodEnded ? "COMPLETE" : "OPEN"],
-              ["Data and evidence readiness", "Preparation", model.scores.dataEvidenceReadiness >= 100 ? "COMPLETE" : "IN_PROGRESS"],
-              ["Evidence gap closure", "Preparation", model.evidenceGaps.length === 0 ? "COMPLETE" : "OPEN"],
-              ["Independent verification", "External", "PENDING"],
-              ["Registry submission (declarant)", "External", "DECLARANT_RESPONSIBILITY"],
+              ["Reporting period close", model.calendar.endDate, "Definitive period", model.scores.periodEnded ? "COMPLETE" : "OPEN", String(model.calendar.remainingDays)],
+              ["Data and evidence readiness", "—", "Preparation", model.scores.dataEvidenceReadiness >= 100 ? "COMPLETE" : "IN_PROGRESS", "—"],
+              ["Evidence gap closure", "—", "Preparation", model.evidenceGaps.length === 0 ? "COMPLETE" : "OPEN", "—"],
+              ["Independent verification", "—", "External", "PENDING", "—"],
+              ["Registry submission (declarant)", "—", "External", "DECLARANT_RESPONSIBILITY", "—"],
             ],
           },
         },
+        { kind: "callout", label: "Period close", value: `The definitive reporting period ${model.calendar.startDate} → ${model.calendar.endDate} has ${model.calendar.remainingDays} day(s) remaining at the sealed generatedAt timestamp. The calendar axis never modifies the data readiness score.` },
       ],
     },
     {
@@ -1045,35 +1089,34 @@ function renderMasterRecordPdf(model: MasterRecordModel, sections: MasterRecordS
 
   const drawDiagram = (type: "boundary" | "dag", boxes: { label: string; sub: string }[], edges: { from: number; to: number }[]) => {
     const boxWidth = 120;
-    const boxHeight = 18;
-    const gap = 8;
+    const boxHeight = type === "dag" ? 15 : 18;
+    const gap = 5;
     const startX = MARGIN_X + (CONTENT_WIDTH - boxWidth) / 2;
-    const maxVisible = Math.min(boxes.length, 6);
-    const totalHeight = maxVisible * boxHeight + (maxVisible - 1) * gap;
-    ensure(totalHeight + 4);
-    for (let index = 0; index < maxVisible; index += 1) {
-      const boxY = y + index * (boxHeight + gap);
+    let previousBoxBottom: number | null = null;
+    boxes.forEach((box, index) => {
+      ensure(boxHeight + gap);
+      const boxY = y;
       document.setFillColor(250, 249, 247);
       document.setDrawColor(HEADING[0], HEADING[1], HEADING[2]);
       document.rect(startX, boxY, boxWidth, boxHeight, "FD");
       document.setFont("helvetica", "bold");
       document.setFontSize(7.5);
       document.setTextColor(HEADING[0], HEADING[1], HEADING[2]);
-      const label = boxes[index].label.length > 46 ? `${boxes[index].label.slice(0, 43)}…` : boxes[index].label;
-      document.text(label, startX + 3, boxY + 7);
+      const label = box.label.length > 46 ? `${box.label.slice(0, 43)}…` : box.label;
+      document.text(label, startX + 3, boxY + 6);
       document.setFont("helvetica", "normal");
       document.setFontSize(6.8);
       document.setTextColor(INK[0], INK[1], INK[2]);
-      const sub = boxes[index].sub.length > 60 ? `${boxes[index].sub.slice(0, 57)}…` : boxes[index].sub;
-      document.text(sub, startX + 3, boxY + 13);
-    }
-    document.setDrawColor(ACCENT[0], ACCENT[1], ACCENT[2]);
-    for (const edge of edges.slice(0, maxVisible - 1)) {
-      const fromY = y + edge.from * (boxHeight + gap) + boxHeight;
-      const toY = y + edge.to * (boxHeight + gap);
-      document.line(startX + boxWidth / 2, fromY, startX + boxWidth / 2, toY);
-    }
-    y += totalHeight + 5;
+      const sub = box.sub.length > 78 ? `${box.sub.slice(0, 75)}…` : box.sub;
+      document.text(sub, startX + 3, boxY + 11);
+      if (previousBoxBottom !== null && boxY - gap === previousBoxBottom && edges.some((edge) => edge.to === index)) {
+        document.setDrawColor(ACCENT[0], ACCENT[1], ACCENT[2]);
+        document.line(startX + boxWidth / 2, previousBoxBottom, startX + boxWidth / 2, boxY);
+      }
+      y += boxHeight + gap;
+      previousBoxBottom = y - gap;
+    });
+    y += 4;
   };
 
   const drawTable = (table: MasterRecordTable) => {
