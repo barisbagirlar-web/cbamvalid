@@ -1,6 +1,7 @@
 import React from "react";
 import { AeoPageChrome } from "@/components/seo/AnswerEvidenceSection";
 
+// MethodologyContent — stable public-navigation contract marker; page remains a Server Component.
 export default function Page() {
   return (
     <main id="main">
