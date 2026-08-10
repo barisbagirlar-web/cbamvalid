@@ -71,18 +71,26 @@ function row(
   return { slo, measured, thresholdRef, status, ts, reason };
 }
 
+export function assertConfigThresholdRef(thresholdRef: string): void {
+  if (thresholdRef === "INV-8.2:observational") return;
+  const refs = thresholdRef.split("|");
+  if (refs.length === 0 || refs.some((ref) => !ref.startsWith("thresholds."))) {
+    throw new Error(`INV-12.2 non-config SLO threshold reference: ${thresholdRef}`);
+  }
+}
+
 export function evaluateSre(config: SreConfig, inputs: SreInputs, now = new Date()) {
   const ts = now.toISOString();
   const rows: SloRow[] = [];
 
   if (!inputs.cwv) {
-    rows.push(row("cwv-p75", null, "thresholds.lcpP75Ms|inpP75Ms|clsP75", "SKIP_NO_DATA", ts, "Field CWV p75 data unavailable."));
+    rows.push(row("cwv-p75", null, "thresholds.lcpP75Ms|thresholds.inpP75Ms|thresholds.clsP75", "SKIP_NO_DATA", ts, "Field CWV p75 data unavailable."));
   } else {
     const breached =
       inputs.cwv.lcpP75Ms > config.thresholds.lcpP75Ms ||
       inputs.cwv.inpP75Ms > config.thresholds.inpP75Ms ||
       inputs.cwv.clsP75 > config.thresholds.clsP75;
-    rows.push(row("cwv-p75", inputs.cwv, "thresholds.lcpP75Ms|inpP75Ms|clsP75", breached ? "BREACH" : "PASS", ts, breached ? "At least one field CWV p75 exceeds config." : "Field CWV p75 is within config."));
+    rows.push(row("cwv-p75", inputs.cwv, "thresholds.lcpP75Ms|thresholds.inpP75Ms|thresholds.clsP75", breached ? "BREACH" : "PASS", ts, breached ? "At least one field CWV p75 exceeds config." : "Field CWV p75 is within config."));
   }
 
   if (inputs.cohortIndexPct === null) {
@@ -122,6 +130,8 @@ export function evaluateSre(config: SreConfig, inputs: SreInputs, now = new Date
       evidenceBreached ? "Conformance/P&L evidence is missing or stale." : "Conformance and P&L evidence are fresh.",
     ),
   );
+
+  rows.forEach((item) => assertConfigThresholdRef(item.thresholdRef));
 
   const breaches = rows.filter((item) => item.status === "BREACH");
   const nextConsecutiveBreaches = breaches.length > 0 ? inputs.consecutiveBreachCount + 1 : 0;
