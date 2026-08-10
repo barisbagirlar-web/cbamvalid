@@ -1,8 +1,8 @@
 # G-26 — Bağımsız Güvenlik İncelemesi — DEĞERLENDİRME GÖREV TANIMI
 
 > **Durum:** AÇIK — dış denetçi/bağımsız inceleyici atanması gerekli.
-> **Fiyat kapısı:** Kritik/yüksek bulgu sayısı sıfır olmadan $1.990 kapısı
-> açılamaz; $449 ile satış devam edebilir.
+> **Kalite çıtası:** Kritik/yüksek bulgu sayısı sıfır olmadan $1.990 kalite
+> çıtası ilan edilemez. Satış fiyatı sabit **$449 USD**'dir.
 
 ## 1. İnceleme kapsamı (görev tanımı)
 

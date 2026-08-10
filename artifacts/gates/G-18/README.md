@@ -25,7 +25,8 @@ Checker) veya eşdeğeri araç kuruluysa PDF/UA taraması yapar, kurulu değilse
 `KANIT_YOK` (exit 2) raporlar. `verapdf-conformance-check.sh` ile aynı
 fail-closed davranışı.
 
-## Fiyat kapısına etkisi
+## Kalite çıtasına etkisi
 
-G-18 BLOCKED → RTM satırı `R-04` `IN_PROGRESS` kalır. **$1.990 kapısı G-18
-kapanmadan açılamaz.** Mevcut $449 satış kanalı G-18'den bağımsız devam eder.
+G-18 BLOCKED → RTM satırı `R-04` `IN_PROGRESS` kalır. **$1.990 kalite çıtası
+G-18 kapanmadan ilan edilemez.** $449 satış fiyatı sabittir ve G-18'den
+bağımsız devam eder.

@@ -1,7 +1,7 @@
 # CBAMVALID-DOSSIER-7.0 — Uygulama Durumu Kaydı
 
-**Mandate:** RM-CBAMVALID-007 (Enterprise Compliance Master Record · $1.990 Değer Kapısı)
-**Durum:** KISMİ — yazılım kapıları tamamlanıyor, insan kapıları ve fiyat ilanı bekliyor.
+**Mandate:** RM-CBAMVALID-007 (Enterprise Compliance Master Record · $1.990 kalite çıtası — metafor; satış fiyatı sabit **$449 USD**)
+**Durum:** KISMİ — yazılım kapıları tamamlanıyor, insan kapıları ve kalite çıtası ilanı bekliyor.
 **Tarih:** 2026-08-10
 
 > Bu kayıt, kullanıcının verdiği RM-CBAMVALID-007 mandate dokümanının
@@ -50,14 +50,14 @@ sürümde yeşildir (226 test dosyası / 1027 test PASS).
 
 - R-01..R-08 (yazılım): G-15..G-22 ile kapatıldı.
 - R-09..R-12 (insan kapıları): G-23..G-26 taslak/AÇIK — **CLOSED değil**.
-- **$1.990 fiyat kapısı:** AÇIK DEĞİL. DoD maddelerinden G-18 (BLOCKED),
-  G-23..G-26 (imza/denetçi), veraPDF raporu, uçtan uca canlı $1.990 satın alma
-  testi ve insan gözüyle doğrulama tamamlanmadan fiyat ilan edilemez.
+- **$1.990 kalite çıtası:** AÇIK DEĞİL. DoD maddelerinden G-18 (BLOCKED),
+  G-23..G-26 (imza/denetçi) ve veraPDF raporu tamamlanmadan kalite çıtası ilan
+  edilemez. Satış fiyatı bu kriterlerden bağımsız olarak sabit **$449 USD**'dir.
 
 ## 4. Sonraki adımlar
 
 1. veraPDF kurulumu + G-17 tam konformans taraması.
 2. G-18 spike (gerçek tagged-PDF üretim yolu araştırması).
 3. G-23..G-26 belgelerinin insan incelemesi ve imzası.
-4. Canlı ortamda uçtan uca $1.990 satın alma testi (Paddle) + insan doğrulama.
-5. Fiyat geçiş politikası (§8) onayı → ancak sonra $1.990 ilanı.
+4. Canlı ortamda uçtan uca satın alma testi (Paddle, $449) + insan doğrulama.
+5. $1.990 kalite çıtası ilanı (fiyat geçişi yok — satış fiyatı sabit $449).
