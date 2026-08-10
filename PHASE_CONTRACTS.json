@@ -16,6 +16,7 @@
       "data/seo/invariants.json",
       "scripts/seo/preflight.ts",
       "scripts/seo/coldstart-check.ts",
+      "scripts/seo/resolve-v6-phase.mjs",
       "tests/conformance/**",
       ".github/workflows/seo-conformance.yml",
       "package.json"
