@@ -63,10 +63,22 @@ function main() {
       const sigJson = JSON.parse(fs.readFileSync(sigPath, "utf8"));
       const pem = sigJson.publicKeyPem;
       const signature = Buffer.from(sigJson.signatureBase64 || "", "base64");
+      const algorithm = String(sigJson.algorithm || sigJson.signatureAlgorithm || "");
       const manifestBytes = fs.readFileSync(manifestPath);
       if (pem && signature.length) {
-        const ok = crypto.verify("sha256", manifestBytes, pem, signature);
-        if (ok) pass("Manifest detached signature verified (embedded public key)");
+        // Schema-aware verification (G-19): packages sealed under the legacy
+        // PKCS#1 v1.5 scheme keep verifying through the legacy path, while
+        // new packages verify under RSA-4096 PSS (RFC 8017 §8.1).
+        const isPss = /RSA_SIGN_PSS/i.test(algorithm) || /PSS/i.test(algorithm);
+        const ok = isPss
+          ? crypto.verify(
+              "sha256",
+              manifestBytes,
+              { key: pem, padding: crypto.constants.RSA_PKCS1_PSS_PADDING, saltLength: 32 },
+              signature
+            )
+          : crypto.verify("sha256", manifestBytes, pem, signature);
+        if (ok) pass(`Manifest detached signature verified (embedded public key, scheme=${isPss ? "PSS" : "PKCS1v1.5"})`);
         else fail("Manifest signature verification failed");
       } else {
         fail("Manifest Signature.sig missing publicKeyPem or signatureBase64");
