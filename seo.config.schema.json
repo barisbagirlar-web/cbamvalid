@@ -59,7 +59,7 @@
         "programmaticPilotMaxPages", "growthCoverageNewPct", "growthCoverageStrengthenPct", "contentLoopObservationDays",
         "toolLoopObservationDays", "ugcLoopObservationDays", "paybackCalibrationDays", "migrationMonitoringHours", "portfolioMinHistoryMonths",
         "valuationMinHistoryMonths", "valuationCashflowMinHistoryMonths", "organicValueDropWarnPct", "killEvaluationDays",
-        "killRefreshAttempts", "deployFreezeConsecutiveBreaches", "alarmReopenCalibrationCount"
+        "killRefreshAttempts", "deployFreezeConsecutiveBreaches", "alarmReopenCalibrationCount", "evidenceSloMaxAgeDays", "killDecisionMaxDays"
       ],
       "additionalProperties": { "type": ["integer", "number", "boolean"] }
     },
