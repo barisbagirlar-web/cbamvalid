@@ -1,0 +1,158 @@
+[
+  {
+    "id": "A1",
+    "title": "A1 · Cover and control identity"
+  },
+  {
+    "id": "A2",
+    "title": "A2 · Control key"
+  },
+  {
+    "id": "A3",
+    "title": "A3 · What this document is and is not"
+  },
+  {
+    "id": "A4",
+    "title": "A4 · Executive summary"
+  },
+  {
+    "id": "A5",
+    "title": "A5 · Reading guide"
+  },
+  {
+    "id": "B1",
+    "title": "B1 · Delivery inventory"
+  },
+  {
+    "id": "B2",
+    "title": "B2 · What this package produced — value statement"
+  },
+  {
+    "id": "B3",
+    "title": "B3 · Out of scope and limits"
+  },
+  {
+    "id": "C1",
+    "title": "C1 · Two-axis readiness panel"
+  },
+  {
+    "id": "C2",
+    "title": "C2 · Score breakdown"
+  },
+  {
+    "id": "C3",
+    "title": "C3 · Findings register"
+  },
+  {
+    "id": "C4",
+    "title": "C4 · Action list"
+  },
+  {
+    "id": "C5",
+    "title": "C5 · Preparation for the next sealed version"
+  },
+  {
+    "id": "D1",
+    "title": "D1 · Parties"
+  },
+  {
+    "id": "D2",
+    "title": "D2 · Installation and production route"
+  },
+  {
+    "id": "D3",
+    "title": "D3 · System boundary"
+  },
+  {
+    "id": "D4",
+    "title": "D4 · Goods population"
+  },
+  {
+    "id": "D5",
+    "title": "D5 · CN classification rationale"
+  },
+  {
+    "id": "E1",
+    "title": "E1 · Source stream register"
+  },
+  {
+    "id": "E2",
+    "title": "E2 · Emission source register"
+  },
+  {
+    "id": "E3",
+    "title": "E3 · Measurement and meter register"
+  },
+  {
+    "id": "E4",
+    "title": "E4 · Evidence register"
+  },
+  {
+    "id": "E5",
+    "title": "E5 · Grading methodology"
+  },
+  {
+    "id": "E6",
+    "title": "E6 · Field-to-evidence matrix"
+  },
+  {
+    "id": "F1",
+    "title": "F1 · Calculation summary"
+  },
+  {
+    "id": "F2",
+    "title": "F2 · Formula trace"
+  },
+  {
+    "id": "F3",
+    "title": "F3 · Calculation graph"
+  },
+  {
+    "id": "F4",
+    "title": "F4 · Recalculation instruction"
+  },
+  {
+    "id": "F5",
+    "title": "F5 · Allocation and reconciliation"
+  },
+  {
+    "id": "F6",
+    "title": "F6 · Sensitivity and materiality"
+  },
+  {
+    "id": "G1",
+    "title": "G1 · Methodology decisions"
+  },
+  {
+    "id": "G2",
+    "title": "G2 · Legal source register"
+  },
+  {
+    "id": "G3",
+    "title": "G3 · Registry field mapping"
+  },
+  {
+    "id": "G4",
+    "title": "G4 · Risk register and sampling"
+  },
+  {
+    "id": "G5",
+    "title": "G5 · Responsibility matrix (RACI)"
+  },
+  {
+    "id": "H1",
+    "title": "H1 · Operator declaration and signatures"
+  },
+  {
+    "id": "H2",
+    "title": "H2 · Compliance calendar"
+  },
+  {
+    "id": "H3",
+    "title": "H3 · Version history"
+  },
+  {
+    "id": "H4",
+    "title": "H4 · Retention and integrity verification guide"
+  }
+]

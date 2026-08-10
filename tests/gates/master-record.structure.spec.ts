@@ -8,7 +8,7 @@
  *
  * Evidence: section presence checklist under artifacts/gates/G-13/.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { MASTER_RECORD_FILE_NAME } from "../../functions/src/cbam/report/v6/master-record-model";
@@ -81,5 +81,19 @@ describe("G-13 master-record.structure", () => {
         2
       )
     );
+  });
+
+  it("renders the exact A1-H4 section sequence of the committed layout template", async () => {
+    const built = await buildV6Package("STEEL_IN");
+    const sections = buildMasterRecordSections(built.masterRecordModel);
+    const template = JSON.parse(
+      readFileSync(join(process.cwd(), "tests", "fixtures", "master-record-template-sections.json"), "utf8")
+    ) as Array<{ id: string; title: string }>;
+
+    expect(sections.map((section) => section.id)).toEqual(template.map((entry) => entry.id));
+    expect(sections.map((section) => section.title)).toEqual(template.map((entry) => entry.title));
+
+    const templateBytes = readFileSync(join(process.cwd(), "tests", "fixtures", "CBAMValid_Master_Record_LAYOUT_TEMPLATE.pdf"));
+    expect(templateBytes.byteLength).toBeGreaterThan(1000);
   });
 });

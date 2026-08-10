@@ -11,13 +11,25 @@ import type { AuditReadyCase } from "../../schema";
 import type { DossierCalculationResult } from "../../calculator";
 import type { QualityControlResult } from "../../validation/quality-controls";
 import type { VerifierPackageModel } from "../verifier-model";
+import type { ReadinessAssessment } from "../premium-dossier-schema";
 import { REQUIRED_TOP_LEVEL_COMPONENTS_V6 } from "../package-components";
 import type { PackageReadinessState, TwoAxisScores, ValueStatementRow } from "./types";
+import { assessReadiness, getReportingPeriodAssessment } from "../../validation/readiness-score";
+import { elapsedPeriodDays } from "./two-axis-score";
 import { buildValueStatement } from "./value-statement";
 import { buildHashArchitecture } from "./hash-architecture";
 import { buildScenarioInterpretations } from "./scenario-interpretation";
 import { findEvidenceGaps, validateNotApplicableBasis } from "./evidence-gap";
 import { buildRegistryTemplateMapping } from "../../registry/registry-template-mapping";
+
+export interface MasterRecordCalendar {
+  readonly startDate: string;
+  readonly endDate: string;
+  readonly elapsedDays: number;
+  readonly totalDays: number;
+  readonly remainingDays: number;
+  readonly periodEnded: boolean;
+}
 
 export const MASTER_RECORD_FOOTER =
   "Operator record. No independent verification opinion is implied.";
@@ -52,6 +64,8 @@ export interface MasterRecordModel {
   readonly scores: TwoAxisScores;
   readonly state: PackageReadinessState;
   readonly stateReasonCodes: readonly string[];
+  readonly readiness: ReadinessAssessment;
+  readonly calendar: MasterRecordCalendar;
   readonly evidenceGaps: ReturnType<typeof findEvidenceGaps>;
   readonly notApplicableBasisErrors: readonly string[];
   readonly valueStatement: readonly ValueStatementRow[];
@@ -101,6 +115,14 @@ export function buildMasterRecordModel(params: {
   const mapping = buildRegistryTemplateMapping(caseData);
   const evidenceGaps = findEvidenceGaps(mapping);
   const notApplicableBasisErrors = validateNotApplicableBasis(mapping);
+  const readiness = assessReadiness({
+    caseData,
+    isDraft: false,
+    assessmentTimestamp: generatedAt,
+    sealMode: "PREVIEW",
+  });
+  const period = getReportingPeriodAssessment(caseData, generatedAt);
+  const elapsed = elapsedPeriodDays({ caseData, assessmentTimestamp: generatedAt });
   const valueStatement = buildValueStatement({ caseData, calculation, controls, model, evidenceCount: model.evidenceSummary.totalEvidenceFiles });
   const { rows: hashArchitecture, inconsistencies: hashInconsistencies } = buildHashArchitecture({
     manifestHash,
@@ -143,6 +165,15 @@ export function buildMasterRecordModel(params: {
     scores,
     state,
     stateReasonCodes,
+    readiness,
+    calendar: {
+      startDate: period.startDate,
+      endDate: period.endDate,
+      elapsedDays: elapsed.elapsedDays,
+      totalDays: elapsed.totalDays,
+      remainingDays: Math.max(0, elapsed.totalDays - elapsed.elapsedDays),
+      periodEnded: elapsed.periodEnded,
+    },
     evidenceGaps,
     notApplicableBasisErrors,
     valueStatement,

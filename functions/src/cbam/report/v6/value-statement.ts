@@ -37,6 +37,7 @@ export function buildValueStatement(params: {
       ? riskRegisters.map((entry) => entry.affectedDataDomain)
       : ["ALL"]
   );
+  const handover = model.verifierPreparation?.independentReviewHandover;
 
   return [
     {
@@ -86,8 +87,8 @@ export function buildValueStatement(params: {
     },
     {
       metric: "Verifier handover agenda and closure conditions prepared",
-      value: "1",
-      source: "verifierPreparation (runtime-derived handover pack)",
+      value: String(handover?.items.length ?? 0),
+      source: "verifierPreparation.independentReviewHandover.items",
     },
   ];
 }

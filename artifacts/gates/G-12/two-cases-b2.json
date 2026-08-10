@@ -49,8 +49,8 @@
       },
       {
         "metric": "Verifier handover agenda and closure conditions prepared",
-        "value": "1",
-        "source": "verifierPreparation (runtime-derived handover pack)"
+        "value": "6",
+        "source": "verifierPreparation.independentReviewHandover.items"
       }
     ]
   },
@@ -104,8 +104,8 @@
       },
       {
         "metric": "Verifier handover agenda and closure conditions prepared",
-        "value": "1",
-        "source": "verifierPreparation (runtime-derived handover pack)"
+        "value": "6",
+        "source": "verifierPreparation.independentReviewHandover.items"
       }
     ]
   }
