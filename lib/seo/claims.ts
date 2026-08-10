@@ -11,12 +11,14 @@ export const PRICE_CLAIM: PublicClaim<{
   currency: "USD";
   formatted: string;
   packName: string;
+  description: string;
 }> = {
   value: {
     amount: CANONICAL_PRICING.displayPrice,
     currency: "USD",
     formatted: CANONICAL_PRICING.priceFormatted,
     packName: CANONICAL_PRICING.packName,
+    description: CANONICAL_PRICING.description,
   },
   evidenceStatus: "verified",
   evidenceId: "CANONICAL_PRICING",
