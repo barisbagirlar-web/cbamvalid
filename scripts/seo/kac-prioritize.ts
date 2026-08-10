@@ -49,6 +49,12 @@ export type StrikingDistanceEntry = {
   gapType: "POSITION" | "CTR" | null;
 };
 
+export type PaybackInputs = {
+  recommendation: "INVEST" | "HOLD" | "HARVEST" | "DIVEST" | null;
+  productionCostMinor: number | null;
+  monthlyExpectedValueMinor: number | null;
+};
+
 function loadJson<T>(path: string): T {
   return JSON.parse(readFileSync(resolve(process.cwd(), path), "utf8")) as T;
 }
@@ -153,6 +159,24 @@ export function assertRecommendationAllowed(
   }
 }
 
+export function assertInvestPaybackAllowed(inputs: PaybackInputs, paybackMaxMonths: number): number | null {
+  if (inputs.recommendation !== "INVEST") return null;
+  if (inputs.productionCostMinor === null || inputs.monthlyExpectedValueMinor === null) {
+    throw new Error("KAC INVEST payback is partial because cost/value evidence is missing");
+  }
+  if (!Number.isSafeInteger(inputs.productionCostMinor) || inputs.productionCostMinor < 0) {
+    throw new Error("KAC production cost must be a non-negative integer minor-unit value");
+  }
+  if (!Number.isSafeInteger(inputs.monthlyExpectedValueMinor) || inputs.monthlyExpectedValueMinor <= 0) {
+    throw new Error("KAC monthly expected value must be a positive integer minor-unit value");
+  }
+  const paybackMonths = inputs.productionCostMinor / inputs.monthlyExpectedValueMinor;
+  if (paybackMonths > paybackMaxMonths) {
+    throw new Error(`KAC INVEST payback ${paybackMonths} exceeds config economics.paybackMaxMonths=${paybackMaxMonths}`);
+  }
+  return paybackMonths;
+}
+
 export function assertStrikingDistanceClassified(entry: StrikingDistanceEntry): void {
   if (!entry.gapType) {
     throw new Error(`INV-11.7 striking-distance entry ${entry.clusterId} must classify POSITION vs CTR gap`);
@@ -195,10 +219,12 @@ export function buildKacState(config: KacConfig, records: readonly RegistryRecor
       status: "SKIP_NO_DATA" as const,
       reason: "No connected first-party GSC position/CTR series; industry CTR fallback is prohibited.",
     },
+    nineStateDistribution: { SKIP_NO_DATA: clusters.length },
     priorityQueue: [] as string[],
     maxConcurrentActions: config.site.maxConcurrentKacActions,
     priorityFormula:
       "expectedExtraClicks × cvr × conversionValueMinor × confidenceMultiplier ÷ effort",
+    paybackRule: "productionCostMinor ÷ monthlyExpectedValueMinor <= economics.paybackMaxMonths",
     partial: true,
     confidence: "low" as const,
     portfolioWriteState: "READ_ONLY_NO_DECISION" as const,
