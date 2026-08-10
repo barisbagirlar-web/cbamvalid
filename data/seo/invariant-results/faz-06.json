@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "artifact": "invariant-results/faz-06",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-09T22:02:00Z",
+    "generatorScript": "lib/seo/schema-validation.ts",
+    "inputWindow": {"start": null, "end": null},
+    "confidence": "high",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+  },
+  "data": {
+    "phase": "faz-06",
+    "codeScopeComplete": true,
+    "results": [
+      {
+        "id": "INV-6.1",
+        "severity": "BLOCK",
+        "status": "PASS",
+        "negativeTestPassed": true,
+        "evidence": "Product JSON-LD name, description, price and currency must equal the verified CANONICAL_PRICING/PRICE_CLAIM SSOT. The same product description and formatted price are rendered on the visible product-classification page. Unsupported managed-service wording is absent and a tampered schema claim fixture is rejected."
+      },
+      {
+        "id": "INV-6.2",
+        "severity": "BLOCK",
+        "status": "PASS",
+        "negativeTestPassed": true,
+        "evidence": "Graph construction deduplicates identical entity @id nodes centrally and throws on conflicting duplicates. Organization identity https://cbamvalid.com/#organization is therefore singular regardless of component insertion order."
+      },
+      {
+        "id": "INV-6.3",
+        "severity": "WARN",
+        "status": "PASS",
+        "evidence": "Visible SeoBreadcrumbs and BreadcrumbList JSON-LD both consume buildSeoBreadcrumbItems(route); independent title-case/schema breadcrumb implementations were removed."
+      },
+      {
+        "id": "INV-6.4",
+        "severity": "INFO",
+        "status": "PASS",
+        "evidence": "FAQ schema generation is deterministic from supplied Q/A content and independent of traffic, ranking or measurement state."
+      }
+    ]
+  }
+}
