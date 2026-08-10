@@ -1,0 +1,3 @@
+import { describe,expect,it } from "vitest";import { assertSingleXDefault,type HreflangEntry } from "../../scripts/seo/audit-vertical-modules";
+const row=(url:string,xDefault:boolean):HreflangEntry=>({route:"/",language:"en",canonical:url,xDefault,alternates:{}});
+describe("INV-15.14",()=>{it("blocks multiple x-default entries",()=>expect(()=>assertSingleXDefault([row("https://x/a",true),row("https://x/b",true)])).toThrow(/INV-15\.14/));});

@@ -1,0 +1,2 @@
+import { describe,expect,it } from "vitest";import { assertNewsSitemapAge } from "../../scripts/seo/audit-vertical-modules";
+describe("INV-15.10",()=>{it("blocks news entry older than source limit",()=>expect(()=>assertNewsSitemapAge({ageHours:49,inNewsSitemap:true})).toThrow(/INV-15\.10/));it("allows old content outside news sitemap",()=>expect(()=>assertNewsSitemapAge({ageHours:49,inNewsSitemap:false})).not.toThrow())});

@@ -1,0 +1,24 @@
+{
+  "meta":{"artifact":"invariant-results/faz-15","schemaVersion":"6.1","generatedAt":"2026-08-10T12:25:00Z","generatorScript":"scripts/seo/audit-vertical-modules.ts","inputWindow":{"start":null,"end":"2026-08-10"},"confidence":"high","partial":false,"siteId":"cbamvalid","coldStart":null,"structuralBreaksApplied":["2025-09-11:num100-removal","2026-08-10:consent-mode-v2-candidate"]},
+  "data":{"phase":"faz-15","codeScopeComplete":true,"activeVerticals":["saas"],"inactiveVerticals":["ecommerce","i18n","local","media"],"results":[
+    {"id":"INV-15.1","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Ecommerce module is inactive by business.verticals; reusable guard blocks temporary out-of-stock 404/410 and requires 200 unless permanent removal or successor 301 applies."},
+    {"id":"INV-15.2","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Inactive ecommerce guard rejects separately indexable variants without independent demand evidence."},
+    {"id":"INV-15.3","severity":"WARN","status":"PASS","negativeTestPassed":null,"evidence":"Current SaaS Product/WebApplication offer schema consumes verified PRICE_CLAIM and InStock state; public product/pricing pages consume CANONICAL_PRICING SSOT."},
+    {"id":"INV-15.4","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Local module inactive; NAP byte-parity guard and negative fixture are installed."},
+    {"id":"INV-15.5","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Local module inactive; doorway guard uses config.thresholds.similarityMax and blocks high-similarity pages without local evidence."},
+    {"id":"INV-15.6","severity":"WARN","status":"PASS","negativeTestPassed":null,"evidence":"Local/GBP module is not active in business.verticals; no GBP freshness claim is emitted."},
+    {"id":"INV-15.7","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Active SaaS /methodology page is now a Server Component with SSR primary content; client-only fixture fails closed."},
+    {"id":"INV-15.8","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Active SaaS product/pricing offers use CANONICAL_PRICING/PRICE_CLAIM SSOT; invented price/trial fixture is rejected."},
+    {"id":"INV-15.9","severity":"WARN","status":"PASS","negativeTestPassed":null,"evidence":"No public competitor comparison pages are present in the active SaaS module; no freshness claim is fabricated."},
+    {"id":"INV-15.10","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Media module inactive; news sitemap guard rejects entries older than the source age rule while permitting old evergreen pages outside news sitemap."},
+    {"id":"INV-15.11","severity":"WARN","status":"PASS","negativeTestPassed":null,"evidence":"Media/publisher module inactive; author/correction policy requirement remains enforced only if activated."},
+    {"id":"INV-15.12","severity":"INFO","status":"PASS","negativeTestPassed":null,"evidence":"Media module inactive; no evergreen/news typing is invented."},
+    {"id":"INV-15.13","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"i18n module inactive; reciprocal hreflang guard rejects one-way alternates."},
+    {"id":"INV-15.14","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"i18n module inactive; exactly-one-x-default guard is installed."},
+    {"id":"INV-15.15","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"i18n module inactive; IP-forced locale redirect guard rejects forced redirects."},
+    {"id":"INV-15.16","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"i18n module inactive; hreflang URL must exist in both canonical and registry sets."},
+    {"id":"INV-15.17","severity":"WARN","status":"PASS","negativeTestPassed":null,"evidence":"i18n module inactive; no translation-quality assertion is emitted."},
+    {"id":"INV-15.18","severity":"INFO","status":"PASS","negativeTestPassed":null,"evidence":"Out-of-scope verticals are explicitly queued as inactive: ecommerce, i18n, local, media. Active vertical is SaaS only."},
+    {"id":"INV-15.19","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Vertical severity guard rejects any vertical rule that weakens a global BLOCK/WARN rule."}
+  ]}
+}

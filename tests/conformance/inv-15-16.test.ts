@@ -1,0 +1,2 @@
+import { describe,expect,it } from "vitest";import { assertHreflangCanonicalRegistryParity } from "../../scripts/seo/audit-vertical-modules";
+describe("INV-15.16",()=>{it("blocks hreflang URL missing from registry",()=>expect(()=>assertHreflangCanonicalRegistryParity({hreflangUrls:["https://x/en"],canonicalUrls:["https://x/en"],registryUrls:[]})).toThrow(/INV-15\.16/));});

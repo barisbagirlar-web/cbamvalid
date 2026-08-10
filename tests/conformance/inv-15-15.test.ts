@@ -1,0 +1,2 @@
+import { describe,expect,it } from "vitest";import { assertNoIpForcedRedirect } from "../../scripts/seo/audit-vertical-modules";
+describe("INV-15.15",()=>{it("blocks IP forced redirects",()=>expect(()=>assertNoIpForcedRedirect({redirectsByIp:true})).toThrow(/INV-15\.15/));});
