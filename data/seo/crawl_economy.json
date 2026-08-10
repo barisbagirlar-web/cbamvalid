@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "artifact": "crawl_economy",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T06:34:45Z",
+    "generatorScript": "scripts/seo/crawl-economy.ts + scripts/seo/bot-identity.ts",
+    "inputWindow": {"start": null, "end": null},
+    "confidence": "low",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+  },
+  "data": {
+    "requestLogsAvailable": false,
+    "crawlWaste": {
+      "status": "SKIP_NO_DATA",
+      "totalCrawlerRequests": 0,
+      "wasteRequests": 0,
+      "wastePct": null,
+      "thresholdPct": 20,
+      "reason": "No crawler request-log observations are connected; crawl waste is not inferred from robots policy or synthetic fixtures."
+    },
+    "discoveryLag": {
+      "status": "SKIP_NO_DATA",
+      "medianHours": null,
+      "reason": "No paired publish/discovery timestamps from server logs and Google Search Console are connected."
+    },
+    "verifiedBotTraffic": {
+      "status": "SKIP_NO_DATA",
+      "observedRequests": null,
+      "verifiedRequests": null,
+      "reason": "No production bot request observations were supplied. User-agent strings alone are never counted as verified bot traffic."
+    },
+    "identityPolicies": [
+      {
+        "family": "Googlebot",
+        "method": "reverse DNS provider suffix plus forward-confirmation to original IP",
+        "source": "https://developers.google.com/crawling/docs/crawlers-fetchers/verify-google-requests"
+      },
+      {
+        "family": "OAI-SearchBot",
+        "method": "current published provider IP manifest",
+        "source": "https://openai.com/searchbot.json"
+      },
+      {
+        "family": "OAI-AdsBot",
+        "method": "current published provider IP manifest",
+        "source": "https://openai.com/adsbot.json"
+      },
+      {
+        "family": "PerplexityBot",
+        "method": "current published provider IP manifest",
+        "source": "https://www.perplexity.com/perplexitybot.json"
+      },
+      {
+        "family": "Perplexity-User",
+        "method": "current published provider IP manifest",
+        "source": "https://www.perplexity.com/perplexity-user.json"
+      },
+      {
+        "family": "GPTBot/ClaudeBot",
+        "method": "no independently configured proof method; UA-only requests remain UNVERIFIED",
+        "source": null
+      }
+    ]
+  }
+}
