@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "artifact": "invariant-results/faz-08",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T06:34:45Z",
+    "generatorScript": "scripts/seo/crawl-economy.ts + scripts/seo/bot-identity.ts",
+    "inputWindow": {"start": null, "end": null},
+    "confidence": "low",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+  },
+  "data": {
+    "phase": "faz-08",
+    "codeScopeComplete": true,
+    "results": [
+      {
+        "id": "INV-8.1",
+        "severity": "WARN",
+        "status": "SKIP_NO_DATA",
+        "evidence": "No production crawler request logs are connected. The config-driven evaluator returns SKIP_NO_DATA rather than deriving a waste ratio from robots policy. Synthetic coverage proves measured waste above thresholds.crawlWasteWarnPct produces WARN."
+      },
+      {
+        "id": "INV-8.2",
+        "severity": "INFO",
+        "status": "SKIP_NO_DATA",
+        "evidence": "Discovery lag requires paired publication and discovery timestamps. Neither production crawl logs nor GSC discovery data are connected, so median discovery lag is not fabricated."
+      },
+      {
+        "id": "INV-8.3",
+        "severity": "BLOCK",
+        "status": "PASS",
+        "negativeTestPassed": true,
+        "evidence": "Crawler user-agent text alone never establishes identity. Googlebot requires provider-owned reverse DNS plus forward-confirmation to the original IP. OAI-SearchBot/OAI-AdsBot and Perplexity crawler families require the source IP to match a supplied current official provider manifest identified by its governed source URL. Unsupported UA-only GPTBot/ClaudeBot observations remain UNVERIFIED. Spoofed Googlebot negative fixture is rejected."
+      }
+    ]
+  }
+}
