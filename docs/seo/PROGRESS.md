@@ -6,7 +6,7 @@ Owner public-proxy override merged after PR #179 checks.
 
 | Phase | Status | Evidence |
 |---|---|---|
-| BOOTSTRAP | completed | PR #175/#177/#179/#185/#189/#190/#200/#202/#208/#214/#218 control corrections; all merged only after repository gates |
+| BOOTSTRAP | completed | PR #175/#177/#179/#185/#189/#190/#200/#202/#208/#214/#218/#228 control corrections; E-43/E-44 recorded; all merged only after repository gates |
 | FAZ 00 | completed | discovery/public-proxy baseline; private metrics `SKIP_NO_DATA` |
 | FAZ 01 | completed | PR #182; governed registry + BLOCK fixtures |
 | FAZ 02 | completed | PR #187; canonical/redirect/HSTS controls |
@@ -24,9 +24,9 @@ Owner public-proxy override merged after PR #179 checks.
 | FAZ 14 | completed | PR #219, merge `21aa6a249ba0f3c8f383401862a943820daa76c8`; full Consent Mode v2 boundary + CRO governance |
 | FAZ 15 | completed | PR #220, merge `9102927a4404a4fe0b7b152de562061863057a1e`; active SaaS module; `/methodology` SSR; vertical fail-closed guards |
 | FAZ 16 | completed | PR #221, merge `4baffb712e0c4d1fcc9261e0a7d89529ceee571e`; 36/36 governed inventory coverage kept separate from unknown market TAM; 18 content-compounding strategy assignments; exact head 8/8 green |
-| FAZ 17 | completed | merge `2e95f0e5bc2ce0c9b16dd9a9391c362c5691bfbc`; P&L history 0 months and KAC recommendations 0 => portfolio decisions `SKIP_NO_DATA`; concentration/DIVEST/budget/A3 decision-chain guards installed |
+| FAZ 17 | completed | PR #222, merge `2e95f0e5bc2ce0c9b16dd9a9391c362c5691bfbc`; P&L history 0 months and KAC recommendations 0 => portfolio decisions `SKIP_NO_DATA`; concentration/DIVEST/budget/A3 decision-chain guards installed |
 | FAZ 18 | completed | PR #223, merge `ccd61eec3a47e67502aba8bb3420aa6b261c6ed9`; registered CN template; no qualifying INVEST+programmatic cluster so publication remains blocked; exact head 8/8 green; no runtime publication |
-| FAZ 19 | completed | candidate `seo/faz-19-valuation-dd`; range-only valuation and calibration gates; current history 0 months => valuation/calibration `SKIP_NO_DATA`; complete DD package + BLOCK negative fixtures; no runtime changes |
+| FAZ 19 | completed | PR #224, merge `06689bd690364e49b6d01fe500618506120d4594`; range-only valuation/calibration gates; history 0 months => valuation/calibration `SKIP_NO_DATA`; complete DD package + BLOCK negative fixtures; exact head 8/8 green; no runtime changes |
 
 Allowed statuses: `pending | in_progress | blocked | completed`.
 
