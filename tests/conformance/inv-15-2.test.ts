@@ -1,0 +1,3 @@
+import { describe, expect, it } from "vitest";
+import { assertVariantDemandProof } from "../../scripts/seo/audit-vertical-modules";
+describe("INV-15.2",()=>{it("blocks indexable variant without demand proof",()=>expect(()=>assertVariantDemandProof({indexable:true,independentDemandEvidenceId:null})).toThrow(/INV-15\.2/));it("allows canonical-only variant",()=>expect(()=>assertVariantDemandProof({indexable:false,independentDemandEvidenceId:null})).not.toThrow())});
