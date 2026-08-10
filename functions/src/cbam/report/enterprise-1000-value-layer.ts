@@ -10,7 +10,7 @@ import { buildRegistryTemplateMapping } from "../registry/registry-template-mapp
 import { VERIFICATION_MATERIALITY_RATE } from "../registry/rulesets";
 import { getComplianceCalendarState } from "../compliance/compliance-calendar";
 import { buildVerifierPackageModel } from "./verifier-model";
-import { buildEnterprisePdf, type EnterprisePdfSection, type EnterpriseReadinessStatus } from "./enterprise-pdf";
+import { buildEnterprisePdf, type EnterprisePdfCover, type EnterprisePdfSection, type EnterpriseReadinessStatus } from "./enterprise-pdf";
 import type { PackageArtifact } from "./verifier-package-builder";
 
 export type EvidenceVerifiabilityState =
@@ -83,7 +83,7 @@ export interface Enterprise1000Model {
 const PRIMARY_DOCUMENT_ROLES = [
   {
     fileName: "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf",
-    uniqueRole: "Executive verifier-preparation decision dossier. It is the single source for enterprise readiness status, preparation score, evidence assurance conclusion and open closure conditions; it does not repeat the full calculation trace.",
+    uniqueRole: "Executive verifier-preparation decision dossier. It is the single source for enterprise readiness status, preparation score, evidence assurance conclusion, calculation summary and provenance, findings closure, methodology decisions, registry mapping, scenario and materiality simulation, compliance calendar, sign-offs and open closure conditions. Focused workpapers in the package provide deeper per-topic detail.",
   },
   {
     fileName: "Verifier First Meeting & Handover Pack.pdf",
@@ -525,9 +525,9 @@ function enterprisePdfArtifacts(params: {
     releaseContractVersion: 5,
   });
   const role = (fileName: string) => params.enterprise.primaryDocumentRoles.find((entry) => entry.fileName === fileName)?.uniqueRole || "Unique enterprise verifier-preparation workpaper.";
-  const pdf = (fileName: string, title: string, subtitle: string, sections: EnterprisePdfSection[]) => artifact(
+  const pdf = (fileName: string, title: string, subtitle: string, sections: EnterprisePdfSection[], cover?: EnterprisePdfCover) => artifact(
     fileName,
-    buildEnterprisePdf({ title, subtitle, uniqueRole: role(fileName), status: params.enterprise.status, preparationScore: params.enterprise.preparationScore, model, sections }),
+    buildEnterprisePdf({ title, subtitle, uniqueRole: role(fileName), status: params.enterprise.status, preparationScore: params.enterprise.preparationScore, model, sections, cover }),
     "application/pdf"
   );
 
@@ -677,27 +677,39 @@ function enterprisePdfArtifacts(params: {
     ],
   };
 
+  const cover: EnterprisePdfCover = {
+    reportId: params.reportId,
+    packageCode: params.packageCode,
+    releaseVersion: params.releaseVersion,
+    generatedAt: params.generatedAt,
+    totalEmbeddedEmissions: params.calculation.totalEmbeddedEmissions,
+    goodsCount: params.calculation.goods.length,
+    evidenceCount: params.caseData.evidenceRegister.length,
+    openFindings: params.enterprise.findings.filter((finding) => finding.status !== "RESOLVED").length,
+    reportingPeriod: `${String(params.caseData.reportingPeriod.startDate?.value || "Not supplied")} to ${String(params.caseData.reportingPeriod.endDate?.value || "Not supplied")}`,
+  };
+
   return [
     pdf("CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf", "CBAMValid Verification Readiness & Evidence Assurance Dossier", "Enterprise verifier-preparation dossier with one authoritative readiness state and the complete workpaper result set", [
-      { heading: "Report contents", paragraphs: ["This dossier consolidates the complete result set of the sealed package: scope, goods population, calculation summary and provenance, readiness state, preparation score, evidence assurance, findings, methodology decisions, registry template mapping, scenario and materiality simulation, compliance calendar, operator sign-offs and the verifier handover agenda."], table: tocTable },
-      { heading: "Scope and identity", table: identityScopeTable },
-      { heading: "Goods population", table: goodsTable },
-      { heading: "Calculation summary", paragraphs: ["Reported embedded-emissions totals, production volume and aggregate specific emissions as calculated by the CBAMValid engine."], table: emissionsSummaryTable },
-      { heading: "Calculation provenance", table: provenanceTable },
-      { heading: "Authoritative readiness state", callout: { label: "Single status field", value: `${params.enterprise.status} — ${params.enterprise.statusReasons.join(" ")}` } },
-      { heading: "Preparation score", paragraphs: [params.enterprise.scoreFormula], table: statusTable },
-      { heading: "Evidence assurance", paragraphs: ["A-E evidence grades are accompanied by a separate independent-verifiability field and a machine-checkable basis. A high grade does not by itself create an independent verification conclusion."], table: evidenceTable },
-      { heading: "Findings and closure", paragraphs: ["Every finding carries Action, Priority, Responsible role, State and Closure condition. Missing fields are a pre-signing contract failure."], table: actionTable },
-      { heading: "Methodology decisions", table: methodologyDecisionTable },
-      { heading: "Registry template mapping", paragraphs: ["Mapping of dossier fields to the CBAM registry template with legal basis, source path, completeness status, owner and linked evidence."], table: registryMappingTable },
-      { heading: "Scenario analysis and materiality simulation", paragraphs: ["Deterministic scenarios isolate arithmetic sensitivity; they are not probability forecasts or verification opinions. Per-good threshold utilization compares deterministic scenario impact with the operator-prepared 5% planning threshold. Independent verifier judgement remains controlling."], table: scenarioTable, barChart: { unit: "% intensity delta", items: params.enterprise.scenarios.filter((row) => row.scenarioId !== "BASE").map((row) => ({ label: row.label, value: row.intensityDeltaPercent })) } },
-      { heading: "Materiality proximity", paragraphs: ["Threshold utilization compares deterministic scenario impact with the operator-prepared 5% planning threshold."], table: materialityTable },
-      { heading: "Compliance calendar", paragraphs: ["Definitive-period CBAM milestones derived from the regulation. The first annual declaration and certificate surrender deadline for 2026 imports is 2027-09-30."], table: complianceTable, callout: { label: "Calendar boundary", value: `${calendarState.daysUntilFirstDeclaration} days remain until the first annual declaration deadline (${calendarState.firstDeclarationDeadline}).` } },
-      { heading: "Operator sign-offs", table: signOffTable },
-      { heading: "Verifier handover", paragraphs: ["Prepared first-meeting agenda: open questions the verifier should challenge and the closure conditions that define a handover-ready dossier."], table: openQuestionsTable, callout: { label: "Closure conditions", value: params.enterprise.closureConditions.join(" | ") } },
-      { heading: "Primary-document architecture", paragraphs: ["The sealed package contains 11 foregrounded human-review documents with non-overlapping roles. Remaining components are machine-readable registers, cryptographic trust files, the verifier workbook and immutable supporting evidence."], table: documentRoleTable },
-      { heading: "Professional boundary", callout: { label: "No verification opinion", value: "CBAMValid prepares and structures the operator dossier. An appropriately accredited independent verifier remains responsible for independent verification work, materiality judgement, site-visit decisions and any final opinion." } },
-    ]),
+      { heading: "Report contents", sectionNumber: 1, paragraphs: ["This dossier consolidates the complete result set of the sealed package: scope, goods population, calculation summary and provenance, readiness state, preparation score, evidence assurance, findings, methodology decisions, registry template mapping, scenario and materiality simulation, compliance calendar, operator sign-offs and the verifier handover agenda."], table: tocTable },
+      { heading: "Scope and identity", sectionNumber: 2, table: identityScopeTable },
+      { heading: "Goods population", sectionNumber: 3, table: goodsTable },
+      { heading: "Calculation summary", sectionNumber: 4, paragraphs: ["Reported embedded-emissions totals, production volume and aggregate specific emissions as calculated by the CBAMValid engine."], table: emissionsSummaryTable },
+      { heading: "Calculation provenance", sectionNumber: 5, table: provenanceTable },
+      { heading: "Authoritative readiness state", sectionNumber: 6, callout: { label: "Single status field", value: `${params.enterprise.status} — ${params.enterprise.statusReasons.join(" ")}` } },
+      { heading: "Preparation score", sectionNumber: 7, paragraphs: [params.enterprise.scoreFormula], table: statusTable },
+      { heading: "Evidence assurance", sectionNumber: 8, paragraphs: ["A-E evidence grades are accompanied by a separate independent-verifiability field and a machine-checkable basis. A high grade does not by itself create an independent verification conclusion."], table: evidenceTable },
+      { heading: "Findings and closure", sectionNumber: 9, paragraphs: ["Every finding carries Action, Priority, Responsible role, State and Closure condition. Missing fields are a pre-signing contract failure."], table: actionTable },
+      { heading: "Methodology decisions", sectionNumber: 10, table: methodologyDecisionTable },
+      { heading: "Registry template mapping", sectionNumber: 11, paragraphs: ["Mapping of dossier fields to the CBAM registry template with legal basis, source path, completeness status, owner and linked evidence."], table: registryMappingTable },
+      { heading: "Scenario analysis and materiality simulation", sectionNumber: 12, paragraphs: ["Deterministic scenarios isolate arithmetic sensitivity; they are not probability forecasts or verification opinions. Per-good threshold utilization compares deterministic scenario impact with the operator-prepared 5% planning threshold. Independent verifier judgement remains controlling."], table: scenarioTable, barChart: { unit: "% intensity delta", items: params.enterprise.scenarios.filter((row) => row.scenarioId !== "BASE").map((row) => ({ label: row.label, value: row.intensityDeltaPercent })) } },
+      { heading: "Materiality proximity", sectionNumber: 13, paragraphs: ["Threshold utilization compares deterministic scenario impact with the operator-prepared 5% planning threshold."], table: materialityTable },
+      { heading: "Compliance calendar", sectionNumber: 14, paragraphs: ["Definitive-period CBAM milestones derived from the regulation. The first annual declaration and certificate surrender deadline for 2026 imports is 2027-09-30."], table: complianceTable, callout: { label: "Calendar boundary", value: `${calendarState.daysUntilFirstDeclaration} days remain until the first annual declaration deadline (${calendarState.firstDeclarationDeadline}).` } },
+      { heading: "Operator sign-offs", sectionNumber: 15, table: signOffTable },
+      { heading: "Verifier handover", sectionNumber: 16, paragraphs: ["Prepared first-meeting agenda: open questions the verifier should challenge and the closure conditions that define a handover-ready dossier."], table: openQuestionsTable, callout: { label: "Closure conditions", value: params.enterprise.closureConditions.join(" | ") } },
+      { heading: "Primary-document architecture", sectionNumber: 17, paragraphs: ["The sealed package contains 11 foregrounded human-review documents with non-overlapping roles. Remaining components are machine-readable registers, cryptographic trust files, the verifier workbook and immutable supporting evidence."], table: documentRoleTable },
+      { heading: "Professional boundary", sectionNumber: 18, callout: { label: "No verification opinion", value: "CBAMValid prepares and structures the operator dossier. An appropriately accredited independent verifier remains responsible for independent verification work, materiality judgement, site-visit decisions and any final opinion." } },
+    ], cover),
 
     pdf("Verifier First Meeting & Handover Pack.pdf", "Verifier First Meeting & Handover Pack", "Prepared first-meeting agenda, challenge questions, closure conditions and seven handover drafts", [
       { heading: "One-page first-meeting brief", table: statusTable, paragraphs: [`Objective: transfer a reproducible operator-prepared dossier to the independent verifier with explicit open issues, evidence weaknesses, scenario sensitivity and closure conditions. Current enterprise status is ${params.enterprise.status}.`] },

@@ -22,11 +22,24 @@ export interface EnterprisePdfBarChart {
 
 export interface EnterprisePdfSection {
   heading: string;
+  sectionNumber?: number;
   paragraphs?: string[];
   table?: EnterprisePdfTableInput;
   callout?: { label: string; value: string };
   barChart?: EnterprisePdfBarChart;
   pageBreakBefore?: boolean;
+}
+
+export interface EnterprisePdfCover {
+  reportId: string;
+  packageCode: string;
+  releaseVersion: number;
+  generatedAt: string;
+  totalEmbeddedEmissions: string;
+  goodsCount: number;
+  evidenceCount: number;
+  openFindings: number;
+  reportingPeriod: string;
 }
 
 export interface EnterprisePdfInput {
@@ -37,6 +50,7 @@ export interface EnterprisePdfInput {
   preparationScore: string;
   model: VerifierPackageModel;
   sections: EnterprisePdfSection[];
+  cover?: EnterprisePdfCover;
 }
 
 const PAGE_WIDTH = 210;
@@ -143,16 +157,129 @@ export function buildEnterprisePdf(input: EnterprisePdfInput): Buffer {
     y = BODY_TOP;
   };
 
+  const drawCoverPage = (cover: EnterprisePdfCover) => {
+    let cy = 0;
+
+    document.setFillColor(18, 37, 62);
+    document.rect(0, 0, PAGE_WIDTH, 96, "F");
+    document.setFillColor(197, 103, 62);
+    document.rect(0, 96, PAGE_WIDTH, 1.6, "F");
+
+    document.setTextColor(150, 164, 182);
+    document.setFont("helvetica", "bold");
+    document.setFontSize(7.5);
+    document.text("CBAMVALID · ENTERPRISE VERIFIER PREPARATION ENGINE", MARGIN, 14);
+
+    const palette = statusPalette(input.status);
+    document.setFillColor(...palette.fill);
+    document.setDrawColor(...palette.stroke);
+    document.roundedRect(135, 10, 60, 22, 2, 2, "FD");
+    document.setTextColor(...palette.text);
+    document.setFont("helvetica", "bold");
+    document.setFontSize(6.5);
+    document.text("ENTERPRISE READINESS", 165, 16, { align: "center" });
+    document.setFontSize(9);
+    document.text(input.status, 165, 23, { align: "center" });
+    document.setFontSize(6);
+    document.text(`Preparation score ${input.preparationScore}/100`, 165, 28.5, { align: "center" });
+
+    document.setTextColor(255, 255, 255);
+    document.setFont("helvetica", "bold");
+    document.setFontSize(17);
+    const titleLines = document.splitTextToSize(input.title, 116) as string[];
+    document.text(titleLines.slice(0, 2), MARGIN, 42);
+    document.setFont("helvetica", "normal");
+    document.setFontSize(9);
+    document.setTextColor(214, 221, 231);
+    const subtitleLines = document.splitTextToSize(input.subtitle, 116) as string[];
+    document.text(subtitleLines.slice(0, 2), MARGIN, 55);
+    document.setFontSize(7.5);
+    document.setTextColor(180, 191, 205);
+    document.text(`Package ${cover.packageCode} | Release ${cover.releaseVersion}`, MARGIN, 63);
+    document.text(`Reporting period ${cover.reportingPeriod}`, MARGIN, 70);
+
+    cy = 118;
+    document.setFont("helvetica", "bold");
+    document.setFontSize(8);
+    document.setTextColor(75, 83, 94);
+    document.text("PREPARATION SCORE", MARGIN, cy);
+    cy += 5;
+    const score = Number(input.preparationScore) || 0;
+    const scoreWidth = Math.max(0, Math.min(CONTENT_WIDTH, (score / 100) * CONTENT_WIDTH));
+    document.setFillColor(230, 233, 235);
+    document.roundedRect(MARGIN, cy, CONTENT_WIDTH, 7, 1.6, 1.6, "F");
+    document.setFillColor(197, 103, 62);
+    document.roundedRect(MARGIN, cy, scoreWidth, 7, 1.6, 1.6, "F");
+    document.setTextColor(255, 255, 255);
+    document.setFont("helvetica", "bold");
+    document.setFontSize(7.5);
+    document.text(`${input.preparationScore}/100`, MARGIN + 4, cy + 5);
+    cy += 15;
+
+    const metrics: Array<{ label: string; value: string; sub?: string }> = [
+      { label: "TOTAL EMBEDDED EMISSIONS", value: cover.totalEmbeddedEmissions, sub: "tCO2e" },
+      { label: "GOODS COVERED", value: String(cover.goodsCount) },
+      { label: "EVIDENCE FILES", value: String(cover.evidenceCount) },
+      { label: "OPEN FINDINGS", value: String(cover.openFindings) },
+    ];
+    const cardGap = 5;
+    const cardWidth = (CONTENT_WIDTH - cardGap) / 2;
+    const cardHeight = 26;
+    metrics.forEach((metric, index) => {
+      const col = index % 2;
+      const row = Math.floor(index / 2);
+      const x = MARGIN + col * (cardWidth + cardGap);
+      const cardY = cy + row * (cardHeight + cardGap);
+      document.setFillColor(247, 246, 242);
+      document.setDrawColor(213, 207, 195);
+      document.roundedRect(x, cardY, cardWidth, cardHeight, 1.8, 1.8, "FD");
+      document.setFillColor(197, 103, 62);
+      document.rect(x, cardY, 2.5, cardHeight, "F");
+      document.setTextColor(18, 37, 62);
+      document.setFont("helvetica", "bold");
+      document.setFontSize(13.5);
+      document.text(metric.value, x + 7, cardY + 12);
+      document.setFont("helvetica", "normal");
+      document.setFontSize(6.8);
+      document.setTextColor(104, 111, 120);
+      const labelText = metric.sub ? `${metric.label} · ${metric.sub}` : metric.label;
+      document.text(labelText, x + 7, cardY + 18);
+    });
+    cy += 2 * (cardHeight + cardGap) + 8;
+
+    const packageTable: EnterprisePdfTable = {
+      headers: ["Package control", "Value"],
+      widths: [55, 125],
+      rows: [
+        ["Report ID", cover.reportId],
+        ["Package code", cover.packageCode],
+        ["Release", String(cover.releaseVersion)],
+        ["Generated at", cover.generatedAt],
+        ["Reporting period", cover.reportingPeriod],
+      ],
+    };
+    y = cy;
+    drawTable(packageTable);
+
+    document.setTextColor(150, 158, 168);
+    document.setFont("helvetica", "normal");
+    document.setFontSize(7);
+    document.text("This document consolidates the complete result set of the sealed package. It is prepared for independent verifier handover and does not create a verification opinion.", MARGIN, PAGE_HEIGHT - 18);
+    document.setFontSize(6.5);
+    document.text("CONFIDENTIAL - VERIFIER PREPARATION WORKSPACE", PAGE_WIDTH - MARGIN, PAGE_HEIGHT - 18, { align: "right" });
+  };
+
   const ensure = (height: number) => {
     if (y + height > BODY_BOTTOM) addPage();
   };
 
-  const drawHeading = (heading: string) => {
+  const drawHeading = (heading: string, sectionNumber?: number) => {
     ensure(10);
     document.setTextColor(18, 37, 62);
     document.setFont("helvetica", "bold");
     document.setFontSize(10.5);
-    document.text(heading, MARGIN, y);
+    const prefix = typeof sectionNumber === "number" ? `${sectionNumber}. ` : "";
+    document.text(`${prefix}${heading}`, MARGIN, y);
     document.setDrawColor(218, 222, 226);
     document.line(MARGIN, y + 2, PAGE_WIDTH - MARGIN, y + 2);
     y += 7;
@@ -264,12 +391,18 @@ export function buildEnterprisePdf(input: EnterprisePdfInput): Buffer {
     y += 2;
   };
 
-  drawFrame();
-  drawCallout("Unique document role", input.uniqueRole);
+  if (input.cover) {
+    drawCoverPage(input.cover);
+    addPage();
+    drawCallout("Unique document role", input.uniqueRole);
+  } else {
+    drawFrame();
+    drawCallout("Unique document role", input.uniqueRole);
+  }
 
   for (const section of input.sections) {
     if (section.pageBreakBefore && y > BODY_TOP + 2) addPage();
-    drawHeading(section.heading);
+    drawHeading(section.heading, section.sectionNumber);
     for (const paragraph of section.paragraphs ?? []) drawParagraph(paragraph);
     if (section.callout) drawCallout(section.callout.label, section.callout.value);
     if (section.barChart) drawBarChart(section.barChart);
@@ -279,6 +412,13 @@ export function buildEnterprisePdf(input: EnterprisePdfInput): Buffer {
   const pages = document.getNumberOfPages();
   for (let page = 1; page <= pages; page += 1) {
     document.setPage(page);
+    if (page === 1 && input.cover) {
+      document.setTextColor(150, 158, 168);
+      document.setFont("helvetica", "normal");
+      document.setFontSize(6.4);
+      document.text(`Report ${input.model.reportId} | ${input.status}`, MARGIN, PAGE_HEIGHT - 8);
+      continue;
+    }
     document.setDrawColor(221, 224, 228);
     document.line(MARGIN, PAGE_HEIGHT - 13, PAGE_WIDTH - MARGIN, PAGE_HEIGHT - 13);
     document.setTextColor(104, 111, 120);

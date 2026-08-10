@@ -118,6 +118,26 @@ async function extractDossierPdfText(): Promise<string> {
 }
 
 describe("premium dossier — complete results in the sealed main report", () => {
+  it("renders a cover page with hero metadata, preparation score and metric cards", async () => {
+    const text = (await extractDossierPdfText()).toLowerCase();
+    expect(text).toContain("cbamvalid · enterprise verifier preparation engine");
+    expect(text).toContain("preparation score");
+    expect(text).toContain("total embedded emissions");
+    expect(text).toContain("goods covered");
+    expect(text).toContain("evidence files");
+    expect(text).toContain("open findings");
+    expect(text).toContain("package control");
+  });
+
+  it("numbers report sections from 1 to 18", async () => {
+    const text = (await extractDossierPdfText()).toLowerCase();
+    for (let sectionNumber = 1; sectionNumber <= 18; sectionNumber += 1) {
+      expect(text, `section ${sectionNumber} must be numbered`).toContain(`${sectionNumber}.`);
+    }
+    expect(text).toContain("1. report contents");
+    expect(text).toContain("18. professional boundary");
+  });
+
   it("renders a report contents section covering the complete result set", async () => {
     const text = (await extractDossierPdfText()).toLowerCase();
     expect(text).toContain("report contents");
