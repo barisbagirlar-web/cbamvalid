@@ -1,0 +1,3 @@
+import { readFileSync } from "node:fs";import { resolve } from "node:path";import { describe,expect,it } from "vitest";import { assertNoDoorwayPage } from "../../scripts/seo/audit-vertical-modules";
+const c=JSON.parse(readFileSync(resolve(process.cwd(),"sites/cbamvalid/seo.config.json"),"utf8")) as {thresholds:{similarityMax:number}};
+describe("INV-15.5",()=>{it("blocks high-similarity page without local evidence",()=>expect(()=>assertNoDoorwayPage({similarity:c.thresholds.similarityMax,similarityMax:c.thresholds.similarityMax,localEvidenceCount:0})).toThrow(/INV-15\.5/))});
