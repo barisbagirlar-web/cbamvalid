@@ -63,7 +63,7 @@ describe("G-09 package.temporal-integrity", () => {
           renderedMasterRecordBytes: bytes.byteLength,
           scannedComponents: ["Enterprise Compliance Master Record.pdf", "Calculation Trace.json", "Data Integrity Manifest.json"],
           forbiddenMatches: leak,
-          scannedAt: new Date().toISOString(),
+          scannedAt: built.masterRecordModel.controlKey.generatedAt,
         },
         null,
         2
