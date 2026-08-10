@@ -250,9 +250,12 @@ async function runCommand(command: string, args: string[]): Promise<void> {
 
 async function waitForServer(baseUrl: string): Promise<void> {
   let lastError: unknown;
-  for (let attempt = 0; attempt < 120; attempt += 1) {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
     try {
-      const response = await fetch(baseUrl, { redirect: "manual" });
+      const response = await fetch(baseUrl, {
+        redirect: "manual",
+        signal: AbortSignal.timeout(5_000),
+      });
       if (response.status >= 200 && response.status < 500) return;
     } catch (error) {
       lastError = error;
@@ -263,8 +266,9 @@ async function waitForServer(baseUrl: string): Promise<void> {
 }
 
 function startServer(port: number): ChildProcess {
-  return spawn("npm", ["run", "start", "--", "-p", String(port), "-H", "127.0.0.1"], {
-    stdio: ["ignore", "pipe", "pipe"],
+  const nextCli = resolve(process.cwd(), "node_modules/next/dist/bin/next");
+  return spawn(process.execPath, [nextCli, "start", "-p", String(port), "-H", "127.0.0.1"], {
+    stdio: "ignore",
     env: { ...process.env, PORT: String(port) },
   });
 }
@@ -277,7 +281,10 @@ async function fetchEdges(baseUrl: string, paths: readonly string[]): Promise<Li
   for (const batch of batches) {
     const results = await Promise.all(
       batch.map(async (path) => {
-        const response = await fetch(new URL(path, baseUrl), { redirect: "manual" });
+        const response = await fetch(new URL(path, baseUrl), {
+          redirect: "manual",
+          signal: AbortSignal.timeout(15_000),
+        });
         if (!response.ok) throw new Error(`Phase 07 crawl failed ${path}: HTTP ${response.status}`);
         const html = await response.text();
         return extractInternalEdges(path, html, baseUrl, allowed);
