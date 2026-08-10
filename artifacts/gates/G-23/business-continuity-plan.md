@@ -2,8 +2,8 @@
 
 > **Durum:** TASLAK — insan incelemesi ve imza gerekli.
 > **Sahip:** Kurucu-mühendis. İmza aşağıdadır.
-> **Fiyat kapısı:** Bu plan imzalanmadan kurumsal/çoklu kurulum katmanı
-> satışa açılamaz (G-23 ROLLBACK).
+> **Kalite çıtası:** Bu plan imzalanmadan kurumsal/çoklu kurulum katmanı
+> satışa açılamaz (G-23 ROLLBACK). Satış fiyatı sabit **$449 USD**'dir.
 
 ## 1. Kapsam
 

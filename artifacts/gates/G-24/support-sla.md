@@ -1,13 +1,14 @@
 # G-24 — Müşteri Destek SLA Tanımı — TASLAK
 
 > **Durum:** TASLAK — yayınlanacak web sayfası URL'si ve insan onayı gerekli.
-> **Fiyat kapısı:** SLA yayınlanmadan $1.990 fiyat noktasında satış yapılamaz.
+> **Kalite çıtası:** SLA yayınlanmadan $1.990 kalite çıtası ilan edilemez.
+> Satış fiyatı sabit **$449 USD**'dir.
 
 ## 1. Hizmet kapsamı
 
-CBAMValid Enterprise Compliance Master Record ($1.990, tek seferlik) satın
-alan müşterilere tanımlı destek seviyeleri. Destek kanalları: e-posta
-(support@cbamvalid.app) ve (kurulduğunda) yardım masası.
+CBAMValid Enterprise Compliance Master Record (tek seferlik, satış fiyatı
+$449) satın alan müşterilere tanımlı destek seviyeleri. Destek kanalları:
+e-posta (support@cbamvalid.app) ve (kurulduğunda) yardım masası.
 
 ## 2. Önem dereceleri ve yanıt hedefleri
 

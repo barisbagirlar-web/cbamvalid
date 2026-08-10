@@ -2,7 +2,7 @@
 
 > **Durum:** TASLAK — insan incelemesi, üçüncü taraf denetim (önerilen) ve
 > imza gerekli. **ROLLBACK (mutlak):** Uygunluk sağlanmadan hiçbir müşteri
-> verisi işlenemez — fiyat kapısından bağımsız kısıtlama.
+> verisi işlenemez — kalite çıtasından bağımsız kısıtlama.
 
 ## 1. Kapsam
 
