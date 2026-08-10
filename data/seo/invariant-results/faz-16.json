@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "artifact": "invariant-results/faz-16",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T12:51:00Z",
+    "generatorScript": "scripts/seo/tam-growth.ts",
+    "inputWindow": {"start": "2025-09-11", "end": "2026-08-10"},
+    "confidence": "low",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal", "2026-08-10:consent-mode-v2-candidate"]
+  },
+  "data": {
+    "phase": "faz-16",
+    "codeScopeComplete": true,
+    "results": [
+      {"id":"INV-16.1","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"TAM cells require explicit vertical, intent, geography and evidenceIds. Market TAM/search volume remain SKIP_NO_DATA rather than inferred."},
+      {"id":"INV-16.2","severity":"WARN","status":"PASS","negativeTestPassed":null,"evidence":"Coverage definitions are separated: governed-inventory coverage is 36/36=100%; market coverage is null because the complete market denominator is unavailable. Config growth thresholds are not applied to the internal inventory ratio."},
+      {"id":"INV-16.3","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"UGC loop assignment requires an explicit moderation script. Current UGC state is BLOCKED_NO_MODERATION."},
+      {"id":"INV-16.4","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Ads/mixed revenue models require field CWV evidence within config thresholds. Current revenueModel=ecommerce, so ads CWV budget is inactive; synthetic missing/breach cases fail closed."},
+      {"id":"INV-16.5","severity":"WARN","status":"PASS","negativeTestPassed":null,"evidence":"Observation windows are read only from config thresholds. Current content-compounding assignments are ASSIGNED_NOT_STARTED with observedDays=0 and no outcome claim."},
+      {"id":"INV-16.6","severity":"INFO","status":"PASS","negativeTestPassed":null,"evidence":"Affiliate disclosure audit is SKIP_NOT_ACTIVE for current revenueModel=ecommerce; no affiliate compliance claim is emitted."}
+    ],
+    "growthLoopState": "18 content_compounding strategy assignments; no A3 investment started; tool/UGC/programmatic loops blocked by missing evidence or later gate",
+    "marketTamStatus": "SKIP_NO_DATA"
+  }
+}

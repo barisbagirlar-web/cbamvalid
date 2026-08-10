@@ -2,20 +2,23 @@
   "meta": {
     "artifact": "tam_map",
     "schemaVersion": "6.1",
-    "generatedAt": "2026-08-09T14:25:00Z",
-    "generatorScript": "owner-authorized public-proxy discovery",
-    "inputWindow": { "start": "2025-09-11", "end": "2026-08-09" },
+    "generatedAt": "2026-08-10T12:51:00Z",
+    "generatorScript": "scripts/seo/tam-growth.ts",
+    "inputWindow": { "start": "2025-09-11", "end": "2026-08-10" },
     "confidence": "low",
     "partial": true,
     "siteId": "cbamvalid",
     "coldStart": null,
-    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+    "structuralBreaksApplied": ["2025-09-11:num100-removal", "2026-08-10:consent-mode-v2-candidate"]
   },
   "data": {
-    "measurementMode": "public_proxy",
+    "measurementMode": "public_proxy_plus_governed_inventory",
+    "marketTamStatus": "SKIP_NO_DATA",
+    "marketTamReason": "A complete evidence-backed query-cluster universe and search-volume dataset are unavailable. The 36 governed clusters are an internal ownership inventory, not a claim about total market demand.",
     "privateMeasurement": {
       "gsc": "SKIP_NO_DATA",
       "ga4": "SKIP_NO_DATA",
+      "adsKeywordVolume": "SKIP_NO_DATA",
       "searchVolume": "NOT_INFERRED",
       "ranking": "NOT_INFERRED",
       "conversionRate": "NOT_INFERRED",
@@ -26,7 +29,9 @@
       "live cbamvalid.com public pages",
       "Google Search Central public guidance",
       "European Commission CBAM public guidance",
-      "public search-result and competitor-page observations"
+      "public search-result and competitor-page observations",
+      "Phase 11 governed 36-cluster owner inventory",
+      "Phase 13 linkable-asset registry"
     ],
     "commercialClusters": [
       {
@@ -120,6 +125,23 @@
         "nextPhase": "faz-05"
       }
     ],
+    "phase16": {
+      "tamCells": [
+        {"cellId":"cbam-global-commercial","vertical":"saas","intent":"commercial","geography":"GLOBAL","evidenceIds":["phase00-public-proxy","phase11-governed-cluster-inventory"]},
+        {"cellId":"cbam-global-informational","vertical":"saas","intent":"informational","geography":"GLOBAL","evidenceIds":["phase00-public-proxy","phase11-governed-cluster-inventory"]},
+        {"cellId":"cbam-global-tool","vertical":"saas","intent":"tool","geography":"GLOBAL","evidenceIds":["phase00-public-proxy","phase11-governed-cluster-inventory"]}
+      ],
+      "knownGovernedClusterCount": 36,
+      "ownedKnownClusterCount": 36,
+      "knownInventoryCoveragePct": 100,
+      "knownInventoryCoverageDefinition": "owner-assigned clusters / Phase-11 governed cluster inventory",
+      "marketCoveragePct": null,
+      "marketCoverageBand": "SKIP_NO_DATA",
+      "marketCoverageDefinition": "owner-assigned clusters / complete evidence-backed market query-cluster universe",
+      "growthDecisionFromMarketCoverage": null,
+      "reasonNoMarketBand": "The denominator for total market query-cluster universe is unavailable; config coverage thresholds are not applied to the internal 36-cluster inventory.",
+      "growthLoopArtifact": "data/seo/growth_loops.json"
+    },
     "priorityDefects": [
       {
         "id": "D00-01",
@@ -139,8 +161,8 @@
         "id": "D00-03",
         "severity": "medium",
         "type": "tool_acquisition_gap",
-        "owner": "faz-05",
-        "detail": "Calculator-led acquisition is visible in the public market, but a new calculator route must reuse the authoritative deterministic engine and pass cannibalization/accuracy gates before publication."
+        "owner": "faz-18-gated",
+        "detail": "Calculator-led acquisition remains a candidate; publication cannot start without measured demand, Phase-18 eligibility and publication approval."
       }
     ]
   }
