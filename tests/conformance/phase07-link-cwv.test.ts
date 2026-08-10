@@ -28,14 +28,21 @@ describe("SEO V6 Phase 07 link economy", () => {
     }
   });
 
-  it("renders governed related-route H1 labels instead of raw path anchors", () => {
-    const source = readFileSync(
+  it("renders governed related-route labels instead of raw path anchors", () => {
+    const regulatory = readFileSync(
       resolve(process.cwd(), "components/seo/RegulatoryGuidePage.tsx"),
       "utf8",
     );
-    expect(source).toContain("const targetRoute = requireSeoRoute(target)");
-    expect(source).toContain("{targetRoute.h1}");
-    expect(source).not.toContain('{target === "/" ? "Home" : target}');
+    const answers = readFileSync(resolve(process.cwd(), "app/(public)/answers/page.tsx"), "utf8");
+    const glossary = readFileSync(resolve(process.cwd(), "app/(public)/glossary/page.tsx"), "utf8");
+
+    expect(regulatory).toContain("const targetRoute = requireSeoRoute(target)");
+    expect(regulatory).toContain("{targetRoute.h1}");
+    expect(regulatory).not.toContain('{target === "/" ? "Home" : target}');
+    expect(answers).toContain("<Link href={route}>{routeLabel(route)}</Link>");
+    expect(glossary).toContain("<Link href={path}>{routeLabel(path)}</Link>");
+    expect(answers).not.toContain('{route === "/" ? "Home" : route}');
+    expect(glossary).not.toContain('{path === "/" ? "Home" : path}');
   });
 
   it("excludes repeated site chrome from contextual anchor concentration samples", () => {
