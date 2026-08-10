@@ -25,15 +25,15 @@ Owner public-proxy override merged after PR #179 checks.
 | FAZ 15 | completed | PR #220, merge `9102927a4404a4fe0b7b152de562061863057a1e`; active SaaS module; `/methodology` SSR; vertical fail-closed guards |
 | FAZ 16 | completed | PR #221, merge `4baffb712e0c4d1fcc9261e0a7d89529ceee571e`; 36/36 governed inventory coverage kept separate from unknown market TAM; 18 content-compounding strategy assignments; exact head 8/8 green |
 | FAZ 17 | completed | merge `2e95f0e5bc2ce0c9b16dd9a9391c362c5691bfbc`; P&L history 0 months and KAC recommendations 0 => portfolio decisions `SKIP_NO_DATA`; concentration/DIVEST/budget/A3 decision-chain guards installed |
-| FAZ 18 | completed | candidate `seo/faz-18-programmatic-factory`; registered CN template; no qualifying INVEST+programmatic cluster so publication remains blocked; eligibility/invariant/rollback/uniqueness controls installed with negative fixtures; no runtime publication |
-| FAZ 19 | pending | — |
+| FAZ 18 | completed | PR #223, merge `ccd61eec3a47e67502aba8bb3420aa6b261c6ed9`; registered CN template; no qualifying INVEST+programmatic cluster so publication remains blocked; exact head 8/8 green; no runtime publication |
+| FAZ 19 | completed | candidate `seo/faz-19-valuation-dd`; range-only valuation and calibration gates; current history 0 months => valuation/calibration `SKIP_NO_DATA`; complete DD package + BLOCK negative fixtures; no runtime changes |
 
 Allowed statuses: `pending | in_progress | blocked | completed`.
 
 A phase is `completed` only after required machine checks, negative coverage and approval conditions are evidenced. Runtime deployment state is tracked separately.
 
 Deployment decisions:
-- BOOTSTRAP/control and FAZ 00/01/05/08/09/10/11/12/13/16/17/18: **NO DEPLOY**.
+- BOOTSTRAP/control and FAZ 00/01/05/08/09/10/11/12/13/16/17/18/19: **NO DEPLOY**.
 - FAZ 02/03/04/06/07/14/15: **DEPLOY AFTER MERGE / EXTERNAL RELEASE EXECUTION** — runtime changes require exact merged-SHA release; current connected tools expose no safe generic dispatcher.
 
 Measurement debt: GSC/GA4/CrUX, request logs, backlink/brand/AI-citation, conversion attribution, complete market-demand denominator, production-cost feeds and monthly P&L history remain unavailable; unavailable measurement fields stay `SKIP_NO_DATA` and are never fabricated.
