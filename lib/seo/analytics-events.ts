@@ -51,14 +51,26 @@ const CONSENT_KEY = "cbamvalid_analytics_consent";
 
 export function getAnalyticsConsent(): "granted" | "denied" | "unset" {
   if (typeof window === "undefined") return "unset";
-  const raw = window.localStorage.getItem(CONSENT_KEY);
-  if (raw === "granted" || raw === "denied") return raw;
+  try {
+    const raw = window.localStorage.getItem(CONSENT_KEY);
+    if (raw === "granted" || raw === "denied") return raw;
+  } catch {
+    return "unset";
+  }
   return "unset";
 }
 
 export function setAnalyticsConsent(value: "granted" | "denied"): void {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(CONSENT_KEY, value);
+  try {
+    window.localStorage.setItem(CONSENT_KEY, value);
+    if (value === "denied") {
+      window.sessionStorage.removeItem(ACQUISITION_KEY);
+      delete window.__cbamSeoAcquisition;
+    }
+  } catch {
+    // Storage may be unavailable in hardened/private browsing contexts.
+  }
 }
 
 function mapLegacyEvent(event: SeoConversionEvent): SeoConversionEvent {
@@ -70,7 +82,7 @@ function mapLegacyEvent(event: SeoConversionEvent): SeoConversionEvent {
 }
 
 function readStoredAcquisition(): SeoAcquisitionDimensions {
-  if (typeof window === "undefined") return {};
+  if (typeof window === "undefined" || getAnalyticsConsent() !== "granted") return {};
   try {
     const raw = window.sessionStorage.getItem(ACQUISITION_KEY);
     if (!raw) return {};
@@ -81,7 +93,7 @@ function readStoredAcquisition(): SeoAcquisitionDimensions {
 }
 
 export function captureAcquisitionFromLocation(): SeoAcquisitionDimensions {
-  if (typeof window === "undefined") return {};
+  if (typeof window === "undefined" || getAnalyticsConsent() !== "granted") return {};
   const url = new URL(window.location.href);
   const dims: SeoAcquisitionDimensions = {
     landingPage: `${url.pathname}${url.search}`,
@@ -100,30 +112,33 @@ export function captureAcquisitionFromLocation(): SeoAcquisitionDimensions {
   if (/chatgpt\.|perplexity\.|claude\.|bing\.com\/chat|openai\./.test(ref)) {
     dims.AIReferrer = "ai_referral";
   }
-  window.sessionStorage.setItem(ACQUISITION_KEY, JSON.stringify(dims));
+  try {
+    window.sessionStorage.setItem(ACQUISITION_KEY, JSON.stringify(dims));
+  } catch {
+    // Measurement storage failure must not affect UX.
+  }
   window.__cbamSeoAcquisition = dims;
   return dims;
 }
 
 function pushGa4(event: SeoConversionEvent, payload: Record<string, unknown>): void {
   const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-  if (!measurementId) return;
-  if (getAnalyticsConsent() === "denied") return;
-  // Cookie policy: third-party measurement requires explicit grant.
-  if (getAnalyticsConsent() !== "granted") return;
+  if (!measurementId || getAnalyticsConsent() !== "granted") return;
   if (typeof window.gtag !== "function") return;
   window.gtag("event", event, payload);
 }
 
 /**
- * Dual delivery:
+ * Consent-gated dual delivery:
  * 1) First-party /api/seo/track (persistent Firestore dedup for purchase)
- * 2) dataLayer + GA4 gtag when measurement ID + consent=granted
+ * 2) dataLayer + GA4 gtag when measurement ID is configured
  *
+ * No acquisition storage, dataLayer event, first-party analytics request, or GA4 event
+ * is produced until the visitor explicitly grants analytics consent.
  * Purchase exactly-once is enforced server-side; client never claims authority.
  */
 export function trackSeoEvent(event: SeoConversionEvent, dims: SeoAcquisitionDimensions = {}): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || getAnalyticsConsent() !== "granted") return;
 
   const normalized = mapLegacyEvent(event);
   const stored = readStoredAcquisition();
@@ -162,6 +177,6 @@ export function trackSeoEvent(event: SeoConversionEvent, dims: SeoAcquisitionDim
     body: JSON.stringify(payload),
     keepalive: true,
   }).catch(() => {
-    // Fail open for UX; missing deliveries observed via server logs / replay tests.
+    // Fail open for UX; missing deliveries are observed through server logs/replay tests.
   });
 }

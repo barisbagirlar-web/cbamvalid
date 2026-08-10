@@ -1,5 +1,7 @@
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import AppFooter from "@/components/layout/AppFooter";
+import { AnalyticsConsentManager } from "@/components/marketing/AnalyticsConsentManager";
+import { ConsentModeBootstrap } from "@/components/marketing/ConsentModeBootstrap";
 import { siteConfig } from "@/lib/site-config";
 
 export default function PublicLayout({
@@ -9,6 +11,7 @@ export default function PublicLayout({
 }) {
   return (
     <>
+      <ConsentModeBootstrap />
       {/* Manual public stylesheet is intentional for Firebase Hosting static CSS parity. */}
       {/* eslint-disable-next-line @next/next/no-css-tags */}
       <link rel="stylesheet" href="/assets/css/style.css" />
@@ -36,6 +39,7 @@ export default function PublicLayout({
       <PublicHeader />
       {children}
       <AppFooter />
+      <AnalyticsConsentManager />
     </>
   );
 }
