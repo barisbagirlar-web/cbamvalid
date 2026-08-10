@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "artifact": "link_equity",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T06:23:58.284Z",
+    "generatorScript": "scripts/seo/link-equity.ts",
+    "inputWindow": {"start": null, "end": null},
+    "confidence": "high",
+    "partial": false,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+  },
+  "data": {
+    "routeCount": 43,
+    "fetchedRouteCount": 43,
+    "orphanDefinition": "internalLinksIn < 2 distinct indexable sources",
+    "orphanThresholdPct": 10,
+    "orphanCount": 0,
+    "orphanRatioPct": 0,
+    "orphanRoutes": [],
+    "anchorMeasurementScope": "contextual links excluding header/nav/footer chrome",
+    "anchorConcentrationThresholdPct": 30,
+    "anchorWarningCount": 28,
+    "anchorWarnings": [
+      {"target":"/cbam-certificate-price","anchor":"cbam certificate price","concentrationPct":100,"samples":2,"sources":["/cbam-2026-definitive-period","/glossary"]},
+      {"target":"/cbam-non-eu-producer-guide","anchor":"cbam guide for non-eu producers","concentrationPct":100,"samples":2,"sources":["/answers","/glossary"]},
+      {"target":"/answers","anchor":"browse the full answer bank","concentrationPct":92.3076923076923,"samples":13},
+      {"target":"/product-classification","anchor":"product classification →","concentrationPct":91.30434782608695,"samples":46},
+      {"target":"/","anchor":"home cbam exporter verification preparation","concentrationPct":81.81818181818183,"samples":11},
+      {"target":"/cbam-cn-code-scope","anchor":"cbam cn code scope guide","concentrationPct":81.81818181818183,"samples":11},
+      {"target":"/cn-code/25231000","anchor":"cn 25231000 cement clinkers","concentrationPct":80,"samples":5},
+      {"target":"/cn-code/25232900","anchor":"cn 25232900 portland cement (excluding white portland cement)","concentrationPct":80,"samples":5},
+      {"target":"/cn-code/27160000","anchor":"cn 27160000 electrical energy","concentrationPct":80,"samples":5},
+      {"target":"/cn-code/28041000","anchor":"cn 28041000 hydrogen","concentrationPct":80,"samples":5},
+      {"target":"/cn-code/28080000","anchor":"cn 28080000 nitric acid; sulphonitric acids","concentrationPct":80,"samples":5},
+      {"target":"/cn-code/31021010","anchor":"cn 31021010 urea, whether or not in aqueous solution","concentrationPct":80,"samples":5},
+      {"target":"/cn-code/72011011","anchor":"cn 72011011 non-alloy pig iron containing by weight 0.5% or less of phosphorus, in lumps, pellets or similar forms","concentrationPct":80,"samples":5},
+      {"target":"/cn-code/72085120","anchor":"cn 72085120 flat-rolled products of iron or non-alloy steel, not in coils, not further worked than hot-rolled, of a thickness exceeding 10 mm","concentrationPct":80,"samples":5},
+      {"target":"/cn-code/76011000","anchor":"cn 76011000 aluminium, not alloyed, unwrought","concentrationPct":80,"samples":5},
+      {"target":"/cbam-2026-definitive-period","anchor":"cbam 2026 definitive period","concentrationPct":66.66666666666666,"samples":6},
+      {"target":"/cbam-actual-vs-default-values","anchor":"actual values vs default values","concentrationPct":66.66666666666666,"samples":6},
+      {"target":"/cn-code","anchor":"verify cbam cn-code scope","concentrationPct":66.66666666666666,"samples":6},
+      {"target":"/refund-policy","anchor":"refund policy","concentrationPct":66.66666666666666,"samples":6},
+      {"target":"/cbam-verification-preparation","anchor":"cbam verification preparation","concentrationPct":62.5,"samples":8},
+      {"target":"/pricing","anchor":"software pricing →","concentrationPct":60.86956521739131,"samples":69},
+      {"target":"/cbam-default-values","anchor":"cbam default values","concentrationPct":60,"samples":5},
+      {"target":"/cbam-exporter-evidence-requirements","anchor":"exporter evidence requirements","concentrationPct":57.14285714285714,"samples":7},
+      {"target":"/glossary","anchor":"entity glossary","concentrationPct":54.166666666666664,"samples":24},
+      {"target":"/cbam-embedded-emissions-calculation","anchor":"calculate cbam embedded emissions","concentrationPct":50,"samples":6},
+      {"target":"/demo","anchor":"product demo","concentrationPct":50,"samples":8},
+      {"target":"/privacy","anchor":"privacy privacy","concentrationPct":40,"samples":5},
+      {"target":"/methodology","anchor":"understand cbam calculation methodology","concentrationPct":34.61538461538461,"samples":26}
+    ],
+    "missingGovernedEdges": [],
+    "pageRankHighlights": {
+      "/cn-code": 0.03212540769202711,
+      "/glossary": 0.03201926372662937,
+      "/answers": 0.03196747480285289,
+      "/cbam-cn-code-scope": 0.006083447034597916,
+      "cnDetailEach": 0.004674407487517743
+    },
+    "implementedCentralityEvidence": {
+      "route": "/cbam-cn-code-scope",
+      "preImplementation": 0.0050331886,
+      "postImplementation": 0.006083447034597916,
+      "interpretation": "Code-derived internal graph centrality change only; not a traffic, ranking or revenue-lift claim."
+    },
+    "simulationOnly": true
+  }
+}
