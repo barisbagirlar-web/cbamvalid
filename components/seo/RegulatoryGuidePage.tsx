@@ -96,13 +96,16 @@ export function RegulatoryGuidePage({
       <section className="mt-8 text-sm">
         <h2 className="font-semibold mb-2">Related</h2>
         <ul className="space-y-1">
-          {route.internalLinkTargets.map((target) => (
-            <li key={target}>
-              <Link className="text-accent underline" href={target}>
-                {target === "/" ? "Home" : target}
-              </Link>
-            </li>
-          ))}
+          {route.internalLinkTargets.map((target) => {
+            const targetRoute = requireSeoRoute(target);
+            return (
+              <li key={target}>
+                <Link className="text-accent underline" href={target}>
+                  {targetRoute.h1}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </section>
     </main>
