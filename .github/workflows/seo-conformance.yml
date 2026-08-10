@@ -142,6 +142,22 @@ jobs:
               echo "SEO_PHASE_RUNTIME_GATE=scripts/seo/run-rendered-gate.sh"
               bash scripts/seo/run-rendered-gate.sh
               ;;
+            faz-07)
+              echo "SEO_PHASE_RUNTIME_GATE=scripts/seo/link-equity.ts + scripts/seo/cwv-field-gate.ts"
+              set +e
+              npx tsx scripts/seo/link-equity.ts --site cbamvalid --dry-run
+              link_code=$?
+              npx tsx scripts/seo/cwv-field-gate.ts --site cbamvalid --dry-run
+              cwv_code=$?
+              set -e
+              for code in "$link_code" "$cwv_code"; do
+                case "$code" in
+                  0) ;;
+                  2) echo "SEO_PHASE_RUNTIME_WARN=$code" ;;
+                  *) echo "SEO_PHASE_RUNTIME_GATE=FAIL code=$code" >&2; exit "$code" ;;
+                esac
+              done
+              ;;
             *)
               echo "SEO_PHASE_RUNTIME_GATE=NONE"
               ;;
