@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "artifact": "invariant-results/faz-09",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T06:50:00Z",
+    "generatorScript": "scripts/seo/seo-pnl.ts + scripts/seo/warehouse-contract.ts",
+    "inputWindow": {"start": null, "end": null},
+    "confidence": "low",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+  },
+  "data": {
+    "phase": "faz-09",
+    "codeScopeComplete": true,
+    "results": [
+      {"id":"INV-9.1","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"All SEO P&L monetary inputs are validated as safe integer minor-unit amounts; fractional money fixture is rejected."},
+      {"id":"INV-9.2","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Warehouse cohort joins cannot cross the 2025-09-11 num100-removal structural break under the same cohort id; explicit split cohorts are required."},
+      {"id":"INV-9.3","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Incrementality evidence is rejected without a bounded confidence interval and method."},
+      {"id":"INV-9.4","severity":"WARN","status":"PASS","evidence":"Configured default conversion value is zero; P&L emits unknown revenue/profit/ROI rather than inferred money."},
+      {"id":"INV-9.5","severity":"INFO","status":"PASS","evidence":"Generative AI clicks are explicitly retained outside the monetary formula; changing that metric cannot change revenue/profit/ROI output."}
+    ]
+  }
+}
