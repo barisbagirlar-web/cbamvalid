@@ -6,7 +6,7 @@ Owner public-proxy override merged after PR #179 checks.
 
 | Phase | Status | Evidence |
 |---|---|---|
-| BOOTSTRAP | completed | PR #175 control plane; PR #177 phase-aware CI; PR #179 owner public-proxy override; PR #185 Phase-02 runtime-owner contract fix; PR #189 legacy G32 contract fix; PR #190 systemic future negative-fixture contract fix; PR #200 fail-visible phase runtime-gate orchestration; PR #202 Phase-06 schema helper contract; PR #208 Phase-07 exact-build runtime link/CWV gate; all merged only after repository workflow gates |
+| BOOTSTRAP | completed | PR #175 control plane; PR #177 phase-aware CI; PR #179 owner public-proxy override; PR #185 Phase-02 runtime-owner contract fix; PR #189 legacy G32 contract fix; PR #190 systemic future negative-fixture contract fix; PR #200 fail-visible phase runtime-gate orchestration; PR #202 Phase-06 schema helper contract; PR #208 Phase-07 exact-build runtime link/CWV gate; PR #214 Phase-12 complete config-threshold contract; all merged only after repository workflow gates |
 | FAZ 00 | completed | `data/seo/tam_map.json` + `data/seo/invariant-results/faz-00.json` + `docs/seo/raporlar/faz00_baz.md`; public-proxy partial baseline; private GSC/GA4 fields SKIP_NO_DATA |
 | FAZ 01 | completed | PR #182; 45-record `data/seo/registry/cbamvalid_seo_registry.json`; config-driven validator; all five Phase-01 BLOCK invariants have executable negative tests; economics partial because production cost/private measurement data is unavailable |
 | FAZ 02 | completed | PR #187, merge `29992892afd33e66b846d6fe166883c7a9106fe5`; canonical origin derived from site config; absolute canonical legacy redirects; HSTS preload removed; redirect ledger and chain/variant/capacity guards; all four Phase-02 BLOCK invariants have executable negative tests; external Firebase/DNS controls excluded from code scope |
@@ -18,8 +18,8 @@ Owner public-proxy override merged after PR #179 checks.
 | FAZ 08 | completed | PR #210, merge `9b5e4a37aa35b7aa19b68e9d2bd2b2c06bcd32a4`; no-fabrication crawl-economy evaluator; production logs/discovery lag `SKIP_NO_DATA`; Google reverse+forward DNS verification; OAI-SearchBot/OAI-AdsBot/Perplexity official-manifest CIDR verification; UA-only GPTBot/ClaudeBot remain unverified; portable Node BlockList IPv4/IPv6 CIDR coverage; INV-8.3 spoof fixture; `data/seo/crawl_economy.json`; `data/seo/slo_history.json`; `data/seo/invariant-results/faz-08.json` |
 | FAZ 09 | completed | PR #211, merge `6003221784888ecc71c8f3d9a84f73f219726aa8`; integer minor-unit SEO P&L; 2025-09-11 structural-break cohort isolation; incrementality confidence-interval contract; Generative AI metric excluded from money formula; zero conversion value leaves revenue/profit/ROI unknown; `data/seo/pnl.json`; `data/seo/warehouse/source_state.json`; `data/seo/invariant-results/faz-09.json` |
 | FAZ 10 | completed | PR #212, merge `ff20bcd8015574a028e8741f96f964baee58ca5d`; four crisis scenario cards; migration/incident runbooks; exact-SHA + rollback + human-approval boundaries; PR-level prohibited-action scanner; annual drill procedure defined but completion evidence `SKIP_NO_DATA`; `data/seo/invariant-results/faz-10.json` |
-| FAZ 11 | completed | PR #213 candidate; exact registry dry-run found 36 unique primary clusters / 36 unique owners; all clusters `partial:true` because first-party position/CTR/CVR/value/cost evidence is unavailable; no fabricated score/9-state/INVEST; industry CTR firewall; config-driven similarity/DIVEST/payback controls; Phase-01 decision single-writer; all BLOCK negative fixtures; `data/seo/kac/state.json`; `data/seo/invariant-results/faz-11.json` |
-| FAZ 12 | pending | — |
+| FAZ 11 | completed | PR #213, merge `ad8eb27d776ea567ea44588d6640f351b7f2b90e`; exact registry dry-run found 36 unique primary clusters / 36 unique owners; all clusters `partial:true` because first-party position/CTR/CVR/value/cost evidence is unavailable; no fabricated score/9-state/INVEST; industry CTR firewall; config-driven similarity/DIVEST/payback controls; Phase-01 decision single-writer; all BLOCK negative fixtures; `data/seo/kac/state.json`; `data/seo/invariant-results/faz-11.json` |
+| FAZ 12 | completed | PR candidate; five SLOs; config-only thresholds; daily read-only SEO SRE workflow; breach→GitHub issue; repeated-breach freeze proposal remains A3-only; alarm calibration; config-driven kill queue/deadline; four private-metric SLOs `SKIP_NO_DATA`, evidence freshness PASS; `data/seo/slo_history.json`; `data/seo/invariant-results/faz-12.json` |
 | FAZ 13 | pending | — |
 | FAZ 14 | pending | — |
 | FAZ 15 | pending | — |
@@ -46,5 +46,6 @@ Deployment decisions:
 - FAZ 09: **NO DEPLOY** — warehouse/P&L scripts, tests, data and docs only.
 - FAZ 10: **NO DEPLOY** — runbooks/tests/data/docs only.
 - FAZ 11: **NO DEPLOY** — read-only KAC scripts/tests/data/docs only; registry and runtime unchanged.
+- FAZ 12: **NO DEPLOY** — monitoring workflow/scripts/tests/data/docs only; no application runtime mutation.
 
 Measurement debt: GSC/GA4/CrUX field reporting, production request-log access, conversion attribution and production-cost feeds remain unavailable; E-35 requires measurement-dependent fields to stay `SKIP_NO_DATA`, `partial: true`, `confidence: low`, and `coldStart: null` until measured.
