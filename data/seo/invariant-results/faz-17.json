@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "artifact": "invariant-results/faz-17",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T13:05:00Z",
+    "generatorScript": "scripts/seo/portfolio-governance.ts",
+    "inputWindow": {"start": "2025-09-11", "end": "2026-08-10"},
+    "confidence": "low",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal", "2026-08-10:consent-mode-v2-candidate"]
+  },
+  "data": {
+    "phase": "faz-17",
+    "codeScopeComplete": true,
+    "decisionState": "SKIP_NO_DATA",
+    "results": [
+      {"id":"INV-17.1","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Concentration above config.thresholds.concentrationWarnPct requires a diversification plan. Current concentration is null because organic value is unavailable."},
+      {"id":"INV-17.2","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"DIVEST requires successor-or-410 record, internal-link cleanup PR, approved execution and monitoring/P&L closure. Partial fixture fails closed; current DIVEST queue is empty."},
+      {"id":"INV-17.3","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Any executed budget split differing from economics.budgetSplit requires an A3 approval record. Current budget is not executed."},
+      {"id":"INV-17.4","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Portfolio decision requires minimum P&L history from config, a KAC recommendation, kill-queue evaluation and an A3 approval record. Current history=0 months and KAC recommendation count=0, therefore decisions=[] and SKIP_NO_DATA."},
+      {"id":"INV-17.5","severity":"WARN","status":"PASS","negativeTestPassed":null,"evidence":"Payback calibration uses thresholds.paybackCalibrationDays and reports SKIP_NO_DATA until projected and actual payback observations exist."},
+      {"id":"INV-17.6","severity":"INFO","status":"PASS","negativeTestPassed":null,"evidence":"HARVEST maintenance-only scan is installed; no HARVEST decision or new-investment request exists in the current board."}
+    ]
+  }
+}
