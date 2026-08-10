@@ -166,13 +166,12 @@ export function assertDivestPendingAge(ageDays: number, divestPendingMaxDays: nu
 export function buildKacState(config: KacConfig, records: readonly RegistryRecord[]) {
   const clusterMap = buildClusterMap(records);
   const clusters = clusterMap.map((cluster) => {
-    const record = records.find((item) => item.primaryQueryClusterId === cluster.clusterId && item.status === "live");
     const score = scorePriority({
       expectedExtraClicks: null,
-      cvr: record?.conversions28d === null || record?.conversions28d === undefined ? null : null,
-      conversionValueMinor: record?.conversionValueMinor ?? null,
+      cvr: null,
+      conversionValueMinor: null,
       confidenceMultiplier: null,
-      effort: record?.productionCostMinor === null || record?.productionCostMinor === undefined ? null : null,
+      effort: null,
     });
     assertRecommendationAllowed(null, score.partial);
     return {
