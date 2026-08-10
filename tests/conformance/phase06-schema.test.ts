@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CANONICAL_PRICING } from "../../lib/billing/pricing-config";
 import { buildSeoBreadcrumbItems } from "../../lib/seo/breadcrumbs";
+import { generateSeoMetadata } from "../../lib/seo/build-metadata";
 import { requireSeoRoute } from "../../lib/seo/registry";
 import {
   buildPageGraph,
@@ -33,6 +34,18 @@ describe("SEO V6 Phase 06 schema/entity contract", () => {
     expect(visibleSource).toContain("{CANONICAL_PRICING.priceFormatted}");
     expect(CANONICAL_PRICING.description).toContain("Self-service software access");
     expect(JSON.stringify(product)).not.toMatch(/prepared for independent verification|managed consulting/i);
+  });
+
+  it("binds WebPage JSON-LD copy to the same public metadata resolver", () => {
+    const metadata = generateSeoMetadata("/product");
+    expect(metadata.title).toBe("CBAMValid Product | Self-Service Emissions Data Software");
+    expect(metadata.description).toBe(
+      "Customer-controlled B2B software for emissions data, deterministic calculations, automated quality controls, and automated PDF, JSON and XLSX delivery.",
+    );
+    const jsonLdSource = readFileSync(resolve(ROOT, "components/seo/JsonLdForRoute.tsx"), "utf8");
+    expect(jsonLdSource).toContain("generateSeoMetadata(path)");
+    expect(jsonLdSource).toContain("name: publicTitle");
+    expect(jsonLdSource).toContain("description: publicDescription");
   });
 
   it("deduplicates identical Organization identity at the schema layer", () => {
