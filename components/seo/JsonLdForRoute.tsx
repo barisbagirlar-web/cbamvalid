@@ -1,4 +1,5 @@
 import { buildSeoBreadcrumbItems } from "@/lib/seo/breadcrumbs";
+import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 import { requireSeoRoute } from "@/lib/seo/registry";
 import {
   buildPageGraph,
@@ -12,12 +13,16 @@ import {
 } from "@/lib/seo/schema";
 
 /**
- * JSON-LD is derived from the runtime SEO registry and shared commercial claims.
- * No route-specific copy overrides are allowed here: visible/metadata/schema copy
- * must converge on the same governed sources instead of drifting independently.
+ * JSON-LD uses the same route metadata resolver that feeds visible search metadata,
+ * while commercial Product/Offer claims stay on their verified pricing SSOT.
+ * This prevents schema copy from silently drifting behind title/description changes.
  */
 export function JsonLdForRoute({ path }: { path: string }) {
   const route = requireSeoRoute(path);
+  const metadata = generateSeoMetadata(path);
+  const publicTitle = typeof metadata.title === "string" ? metadata.title : route.title;
+  const publicDescription =
+    typeof metadata.description === "string" ? metadata.description : route.description;
   const nodes: JsonLdNode[] = [];
 
   if (route.schemaTypes.includes("Organization") || path === "/") {
@@ -27,7 +32,7 @@ export function JsonLdForRoute({ path }: { path: string }) {
     nodes.push(generateWebSiteSchema());
   }
   if (route.schemaTypes.includes("WebApplication")) {
-    nodes.push(generateWebApplicationSchema(route.description));
+    nodes.push(generateWebApplicationSchema(publicDescription));
   }
   if (route.schemaTypes.includes("Product") || route.schemaTypes.includes("Offer")) {
     const productDoc = generateProductOfferSchema();
@@ -55,8 +60,8 @@ export function JsonLdForRoute({ path }: { path: string }) {
     nodes.push(
       generateWebPageSchema({
         path: route.canonicalPath,
-        name: route.title,
-        description: route.description,
+        name: publicTitle,
+        description: publicDescription,
         type,
       }),
     );
