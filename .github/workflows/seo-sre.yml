@@ -69,7 +69,7 @@ jobs:
 
       - name: Upload SRE evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: seo-sre-${{ github.run_id }}
           path: .seo-evidence/slo-check.json
