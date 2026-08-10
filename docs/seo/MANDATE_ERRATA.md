@@ -162,6 +162,18 @@ Permanent correction: add only `lib/seo/breadcrumbs.ts` and `lib/seo/schema-vali
 
 Permanent correction: add `organicValueDropWarnPct`, `killEvaluationDays`, `killRefreshAttempts`, `deployFreezeConsecutiveBreaches`, and `alarmReopenCalibrationCount` to defaults, CBAMValid site config and the required threshold schema. Phase 12 may only consume these configured keys; it may not embed equivalent business thresholds in source code. This is control-plane only and does not change runtime application behavior.
 
+## E-43 — PHASE 14 OMITTED THE FIRST-PARTY ANALYTICS CONSENT OWNER
+
+[Kesin] Phase 14 requires consent-aware analytics behavior, but the real first-party SEO acquisition/event owner is `lib/seo/analytics-events.ts`. The installed Phase-14 contract originally authorized public pages and marketing components while omitting that exact file. Gating only GA4 transport would leave acquisition session storage, dataLayer event delivery and the first-party `/api/seo/track` transport outside the consent boundary.
+
+Permanent correction: authorize only `lib/seo/analytics-events.ts` in `faz-14.writes`. Phase 14 must fail closed unless analytics consent is explicitly `granted`: acquisition session storage, analytics dataLayer events, first-party `/api/seo/track` and GA4 delivery all remain inactive for `unset` or `denied`. Advertising storage, user data and personalization remain denied. This does not authorize unrelated `lib/seo/**` changes.
+
+## E-44 — V6 PR PHASE RESOLUTION FALSE-BLOCKS NON-SEO WORK
+
+[Kesin] The SEO V6 workflow intentionally watches broad runtime families such as `app/**`, `components/**`, `lib/seo/**` and `package.json`, but its PR phase resolver originally accepted only `seo/bootstrap-*` and `seo/faz-NN-*`. A valid non-SEO PR touching a watched file therefore exited 4 at phase resolution before typecheck, build or global V6 conformance could execute. PR #227 exposed this defect with `feat/cbamvalid-6.0-master-record-audit-fixes`.
+
+Permanent correction: phase resolution is centralized in `scripts/seo/resolve-v6-phase.mjs` and covered by `tests/conformance/v6-workflow-routing.test.mjs`. `seo/bootstrap-*` and valid `seo/faz-NN-*` remain phase-scoped; malformed or out-of-range `seo/*` branches fail closed. Ordinary non-SEO PRs do not invent a phase: only phase-specific write-lock/preflight and phase runtime mapping are skipped, while typecheck, production build, existing release guards, V6 conformance/negative fixtures and cold-start fail-closed proof remain mandatory. `workflow_dispatch` still requires an explicit valid phase. The bootstrap contract narrowly authorizes only the resolver file rather than widening to `scripts/seo/**`.
+
 ## Decision record
 
 These corrections preserve the source mandate's intent: stricter write isolation, machine-verifiable evidence, no invented data, no unnecessary deployment and no weakening of any legal/ethical restriction.
