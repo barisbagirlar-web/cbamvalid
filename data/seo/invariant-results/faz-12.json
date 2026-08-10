@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "artifact": "invariant-results/faz-12",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T10:03:00Z",
+    "generatorScript": "scripts/seo/seo-slo-check.ts",
+    "inputWindow": {"start": "2025-09-11", "end": "2026-08-10"},
+    "confidence": "low",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+  },
+  "data": {
+    "phase": "faz-12",
+    "codeScopeComplete": true,
+    "results": [
+      {"id":"INV-12.1","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Governed SLO breaches set issueRequired and the negative fixture rejects a breach without an issue link. The scheduled workflow creates or comments on an exact-title GitHub issue; it never deploys or merges."},
+      {"id":"INV-12.2","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Every machine breach threshold is referenced through thresholds.* config keys; literal/hard-coded threshold-source fixtures fail closed. Discovery lag remains observational because the mandate defines no breach threshold."},
+      {"id":"INV-12.3","severity":"WARN","status":"PASS","negativeTestPassed":null,"evidence":"Current baseline has no freeze proposal. Repeated breaches use thresholds.deployFreezeConsecutiveBreaches and unresolved proposal escalation uses thresholds.decisionEscalationDays; freeze execution remains A3-only."},
+      {"id":"INV-12.4","severity":"INFO","status":"PASS","negativeTestPassed":null,"evidence":"Latest Phase-11 conformance and P&L artifacts are within thresholds.evidenceSloMaxAgeDays at the Phase-12 baseline. Missing/stale evidence becomes a governed evidence-freshness breach."},
+      {"id":"INV-12.5","severity":"BLOCK","status":"PASS","negativeTestPassed":true,"evidence":"Kill candidates use config-driven age/refresh/deadline rules; an overdue triggered asset without a non-INVEST portfolio decision is rejected. Current kill queue is empty."}
+    ]
+  }
+}
