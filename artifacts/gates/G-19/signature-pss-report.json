@@ -1,0 +1,11 @@
+{
+  "scheme": "RSA-4096 PSS (RFC 8017 §8.1)",
+  "saltLength": 32,
+  "legacySchemeKept": "RSA-SIGN-PKCS1-v1.5 verified through schema-aware verifier",
+  "verified": [
+    "PSS signature produced and verified",
+    "legacy PKCS#1 v1.5 signature still verifies",
+    "cross-scheme verification fails",
+    "shipped verify/cli.js is schema-aware and verifies a PSS package"
+  ]
+}

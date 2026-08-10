@@ -1,0 +1,10 @@
+{
+  "rule": "no-float-in-hashed-fields (eslint) + assertNoFloatFieldsInHash (runtime)",
+  "decimalArithmetic": "decimal.js precision 34, ROUND_HALF_UP",
+  "verified": [
+    "0.1 + 0.2 exact via Decimal, trap via IEEE 754",
+    "fixed-point string hashes byte-identically",
+    "runtime guard rejects number in monetary/emissions fields",
+    "produced STEEL_IN calculation trace has zero float-bearing numbers"
+  ]
+}

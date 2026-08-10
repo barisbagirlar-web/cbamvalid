@@ -1,0 +1,49 @@
+{
+  "rule": "Legal source active only within 90 days of last verification",
+  "asOf": "2026-08-10",
+  "entries": [
+    {
+      "id": "REG_2023_956",
+      "celexId": "32023R0956",
+      "lastVerifiedAt": "2026-07-31",
+      "ageInDays": 10,
+      "fresh": true
+    },
+    {
+      "id": "REG_2025_2083",
+      "celexId": "32025R2083",
+      "lastVerifiedAt": "2026-07-31",
+      "ageInDays": 10,
+      "fresh": true
+    },
+    {
+      "id": "IMPL_2025_2546",
+      "celexId": "32025R2546",
+      "lastVerifiedAt": "2026-07-31",
+      "ageInDays": 10,
+      "fresh": true
+    },
+    {
+      "id": "IMPL_2025_2547",
+      "celexId": "32025R2547",
+      "lastVerifiedAt": "2026-07-31",
+      "ageInDays": 10,
+      "fresh": true
+    },
+    {
+      "id": "IMPL_2025_2548",
+      "celexId": "32025R2548",
+      "lastVerifiedAt": "2026-07-31",
+      "ageInDays": 10,
+      "fresh": true
+    },
+    {
+      "id": "DEL_2025_2551",
+      "celexId": "32025R2551",
+      "lastVerifiedAt": "2026-07-31",
+      "ageInDays": 10,
+      "fresh": true
+    }
+  ],
+  "allFresh": true
+}

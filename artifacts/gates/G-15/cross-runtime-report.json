@@ -1,0 +1,53 @@
+{
+  "rule": "RFC8785:JCS:1.0",
+  "runtimes": [
+    "node:crypto (SHA-256)",
+    "python3:hashlib (SHA-256)"
+  ],
+  "vectors": 6,
+  "allMatched": true,
+  "comparisons": [
+    {
+      "name": "IETF Example",
+      "canonicalEqual": true,
+      "hashEqual": true,
+      "nodeHash": "2881a6bfea35e894d37de477c6edc1474ed4714d7815631569f3795ee7bd7a5e",
+      "pythonHashValue": "2881a6bfea35e894d37de477c6edc1474ed4714d7815631569f3795ee7bd7a5e"
+    },
+    {
+      "name": "Unicode duplicate keys",
+      "canonicalEqual": true,
+      "hashEqual": true,
+      "nodeHash": "3035901985b576bf315f5fb3a4190431292215297e9a498cbe3eb02238464021",
+      "pythonHashValue": "3035901985b576bf315f5fb3a4190431292215297e9a498cbe3eb02238464021"
+    },
+    {
+      "name": "Key ordering by Unicode code point",
+      "canonicalEqual": true,
+      "hashEqual": true,
+      "nodeHash": "020a4871ec48ab167904b5811995d98b95bc5b5f6a1601e4690b71ddb0c7f367",
+      "pythonHashValue": "020a4871ec48ab167904b5811995d98b95bc5b5f6a1601e4690b71ddb0c7f367"
+    },
+    {
+      "name": "Big number normalisation",
+      "canonicalEqual": true,
+      "hashEqual": true,
+      "nodeHash": "c435e8c3206613ec6eaa28a4c6108689be282a82116aeb539e443992a567c488",
+      "pythonHashValue": "c435e8c3206613ec6eaa28a4c6108689be282a82116aeb539e443992a567c488"
+    },
+    {
+      "name": "Big number exponential form",
+      "canonicalEqual": true,
+      "hashEqual": true,
+      "nodeHash": "96fbbc7943228390d9e6d72a40cd690dc7574de64aac440ea59f091227443ef7",
+      "pythonHashValue": "96fbbc7943228390d9e6d72a40cd690dc7574de64aac440ea59f091227443ef7"
+    },
+    {
+      "name": "Representative sealed package",
+      "canonicalEqual": true,
+      "hashEqual": true,
+      "nodeHash": "163309044edc4cd4ee003785ec7b49cb3ed459334504592e2a0957f68c8804ce",
+      "pythonHashValue": "163309044edc4cd4ee003785ec7b49cb3ed459334504592e2a0957f68c8804ce"
+    }
+  ]
+}

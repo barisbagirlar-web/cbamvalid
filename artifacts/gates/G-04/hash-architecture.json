@@ -52,5 +52,5 @@
       "reproduction": "SHA-256 over the canonical serialisation of the locked legal-source registry version."
     }
   ],
-  "reproducedHash": "cee72d62e5da2bf86064c2f650b4eb033c0cd7b0d85df6fa9d6c5c4e8e5267c8"
+  "reproducedHash": "e1e2ed1d86d38a2ab4abac8358ecd690ca1cf4c74a53985cb3266e089e75cac8"
 }
