@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "artifact": "linkable_assets",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T10:27:00Z",
+    "generatorScript": "scripts/seo/audit-offpage.ts",
+    "inputWindow": {"start": null, "end": "2026-08-10"},
+    "confidence": "high",
+    "partial": false,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+  },
+  "data": {
+    "requiredAssetTypes": ["data-study","tool-calculator","template-checklist","original-research","expert-commentary-repository","visual-asset"],
+    "linkableAssetCount": 18,
+    "prCampaignEligible": true,
+    "prCampaignStatus": "REQUIRES_A3_APPROVAL",
+    "assets": [
+      {"route":"/answers","registryType":"category","primaryEntity":"CBAM answers","registryLinkableAsset":true,"mandateAssetType":"expert-commentary-repository"},
+      {"route":"/case-studies","registryType":"article","primaryEntity":"CBAM preparation scenarios","registryLinkableAsset":true,"mandateAssetType":null},
+      {"route":"/cbam-2026-definitive-period","registryType":"article","primaryEntity":"CBAM definitive period 2026","registryLinkableAsset":true,"mandateAssetType":null},
+      {"route":"/cbam-actual-vs-default-values","registryType":"article","primaryEntity":"CBAM actual versus default values","registryLinkableAsset":true,"mandateAssetType":null},
+      {"route":"/cbam-certificate-price","registryType":"article","primaryEntity":"CBAM certificate price","registryLinkableAsset":true,"mandateAssetType":null},
+      {"route":"/cbam-cn-code-scope","registryType":"article","primaryEntity":"CBAM CN code scope","registryLinkableAsset":true,"mandateAssetType":null},
+      {"route":"/cbam-default-values","registryType":"article","primaryEntity":"CBAM default values","registryLinkableAsset":true,"mandateAssetType":null},
+      {"route":"/cbam-embedded-emissions-calculation","registryType":"article","primaryEntity":"CBAM embedded emissions calculation","registryLinkableAsset":true,"mandateAssetType":null},
+      {"route":"/cbam-exporter-evidence-requirements","registryType":"article","primaryEntity":"CBAM exporter evidence requirements","registryLinkableAsset":true,"mandateAssetType":null},
+      {"route":"/cbam-non-eu-producer-guide","registryType":"article","primaryEntity":"CBAM for non-EU producers","registryLinkableAsset":true,"mandateAssetType":null},
+      {"route":"/cbam-verification-preparation","registryType":"article","primaryEntity":"CBAM verification preparation","registryLinkableAsset":true,"mandateAssetType":null},
+      {"route":"/cn-code","registryType":"category","primaryEntity":"CBAM CN code scope verification","registryLinkableAsset":true,"mandateAssetType":null},
+      {"route":"/glossary","registryType":"category","primaryEntity":"CBAM glossary","registryLinkableAsset":true,"mandateAssetType":"expert-commentary-repository"},
+      {"route":"/methodology","registryType":"article","primaryEntity":"CBAM calculation methodology","registryLinkableAsset":true,"mandateAssetType":null},
+      {"route":"/rulesets","registryType":"article","primaryEntity":"CBAMValid published rulesets","registryLinkableAsset":true,"mandateAssetType":null},
+      {"route":"/sample-dossier","registryType":"product","primaryEntity":"CBAMValid sample automated output","registryLinkableAsset":true,"mandateAssetType":"template-checklist"},
+      {"route":"/security","registryType":"legal","primaryEntity":"CBAMValid security and data protection","registryLinkableAsset":true,"mandateAssetType":null},
+      {"route":"/trust","registryType":"other","primaryEntity":"CBAMValid trust evidence registry","registryLinkableAsset":true,"mandateAssetType":null}
+    ]
+  }
+}
