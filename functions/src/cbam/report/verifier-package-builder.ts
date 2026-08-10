@@ -46,7 +46,9 @@ import type { HonestScoreboard } from "./honest-scoreboard";
 import {
   REQUIRED_TOP_LEVEL_COMPONENTS,
   REQUIRED_TOP_LEVEL_COMPONENTS_V5,
+  REQUIRED_TOP_LEVEL_COMPONENTS_V6,
   REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5,
+  REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6,
   REQUIRED_TOP_LEVEL_COMPONENT_COUNT,
 } from "./package-components";
 
@@ -54,6 +56,8 @@ export {
   REQUIRED_TOP_LEVEL_COMPONENTS,
   REQUIRED_TOP_LEVEL_COMPONENTS_V5,
   REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5,
+  REQUIRED_TOP_LEVEL_COMPONENTS_V6,
+  REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6,
 } from "./package-components";
 
 export type EvidenceBinary = { evidenceId: string; fileName: string; bytes: Buffer };
@@ -61,7 +65,7 @@ export type PackageArtifact = { path: string; bytes: Buffer; mediaType: string }
 
 type ManifestFile = { path: string; sha256: string; sizeBytes: number; mediaType: string };
 export type DataIntegrityManifest = {
-  schemaVersion: "CBAMVALID-DOSSIER-4.0" | "CBAMVALID-DOSSIER-5.0";
+  schemaVersion: "CBAMVALID-DOSSIER-4.0" | "CBAMVALID-DOSSIER-5.0" | "CBAMVALID-DOSSIER-6.0";
   reportId: string;
   caseId: string;
   releaseVersion: number;
@@ -246,7 +250,8 @@ function buildPdfArtifacts(params: {
 
   const isV5 =
     assessmentContext?.productCode === "pack_premium_dossier_v5" ||
-    assessmentContext?.releaseContractVersion === 5;
+    (assessmentContext?.releaseContractVersion ?? 0) >= 5;
+  const isV6 = (assessmentContext?.releaseContractVersion ?? 0) === 6;
   if (isV5) {
     // V5 PDFs
     const timestamp = assessmentContext?.assessmentTimestamp || generatedAt;
@@ -257,10 +262,10 @@ function buildPdfArtifacts(params: {
     const periodAssessment = getReportingPeriodAssessment(caseData, timestamp);
     const premiumContractResult = evaluatePremiumChapterContract({ caseData, calculation: params.calculation, model });
     const dossierModel: PremiumDossierViewModelV2 = {
-      schemaVersion: "CBAMVALID-DOSSIER-5.0",
+      schemaVersion: isV6 ? "CBAMVALID-DOSSIER-6.0" : "CBAMVALID-DOSSIER-5.0",
       productCode: "pack_premium_dossier_v5",
-      releaseContractVersion: 5,
-      dossierSchemaVersion: "CBAMVALID-DOSSIER-5.0",
+      releaseContractVersion: isV6 ? 6 : 5,
+      dossierSchemaVersion: isV6 ? "CBAMVALID-DOSSIER-6.0" : "CBAMVALID-DOSSIER-5.0",
       reportingPeriodAssessment: periodAssessment,
       reportId: params.reportId,
       packageCode: params.packageCode,
@@ -529,7 +534,7 @@ function buildCsvArtifacts(params: {
 
   const isV5 =
     model.productCode === "pack_premium_dossier_v5" ||
-    model.releaseContractVersion === 5;
+    (model.releaseContractVersion ?? 0) >= 5;
   if (isV5) {
     // V5 CSVs
     return [
@@ -665,13 +670,14 @@ export function buildDataIntegrityManifest(params: {
   generatedAt: string;
   evidenceCount: number;
   productCode?: string;
-  releaseContractVersion?: 5;
+  releaseContractVersion?: 5 | 6;
 }): { manifest: DataIntegrityManifest; bytes: Buffer } {
   const isV5 =
     params.productCode === "pack_premium_dossier_v5" ||
     params.releaseContractVersion === 5;
+  const isV6 = params.releaseContractVersion === 6;
   const manifest: DataIntegrityManifest = {
-    schemaVersion: isV5 ? "CBAMVALID-DOSSIER-5.0" : "CBAMVALID-DOSSIER-4.0",
+    schemaVersion: isV6 ? "CBAMVALID-DOSSIER-6.0" : isV5 ? "CBAMVALID-DOSSIER-5.0" : "CBAMVALID-DOSSIER-4.0",
     reportId: params.reportId,
     caseId: params.caseData.caseId || "",
     releaseVersion: params.releaseVersion,
@@ -681,8 +687,16 @@ export function buildDataIntegrityManifest(params: {
     calculationRootHash: params.calculation.calculationRootHash,
     legalSourceRegistryHash: DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT,
     componentContract: {
-      requiredTopLevelComponents: isV5 ? REQUIRED_TOP_LEVEL_COMPONENTS_V5 : REQUIRED_TOP_LEVEL_COMPONENTS,
-      requiredCount: isV5 ? REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5 : REQUIRED_TOP_LEVEL_COMPONENT_COUNT,
+      requiredTopLevelComponents: isV6
+        ? REQUIRED_TOP_LEVEL_COMPONENTS_V6
+        : isV5
+          ? REQUIRED_TOP_LEVEL_COMPONENTS_V5
+          : REQUIRED_TOP_LEVEL_COMPONENTS,
+      requiredCount: isV6
+        ? REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6
+        : isV5
+          ? REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5
+          : REQUIRED_TOP_LEVEL_COMPONENT_COUNT,
     },
     files: params.artifacts
       .filter((item) => item.path !== "Data Integrity Manifest.json" && item.path !== "Manifest Signature.sig")
@@ -690,7 +704,7 @@ export function buildDataIntegrityManifest(params: {
       .sort((left, right) => left.path.localeCompare(right.path)),
     evidenceCount: params.evidenceCount,
     signatureScope: "EXACT_UTF8_BYTES_OF_THIS_MANIFEST",
-    ...(isV5 ? { manifestExclusions: ["Data Integrity Manifest.json", "Manifest Signature.sig"] } : {}),
+    ...(isV5 || isV6 ? { manifestExclusions: ["Data Integrity Manifest.json", "Manifest Signature.sig"] } : {}),
   };
   return { manifest, bytes: Buffer.from(canonical(manifest), "utf8") };
 }
@@ -731,12 +745,15 @@ export async function finalizeVerifierPackage(params: {
   ];
   const manifest = JSON.parse(params.manifestBytes.toString("utf8")) as DataIntegrityManifest;
   const isV5 = manifest.schemaVersion === "CBAMVALID-DOSSIER-5.0";
+  const isV6 = manifest.schemaVersion === "CBAMVALID-DOSSIER-6.0";
 
   // ---- Patch 5: Strengthened component contract diagnostics ----
   const topLevel = topLevelComponents(allArtifacts.map((item) => item.path));
-  const expected: string[] = isV5
-    ? [...REQUIRED_TOP_LEVEL_COMPONENTS_V5].sort()
-    : [...REQUIRED_TOP_LEVEL_COMPONENTS].sort();
+  const expected: string[] = isV6
+    ? [...REQUIRED_TOP_LEVEL_COMPONENTS_V6].sort()
+    : isV5
+      ? [...REQUIRED_TOP_LEVEL_COMPONENTS_V5].sort()
+      : [...REQUIRED_TOP_LEVEL_COMPONENTS].sort();
   const missingComponents = expected.filter((component) => !topLevel.includes(component));
   const extraComponents = topLevel.filter((component) => !expected.includes(component));
   if (missingComponents.length > 0 || extraComponents.length > 0) {
@@ -866,8 +883,8 @@ export async function finalizeVerifierPackage(params: {
     throw new Error("PACKAGE_ZIP_SIGNATURE_CONTENT_MISMATCH");
   }
 
-  // Verify critical V5 components exist in ZIP
-  if (isV5) {
+  // Verify critical V5/V6 components exist in ZIP
+  if (isV5 || isV6) {
     const criticalPaths = [
       "Data Integrity Manifest.json",
       "Manifest Signature.sig",
@@ -893,13 +910,14 @@ export async function finalizeVerifierPackage(params: {
 
   // Regulatory provenance check
   if (
-    manifest.schemaVersion !== (isV5 ? "CBAMVALID-DOSSIER-5.0" : "CBAMVALID-DOSSIER-4.0") ||
+    manifest.schemaVersion !==
+      (isV6 ? "CBAMVALID-DOSSIER-6.0" : isV5 ? "CBAMVALID-DOSSIER-5.0" : "CBAMVALID-DOSSIER-4.0") ||
     manifest.legalSourceRegistryHash !== DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT
   ) {
     throw new Error("PACKAGE_MANIFEST_REGULATORY_PROVENANCE_INVALID");
   }
 
-  const primaryPdfPath = isV5 ? "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf" : "Operator Emissions Report.pdf";
+  const primaryPdfPath = isV5 || isV6 ? "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf" : "Operator Emissions Report.pdf";
   const primaryPdf = allArtifacts.find((item) => item.path === primaryPdfPath)?.bytes;
   const workbook = allArtifacts.find((item) => item.path === "Verifier Workspace.xlsx")?.bytes;
   if (!primaryPdf || !workbook || primaryPdf.byteLength < 5000 || workbook.byteLength < 5000) {

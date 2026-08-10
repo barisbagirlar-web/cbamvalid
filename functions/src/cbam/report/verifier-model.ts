@@ -69,7 +69,7 @@ export interface VerifierPackageModel {
   automatedReadiness: AutomatedReadinessStatus;
   independentVerifierStatus: VerifierReviewStatus;
   productCode?: string;
-  releaseContractVersion?: 5;
+  releaseContractVersion?: 5 | 6;
   disclaimer: string;
   ruleset: {
     version: string;
@@ -239,7 +239,7 @@ export function buildVerifierPackageModel(params: {
   generatedAt: string;
   assessmentTimestamp?: string;
   productCode?: string;
-  releaseContractVersion?: 5;
+  releaseContractVersion?: 5 | 6;
 }): VerifierPackageModel {
   const year = Number(params.caseData.reportingPeriod.year.value);
   if (!Number.isInteger(year) || year < 2026) throw new Error("VERIFIER_MODEL_REPORTING_YEAR_INVALID");

@@ -19,7 +19,6 @@ describe("G-04 hash.architecture", () => {
     const traceHashes = built.calculation.trace.map((item) => ({ formulaId: item.formulaId, hash: item.calculationHash }));
     const graphHashes = traceHashes.map((item) => ({ ...item }));
     const { rows, inconsistencies } = buildHashArchitecture({
-      manifestHash: "m".repeat(64),
       calculationRootHash: built.calculation.calculationRootHash,
       graphRootHash: built.calculation.calculationRootHash,
       legalSourceRegistryHash: built.model.ruleset.sourceHash,
@@ -63,7 +62,6 @@ describe("G-04 hash.architecture", () => {
       hash: index === 0 ? "d".repeat(64) : item.hash,
     }));
     const { inconsistencies } = buildHashArchitecture({
-      manifestHash: "m".repeat(64),
       calculationRootHash: built.calculation.calculationRootHash,
       legalSourceRegistryHash: built.model.ruleset.sourceHash,
       traceCalculationHashes: traceHashes,

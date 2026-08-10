@@ -13,7 +13,7 @@ import { assessOrigin } from "../dossier/01-ruleset/origin.rules";
 Decimal.set({ precision: 34, rounding: Decimal.ROUND_HALF_UP });
 
 export const CALCULATION_RULESET = "EU-CBAM-DEFINITIVE-2026";
-export const CALCULATION_ENGINE_VERSION = "3.0.0";
+export const CALCULATION_ENGINE_VERSION = "4.0.0";
 export const CALCULATION_SOURCE = "Regulation (EU) 2023/956, Annex IV; active definitive-period implementing rules";
 export const ALLOCATION_TOLERANCE = new Decimal("0.000001");
 

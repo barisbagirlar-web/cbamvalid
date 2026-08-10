@@ -19,7 +19,11 @@ import { computeTwoAxisScores } from "../../functions/src/cbam/report/v6/two-axi
 import { derivePackageReadinessState } from "../../functions/src/cbam/report/v6/package-state";
 import type { PackageReadinessState } from "../../functions/src/cbam/report/v6/types";
 import type { MasterRecordModel } from "../../functions/src/cbam/report/v6/master-record-model";
-import { buildMasterRecordModel } from "../../functions/src/cbam/report/v6/master-record-model";
+import {
+  buildMasterRecordModel,
+  MASTER_RECORD_MANIFEST_REFERENCE,
+  MASTER_RECORD_SIGNATURE_REFERENCE,
+} from "../../functions/src/cbam/report/v6/master-record-model";
 import { createFourDossierCase, buildFourDossierEvidenceFiles, type FourDossierKey } from "../fixtures/four-dossiers";
 import { FIXTURE_PACKAGE_CODE } from "../fixtures/verifier-grade-case";
 
@@ -28,7 +32,6 @@ export const V6_SCHEMA_VERSION = "CBAMVALID-DOSSIER-6.0";
 export const V6_ENGINE_VERSION = "4.0.0";
 export const V6_RULESET = "EU-CBAM-DEFINITIVE-2026";
 const V6_REPORT_ID = `report_${"v6gate".padEnd(57, "0")}`;
-const DUMMY_MANIFEST_HASH = "0".repeat(64);
 
 export interface V6BuiltPackage {
   readonly key: FourDossierKey;
@@ -82,9 +85,9 @@ export async function buildV6PackageFromCase(
     schemaVersion: V6_SCHEMA_VERSION,
     engineVersion: V6_ENGINE_VERSION,
     generatedAt: assessmentTimestamp,
-    manifestHash: DUMMY_MANIFEST_HASH,
+    manifestReference: MASTER_RECORD_MANIFEST_REFERENCE,
     signatureAlgorithm: "RSA-SHA256",
-    signatureKeyVersion: "v1",
+    signatureReference: MASTER_RECORD_SIGNATURE_REFERENCE,
     signatureProtectionLevel: "FULL",
     scores,
     state: stateDecision.state,
