@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAnalyticsConsent, setAnalyticsConsent } from "@/lib/seo/analytics-events";
+import {
+  captureAcquisitionFromLocation,
+  getAnalyticsConsent,
+  setAnalyticsConsent,
+  trackSeoEvent,
+} from "@/lib/seo/analytics-events";
 import { consentModeUpdate, type ConsentChoice } from "./consent-mode";
 
 function ensureGtagLoaded(): void {
@@ -24,11 +29,27 @@ function ensureGtagLoaded(): void {
   }
 }
 
+function resumeCurrentPageMeasurement(): void {
+  const dims = captureAcquisitionFromLocation();
+  trackSeoEvent("page_view", dims);
+  const pathname = window.location.pathname;
+  if (pathname === "/" || pathname.startsWith("/cbam-") || pathname.startsWith("/cn-code")) {
+    trackSeoEvent("organic_landing_view", dims);
+  }
+  if (pathname === "/product") trackSeoEvent("seo_to_product", dims);
+  if (pathname === "/pricing") trackSeoEvent("seo_to_pricing", dims);
+  if (pathname === "/register") trackSeoEvent("seo_to_register", dims);
+  if (pathname.startsWith("/cases/new")) trackSeoEvent("dossier_start", dims);
+}
+
 function applyChoice(choice: ConsentChoice): void {
   setAnalyticsConsent(choice);
   window.gtag?.("consent", "update", consentModeUpdate(choice));
   window.__cbamConsentModeV2 = { version: 2, choice, defaultDenied: true };
-  if (choice === "granted") ensureGtagLoaded();
+  if (choice === "granted") {
+    ensureGtagLoaded();
+    resumeCurrentPageMeasurement();
+  }
 }
 
 export function AnalyticsConsentManager() {
