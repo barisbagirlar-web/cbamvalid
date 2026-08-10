@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "artifact": "slo_history",
+    "schemaVersion": "6.1",
+    "generatedAt": "2026-08-10T06:34:45Z",
+    "generatorScript": "phase-08-public-proxy",
+    "inputWindow": {"start": null, "end": null},
+    "confidence": "low",
+    "partial": true,
+    "siteId": "cbamvalid",
+    "coldStart": null,
+    "structuralBreaksApplied": ["2025-09-11:num100-removal"]
+  },
+  "data": {
+    "observations": [
+      {
+        "observedAt": "2026-08-10T06:34:45Z",
+        "phase": "faz-08",
+        "crawlWastePct": null,
+        "discoveryLagHours": null,
+        "verifiedBotTrafficPct": null,
+        "status": "SKIP_NO_DATA",
+        "reason": "Production request logs and GSC discovery timestamps are unavailable; public-proxy mode forbids invented SLO values."
+      }
+    ]
+  }
+}
