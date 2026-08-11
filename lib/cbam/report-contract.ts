@@ -115,6 +115,12 @@ export type SealedReportView = z.infer<typeof SealedReportViewSchema>;
 export function parseSealedReportView(value: unknown): SealedReportView {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const raw = { ...value as Record<string, any> };
+  // Firestore/JSON null is not valid for z.string().optional(); drop non-strings.
+  if (typeof raw.readinessScore !== "string") delete raw.readinessScore;
+  if (typeof raw.operatorReadinessStatus !== "string") delete raw.operatorReadinessStatus;
+  if (typeof raw.installationName !== "string") delete raw.installationName;
+  if (typeof raw.dossierSchemaVersion !== "string") delete raw.dossierSchemaVersion;
+
   let packageMetadata: z.infer<typeof PackageMetadataSchema> | undefined;
   if (raw.packageMetadata && typeof raw.packageMetadata === "object") {
     const metaParse = PackageMetadataSchema.safeParse(raw.packageMetadata);
@@ -147,5 +153,6 @@ export function parseSealedReportView(value: unknown): SealedReportView {
     packageTopLevelComponentCount: manifestCount !== undefined ? manifestCount : defaultCount,
     automatedReadiness: isV5 ? "OPERATOR_PREPARATION_COMPLETE" : "READY_FOR_INDEPENDENT_VERIFICATION",
     independentVerifierStatus: (raw.independentVerifierStatus as string) || "NOT_REVIEWED",
+    verificationMaterialityRate: 0.05,
   });
 }

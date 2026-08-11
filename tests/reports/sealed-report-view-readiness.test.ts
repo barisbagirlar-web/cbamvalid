@@ -77,4 +77,9 @@ describe("sealed report view readiness mapping (Enterprise 1000 mandate)", () =>
     const view = toSealedReportView(baseRecord({}));
     expect(view.reportingYear).toBeUndefined();
   });
+
+  it("coerces readinessScore null to absent (Firestore null vs Zod optional)", () => {
+    const view = toSealedReportView(baseRecord({ readinessScore: null }));
+    expect(view.readinessScore).toBeUndefined();
+  });
 });

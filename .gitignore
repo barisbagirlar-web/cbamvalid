@@ -56,6 +56,8 @@ artifacts/step8-final-action/
 # G-09 rendered V6 package byproduct (reproducible via npm run render:v6-gate-package);
 # the gate evidence itself (scan-result.txt / scan-report.json) is committed.
 artifacts/gates/G-09/package/
+# teb232 test hesabı sıfırlama backup çıktısı (scripts/reset-teb232-two-scenarios.ts ile üretilir)
+artifacts/teb232-reset/
 tsconfig.check.tsbuildinfo
 
 # Local SEO lab CWV scratch (baseline lives in docs/seo/)
