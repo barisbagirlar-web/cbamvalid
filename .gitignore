@@ -67,5 +67,6 @@ tsconfig.check.tsbuildinfo
 CBAM-PADDLE-*.txt
 
 # Kimi agent ERP görünümü/kullanıcı arayüzü teslimat paketi
-# (patch bundle'ı + Vite prototipi — RM-CBAMVALID-008 teslim artefaktı, repo'ya girmez)
-Kimi_Agent_ERP Görünümü ve Kullanıcı Arayüzü/
+# (patch bundle'ı + Vite prototipi — RM-008/009 teslim artefaktı, repo'ya girmez)
+# Glob covers the base folder and Finder " (1)" / " (2)" duplicates.
+Kimi_Agent_ERP*/

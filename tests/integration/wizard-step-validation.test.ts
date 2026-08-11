@@ -362,6 +362,90 @@ describe("wizard step validation", () => {
 });
 
 /**
+ * Step 7 carbon-price evidence SSOT (2026-08-11) — regression suite.
+ *
+ * The Step 7 UI links carbon-price evidence exactly once per record via
+ * `proofOfPaymentEvidenceId`; the QC engine (QC_11) and the seal path verify
+ * that same record-level link. The stepper's per-field evidence check must
+ * honor it too — otherwise the step rail reports phantom "N docs needed"
+ * while the QC inspector and the seal see ALL CLEAR.
+ */
+describe("step 7 carbon price evidence — record-level proof SSOT", () => {
+  const EV_PAY = "55555555-5555-4555-8555-555555555555";
+
+  function fullyLinkedCase(): AuditReadyCase {
+    const complete = baseCase();
+    linkEvidence(complete, EV_EORI, "importerIdentity.eoriNumber", "EORI_REGISTRATION_RECORD");
+    linkEvidence(complete, EV_EORI, "importerIdentity.legalName", "COMMERCIAL_REGISTRY_EXTRACT");
+    linkEvidence(complete, EV_EORI, "exporterIdentity.legalName", "COMMERCIAL_REGISTRY_EXTRACT");
+    linkEvidence(complete, EV_EORI, "exporterIdentity.address", "COMMERCIAL_REGISTRY_EXTRACT");
+    linkEvidence(complete, EV_EORI, "reportingPeriod.year", "SIGNED_PERIOD_CLOSURE_SHEET");
+    linkEvidence(complete, EV_EORI, "installation.name", "MONITORING_PLAN");
+    linkEvidence(complete, EV_EORI, "installation.country", "MONITORING_PLAN");
+    linkEvidence(complete, EV_EORI, "installation.productionRoute", "MONITORING_PLAN");
+    linkEvidence(complete, EV_BOUNDARY, "installation.systemBoundaries", "MONITORING_PLAN");
+    linkEvidence(complete, EV_CN, "goods.0.cnCode", "CUSTOMS_DECLARATION");
+    linkEvidence(complete, EV_VOL, "goods.0.productionVolume", "SIGNED_PRODUCTION_LEDGER");
+    linkEvidence(complete, EV_VOL, "directEmissions", "DIRECT_EMISSIONS_CALCULATION_WORKBOOK");
+    linkEvidence(complete, EV_VOL, "electricityConsumed", "ELECTRICITY_METER_RECORD");
+    linkEvidence(complete, EV_VOL, "gridEmissionFactor", "OFFICIAL_GRID_OPERATOR_PUBLICATION");
+    return complete;
+  }
+
+  function withCarbonPriceRecord(caseData: AuditReadyCase, proofEvidenceId?: string): AuditReadyCase {
+    caseData.carbonPriceRecords.push({
+      id: "99999999-9999-4999-8999-999999999999",
+      amountPaid: "1500000",
+      applicableEmissions: "150000",
+      currency: "EUR",
+      paymentPeriod: "2026",
+      legislationReference: "Origin Country Carbon Act 2025",
+      ...(proofEvidenceId ? { proofOfPaymentEvidenceId: proofEvidenceId } : {}),
+      rebateInformation: "",
+      eligibleCertificateReduction: "150000",
+    });
+    return caseData;
+  }
+
+  it("clears all three carbon-price evidence requirements when the record-level payment proof is linked", () => {
+    const caseData = withCarbonPriceRecord(fullyLinkedCase(), EV_PAY);
+    linkEvidence(caseData, EV_PAY, "carbonPriceRecords.0.proofOfPaymentEvidenceId", "OFFICIAL_PAYMENT_RECEIPT");
+
+    const validation = validateWizardStep(7, caseData);
+
+    expect(validation.missingEvidenceCount).toBe(0);
+    expect(validation.evidenceIssues).toHaveLength(0);
+    expect(validation.valid).toBe(true);
+    expect(validation.state).toBe("COMPLETE");
+  });
+
+  it("still flags all three carbon-price evidence requirements when no payment proof is linked", () => {
+    const caseData = withCarbonPriceRecord(fullyLinkedCase());
+
+    const validation = validateWizardStep(7, caseData);
+    const carbonIssues = validation.evidenceIssues.filter((issue) =>
+      issue.fieldPath.startsWith("carbonPriceRecords.")
+    );
+
+    expect(carbonIssues).toHaveLength(3);
+    expect(validation.valid).toBe(false);
+    expect(validation.state).toBe("NEEDS_DOCUMENTS");
+  });
+
+  it("treats a dangling proof-of-payment reference as unlinked (mirrors QC_11)", () => {
+    // EV_PAY is referenced by the record but never enters the evidence register.
+    const caseData = withCarbonPriceRecord(fullyLinkedCase(), EV_PAY);
+
+    const validation = validateWizardStep(7, caseData);
+    const carbonIssues = validation.evidenceIssues.filter((issue) =>
+      issue.fieldPath.startsWith("carbonPriceRecords.")
+    );
+
+    expect(carbonIssues).toHaveLength(3);
+  });
+});
+
+/**
  * FAZ P0 UX (2026-08-01) — final-review wizard regression suite.
  *
  * The wizard must never force Step 8 back to Step 7. Navigation and sealing
