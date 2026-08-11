@@ -15,6 +15,7 @@ export interface CnResolution {
 }
 
 const CN_PREFIX_TO_SECTOR: ReadonlyArray<{ readonly prefix: string; readonly sector: CbamSector }> = [
+  { prefix: "2507", sector: "CEMENT" },
   { prefix: "2523", sector: "CEMENT" },
   { prefix: "27160000", sector: "ELECTRICITY" },
   { prefix: "28041000", sector: "HYDROGEN" },
