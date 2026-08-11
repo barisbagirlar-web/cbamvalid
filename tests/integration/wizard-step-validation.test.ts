@@ -443,6 +443,40 @@ describe("step 7 carbon price evidence — record-level proof SSOT", () => {
 
     expect(carbonIssues).toHaveLength(3);
   });
+
+  it("does not clear carbon-price evidence requirements when the proof is REJECTED (QC_11 parity)", () => {
+    const caseData = withCarbonPriceRecord(fullyLinkedCase(), EV_PAY);
+    linkEvidence(caseData, EV_PAY, "carbonPriceRecords.0.proofOfPaymentEvidenceId", "OFFICIAL_PAYMENT_RECEIPT");
+    caseData.evidenceRegister = caseData.evidenceRegister.map((evidence) =>
+      evidence.evidenceId === EV_PAY ? { ...evidence, reviewStatus: "REJECTED" as const } : evidence
+    );
+
+    const validation = validateWizardStep(7, caseData);
+    const carbonIssues = validation.evidenceIssues.filter((issue) =>
+      issue.fieldPath.startsWith("carbonPriceRecords.")
+    );
+
+    expect(carbonIssues).toHaveLength(3);
+    expect(validation.state).toBe("NEEDS_DOCUMENTS");
+  });
+
+  it("does not clear carbon-price evidence requirements when the proof is not malware CLEAN (QC_11 parity)", () => {
+    const caseData = withCarbonPriceRecord(fullyLinkedCase(), EV_PAY);
+    linkEvidence(caseData, EV_PAY, "carbonPriceRecords.0.proofOfPaymentEvidenceId", "OFFICIAL_PAYMENT_RECEIPT");
+    caseData.evidenceRegister = caseData.evidenceRegister.map((evidence) =>
+      evidence.evidenceId === EV_PAY
+        ? { ...evidence, malwareScanStatus: "PENDING" as const }
+        : evidence
+    );
+
+    const validation = validateWizardStep(7, caseData);
+    const carbonIssues = validation.evidenceIssues.filter((issue) =>
+      issue.fieldPath.startsWith("carbonPriceRecords.")
+    );
+
+    expect(carbonIssues).toHaveLength(3);
+    expect(validation.state).toBe("NEEDS_DOCUMENTS");
+  });
 });
 
 /**

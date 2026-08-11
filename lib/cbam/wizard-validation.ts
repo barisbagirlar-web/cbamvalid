@@ -207,6 +207,11 @@ function findEvidenceForInput(caseData: AuditReadyCase, path: string): boolean {
  * per-field evidence check must honor this record-level SSOT. Without it,
  * the stepper reports phantom "documents needed" while the QC inspector
  * and the seal path see ALL CLEAR.
+ *
+ * Parity with QC_11 in the working-file view (`pendingReviewIsPresent: true`):
+ * the proof must resolve in the evidence register, must not be REJECTED, and
+ * must be malware CLEAN. PENDING review is accepted here (same as the
+ * inspector rail); mere register membership is not enough.
  */
 const CARBON_PRICE_VALUE_PATH_PATTERN =
   /^carbonPriceRecords\.(\d+)\.(?:amountPaid|applicableEmissions|eligibleCertificateReduction)$/;
@@ -217,7 +222,10 @@ function hasCarbonPricePaymentProof(caseData: AuditReadyCase, path: string): boo
   const record = caseData.carbonPriceRecords[Number(match[1])];
   if (!record || !record.proofOfPaymentEvidenceId) return false;
   return caseData.evidenceRegister.some(
-    (evidence) => evidence.evidenceId === record.proofOfPaymentEvidenceId
+    (evidence) =>
+      evidence.evidenceId === record.proofOfPaymentEvidenceId &&
+      evidence.reviewStatus !== "REJECTED" &&
+      evidence.malwareScanStatus === "CLEAN"
   );
 }
 
