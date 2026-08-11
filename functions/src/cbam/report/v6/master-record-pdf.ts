@@ -1,16 +1,16 @@
 /**
  * G-13 — Enterprise Compliance Master Record renderer.
  *
- * Renders the 30 binding sections (A1-H4) on A4 portrait, 18mm top/bottom and
- * 16mm side margins, single variable-weight type family, at most two accent
- * colours, status colours that carry meaning, thin table separators, tabular
- * numerals, monospace hash display and the mandated footer on every page.
- * Diagrams are vector (rect + line); raster images are forbidden.
+ * Renders the 30 binding sections (A1-H4) on A4 portrait with the Zero-Dark
+ * Policy (pure white / soft off-white surfaces only; never dark navy fills or
+ * white-on-dark table headers). Status meaning is carried by 4px left borders
+ * and icons, not filled backgrounds. Diagrams are vector (rect + line); raster
+ * images are forbidden. Footer is a single centred line:
+ * Report ID | Status | Page X / Y.
  */
 import { jsPDF } from "jspdf";
 import crypto from "node:crypto";
 import type { MasterRecordModel } from "./master-record-model";
-import { MASTER_RECORD_FOOTER } from "./master-record-model";
 import { REQUIRED_TOP_LEVEL_COMPONENTS_V6 } from "../package-components";
 import { HASH_CANONICAL_RULE } from "./hash-architecture";
 import { buildRegistryTemplateMapping } from "../../registry/registry-template-mapping";
@@ -47,10 +47,18 @@ const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_X * 2;
 const BODY_TOP = MARGIN_TOP;
 const BODY_BOTTOM = PAGE_HEIGHT - MARGIN_BOTTOM - 6;
 
-const INK = [35, 41, 52] as const;
-const HEADING = [20, 42, 74] as const;
-const ACCENT = [197, 103, 62] as const;
-const LINE = [211, 218, 227] as const;
+/** Zero-Dark Policy — pure white / soft off-white surfaces; near-black ink. */
+const INK = [15, 23, 42] as const; // slate-900 — WCAG AA on white (≥12:1)
+const HEADING = [15, 23, 42] as const;
+const MUTED = [100, 116, 139] as const; // slate-500
+const LINE = [226, 232, 240] as const; // slate-200
+const SURFACE_SOFT = [248, 250, 252] as const; // slate-50 / #F8FAFC
+const SURFACE_HEADER = [241, 245, 249] as const; // slate-100 / #F1F5F9
+const ROW_ALT = [250, 250, 250] as const; // #FAFAFA
+const ACCENT = [37, 99, 235] as const; // blue-600 — border/icon only, never fill
+const ACCENT_SOFT = [239, 246, 255] as const; // blue-50 / #EFF6FF
+const OPERATOR_BOUNDARY_DISCLAIMER =
+  "Operator record. No independent verification opinion is implied.";
 
 function asText(value: unknown): string {
   const result = String(value ?? "—").trim();
@@ -165,6 +173,7 @@ function section(model: MasterRecordModel): MasterRecordSection[] {
       pageBreakBefore: false,
       blocks: [
         { kind: "paragraph", text: `Enterprise Compliance Master Record for ${ck.caseId}. This document is the operator's permanent corporate record; it is not a copy of the verifier dossier and it never implies an independent verification opinion.` },
+        { kind: "paragraph", text: OPERATOR_BOUNDARY_DISCLAIMER },
         {
           kind: "table",
           table: {
@@ -971,12 +980,15 @@ function renderMasterRecordPdf(model: MasterRecordModel, sections: MasterRecordS
 
   const drawHeading = (title: string) => {
     ensure(12);
-    document.setFillColor(233, 237, 243);
-    document.rect(MARGIN_X, y, CONTENT_WIDTH, 9, "F");
+    document.setFillColor(SURFACE_HEADER[0], SURFACE_HEADER[1], SURFACE_HEADER[2]);
+    document.setDrawColor(LINE[0], LINE[1], LINE[2]);
+    document.rect(MARGIN_X, y, CONTENT_WIDTH, 9, "FD");
+    document.setFillColor(ACCENT[0], ACCENT[1], ACCENT[2]);
+    document.rect(MARGIN_X, y, 1.2, 9, "F");
     document.setTextColor(HEADING[0], HEADING[1], HEADING[2]);
     document.setFont("helvetica", "bold");
     document.setFontSize(10);
-    document.text(title, MARGIN_X + 3, y + 6);
+    document.text(title, MARGIN_X + 4, y + 6);
     y += 13;
   };
 
@@ -995,8 +1007,8 @@ function renderMasterRecordPdf(model: MasterRecordModel, sections: MasterRecordS
     const valueLines = document.splitTextToSize(asText(value), CONTENT_WIDTH - 8) as string[];
     const height = 8 + labelLines.length * 4 + valueLines.length * 4.4;
     ensure(height + 4);
-    document.setFillColor(246, 244, 240);
-    document.setDrawColor(216, 209, 198);
+    document.setFillColor(ACCENT_SOFT[0], ACCENT_SOFT[1], ACCENT_SOFT[2]);
+    document.setDrawColor(LINE[0], LINE[1], LINE[2]);
     document.roundedRect(MARGIN_X, y, CONTENT_WIDTH, height, 1.5, 1.5, "FD");
     document.setFillColor(ACCENT[0], ACCENT[1], ACCENT[2]);
     document.rect(MARGIN_X, y, 2.4, height, "F");
@@ -1018,8 +1030,8 @@ function renderMasterRecordPdf(model: MasterRecordModel, sections: MasterRecordS
     ensure(height + 4);
     badges.forEach((badge, index) => {
       const x = MARGIN_X + index * (width + gap);
-      document.setFillColor(246, 244, 240);
-      document.setDrawColor(216, 209, 198);
+      document.setFillColor(SURFACE_SOFT[0], SURFACE_SOFT[1], SURFACE_SOFT[2]);
+      document.setDrawColor(LINE[0], LINE[1], LINE[2]);
       document.roundedRect(x, y, width, height, 1.5, 1.5, "FD");
       document.setFillColor(ACCENT[0], ACCENT[1], ACCENT[2]);
       document.rect(x, y, 2.4, height, "F");
@@ -1032,7 +1044,7 @@ function renderMasterRecordPdf(model: MasterRecordModel, sections: MasterRecordS
       document.text(badge.value, x + 5, y + 12.5);
       document.setFont("helvetica", "normal");
       document.setFontSize(6.3);
-      document.setTextColor(96, 103, 113);
+      document.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
       const noteLines = document.splitTextToSize(badge.note, width - 12) as string[];
       document.text(noteLines.slice(0, 2), x + 5, y + 17.5);
     });
@@ -1047,8 +1059,8 @@ function renderMasterRecordPdf(model: MasterRecordModel, sections: MasterRecordS
       const lineHeights = box.lines.map((line) => (document.splitTextToSize(line, width - 8) as string[]).length);
       const height = 12 + box.lines.length * 4 + lineHeights.reduce((sum, count) => sum + (count - 1) * 4, 0);
       ensure(height + 4);
-      document.setFillColor(250, 249, 247);
-      document.setDrawColor(216, 209, 198);
+      document.setFillColor(SURFACE_SOFT[0], SURFACE_SOFT[1], SURFACE_SOFT[2]);
+      document.setDrawColor(LINE[0], LINE[1], LINE[2]);
       document.roundedRect(x, y, width, height, 1.5, 1.5, "FD");
       document.setFont("helvetica", "bold");
       document.setFontSize(7.8);
@@ -1073,7 +1085,7 @@ function renderMasterRecordPdf(model: MasterRecordModel, sections: MasterRecordS
       document.setFontSize(9);
       const lines = document.splitTextToSize(asText(step), CONTENT_WIDTH - 10) as string[];
       ensure(lines.length * 4.6 + 5);
-      document.setFillColor(233, 237, 243);
+      document.setFillColor(SURFACE_HEADER[0], SURFACE_HEADER[1], SURFACE_HEADER[2]);
       document.rect(MARGIN_X, y, 5, 5, "F");
       document.setFont("helvetica", "bold");
       document.setFontSize(8);
@@ -1096,8 +1108,8 @@ function renderMasterRecordPdf(model: MasterRecordModel, sections: MasterRecordS
     boxes.forEach((box, index) => {
       ensure(boxHeight + gap);
       const boxY = y;
-      document.setFillColor(250, 249, 247);
-      document.setDrawColor(HEADING[0], HEADING[1], HEADING[2]);
+      document.setFillColor(SURFACE_SOFT[0], SURFACE_SOFT[1], SURFACE_SOFT[2]);
+      document.setDrawColor(LINE[0], LINE[1], LINE[2]);
       document.rect(startX, boxY, boxWidth, boxHeight, "FD");
       document.setFont("helvetica", "bold");
       document.setFontSize(7.5);
@@ -1126,20 +1138,22 @@ function renderMasterRecordPdf(model: MasterRecordModel, sections: MasterRecordS
       const headerLines = table.headers.map((header, index) => document.splitTextToSize(header, widths[index] - 4) as string[]);
       const height = Math.max(8, Math.max(1, ...headerLines.map((lines) => lines.length)) * 3.8 + 4.5);
       ensure(height + 8);
-      document.setFillColor(20, 42, 74);
-      document.setTextColor(255, 255, 255);
+      // Zero-Dark: light header surface + near-black ink (never white-on-navy).
+      document.setFillColor(SURFACE_SOFT[0], SURFACE_SOFT[1], SURFACE_SOFT[2]);
+      document.setDrawColor(LINE[0], LINE[1], LINE[2]);
+      document.setTextColor(HEADING[0], HEADING[1], HEADING[2]);
       document.setFont("helvetica", "bold");
       document.setFontSize(8.5);
       let x = MARGIN_X;
-      table.headers.forEach((header, index) => {
-        document.rect(x, y, widths[index], height, "F");
+      table.headers.forEach((_header, index) => {
+        document.rect(x, y, widths[index], height, "FD");
         document.text(headerLines[index], x + 2, y + 4.5);
         x += widths[index];
       });
       y += height;
     };
     drawHeader();
-    table.rows.forEach((row) => {
+    table.rows.forEach((row, rowIndex) => {
       const cellLines = table.headers.map((_, columnIndex) =>
         document.splitTextToSize(asText(row[columnIndex]), widths[columnIndex] - 4) as string[]
       );
@@ -1149,7 +1163,8 @@ function renderMasterRecordPdf(model: MasterRecordModel, sections: MasterRecordS
         addPage();
         drawHeader();
       }
-      document.setFillColor(255, 255, 255);
+      const fill = rowIndex % 2 === 0 ? ([255, 255, 255] as const) : ROW_ALT;
+      document.setFillColor(fill[0], fill[1], fill[2]);
       document.setDrawColor(LINE[0], LINE[1], LINE[2]);
       document.setFont("helvetica", "normal");
       document.setFontSize(8.5);
@@ -1193,10 +1208,15 @@ function renderMasterRecordPdf(model: MasterRecordModel, sections: MasterRecordS
     document.setDrawColor(LINE[0], LINE[1], LINE[2]);
     document.line(MARGIN_X, PAGE_HEIGHT - 14, PAGE_WIDTH - MARGIN_X, PAGE_HEIGHT - 14);
     document.setFont("helvetica", "normal");
-    document.setFontSize(6.8);
-    document.setTextColor(96, 103, 113);
-    document.text(`${model.controlKey.reportId} · ${model.state} · Page ${page}/${pages}`, MARGIN_X, PAGE_HEIGHT - 9);
-    document.text(MASTER_RECORD_FOOTER, PAGE_WIDTH - MARGIN_X, PAGE_HEIGHT - 9, { align: "right" });
+    document.setFontSize(8);
+    document.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
+    // Mandate 3.3 — single-line centred footer (no repeating disclaimer strip).
+    document.text(
+      `${model.controlKey.reportId} | ${model.state} | Page ${page} / ${pages}`,
+      PAGE_WIDTH / 2,
+      PAGE_HEIGHT - 9,
+      { align: "center" }
+    );
   }
 
   return Buffer.from(document.output("arraybuffer"));

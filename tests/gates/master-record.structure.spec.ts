@@ -52,9 +52,15 @@ describe("G-13 master-record.structure", () => {
     expect(pages).toBeGreaterThanOrEqual(30);
     expect(pages).toBeLessThanOrEqual(44);
 
-    // The mandated footer appears on every page.
-    const footer = "Operator record. No independent verification opinion is implied.";
-    expect(text.split(footer).length - 1).toBe(pages);
+    // Mandate 3.3 — single-line footer carries report identity + page index.
+    // The operator-boundary disclaimer is a body statement (A1), not a repeating footer strip.
+    const footerPattern = new RegExp(
+      `${built.masterRecordModel.controlKey.reportId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\|\\s*${built.masterRecordModel.state}\\s*\\|\\s*Page\\s+\\d+\\s*/\\s*\\d+`,
+      "g"
+    );
+    const footerHits = text.match(footerPattern)?.length ?? 0;
+    expect(footerHits).toBe(pages);
+    expect(text).toContain("Operator record. No independent verification opinion is implied.");
 
     // None of the forbidden expressions appear.
     expect(scanForbiddenStrings(text)).toEqual([]);
@@ -74,7 +80,8 @@ describe("G-13 master-record.structure", () => {
           pages,
           bytes: bytes.byteLength,
           allMandatedPresent: MANDATED_SECTION_IDS.every((id) => ids.includes(id)),
-          footerPerPage: text.split(footer).length - 1 === pages,
+          footerPerPage: footerHits === pages,
+          boundaryDisclaimerPresent: text.includes("Operator record. No independent verification opinion is implied."),
           forbiddenMatches: scanForbiddenStrings(text),
         },
         null,
