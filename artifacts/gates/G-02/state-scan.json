@@ -18,7 +18,7 @@
     "NOT_READY"
   ],
   "scanned": {
-    "masterRecordPdfBytes": 77675,
+    "masterRecordPdfBytes": 75715,
     "scannedOutputs": [
       "Enterprise Compliance Master Record.pdf",
       "Calculation Trace.json",

@@ -2,8 +2,9 @@
   "fileName": "Enterprise Compliance Master Record.pdf",
   "sectionCount": 39,
   "pages": 43,
-  "bytes": 78295,
+  "bytes": 76312,
   "allMandatedPresent": true,
   "footerPerPage": true,
+  "boundaryDisclaimerPresent": true,
   "forbiddenMatches": []
 }
