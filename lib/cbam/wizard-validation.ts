@@ -199,6 +199,28 @@ function findEvidenceForInput(caseData: AuditReadyCase, path: string): boolean {
   );
 }
 
+/**
+ * Carbon-price records carry one record-level proof-of-payment link
+ * (`proofOfPaymentEvidenceId`) — the exact link the Step 7 UI sets and the
+ * QC engine (QC_11) plus the seal path verify. The linked payment document
+ * evidences all three monetary fields of that record, so the stepper's
+ * per-field evidence check must honor this record-level SSOT. Without it,
+ * the stepper reports phantom "documents needed" while the QC inspector
+ * and the seal path see ALL CLEAR.
+ */
+const CARBON_PRICE_VALUE_PATH_PATTERN =
+  /^carbonPriceRecords\.(\d+)\.(?:amountPaid|applicableEmissions|eligibleCertificateReduction)$/;
+
+function hasCarbonPricePaymentProof(caseData: AuditReadyCase, path: string): boolean {
+  const match = CARBON_PRICE_VALUE_PATH_PATTERN.exec(path);
+  if (!match) return false;
+  const record = caseData.carbonPriceRecords[Number(match[1])];
+  if (!record || !record.proofOfPaymentEvidenceId) return false;
+  return caseData.evidenceRegister.some(
+    (evidence) => evidence.evidenceId === record.proofOfPaymentEvidenceId
+  );
+}
+
 const STEP_FIELD_SPECS: WizardFieldSpec[][] = [
   // Step 1 — Who and where
   [
@@ -336,7 +358,9 @@ export function validateWizardStep(step: number, caseData: AuditReadyCase): Wiza
     completedFieldCount += 1;
 
     const hasLinkedEvidence =
-      hasEvidenceId(caseData, concretePath) || findEvidenceForInput(caseData, concretePath);
+      hasEvidenceId(caseData, concretePath) ||
+      findEvidenceForInput(caseData, concretePath) ||
+      hasCarbonPricePaymentProof(caseData, concretePath);
     if (spec.evidenceRequired && !hasLinkedEvidence) {
       const coveredByAcceptedDecision =
         concretePath === "installation.systemBoundaries" &&
