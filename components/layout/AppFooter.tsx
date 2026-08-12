@@ -34,6 +34,7 @@ const COMPANY_LINKS = [
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
   { href: "/security", label: "Security & DPA" },
+  { href: "/status", label: "Status" },
   { href: "/case-studies", label: "Case Studies" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },

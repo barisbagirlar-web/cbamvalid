@@ -55,6 +55,11 @@ export default function ContactPage() {
                 </a>
               </p>
               <span className="ref">TYPICAL RESPONSE · 24–48 BUSINESS HOURS</span>
+              <p style={{ marginTop: "10px" }}>
+                Priority targets (P0–P3) and the honesty boundary vs uptime warranties are published
+                on <a href="/security">Security</a>. Dependency status:{" "}
+                <a href="/status">/status</a>.
+              </p>
             </div>
             <div className="method-card reveal">
               <h3>Legal &amp; privacy</h3>

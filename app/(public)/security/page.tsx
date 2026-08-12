@@ -1,18 +1,11 @@
 import Link from "next/link";
 import { AeoPageChrome } from "@/components/seo/AnswerEvidenceSection";
-
-const SUBPROCESSORS = [
-  {
-    name: "Google Cloud / Firebase",
-    role: "Hosting, authentication, Firestore, Cloud Storage, Cloud Functions / Cloud Run",
-    region: "europe-west1 (primary application region)",
-  },
-  {
-    name: "Paddle",
-    role: "Payment processing and merchant of record for paid lock checkout",
-    region: "Paddle processing regions per Paddle DPA",
-  },
-] as const;
+import { SUBPROCESSORS } from "@/lib/security/subprocessors";
+import {
+  SECURITY_ASSURANCE_FACTS,
+  SUPPORT_RESPONSE_TARGETS,
+  SUPPORT_WINDOW,
+} from "@/lib/trust/operational-commitments";
 
 export default function SecurityPage() {
   return (
@@ -26,18 +19,22 @@ export default function SecurityPage() {
             <span className="serif-i">facts only</span>
           </h1>
           <p className="lede">
-            Hosting region, encryption, backups, deletion, and subprocessors — published without
-            unverified certification claims. ISO 27001 / SOC 2 are not claimed here.
+            Hosting region, encryption, backups, deletion, subprocessors, support targets, and
+            assurance gaps — published without unverified certification claims. ISO 27001 / SOC 2
+            are not claimed here.
           </p>
           <div className="hero-ctas">
             <a className="btn btn-primary" href="/security/dpa-draft.pdf" download>
               Download DPA draft (PDF)
             </a>
+            <Link className="btn btn-ghost" href="/status">
+              Status
+            </Link>
             <Link className="btn btn-ghost" href="/privacy">
               Privacy policy
             </Link>
-            <Link className="btn btn-ghost" href="/pricing">
-              See pricing
+            <Link className="btn btn-ghost" href="/trust">
+              Trust registry
             </Link>
           </div>
         </div>
@@ -112,30 +109,113 @@ export default function SecurityPage() {
       <section className="section" style={{ background: "var(--paper-2)" }}>
         <div className="wrap">
           <div className="section-head">
-            <span className="eyebrow">Sub-processors</span>
+            <span className="eyebrow">Sub-processors · GDPR Art. 28</span>
             <h2>Current processing providers</h2>
-            <p>Material infrastructure and payment subprocessors for the production service.</p>
+            <p>
+              Material subprocessors that may process personal data for the production service.
+              Providers not engaged (for example a separate ESP or Sentry) are stated explicitly
+              rather than omitted.
+            </p>
           </div>
           <table className="ruleset-table">
             <thead>
               <tr>
                 <th>Provider</th>
+                <th>Category</th>
                 <th>Role</th>
+                <th>Personal data note</th>
                 <th>Region note</th>
               </tr>
             </thead>
             <tbody>
               {SUBPROCESSORS.map((row) => (
-                <tr key={row.name}>
+                <tr key={row.id}>
                   <td>
                     <b>{row.name}</b>
                   </td>
+                  <td className="mono">{row.category}</td>
                   <td>{row.role}</td>
-                  <td>{row.region}</td>
+                  <td>{row.personalDataNote}</td>
+                  <td>{row.regionNote}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="wrap">
+          <div className="section-head">
+            <span className="eyebrow">Support response targets</span>
+            <h2>Operational targets — not an uptime warranty</h2>
+            <p>
+              {SUPPORT_WINDOW.hours} · {SUPPORT_WINDOW.days}. {SUPPORT_WINDOW.warranty}
+            </p>
+          </div>
+          <table className="ruleset-table">
+            <thead>
+              <tr>
+                <th>Priority</th>
+                <th>Definition</th>
+                <th>First response</th>
+                <th>Resolution target</th>
+              </tr>
+            </thead>
+            <tbody>
+              {SUPPORT_RESPONSE_TARGETS.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <b>
+                      {row.id} · {row.label}
+                    </b>
+                  </td>
+                  <td>{row.definition}</td>
+                  <td>{row.firstResponse}</td>
+                  <td>{row.resolutionTarget}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p style={{ marginTop: "16px" }}>
+            Channel: <Link href="/contact">Software support</Link> · dependency status:{" "}
+            <Link href="/status">/status</Link>
+          </p>
+        </div>
+      </section>
+
+      <section className="section" style={{ background: "var(--paper-2)" }}>
+        <div className="wrap">
+          <div className="section-head">
+            <span className="eyebrow">Assurance inventory</span>
+            <h2>What is published — and what is not</h2>
+          </div>
+          <div className="deliv-grid">
+            <div className="deliv-card">
+              <span className="fmt">PEN-TEST</span>
+              <h3>Independent testing</h3>
+              <p>{SECURITY_ASSURANCE_FACTS.penTest}</p>
+            </div>
+            <div className="deliv-card">
+              <span className="fmt">EDGE</span>
+              <h3>WAF / abuse controls</h3>
+              <p>{SECURITY_ASSURANCE_FACTS.waf}</p>
+            </div>
+            <div className="deliv-card">
+              <span className="fmt">API</span>
+              <h3>Rate limiting</h3>
+              <p>{SECURITY_ASSURANCE_FACTS.rateLimit}</p>
+            </div>
+            <div className="deliv-card">
+              <span className="fmt">STATUS</span>
+              <h3>Uptime commitment</h3>
+              <p>
+                No contractual availability percentage is published. See{" "}
+                <Link href="/status">service status</Link> for dependency facts and provider status
+                links.
+              </p>
+            </div>
+          </div>
           <div className="notice" style={{ marginTop: "24px" }}>
             <b>Certification honesty:</b> This page does not claim ISO 27001, SOC 2, or equivalent
             certification. If a certificate is obtained later, it will be published with issuer,

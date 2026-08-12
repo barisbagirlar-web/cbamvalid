@@ -361,7 +361,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     empathyLead:
       "Procurement asks for region, encryption, subprocessors, and a DPA. Fake certification language destroys trust.",
     directAnswer:
-      "CBAMValid publishes europe-west1 hosting, TLS, HttpOnly sessions, provider encryption at rest, subprocessors (Firebase/Google Cloud and Paddle), and a DPA draft. ISO 27001 and SOC 2 are not claimed.",
+      "CBAMValid publishes europe-west1 hosting, TLS, HttpOnly sessions, provider encryption at rest, a GDPR Art. 28 subprocessors inventory (GCP/Firebase, Cloud Logging, App Check/reCAPTCHA, consent-gated GA4, Paddle and Retain, Firebase Auth email), support response targets, /status dependency facts, and a DPA draft. ISO 27001 and SOC 2 are not claimed. Pen-test reports, commercial WAF products, and uptime percentages are not invented when absent.",
     calculation:
       "Security controls protect case and evidence data; they do not alter sealed emissions arithmetic.",
     explanation:
@@ -375,14 +375,45 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     relatedProblems: [
       { question: "Privacy notice", href: "/privacy", why: "Data handling" },
       { question: "Trust registry", href: "/trust", why: "Pinned claims" },
+      { question: "Service status", href: "/status", why: "Dependency facts" },
       { question: "Contact privacy", href: "/contact", why: "Requests" },
       { question: "Buyer share link", href: "/buyer-link", why: "Public token path" },
     ],
-    entities: ["europe-west1", "DPA draft", "subprocessors", "no ISO 27001 claim"],
+    entities: ["europe-west1", "DPA draft", "subprocessors", "no ISO 27001 claim", "support targets"],
     fanOutQueries: [
       "CBAMValid security",
       "CBAMValid DPA",
       "CBAMValid ISO 27001",
+      "CBAMValid subprocessors",
+    ],
+  },
+  {
+    path: "/status",
+    primaryQuestion: "Does CBAMValid publish a status page or uptime SLA?",
+    empathyLead:
+      "Buyers ask for status, SLA, and uptime. Invented green badges are worse than an honest dependency page.",
+    directAnswer:
+      "CBAMValid publishes /status with Google Cloud / Firebase europe-west1 dependency facts and links to provider status boards. No contractual uptime percentage and no separate commercial status-page vendor are claimed.",
+    calculation:
+      "Status facts describe platform dependency; they do not change sealed emissions arithmetic.",
+    explanation:
+      "Incident reports go to software support email with UTC time, URL, and whether checkout or dossier generation is affected.",
+    methodology:
+      "Uptime percentages and pen-test reports are published only when evidence exists — never as filler.",
+    evidence:
+      "/status page + Google Cloud / Firebase public status dashboards.",
+    expert:
+      "Best-effort continuity on named cloud providers is not a 99.9% warranty.",
+    relatedProblems: [
+      { question: "Security facts", href: "/security", why: "Controls and gaps" },
+      { question: "Contact support", href: "/contact", why: "Incident channel" },
+      { question: "Trust registry", href: "/trust", why: "Pinned claims" },
+    ],
+    entities: ["europe-west1", "Google Cloud status", "no uptime percentage"],
+    fanOutQueries: [
+      "CBAMValid status page",
+      "CBAMValid uptime SLA",
+      "CBAMValid Firebase status",
     ],
   },
   {
