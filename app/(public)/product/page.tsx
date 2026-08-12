@@ -230,6 +230,38 @@ export default function Page() {
               <h3>Customer locks and downloads</h3>
               <p>You pay once to lock the working file and download the sealed package — same-file re-locks included.</p>
             </div>
+            <div className="tl-step reveal">
+              <div className="tl-node">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="m16 6-4-4-4 4M12 2v13"/></svg>
+              </div>
+              <p className="step-no">Step 7</p>
+              <h3>Customer shares the sealed package</h3>
+              <p>You send the downloaded dossier to your buyer, adviser or independent verifier outside CBAMValid.</p>
+            </div>
+            <div className="tl-step reveal">
+              <div className="tl-node">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6l-8-3Z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>
+              </div>
+              <p className="step-no">Step 8</p>
+              <h3>Recipient checks integrity</h3>
+              <p>The manifest and SHA-256 hashes let recipients confirm that the sealed files have not changed.</p>
+            </div>
+            <div className="tl-step reveal">
+              <div className="tl-node">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5Z"/></svg>
+              </div>
+              <p className="step-no">Step 9</p>
+              <h3>Customer makes corrections</h3>
+              <p>If review feedback requires changes, you return to the same paid working file and update its supporting data.</p>
+            </div>
+            <div className="tl-step reveal">
+              <div className="tl-node">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M20 7h-7a4 4 0 0 0-4 4v1"/><path d="m17 4 3 3-3 3"/><path d="M4 17h7a4 4 0 0 0 4-4v-1"/><path d="m7 20-3-3 3-3"/></svg>
+              </div>
+              <p className="step-no">Step 10</p>
+              <h3>Customer re-locks the same file</h3>
+              <p>You generate a fresh sealed release for that same working file without another payment; a new file is charged separately.</p>
+            </div>
           </div>
         </div>
       </section>
