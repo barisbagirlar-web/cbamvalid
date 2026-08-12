@@ -116,6 +116,17 @@ const nextConfig = {
         permanent: true,
       },
       {
+        // Legal alias: buyers and MoR surfaces often expect /refunds.
+        source: '/refunds',
+        destination: `${canonicalOrigin}/refund-policy`,
+        permanent: true,
+      },
+      {
+        source: '/refund',
+        destination: `${canonicalOrigin}/refund-policy`,
+        permanent: true,
+      },
+      {
         source: '/:path*',
         has: [
           {
