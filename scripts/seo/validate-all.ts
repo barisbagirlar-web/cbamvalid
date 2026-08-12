@@ -161,8 +161,6 @@ function validateSitemapDerivation(): GateResult[] {
       "User-agent: ClaudeBot",
       "User-agent: Google-Extended",
       "Disallow: /dashboard/",
-      "Disallow: /admin/",
-      "Disallow: /api/",
       "Disallow: /cases/",
       "Disallow: /reports/",
       "Disallow: /account/",
@@ -176,7 +174,11 @@ function validateSitemapDerivation(): GateResult[] {
     const missingAppAgents = ["OAI-SearchBot", "Googlebot", "GPTBot", "ClaudeBot", "Google-Extended"].filter(
       (agent) => !robotsSrc.includes(agent),
     );
-    if (missingStatic.length > 0) {
+    if (/Disallow:\s*\/admin\//i.test(staticRobots) || /Disallow:\s*\/api\//i.test(staticRobots)) {
+      results.push(fail("G16", "public/robots.txt must not advertise /admin/ or /api/ paths"));
+    } else if (/source of truth:\s*app\/robots\.ts/i.test(staticRobots)) {
+      results.push(fail("G16", "public/robots.txt must not expose internal SSOT path comments"));
+    } else if (missingStatic.length > 0) {
       results.push(fail("G16", `public/robots.txt missing required markers: ${missingStatic.join(", ")}`));
     } else if (missingAppAgents.length > 0) {
       results.push(fail("G16", `app/robots.ts missing agents mirrored in static fallback: ${missingAppAgents.join(", ")}`));

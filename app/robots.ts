@@ -10,8 +10,6 @@ import { siteConfig } from "@/lib/site-config";
  */
 export const PRIVATE_ROBOTS_DISALLOW = [
   "/dashboard/",
-  "/admin/",
-  "/api/",
   "/cases/",
   "/reports/",
   "/account/",

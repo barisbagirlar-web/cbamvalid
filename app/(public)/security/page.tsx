@@ -68,6 +68,18 @@ export default function SecurityPage() {
               </p>
             </div>
             <div className="deliv-card">
+              <span className="fmt">BROWSER</span>
+              <h3>Content Security Policy</h3>
+              <p>
+                Document responses use a per-request CSP nonce with{" "}
+                <span className="mono">strict-dynamic</span>. Production{" "}
+                <span className="mono">script-src</span> does not allow{" "}
+                <span className="mono">unsafe-inline</span> or{" "}
+                <span className="mono">unsafe-eval</span>. Local emulator hosts and
+                Paddle sandbox CDNs are environment-gated and absent from production.
+              </p>
+            </div>
+            <div className="deliv-card">
               <span className="fmt">AUTH</span>
               <h3>Session model</h3>
               <p>

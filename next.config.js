@@ -18,6 +18,8 @@ const wwwHost = `www.${canonicalHost}`;
 const nextConfig = {
   reactStrictMode: true,
   compress: true,
+  // Do not advertise the framework to scanners / clients.
+  poweredByHeader: false,
   images: {
     unoptimized: false,
   },
@@ -53,29 +55,25 @@ const nextConfig = {
             // separate irreversible-action approval is recorded.
             value: 'max-age=63072000; includeSubDomains',
           },
-          {
-            key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://paddle.com https://cdn.paddle.com https://sandbox-cdn.paddle.com https://public.profitwell.com https://www.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.paddle.com https://sandbox-cdn.paddle.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.paddle.com https://*.profitwell.com https://*.cloudfunctions.net http://127.0.0.1:5001 http://localhost:5001; img-src 'self' data: https:; frame-src 'self' https://*.paddle.com https://*.firebaseapp.com https://www.google.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
-          }
+          // Content-Security-Policy is request-scoped (nonce) and owned by proxy.ts.
         ],
       },
-      // Public Content Caching
+      // HTML must not be shared-cached: proxy issues a per-request CSP nonce.
       {
         source: '/',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, s-maxage=3600, stale-while-revalidate=86400',
+            value: 'private, no-store',
           },
         ],
       },
-      // Legal Content Caching
       {
         source: '/(privacy|terms|refund-policy|cookie-policy|legal-notice|about|methodology)',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, s-maxage=86400, stale-while-revalidate=604800',
+            value: 'private, no-store',
           },
         ],
       },
