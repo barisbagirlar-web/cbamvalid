@@ -25,19 +25,13 @@ export function JsonLdForRoute({ path }: { path: string }) {
   if (route.schemaTypes.includes("Organization") || path === "/" || route.pageType === "guide") {
     nodes.push(generateOrganizationSchema());
   }
-  if (route.schemaTypes.includes("WebSite") || path === "/") {
-    nodes.push(generateWebSiteSchema());
-  }
-  if (route.schemaTypes.includes("WebApplication")) {
-    nodes.push(generateWebApplicationSchema(publicDescription));
-  }
+  if (route.schemaTypes.includes("WebSite") || path === "/") nodes.push(generateWebSiteSchema());
+  if (route.schemaTypes.includes("WebApplication")) nodes.push(generateWebApplicationSchema(publicDescription));
   if (route.schemaTypes.includes("Product") || route.schemaTypes.includes("Offer")) {
     const productDoc = generateProductOfferSchema();
     const graph = productDoc["@graph"];
     if (Array.isArray(graph)) {
-      for (const node of graph) {
-        if (node && typeof node === "object") nodes.push(node as JsonLdNode);
-      }
+      for (const node of graph) if (node && typeof node === "object") nodes.push(node as JsonLdNode);
     }
   }
   if (
@@ -54,28 +48,19 @@ export function JsonLdForRoute({ path }: { path: string }) {
           : route.pageType === "contact"
             ? "ContactPage"
             : "WebPage";
-    nodes.push(
-      generateWebPageSchema({
-        path: route.canonicalPath,
-        name: publicTitle,
-        description: publicDescription,
-        type,
-      }),
-    );
+    nodes.push(generateWebPageSchema({ path: route.canonicalPath, name: publicTitle, description: publicDescription, type }));
   }
-  if (route.pageType === "guide") {
+  if (route.pageType === "guide" && route.factualLastModified) {
     const citations = route.regulatorySourceIds.flatMap((id) => {
       const source = SEO_LEGAL_SOURCE_INDEX[id as keyof typeof SEO_LEGAL_SOURCE_INDEX];
       return source?.eliUri ? [source.eliUri] : [];
     });
-    const dateModified = route.factualLastModified ?? "2026-08-13";
     nodes.push(
       generateTechArticleSchema({
         path: route.canonicalPath,
         headline: route.h1,
         description: publicDescription,
-        datePublished: dateModified,
-        dateModified,
+        dateModified: route.factualLastModified,
         citations,
       }),
     );
@@ -85,10 +70,5 @@ export function JsonLdForRoute({ path }: { path: string }) {
   }
 
   const payload = nodes.length === 1 ? nodes[0] : buildPageGraph(nodes);
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(payload) }}
-    />
-  );
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(payload) }} />;
 }
