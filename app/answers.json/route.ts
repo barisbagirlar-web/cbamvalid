@@ -17,10 +17,7 @@ import {
   assertVerifiedClaim,
 } from "@/lib/seo/claims";
 
-/**
- * Machine-readable answer feed for LLMs / answer engines.
- * Public product classification is normalized before serialization.
- */
+/** Machine-readable answer feed for LLMs / answer engines. */
 export function GET() {
   const price = assertVerifiedClaim(PRICE_CLAIM, "PRICE_CLAIM");
   const publicChains = AUTHORITY_CHAINS.map(toPublicAuthorityChain);
@@ -39,8 +36,9 @@ export function GET() {
       url: siteConfig.canonicalOrigin,
       email: assertVerifiedClaim(SUPPORT_EMAIL_CLAIM, "SUPPORT_EMAIL_CLAIM"),
     },
-    license: "Informational software product documentation",
-    dateModified: "2026-08-04",
+    license: "https://creativecommons.org/licenses/by/4.0/",
+    creditText: "CBAMValid (cbamvalid.com)",
+    dateModified: "2026-08-13",
     product: {
       name: assertVerifiedClaim(PRODUCT_POSITIONING_CLAIM, "PRODUCT_POSITIONING_CLAIM"),
       productType: "Self-service B2B software",
