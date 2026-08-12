@@ -16,8 +16,8 @@ describe("SEO V6 Phase 02 host/canonical contract", () => {
     const result = await runStaticValidation();
     expect(result.blocks).toEqual([]);
     expect(result.warnings).toEqual([]);
-    expect(result.stats.ruleCount).toBe(3);
-    expect(result.stats.capacityBasisPoints).toBe(15);
+    expect(result.stats.ruleCount).toBe(5);
+    expect(result.stats.capacityBasisPoints).toBe(25);
   });
 
   it("passes the duplicate URL variant inventory audit", () => {
