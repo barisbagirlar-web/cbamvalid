@@ -176,11 +176,11 @@ jobs:
           }
           NODE
 
-      - name: Deploy changed production runtime surfaces
+      - name: Deploy framework-aware Hosting only
         shell: bash
         run: |
           set -euo pipefail
-          firebase deploy --only functions,hosting --project "${FIREBASE_PROJECT}" --non-interactive
+          firebase deploy --only hosting --project "${FIREBASE_PROJECT}" --non-interactive
 
       - name: Verify deployed production runtime and live surface
         shell: bash
@@ -192,6 +192,7 @@ jobs:
           node scripts/verify-live-next-assets.mjs "${LIVE_BASE_URL}"
           curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/" >/dev/null
           curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/login" >/dev/null
+          curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/product" | grep -q 'Customer re-locks the same file'
           API_STATUS="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 30 -X POST "${LIVE_BASE_URL}/api/qa/reconcile-teb232" -H 'content-type: application/json' --data '{}')"
           if [[ "${API_STATUS}" != "401" && "${API_STATUS}" != "403" ]]; then
             printf 'Unexpected unauthenticated reconcile route status: %s\n' "${API_STATUS}"
@@ -205,7 +206,8 @@ jobs:
             printf '%s\n' '- English-only guard PASS'
             printf '%s\n' '- root/functions HIGH/CRITICAL production dependency gate PASS'
             printf '%s\n' '- exact premium artifact guard PASS'
-            printf '%s\n' '- Functions + framework-aware Hosting deploy PASS'
+            printf '%s\n' '- framework-aware Hosting deploy PASS'
+            printf '%s\n' '- live /product ten-step workflow marker PASS'
             printf '%s\n' '- live Next.js asset integrity and public-route health PASS'
             printf '%s\n' '- reconcile API remains authentication-protected'
           } >> "${GITHUB_STEP_SUMMARY}"
