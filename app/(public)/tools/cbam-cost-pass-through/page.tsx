@@ -1,12 +1,7 @@
-import type { Metadata } from "next";
 import { CbamPassThroughCalculator } from "@/components/tools/CbamPassThroughCalculator";
+import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 
-export const metadata: Metadata = {
-  title: "CBAM Cost Pass-Through Calculator | Contract Margin Impact",
-  description:
-    "Model CBAM certificate cost per tonne, total contract impact and low/base/high EUA scenarios, then generate an English CBAM Cost Impact Letter.",
-  alternates: { canonical: "https://cbamvalid.com/tools/cbam-cost-pass-through" },
-};
+export const metadata = generateSeoMetadata("/tools/cbam-cost-pass-through");
 
 export default function CbamCostPassThroughPage() {
   return (
