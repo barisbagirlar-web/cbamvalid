@@ -18,7 +18,7 @@ export default function CbamCostPassThroughPage() {
           Estimate how a user-defined CBAM exposure changes contract economics. The server-side engine calculates certificate cost per tonne, total EUR impact and ±20% EUA scenarios from the same normalized input, with an engine-versioned audit trail.
         </p>
         <p className="mt-3 text-sm text-muted">
-          Planning model only. It does not determine official liability, replace current EU rules, perform accredited verification, or provide legal/customs advice.
+          Planning model only. It does not determine official liability, issue an accredited verification opinion, replace current EU rules, or provide legal/customs advice.
         </p>
       </div>
       <div className="mt-10">
