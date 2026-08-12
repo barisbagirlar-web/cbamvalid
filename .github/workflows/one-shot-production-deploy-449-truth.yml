@@ -83,6 +83,7 @@ jobs:
           npm install --global firebase-tools@15.24.0
           firebase --version
           firebase projects:list --json | grep -q 'cbam-desk'
+          firebase experiments:enable webframeworks
 
       - name: Deploy exact sealing function and hosting
         shell: bash
