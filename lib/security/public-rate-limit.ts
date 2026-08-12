@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { Timestamp } from "firebase-admin/firestore";
 import { adminDb, FieldValue } from "@/lib/firebase/admin";
 
 function clientIp(request: Request): string {
@@ -30,7 +31,7 @@ export async function enforcePublicRateLimit(
         count: FieldValue.increment(1),
         scopeHash,
         windowStart,
-        expiresAtEpochMs: windowStart + windowMs * 2,
+        expiresAt: Timestamp.fromMillis(windowStart + windowMs * 2),
         updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true },
