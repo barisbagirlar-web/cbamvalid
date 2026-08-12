@@ -40,14 +40,14 @@ jobs:
           printf 'ACTUAL_SHA=%s\n' "${ACTUAL_SHA}"
           test "${ACTUAL_SHA}" = "${TARGET_SHA}"
 
-      - name: Set up Node.js 24
+      - name: Set up Node.js 22
         uses: actions/setup-node@v7
         with:
-          node-version: "24"
+          node-version: "22"
           cache: npm
 
-      - name: Verify Node 24 runtime
-        run: node --version | grep -E '^v24\.'
+      - name: Verify Node 22 runtime
+        run: node --version | grep -E '^v22\.'
 
       - name: Install locked dependencies
         run: npm ci
@@ -157,6 +157,7 @@ jobs:
             printf '%s\n' "- deployed application commit: ${TARGET_SHA}"
             printf '%s\n' "- Firebase project: ${FIREBASE_PROJECT}"
             printf '%s\n' '- release artifact gate passed before deployment'
+            printf '%s\n' '- Node 22 used for Firebase framework compatibility'
             printf '%s\n' '- Firebase Web SDK build config resolved before Next.js build'
             printf '%s\n' '- sealCbamReport and Firebase Hosting deployed'
             printf '%s\n' '- homepage product claims and sealed package output section verified on production'
