@@ -215,8 +215,23 @@ export function discoverPublicDynamicRouteFamilies(root = PUBLIC_APP_ROOT): stri
   return [...new Set(routes)].sort();
 }
 
-export function expectedConcreteSeoRoutes(root = PUBLIC_APP_ROOT): string[] {
-  const staticRoutes = discoverPublicStaticRoutes(root);
+function pageFileForStaticRoute(route: string, root = PUBLIC_APP_ROOT): string {
+  return route === "/" ? join(root, "page.tsx") : join(root, route.slice(1), "page.tsx");
+}
+
+export function isFailClosedUnregisteredUtility(route: string, root = PUBLIC_APP_ROOT): boolean {
+  const source = readFileSync(pageFileForStaticRoute(route, root), "utf8");
+  return source.includes(`generateSeoMetadata("${route}")`) || source.includes(`generateSeoMetadata('${route}')`);
+}
+
+export function expectedConcreteSeoRoutes(
+  root = PUBLIC_APP_ROOT,
+  registeredRoutes: readonly string[] = [],
+): string[] {
+  const registered = new Set(registeredRoutes);
+  const staticRoutes = discoverPublicStaticRoutes(root).filter(
+    (route) => registered.has(route) || !isFailClosedUnregisteredUtility(route, root),
+  );
   const cnRoutes = listPublicCnCodes().map((code) => `/cn-code/${code}`);
   return [...new Set([...staticRoutes, ...cnRoutes])].sort();
 }
@@ -428,7 +443,10 @@ export function loadRegistryArtifact(path = REGISTRY_PATH): RegistryArtifact {
 
 export function runRegistryValidation(): RegistryValidation {
   const artifact = loadRegistryArtifact();
-  const expectedRoutes = expectedConcreteSeoRoutes();
+  const expectedRoutes = expectedConcreteSeoRoutes(
+    PUBLIC_APP_ROOT,
+    artifact.data.records.map((record) => record.route),
+  );
   const sitemapRoutes = listSitemapRoutes().map((entry) => entry.path);
   const result = validateRecords(artifact.data.records, { expectedRoutes, sitemapRoutes, phase: "faz-01" });
   result.blocks.push(...validateDynamicRouteCoverage(artifact));

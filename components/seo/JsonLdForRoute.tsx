@@ -1,22 +1,19 @@
 import { buildSeoBreadcrumbItems } from "@/lib/seo/breadcrumbs";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 import { requireSeoRoute } from "@/lib/seo/registry";
+import { SEO_LEGAL_SOURCE_INDEX } from "@/lib/seo/regulatory-sources";
 import {
   buildPageGraph,
   generateBreadcrumbSchema,
   generateOrganizationSchema,
   generateProductOfferSchema,
+  generateTechArticleSchema,
   generateWebApplicationSchema,
   generateWebPageSchema,
   generateWebSiteSchema,
   type JsonLdNode,
 } from "@/lib/seo/schema";
 
-/**
- * JSON-LD uses the same route metadata resolver that feeds visible search metadata,
- * while commercial Product/Offer claims stay on their verified pricing SSOT.
- * This prevents schema copy from silently drifting behind title/description changes.
- */
 export function JsonLdForRoute({ path }: { path: string }) {
   const route = requireSeoRoute(path);
   const metadata = generateSeoMetadata(path);
@@ -25,22 +22,16 @@ export function JsonLdForRoute({ path }: { path: string }) {
     typeof metadata.description === "string" ? metadata.description : route.description;
   const nodes: JsonLdNode[] = [];
 
-  if (route.schemaTypes.includes("Organization") || path === "/") {
+  if (route.schemaTypes.includes("Organization") || path === "/" || route.pageType === "guide") {
     nodes.push(generateOrganizationSchema());
   }
-  if (route.schemaTypes.includes("WebSite") || path === "/") {
-    nodes.push(generateWebSiteSchema());
-  }
-  if (route.schemaTypes.includes("WebApplication")) {
-    nodes.push(generateWebApplicationSchema(publicDescription));
-  }
+  if (route.schemaTypes.includes("WebSite") || path === "/") nodes.push(generateWebSiteSchema());
+  if (route.schemaTypes.includes("WebApplication")) nodes.push(generateWebApplicationSchema(publicDescription));
   if (route.schemaTypes.includes("Product") || route.schemaTypes.includes("Offer")) {
     const productDoc = generateProductOfferSchema();
     const graph = productDoc["@graph"];
     if (Array.isArray(graph)) {
-      for (const node of graph) {
-        if (node && typeof node === "object") nodes.push(node as JsonLdNode);
-      }
+      for (const node of graph) if (node && typeof node === "object") nodes.push(node as JsonLdNode);
     }
   }
   if (
@@ -57,12 +48,20 @@ export function JsonLdForRoute({ path }: { path: string }) {
           : route.pageType === "contact"
             ? "ContactPage"
             : "WebPage";
+    nodes.push(generateWebPageSchema({ path: route.canonicalPath, name: publicTitle, description: publicDescription, type }));
+  }
+  if (route.pageType === "guide" && route.factualLastModified) {
+    const citations = route.regulatorySourceIds.flatMap((id) => {
+      const source = SEO_LEGAL_SOURCE_INDEX[id as keyof typeof SEO_LEGAL_SOURCE_INDEX];
+      return source?.eliUri ? [source.eliUri] : [];
+    });
     nodes.push(
-      generateWebPageSchema({
+      generateTechArticleSchema({
         path: route.canonicalPath,
-        name: publicTitle,
+        headline: route.h1,
         description: publicDescription,
-        type,
+        dateModified: route.factualLastModified,
+        citations,
       }),
     );
   }
@@ -71,10 +70,5 @@ export function JsonLdForRoute({ path }: { path: string }) {
   }
 
   const payload = nodes.length === 1 ? nodes[0] : buildPageGraph(nodes);
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(payload) }}
-    />
-  );
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(payload) }} />;
 }

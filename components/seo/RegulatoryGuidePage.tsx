@@ -9,6 +9,15 @@ import type { GuideSection } from "@/lib/seo/hub-content";
 
 export type { GuideSection };
 
+function directAnswer(description: string, sections: readonly GuideSection[]): string {
+  const source = [description, ...(sections[0]?.paragraphs ?? []), ...(sections[1]?.paragraphs ?? [])]
+    .join(" ")
+    .trim();
+  const words = source.split(/\s+/).filter(Boolean);
+  if (words.length <= 60) return source;
+  return `${words.slice(0, 58).join(" ")}…`;
+}
+
 export function RegulatoryGuidePage({
   path,
   sections,
@@ -23,39 +32,34 @@ export function RegulatoryGuidePage({
   const route = requireSeoRoute(path);
   const declaration = getRegulatoryFact("FIRST_DECLARATION_DEADLINE");
   const independence = getRegulatoryFact("INDEPENDENCE_BOUNDARY");
+  const verifiedDate = route.factualLastModified ?? "not stated";
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-10 md:py-14 font-sans text-foreground">
       <JsonLdForRoute path={path} />
       <nav aria-label="Breadcrumb" className="text-sm text-muted mb-4">
         <ol className="flex gap-2">
-          <li>
-            <Link href="/" className="hover:text-accent">
-              Home
-            </Link>
-          </li>
+          <li><Link href="/" className="hover:text-accent">Home</Link></li>
           <li aria-hidden="true">/</li>
           <li>{route.h1}</li>
         </ol>
       </nav>
 
-      {/* H1 uses sans (Inter, preloaded) — serif Lora is deferred and delayed LCP on guide pages. */}
       <h1 className="font-sans text-3xl md:text-4xl font-bold tracking-tight mb-3">{route.h1}</h1>
-      <p className="text-base md:text-lg text-muted leading-relaxed mb-8">{route.description}</p>
+      <p className="text-base md:text-lg text-muted leading-relaxed mb-3">{directAnswer(route.description, sections)}</p>
+      <p className="mb-8 inline-flex rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-muted">
+        Last verified against EUR-Lex: {verifiedDate}
+      </p>
 
       {sections.map((section) => (
         <section key={section.id} id={section.id} className="mb-8 space-y-3">
           <h2 className="text-xl md:text-2xl font-sans font-semibold">{section.title}</h2>
           {section.paragraphs?.map((paragraph) => (
-            <p key={paragraph.slice(0, 24)} className="text-sm text-muted leading-relaxed">
-              {paragraph}
-            </p>
+            <p key={paragraph.slice(0, 24)} className="text-sm text-muted leading-relaxed">{paragraph}</p>
           ))}
           {section.bullets ? (
             <ul className="list-disc pl-5 space-y-2 text-sm text-muted">
-              {section.bullets.map((bullet) => (
-                <li key={bullet}>{bullet}</li>
-              ))}
+              {section.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}
             </ul>
           ) : null}
         </section>
@@ -83,14 +87,12 @@ export function RegulatoryGuidePage({
             return (
               <li key={id}>
                 {source.id}:{" "}
-                <a className="text-accent underline" href={source.eliUri} rel="noreferrer" target="_blank">
-                  {source.title}
-                </a>
+                <a className="text-accent underline" href={source.eliUri} rel="noreferrer" target="_blank">{source.title}</a>
               </li>
             );
           })}
         </ul>
-        <p>Last content review: {route.factualLastModified ?? "not stated"}</p>
+        <p>Last content review: {verifiedDate}</p>
       </section>
 
       <section className="mt-8 text-sm">
@@ -99,11 +101,7 @@ export function RegulatoryGuidePage({
           {route.internalLinkTargets.map((target) => {
             const targetRoute = requireSeoRoute(target);
             return (
-              <li key={target}>
-                <Link className="text-accent underline" href={target}>
-                  {targetRoute.h1}
-                </Link>
-              </li>
+              <li key={target}><Link className="text-accent underline" href={target}>{targetRoute.h1}</Link></li>
             );
           })}
         </ul>

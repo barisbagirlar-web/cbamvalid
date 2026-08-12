@@ -12,10 +12,7 @@ function organizationNode(): JsonLdNode {
     name: legalConfig.legalEntityName,
     alternateName: legalConfig.tradingName,
     url: siteConfig.canonicalOrigin,
-    logo: {
-      "@type": "ImageObject",
-      url: `${siteConfig.canonicalOrigin}/favicon.svg`,
-    },
+    logo: { "@type": "ImageObject", url: `${siteConfig.canonicalOrigin}/favicon.svg` },
     contactPoint: {
       "@type": "ContactPoint",
       email: assertVerifiedClaim(
@@ -24,7 +21,6 @@ function organizationNode(): JsonLdNode {
       ),
       contactType: "customer support",
     },
-    // Empty until independently verified public profiles exist.
     sameAs: siteConfig.socialProfiles,
   };
 }
@@ -71,6 +67,32 @@ export function generateWebApplicationSchema(description: string): JsonLdNode {
   };
 }
 
+export function generateTechArticleSchema(params: {
+  path: string;
+  headline: string;
+  description: string;
+  dateModified: string;
+  datePublished?: string;
+  citations: readonly string[];
+}): JsonLdNode {
+  return {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "@id": `${buildCanonicalUrl(params.path)}#article`,
+    headline: params.headline,
+    description: params.description,
+    url: buildCanonicalUrl(params.path),
+    inLanguage: "en",
+    ...(params.datePublished ? { datePublished: params.datePublished } : {}),
+    dateModified: params.dateModified,
+    author: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
+    publisher: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
+    mainEntityOfPage: { "@id": `${buildCanonicalUrl(params.path)}#webpage` },
+    citation: params.citations,
+    isAccessibleForFree: true,
+  };
+}
+
 export function generateBreadcrumbSchema(items: { name: string; item: string }[]): JsonLdNode {
   return {
     "@context": "https://schema.org",
@@ -91,16 +113,12 @@ export function generateFAQSchema(faqs: { question: string; answer: string }[]):
     mainEntity: faqs.map((faq) => ({
       "@type": "Question",
       name: faq.question,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: faq.answer,
-      },
+      acceptedAnswer: { "@type": "Answer", text: faq.answer },
     })),
   };
 }
 
 export function generateProductOfferSchema(): JsonLdNode {
-  // Hard fail if social-proof ever regresses to unverified emission.
   if (FORBIDDEN_SOCIAL_PROOF.aggregateRating.evidenceStatus !== "unverified") {
     throw new Error("SEO schema gate: AggregateRating must remain unverified/absent");
   }
@@ -128,7 +146,6 @@ export function generateProductOfferSchema(): JsonLdNode {
   };
 }
 
-/** @deprecated Use generateProductOfferSchema — kept name for call-site migration. */
 export function generateEeatProductSchema(): JsonLdNode {
   return generateProductOfferSchema();
 }
@@ -158,11 +175,6 @@ function normalizeGraphNode(node: JsonLdNode): JsonLdNode {
   return copy;
 }
 
-/**
- * Deduplicate graph identities at the schema layer, not only at one component call site.
- * Conflicting nodes with the same @id are BLOCK-worthy because silently choosing one
- * would make the entity graph depend on insertion order.
- */
 export function dedupeGraphNodes(nodes: readonly JsonLdNode[]): JsonLdNode[] {
   const byId = new Map<string, JsonLdNode>();
   const anonymous: JsonLdNode[] = [];
@@ -186,8 +198,5 @@ export function dedupeGraphNodes(nodes: readonly JsonLdNode[]): JsonLdNode[] {
 }
 
 export function buildPageGraph(nodes: JsonLdNode[]): JsonLdNode {
-  return {
-    "@context": "https://schema.org",
-    "@graph": dedupeGraphNodes(nodes),
-  };
+  return { "@context": "https://schema.org", "@graph": dedupeGraphNodes(nodes) };
 }
