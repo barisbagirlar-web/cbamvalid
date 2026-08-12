@@ -12,6 +12,7 @@ export const SEO_CONVERSION_EVENTS = [
   "seo_to_register",
   "seo_to_case_start",
   "dossier_start",
+  "passthrough_to_draft",
   "begin_checkout",
   "checkout_start",
   "seo_to_checkout",
@@ -106,12 +107,8 @@ export function captureAcquisitionFromLocation(): SeoAcquisitionDimensions {
     campaign: url.searchParams.get("utm_campaign") ?? undefined,
   };
   const ref = (document.referrer || "").toLowerCase();
-  if (/google\.|bing\.|duckduckgo\.|yahoo\./.test(ref)) {
-    dims.searchEngine = "organic_search";
-  }
-  if (/chatgpt\.|perplexity\.|claude\.|bing\.com\/chat|openai\./.test(ref)) {
-    dims.AIReferrer = "ai_referral";
-  }
+  if (/google\.|bing\.|duckduckgo\.|yahoo\./.test(ref)) dims.searchEngine = "organic_search";
+  if (/chatgpt\.|perplexity\.|claude\.|bing\.com\/chat|openai\./.test(ref)) dims.AIReferrer = "ai_referral";
   try {
     window.sessionStorage.setItem(ACQUISITION_KEY, JSON.stringify(dims));
   } catch {
@@ -128,22 +125,11 @@ function pushGa4(event: SeoConversionEvent, payload: Record<string, unknown>): v
   window.gtag("event", event, payload);
 }
 
-/**
- * Consent-gated dual delivery:
- * 1) First-party /api/seo/track (persistent Firestore dedup for purchase)
- * 2) dataLayer + GA4 gtag when measurement ID is configured
- *
- * No acquisition storage, dataLayer event, first-party analytics request, or GA4 event
- * is produced until the visitor explicitly grants analytics consent.
- * Purchase exactly-once is enforced server-side; client never claims authority.
- */
 export function trackSeoEvent(event: SeoConversionEvent, dims: SeoAcquisitionDimensions = {}): void {
   if (typeof window === "undefined" || getAnalyticsConsent() !== "granted") return;
-
   const normalized = mapLegacyEvent(event);
   const stored = readStoredAcquisition();
   const merged: SeoAcquisitionDimensions = { ...stored, ...dims };
-
   const payload = {
     event: normalized,
     landing_page: merged.landingPage ?? window.location.pathname,
@@ -156,10 +142,8 @@ export function trackSeoEvent(event: SeoConversionEvent, dims: SeoAcquisitionDim
     currency: merged.currency,
     items: merged.items,
   };
-
   window.dataLayer = window.dataLayer ?? [];
   window.dataLayer.push({ ...merged, ...payload, event: normalized });
-
   pushGa4(normalized, {
     transaction_id: payload.transaction_id,
     value: payload.value,
@@ -170,13 +154,10 @@ export function trackSeoEvent(event: SeoConversionEvent, dims: SeoAcquisitionDim
     medium: payload.medium,
     campaign: payload.campaign,
   });
-
   void fetch("/api/seo/track", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(payload),
     keepalive: true,
-  }).catch(() => {
-    // Fail open for UX; missing deliveries are observed through server logs/replay tests.
-  });
+  }).catch(() => {});
 }
