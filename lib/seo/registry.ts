@@ -538,7 +538,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList", "FAQPage"],
     internalLinkTargets: ["/", "/privacy", "/buyer-link", "/legal-notice", "/contact", "/trust", "/status"],
     regulatorySourceIds: [],
-    factualLastModified: "2026-08-13",
+    factualLastModified: "2026-08-12",
   },
   {
     path: "/status",
@@ -555,7 +555,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/security", "/contact", "/trust"],
     regulatorySourceIds: [],
-    factualLastModified: "2026-08-13",
+    factualLastModified: "2026-08-12",
   },
   {
     path: "/trust",
@@ -580,7 +580,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
       "/contact",
     ],
     regulatorySourceIds: [],
-    factualLastModified: "2026-08-13",
+    factualLastModified: "2026-08-12",
   },
   {
     path: "/platform",
