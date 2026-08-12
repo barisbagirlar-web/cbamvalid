@@ -1,22 +1,19 @@
 import { buildSeoBreadcrumbItems } from "@/lib/seo/breadcrumbs";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 import { requireSeoRoute } from "@/lib/seo/registry";
+import { SEO_LEGAL_SOURCE_INDEX } from "@/lib/seo/regulatory-sources";
 import {
   buildPageGraph,
   generateBreadcrumbSchema,
   generateOrganizationSchema,
   generateProductOfferSchema,
+  generateTechArticleSchema,
   generateWebApplicationSchema,
   generateWebPageSchema,
   generateWebSiteSchema,
   type JsonLdNode,
 } from "@/lib/seo/schema";
 
-/**
- * JSON-LD uses the same route metadata resolver that feeds visible search metadata,
- * while commercial Product/Offer claims stay on their verified pricing SSOT.
- * This prevents schema copy from silently drifting behind title/description changes.
- */
 export function JsonLdForRoute({ path }: { path: string }) {
   const route = requireSeoRoute(path);
   const metadata = generateSeoMetadata(path);
@@ -25,7 +22,7 @@ export function JsonLdForRoute({ path }: { path: string }) {
     typeof metadata.description === "string" ? metadata.description : route.description;
   const nodes: JsonLdNode[] = [];
 
-  if (route.schemaTypes.includes("Organization") || path === "/") {
+  if (route.schemaTypes.includes("Organization") || path === "/" || route.pageType === "guide") {
     nodes.push(generateOrganizationSchema());
   }
   if (route.schemaTypes.includes("WebSite") || path === "/") {
@@ -63,6 +60,23 @@ export function JsonLdForRoute({ path }: { path: string }) {
         name: publicTitle,
         description: publicDescription,
         type,
+      }),
+    );
+  }
+  if (route.pageType === "guide") {
+    const citations = route.regulatorySourceIds.flatMap((id) => {
+      const source = SEO_LEGAL_SOURCE_INDEX[id as keyof typeof SEO_LEGAL_SOURCE_INDEX];
+      return source?.eliUri ? [source.eliUri] : [];
+    });
+    const dateModified = route.factualLastModified ?? "2026-08-13";
+    nodes.push(
+      generateTechArticleSchema({
+        path: route.canonicalPath,
+        headline: route.h1,
+        description: publicDescription,
+        datePublished: dateModified,
+        dateModified,
+        citations,
       }),
     );
   }
