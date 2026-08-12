@@ -156,7 +156,7 @@ export function CbamPassThroughCalculator() {
                 </div>
               ))}
             </div>
-            <p className="text-xs text-muted">Engine {result.engineVersion} · payable emissions {result.payableEmbeddedEmissionsTco2e} tCO2e</p>
+            <p className="text-xs text-muted">Engine {result.engineVersion} · payable emissions {result.payableEmbeddedEmissionsTco2} tCO2e</p>
             <button type="button" onClick={downloadLetter} className="min-h-11 rounded-md border border-accent px-4 py-2 text-sm font-semibold text-accent">
               Download CBAM Cost Impact Letter
             </button>
