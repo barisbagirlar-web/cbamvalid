@@ -110,7 +110,8 @@ export default function SoftwareProductHome() {
                 </span>
                 <span className={styles.dashBrand}>CBAMValid</span>
                 <span className={styles.readiness}>
-                  Case Readiness&nbsp; 86%
+                  <span className={styles.readinessLabel}>Case Readiness&nbsp;</span>
+                  <span className={styles.readinessValue}>86%</span>
                   <span className={styles.ring} aria-hidden="true" />
                 </span>
               </div>
