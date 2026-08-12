@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
-      TARGET_APP_SHA: 017e918f6ffcac47a653a1b29ed532a1086462f1
+      TARGET_APP_SHA: 4172b592888315169fc46241a491d0b2be259c88
       FIREBASE_PROJECT: cbam-desk
       LIVE_BASE_URL: https://cbamvalid.com
       CI: "true"
