@@ -80,7 +80,7 @@ function CheckIcon() {
 
 export default function PricingPage() {
   return (
-    <main>
+    <main id="main">
       <section className="pricing-wrap" aria-label="Pricing">
         <header className="pricing-hero">
           <p className="eyebrow">Pricing — one self-service software product</p>

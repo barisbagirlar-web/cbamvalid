@@ -84,15 +84,20 @@ export default function SoftwareProductHome() {
         <div className={`wrap ${styles.grid}`}>
           <div className={styles.copy}>
             <span className={styles.kicker}>EU Regulatory Method Alignment</span>
+            <p className={styles.saasLabel}>B2B SaaS · Automated digital delivery</p>
             <h1 className={styles.title} id="homepage-hero-title">
               CBAM Exporter
               <br />
               Evidence Dossier
             </h1>
             <p className={styles.lede}>
-              Build an evidence-linked CBAM operator dossier from customer-entered data: deterministic
+              Customer-entered data drives evidence-linked CBAM operator dossiers: deterministic
               embedded-emissions calculations, fail-closed quality controls, versioned rulesets and sealed
-              multi-file outputs prepared for independent accredited verification.
+              multi-file outputs for buyer and independent review preparation.
+            </p>
+            <p className={styles.classification}>
+              <strong>Product classification:</strong> privately operated self-service B2B software with
+              customer-controlled data and automated digital delivery.
             </p>
 
             <div className={styles.ctas}>
@@ -218,7 +223,8 @@ export default function SoftwareProductHome() {
             ))}
           </div>
           <p style={{ maxWidth: "980px", margin: "28px auto 0", textAlign: "center" }}>
-            Prepared for independent accredited verification. CBAMValid does not issue an accredited verification opinion, customs approval, EU approval or CBAM Registry acceptance.
+            Built for buyer and independent review preparation. CBAMValid does not issue an accredited
+            verification opinion, customs approval, EU approval or CBAM Registry acceptance.
           </p>
           <div className="hero-ctas" style={{ marginTop: "28px", justifyContent: "center" }}>
             <Link className="btn btn-navy" href="/sample-dossier">Inspect Sample Outputs</Link>

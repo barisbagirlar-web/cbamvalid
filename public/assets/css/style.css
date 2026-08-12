@@ -95,6 +95,15 @@ h3{font-size:1.35rem}
 .section-head h2{margin:.55em 0 .45em}
 .section-head p{color:var(--muted)}
 
+/* ---------- Skip link (WCAG 2.4.1) ---------- */
+.skip-link{
+  position:absolute;left:12px;top:-56px;z-index:1000;
+  display:inline-flex;align-items:center;min-height:44px;padding:0 16px;
+  border-radius:10px;background:var(--terra);color:var(--card);font-weight:700;
+  box-shadow:var(--shadow-md);transition:top .18s ease;
+}
+.skip-link:focus{top:12px;outline:2px solid var(--gold);outline-offset:2px}
+
 /* ---------- Urgency topbar ---------- */
 .topbar{
   background:var(--navy-deep);color:#E8EDF7;
@@ -102,7 +111,10 @@ h3{font-size:1.35rem}
 }
 .topbar .wrap{display:flex;justify-content:center;align-items:center;gap:12px;padding:9px 28px;text-align:center}
 .topbar b{color:var(--gold);font-weight:600}
-.topbar a{color:#fff;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.topbar a{
+  display:inline-flex;align-items:center;min-height:44px;padding:0 6px;
+  color:#fff;text-decoration:underline;text-underline-offset:3px;white-space:nowrap;
+}
 .topbar .dot{width:7px;height:7px;border-radius:50%;background:var(--terra);flex:none;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
