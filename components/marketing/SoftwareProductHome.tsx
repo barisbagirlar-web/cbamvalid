@@ -42,13 +42,6 @@ const CHECKS = [
   "Integrity manifest",
 ] as const;
 
-const EXPORTS = [
-  { label: "PDF", sub: "Export format" },
-  { label: "JSON", sub: "Export format" },
-  { label: "O3CI XLSX", sub: "Export format" },
-  { label: "SHA-256 sealed", sub: "Evidence integrity" },
-] as const;
-
 export default function SoftwareProductHome() {
   return (
     <main id="main">
@@ -56,19 +49,14 @@ export default function SoftwareProductHome() {
         <div className={`wrap ${styles.grid}`}>
           <div className={styles.copy}>
             <span className={styles.kicker}>EU Regulatory Method Alignment</span>
-            <p className={styles.saasLabel}>B2B SaaS · Automated digital delivery</p>
             <h1 className={styles.title} id="homepage-hero-title">
               CBAM Exporter
               <br />
               Evidence Dossier
             </h1>
             <p className={styles.lede}>
-              Customer-entered data, automated calculations, quality controls, and export-ready
+              Customer-entered emissions data, automated calculations, quality controls, and export-ready
               dossier files for independent review preparation.
-            </p>
-            <p className={styles.classification}>
-              <strong>Product classification:</strong> privately operated self-service B2B software with
-              customer-controlled data and automated digital delivery.
             </p>
 
             <div className={styles.ctas}>
@@ -81,22 +69,10 @@ export default function SoftwareProductHome() {
             </div>
 
             <div className={styles.trustRow} aria-label="Product trust signals">
-              <span className={styles.trustItem}>
-                <span className={styles.trustIcon}>✓</span>
-                EU Hosted
-              </span>
-              <span className={styles.trustItem}>
-                <span className={styles.trustIcon}>•</span>
-                Versioned EU Rulesets
-              </span>
-              <span className={styles.trustItem}>
-                <span className={styles.trustIcon}>↗</span>
-                Evidence-linked
-              </span>
-              <span className={styles.trustItem}>
-                <span className={styles.trustIcon}>⌁</span>
-                Pay only at lock
-              </span>
+              <span className={styles.trustItem}><span className={styles.trustIcon}>✓</span>EU Hosted</span>
+              <span className={styles.trustItem}><span className={styles.trustIcon}>•</span>Versioned EU Rulesets</span>
+              <span className={styles.trustItem}><span className={styles.trustIcon}>↗</span>Evidence-linked</span>
+              <span className={styles.trustItem}><span className={styles.trustIcon}>⌁</span>Pay only at lock</span>
             </div>
           </div>
 
@@ -104,14 +80,12 @@ export default function SoftwareProductHome() {
             <div className={styles.dashboard}>
               <div className={styles.dashboardTop}>
                 <span className={styles.dots} aria-hidden="true">
-                  {Array.from({ length: 9 }).map((_, index) => (
-                    <span key={index} />
-                  ))}
+                  {Array.from({ length: 9 }).map((_, index) => <span key={index} />)}
                 </span>
                 <span className={styles.dashBrand}>CBAMValid</span>
                 <span className={styles.readiness}>
-                  <span className={styles.readinessLabel}>Case Readiness&nbsp;</span>
-                  <span className={styles.readinessValue}>86%</span>
+                  <span>Case Readiness</span>
+                  <strong>86%</strong>
                   <span className={styles.ring} aria-hidden="true" />
                 </span>
               </div>
@@ -130,41 +104,26 @@ export default function SoftwareProductHome() {
 
                 <div className={styles.metrics}>
                   {METRICS.map((metric) => (
-                    <div
-                      className={`${styles.metric} ${metric.good ? styles.metricGood : ""}`}
-                      key={metric.label}
-                    >
+                    <div className={`${styles.metric} ${metric.good ? styles.metricGood : ""}`} key={metric.label}>
                       <span className={styles.metricLabel}>{metric.label}</span>
                       <span className={`${styles.metricValue} ${metric.warn ? styles.warn : ""}`}>
-                        {metric.value}
-                        {metric.unit ? <small>{metric.unit}</small> : null}
+                        {metric.value}{metric.unit ? <small>{metric.unit}</small> : null}
                       </span>
                     </div>
                   ))}
                 </div>
 
                 <div className={styles.evidenceBox}>
-                  <div className={styles.evidenceMain}>
-                    <div className={styles.evidenceTitleRow}>
-                      <span>Evidence Complete</span>
-                      <strong>100%</strong>
-                    </div>
-                    <div className={styles.progress} aria-label="Evidence completion 100 percent">
-                      <span />
-                    </div>
-                    <div className={styles.checks}>
-                      {CHECKS.map((item) => (
-                        <span className={styles.checkItem} key={item}>
-                          <span className={styles.checkDot}>✓</span>
-                          {item}
-                        </span>
-                      ))}
-                    </div>
+                  <div className={styles.evidenceTitleRow}>
+                    <span>Evidence Complete</span><strong>100%</strong>
                   </div>
-
-                  <div className={styles.blockerCard}>
-                    <strong>0 QC blockers</strong>
-                    <span>Ready for independent verification</span>
+                  <div className={styles.progress}><span /></div>
+                  <div className={styles.checks}>
+                    {CHECKS.map((item) => (
+                      <span className={styles.checkItem} key={item}>
+                        <span className={styles.checkDot}>✓</span>{item}
+                      </span>
+                    ))}
                   </div>
                 </div>
 
@@ -172,15 +131,17 @@ export default function SoftwareProductHome() {
                   <span className={styles.shield}>✓</span>
                   READY TO SEAL
                 </div>
+              </div>
+            </div>
 
-                <div className={styles.exports}>
-                  {EXPORTS.map((item) => (
-                    <div className={styles.exportCard} key={item.label}>
-                      <strong>{item.label}</strong>
-                      <span>{item.sub}</span>
-                    </div>
-                  ))}
-                </div>
+            <div className={styles.detachedCards} aria-label="Export and integrity outputs">
+              <div className={styles.outputCard}>
+                <span className={styles.outputIcon}>▧</span>
+                <span><strong>PDF · JSON · O3CI XLSX</strong><small>Export formats</small></span>
+              </div>
+              <div className={styles.outputCard}>
+                <span className={styles.outputIcon}>♢</span>
+                <span><strong>SHA-256 sealed</strong><small>Evidence integrity guaranteed</small></span>
               </div>
             </div>
           </div>
@@ -192,9 +153,7 @@ export default function SoftwareProductHome() {
           <div className="section-head center">
             <span className="eyebrow">Software operation</span>
             <h2>Four automated functions, one digital product</h2>
-            <p>
-              The paid deliverable is generated by the application from customer-controlled inputs.
-            </p>
+            <p>The paid deliverable is generated by the application from customer-controlled inputs.</p>
           </div>
           <div className="deliv-grid">
             {SOFTWARE_FEATURES.map((feature) => (
@@ -212,24 +171,13 @@ export default function SoftwareProductHome() {
           <div className="section-head">
             <span className="eyebrow">Transparent product scope</span>
             <h2>Software access, automated processing and digital files</h2>
-            <p>
-              Product capabilities, pricing, delivery rules and legal boundaries are published before
-              checkout so buyers can assess the software without contacting a sales representative.
-            </p>
+            <p>Product capabilities, pricing, delivery rules and legal boundaries are published before checkout so buyers can assess the software without contacting a sales representative.</p>
           </div>
           <div className="hero-ctas" style={{ marginTop: "28px" }}>
-            <Link className="btn btn-navy" href="/product">
-              Product Capabilities
-            </Link>
-            <Link className="btn btn-ghost" href="/pricing">
-              Pricing and Delivery
-            </Link>
-            <Link className="btn btn-ghost" href="/terms">
-              Terms of Service
-            </Link>
-            <Link className="btn btn-ghost" href="/refund-policy">
-              Refund Policy
-            </Link>
+            <Link className="btn btn-navy" href="/product">Product Capabilities</Link>
+            <Link className="btn btn-ghost" href="/pricing">Pricing and Delivery</Link>
+            <Link className="btn btn-ghost" href="/terms">Terms of Service</Link>
+            <Link className="btn btn-ghost" href="/refund-policy">Refund Policy</Link>
           </div>
         </div>
       </section>
