@@ -22,12 +22,17 @@ export function shareTokenHash(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
+export function isValidShareTokenId(tokenId: string): boolean {
+  return /^[a-f0-9]{64}$/i.test(tokenId);
+}
+
 async function assertOwnedSealedReport(reportId: string, uid: string): Promise<DocumentData> {
   const snapshot = await adminDb.collection("cbam_reports").doc(reportId).get();
   if (!snapshot.exists) throw new Error("REPORT_NOT_FOUND");
   const data = snapshot.data() as DocumentData;
   if (data.uid !== uid) throw new Error("REPORT_FORBIDDEN");
   if (data.status !== "SEALED") throw new Error("REPORT_NOT_SEALED");
+  if (data.publicVerificationState === "REVOKED") throw new Error("REPORT_REVOKED");
   return data;
 }
 
@@ -47,7 +52,7 @@ export async function createShareLink(params: { reportId: string; uid: string; l
     opens: 0,
     lastOpenedAt: null,
   } satisfies ShareLinkRecord);
-  return { token, tokenId: tokenHash.slice(0, 16), label };
+  return { token, tokenId: tokenHash, label };
 }
 
 export async function listShareLinks(reportId: string, uid: string) {
@@ -61,7 +66,7 @@ export async function listShareLinks(reportId: string, uid: string) {
     .map((doc) => {
       const data = doc.data() as ShareLinkRecord;
       return {
-        tokenId: doc.id.slice(0, 16),
+        tokenId: doc.id,
         label: data.label,
         createdAt: data.createdAt ?? null,
         revokedAt: data.revokedAt ?? null,
@@ -74,14 +79,13 @@ export async function listShareLinks(reportId: string, uid: string) {
 
 export async function revokeShareLink(params: { reportId: string; uid: string; tokenId: string }) {
   await assertOwnedSealedReport(params.reportId, params.uid);
-  const snapshot = await adminDb
-    .collection(COLLECTION)
-    .where("reportId", "==", params.reportId)
-    .where("uid", "==", params.uid)
-    .get();
-  const match = snapshot.docs.find((doc) => doc.id.startsWith(params.tokenId));
-  if (!match) throw new Error("SHARE_TOKEN_NOT_FOUND");
-  await match.ref.set({ revokedAt: FieldValue.serverTimestamp() }, { merge: true });
+  if (!isValidShareTokenId(params.tokenId)) throw new Error("INVALID_TOKEN_ID");
+  const ref = adminDb.collection(COLLECTION).doc(params.tokenId.toLowerCase());
+  const snapshot = await ref.get();
+  if (!snapshot.exists) throw new Error("SHARE_TOKEN_NOT_FOUND");
+  const data = snapshot.data() as ShareLinkRecord;
+  if (data.reportId !== params.reportId || data.uid !== params.uid) throw new Error("SHARE_TOKEN_NOT_FOUND");
+  await ref.set({ revokedAt: FieldValue.serverTimestamp() }, { merge: true });
 }
 
 export async function resolveShareToken(token: string, countOpen = true) {
@@ -95,6 +99,9 @@ export async function resolveShareToken(token: string, countOpen = true) {
   const report = await adminDb.collection("cbam_reports").doc(data.reportId).get();
   if (!report.exists) return { state: "MISSING" as const };
   const reportData = report.data() as DocumentData;
+  if (reportData.publicVerificationState === "REVOKED" || reportData.status === "REVOKED") {
+    return { state: "REVOKED" as const };
+  }
   if (reportData.status !== "SEALED") return { state: "MISSING" as const };
 
   if (countOpen) {
