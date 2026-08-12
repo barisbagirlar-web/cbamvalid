@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      TARGET_SHA: 21130b8b95285a7cf84b528d144eebc1b6b001dc
+      TARGET_SHA: c49bbe9e8052c134ddf1ed1dd322f7e71b9ca9d7
       FIREBASE_PROJECT: cbam-desk
       LIVE_BASE_URL: https://cbamvalid.com
       SA_FIREBASE_CBAM: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CBAM_DESK }}
@@ -135,7 +135,7 @@ jobs:
           set -euo pipefail
           firebase deploy --only functions:sealCbamReport,hosting --project "${FIREBASE_PROJECT}" --non-interactive
 
-      - name: Verify production function and approved hero
+      - name: Verify production function and homepage grid
         shell: bash
         run: |
           set -euo pipefail
@@ -146,13 +146,16 @@ jobs:
           curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/" > "${HOME_HTML}"
           grep -q 'CBAM Exporter' "${HOME_HTML}"
           grep -q 'Evidence Dossier' "${HOME_HTML}"
+          grep -q 'Six automated functions, one digital product' "${HOME_HTML}"
+          grep -q 'Evidence-linked audit trail' "${HOME_HTML}"
+          grep -q 'Sealed version integrity' "${HOME_HTML}"
           curl --fail --silent --show-error --location --max-time 30 "${LIVE_BASE_URL}/login" >/dev/null
           {
-            printf '%s\n' '## Approved asymmetric hero production deployment PASS'
+            printf '%s\n' '## Balanced homepage software-operation grid production deployment PASS'
             printf '%s\n' "- deployed application commit: ${TARGET_SHA}"
             printf '%s\n' "- Firebase project: ${FIREBASE_PROJECT}"
             printf '%s\n' '- release artifact gate passed before deployment'
             printf '%s\n' '- Firebase Web SDK build config resolved before Next.js build'
             printf '%s\n' '- sealCbamReport and Firebase Hosting deployed'
-            printf '%s\n' '- CBAM Exporter / Evidence Dossier hero verified on production'
+            printf '%s\n' '- six-card software operation grid verified on production'
           } >> "${GITHUB_STEP_SUMMARY}"
