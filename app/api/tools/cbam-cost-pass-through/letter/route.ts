@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     const regular = await pdf.embedFont(StandardFonts.Helvetica);
     const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
     const page = pdf.addPage([595.28, 841.89]);
-    const { width, height } = page.getSize();
+    const { height } = page.getSize();
     let y = height - 58;
 
     const line = (text: string, size = 10, isBold = false) => {
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     const bytes = await pdf.save({ useObjectStreams: false });
     if (pdf.getPageCount() > 2) throw new Error("PDF_PAGE_LIMIT_EXCEEDED");
 
-    return new NextResponse(Buffer.from(bytes), {
+    return new NextResponse(new Uint8Array(bytes), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="CBAM-Cost-Impact-${result.normalizedInput.cnCode}.pdf"`,
