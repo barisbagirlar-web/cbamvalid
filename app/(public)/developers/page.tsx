@@ -1,10 +1,6 @@
-import type { Metadata } from "next";
+import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 
-export const metadata: Metadata = {
-  title: "Developers | CBAMValid Verification API",
-  description: "Integrate read-only CBAMValid sealed dossier hash verification with the public v1 API.",
-  alternates: { canonical: "https://cbamvalid.com/developers" },
-};
+export const metadata = generateSeoMetadata("/developers");
 
 const hash = "<64-character-sha256>";
 
