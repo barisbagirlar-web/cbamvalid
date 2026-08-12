@@ -75,7 +75,7 @@ export default function SoftwareProductHome() {
               <Link className={styles.primary} href="/register?next=/cases/new" prefetch={false}>
                 Start Free Draft
               </Link>
-              <Link className={styles.secondary} href="/sample">
+              <Link className={styles.secondary} href="/sample-dossier">
                 View Sample Dossier
               </Link>
             </div>
