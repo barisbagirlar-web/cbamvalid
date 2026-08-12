@@ -18,6 +18,8 @@ const PRIMARY_NAV = [
 /** Authority + deeper surfaces — derived from marketing SSOT (Trust, Rulesets, …). */
 const MORE_NAV = AUTHORITY_MORE_NAV;
 
+const MOBILE_NAV_ID = "public-mobile-nav";
+
 export function PublicHeader() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -27,10 +29,21 @@ export function PublicHeader() {
     return () => globalThis.clearTimeout(id);
   }, [pathname]);
 
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = isMobileMenuOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [isMobileMenuOpen]);
+
   const isActive = (path: string) => (pathname === path ? "active" : "");
 
   return (
     <>
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
       <div className="topbar">
         <div className="wrap">
           <span className="dot" aria-hidden="true"></span>
@@ -75,6 +88,7 @@ export function PublicHeader() {
               className={`nav-toggle ${isMobileMenuOpen ? "open" : ""}`}
               aria-label="Toggle menu"
               aria-expanded={isMobileMenuOpen}
+              aria-controls={MOBILE_NAV_ID}
               type="button"
             >
               <span></span>
@@ -86,6 +100,7 @@ export function PublicHeader() {
       </header>
 
       <nav
+        id={MOBILE_NAV_ID}
         className={`mobile-nav ${isMobileMenuOpen ? "open" : ""}`}
         aria-label="Mobile navigation"
         style={{ display: isMobileMenuOpen ? "flex" : "none" }}
