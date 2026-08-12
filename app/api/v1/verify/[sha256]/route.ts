@@ -11,6 +11,18 @@ function pseudonym(value: unknown): string | null {
   return `op_${crypto.createHash("sha256").update(value).digest("hex").slice(0, 16)}`;
 }
 
+function toIsoTimestamp(value: unknown): string | null {
+  if (typeof value === "string") {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+  }
+  if (value && typeof value === "object" && "toDate" in value && typeof (value as { toDate?: unknown }).toDate === "function") {
+    const date = (value as { toDate: () => Date }).toDate();
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+  }
+  return null;
+}
+
 export async function GET(request: Request, props: { params: Promise<{ sha256: string }> }) {
   const rate = await enforcePublicRateLimit(request, "api-v1-verify", 60);
   if (!rate.allowed) {
@@ -40,12 +52,23 @@ export async function GET(request: Request, props: { params: Promise<{ sha256: s
 
   const data = snapshot.docs[0].data();
   const revoked = data.publicVerificationState === "REVOKED" || data.status === "REVOKED";
+  const sealed = data.status === "SEALED" || revoked;
+  if (!sealed) {
+    console.error("[VERIFY STATE CONFLICT] hash matched a non-sealed report", snapshot.docs[0].id, data.status);
+    return NextResponse.json({ error: "REGISTRY_STATE_CONFLICT" }, { status: 409 });
+  }
+
   return NextResponse.json(
     {
       exists: true,
-      sealedAt: data.createdAt ?? null,
-      rulesetVersion: data.rulesetVersion ?? null,
-      engineVersion: data.engineVersion ?? data.calculation?.engineVersion ?? null,
+      sealedAt: toIsoTimestamp(data.createdAt),
+      rulesetVersion: typeof data.rulesetVersion === "string" ? data.rulesetVersion : null,
+      engineVersion:
+        typeof data.engineVersion === "string"
+          ? data.engineVersion
+          : typeof data.calculation?.engineVersion === "string"
+            ? data.calculation.engineVersion
+            : null,
       operator: pseudonym(data.uid),
       status: revoked ? "revoked" : "valid",
     },
