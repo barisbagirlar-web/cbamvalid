@@ -12,10 +12,7 @@ function organizationNode(): JsonLdNode {
     name: legalConfig.legalEntityName,
     alternateName: legalConfig.tradingName,
     url: siteConfig.canonicalOrigin,
-    logo: {
-      "@type": "ImageObject",
-      url: `${siteConfig.canonicalOrigin}/favicon.svg`,
-    },
+    logo: { "@type": "ImageObject", url: `${siteConfig.canonicalOrigin}/favicon.svg` },
     contactPoint: {
       "@type": "ContactPoint",
       email: assertVerifiedClaim(
@@ -74,8 +71,8 @@ export function generateTechArticleSchema(params: {
   path: string;
   headline: string;
   description: string;
-  datePublished: string;
   dateModified: string;
+  datePublished?: string;
   citations: readonly string[];
 }): JsonLdNode {
   return {
@@ -86,7 +83,7 @@ export function generateTechArticleSchema(params: {
     description: params.description,
     url: buildCanonicalUrl(params.path),
     inLanguage: "en",
-    datePublished: params.datePublished,
+    ...(params.datePublished ? { datePublished: params.datePublished } : {}),
     dateModified: params.dateModified,
     author: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
     publisher: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
@@ -116,10 +113,7 @@ export function generateFAQSchema(faqs: { question: string; answer: string }[]):
     mainEntity: faqs.map((faq) => ({
       "@type": "Question",
       name: faq.question,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: faq.answer,
-      },
+      acceptedAnswer: { "@type": "Answer", text: faq.answer },
     })),
   };
 }
@@ -204,8 +198,5 @@ export function dedupeGraphNodes(nodes: readonly JsonLdNode[]): JsonLdNode[] {
 }
 
 export function buildPageGraph(nodes: JsonLdNode[]): JsonLdNode {
-  return {
-    "@context": "https://schema.org",
-    "@graph": dedupeGraphNodes(nodes),
-  };
+  return { "@context": "https://schema.org", "@graph": dedupeGraphNodes(nodes) };
 }
