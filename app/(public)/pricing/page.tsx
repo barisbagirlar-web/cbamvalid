@@ -43,7 +43,7 @@ const ASSURANCES: { label: string; text: string }[] = [
   },
 ];
 
-const FAQS: { question: string; answer: string }[] = [
+const FAQS: { question: string; answer: React.ReactNode }[] = [
   {
     question: "When am I charged?",
     answer:
@@ -67,6 +67,19 @@ const FAQS: { question: string; answer: string }[] = [
     question: "Is manual preparation included?",
     answer:
       "No. The paid product is software access and automated digital delivery. Customers enter and control their own data.",
+  },
+  {
+    question: "Do you offer refunds?",
+    answer: (
+      <>
+        Yes. If you paid for a working file and have not yet completed a successful sealed lock, you may
+        request a refund within 14 days. Duplicate charges and confirmed failed deliveries are refundable.{" "}
+        <Link href="/refund-policy" className="underline">
+          Read the Refund Policy
+        </Link>
+        .
+      </>
+    ),
   },
 ];
 

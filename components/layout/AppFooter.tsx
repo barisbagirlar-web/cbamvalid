@@ -129,7 +129,7 @@ export default function AppFooter() {
               Terms
             </Link>
             <Link href="/cookie-policy">Cookies</Link>
-            <Link href="/refund-policy">Refunds</Link>
+            <Link href="/refund-policy">Refund Policy</Link>
             <Link className="footer-legal-dup" href="/security">
               Security
             </Link>

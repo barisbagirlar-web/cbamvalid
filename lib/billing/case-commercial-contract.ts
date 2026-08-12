@@ -91,7 +91,7 @@ export const COMMERCIAL_PUBLIC_FAQ = [
   {
     question: "Do you offer refunds?",
     answer:
-      "Yes. If you paid for a working file and have not yet completed a successful sealed lock, you may request a refund within 14 days. Duplicate charges and confirmed failed deliveries are refundable. See the Refund Policy.",
+      "Yes. If you paid for a working file and have not yet completed a successful sealed lock, you may request a refund within 14 days. Duplicate charges and confirmed failed deliveries are refundable. See /refund-policy.",
   },
   {
     question: "Can I pay in EUR?",

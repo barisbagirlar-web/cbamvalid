@@ -13,6 +13,10 @@ const eslintConfig = defineConfig([
     plugins: { cbamvalid: { rules: { "no-float-in-hashed-fields": noFloatInHashedFields } } },
     rules: { "cbamvalid/no-float-in-hashed-fields": "error" },
   },
+  {
+    files: ["next.config.js", "sites/**/seo.config.json"],
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

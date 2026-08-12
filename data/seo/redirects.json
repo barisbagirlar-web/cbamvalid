@@ -2,7 +2,7 @@
   "meta": {
     "artifact": "redirects/cbamvalid_redirect_ledger",
     "schemaVersion": "6.1",
-    "generatedAt": "2026-08-09T19:35:00Z",
+    "generatedAt": "2026-08-12T22:45:00Z",
     "generatorScript": "scripts/seo/redirect-audit-v6.ts",
     "inputWindow": {
       "start": null,
@@ -62,6 +62,34 @@
       },
       {
         "id": "rd_003",
+        "source": "/refunds",
+        "sourceHost": "*",
+        "destination": "https://cbamvalid.com/refund-policy",
+        "statusCode": 308,
+        "permanent": true,
+        "owner": "next.config.js",
+        "firstObservedAt": "2026-08-12T22:45:00Z",
+        "ageKnown": false,
+        "lastReviewedAt": "2026-08-12T22:45:00Z",
+        "reviewDecision": "KEEP",
+        "rationale": "Buyer/MoR alias /refunds consolidates to the canonical refund-policy page on the absolute canonical origin in one hop."
+      },
+      {
+        "id": "rd_004",
+        "source": "/refund",
+        "sourceHost": "*",
+        "destination": "https://cbamvalid.com/refund-policy",
+        "statusCode": 308,
+        "permanent": true,
+        "owner": "next.config.js",
+        "firstObservedAt": "2026-08-12T22:45:00Z",
+        "ageKnown": false,
+        "lastReviewedAt": "2026-08-12T22:45:00Z",
+        "reviewDecision": "KEEP",
+        "rationale": "Singular /refund alias consolidates to the canonical refund-policy page on the absolute canonical origin in one hop."
+      },
+      {
+        "id": "rd_005",
         "source": "/:path*",
         "sourceHost": "www.cbamvalid.com",
         "destination": "https://cbamvalid.com/:path*",
@@ -70,7 +98,7 @@
         "owner": "next.config.js",
         "firstObservedAt": "2026-08-09T19:35:00Z",
         "ageKnown": false,
-        "lastReviewedAt": "2026-08-09T19:35:00Z",
+        "lastReviewedAt": "2026-08-12T22:45:00Z",
         "reviewDecision": "KEEP",
         "rationale": "All application-reachable www requests collapse to the configured non-www canonical origin."
       }
@@ -104,8 +132,8 @@
     ],
     "capacity": {
       "redirectLimit": 2000,
-      "applicationRuleCount": 3,
-      "utilizationBasisPoints": 15,
+      "applicationRuleCount": 5,
+      "utilizationBasisPoints": 25,
       "warningThresholdPct": 80,
       "warning": false
     }
