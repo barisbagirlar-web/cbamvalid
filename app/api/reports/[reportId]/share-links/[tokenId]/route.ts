@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { requireFirebaseSession } from "@/lib/auth/require-firebase-session";
-import { revokeShareLink } from "@/lib/verify/share-links";
+import { isValidShareTokenId, revokeShareLink } from "@/lib/verify/share-links";
 
 export async function DELETE(request: Request, props: { params: Promise<{ reportId: string; tokenId: string }> }) {
   try {
     const auth = await requireFirebaseSession(request);
     const { reportId, tokenId } = await props.params;
-    if (!/^[a-f0-9]{16}$/i.test(tokenId)) {
+    if (!isValidShareTokenId(tokenId)) {
       return NextResponse.json({ error: "INVALID_TOKEN_ID" }, { status: 400 });
     }
     await revokeShareLink({ reportId, uid: auth.uid, tokenId });
