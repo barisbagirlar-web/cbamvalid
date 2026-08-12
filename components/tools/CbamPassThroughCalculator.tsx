@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { trackSeoEvent } from "@/lib/seo/analytics-events";
 
 type FormState = {
   cnCode: string;
@@ -155,11 +156,17 @@ export function CbamPassThroughCalculator() {
                 </div>
               ))}
             </div>
-            <p className="text-xs text-muted">Engine {result.engineVersion} · payable emissions {result.payableEmbeddedEmissionsTco2} tCO2e</p>
+            <p className="text-xs text-muted">Engine {result.engineVersion} · payable emissions {result.payableEmbeddedEmissionsTco2e} tCO2e</p>
             <button type="button" onClick={downloadLetter} className="min-h-11 rounded-md border border-accent px-4 py-2 text-sm font-semibold text-accent">
               Download CBAM Cost Impact Letter
             </button>
-            <a href="/register" className="block text-sm font-semibold text-accent underline">Turn this estimate into a working file → Start Free Draft</a>
+            <a
+              href="/register"
+              onClick={() => trackSeoEvent("passthrough_to_draft", { landingPage: "/tools/cbam-cost-pass-through" })}
+              className="block text-sm font-semibold text-accent underline"
+            >
+              Turn this estimate into a working file → Start Free Draft
+            </a>
           </div>
         )}
       </section>
