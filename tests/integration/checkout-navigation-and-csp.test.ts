@@ -13,11 +13,27 @@ describe("checkout navigation and Paddle Retain CSP", () => {
     expect(page).not.toContain('href="/cbam"');
   });
 
-  it("permits Paddle Retain/ProfitWell without broadening the entire CSP", () => {
+  it("permits Paddle Retain/ProfitWell without broadening the entire CSP", async () => {
+    const { buildContentSecurityPolicy } = await import("../../lib/security/csp");
+    const proxy = read("proxy.ts");
     const config = read("next.config.js");
-    expect(config).toContain("script-src 'self'");
-    expect(config).toContain("https://public.profitwell.com");
-    expect(config).toContain("connect-src 'self'");
-    expect(config).toContain("https://*.profitwell.com");
+    const csp = buildContentSecurityPolicy({
+      nonce: "contract-nonce",
+      isDevelopment: false,
+      allowFirebaseEmulator: false,
+      paddleSandbox: false,
+    });
+
+    expect(csp).toContain("https://public.profitwell.com");
+    expect(csp).toContain("https://*.profitwell.com");
+    expect(csp).toContain("'strict-dynamic'");
+    expect(csp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+    expect(csp).not.toMatch(/script-src[^;]*'unsafe-eval'/);
+    expect(csp).not.toContain("sandbox-cdn.paddle.com");
+    expect(csp).not.toContain("127.0.0.1:5001");
+    expect(proxy).toContain("buildContentSecurityPolicy");
+    expect(proxy).toContain("X-Robots-Tag");
+    expect(config).toContain("poweredByHeader: false");
+    expect(config).not.toMatch(/key:\s*['"]Content-Security-Policy['"]/);
   });
 });

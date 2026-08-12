@@ -22,8 +22,6 @@ export function renderAiTxt(origin: string = siteConfig.canonicalOrigin): string
     "Allow: /icon-512.png",
     "Allow: /site.webmanifest",
     "Disallow: /dashboard/",
-    "Disallow: /admin/",
-    "Disallow: /api/",
     "Disallow: /cases/",
     "Disallow: /reports/",
     "Disallow: /account/",

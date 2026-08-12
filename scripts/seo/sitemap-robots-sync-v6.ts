@@ -6,11 +6,7 @@ import { buildRobotsPolicy } from "../../app/robots";
 
 const ROOT = resolve(fileURLToPath(new URL("../../", import.meta.url)));
 const STATIC_ROBOTS_PATH = resolve(ROOT, "public/robots.txt");
-const HEADER = [
-  "# GENERATED FALLBACK — source of truth: app/robots.ts",
-  "# Required because Firebase Frameworks Hosting can miss Next MetadataRoute /robots.txt.",
-  "",
-] as const;
+const HEADER: readonly string[] = [];
 
 function list(value: string | string[] | undefined): string[] {
   if (value === undefined) return [];

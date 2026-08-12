@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Suspense } from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -31,11 +32,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Request-time render so proxy.ts CSP nonces apply to framework scripts.
+  await headers();
+
   return (
     <html lang="en" className={inter.variable}>
       <body className={`${inter.className} bg-kil-base text-kil-text antialiased min-h-screen`}>

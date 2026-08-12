@@ -1,11 +1,6 @@
-# GENERATED FALLBACK — source of truth: app/robots.ts
-# Required because Firebase Frameworks Hosting can miss Next MetadataRoute /robots.txt.
-
 User-agent: *
 Allow: /
 Disallow: /dashboard/
-Disallow: /admin/
-Disallow: /api/
 Disallow: /cases/
 Disallow: /reports/
 Disallow: /account/
@@ -17,8 +12,6 @@ Disallow: /register
 User-agent: OAI-SearchBot
 Allow: /
 Disallow: /dashboard/
-Disallow: /admin/
-Disallow: /api/
 Disallow: /cases/
 Disallow: /reports/
 Disallow: /account/
@@ -30,8 +23,6 @@ Disallow: /register
 User-agent: Googlebot
 Allow: /
 Disallow: /dashboard/
-Disallow: /admin/
-Disallow: /api/
 Disallow: /cases/
 Disallow: /reports/
 Disallow: /account/
@@ -43,8 +34,6 @@ Disallow: /register
 User-agent: GPTBot
 Allow: /
 Disallow: /dashboard/
-Disallow: /admin/
-Disallow: /api/
 Disallow: /cases/
 Disallow: /reports/
 Disallow: /account/
@@ -56,8 +45,6 @@ Disallow: /register
 User-agent: ClaudeBot
 Allow: /
 Disallow: /dashboard/
-Disallow: /admin/
-Disallow: /api/
 Disallow: /cases/
 Disallow: /reports/
 Disallow: /account/
@@ -69,8 +56,6 @@ Disallow: /register
 User-agent: Google-Extended
 Allow: /
 Disallow: /dashboard/
-Disallow: /admin/
-Disallow: /api/
 Disallow: /cases/
 Disallow: /reports/
 Disallow: /account/
