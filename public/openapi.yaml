@@ -1,0 +1,40 @@
+openapi: 3.1.0
+info:
+  title: CBAMValid Public Verification API
+  version: 1.0.0
+  description: Public, read-only integrity verification for CBAMValid sealed dossier document hashes.
+servers:
+  - url: https://cbamvalid.com
+paths:
+  /api/v1/verify/{sha256}:
+    get:
+      operationId: verifySealedDossierHash
+      summary: Verify a sealed dossier SHA-256
+      parameters:
+        - name: sha256
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-fA-F0-9]{64}$'
+      responses:
+        '200':
+          description: Hash lookup result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [exists, status]
+                properties:
+                  exists: { type: boolean }
+                  sealedAt: { type: [string, 'null'] }
+                  rulesetVersion: { type: [string, 'null'] }
+                  engineVersion: { type: [string, 'null'] }
+                  operator: { type: [string, 'null'] }
+                  status:
+                    anyOf:
+                      - enum: [valid, revoked]
+                      - type: 'null'
+        '400': { description: Invalid SHA-256 }
+        '429': { description: Rate limit exceeded }
+        '500': { description: Internal error }
