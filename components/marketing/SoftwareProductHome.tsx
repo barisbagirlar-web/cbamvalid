@@ -20,12 +20,20 @@ const SOFTWARE_FEATURES = [
   },
 ] as const;
 
-const METRICS = [
+type HeroMetric = {
+  label: string;
+  value: string;
+  unit?: string;
+  good?: boolean;
+  warn?: boolean;
+};
+
+const METRICS: readonly HeroMetric[] = [
   { label: "Embedded Emissions", value: "412.60", unit: "tCO₂e" },
   { label: "Evidence Coverage", value: "16 / 16" },
   { label: "QC Blockers", value: "0", good: true },
   { label: "Warnings", value: "2", warn: true },
-] as const;
+];
 
 const CHECKS = [
   "Calculation trace",
