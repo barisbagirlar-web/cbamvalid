@@ -56,14 +56,19 @@ export default function SoftwareProductHome() {
         <div className={`wrap ${styles.grid}`}>
           <div className={styles.copy}>
             <span className={styles.kicker}>EU Regulatory Method Alignment</span>
+            <p className={styles.saasLabel}>B2B SaaS · Automated digital delivery</p>
             <h1 className={styles.title} id="homepage-hero-title">
               CBAM Exporter
               <br />
               Evidence Dossier
             </h1>
             <p className={styles.lede}>
-              Customer-entered emissions data, automated calculations, quality controls, and export-ready
+              Customer-entered data, automated calculations, quality controls, and export-ready
               dossier files for independent review preparation.
+            </p>
+            <p className={styles.classification}>
+              <strong>Product classification:</strong> privately operated self-service B2B software with
+              customer-controlled data and automated digital delivery.
             </p>
 
             <div className={styles.ctas}>

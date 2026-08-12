@@ -32,13 +32,21 @@
 
 .kicker {
   display: inline-block;
-  margin-bottom: 24px;
+  margin-bottom: 10px;
   color: var(--terra-dark, #2d6a4f);
   font-family: var(--mono, ui-monospace, monospace);
   font-size: .72rem;
   font-weight: 700;
   letter-spacing: .15em;
   text-transform: uppercase;
+}
+
+.saasLabel {
+  margin: 0 0 18px;
+  color: var(--ink-2, #4a4a45);
+  font-size: .9rem;
+  font-weight: 600;
+  letter-spacing: .01em;
 }
 
 .title {
@@ -53,10 +61,18 @@
 
 .lede {
   max-width: 580px;
-  margin: 0 0 30px;
+  margin: 0 0 14px;
   color: var(--ink-2, #4a4a45);
   font-size: clamp(1.05rem, 1.35vw, 1.22rem);
   line-height: 1.55;
+}
+
+.classification {
+  max-width: 580px;
+  margin: 0 0 30px;
+  color: var(--ink-2, #4a4a45);
+  font-size: .98rem;
+  line-height: 1.5;
 }
 
 .ctas {
