@@ -472,25 +472,78 @@
 }
 
 @media (max-width: 640px) {
-  .hero { padding: 42px 0 52px; }
-  .kicker { margin-bottom: 17px; font-size: .64rem; }
-  .title { font-size: clamp(2.45rem, 13vw, 3.45rem); }
-  .lede { font-size: 1rem; }
-  .ctas { display: grid; grid-template-columns: 1fr; }
-  .primary, .secondary { width: 100%; }
-  .trustRow { gap: 8px 0; }
-  .trustItem { width: 50%; border-right: 0; padding-left: 0; }
-  .dashboardTop { min-height: 54px; padding-inline: 14px; }
-  .readiness { font-size: .72rem; }
-  .ring { width: 28px; height: 28px; border-width: 4px; }
-  .dashboardBody { padding: 16px 12px 14px; }
-  .caseHead { display: block; }
-  .verifyBadge { margin-top: 12px; white-space: normal; }
-  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .evidenceBox { grid-template-columns: 1fr; }
-  .checks { grid-template-columns: 1fr; }
-  .blockerCard { min-height: 92px; }
-  .exports { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero { padding: 28px 0 40px; }
+  .kicker { margin-bottom: 10px; font-size: .64rem; }
+  .saasLabel { margin-bottom: 12px; font-size: .84rem; }
+  .title { font-size: clamp(2.2rem, 11.5vw, 3.1rem); margin-bottom: 16px; }
+  .lede { font-size: .98rem; margin-bottom: 10px; }
+  .classification { font-size: .9rem; margin-bottom: 20px; }
+  .ctas { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 20px; }
+  .primary, .secondary { width: 100%; min-height: 52px; }
+  .trustRow {
+    gap: 0;
+    padding-top: 14px;
+  }
+  .trustItem {
+    width: 50%;
+    border-right: 0;
+    padding: 8px 8px 8px 0;
+    font-size: .78rem;
+  }
+  .trustItem:nth-child(odd) { padding-right: 10px; }
+  .dashboardTop {
+    min-height: 48px;
+    gap: 8px;
+    padding-inline: 12px;
+    overflow: hidden;
+  }
+  .dots { display: none; }
+  .dashBrand { font-size: .95rem; min-width: 0; }
+  .readiness {
+    gap: 8px;
+    min-width: 0;
+    font-size: .78rem;
+  }
+  .readinessLabel { display: none; }
+  .ring { width: 26px; height: 26px; border-width: 3px; flex: none; }
+  .dashboardBody { padding: 14px 12px 12px; }
+  .caseTitle { font-size: 1.28rem; }
+  .caseHead { display: block; margin-bottom: 14px; }
+  .verifyBadge {
+    margin-top: 10px;
+    white-space: normal;
+    font-size: .74rem;
+    line-height: 1.35;
+  }
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .metric { padding: 12px 10px; }
+  .metricLabel {
+    white-space: normal;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-size: .68rem;
+    margin-bottom: 6px;
+    line-height: 1.25;
+  }
+  .metricValue { font-size: 1.2rem; }
+  .metricValue small { font-size: .7rem; }
+  .evidenceBox { grid-template-columns: 1fr; gap: 10px; }
+  .checks { grid-template-columns: 1fr; gap: 8px; }
+  .checkItem { font-size: .78rem; }
+  .blockerCard { min-height: 0; padding: 14px; }
+  .exports {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .exportCard { padding: 12px 10px; }
+  .exportCard strong { font-size: .86rem; }
+  .exportCard span { font-size: .72rem; line-height: 1.3; }
 }
 
 @media (prefers-reduced-motion: reduce) {

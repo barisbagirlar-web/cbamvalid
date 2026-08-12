@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { legalConfig } from "@/lib/legal-config";
@@ -40,16 +40,35 @@ const COMPANY_LINKS = [
   { href: "/legal-notice", label: "Legal Notice" },
 ] as const;
 
+function useDesktopFooterOpen(): boolean {
+  const [open, setOpen] = useState(true);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 760px)");
+    const sync = () => setOpen(!media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  return open;
+}
+
 function FooterColumn({
   title,
   links,
+  forceOpen,
 }: {
   title: string;
   links: readonly { href: string; label: string }[];
+  forceOpen: boolean;
 }) {
   return (
-    <div className="footer-col">
-      <h4>{title}</h4>
+    <details className="footer-col footer-accordion" open={forceOpen || undefined}>
+      <summary className="footer-accordion-summary">
+        <h4>{title}</h4>
+        <span className="footer-accordion-icon" aria-hidden="true" />
+      </summary>
       <ul>
         {links.map((item) => (
           <li key={item.href}>
@@ -57,11 +76,13 @@ function FooterColumn({
           </li>
         ))}
       </ul>
-    </div>
+    </details>
   );
 }
 
 export default function AppFooter() {
+  const desktopOpen = useDesktopFooterOpen();
+
   return (
     <footer className="site-footer">
       <div className="wrap">
@@ -94,19 +115,27 @@ export default function AppFooter() {
             </div>
           </div>
 
-          <FooterColumn title="Product" links={PRODUCT_LINKS} />
-          <FooterColumn title="Guides" links={GUIDE_LINKS} />
-          <FooterColumn title="Company" links={COMPANY_LINKS} />
+          <FooterColumn title="Product" links={PRODUCT_LINKS} forceOpen={desktopOpen} />
+          <FooterColumn title="Guides" links={GUIDE_LINKS} forceOpen={desktopOpen} />
+          <FooterColumn title="Company" links={COMPANY_LINKS} forceOpen={desktopOpen} />
         </div>
 
         <div className="footer-legal-row">
           <div className="footer-legal-links">
-            <Link href="/privacy">Privacy</Link>
-            <Link href="/terms">Terms</Link>
+            <Link className="footer-legal-dup" href="/privacy">
+              Privacy
+            </Link>
+            <Link className="footer-legal-dup" href="/terms">
+              Terms
+            </Link>
             <Link href="/cookie-policy">Cookies</Link>
             <Link href="/refund-policy">Refunds</Link>
-            <Link href="/security">Security</Link>
-            <Link href="/legal-notice">Legal notice</Link>
+            <Link className="footer-legal-dup" href="/security">
+              Security
+            </Link>
+            <Link className="footer-legal-dup" href="/legal-notice">
+              Legal notice
+            </Link>
             <Link href="/product-classification">Product classification</Link>
           </div>
         </div>
@@ -121,11 +150,19 @@ export default function AppFooter() {
             ))}
           </div>
           <p className="disclaimer">
-            <b>Software Classification:</b> CBAMValid is privately operated self-service B2B software.
-            Customers enter and control their own data; the application performs automated calculations,
-            quality controls and digital file generation. Review the{" "}
-            <Link href="/product-classification">Product Classification Statement</Link> and{" "}
-            <Link href="/terms">Terms of Service</Link> for the complete commercial scope.
+            <b>Software Classification:</b>{" "}
+            <span className="disclaimer-full">
+              CBAMValid is privately operated self-service B2B software. Customers enter and control
+              their own data; the application performs automated calculations, quality controls and
+              digital file generation. Review the{" "}
+              <Link href="/product-classification">Product Classification Statement</Link> and{" "}
+              <Link href="/terms">Terms of Service</Link> for the complete commercial scope.
+            </span>
+            <span className="disclaimer-compact">
+              Privately operated self-service B2B software.{" "}
+              <Link href="/product-classification">Classification</Link> ·{" "}
+              <Link href="/terms">Terms</Link>
+            </span>
           </p>
         </div>
       </div>
