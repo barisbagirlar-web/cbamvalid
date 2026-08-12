@@ -7,24 +7,51 @@ const SOFTWARE_FEATURES = [
     text: "Business users enter and maintain their own installation, production, emissions and evidence data.",
   },
   {
-    title: "Automated calculation engine",
-    text: "The application runs deterministic calculations and repeatable validation rules from customer-entered data.",
+    title: "Deterministic calculation engine",
+    text: "The application runs replayable embedded-emissions calculations from the same case snapshot, engine version and pinned ruleset.",
   },
   {
-    title: "Automated quality controls",
-    text: "Missing fields, reconciliation differences and unsupported material inputs are surfaced before digital delivery.",
-  },
-  {
-    title: "Automated digital delivery",
-    text: "A successful lock generates downloadable PDF, JSON and XLSX files without manual document preparation.",
+    title: "Fail-closed quality controls",
+    text: "Missing inputs, reconciliation differences, unit issues and unsupported material data are surfaced before sealing.",
   },
   {
     title: "Evidence-linked audit trail",
     text: "Supporting evidence is linked to the relevant data and calculation records so reviewers can trace the basis of the dossier.",
   },
   {
-    title: "Sealed version integrity",
-    text: "Locked outputs preserve a versioned integrity record with hashes and seal metadata for consistent re-download and review.",
+    title: "Versioned EU rulesets",
+    text: "Each sealed release records the ruleset version used so the methodology basis does not silently change after sealing.",
+  },
+  {
+    title: "Sealed digital delivery",
+    text: "Locked outputs preserve a timestamped integrity record with SHA-256 hashes for controlled handover, re-download and review.",
+  },
+] as const;
+
+const SEALED_OUTPUTS = [
+  {
+    title: "Verification readiness dossier",
+    text: "CBAMValid Verification Readiness & Evidence Assurance Dossier PDF — the primary human-review document for the sealed working file.",
+  },
+  {
+    title: "Calculation and emissions reports",
+    text: "Embedded Emissions Calculation Annex and Operator Emissions Report PDFs expose the calculation result and supporting calculation structure.",
+  },
+  {
+    title: "Evidence and field mapping",
+    text: "Evidence Register, Field-to-Evidence Matrix and O3CI Field Mapping provide structured links between source evidence, dossier fields and handover data.",
+  },
+  {
+    title: "Verifier workspace",
+    text: "Verifier Workspace XLSX, methodology decisions and monitoring-plan outputs organize the working file for buyer or independent verifier review.",
+  },
+  {
+    title: "Calculation reproducibility",
+    text: "Calculation Trace JSON and Calculation Graph JSON preserve machine-readable calculation lineage for replay and technical review.",
+  },
+  {
+    title: "Integrity and supporting evidence",
+    text: "Data Integrity Manifest, manifest signature and Supporting_Evidence references preserve file identity, hashes and the sealed handover structure.",
   },
 ] as const;
 
@@ -63,8 +90,9 @@ export default function SoftwareProductHome() {
               Evidence Dossier
             </h1>
             <p className={styles.lede}>
-              Customer-entered emissions data, automated calculations, quality controls, and export-ready
-              dossier files for independent review preparation.
+              Build an evidence-linked CBAM operator dossier from customer-entered data: deterministic
+              embedded-emissions calculations, fail-closed quality controls, versioned rulesets and sealed
+              multi-file outputs prepared for independent accredited verification.
             </p>
 
             <div className={styles.ctas}>
@@ -145,11 +173,11 @@ export default function SoftwareProductHome() {
             <div className={styles.detachedCards} aria-label="Export and integrity outputs">
               <div className={styles.outputCard}>
                 <span className={styles.outputIcon}>▧</span>
-                <span><strong>PDF · JSON · O3CI XLSX</strong><small>Export formats</small></span>
+                <span><strong>Reports · XLSX · JSON · CSV</strong><small>Structured sealed package</small></span>
               </div>
               <div className={styles.outputCard}>
                 <span className={styles.outputIcon}>♢</span>
-                <span><strong>SHA-256 sealed</strong><small>Evidence integrity guaranteed</small></span>
+                <span><strong>SHA-256 sealed</strong><small>Tamper-evident integrity record</small></span>
               </div>
             </div>
           </div>
@@ -160,8 +188,8 @@ export default function SoftwareProductHome() {
         <div className="wrap">
           <div className="section-head center">
             <span className="eyebrow">Software operation</span>
-            <h2>Six automated functions, one digital product</h2>
-            <p>The paid deliverable is generated by the application from customer-controlled inputs.</p>
+            <h2>Six controls from case data to sealed handover</h2>
+            <p>The application turns customer-controlled inputs into a reproducible, evidence-linked preparation package without CBAMValid staff preparing or approving the customer file.</p>
           </div>
           <div className="deliv-grid">
             {SOFTWARE_FEATURES.map((feature) => (
@@ -175,6 +203,31 @@ export default function SoftwareProductHome() {
       </section>
 
       <section className="section">
+        <div className="wrap">
+          <div className="section-head center">
+            <span className="eyebrow">Sealed package outputs</span>
+            <h2>What you receive when the working file is locked</h2>
+            <p>The deliverable is more than a single PDF. The sealed verifier-preparation package combines human-review reports, structured registers, calculation lineage, verifier workspace files, evidence references and integrity controls.</p>
+          </div>
+          <div className="deliv-grid">
+            {SEALED_OUTPUTS.map((output) => (
+              <div className="deliv-card" key={output.title}>
+                <h3>{output.title}</h3>
+                <p>{output.text}</p>
+              </div>
+            ))}
+          </div>
+          <p style={{ maxWidth: "980px", margin: "28px auto 0", textAlign: "center" }}>
+            Prepared for independent accredited verification. CBAMValid does not issue an accredited verification opinion, customs approval, EU approval or CBAM Registry acceptance.
+          </p>
+          <div className="hero-ctas" style={{ marginTop: "28px", justifyContent: "center" }}>
+            <Link className="btn btn-navy" href="/sample-dossier">Inspect Sample Outputs</Link>
+            <Link className="btn btn-ghost" href="/product">Review Full Product Capabilities</Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="section" style={{ background: "var(--paper-2)" }}>
         <div className="wrap">
           <div className="section-head">
             <span className="eyebrow">Transparent product scope</span>
