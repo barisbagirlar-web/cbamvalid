@@ -52,9 +52,19 @@ export default function PrivacyPage() {
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-2">3. Firebase & Third Party Subprocessors</h2>
+          <h2 className="text-xl font-bold mb-2">3. Firebase &amp; Third Party Subprocessors</h2>
           <p className="text-sm text-muted">
-            We utilize Firebase Authentication, Firestore, and Storage for secure user management and data persistence. We also use App Check/reCAPTCHA for security and Paddle for payment processing. Your data may be transferred to and processed by these sub-processors internationally, safeguarded by standard contractual clauses where appropriate.
+            Material subprocessors that may process personal data for the production service are
+            listed on the{" "}
+            <a className="text-accent" href="/security">
+              Security &amp; data protection
+            </a>{" "}
+            page (GDPR Art. 28 inventory). That list currently covers Google Cloud / Firebase
+            (including Cloud Logging and Authentication email delivery), Google App Check /
+            reCAPTCHA, Google Analytics 4 when consent is granted, and Paddle (including Paddle
+            Retain / ProfitWell where active). We do not currently engage a separate email service
+            provider or a separate error-monitoring product such as Sentry. International transfers
+            are safeguarded by standard contractual clauses where appropriate.
           </p>
         </div>
 

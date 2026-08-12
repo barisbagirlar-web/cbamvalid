@@ -107,8 +107,61 @@ export const TRUST_EVIDENCE_ITEMS: readonly TrustEvidenceItem[] = [
     layer: "security",
     title: "Security & DPA facts",
     status: "CODE_PROVEN",
-    proof: "europe-west1, TLS, HttpOnly session, subprocessors, DPA draft PDF — no ISO/SOC claim",
+    proof:
+      "europe-west1, TLS, HttpOnly session, Art. 28 subprocessors inventory, support targets, DPA draft PDF — no ISO/SOC claim",
     publicHref: "/security",
+  },
+  {
+    id: "subprocessors-inventory",
+    layer: "security",
+    title: "Sub-processor inventory (GDPR Art. 28)",
+    status: "CODE_PROVEN",
+    proof:
+      "Published inventory covers GCP/Firebase, Cloud Logging, App Check/reCAPTCHA, GA4 (consent-gated), Paddle, Paddle Retain/ProfitWell, and Firebase Auth email — and states that no separate ESP/Sentry product is engaged",
+    publicHref: "/security",
+  },
+  {
+    id: "support-response-targets",
+    layer: "security",
+    title: "Support response targets",
+    status: "CODE_PROVEN",
+    proof:
+      "P0–P3 first-response and resolution targets published on /security; explicitly not a contractual uptime or damages SLA",
+    publicHref: "/security",
+  },
+  {
+    id: "service-status-page",
+    layer: "security",
+    title: "Service status page",
+    status: "CODE_PROVEN",
+    proof:
+      "/status publishes cloud dependency facts and links to Google Cloud / Firebase status boards; no invented uptime % and no third-party status vendor claimed",
+    publicHref: "/status",
+  },
+  {
+    id: "pen-test-report",
+    layer: "security",
+    title: "Independent penetration test",
+    status: "EMPTY_BY_DESIGN",
+    proof: "No independent penetration-test report is published. Gap is visible rather than invented.",
+    publicHref: "/security",
+  },
+  {
+    id: "waf-rate-limit-product",
+    layer: "security",
+    title: "Commercial WAF / dedicated API rate-limit product",
+    status: "EMPTY_BY_DESIGN",
+    proof:
+      "No commercial WAF or customer-facing rate-limit product is claimed. Published controls: Hosting/Cloud Run edge, App Check when enforced, auth gates, nonce CSP.",
+    publicHref: "/security",
+  },
+  {
+    id: "uptime-percentage-sla",
+    layer: "security",
+    title: "Contractual uptime percentage",
+    status: "EMPTY_BY_DESIGN",
+    proof: "No 99.x% availability warranty is published. Continuity is best-effort on listed cloud providers.",
+    publicHref: "/status",
   },
   {
     id: "independence-boundary",

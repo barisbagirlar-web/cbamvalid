@@ -530,7 +530,7 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
     question: "Does CBAMValid claim ISO 27001 or SOC 2 certification?",
     aliases: ["ISO 27001", "SOC 2", "security certification", "DPA"],
     directAnswer:
-      "No. The security page publishes hosting region (europe-west1), TLS, session model, encryption-at-rest defaults, subprocessors, and a DPA draft. ISO 27001 and SOC 2 are not claimed. Certificates will be published only with issuer, scope, and validity dates.",
+      "No. The security page publishes hosting region (europe-west1), TLS, session model, encryption-at-rest defaults, a GDPR Art. 28 subprocessors inventory, support response targets, service-status dependency facts, and a DPA draft. ISO 27001 and SOC 2 are not claimed. Certificates will be published only with issuer, scope, and validity dates.",
     empathyContext:
       "Procurement needs facts. “In progress” certification language is a trust defect.",
     evidence: [
@@ -547,8 +547,60 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
         evidenceStatus: "verified",
       },
     ],
+    routes: ["/security", "/privacy", "/status"],
+    relatedPaths: ["/contact", "/legal-notice", "/trust", "/status"],
+    schemaEligible: true,
+  },
+  {
+    id: "subprocessors-art28",
+    question: "Which subprocessors does CBAMValid use?",
+    aliases: ["subprocessors", "sub-processors", "GDPR Article 28", "Art. 28"],
+    directAnswer:
+      "The Security page lists Google Cloud / Firebase (including Cloud Logging and Authentication email), Google App Check / reCAPTCHA, Google Analytics 4 when consent is granted, and Paddle (including Paddle Retain / ProfitWell where active). No separate ESP or Sentry-class APM is currently engaged.",
+    empathyContext:
+      "Article 28 transparency fails when only hosting and payments are named while analytics and mail still process personal data.",
+    evidence: [
+      {
+        label: "Security subprocessors table",
+        detail: "Art. 28 inventory with categories and personal-data notes",
+        href: "/security",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Privacy notice",
+        detail: "Points to the same inventory and states absent ESP/Sentry",
+        href: "/privacy",
+        evidenceStatus: "verified",
+      },
+    ],
     routes: ["/security", "/privacy"],
-    relatedPaths: ["/contact", "/legal-notice", "/trust"],
+    relatedPaths: ["/status", "/contact", "/trust"],
+    schemaEligible: true,
+  },
+  {
+    id: "status-no-fake-uptime",
+    question: "Does CBAMValid publish a status page or uptime SLA?",
+    aliases: ["status page", "uptime", "SLA", "availability"],
+    directAnswer:
+      "Yes for dependency facts: /status links Google Cloud and Firebase status boards and explains europe-west1 runtime dependency. No contractual uptime percentage and no third-party status vendor are claimed.",
+    empathyContext:
+      "Procurement asks for status and SLA. Green badges without monitoring are a trust defect.",
+    evidence: [
+      {
+        label: "Status page",
+        detail: "Dependency facts and incident contact",
+        href: "/status",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Support targets",
+        detail: "P0–P3 response targets on Security — not an uptime warranty",
+        href: "/security",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/status", "/security", "/contact"],
+    relatedPaths: ["/trust", "/privacy"],
     schemaEligible: true,
   },
   {
