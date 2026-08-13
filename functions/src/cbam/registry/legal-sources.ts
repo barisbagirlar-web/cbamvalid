@@ -62,7 +62,7 @@ export const LEGAL_SOURCE_REGISTRY_VERSION = "CBAM-EU-2026.08.13";
  * recomputes this value and fails closed on registry drift.
  */
 export const DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT =
-  "92ab85ff33e946a6d1f656704bdab46bd92082a3a39adc08f61980c3c5a66016";
+  "0cf77baf09c681e79d9c8ad738fa66b055df17005662e054c64eb55cae470267";
 
 export const OFFICIAL_SOURCES = {
   REG_2023_956: {
@@ -160,7 +160,7 @@ export const OFFICIAL_SOURCES = {
     effectiveTo: null,
     legalStatus: "IN_FORCE",
     verificationAuthority: "EUR_LEX",
-    verifiedAt: "2026-08-13",
+    verifiedAt: "2026-08-10",
     articles: ["Article 1", "Article 2", "Article 3", "Article 4", "Article 5", "Article 6", "Article 7"],
     annexes: ["Annex"],
     sectorApplicability: [
@@ -189,7 +189,7 @@ export const OFFICIAL_SOURCES = {
       "Annex — Template of the verification report",
     ],
     contentHash: "e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3",
-    lastReviewedAt: "2026-08-13",
+    lastReviewedAt: "2026-08-10",
   },
   IMPL_2025_2547: {
     id: "IMPL_2025_2547",
@@ -205,7 +205,7 @@ export const OFFICIAL_SOURCES = {
     effectiveTo: null,
     legalStatus: "IN_FORCE",
     verificationAuthority: "EUR_LEX",
-    verifiedAt: "2026-08-13",
+    verifiedAt: "2026-08-10",
     articles: [
       "Article 1",
       "Article 2",
@@ -255,7 +255,7 @@ export const OFFICIAL_SOURCES = {
       "Annex V — Alternative default values conditions",
     ],
     contentHash: "d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2",
-    lastReviewedAt: "2026-08-13",
+    lastReviewedAt: "2026-08-10",
   },
   IMPL_2025_2548: {
     id: "IMPL_2025_2548",
@@ -271,7 +271,7 @@ export const OFFICIAL_SOURCES = {
     effectiveTo: null,
     legalStatus: "IN_FORCE",
     verificationAuthority: "EUR_LEX",
-    verifiedAt: "2026-08-13",
+    verifiedAt: "2026-08-10",
     articles: [
       "Article 1",
       "Article 2",
@@ -298,7 +298,7 @@ export const OFFICIAL_SOURCES = {
       "Article 9 — Entry into force and application from 1 January 2026",
     ],
     contentHash: "c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1",
-    lastReviewedAt: "2026-08-13",
+    lastReviewedAt: "2026-08-10",
   },
   DEL_2025_2551: {
     id: "DEL_2025_2551",

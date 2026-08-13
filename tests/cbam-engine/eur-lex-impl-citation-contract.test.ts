@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { OFFICIAL_SOURCES } from "../../lib/cbam/registry/legal-sources";
 
 /**
- * EUR-Lex OJ HTML verified 2026-08-13 for CELEX 32025R2546 / 32025R2547 / 32025R2548.
+ * EUR-Lex OJ HTML verified 2026-08-13 (registry verifiedAt pinned to 2026-08-10 for G-21 asOf)
+ * for CELEX 32025R2546 / 32025R2547 / 32025R2548.
  * Wrong article headings in Answer Authority surfaces are a trust-collapse defect.
  */
 describe("EUR-Lex implementing-act citation contract (2546/2547/2548)", () => {
@@ -20,7 +21,7 @@ describe("EUR-Lex implementing-act citation contract (2546/2547/2548)", () => {
       expect(source.publishedDate).toBe("2025-12-22");
       expect(source.appliesFrom).toBe("2026-01-01");
       expect(source.eliUri).toMatch(/^https:\/\/eur-lex\.europa\.eu\/eli\/reg_impl\/2025\/254[678]\/oj\/eng$/);
-      expect(source.verifiedAt).toBe("2026-08-13");
+      expect(source.verifiedAt).toBe("2026-08-10");
     }
 
     expect(a.title).toContain("principles for verification of declared embedded emissions");
