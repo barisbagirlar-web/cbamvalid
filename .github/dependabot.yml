@@ -12,6 +12,13 @@ updates:
     rebase-strategy: auto
     versioning-strategy: increase-if-necessary
     groups:
+      next-toolchain:
+        patterns:
+          - "next"
+          - "eslint-config-next"
+        update-types:
+          - minor
+          - patch
       production-minor-patch:
         dependency-type: production
         update-types:
