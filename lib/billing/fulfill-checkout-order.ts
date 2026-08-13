@@ -262,6 +262,18 @@ export async function fulfillCheckoutOrder(params: {
     return entitlementRef.id;
   });
 
+  const lockId = crypto.createHash("sha256").update(`${uid}\u0000${scopeCaseId}`).digest("hex");
+  await adminDb.collection("commerce_checkout_locks").doc(lockId).set(
+    {
+      status: "FULFILLED",
+      uid,
+      caseId: scopeCaseId,
+      orderId,
+      updatedAt: new Date().toISOString(),
+    },
+    { merge: true },
+  );
+
   return {
     orderId,
     transactionId,
