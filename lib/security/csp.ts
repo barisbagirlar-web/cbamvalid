@@ -1,8 +1,9 @@
 /**
  * Production CSP SSOT.
  * Scripts: nonce + strict-dynamic (no unsafe-inline / unsafe-eval in production).
- * Styles: nonce for framework <style> tags; 'unsafe-inline' remains required for
- * React style="" attributes (nonce does not authorize style attributes).
+ * Styles: framework <style> elements are nonce-based; React style="" attributes
+ * are allowed explicitly through style-src-attr. Keeping 'unsafe-inline' beside a
+ * nonce in style-src does not authorize style attributes in modern browsers.
  * Emulator hosts and Paddle sandbox CDN are environment-gated only.
  */
 
@@ -49,8 +50,6 @@ export function buildContentSecurityPolicy(input: CspBuildInput): string {
   const styleSrc = [
     "'self'",
     `'nonce-${input.nonce}'`,
-    // React style attributes cannot use script/style nonces; keep attribute allowance.
-    "'unsafe-inline'",
     "https://fonts.googleapis.com",
     "https://cdn.paddle.com",
   ];
@@ -76,6 +75,7 @@ export function buildContentSecurityPolicy(input: CspBuildInput): string {
     "default-src 'self'",
     `script-src ${scriptSrc.join(" ")}`,
     `style-src ${styleSrc.join(" ")}`,
+    "style-src-attr 'unsafe-inline'",
     "font-src 'self' https://fonts.gstatic.com",
     `connect-src ${connectSrc.join(" ")}`,
     "img-src 'self' data: blob: https:",
