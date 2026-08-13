@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { JsonLdForRoute } from "@/components/seo/JsonLdForRoute";
+import { GUIDE_EDITORIAL } from "@/lib/seo/editorial-attribution";
 import { requireSeoRoute } from "@/lib/seo/registry";
 import {
   getRegulatoryFact,
@@ -47,9 +48,58 @@ export function RegulatoryGuidePage({
 
       <h1 className="font-sans text-3xl md:text-4xl font-bold tracking-tight mb-3">{route.h1}</h1>
       <p className="text-base md:text-lg text-muted leading-relaxed mb-3">{directAnswer(route.description, sections)}</p>
-      <p className="mb-8 inline-flex rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-muted">
-        Last verified against EUR-Lex: {verifiedDate}
-      </p>
+
+      <aside
+        className="mb-8 rounded-md border border-border bg-surface p-4 text-sm text-muted space-y-3"
+        aria-label="Guide authorship and review"
+      >
+        <p>
+          <span className="font-semibold text-foreground">Written by:</span>{" "}
+          {GUIDE_EDITORIAL.author.name} ({GUIDE_EDITORIAL.author.parentOrganization} ·{" "}
+          {GUIDE_EDITORIAL.author.tradingName})
+        </p>
+        <p>
+          <span className="font-semibold text-foreground">Role:</span> {GUIDE_EDITORIAL.author.role}
+        </p>
+        <p>
+          <span className="font-semibold text-foreground">Reviewed by:</span>{" "}
+          {GUIDE_EDITORIAL.reviewer.name} — {GUIDE_EDITORIAL.reviewer.role}
+        </p>
+        <p>
+          <span className="font-semibold text-foreground">Last verified against EUR-Lex:</span>{" "}
+          {verifiedDate}
+        </p>
+        <div>
+          <p className="font-semibold text-foreground mb-1">Expertise basis</p>
+          <ul className="list-disc pl-5 space-y-1">
+            {GUIDE_EDITORIAL.expertiseBasis.map((line) => (
+              <li key={line.slice(0, 48)}>{line}</li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <p className="font-semibold text-foreground mb-1">Boundaries</p>
+          <ul className="list-disc pl-5 space-y-1">
+            {GUIDE_EDITORIAL.boundaryLines.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </div>
+        <p>
+          Identity and academic-assessment disclosure:{" "}
+          <Link href="/about" className="text-accent underline">
+            About
+          </Link>
+          {" · "}
+          <Link href="/methodology" className="text-accent underline">
+            Methodology
+          </Link>
+          {" · "}
+          <Link href="/trust" className="text-accent underline">
+            Trust
+          </Link>
+        </p>
+      </aside>
 
       {sections.map((section) => (
         <section key={section.id} id={section.id} className="mb-8 space-y-3">

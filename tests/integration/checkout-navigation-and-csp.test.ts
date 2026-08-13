@@ -33,6 +33,7 @@ describe("checkout navigation and Paddle Retain CSP", () => {
     expect(csp).not.toContain("127.0.0.1:5001");
     expect(proxy).toContain("buildContentSecurityPolicy");
     expect(proxy).toContain("X-Robots-Tag");
+    expect(proxy).toContain('headers.delete("x-powered-by")');
     expect(config).toContain("poweredByHeader: false");
     expect(config).not.toMatch(/key:\s*['"]Content-Security-Policy['"]/);
   });

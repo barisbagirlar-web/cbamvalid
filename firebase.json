@@ -29,6 +29,18 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "redirects": [
+      {
+        "source": "/refunds",
+        "destination": "/refund-policy",
+        "type": 301
+      },
+      {
+        "source": "/refund",
+        "destination": "/refund-policy",
+        "type": 301
+      }
+    ],
     "headers": [
       {
         "source": "**",

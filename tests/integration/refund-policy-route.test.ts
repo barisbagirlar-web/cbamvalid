@@ -7,6 +7,7 @@ describe("refund policy route contract", () => {
     const root = process.cwd();
     const pagePath = path.join(root, "app/(public)/refund-policy/page.tsx");
     const configPath = path.join(root, "next.config.js");
+    const redirectsPath = path.join(root, "data/seo/redirects.json");
     const footerPath = path.join(root, "components/layout/AppFooter.tsx");
     const pricingPath = path.join(root, "app/(public)/pricing/page.tsx");
 
@@ -16,6 +17,24 @@ describe("refund policy route contract", () => {
     expect(config).toContain("source: '/refunds'");
     expect(config).toContain("source: '/refund'");
     expect(config).toMatch(/destination:.*\/refund-policy/);
+    expect(config).toMatch(/permanent:\s*true/);
+
+    const redirects = JSON.parse(fs.readFileSync(redirectsPath, "utf8")) as {
+      data: { redirects: Array<{ source: string; destination: string; statusCode: number }> };
+    };
+    const refundAlias = redirects.data.redirects.find((row) => row.source === "/refunds");
+    expect(refundAlias?.destination).toBe("https://cbamvalid.com/refund-policy");
+    expect(refundAlias?.statusCode).toBe(308);
+
+    const firebase = JSON.parse(fs.readFileSync(path.join(root, "firebase.json"), "utf8")) as {
+      hosting: { redirects: Array<{ source: string; destination: string; type: number }> };
+    };
+    expect(firebase.hosting.redirects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ source: "/refunds", destination: "/refund-policy", type: 301 }),
+        expect.objectContaining({ source: "/refund", destination: "/refund-policy", type: 301 }),
+      ]),
+    );
 
     const footer = fs.readFileSync(footerPath, "utf8");
     expect(footer).toContain('href="/refund-policy"');

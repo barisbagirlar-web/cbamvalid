@@ -47,10 +47,12 @@ export default function GlobalError({
                 Try Again
               </button>
               <button
-                onClick={() => window.location.href = '/dashboard'}
+                onClick={() => {
+                  window.location.href = "/";
+                }}
                 className="w-full border border-kil-text/20 text-kil-text py-3 text-sm font-medium rounded-sm hover:bg-kil-surface transition-colors cursor-pointer"
               >
-                Return to Dashboard
+                Return to Home
               </button>
             </div>
 

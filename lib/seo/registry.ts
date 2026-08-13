@@ -3,7 +3,23 @@ import type { SeoRouteContract } from "./types";
 import { listIndexablePublicCnEntries } from "./cn-public-registry";
 import { SEO_REGULATORY_CONTENT_VERSION } from "./regulatory-sources";
 
-const LASTMOD_IA = "2026-07-26";
+/**
+ * Factual content-wave lastmods for sitemap (INV-3.4a).
+ * Never stamp “today” at build time. Never bulk-assign one date to every URL.
+ * Keep dates ≤ CI clock (use ≤ 2026-08-12).
+ */
+const LASTMOD = {
+  /** Stage-1 CN allowlist + original IA baseline surfaces that were not rewritten later. */
+  IA_BASELINE: "2026-07-26",
+  /** Definitive-period methodology / guide pack aligned to legal-source review. */
+  DEFINITIVE_GUIDES: "2026-07-31",
+  /** Product-classification / commercial positioning wave. */
+  COMMERCIAL_CLASS: "2026-08-04",
+  /** EUR-Lex citation honesty + answer-feed regeneration wave. */
+  LEGAL_CITATION: "2026-08-10",
+  /** Trust inventory, status/security, product-boundary honesty wave. */
+  TRUST_BOUNDARY: "2026-08-12",
+} as const;
 
 type RouteDraft = Omit<SeoRouteContract, "regulatoryContentVersion">;
 
@@ -37,7 +53,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
       "/legal-notice",
     ],
     regulatorySourceIds: ["REG_2023_956", "REG_2025_2083"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.TRUST_BOUNDARY,
   },
   {
     path: "/product",
@@ -54,7 +70,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["Product", "Offer", "WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/pricing", "/sample-dossier", "/how-it-works"],
     regulatorySourceIds: ["REG_2023_956", "IMPL_2025_2546"],
-    factualLastModified: "2026-08-12",
+    factualLastModified: LASTMOD.TRUST_BOUNDARY,
   },
   {
     path: "/pricing",
@@ -70,7 +86,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["Product", "Offer", "WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/product", "/product-classification", "/sample-dossier", "/demo"],
     regulatorySourceIds: [],
-    factualLastModified: "2026-08-12",
+    factualLastModified: LASTMOD.TRUST_BOUNDARY,
   },
   {
     path: "/product-classification",
@@ -87,7 +103,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/demo", "/pricing", "/terms"],
     regulatorySourceIds: [],
-    factualLastModified: "2026-08-04",
+    factualLastModified: LASTMOD.COMMERCIAL_CLASS,
   },
   {
     path: "/how-it-works",
@@ -104,7 +120,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/product", "/pricing", "/sample-dossier"],
     regulatorySourceIds: ["REG_2023_956"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.COMMERCIAL_CLASS,
   },
   {
     path: "/sample-dossier",
@@ -121,7 +137,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/product", "/pricing", "/verify"],
     regulatorySourceIds: ["REG_2023_956", "IMPL_2025_2546"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.COMMERCIAL_CLASS,
   },
   {
     path: "/methodology",
@@ -138,7 +154,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/cn-code", "/cbam-embedded-emissions-calculation", "/cbam-actual-vs-default-values"],
     regulatorySourceIds: ["REG_2023_956", "IMPL_2025_2547", "IMPL_2025_2546"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.DEFINITIVE_GUIDES,
   },
   {
     path: "/cn-code",
@@ -160,7 +176,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
       ...listIndexablePublicCnEntries().map((entry) => `/cn-code/${entry.cnCode}`),
     ],
     regulatorySourceIds: ["REG_2023_956"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.DEFINITIVE_GUIDES,
   },
   {
     path: "/verify",
@@ -177,7 +193,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/sample-dossier", "/product"],
     regulatorySourceIds: [],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.LEGAL_CITATION,
   },
   {
     path: "/about",
@@ -194,7 +210,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["AboutPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/contact", "/product", "/methodology", "/legal-notice", "/privacy"],
     regulatorySourceIds: [],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.COMMERCIAL_CLASS,
   },
   {
     path: "/contact",
@@ -211,7 +227,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["ContactPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/privacy", "/terms", "/refund-policy", "/cookie-policy", "/legal-notice"],
     regulatorySourceIds: [],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.TRUST_BOUNDARY,
   },
   {
     path: "/privacy",
@@ -228,7 +244,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/contact"],
     regulatorySourceIds: [],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.TRUST_BOUNDARY,
   },
   {
     path: "/terms",
@@ -244,7 +260,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/contact", "/privacy"],
     regulatorySourceIds: [],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.TRUST_BOUNDARY,
   },
   {
     path: "/refund-policy",
@@ -260,7 +276,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/contact", "/terms"],
     regulatorySourceIds: [],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.COMMERCIAL_CLASS,
   },
   {
     path: "/cookie-policy",
@@ -276,7 +292,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/privacy"],
     regulatorySourceIds: [],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.IA_BASELINE,
   },
   {
     path: "/legal-notice",
@@ -292,7 +308,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/contact"],
     regulatorySourceIds: [],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.TRUST_BOUNDARY,
   },
   {
     path: "/cbam-2026-definitive-period",
@@ -317,7 +333,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
       "/cbam-exporter-evidence-requirements",
     ],
     regulatorySourceIds: ["REG_2023_956", "REG_2025_2083", "IMPL_2025_2546"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.DEFINITIVE_GUIDES,
   },
   {
     path: "/cbam-embedded-emissions-calculation",
@@ -334,7 +350,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/methodology", "/cbam-actual-vs-default-values", "/product"],
     regulatorySourceIds: ["REG_2023_956", "IMPL_2025_2547"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.DEFINITIVE_GUIDES,
   },
   {
     path: "/cbam-actual-vs-default-values",
@@ -351,7 +367,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/cbam-default-values", "/methodology", "/cbam-verification-preparation"],
     regulatorySourceIds: ["REG_2023_956", "REG_2025_2083", "IMPL_2025_2547"],
-    factualLastModified: "2026-08-12",
+    factualLastModified: LASTMOD.TRUST_BOUNDARY,
   },
   {
     path: "/cbam-default-values",
@@ -368,7 +384,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/cbam-actual-vs-default-values", "/methodology", "/cn-code"],
     regulatorySourceIds: ["REG_2023_956", "IMPL_2025_2547"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.DEFINITIVE_GUIDES,
   },
   {
     path: "/cbam-certificate-price",
@@ -385,7 +401,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/cbam-2026-definitive-period", "/pricing", "/methodology"],
     regulatorySourceIds: ["IMPL_2025_2548", "REG_2025_2083"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.LEGAL_CITATION,
   },
   {
     path: "/cbam-verification-preparation",
@@ -402,7 +418,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/product", "/sample-dossier", "/cbam-exporter-evidence-requirements"],
     regulatorySourceIds: ["IMPL_2025_2546", "REG_2023_956"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.DEFINITIVE_GUIDES,
   },
   {
     path: "/cbam-exporter-evidence-requirements",
@@ -419,7 +435,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/cbam-verification-preparation", "/product", "/methodology"],
     regulatorySourceIds: ["REG_2023_956", "IMPL_2025_2546"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.DEFINITIVE_GUIDES,
   },
   {
     path: "/cbam-non-eu-producer-guide",
@@ -436,7 +452,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/cbam-2026-definitive-period", "/cn-code", "/product"],
     regulatorySourceIds: ["REG_2023_956", "REG_2025_2083"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.DEFINITIVE_GUIDES,
   },
   {
     path: "/cbam-cn-code-scope",
@@ -453,7 +469,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/cn-code", "/methodology", "/product"],
     regulatorySourceIds: ["REG_2023_956"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.DEFINITIVE_GUIDES,
   },
   {
     path: "/demo",
@@ -470,7 +486,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList", "FAQPage"],
     internalLinkTargets: ["/", "/pricing", "/sample-dossier", "/how-it-works"],
     regulatorySourceIds: [],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.COMMERCIAL_CLASS,
   },
   {
     path: "/rulesets",
@@ -487,7 +503,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList", "FAQPage"],
     internalLinkTargets: ["/", "/methodology", "/sample-dossier", "/verify", "/platform"],
     regulatorySourceIds: ["REG_2023_956", "REG_2025_2083", "IMPL_2025_2546", "IMPL_2025_2547"],
-    factualLastModified: "2026-08-12",
+    factualLastModified: LASTMOD.TRUST_BOUNDARY,
   },
   {
     path: "/buyer-link",
@@ -504,7 +520,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList", "FAQPage"],
     internalLinkTargets: ["/", "/verify", "/sample-dossier", "/product", "/security", "/demo"],
     regulatorySourceIds: [],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.LEGAL_CITATION,
   },
   {
     path: "/case-studies",
@@ -521,7 +537,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList", "FAQPage"],
     internalLinkTargets: ["/", "/sample-dossier", "/product", "/demo", "/pricing"],
     regulatorySourceIds: [],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.COMMERCIAL_CLASS,
   },
   {
     path: "/security",
@@ -538,7 +554,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList", "FAQPage"],
     internalLinkTargets: ["/", "/privacy", "/buyer-link", "/legal-notice", "/contact", "/trust", "/status"],
     regulatorySourceIds: [],
-    factualLastModified: "2026-08-12",
+    factualLastModified: LASTMOD.TRUST_BOUNDARY,
   },
   {
     path: "/status",
@@ -555,7 +571,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/security", "/contact", "/trust"],
     regulatorySourceIds: [],
-    factualLastModified: "2026-08-12",
+    factualLastModified: LASTMOD.TRUST_BOUNDARY,
   },
   {
     path: "/trust",
@@ -580,7 +596,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
       "/contact",
     ],
     regulatorySourceIds: [],
-    factualLastModified: "2026-08-12",
+    factualLastModified: LASTMOD.TRUST_BOUNDARY,
   },
   {
     path: "/platform",
@@ -597,7 +613,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList", "FAQPage"],
     internalLinkTargets: ["/", "/rulesets", "/product", "/methodology", "/security"],
     regulatorySourceIds: ["REG_2023_956"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.COMMERCIAL_CLASS,
   },
   {
     path: "/answers",
@@ -614,7 +630,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["CollectionPage", "FAQPage", "BreadcrumbList", "ItemList"],
     internalLinkTargets: ["/", "/glossary", "/pricing", "/product", "/methodology", "/how-it-works"],
     regulatorySourceIds: ["REG_2023_956", "REG_2025_2083"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.LEGAL_CITATION,
   },
   {
     path: "/glossary",
@@ -631,7 +647,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["CollectionPage", "DefinedTermSet", "BreadcrumbList"],
     internalLinkTargets: ["/", "/answers", "/methodology", "/cn-code", "/cbam-embedded-emissions-calculation"],
     regulatorySourceIds: ["REG_2023_956", "IMPL_2025_2546"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.DEFINITIVE_GUIDES,
   },
   {
     path: "/cbam-methodology",
@@ -648,7 +664,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/methodology", "/cbam-embedded-emissions-calculation", "/product"],
     regulatorySourceIds: ["REG_2023_956", "IMPL_2025_2547"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: LASTMOD.DEFINITIVE_GUIDES,
   }
 ];
 
