@@ -1,8 +1,9 @@
 /**
  * Production CSP SSOT.
  * Scripts: nonce + strict-dynamic (no unsafe-inline / unsafe-eval in production).
- * Styles: nonce for framework <style> tags; 'unsafe-inline' remains required for
- * React style="" attributes (nonce does not authorize style attributes).
+ * Styles: 'unsafe-inline' only. A style-src nonce would ignore 'unsafe-inline'
+ * (CSP Level 2+), which breaks React style="" attributes and un-nonced
+ * framework/stylesheet injection observed on public pages.
  * Emulator hosts and Paddle sandbox CDN are environment-gated only.
  */
 
@@ -48,8 +49,6 @@ export function buildContentSecurityPolicy(input: CspBuildInput): string {
 
   const styleSrc = [
     "'self'",
-    `'nonce-${input.nonce}'`,
-    // React style attributes cannot use script/style nonces; keep attribute allowance.
     "'unsafe-inline'",
     "https://fonts.googleapis.com",
     "https://cdn.paddle.com",
