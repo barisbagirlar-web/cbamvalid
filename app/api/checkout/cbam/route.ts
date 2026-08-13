@@ -3,6 +3,10 @@ import { requireFirebaseSession, AuthError } from "@/lib/auth/require-firebase-s
 import { getCreditPackageBySlug } from "@/lib/billing/catalog";
 import { CANONICAL_PRICING } from "@/lib/billing/pricing-config";
 import { getPaddleConfig } from "@/lib/billing/paddle-config.server";
+import {
+  attachPaddleTransactionToLock,
+  claimOrReuseCheckoutLock,
+} from "@/lib/billing/checkout-lock";
 import { apiSuccess, apiFailure } from "@/lib/http/api-response";
 import { adminDb } from "@/lib/firebase/admin";
 import { isTestAdminEmail } from "@/lib/commerce/test-admin-emails";
@@ -16,6 +20,7 @@ type CheckoutSuccess = {
   correlationId: string;
   priceId: string;
   transactionId?: string;
+  reusedExistingCheckout?: boolean;
 };
 
 export async function POST(request: Request) {
@@ -100,7 +105,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Prefer an existing case-scoped entitlement (already paid via confirm/webhook).
     const existingEnt = await adminDb
       .collection("entitlements")
       .where("uid", "==", decoded.uid)
@@ -129,9 +133,46 @@ export async function POST(request: Request) {
       return apiFailure("PADDLE_CONFIGURATION_ERROR", "Paddle price ID is not configured.", 500);
     }
 
+    const claim = await claimOrReuseCheckoutLock({
+      uid: decoded.uid,
+      caseId,
+      priceId,
+      createOrderId: () => `ord_${crypto.randomBytes(12).toString("hex")}`,
+      createCorrelationId: () => crypto.randomUUID(),
+    });
+
+    if (claim.action === "already_paid") {
+      return apiFailure(
+        "CASE_ALREADY_PAID",
+        "This working file is already paid. Return to the file and lock it — do not pay again.",
+        409
+      );
+    }
+
+    if (claim.action === "reuse") {
+      if (claim.checkoutMode === "transaction" && claim.paddleTransactionId) {
+        const success: CheckoutSuccess = {
+          mode: "transaction",
+          orderId: claim.orderId,
+          correlationId: claim.correlationId,
+          priceId: claim.priceId,
+          transactionId: claim.paddleTransactionId,
+          reusedExistingCheckout: true,
+        };
+        return apiSuccess(success);
+      }
+      const success: CheckoutSuccess = {
+        mode: "items",
+        orderId: claim.orderId,
+        correlationId: claim.correlationId,
+        priceId: claim.priceId,
+        reusedExistingCheckout: true,
+      };
+      return apiSuccess(success);
+    }
+
     const canonicalProductCode = "pack_premium_dossier_v5";
-    const orderId = `ord_${crypto.randomBytes(12).toString("hex")}`;
-    const correlationId = crypto.randomUUID();
+    const { orderId, correlationId } = claim;
     const now = new Date().toISOString();
 
     const orderRef = adminDb.collection("commerce_orders").doc(orderId);
@@ -153,8 +194,6 @@ export async function POST(request: Request) {
       billingModel: "CASE_PAY_AT_LOCK",
     });
 
-    // Prefer server-created Paddle transaction when API key has transaction.write.
-    // Many sandbox keys only have transaction.read — fall back to items overlay.
     const transactionUrl = paddleConfig.isSandbox
       ? "https://sandbox-api.paddle.com/transactions"
       : "https://api.paddle.com/transactions";
@@ -184,6 +223,13 @@ export async function POST(request: Request) {
             checkoutMode: "transaction",
             updatedAt: new Date().toISOString(),
           });
+          await attachPaddleTransactionToLock({
+            uid: decoded.uid,
+            caseId,
+            orderId,
+            paddleTransactionId: transactionId,
+            checkoutMode: "transaction",
+          });
           const success: CheckoutSuccess = {
             mode: "transaction",
             orderId,
@@ -209,6 +255,12 @@ export async function POST(request: Request) {
       status: "PAYMENT_PENDING",
       checkoutMode: "items",
       updatedAt: new Date().toISOString(),
+    });
+    await attachPaddleTransactionToLock({
+      uid: decoded.uid,
+      caseId,
+      orderId,
+      checkoutMode: "items",
     });
 
     const success: CheckoutSuccess = {

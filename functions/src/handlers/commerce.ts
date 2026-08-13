@@ -91,6 +91,12 @@ export const createCheckoutSession = createCallable(
       return { ...checkout, status: "success" };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "CHECKOUT_CREATION_FAILED";
+      if (message === "WORKING_FILE_ALREADY_PAID") {
+        throw new HttpsError(
+          "failed-precondition",
+          "This working file is already paid. Open the file and lock — do not start a second checkout.",
+        );
+      }
       throw new HttpsError("internal", message);
     }
   }

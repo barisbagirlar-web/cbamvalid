@@ -65,19 +65,32 @@ export default function RefundPolicyPage() {
             If a confirmed technical error prevents delivery of a sealed package after payment, or if
             you were charged twice for the same Working File unlock, you are eligible for a full
             refund of the duplicate or failed charge. A blocked or failed seal attempt that did not
-            complete delivery is not treated as a completed purchase of a sealed package.
+            complete delivery is not treated as a completed purchase of a sealed package. Checkout is
+            bound to one Working File identifier; a second tab should reuse the open checkout rather
+            than create a second charge.
           </p>
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-2">5. Payment processing (Merchant of Record)</h2>
+          <h2 className="text-xl font-bold mb-2">5. Chargeback after sealed download</h2>
+          <p className="text-sm text-muted">
+            Once a sealed package has been successfully delivered and made available for download,
+            the digital good cannot be clawed back from recipients. Card disputes (chargebacks) after
+            delivery are processed through Paddle as Merchant of Record. CBAMValid may contest
+            abusive disputes using order, entitlement, seal-hash, and delivery evidence. A successful
+            dispute does not create a right to continued software access or additional free remakes.
+          </p>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-bold mb-2">6. Payment processing (Merchant of Record)</h2>
           <p className="text-sm text-muted">
             Our order process is conducted by our online reseller Paddle.com. Paddle.com is the Merchant of Record for all our orders. Refunds are processed through Paddle and typically take 3–5 business days to appear on your statement.
           </p>
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-2">6. Statutory rights</h2>
+          <h2 className="text-xl font-bold mb-2">7. Statutory rights</h2>
           <p className="text-sm text-muted">
             This policy does not restrict your statutory consumer rights under the laws of{" "}
             {legalConfig.governingLaw} or your local jurisdiction.

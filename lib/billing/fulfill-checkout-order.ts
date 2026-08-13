@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { adminDb } from "@/lib/firebase/admin";
 import { getPaddleConfig } from "@/lib/billing/paddle-config.server";
 import { CASE_COMMERCIAL } from "@/lib/billing/case-commercial-contract";
+import { markCheckoutLockFulfilled } from "@/lib/billing/checkout-lock";
 
 const MAX_RELEASES_PER_PAID_CASE = CASE_COMMERCIAL.maxReleasesPerPaidCase;
 const CANONICAL_PRODUCT = "pack_premium_dossier_v5";
@@ -108,6 +109,12 @@ export async function fulfillCheckoutOrder(params: {
       .where("uid", "==", uid)
       .limit(1)
       .get();
+    const scopeCaseId =
+      (typeof order.caseId === "string" && order.caseId.trim()) ||
+      String(existingEntitlement.docs[0]?.data()?.scopeCaseId || "");
+    if (scopeCaseId) {
+      await markCheckoutLockFulfilled(uid, scopeCaseId);
+    }
     return {
       orderId,
       transactionId: String(order.paddleTransactionId || transactionId),
@@ -261,6 +268,8 @@ export async function fulfillCheckoutOrder(params: {
 
     return entitlementRef.id;
   });
+
+  await markCheckoutLockFulfilled(uid, scopeCaseId);
 
   return {
     orderId,

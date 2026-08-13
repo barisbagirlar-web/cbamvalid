@@ -3,7 +3,7 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 // Mock server-only in Vitest environment
 vi.mock("server-only", () => ({}));
 
-const { verifySessionCookie, createSessionCookie, verifyIdToken, mockCookiesSet, mockCookiesGet, mockCollection } = vi.hoisted(() => {
+const { verifySessionCookie, createSessionCookie, verifyIdToken, mockCookiesSet, mockCookiesGet, mockCollection, mockRunTransaction } = vi.hoisted(() => {
   const mockGet = vi.fn().mockImplementation(async () => {
     // Default: system config + case docs exist. Omit uid so ownership check is not
     // falsely mismatched across different authenticated test UIDs.
@@ -35,6 +35,17 @@ const { verifySessionCookie, createSessionCookie, verifyIdToken, mockCookiesSet,
     where: vi.fn().mockReturnValue(mockQuery),
   });
 
+  const mockRunTransaction = vi.fn(async (fn: (tx: {
+    get: ReturnType<typeof vi.fn>;
+    set: ReturnType<typeof vi.fn>;
+  }) => Promise<unknown>) => {
+    const tx = {
+      get: vi.fn().mockResolvedValue({ exists: false, data: () => undefined }),
+      set: vi.fn(),
+    };
+    return fn(tx);
+  });
+
   return {
     verifySessionCookie: vi.fn(),
     createSessionCookie: vi.fn(),
@@ -42,6 +53,7 @@ const { verifySessionCookie, createSessionCookie, verifyIdToken, mockCookiesSet,
     mockCookiesSet: vi.fn(),
     mockCookiesGet: vi.fn(),
     mockCollection: mockCollectionFn,
+    mockRunTransaction,
   };
 });
 
@@ -55,6 +67,7 @@ vi.mock("@/lib/firebase/admin", () => {
     },
     adminDb: {
       collection: mockCollection,
+      runTransaction: mockRunTransaction,
     },
   };
 });
