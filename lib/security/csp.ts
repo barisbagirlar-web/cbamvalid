@@ -1,8 +1,9 @@
 /**
  * Production CSP SSOT.
- * Nonce + strict-dynamic for scripts; style-src keeps 'unsafe-inline' for React
- * style attributes (nonce does not cover style=""). Emulator and Paddle sandbox
- * hosts are environment-gated and must not appear in production.
+ * Scripts: nonce + strict-dynamic (no unsafe-inline / unsafe-eval in production).
+ * Styles: nonce for framework <style> tags; 'unsafe-inline' remains required for
+ * React style="" attributes (nonce does not authorize style attributes).
+ * Emulator hosts and Paddle sandbox CDN are environment-gated only.
  */
 
 export type CspBuildInput = {
@@ -47,6 +48,8 @@ export function buildContentSecurityPolicy(input: CspBuildInput): string {
 
   const styleSrc = [
     "'self'",
+    `'nonce-${input.nonce}'`,
+    // React style attributes cannot use script/style nonces; keep attribute allowance.
     "'unsafe-inline'",
     "https://fonts.googleapis.com",
     "https://cdn.paddle.com",

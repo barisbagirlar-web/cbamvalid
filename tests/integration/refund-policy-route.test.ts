@@ -26,6 +26,16 @@ describe("refund policy route contract", () => {
     expect(refundAlias?.destination).toBe("https://cbamvalid.com/refund-policy");
     expect(refundAlias?.statusCode).toBe(308);
 
+    const firebase = JSON.parse(fs.readFileSync(path.join(root, "firebase.json"), "utf8")) as {
+      hosting: { redirects: Array<{ source: string; destination: string; type: number }> };
+    };
+    expect(firebase.hosting.redirects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ source: "/refunds", destination: "/refund-policy", type: 301 }),
+        expect.objectContaining({ source: "/refund", destination: "/refund-policy", type: 301 }),
+      ]),
+    );
+
     const footer = fs.readFileSync(footerPath, "utf8");
     expect(footer).toContain('href="/refund-policy"');
     expect(footer).not.toContain('href="/refunds"');

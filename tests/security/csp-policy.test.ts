@@ -5,7 +5,7 @@ import {
 } from "../../lib/security/csp";
 
 describe("production CSP contract", () => {
-  it("drops unsafe-inline, unsafe-eval, localhost and sandbox CDN in production", () => {
+  it("keeps production script-src nonce-based without eval/localhost/sandbox CDN", () => {
     const csp = buildContentSecurityPolicy({
       nonce: "test-nonce",
       isDevelopment: false,
@@ -15,11 +15,12 @@ describe("production CSP contract", () => {
 
     expect(csp).toContain("'nonce-test-nonce'");
     expect(csp).toContain("'strict-dynamic'");
+    expect(csp).toMatch(/style-src[^;]*'nonce-test-nonce'/);
     expect(csp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
     expect(csp).not.toMatch(/script-src[^;]*'unsafe-eval'/);
     expect(csp).toMatch(/style-src[^;]*'unsafe-inline'/);
-    expect(csp).not.toContain("127.0.0.1:5001");
-    expect(csp).not.toContain("localhost:5001");
+    expect(csp).not.toContain("127.0.0.1");
+    expect(csp).not.toContain("localhost");
     expect(csp).not.toContain("sandbox-cdn.paddle.com");
     expect(csp).toContain("https://cdn.paddle.com");
     expect(csp).toContain("https://public.profitwell.com");
