@@ -109,14 +109,22 @@ h3{font-size:1.35rem}
   background:var(--navy-deep);color:#E8EDF7;
   font-family:var(--mono);font-size:.74rem;letter-spacing:.02em;
 }
-.topbar .wrap{display:flex;justify-content:center;align-items:center;gap:12px;padding:9px 28px;text-align:center}
-.topbar b{color:var(--gold);font-weight:600}
-.topbar a{
-  display:inline-flex;align-items:center;min-height:44px;padding:0 6px;
-  color:#fff;text-decoration:underline;text-underline-offset:3px;white-space:nowrap;
+.topbar .wrap{
+  display:flex;justify-content:space-between;align-items:center;gap:20px;
+  padding:8px 28px;min-height:40px;
 }
-.topbar .dot{width:7px;height:7px;border-radius:50%;background:var(--terra);flex:none;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.topbar-copy{
+  margin:0;flex:1 1 auto;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  text-align:left;line-height:1.35;
+}
+.topbar b{color:var(--gold);font-weight:600}
+.topbar-links{display:flex;align-items:center;gap:14px;flex:0 0 auto}
+.topbar a{
+  display:inline-flex;align-items:center;padding:0;
+  color:#fff;text-decoration:underline;text-underline-offset:3px;white-space:nowrap;
+  line-height:1.2;
+}
 
 /* ---------- Header ---------- */
 .site-header{
@@ -126,27 +134,51 @@ h3{font-size:1.35rem}
   border-bottom:1px solid var(--line);
 }
 .site-header .wrap{
-  display:flex;align-items:center;gap:20px;height:74px;
-  min-width:0;overflow:visible;
+  display:flex;align-items:center;gap:20px;
+  height:72px;min-height:72px;
+  min-width:0;
 }
-.brand{display:flex;align-items:center;gap:11px;flex:none;min-width:0}
-.brand > span{display:flex;flex-direction:column;min-width:0}
+.brand{display:flex;align-items:center;gap:11px;flex:0 0 auto;min-width:0}
+.brand > span{display:flex;flex-direction:column;min-width:0;justify-content:center}
 .brand-mark{width:38px;height:38px;flex:none}
-.brand-name{font-family:var(--serif);font-weight:600;font-size:1.28rem;letter-spacing:-.01em}
+.brand-name{font-family:var(--serif);font-weight:600;font-size:1.28rem;letter-spacing:-.01em;line-height:1.1}
 .brand-name em{font-style:normal;color:var(--terra)}
-.brand-sub{display:block;font-family:var(--mono);font-size:.58rem;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-top:1px}
+.brand-sub{display:block;font-family:var(--mono);font-size:.58rem;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-top:2px;line-height:1.2}
 .main-nav{
-  display:flex;align-items:center;justify-content:flex-end;gap:18px;
+  display:flex;align-items:center;justify-content:flex-end;gap:16px;
   margin-left:auto;min-width:0;flex:1 1 auto;
+  overflow:hidden;
 }
-.main-nav a{font-size:.88rem;font-weight:500;color:var(--ink-2);padding:6px 0;position:relative;white-space:nowrap}
-.main-nav a::after{content:"";position:absolute;left:0;bottom:0;width:0;height:2px;background:var(--terra);transition:width .25s}
+.main-nav a{
+  font-size:.88rem;font-weight:500;color:var(--ink-2);
+  padding:0;position:relative;white-space:nowrap;line-height:1.2;
+  display:inline-flex;align-items:center;height:32px;
+}
+.main-nav a::after{content:"";position:absolute;left:0;bottom:2px;width:0;height:2px;background:var(--terra);transition:width .25s}
 .main-nav a:hover{color:var(--ink)}
 .main-nav a:hover::after,.main-nav a.active::after{width:100%}
 .main-nav a.active{color:var(--terra-dark);font-weight:600}
-.header-actions{display:flex;align-items:center;gap:10px;flex:none}
+.header-actions{
+  display:flex;align-items:center;gap:12px;
+  flex:0 0 auto;margin-left:4px;position:relative;z-index:2;
+}
 .header-actions .header-demo{padding:8px 14px;font-size:.84rem}
-.header-actions .btn-primary{padding:8px 16px;font-size:.84rem;white-space:nowrap}
+.header-actions .signin{
+  display:inline-flex;align-items:center;height:40px;
+  font-size:.88rem;font-weight:500;color:var(--ink-2);white-space:nowrap;
+}
+.header-actions .signin:hover{color:var(--ink)}
+.header-actions .btn,
+.header-actions .btn-primary{
+  display:inline-flex;align-items:center;justify-content:center;
+  height:40px;min-height:40px;padding:0 16px;font-size:.84rem;
+  white-space:nowrap;line-height:1;border-radius:10px;
+  transform:none;box-shadow:0 2px 8px rgba(27,67,50,.2);
+}
+.header-actions .btn-primary:hover,
+.header-actions .btn:hover{
+  transform:none;background:var(--terra-dark);
+}
 .signin{font-size:.92rem;font-weight:500;color:var(--ink-2);white-space:nowrap}
 .signin:hover{color:var(--ink)}
 .nav-toggle{
@@ -806,17 +838,16 @@ h3{font-size:1.35rem}
 }
 
 /* ---------- Responsive ---------- */
-@media(max-width:1180px){
+@media(max-width:1320px){
   .brand-sub{display:none}
-  .main-nav{gap:14px}
-  .header-actions .header-demo{padding:8px 12px}
+  .main-nav{gap:12px}
 }
-@media(max-width:1024px){
+@media(max-width:1180px){
   .main-nav,.header-actions .signin,.header-actions .header-demo{display:none}
   .nav-toggle{display:flex}
   .site-header .wrap{gap:16px}
   .mobile-nav{
-    position:fixed;inset:74px 0 auto 0;background:var(--paper);border-bottom:1px solid var(--line);
+    position:fixed;inset:72px 0 auto 0;background:var(--paper);border-bottom:1px solid var(--line);
     padding:20px 28px 28px;display:none;flex-direction:column;gap:4px;z-index:190;box-shadow:var(--shadow-md);
   }
   .mobile-nav.open{display:flex}
@@ -882,10 +913,13 @@ h3{font-size:1.35rem}
   .legal-identity-block p:nth-child(n+3){display:none}
   .disclaimer-full{display:none}
   .disclaimer-compact{display:inline}
-  .topbar .wrap{flex-wrap:wrap;gap:6px;padding:8px 16px}
+  .topbar .wrap{flex-wrap:wrap;gap:8px;padding:8px 16px}
+  .topbar-copy{white-space:normal;overflow:visible;text-overflow:unset}
+  .topbar-links{flex-wrap:wrap;justify-content:flex-start}
+  .topbar a{min-height:44px;padding:0 2px}
   .site-header .wrap{gap:12px}
-  .header-actions{gap:7px}
-  .header-actions .btn-primary{min-height:44px;padding:10px 14px}
+  .header-actions{gap:8px}
+  .header-actions .btn-primary{min-height:44px;height:44px;padding:0 14px}
   .verify-box{padding:30px 24px}
   .price-card{padding:32px 26px}
   .aeo-grid{grid-template-columns:1fr}
