@@ -541,29 +541,29 @@ export const ACTUAL_VS_DEFAULT_SECTIONS: readonly GuideSection[] = [
     id: "answer",
     title: "Direct answer",
     paragraphs: [
-      "Actual values reflect installation-specific monitored or calculated emissions and generally require independent verification where legally required.",
-      "Default values are official fallbacks that depend on multiple regulatory dimensions — not a single universal CN number.",
+      "Actual values reflect installation-specific monitored or calculated emissions. Regulation (EU) 2025/2083 recital (19) states that verification of embedded emissions applies to actual values — not to default-value declarations.",
+      "Default values are official multi-dimensional fallbacks — not a single universal CN number. If an EU buyer accepts defaults for the declaration path, the commercial pressure on the exporter to prepare an evidence-linked actual-value dossier can disappear.",
     ],
   },
   {
     id: "who",
     title: "Who is affected",
     paragraphs: [
-      "Producers choosing a reporting pathway, importers assessing evidence strength, and reviewers who must prevent silent default substitution.",
+      "Producers whose buyers still demand actual-value evidence, authorised declarants choosing a reporting pathway, and reviewers who must prevent silent default substitution. After Omnibus 2025/2083, mass-market “every importer needs a dossier” demand is not the honest framing.",
     ],
   },
   {
     id: "rule",
     title: "Regulatory rule",
     paragraphs: [
-      "Pathway choice is a methodology decision. Switching from actual to default (or the reverse) changes evidence burden, verification expectations, and often the numeric result.",
+      "Pathway choice is a methodology decision. Switching from actual to default (or the reverse) changes evidence burden, verification expectations, and often the numeric result. Verification attaches to actual values under recital (19); defaults remain a permitted declaration path under the Regulation’s conditions.",
     ],
   },
   {
     id: "impact-2026",
     title: "2026 definitive-period impact",
     paragraphs: [
-      "Definitive-period declarations amplify the cost of undocumented pathway switches. Record the choice before sealing 2026 reporting packages.",
+      "Definitive-period declarations amplify the cost of undocumented pathway switches. Record the choice before sealing 2026 reporting packages. Buyer acceptance of defaults can erase exporter preparation demand even when large consignments remain in CBAM scope via other declarants.",
     ],
   },
   {
@@ -574,24 +574,25 @@ export const ACTUAL_VS_DEFAULT_SECTIONS: readonly GuideSection[] = [
       "Dimensional keys for any default lookup",
       "Documented reason for the selected pathway",
       "Ruleset version pinning both calculation and defaults",
+      "Buyer/declarant requirement: actual-value package requested or default path accepted",
     ],
   },
   {
     id: "decision-tree",
     title: "Decision tree",
     bullets: [
-      "1. Can actual evidence support verification for material sources? If yes, prefer actual.",
-      "2. If not, confirm defaults are allowed for that goods/context under the ruleset.",
-      "3. Apply full dimensional lookup — never CN-only.",
-      "4. Log rejected alternatives and residual uncertainty.",
-      "5. Recalculate and reseal if the pathway changes.",
+      "1. Does the buyer/declarant path require actual values? If no and defaults are accepted, preparation demand may end.",
+      "2. Can actual evidence support verification for material sources? If yes, prefer actual.",
+      "3. If using defaults, confirm they are allowed for that goods/context under the ruleset.",
+      "4. Apply full dimensional lookup — never CN-only.",
+      "5. Log rejected alternatives and residual uncertainty; reseal if the pathway changes.",
     ],
   },
   {
     id: "example",
     title: "Practical example",
     paragraphs: [
-      "An aluminium smelter has strong electricity metering (actual indirect) but incomplete anode evidence. The team keeps actual electricity data and applies an allowed default only to the unsupported process component, with explicit methodology notes — not a blended invented factor.",
+      "An aluminium smelter has strong electricity metering (actual indirect) but incomplete anode evidence. The team keeps actual electricity data and applies an allowed default only to the unsupported process component, with explicit methodology notes — not a blended invented factor. Separately, if the EU buyer later says “use defaults for everything,” the commercial need for a full actual-value package may vanish even though the software can still record the default pathway.",
     ],
   },
   {
@@ -602,34 +603,35 @@ export const ACTUAL_VS_DEFAULT_SECTIONS: readonly GuideSection[] = [
       "CN-only default tables on websites",
       "Changing pathway after seal without a new release",
       "Hiding mark-ups that the rules require",
+      "Assuming dossier demand survives after a buyer accepts defaults",
     ],
   },
   {
     id: "sources",
     title: "Official EU sources",
     paragraphs: [
-      "Follow Regulation (EU) 2023/956 and the implementing acts governing calculation and default publication; see also the default-values guide on this site.",
+      "Follow Regulation (EU) 2023/956 as amended by Regulation (EU) 2025/2083 (recital (19) on actual-value verification), plus implementing acts governing calculation and default publication; see also the default-values guide on this site.",
     ],
   },
   {
     id: "related",
     title: "Related CN and methodology",
     paragraphs: [
-      "Pair this page with `/cbam-default-values` and `/methodology`. Goods scope must be settled before pathway choice matters.",
+      "Pair this page with `/cbam-default-values`, `/methodology`, and `/trust` (demand boundary). Goods scope must be settled before pathway choice matters.",
     ],
   },
   {
     id: "cbamvalid",
     title: "How CBAMValid handles it",
     paragraphs: [
-      "CBAMValid records pathway decisions, binds engine versions, and keeps actual vs default explicit in traces and sealed outputs.",
+      "CBAMValid records pathway decisions, binds engine versions, and keeps actual vs default explicit in traces and sealed outputs. The product’s primary reason to exist is buyer-driven actual-value preparation — not inventing demand where defaults are accepted.",
     ],
   },
   {
     id: "boundary",
     title: "Product boundary",
     paragraphs: [
-      "CBAMValid does not decide legal acceptability of a pathway for a specific declarant; that remains with the operator, importer, and accredited verifier where required.",
+      "CBAMValid does not decide legal acceptability of a pathway for a specific declarant; that remains with the operator, importer, and accredited verifier where required. It also does not claim that default-path buyers will still request an actual-value dossier.",
     ],
   },
 ];
