@@ -48,6 +48,8 @@ function withCsp(
 
   response.headers.set("Content-Security-Policy", csp);
   response.headers.set("x-nonce", nonce);
+  response.headers.delete("x-powered-by");
+  response.headers.delete("X-Powered-By");
 
   const { pathname } = request.nextUrl;
   if (shouldNoindex(pathname)) {
