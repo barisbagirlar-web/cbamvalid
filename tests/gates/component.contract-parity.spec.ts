@@ -1,9 +1,10 @@
 /**
  * G-05 — component contract full parity. D-04.
  *
- * The sealed component contract, the manifest file list and every
- * primary-document reference in delivered documents must match exactly.
- * The V6 package surface is exactly 27 components.
+ * The sealed verifier ZIP contract, the manifest file list and every
+ * primary-document reference in delivered verifier documents must match.
+ * Counted components are deliverable FILES only (25). Directory containers
+ * and the operator Master Record are excluded.
  *
  * Evidence: three-list comparison under artifacts/gates/G-05/.
  */
@@ -13,22 +14,26 @@ import { describe, expect, it } from "vitest";
 import {
   REQUIRED_TOP_LEVEL_COMPONENTS_V6,
   REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6,
+  countVerifierControlledFileComponents,
 } from "../../functions/src/cbam/report/package-components";
+import { MASTER_RECORD_FILE_NAME } from "../../functions/src/cbam/report/v6/master-record-model";
 import { validateComponentContractParity } from "../../functions/src/cbam/report/v6/component-contract";
 
 const ARTIFACT_DIR = join(process.cwd(), "artifacts", "gates", "G-05");
 
 describe("G-05 component.contract-parity", () => {
-  it("mandates the Enterprise Compliance Master Record as the 27th component", () => {
-    expect(REQUIRED_TOP_LEVEL_COMPONENTS_V6).toContain("Enterprise Compliance Master Record.pdf");
-    expect(REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6).toBe(27);
+  it("counts 25 verifier files and excludes the operator Master Record and directories", () => {
+    expect(REQUIRED_TOP_LEVEL_COMPONENTS_V6).not.toContain(MASTER_RECORD_FILE_NAME);
+    expect(REQUIRED_TOP_LEVEL_COMPONENTS_V6.some((component) => component.endsWith("/"))).toBe(false);
+    expect(REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6).toBe(25);
+    expect(countVerifierControlledFileComponents([...REQUIRED_TOP_LEVEL_COMPONENTS_V6, "Supporting_Evidence/"])).toBe(25);
   });
 
   it("accepts a contract whose manifest, exclusions and references are fully aligned", () => {
     const contract = [...REQUIRED_TOP_LEVEL_COMPONENTS_V6];
     const exclusions = ["dossier.zip"];
     const manifestFiles = [...contract, "Supporting_Evidence/README.txt", "Supporting_Evidence/verify/cli.js"];
-    const documentReferences = ["Enterprise Compliance Master Record.pdf", "Calculation Trace.json"];
+    const documentReferences = ["Calculation Trace.json", "Data Integrity Manifest.json"];
     const errors = validateComponentContractParity({
       contract,
       manifestFiles,

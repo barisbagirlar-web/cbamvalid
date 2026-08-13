@@ -61,4 +61,12 @@ describe("step 8 honesty", () => {
     expect(client).toContain("Advanced calculation and integrity details");
     expect(client).toContain("aria-expanded={showAdvancedDetails}");
   });
+
+  it("preview count matches the canonical 25 verifier-file contract", () => {
+    const client = readSource("app/(workspace)/cases/[caseId]/CaseWizardClient.tsx");
+    expect(client).toContain("25 package components");
+    expect(client).toContain("25-part verifier package");
+    expect(client).not.toContain("26 package components");
+    expect(client).not.toContain("26-part verifier package");
+  });
 });

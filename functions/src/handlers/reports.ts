@@ -117,16 +117,18 @@ export const getCbamReport = createCallable(
 );
 
 const DOWNLOADS = {
-  zip: { file: "dossier.zip", downloadName: "CBAMValid-Verifier-Preparation-Dossier.zip" },
+  zip: { file: "dossier.zip", downloadName: "Complete-Signed-Verifier-Dossier.zip" },
   pdf: { file: "dossier.pdf", downloadName: "Operator-Emissions-Report.pdf" },
   xlsx: { file: "dossier.xlsx", downloadName: "Verifier-Workspace.xlsx" },
   manifest: { file: "manifest.json", downloadName: "Data-Integrity-Manifest.json" },
   signature: { file: "manifest.sig", downloadName: "Manifest-Signature.sig" },
   snapshot: { file: "case-snapshot.json", downloadName: "Immutable-Case-Snapshot.json" },
+  masterRecord: { file: "master-record.pdf", downloadName: "Enterprise Compliance Master Record.pdf" },
 } as const;
 
 export function resolveDownloadName(report: SealedReportView, format: keyof typeof DOWNLOADS): string {
   const target = DOWNLOADS[format];
+  if (format === "masterRecord") return "Enterprise Compliance Master Record.pdf";
   if (format !== "pdf") return target.downloadName;
   // V5 packages store the Enterprise-1000 main dossier under dossier.pdf; only
   // legacy V4 packages keep the legacy Operator Emissions Report label.
@@ -138,7 +140,7 @@ export const getReportDownloadUrl = createCallable(
   {
     schema: z.object({
       reportId: z.string().regex(/^report_[a-f0-9]{64}$/),
-      format: z.enum(["zip", "pdf", "xlsx", "manifest", "signature", "snapshot"]),
+      format: z.enum(["zip", "pdf", "xlsx", "manifest", "signature", "snapshot", "masterRecord"]),
     }),
   },
   async ({ reportId, format }, { auth }) => {

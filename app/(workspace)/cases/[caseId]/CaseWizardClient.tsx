@@ -108,7 +108,7 @@ const SEALED_PACKAGE_HIGHLIGHTS = [
   { title: "11 professional PDFs", detail: "Executive report, monitoring plan, calculation annex, readiness assessment and methodology records", icon: FileCheck2 },
   { title: "Verifier workspace", detail: "Spreadsheet with 14+ worksheets, filters, validations, source links and verifier sign-off", icon: FileCode2 },
   { title: "Evidence assurance", detail: "Immutable evidence copies, field links, issuer/date metadata, malware status and SHA-256 register", icon: Shield },
-  { title: "Verified package", detail: "26-part verifier package, integrity manifest, secure digital signature and tamper-proof file fingerprint", icon: LockKeyhole },
+  { title: "Verified package", detail: "25-part verifier package, integrity manifest, secure digital signature and tamper-proof file fingerprint", icon: LockKeyhole },
 ] as const;
 
 function numeric(value: string | number | null | undefined): number {
@@ -1502,7 +1502,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
               <h3 className="flex items-center gap-2 text-xl font-bold"><PackageCheck className="h-6 w-6" /> {STEP8_PACKAGE_PREVIEW_HEADLINE}</h3>
               <p className="mt-2 max-w-3xl text-sm leading-relaxed text-dark-text/80">Once you lock and pay, the package is created from your data after every preparation check passes, producing a verifier-ready, tamper-proof release.</p>
             </div>
-            <span className="shrink-0 rounded-full border border-border-strong px-3 py-1 text-xs font-semibold">26 package components</span>
+            <span className="shrink-0 rounded-full border border-border-strong px-3 py-1 text-xs font-semibold">25 package components</span>
           </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {SEALED_PACKAGE_HIGHLIGHTS.map((item) => {
@@ -1513,7 +1513,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
           <ul className="mt-4 grid gap-1.5 text-xs text-dark-text/80 sm:grid-cols-2">
             <li>11 professional PDF reports and annexes</li>
             <li>Verifier spreadsheet with sign-off</li>
-            <li>26 package components</li>
+            <li>25 package components</li>
             <li>Data-integrity manifest</li>
             <li>Digital signature and tamper-proof release hash</li>
             <li>Offline verifier review layout</li>

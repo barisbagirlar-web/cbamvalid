@@ -10,7 +10,7 @@
  */
 import { jsPDF } from "jspdf";
 import crypto from "node:crypto";
-import type { MasterRecordModel } from "./master-record-model";
+import { MASTER_RECORD_FILE_NAME, type MasterRecordModel } from "./master-record-model";
 import { REQUIRED_TOP_LEVEL_COMPONENTS_V6 } from "../package-components";
 import { HASH_CANONICAL_RULE } from "./hash-architecture";
 import { buildRegistryTemplateMapping } from "../../registry/registry-template-mapping";
@@ -126,6 +126,24 @@ function scoreBreakdownRows(model: MasterRecordModel): Array<Array<string | numb
     }
   }
   return rows;
+}
+
+function operatorSignOffRows(model: MasterRecordModel): string[][] {
+  const generatedMs = Date.parse(model.controlKey.generatedAt);
+  if (model.caseData.operatorSignOffs.length === 0) {
+    return [["OPERATOR_PREPARER", "NOT_YET_SIGNED", "—", "NOT_YET_SET"]];
+  }
+  return model.caseData.operatorSignOffs.map((signOff) => {
+    const signedMs = Date.parse(signOff.signedAt);
+    const afterGeneratedAt =
+      Number.isFinite(generatedMs) && Number.isFinite(signedMs) && signedMs > generatedMs;
+    return [
+      signOff.role,
+      signOff.name,
+      signOff.title,
+      afterGeneratedAt ? "NOT BINDING — signedAt after generatedAt" : signOff.signedAt,
+    ];
+  });
 }
 
 function section(model: MasterRecordModel): MasterRecordSection[] {
@@ -332,7 +350,7 @@ function section(model: MasterRecordModel): MasterRecordSection[] {
     },
     {
       id: "B1",
-      title: "B1 · Delivery inventory",
+      title: "B1 · Verifier package delivery inventory",
       pageBreakBefore: true,
       blocks: [
         {
@@ -342,18 +360,31 @@ function section(model: MasterRecordModel): MasterRecordSection[] {
             widths: [78, 12, 70, 18],
             rows: REQUIRED_TOP_LEVEL_COMPONENTS_V6.map((component) => [
               component,
-              component.endsWith(".pdf") ? "PDF" : component.endsWith(".csv") ? "CSV" : component.endsWith(".json") ? "JSON" : component.endsWith(".xlsx") ? "XLSX" : component.endsWith(".sig") ? "SIG" : component.endsWith("/") ? "DIR" : "FILE",
-              component === "Enterprise Compliance Master Record.pdf"
-                ? "Permanent operator corporate record (this document)"
-                : component === "Data Integrity Manifest.json"
-                  ? "Manifest of hashes; sealed by the KMS signature"
-                  : component === "Manifest Signature.sig"
-                    ? "Detached KMS signature over the manifest"
-                    : "Controlled component covered by the manifest",
+              component.endsWith(".pdf") ? "PDF" : component.endsWith(".csv") ? "CSV" : component.endsWith(".json") ? "JSON" : component.endsWith(".xlsx") ? "XLSX" : component.endsWith(".sig") ? "SIG" : "FILE",
+              component === "Data Integrity Manifest.json"
+                ? "Manifest of hashes; sealed by the KMS signature"
+                : component === "Manifest Signature.sig"
+                  ? "Detached KMS signature over the manifest"
+                  : "Controlled verifier component covered by the manifest",
               "PRESENT",
             ]),
           },
         },
+        { kind: "callout", label: "Verifier package", value: `${REQUIRED_TOP_LEVEL_COMPONENTS_V6.length} controlled verifier components. Supporting_Evidence/ is a container path, not a counted component.` },
+        {
+          kind: "table",
+          table: {
+            headers: ["Record", "Type", "Role", "Status"],
+            widths: [78, 12, 70, 18],
+            rows: [[
+              MASTER_RECORD_FILE_NAME,
+              "PDF",
+              "Permanent operator corporate record — not part of verifier handover package",
+              "SEPARATE",
+            ]],
+          },
+        },
+        { kind: "callout", label: "B1A · Operator records", value: `${MASTER_RECORD_FILE_NAME} is the operator's permanent corporate record. It is not a copy of the verifier dossier and is not a ZIP component.` },
       ],
     },
     {
@@ -874,9 +905,7 @@ function section(model: MasterRecordModel): MasterRecordSection[] {
           table: {
             headers: ["Role", "Name", "Title", "Signed at (UTC)"],
             widths: [44, 46, 46, 42],
-            rows: model.caseData.operatorSignOffs.length > 0
-              ? model.caseData.operatorSignOffs.map((signOff) => [signOff.role, signOff.name, signOff.title, signOff.signedAt])
-              : [["OPERATOR_PREPARER", "NOT_YET_SIGNED", "—", "NOT_YET_SET"]],
+            rows: operatorSignOffRows(model),
           },
         },
         { kind: "callout", label: "Declaration", value: "The operator declares that the recorded data reflects its records and that the evidence chain is complete to the best of its knowledge. This declaration is an operator record; it is not a verification opinion." },
@@ -893,7 +922,7 @@ function section(model: MasterRecordModel): MasterRecordSection[] {
             headers: ["Milestone", "Date", "Type", "State", "Remaining days"],
             widths: [62, 30, 32, 30, 24],
             rows: [
-              ["Reporting period close", model.calendar.endDate, "Definitive period", model.scores.periodEnded ? "COMPLETE" : "OPEN", String(model.calendar.remainingDays)],
+              ["Reporting period close", model.calendar.endDate, "Definitive period", model.calendar.periodEnded ? "COMPLETE" : "OPEN", String(model.calendar.remainingDays)],
               ["Data and evidence readiness", "—", "Preparation", model.scores.dataEvidenceReadiness >= 100 ? "COMPLETE" : "IN_PROGRESS", "—"],
               ["Evidence gap closure", "—", "Preparation", model.evidenceGaps.length === 0 ? "COMPLETE" : "OPEN", "—"],
               ["Independent verification", "—", "External", "PENDING", "—"],
@@ -926,7 +955,7 @@ function section(model: MasterRecordModel): MasterRecordSection[] {
       title: "H4 · Retention and integrity verification guide",
       pageBreakBefore: true,
       blocks: [
-        { kind: "paragraph", text: `Keep the whole package unmodified until ${ck.retentionUntil}. Legal retention covers the operator's obligation to produce evidence for its CBAM declarations. Never split the package; keep the ZIP, manifest and signature together.` },
+        { kind: "paragraph", text: `Keep the signed verifier ZIP unmodified until ${ck.retentionUntil}. Legal retention covers the operator's obligation to produce evidence for its CBAM declarations. Never split the ZIP; keep the ZIP, manifest and signature together. ${MASTER_RECORD_FILE_NAME} is a separate operator corporate record and is not a member of the verifier handover package.` },
         {
           kind: "steps",
           steps: [

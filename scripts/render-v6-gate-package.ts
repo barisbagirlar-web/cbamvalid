@@ -2,13 +2,12 @@
 /**
  * G-09 CI helper — render a V6 package surface to disk so the forbidden-string
  * scan (scripts/gate-no-test-artifacts.sh) runs against real V6 output, not a
- * legacy sample. The 27th component (Enterprise Compliance Master Record.pdf)
- * is rendered from the V6 master-record model; the remaining components come
- * from the same shared seal pipeline the four-dossier suites exercise.
+ * legacy sample. The operator Master Record is rendered beside the verifier
+ * artifacts; it is not a counted verifier ZIP component.
  *
  * Output layout:
  *   artifacts/gates/G-09/package/
- *     Enterprise Compliance Master Record.pdf
+ *     Enterprise Compliance Master Record.pdf   (operator record, separate)
  *     <standard verifier artifacts: CSVs, workbook, trace, evidence, ...>
  *
  * Usage:
@@ -37,13 +36,12 @@ async function main(): Promise<void> {
   const v6 = await buildV6Package("STEEL_IN");
   const v5 = await buildDossierSealedPackage("STEEL_IN");
 
+  const verifierArtifacts = v5.artifacts;
   const masterRecordEntry: PackageArtifact = {
     path: "Enterprise Compliance Master Record.pdf",
     bytes: buildMasterRecordPdf(v6.masterRecordModel),
     mediaType: "application/pdf",
   };
-
-  const allArtifacts = [...v5.artifacts, masterRecordEntry];
   const controlKey = v6.masterRecordModel.controlKey;
 
   const manifest = {
@@ -59,9 +57,9 @@ async function main(): Promise<void> {
     dataEvidenceReadiness: v6.scores.dataEvidenceReadiness,
     periodClosure: v6.scores.periodClosure,
     calculationRootHash: v6.calculation.calculationRootHash,
-    componentCount: allArtifacts.length,
+    componentCount: controlKey.componentCount,
     evidenceCount: controlKey.evidenceCount,
-    files: allArtifacts
+    files: verifierArtifacts
       .map((entry) => ({
         path: entry.path,
         sha256: sha256(entry.bytes),
@@ -77,14 +75,14 @@ async function main(): Promise<void> {
     mediaType: "application/json",
   };
 
-  for (const entry of [...allArtifacts, manifestEntry]) {
+  for (const entry of [...verifierArtifacts, manifestEntry, masterRecordEntry]) {
     const target = join(OUT_DIR, entry.path);
     mkdirSync(dirname(target), { recursive: true });
     writeFileSync(target, entry.bytes);
   }
 
   console.log(
-    `Rendered V6 gate package: ${allArtifacts.length + 1} components, state ${v6.state}, ` +
+    `Rendered V6 gate package: ${controlKey.componentCount} verifier components + operator Master Record, state ${v6.state}, ` +
       `dataEvidenceReadiness ${v6.scores.dataEvidenceReadiness}, periodClosure ${v6.scores.periodClosure} → ${OUT_DIR}`
   );
 }

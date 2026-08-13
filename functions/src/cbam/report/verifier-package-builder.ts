@@ -51,6 +51,7 @@ import {
   REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5,
   REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6,
   REQUIRED_TOP_LEVEL_COMPONENT_COUNT,
+  VERIFIER_PACKAGE_DIRECTORY_CONTAINERS,
 } from "./package-components";
 
 export {
@@ -760,15 +761,26 @@ export async function finalizeVerifierPackage(params: {
     : isV5
       ? [...REQUIRED_TOP_LEVEL_COMPONENTS_V5].sort()
       : [...REQUIRED_TOP_LEVEL_COMPONENTS].sort();
-  const missingComponents = expected.filter((component) => !topLevel.includes(component));
-  const extraComponents = topLevel.filter((component) => !expected.includes(component));
-  if (missingComponents.length > 0 || extraComponents.length > 0) {
+  const countedTopLevel = isV6 || isV7
+    ? topLevel.filter((component) => !component.endsWith("/"))
+    : topLevel;
+  const extraDirectories = isV6 || isV7
+    ? topLevel.filter(
+        (component) =>
+          component.endsWith("/") &&
+          !(VERIFIER_PACKAGE_DIRECTORY_CONTAINERS as readonly string[]).includes(component)
+      )
+    : [];
+  const missingComponents = expected.filter((component) => !countedTopLevel.includes(component));
+  const extraComponents = countedTopLevel.filter((component) => !expected.includes(component));
+  if (missingComponents.length > 0 || extraComponents.length > 0 || extraDirectories.length > 0) {
     throw new Error(
       `PACKAGE_COMPONENT_CONTRACT_FAILED:${JSON.stringify({
         expectedCount: expected.length,
-        actualCount: topLevel.length,
+        actualCount: countedTopLevel.length,
         missingComponents,
         extraComponents,
+        extraDirectories,
       })}`
     );
   }
@@ -856,15 +868,28 @@ export async function finalizeVerifierPackage(params: {
       (path) => !reopened.files[path].dir || path === "Supporting_Evidence/"
     )
   );
-  if (canonical(reopenedTopLevel) !== canonical(expected)) {
+  const reopenedCounted = isV6 || isV7
+    ? reopenedTopLevel.filter((component) => !component.endsWith("/"))
+    : reopenedTopLevel;
+  if (canonical(reopenedCounted) !== canonical(expected)) {
     throw new Error(
       `PACKAGE_COMPONENT_CONTRACT_FAILED:${JSON.stringify({
         expectedCount: expected.length,
-        actualCount: reopenedTopLevel.length,
-        missingComponents: expected.filter((c) => !reopenedTopLevel.includes(c)),
-        extraComponents: reopenedTopLevel.filter((c) => !expected.includes(c as unknown as string)),
+        actualCount: reopenedCounted.length,
+        missingComponents: expected.filter((c) => !reopenedCounted.includes(c)),
+        extraComponents: reopenedCounted.filter((c) => !expected.includes(c as unknown as string)),
       })}`
     );
+  }
+  if (isV6 || isV7) {
+    const missingContainers = (VERIFIER_PACKAGE_DIRECTORY_CONTAINERS as readonly string[]).filter(
+      (container) => !reopenedTopLevel.includes(container)
+    );
+    if (missingContainers.length > 0) {
+      throw new Error(
+        `PACKAGE_COMPONENT_CONTRACT_FAILED:${JSON.stringify({ missingContainers })}`
+      );
+    }
   }
 
   // Verify every manifest file against ZIP bytes (including PDFs)
@@ -890,7 +915,7 @@ export async function finalizeVerifierPackage(params: {
   }
 
   // Verify critical V5/V6 components exist in ZIP
-  if (isV5 || isV6) {
+  if (isV5 || isV6 || isV7) {
     const criticalPaths = [
       "Data Integrity Manifest.json",
       "Manifest Signature.sig",

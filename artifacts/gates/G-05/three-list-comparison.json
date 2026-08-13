@@ -24,9 +24,7 @@
     "Calculation Graph.json",
     "Verifier Workspace.xlsx",
     "Data Integrity Manifest.json",
-    "Manifest Signature.sig",
-    "Supporting_Evidence/",
-    "Enterprise Compliance Master Record.pdf"
+    "Manifest Signature.sig"
   ],
   "manifest": [
     "CBAMValid Verification Readiness & Evidence Assurance Dossier.pdf",
@@ -53,9 +51,7 @@
     "Calculation Graph.json",
     "Verifier Workspace.xlsx",
     "Data Integrity Manifest.json",
-    "Manifest Signature.sig",
-    "Supporting_Evidence/",
-    "Enterprise Compliance Master Record.pdf"
+    "Manifest Signature.sig"
   ],
   "exclusions": [],
   "references": [
@@ -83,9 +79,7 @@
     "Calculation Graph.json",
     "Verifier Workspace.xlsx",
     "Data Integrity Manifest.json",
-    "Manifest Signature.sig",
-    "Supporting_Evidence/",
-    "Enterprise Compliance Master Record.pdf"
+    "Manifest Signature.sig"
   ],
-  "count": 27
+  "count": 25
 }

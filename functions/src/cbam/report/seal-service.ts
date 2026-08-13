@@ -12,7 +12,7 @@ import { assertKmsSigningConfigured, signManifestWithKms } from "./kms-signature
 import {
   type EvidenceBinary,
 } from "./verifier-package-builder";
-import { REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5, REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6 } from "./package-components";
+import { REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5, REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6, countVerifierControlledFileComponents } from "./package-components";
 import type { SealAssessmentContext } from "./premium-dossier-schema";
 import { CommercialReportPipelineV2 } from "./commercial-report-pipeline-v2";
 import { allocatePackageCode } from "./allocate-package-code";
@@ -566,7 +566,7 @@ export async function sealReport(params: {
       premiumNameVisible: isPremiumProduct ? premiumContract.premiumNameVisible : undefined,
       productTierLabel,
     });
-    const { artifacts, manifestBytes, signature, packageResult, scoreboard: sealedScoreboard, enterprise: enterpriseModel } = await CommercialReportPipelineV2.executeSealingPipeline({
+    const { artifacts, manifestBytes, signature, packageResult, scoreboard: sealedScoreboard, enterprise: enterpriseModel, masterRecordPdf } = await CommercialReportPipelineV2.executeSealingPipeline({
       caseData,
       calculation,
       controls,
@@ -598,14 +598,20 @@ export async function sealReport(params: {
 
     const basePath = `reports/${params.uid}/${identity.reportId}`;
     const commonMetadata = { reportId: identity.reportId, caseId: params.caseId, requestId: identity.requestId };
-    const storageEntries = await Promise.all([
+    const artifactCommits = [
       commitImmutableArtifact({ path: `${basePath}/dossier.zip`, bytes: packageResult.zip, contentType: "application/zip", metadata: commonMetadata }),
       commitImmutableArtifact({ path: `${basePath}/dossier.pdf`, bytes: packageResult.primaryPdf, contentType: "application/pdf", metadata: commonMetadata }),
       commitImmutableArtifact({ path: `${basePath}/dossier.xlsx`, bytes: packageResult.workbook, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", metadata: commonMetadata }),
       commitImmutableArtifact({ path: `${basePath}/manifest.json`, bytes: manifest.bytes, contentType: "application/json", metadata: commonMetadata }),
       commitImmutableArtifact({ path: `${basePath}/manifest.sig`, bytes: packageResult.signatureBytes, contentType: "application/vnd.cbamvalid.kms-signature+json", metadata: commonMetadata }),
       commitImmutableArtifact({ path: `${basePath}/case-snapshot.json`, bytes: frozenJson, contentType: "application/json", metadata: commonMetadata }),
-    ]);
+    ];
+    if (masterRecordPdf) {
+      artifactCommits.push(
+        commitImmutableArtifact({ path: `${basePath}/master-record.pdf`, bytes: masterRecordPdf, contentType: "application/pdf", metadata: commonMetadata })
+      );
+    }
+    const storageEntries = await Promise.all(artifactCommits);
     if (packageResult.zipHash !== storageEntries[0].sha256) {
       throw new Error("PACKAGE_RECEIPT_HASH_MISMATCH");
     }
@@ -716,13 +722,11 @@ export async function sealReport(params: {
 
       const manifestObj = manifest.manifest;
       const evidenceFiles = manifestObj.files.filter((f: { path: string }) => f.path.startsWith("Supporting_Evidence/"));
-
-      const components = new Set<string>();
-      manifestObj.files.forEach((f: { path: string }) => {
-        const slash = f.path.indexOf("/");
-        components.add(slash >= 0 ? `${f.path.slice(0, slash)}/` : f.path);
-      });
-      const actualTopLevelComponentCount = components.size;
+      const actualTopLevelComponentCount = countVerifierControlledFileComponents([
+        ...manifestObj.files.map((f: { path: string }) => f.path),
+        "Data Integrity Manifest.json",
+        "Manifest Signature.sig",
+      ]);
 
       const packageMetadata = {
         schemaVersion: manifestObj.schemaVersion,
@@ -735,6 +739,11 @@ export async function sealReport(params: {
         operatorEmissionsReportFileName: "Operator Emissions Report.pdf",
         masterRecordFileName: "Enterprise Compliance Master Record.pdf",
       };
+      if (actualTopLevelComponentCount !== REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6) {
+        throw new Error(
+          `PACKAGE_VERIFIER_COMPONENT_COUNT_MISMATCH:${actualTopLevelComponentCount}:${REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6}`
+        );
+      }
 
       Object.assign(reportRecord, {
         productCode: entitlement.productCode,

@@ -15,7 +15,8 @@ describe("production CSP contract", () => {
 
     expect(csp).toContain("'nonce-test-nonce'");
     expect(csp).toContain("'strict-dynamic'");
-    expect(csp).toMatch(/style-src[^;]*'nonce-test-nonce'/);
+    expect(csp).toMatch(/script-src[^;]*'nonce-test-nonce'/);
+    expect(csp).not.toMatch(/style-src[^;]*'nonce-test-nonce'/);
     expect(csp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
     expect(csp).not.toMatch(/script-src[^;]*'unsafe-eval'/);
     expect(csp).toMatch(/style-src[^;]*'unsafe-inline'/);
