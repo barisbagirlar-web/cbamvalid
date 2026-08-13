@@ -73,11 +73,22 @@ jobs:
       - name: Install Playwright
         run: npx playwright install --with-deps chromium webkit
 
-      - name: Run Critical-Flow E2E Tests
+      # Source regression must exercise the checked-out PR/main code, not whatever
+      # revision happens to be live on cbamvalid.com. Production smoke belongs in
+      # the gated deployment workflow after the exact source SHA is deployed.
+      - name: Run Critical-Flow E2E Tests (checked-out source)
         run: npm run test:e2e:critical
         env:
-          BASE_URL: https://cbamvalid.com
-          PLAYWRIGHT_TEST_BASE_URL: https://cbamvalid.com
+          PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
+          NEXT_TELEMETRY_DISABLED: "1"
+          NEXT_PUBLIC_FIREBASE_API_KEY: "ci-placeholder-not-a-secret"
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "cbamvalid-ci.invalid"
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: "cbamvalid-ci"
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "cbamvalid-ci.appspot.com"
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+          NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:0000000000000000000000"
+          ADMIN_USE_ADC: "true"
+          GCLOUD_PROJECT: "cbamvalid-ci"
 
       - name: Upload Playwright Report
         if: failure()
