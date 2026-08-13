@@ -27,24 +27,29 @@ describe("extreme-scenario money playbook", () => {
     ).join(" ");
     expect(blob).not.toMatch(/99\.9%/);
     expect(blob).toMatch(/not (an )?unlimited free/i);
+    expect(blob).toMatch(/\/api\/checkout\/cbam/);
     expect(blob).toMatch(/Failed or blocked seals do not consume/i);
     expect(blob).toMatch(/commerce_checkout_locks/i);
     expect(blob).toMatch(/Chargebacks are handled via Paddle/i);
-    expect(edgeCaseStatusCounts().CODE_PROVEN).toBeGreaterThanOrEqual(3);
+    expect(blob).toMatch(/ruleset-pin-banner/);
+    expect(edgeCaseStatusCounts().CODE_PROVEN).toBeGreaterThanOrEqual(4);
   });
 
   it("surfaces the playbook on /trust and chargeback rules on /refund-policy", () => {
     const trust = readFileSync(resolve(process.cwd(), "app/(public)/trust/page.tsx"), "utf8");
     const refund = readFileSync(resolve(process.cwd(), "app/(public)/refund-policy/page.tsx"), "utf8");
-    const checkout = readFileSync(
-      resolve(process.cwd(), "functions/src/commerce/paddle/checkout-service.ts"),
+    const liveCheckout = readFileSync(resolve(process.cwd(), "app/api/checkout/cbam/route.ts"), "utf8");
+    const lock = readFileSync(resolve(process.cwd(), "lib/billing/checkout-lock.ts"), "utf8");
+    const wizard = readFileSync(
+      resolve(process.cwd(), "app/(workspace)/cases/[caseId]/CaseWizardClient.tsx"),
       "utf8",
     );
     expect(trust).toContain("EDGE_CASE_PLAYBOOK");
     expect(trust).toContain("Extreme scenarios");
     expect(refund).toContain("Chargeback after sealed download");
-    expect(checkout).toContain("commerce_checkout_locks");
-    expect(checkout).toContain("reusedExistingCheckout");
-    expect(checkout).toContain("WORKING_FILE_ALREADY_PAID");
+    expect(liveCheckout).toContain("claimOrReuseCheckoutLock");
+    expect(lock).toContain("commerce_checkout_locks");
+    expect(lock).toContain("CHECKOUT_LOCK_TTL_MS");
+    expect(wizard).toContain('data-testid="ruleset-pin-banner"');
   });
 });

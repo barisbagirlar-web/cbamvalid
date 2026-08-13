@@ -43,10 +43,10 @@ export const EDGE_CASE_PLAYBOOK: readonly EdgeCaseRecord[] = [
       "Two browser tabs start checkout for the same working file (caseId) and Paddle could create two charges.",
     status: "CODE_PROVEN",
     commercialPosition:
-      "Duplicate charges for the same Working File unlock are refundable. Prevention is preferred: one open checkout lock per uid+caseId.",
+      "Duplicate charges for the same Working File unlock are refundable. Prevention is preferred: one open checkout lock per uid+caseId on the live `/api/checkout/cbam` path.",
     technicalPosition:
-      "Checkout creation uses a per-(uid, caseId) commerce_checkout_locks document so a second tab reuses the open order/transaction instead of minting a second Paddle charge.",
-    moneyRule: "Prevent double charge first; refund only the residual duplicate.",
+      "Live pay flow (`/credits/buy` → `/api/checkout/cbam`) claims a per-(uid, caseId) `commerce_checkout_locks` document (2h TTL). A second tab reuses the open order/transaction; fulfilled locks return CASE_ALREADY_PAID; unused refunds supersede the lock for repurchase.",
+    moneyRule: "Prevent double charge on the production checkout route first; refund only the residual duplicate.",
     publicHref: "/refund-policy",
   },
   {
@@ -68,11 +68,11 @@ export const EDGE_CASE_PLAYBOOK: readonly EdgeCaseRecord[] = [
     title: "Ruleset changes while a draft is open",
     scenario:
       "Draft started under ruleset v1; v2 becomes the sealable path; user locks assuming v1 without noticing.",
-    status: "PARTIAL",
+    status: "CODE_PROVEN",
     commercialPosition:
-      "Seals pin the ruleset/engine/legal-source hash at lock time. Historical seals are never rewritten. Same-file re-locks are for ordinary corrections — not unlimited free remakes for every mid-year EU act.",
+      "Seals pin the ruleset/engine/legal-source hash at lock time. Historical seals are never rewritten. Same-file re-locks are for ordinary corrections — not unlimited free remakes for every mid-year EU act. The wizard shows a ruleset-pin banner on the draft so the sealable pin is visible before lock.",
     technicalPosition:
-      "Seal pipeline pins named ruleset versions. Draft UI surfaces the active sealable pin; silent methodology rewrite of historical seals is prohibited by design.",
+      "Seal pipeline pins named ruleset versions. Draft UI surfaces the active sealable pin via `ruleset-pin-banner`; silent methodology rewrite of historical seals is prohibited by design.",
     moneyRule: "Pinned ≠ perpetual current law. Price corrections for EU methodology shocks separately if free remakes would bankrupt support.",
     publicHref: "/rulesets",
   },

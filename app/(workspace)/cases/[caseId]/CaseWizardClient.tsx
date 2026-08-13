@@ -1739,7 +1739,7 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
               ID: {caseData.caseId || "UNASSIGNED"} · User: {sessionUser.email || sessionUser.uid} · One factory · one year
             </p>
           </div>
-          <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
+            <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
             <p
               aria-live="polite"
               aria-busy={saving}
@@ -1757,6 +1757,22 @@ export default function CaseWizardClient({ sessionUser, initialCase, availableEn
             </div>
           </div>
         </header>
+
+        <div
+          role="status"
+          className="mt-4 rounded-md border border-border bg-surface px-4 py-3 text-sm text-muted"
+          data-testid="ruleset-pin-banner"
+        >
+          <p className="font-semibold text-foreground">Ruleset pin for this draft</p>
+          <p className="mt-1">
+            Sealable calculations will pin{" "}
+            <span className="font-mono text-foreground">
+              {caseData.methodologyDecisions[0]?.rulesetVersion || "EU-CBAM-DEFINITIVE-2026"}
+            </span>
+            . A later EU act does not rewrite a sealed package. Same-file re-locks cover ordinary
+            corrections — not unlimited free remakes for every methodology change.
+          </p>
+        </div>
 
         <WorkingFileJourneyStrip
           currentStep={currentStep}
