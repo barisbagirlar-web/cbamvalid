@@ -5,7 +5,7 @@ import {
 } from "../../lib/security/csp";
 
 describe("production CSP contract", () => {
-  it("keeps production script/style elements nonce-based and scopes inline styles to attributes", () => {
+  it("keeps production scripts nonce-based while inline styles remain browser-effective", () => {
     const csp = buildContentSecurityPolicy({
       nonce: "test-nonce",
       isDevelopment: false,
@@ -15,11 +15,11 @@ describe("production CSP contract", () => {
 
     expect(csp).toContain("'nonce-test-nonce'");
     expect(csp).toContain("'strict-dynamic'");
-    expect(csp).toMatch(/style-src[^;]*'nonce-test-nonce'/);
     expect(csp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
     expect(csp).not.toMatch(/script-src[^;]*'unsafe-eval'/);
-    expect(csp).not.toMatch(/style-src [^;]*'unsafe-inline'/);
-    expect(csp).toContain("style-src-attr 'unsafe-inline'");
+    expect(csp).toMatch(/style-src[^;]*'unsafe-inline'/);
+    expect(csp).not.toMatch(/style-src[^;]*'nonce-test-nonce'/);
+    expect(csp).not.toContain("style-src-attr");
     expect(csp).not.toContain("127.0.0.1");
     expect(csp).not.toContain("localhost");
     expect(csp).not.toContain("sandbox-cdn.paddle.com");
