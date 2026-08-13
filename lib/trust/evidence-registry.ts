@@ -171,6 +171,42 @@ export const TRUST_EVIDENCE_ITEMS: readonly TrustEvidenceItem[] = [
     proof: "Preparation ≠ accredited verification opinion — published on homepage, legal notice and methodology",
     publicHref: "/legal-notice",
   },
+  {
+    id: "de-minimis-demand-boundary",
+    layer: "structure",
+    title: "50t de minimis / demand boundary (Omnibus 2025/2083)",
+    status: "CODE_PROVEN",
+    proof:
+      "EUR-Lex 2025/2083: 50t cumulative mass threshold; vast majority of importers exempt; ≥99% of embedded emissions remain in scope. Product demand framed as buyer-driven actual-value preparation — not mass-market for exempted importers. No invented “~90%” statistic.",
+    publicHref: "/trust",
+  },
+  {
+    id: "actual-default-demand-trap",
+    layer: "structure",
+    title: "Actual-value demand vs default-value path",
+    status: "CODE_PROVEN",
+    proof:
+      "EUR-Lex 2025/2083 recital (19): verification applies to actual values only. If a buyer accepts defaults, exporter dossier demand can disappear. Product reason-to-exist is indexed to actual-value buyer demand.",
+    publicHref: "/cbam-actual-vs-default-values",
+  },
+  {
+    id: "ruleset-drift-boundary",
+    layer: "structure",
+    title: "Pinned ruleset ≠ perpetual legal currency",
+    status: "CODE_PROVEN",
+    proof:
+      "Seals pin ruleset/engine/legal-source hash and stay immutable. No 24/7 automated EUR-Lex surveillance claim. Same-file re-locks = ordinary data/evidence corrections — not unlimited free remakes for every mid-year regulatory change.",
+    publicHref: "/rulesets",
+  },
+  {
+    id: "engine-third-party-audit",
+    layer: "independence",
+    title: "Independent calculation-engine audit",
+    status: "EMPTY_BY_DESIGN",
+    proof:
+      "Deterministic = reproducible under the same snapshot/ruleset/engine version. No third-party code or calculation audit is published. Gap is visible rather than invented.",
+    publicHref: "/product",
+  },
 ] as const;
 
 export function trustEvidenceSummary(items: readonly TrustEvidenceItem[] = TRUST_EVIDENCE_ITEMS) {

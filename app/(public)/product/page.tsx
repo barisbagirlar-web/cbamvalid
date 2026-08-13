@@ -11,7 +11,7 @@ import { HOMEPAGE_STATS } from "@/lib/marketing/homepage-stats";
 const CAPABILITIES = [
   {
     title: "Deterministic calculation engine",
-    body: "Every figure is reproducible: same inputs, same outputs, every time. The full calculation trace expands to formulas, emission factors and source references — exactly what an accredited verifier asks for first.",
+    body: "Reproducible arithmetic: same case snapshot, same ruleset, same engine version → same outputs and node hashes. The calculation trace records formulas, factors and source pins. Deterministic ≠ third-party audited — no independent engine audit is published.",
     ref: "ENGINE · REPLAYABLE",
   },
   {
@@ -31,7 +31,7 @@ const CAPABILITIES = [
   },
   {
     title: "Versioned EU rulesets",
-    body: "Calculations pin to a named ruleset version (e.g. CBAM-DEFINITIVE-2026.1). When the EU updates its methods, your sealed dossier still shows exactly which rules it was built against.",
+    body: "Calculations pin to a named ruleset version (e.g. CBAM-DEFINITIVE-2026.1). Historical seals keep that pin when the Commission later amends methods. Pinning is reproducibility — not perpetual “current law” without monitoring.",
     ref: "REGULATION (EU) 2023/956",
   },
   {
@@ -167,6 +167,25 @@ export default function Page() {
                 <span className="ref">{cap.ref}</span>
               </article>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="wrap" style={{ maxWidth: "820px" }}>
+          <div className="section-head reveal">
+            <span className="eyebrow">Demand boundary · facts only</span>
+            <h2>Who this software is for — and who it is not</h2>
+            <p>
+              Omnibus Regulation (EU) 2025/2083 exempts importers under the 50-tonne cumulative mass
+              threshold (vast majority of importers; at least 99% of embedded emissions remain in
+              CBAM scope). Exporter preparation demand is driven mainly by buyers that still need
+              actual-value evidence. If a buyer accepts defaults, verification is not required for
+              that path — and dossier demand can disappear. Deterministic replay is not a third-party
+              engine audit. See{" "}
+              <a href="/trust">Trust registry</a> and{" "}
+              <a href="/cbam-actual-vs-default-values">actual vs default</a>.
+            </p>
           </div>
         </div>
       </section>

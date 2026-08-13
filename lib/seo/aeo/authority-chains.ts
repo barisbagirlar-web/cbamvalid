@@ -576,11 +576,11 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     empathyLead:
       "Defaults can look easier until a buyer or verifier rejects them. Choosing the wrong basis creates commercial and legal risk.",
     directAnswer:
-      "Actual values reflect installation-specific monitored or calculated emissions and generally require independent verification where legally required. Default values are official fallbacks that depend on multiple regulatory dimensions — not a single universal CN number.",
+      "Actual values reflect installation-specific monitored or calculated emissions. Regulation (EU) 2025/2083 recital (19) states verification applies to actual values — not default-value declarations. Default values are official multi-dimensional fallbacks. If a buyer accepts defaults, exporter dossier demand can evaporate even though CBAMValid remains useful only when actual-value evidence is still requested.",
     calculation:
       "Actual-value pathways use installation data and evidence-linked factors. Default-value pathways apply multi-dimensional official factors (including country, route, and year dimensions where defined). Mixing bases without disclosure breaks reproducibility.",
     explanation:
-      "Prefer actual values when evidence quality can support verification. Use defaults only under conditions permitted by applicable implementing rules, understanding mark-ups and dimensional dependencies.",
+      "Prefer actual values when a buyer/declarant path requires them and evidence quality can support verification. Use defaults only under conditions permitted by applicable implementing rules, understanding that the verification obligation does not attach to default declarations under recital (19).",
     methodology:
       "Document the actual/default decision in the methodology decision log with legal basis and evidence IDs.",
     evidence:

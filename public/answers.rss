@@ -7,7 +7,7 @@
     <language>en</language>
     <copyright>CBAMValid (cbamvalid.com) — CC BY 4.0</copyright>
     <cc:license>https://creativecommons.org/licenses/by/4.0/</cc:license>
-    <lastBuildDate>Thu, 13 Aug 2026 00:04:34 GMT</lastBuildDate>
+    <lastBuildDate>Thu, 13 Aug 2026 00:23:56 GMT</lastBuildDate>
     <atom:link href="https://cbamvalid.com/answers.rss" rel="self" type="application/rss+xml"/>
     <item>
       <title>What does $449 buy on CBAMValid?</title>
@@ -94,9 +94,9 @@ A wrong total under buyer pressure is worse than a blocked draft. Fail-closed ca
       <title>Should exporters use actual values or CBAM default values?</title>
       <link>https://cbamvalid.com/cbam-actual-vs-default-values</link>
       <guid isPermaLink="false">actual-vs-default</guid>
-      <description>Actual values reflect installation-specific monitored or calculated emissions and generally require independent verification where legally required. Default values are multi-dimensional official fallbacks — not a single universal CN number.
+      <description>Actual values reflect installation-specific monitored or calculated emissions. Under Regulation (EU) 2025/2083 recital (19), verification of embedded emissions applies to actual values — not to default-value declarations. Default values are multi-dimensional official fallbacks. If a buyer accepts defaults, the commercial pressure to prepare an evidence-linked actual-value dossier can disappear.
 
-Defaults can look easier until a buyer or verifier rejects them. Document the basis choice with evidence.</description>
+Defaults can look easier until a buyer still demands actuals — or until they accept defaults and your preparation work suddenly has no buyer. Document the basis choice with evidence.</description>
       <category>/cbam-actual-vs-default-values, /cbam-default-values</category>
     </item>
     <item>
@@ -208,12 +208,30 @@ Architecture honesty beats vaporware roadmaps. Door = CBAM; room is larger only 
       <category>/platform, /</category>
     </item>
     <item>
+      <title>Did the CBAM Omnibus 50-tonne threshold remove most importer demand for exporter dossiers?</title>
+      <link>https://cbamvalid.com/trust</link>
+      <guid isPermaLink="false">omnibus-de-minimis-demand</guid>
+      <description>Regulation (EU) 2025/2083 introduces a 50-tonne cumulative mass de minimis threshold for cement, fertilisers, iron and steel, and aluminium. EUR-Lex recital (5) says the vast majority of importers are exempt while at least 99% of embedded emissions remain in scope. Exporter preparation demand is driven mainly by buyers that still need actual-value evidence for above-threshold chains — not by every small exempted importer. CBAMValid does not invent a precise “~90% of importers” figure beyond that recital language.
+
+Mass-market “every importer needs a dossier” messaging is false after Omnibus. Honest demand is buyer-driven and concentrated where obligations and actual values still matter.</description>
+      <category>/trust, /product, /cbam-2026-definitive-period</category>
+    </item>
+    <item>
+      <title>Does a pinned CBAMValid ruleset stay “current law” forever, and are re-locks unlimited free remakes?</title>
+      <link>https://cbamvalid.com/rulesets</link>
+      <guid isPermaLink="false">ruleset-pin-vs-drift</guid>
+      <description>No. A sealed release pins a named ruleset, engine version, and legal-source registry hash and stays immutable. Later implementing or delegated acts do not rewrite historical seals. CBAMValid does not claim 24/7 automated EUR-Lex surveillance. Same-file correction re-locks cover ordinary data/evidence corrections on the paid working file — not an unlimited free obligation to re-engineer every mid-year methodology change.
+
+Pinning without honesty becomes a silent stale-file trap. Buyers and verifiers need to know which ruleset was locked — and that “current” requires continued monitoring.</description>
+      <category>/rulesets, /pricing, /trust</category>
+    </item>
+    <item>
       <title>Is the CBAMValid calculation engine deterministic and replayable?</title>
       <link>https://cbamvalid.com/product</link>
       <guid isPermaLink="false">product-deterministic-engine</guid>
-      <description>Yes. Authoritative calculations run server-side and are replayable: same case snapshot, same ruleset, and same engine version produce the same outputs and node hashes. Every authoritative node records formula identity, inputs, units, conversions, and a SHA-256 node hash.
+      <description>Authoritative calculations are deterministic and replayable: same case snapshot, same ruleset, and same engine version produce the same outputs and node hashes. Every authoritative node records formula identity, inputs, units, conversions, and a SHA-256 node hash. Deterministic reproducibility is not a third-party code or calculation audit — no independent engine assurance opinion is published.
 
-Verifier questions collapse spreadsheets that cannot reproduce a figure. Replayability is what lets you defend a number weeks later.</description>
+Verifier questions collapse spreadsheets that cannot reproduce a figure. Replayability helps you defend a number; it does not replace an accredited verifier’s recomputation or an external software audit you do not have.</description>
       <category>/product, /methodology, /</category>
     </item>
     <item>

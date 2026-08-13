@@ -24,4 +24,4 @@ export function getRulesetSourceRows(ruleset: CbamRuleset) {
 }
 
 export const RULESET_PUBLIC_NOTICE =
-  "Every sealed CBAMValid package pins a named ruleset version and source-registry hash. Historical seals keep the ruleset they were built against. Publishing the registry is an authority surface — not an accredited verification opinion." as const;
+  "Every sealed CBAMValid package pins a named ruleset version and source-registry hash. Historical seals keep the ruleset they were built against and are not rewritten when later implementing or delegated acts change methodology. Pinning is reproducibility — not a promise of perpetual “current law,” 24/7 automated EUR-Lex surveillance, or unlimited free re-engineering of every mid-year regulatory change. Publishing the registry is an authority surface — not an accredited verification opinion." as const;
