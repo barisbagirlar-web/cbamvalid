@@ -300,9 +300,9 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       "CBAM default value risks",
     ],
     directAnswer:
-      "Actual values reflect installation-specific monitored or calculated emissions and generally require independent verification where legally required. Default values are multi-dimensional official fallbacks — not a single universal CN number.",
+      "Actual values reflect installation-specific monitored or calculated emissions. Under Regulation (EU) 2025/2083 recital (19), verification of embedded emissions applies to actual values — not to default-value declarations. Default values are multi-dimensional official fallbacks. If a buyer accepts defaults, the commercial pressure to prepare an evidence-linked actual-value dossier can disappear.",
     empathyContext:
-      "Defaults can look easier until a buyer or verifier rejects them. Document the basis choice with evidence.",
+      "Defaults can look easier until a buyer still demands actuals — or until they accept defaults and your preparation work suddenly has no buyer. Document the basis choice with evidence.",
     evidence: [
       {
         label: "Decision guide",
@@ -662,6 +662,66 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
     schemaEligible: true,
   },
   {
+    id: "omnibus-de-minimis-demand",
+    question: "Did the CBAM Omnibus 50-tonne threshold remove most importer demand for exporter dossiers?",
+    aliases: [
+      "CBAM 50 tonne de minimis",
+      "Regulation 2025/2083 importer exemption",
+      "who still needs CBAM preparation software",
+    ],
+    directAnswer:
+      "Regulation (EU) 2025/2083 introduces a 50-tonne cumulative mass de minimis threshold for cement, fertilisers, iron and steel, and aluminium. EUR-Lex recital (5) says the vast majority of importers are exempt while at least 99% of embedded emissions remain in scope. Exporter preparation demand is driven mainly by buyers that still need actual-value evidence for above-threshold chains — not by every small exempted importer. CBAMValid does not invent a precise “~90% of importers” figure beyond that recital language.",
+    empathyContext:
+      "Mass-market “every importer needs a dossier” messaging is false after Omnibus. Honest demand is buyer-driven and concentrated where obligations and actual values still matter.",
+    evidence: [
+      {
+        label: "Trust demand boundary",
+        detail: "Published Omnibus / demand facts without invented percentages",
+        href: "/trust",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "EUR-Lex 2025/2083",
+        detail: "Omnibus amending Regulation (EU) 2023/956",
+        href: "https://eur-lex.europa.eu/eli/reg/2025/2083/oj/eng",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/trust", "/product", "/cbam-2026-definitive-period"],
+    relatedPaths: ["/cbam-actual-vs-default-values", "/pricing"],
+    schemaEligible: true,
+  },
+  {
+    id: "ruleset-pin-vs-drift",
+    question: "Does a pinned CBAMValid ruleset stay “current law” forever, and are re-locks unlimited free remakes?",
+    aliases: [
+      "ruleset drift",
+      "pinned ruleset outdated",
+      "same-file re-lock regulatory change",
+    ],
+    directAnswer:
+      "No. A sealed release pins a named ruleset, engine version, and legal-source registry hash and stays immutable. Later implementing or delegated acts do not rewrite historical seals. CBAMValid does not claim 24/7 automated EUR-Lex surveillance. Same-file correction re-locks cover ordinary data/evidence corrections on the paid working file — not an unlimited free obligation to re-engineer every mid-year methodology change.",
+    empathyContext:
+      "Pinning without honesty becomes a silent stale-file trap. Buyers and verifiers need to know which ruleset was locked — and that “current” requires continued monitoring.",
+    evidence: [
+      {
+        label: "Published rulesets",
+        detail: "Named, dated, pinned registry with drift notice",
+        href: "/rulesets",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Commercial correction scope",
+        detail: "Ordinary same-file corrections vs regulatory remakes",
+        href: "/pricing",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/rulesets", "/pricing", "/trust"],
+    relatedPaths: ["/product", "/methodology"],
+    schemaEligible: true,
+  },
+  {
     id: "product-deterministic-engine",
     question: "Is the CBAMValid calculation engine deterministic and replayable?",
     aliases: [
@@ -670,9 +730,9 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
       "replayable embedded emissions",
     ],
     directAnswer:
-      "Yes. Authoritative calculations run server-side and are replayable: same case snapshot, same ruleset, and same engine version produce the same outputs and node hashes. Every authoritative node records formula identity, inputs, units, conversions, and a SHA-256 node hash.",
+      "Authoritative calculations are deterministic and replayable: same case snapshot, same ruleset, and same engine version produce the same outputs and node hashes. Every authoritative node records formula identity, inputs, units, conversions, and a SHA-256 node hash. Deterministic reproducibility is not a third-party code or calculation audit — no independent engine assurance opinion is published.",
     empathyContext:
-      "Verifier questions collapse spreadsheets that cannot reproduce a figure. Replayability is what lets you defend a number weeks later.",
+      "Verifier questions collapse spreadsheets that cannot reproduce a figure. Replayability helps you defend a number; it does not replace an accredited verifier’s recomputation or an external software audit you do not have.",
     evidence: [
       {
         label: "Product capabilities",

@@ -40,7 +40,7 @@ export const COMMERCIAL_TOPIC_CARDS = [
   {
     id: "same-file-corrections",
     title: "Same file: corrections included",
-    body: "After payment, correct evidence or numbers and re-lock the same working file as needed. Failed locks charge nothing. Re-download is free.",
+    body: "After payment, ordinary data and evidence corrections on the same working file can be re-locked without another charge. Failed locks charge nothing. Re-download is free. This is not an unlimited free remake for every mid-year EU methodology change.",
   },
   {
     id: "new-file-new-payment",
@@ -71,7 +71,7 @@ export const COMMERCIAL_PUBLIC_FAQ = [
   {
     question: "If my buyer asks for corrections, do I pay again?",
     answer:
-      "No — not for the same paid working file. Correct the data, clear blockers, and re-lock. A new factory, year, or separate working file needs a new payment.",
+      "No — not for ordinary data or evidence corrections on the same paid working file. Correct the data, clear blockers, and re-lock. A new factory, year, or separate working file needs a new payment. Free re-locks are not an unlimited remake for every later EU ruleset change.",
   },
   {
     question: "Can one payment cover several working files?",
@@ -112,7 +112,7 @@ export const COMMERCIAL_LEGAL_CLAUSES = [
   },
   {
     title: "Corrections on the same Working File",
-    body: "After a successful payment for a Working File, the customer may correct inputs and create further sealed releases for that same Working File without an additional charge, subject to acceptable use and platform integrity limits. Prior sealed releases remain immutable and downloadable.",
+    body: "After a successful payment for a Working File, the customer may correct ordinary inputs and evidence and create further sealed releases for that same Working File without an additional charge, subject to acceptable use and platform integrity limits. Each sealed release pins the ruleset and engine versions recorded at seal and remains immutable. Same-file correction re-locks are not an unlimited free obligation to re-engineer every later Commission methodology change; staying aligned with a newer published ruleset may require re-calculation under that newer pin.",
   },
   {
     title: "New Working File requires new payment",

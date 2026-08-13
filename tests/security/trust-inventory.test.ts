@@ -39,10 +39,19 @@ describe("B2B trust inventory and Art. 28 subprocessors", () => {
     expect(ids).toContain("pen-test-report");
     expect(ids).toContain("waf-rate-limit-product");
     expect(ids).toContain("uptime-percentage-sla");
+    expect(ids).toContain("de-minimis-demand-boundary");
+    expect(ids).toContain("actual-default-demand-trap");
+    expect(ids).toContain("ruleset-drift-boundary");
+    expect(ids).toContain("engine-third-party-audit");
 
     const emptyByDesign = TRUST_EVIDENCE_ITEMS.filter((item) => item.status === "EMPTY_BY_DESIGN");
     expect(emptyByDesign.map((item) => item.id)).toEqual(
-      expect.arrayContaining(["pen-test-report", "waf-rate-limit-product", "uptime-percentage-sla"]),
+      expect.arrayContaining([
+        "pen-test-report",
+        "waf-rate-limit-product",
+        "uptime-percentage-sla",
+        "engine-third-party-audit",
+      ]),
     );
   });
 });
