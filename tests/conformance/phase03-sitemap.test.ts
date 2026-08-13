@@ -48,6 +48,19 @@ describe("SEO V6 Phase 03 sitemap/robots/index-state", () => {
     expect(urls.every((url) => !noindexPaths.has(new URL(url).pathname))).toBe(true);
   });
 
+  it("spreads sitemap lastmod across content waves (no single bulk stamp)", () => {
+    const entries = buildSitemapEntries();
+    const dates = entries.map((entry) => {
+      expect(entry.lastModified).toBeInstanceOf(Date);
+      return (entry.lastModified as Date).toISOString().slice(0, 10);
+    });
+    const counts = new Map<string, number>();
+    for (const date of dates) counts.set(date, (counts.get(date) ?? 0) + 1);
+    expect(counts.size).toBeGreaterThanOrEqual(5);
+    const maxShare = Math.max(...counts.values()) / dates.length;
+    expect(maxShare).toBeLessThanOrEqual(0.4);
+  });
+
   it("requires C-02 negativeTestPassed=true for every Phase-03 BLOCK result", () => {
     const artifact = JSON.parse(
       readFileSync(resolve(process.cwd(), "data/seo/invariant-results/faz-03.json"), "utf8"),
