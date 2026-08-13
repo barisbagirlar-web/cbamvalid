@@ -54,7 +54,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["Product", "Offer", "WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/pricing", "/sample-dossier", "/how-it-works"],
     regulatorySourceIds: ["REG_2023_956", "IMPL_2025_2546"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: "2026-08-12",
   },
   {
     path: "/pricing",
@@ -351,7 +351,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/cbam-default-values", "/methodology", "/cbam-verification-preparation"],
     regulatorySourceIds: ["REG_2023_956", "REG_2025_2083", "IMPL_2025_2547"],
-    factualLastModified: LASTMOD_IA,
+    factualLastModified: "2026-08-12",
   },
   {
     path: "/cbam-default-values",
