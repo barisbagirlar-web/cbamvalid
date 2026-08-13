@@ -1,8 +1,10 @@
 /**
  * Production CSP SSOT.
  * Scripts: nonce + strict-dynamic (no unsafe-inline / unsafe-eval in production).
- * Styles: nonce protects <style> elements; React style="" attributes are isolated
- * under style-src-attr so 'unsafe-inline' cannot be neutralized by a style nonce.
+ * Styles: framework/public surfaces currently emit inline <style> blocks and React
+ * style="" attributes, so element/attribute allowances are explicit and isolated.
+ * Do not mix a style nonce with 'unsafe-inline': CSP3 browsers ignore the inline
+ * allowance when a nonce/hash is present in the same directive.
  * Emulator hosts and Paddle sandbox CDN are environment-gated only.
  */
 
@@ -46,14 +48,13 @@ export function buildContentSecurityPolicy(input: CspBuildInput): string {
     scriptSrc.push("'unsafe-eval'");
   }
 
-  const styleSrc = [
+  const styleOrigins = [
     "'self'",
-    `'nonce-${input.nonce}'`,
     "https://fonts.googleapis.com",
     "https://cdn.paddle.com",
   ];
   if (input.paddleSandbox) {
-    styleSrc.push("https://sandbox-cdn.paddle.com");
+    styleOrigins.push("https://sandbox-cdn.paddle.com");
   }
 
   const connectSrc = [
@@ -73,7 +74,8 @@ export function buildContentSecurityPolicy(input: CspBuildInput): string {
   return [
     "default-src 'self'",
     `script-src ${scriptSrc.join(" ")}`,
-    `style-src ${styleSrc.join(" ")}`,
+    `style-src ${styleOrigins.join(" ")}`,
+    `style-src-elem ${[...styleOrigins, "'unsafe-inline'"].join(" ")}`,
     "style-src-attr 'unsafe-inline'",
     "font-src 'self' https://fonts.gstatic.com",
     `connect-src ${connectSrc.join(" ")}`,
