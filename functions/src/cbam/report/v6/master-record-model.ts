@@ -12,7 +12,7 @@ import type { DossierCalculationResult } from "../../calculator";
 import type { QualityControlResult } from "../../validation/quality-controls";
 import type { VerifierPackageModel } from "../verifier-model";
 import type { ReadinessAssessment } from "../premium-dossier-schema";
-import { REQUIRED_TOP_LEVEL_COMPONENTS_V6 } from "../package-components";
+import { REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6 } from "../package-components";
 import type { PackageReadinessState, TwoAxisScores, ValueStatementRow } from "./types";
 import { assessReadiness, getReportingPeriodAssessment } from "../../validation/readiness-score";
 import { elapsedPeriodDays } from "./two-axis-score";
@@ -180,7 +180,7 @@ export function buildMasterRecordModel(params: {
       signatureAlgorithm,
       signatureReference,
       signatureProtectionLevel,
-      componentCount: REQUIRED_TOP_LEVEL_COMPONENTS_V6.length,
+      componentCount: REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6,
       evidenceCount: model.evidenceSummary.totalEvidenceFiles,
       retentionUntil: retentionUntil(generatedAt),
     },

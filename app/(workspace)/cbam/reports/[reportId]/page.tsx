@@ -204,6 +204,7 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
   
   const componentCount = report.packageTopLevelComponentCount;
   const zipFileIndex = storageByFile["dossier.zip"] || storageByFile["Complete signed dossier package.zip"];
+  const masterRecordIndex = storageByFile["master-record.pdf"];
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 text-foreground md:px-8">
@@ -243,7 +244,7 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
                 ) : (
                   <FileArchive className="h-5 w-5" />
                 )}
-                Download Complete Signed Dossier Package
+                Download Complete Signed Verifier Package
               </button>
 
               <button
@@ -308,6 +309,33 @@ export default function SealedReportPage({ params }: { params: Promise<{ reportI
             </div>
           )}
         </section>
+
+        {masterRecordIndex && (
+          <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm md:p-8 space-y-4">
+            <div className="flex flex-col md:flex-row justify-between gap-6 md:items-start">
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Operator record</p>
+                <h2 className="font-serif text-2xl font-bold">Enterprise Compliance Master Record</h2>
+                <p className="max-w-xl text-sm leading-relaxed text-muted">
+                  Permanent operator corporate record for audit and retention. It is not part of the verifier handover package.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={activeDownload !== null}
+                onClick={() => void download("masterRecord")}
+                className="inline-flex h-11 items-center justify-center gap-3 rounded-xl border border-border bg-surface text-foreground px-6 font-semibold hover:bg-muted/10 active:bg-muted/20 transition-colors shadow-sm disabled:opacity-75 disabled:cursor-not-allowed shrink-0"
+              >
+                {activeDownload === "masterRecord" ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <FileText className="h-5 w-5 text-accent" />
+                )}
+                Download Enterprise Compliance Master Record
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* Report Summary section */}
         <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm md:p-8 space-y-6">

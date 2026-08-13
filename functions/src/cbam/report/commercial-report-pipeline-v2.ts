@@ -26,7 +26,6 @@ import { computeTwoAxisScores } from "./v6/two-axis-score";
 import { derivePackageReadinessState } from "./v6/package-state";
 import {
   buildMasterRecordModel,
-  MASTER_RECORD_FILE_NAME,
   MASTER_RECORD_MANIFEST_REFERENCE,
   MASTER_RECORD_SIGNATURE_REFERENCE,
 } from "./v6/master-record-model";
@@ -166,15 +165,20 @@ export class CommercialReportPipelineV2 {
       )
     );
 
-    // V6 (CBAMVALID-DOSSIER-6.0): the Enterprise Compliance Master Record is
-    // the mandatory 27th top-level component (G-13). It is rendered after the
-    // enterprise transformation so it never duplicates or replaces the
-    // verifier-dossier PDFs, and before the manifest so it is sealed into the
-    // signed package. Its control key records the signed manifest instead of
-    // embedding the manifest hash (a self-referential cycle is impossible).
+    // V6+: Enterprise Compliance Master Record is an operator corporate
+    // record, not a verifier ZIP member. Render it after enterprise
+    // transformation, keep it out of the signed ZIP, and use generatedAt as
+    // the customer-facing period/state clock (assessmentTimestamp may only
+    // validate controlled QA evidence).
+    let masterRecordPdf: Buffer | null = null;
     if (params.releaseContractVersion >= 6) {
-      const scores = computeTwoAxisScores({ caseData: artifactCaseData, assessmentTimestamp });
-      const stateDecision = derivePackageReadinessState({ caseData: artifactCaseData, assessmentTimestamp, scores });
+      const customerFacingClock = params.generatedAt;
+      const scores = computeTwoAxisScores({ caseData: artifactCaseData, assessmentTimestamp: customerFacingClock });
+      const stateDecision = derivePackageReadinessState({
+        caseData: artifactCaseData,
+        assessmentTimestamp: customerFacingClock,
+        scores,
+      });
       const masterRecordModel = buildMasterRecordModel({
         caseData: artifactCaseData,
         calculation: params.calculation,
@@ -187,7 +191,7 @@ export class CommercialReportPipelineV2 {
           packageCode: params.packageCode,
           releaseVersion: params.releaseVersion,
           generatedAt: params.generatedAt,
-          assessmentTimestamp,
+          assessmentTimestamp: customerFacingClock,
           productCode: params.productCode,
           releaseContractVersion: params.releaseContractVersion,
         }),
@@ -207,14 +211,7 @@ export class CommercialReportPipelineV2 {
         graphRootHash: params.calculation.calculationRootHash,
         graphNodeHashes: params.calculation.trace.map((item) => ({ formulaId: item.formulaId, hash: item.calculationHash })),
       });
-      unsignedArtifacts = [
-        ...unsignedArtifacts,
-        {
-          path: MASTER_RECORD_FILE_NAME,
-          bytes: buildMasterRecordPdf(masterRecordModel),
-          mediaType: "application/pdf",
-        },
-      ];
+      masterRecordPdf = buildMasterRecordPdf(masterRecordModel);
     }
 
     // Graph/Trace/Workbook must still satisfy the exact offline-verifier
@@ -254,6 +251,7 @@ export class CommercialReportPipelineV2 {
       packageResult: finalPackage,
       scoreboard: sealedScoreboard,
       enterprise: enterpriseModel,
+      masterRecordPdf,
     };
   }
 }

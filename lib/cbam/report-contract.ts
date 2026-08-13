@@ -8,6 +8,7 @@ export const ReportDownloadFormatSchema = z.enum([
   "manifest",
   "signature",
   "snapshot",
+  "masterRecord",
 ]);
 export type ReportDownloadFormat = z.infer<typeof ReportDownloadFormatSchema>;
 
@@ -61,6 +62,7 @@ export const PackageMetadataSchema = z.object({
   primaryDossierFileName: z.string(),
   technicalCompilationFileName: z.string(),
   operatorEmissionsReportFileName: z.string(),
+  masterRecordFileName: z.string().optional(),
 });
 
 export const SealedReportViewSchema = z.object({
@@ -145,7 +147,7 @@ export function parseSealedReportView(value: unknown): SealedReportView {
   );
 
   const manifestCount = packageMetadata?.actualTopLevelComponentCount;
-  const defaultCount = isV5 ? 25 : 27;
+  const defaultCount = 25;
 
   return SealedReportViewSchema.parse({
     ...raw,

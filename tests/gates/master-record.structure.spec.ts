@@ -31,8 +31,8 @@ const MANDATED_SECTION_IDS = [
 ];
 
 describe("G-13 master-record.structure", () => {
-  it("is a mandatory 27th component in the sealed contract", () => {
-    expect(REQUIRED_TOP_LEVEL_COMPONENTS_V6).toContain(MASTER_RECORD_FILE_NAME);
+  it("is an operator corporate record, not a verifier ZIP component", () => {
+    expect(REQUIRED_TOP_LEVEL_COMPONENTS_V6).not.toContain(MASTER_RECORD_FILE_NAME);
   });
 
   it("emits every A1-H4 section in binding order and renders within 30-44 pages", async () => {

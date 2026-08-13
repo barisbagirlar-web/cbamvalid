@@ -72,15 +72,25 @@ export const REQUIRED_TOP_LEVEL_COMPONENTS_V5 = [
 ] as const;
 
 /**
- * V6 (CBAMVALID-DOSSIER-6.0) keeps the V5 package surface and adds the
- * Enterprise Compliance Master Record as the mandatory 27th top-level
- * component (RM-CBAMVALID-006 G-13).
+ * V6+ verifier ZIP contract: counted components are deliverable FILES only.
+ * Directory entries (Supporting_Evidence/) are containers, not components.
+ * Enterprise Compliance Master Record.pdf is an operator corporate record
+ * and is produced as a separate download — never a verifier ZIP member.
  */
-export const REQUIRED_TOP_LEVEL_COMPONENTS_V6 = [
-  ...REQUIRED_TOP_LEVEL_COMPONENTS_V5,
-  "Enterprise Compliance Master Record.pdf",
-] as const;
+export const VERIFIER_PACKAGE_DIRECTORY_CONTAINERS = ["Supporting_Evidence/"] as const;
+
+export const REQUIRED_TOP_LEVEL_COMPONENTS_V6: readonly string[] =
+  REQUIRED_TOP_LEVEL_COMPONENTS_V5.filter((component) => !component.endsWith("/"));
 
 export const REQUIRED_TOP_LEVEL_COMPONENT_COUNT = REQUIRED_TOP_LEVEL_COMPONENTS.length;
 export const REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V5 = REQUIRED_TOP_LEVEL_COMPONENTS_V5.length;
 export const REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6 = REQUIRED_TOP_LEVEL_COMPONENTS_V6.length;
+
+export function countVerifierControlledFileComponents(paths: readonly string[]): number {
+  const files = new Set<string>();
+  for (const path of paths) {
+    if (path.endsWith("/") || path.includes("/")) continue;
+    files.add(path);
+  }
+  return files.size;
+}
