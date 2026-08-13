@@ -103,6 +103,7 @@ function buildDatasetJson(chains: readonly AuthorityChainRecord[], items: readon
     creator: { "@type": "Organization", name: "CBAMValid", url: origin, email: LEGAL_IDENTITY.supportEmail },
     license: FEED_LICENSE,
     creditText: FEED_CREDIT,
+    dateModified: "2026-08-13",
     product: {
       name: CANONICAL_PRICING.packName,
       productType: "Self-service B2B software",

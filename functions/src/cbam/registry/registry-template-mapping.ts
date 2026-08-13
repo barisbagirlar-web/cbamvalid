@@ -44,16 +44,16 @@ export interface RegistryTemplateMappingDataset {
 
 const legalBasis = {
   operatorIdentity: "Regulation (EU) 2023/956 Article 8 and Annex VI.1(a)",
-  installationIdentity: "Implementing Regulation (EU) 2025/2546 Article 6 and Annex",
+  installationIdentity: "Implementing Regulation (EU) 2025/2546 Article 6 and Annex point 1.1",
   reportingPeriod: "Regulation (EU) 2023/956 Article 8",
   goods: "Regulation (EU) 2023/956 Annex VI.1(c)",
   directEmissions: "Regulation (EU) 2023/956 Annex VI.1(d)",
-  electricity: "Implementing Regulation (EU) 2025/2546 Article 6(3)",
-  precursor: "Implementing Regulation (EU) 2025/2546 Annex II.4",
-  allocation: "Implementing Regulation (EU) 2025/2546 Annex II",
+  electricity: "Implementing Regulation (EU) 2025/2546 Article 6 and Annex point 2.4",
+  precursor: "Implementing Regulation (EU) 2025/2546 Article 6 and Annex point 2.5",
+  allocation: "Implementing Regulation (EU) 2025/2546 Article 6 and Annex point 2.4",
   carbonPrice: "Regulation (EU) 2023/956 Article 9 and Annex VI.2",
   verifierIdentity: "Regulation (EU) 2023/956 Annex VI.2",
-  siteVisit: "Implementing Regulation (EU) 2025/2546 Article 6(2)",
+  siteVisit: "Implementing Regulation (EU) 2025/2546 Articles 2 to 4 and Annex point 2.2",
   opinion: "Regulation (EU) 2023/956 Annex VI.4",
 } as const;
 

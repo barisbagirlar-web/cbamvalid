@@ -197,7 +197,7 @@ export const SEO_REGULATORY_FACTS = {
   CERTIFICATE_PRICE_CADENCE_2026: {
     id: "CERTIFICATE_PRICE_CADENCE_2026",
     statement:
-      "In 2026, CBAM certificate prices are calculated on a quarterly cadence. Certificate purchase obligations follow the definitive-period rules and must not be confused with transitional quarterly emissions reporting.",
+      "In 2026, CBAM certificate prices are calculated on a quarterly cadence under Implementing Regulation (EU) 2025/2548 Article 1. From 2027 the cadence is weekly under Article 5. Certificate purchase obligations follow the definitive-period rules and must not be confused with transitional quarterly emissions reporting.",
     provenanceStatus: "VERIFIED_PRIMARY_SOURCE",
     primarySourceIds: ["IMPL_2025_2548", "EC_CBAM_FIRST_DECLARATION_2026_06_23"],
     legalSourceIds: ["IMPL_2025_2548"],

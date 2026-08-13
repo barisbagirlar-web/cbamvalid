@@ -1,9 +1,9 @@
 /**
  * Legal act registry — SSOT for every citation in dossier artifacts.
  *
- * [MISSING] RULE (spec WP-01): celex/eli/oj/adopted are confirmed ONLY for
- * CBAM_BASE and IR_METHODOLOGY. All other bibliographic fields stay null until
- * a human pastes exact EUR-Lex strings. Do not invent.
+ * Bibliographic fields (celex/eli/oj/adopted) are filled only after EUR-Lex
+ * confirmation. IR_FREE_ALLOCATION / IR_DEFAULT_VALUES / ETS_MRV remain null
+ * until a human pastes exact EUR-Lex strings. Do not invent.
  */
 
 export type RegulationKey =
@@ -37,10 +37,10 @@ export const REGULATIONS = {
   IR_VERIFICATION: {
     key: "IR_VERIFICATION",
     short: "Commission Implementing Regulation (EU) 2025/2546",
-    celex: null,
-    eli: null,
-    oj: null,
-    adopted: null,
+    celex: "32025R2546",
+    eli: "http://data.europa.eu/eli/reg_impl/2025/2546/oj",
+    oj: "OJ L, 2025/2546, 22.12.2025",
+    adopted: "2025-12-10",
     role: "Verification principles and requirements; accredited verifier obligations",
   },
   IR_METHODOLOGY: {

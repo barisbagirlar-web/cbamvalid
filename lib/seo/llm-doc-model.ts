@@ -75,7 +75,7 @@ export function buildLlmDocModel(): LlmDocModel {
       title: source.title,
       url: source.eliUri,
     })),
-    lastUpdated: "2026-08-04",
+    lastUpdated: "2026-08-13",
   };
 }
 
