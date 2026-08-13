@@ -2,6 +2,7 @@ import { legalConfig } from "@/lib/legal-config";
 import { siteConfig } from "@/lib/site-config";
 import { assertVerifiedClaim, FORBIDDEN_SOCIAL_PROOF, PRICE_CLAIM } from "./claims";
 import { buildCanonicalUrl } from "./canonical";
+import { guideAuthorSchemaNode, guideReviewerSchemaNode } from "./editorial-attribution";
 
 export type JsonLdNode = Record<string, unknown>;
 
@@ -67,6 +68,9 @@ export function generateWebApplicationSchema(description: string): JsonLdNode {
   };
 }
 
+const GUIDE_ABOUT_BOUNDARY =
+  "Operator-facing CBAM preparation guidance mapped to cited EUR-Lex sources. Not legal advice and not an accredited verification opinion.";
+
 export function generateTechArticleSchema(params: {
   path: string;
   headline: string;
@@ -75,6 +79,8 @@ export function generateTechArticleSchema(params: {
   datePublished?: string;
   citations: readonly string[];
 }): JsonLdNode {
+  const author = guideAuthorSchemaNode();
+  const reviewer = guideReviewerSchemaNode();
   return {
     "@context": "https://schema.org",
     "@type": "TechArticle",
@@ -85,12 +91,19 @@ export function generateTechArticleSchema(params: {
     inLanguage: "en",
     ...(params.datePublished ? { datePublished: params.datePublished } : {}),
     dateModified: params.dateModified,
-    author: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
+    author: { "@id": author["@id"] },
+    reviewedBy: { "@id": reviewer["@id"] },
     publisher: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
     mainEntityOfPage: { "@id": `${buildCanonicalUrl(params.path)}#webpage` },
     citation: params.citations,
     isAccessibleForFree: true,
+    about: GUIDE_ABOUT_BOUNDARY,
   };
+}
+
+/** Graph companions for TechArticle author/reviewedBy @id refs. */
+export function generateGuideAttributionNodes(): JsonLdNode[] {
+  return [guideAuthorSchemaNode(), guideReviewerSchemaNode()];
 }
 
 export function generateBreadcrumbSchema(items: { name: string; item: string }[]): JsonLdNode {

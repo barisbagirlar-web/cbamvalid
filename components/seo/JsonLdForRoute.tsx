@@ -5,6 +5,7 @@ import { SEO_LEGAL_SOURCE_INDEX } from "@/lib/seo/regulatory-sources";
 import {
   buildPageGraph,
   generateBreadcrumbSchema,
+  generateGuideAttributionNodes,
   generateOrganizationSchema,
   generateProductOfferSchema,
   generateTechArticleSchema,
@@ -63,6 +64,7 @@ export function JsonLdForRoute({ path }: { path: string }) {
         dateModified: route.factualLastModified,
         citations,
       }),
+      ...generateGuideAttributionNodes(),
     );
   }
   if (route.schemaTypes.includes("BreadcrumbList") && route.canonicalPath !== "/") {
