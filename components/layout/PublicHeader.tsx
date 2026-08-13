@@ -46,13 +46,14 @@ export function PublicHeader() {
       </a>
       <div className="topbar">
         <div className="wrap">
-          <span className="dot" aria-hidden="true"></span>
-          <span>
+          <p className="topbar-copy">
             <b>Self-service B2B software.</b> Customer-entered data, automated calculations and
             PDF/JSON/XLSX delivery.
-          </span>
-          <Link href="/product-classification">Product classification →</Link>
-          <Link href="/pricing">Software pricing →</Link>
+          </p>
+          <div className="topbar-links">
+            <Link href="/product-classification">Product classification →</Link>
+            <Link href="/pricing">Software pricing →</Link>
+          </div>
         </div>
       </div>
 
