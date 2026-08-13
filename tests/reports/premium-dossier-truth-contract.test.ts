@@ -40,9 +40,12 @@ describe("premium dossier truth and consistency contract", () => {
   it("separates verification law from calculation methodology with readable citations", () => {
     expect(crosswalkSource).toContain('legalSourceId: "IMPL_2025_2546"');
     expect(crosswalkSource).toContain('legalSourceId: "IMPL_2025_2547"');
-    expect(crosswalkSource).toContain("Implementing Regulation (EU) 2025/2546, Article 6");
+    expect(crosswalkSource).toContain("Implementing Regulation (EU) 2025/2546, Article 6 and Annex point 1.1");
+    expect(crosswalkSource).toContain("Implementing Regulation (EU) 2025/2546, Articles 2 to 4 and Annex point 2.2");
     expect(crosswalkSource).toContain("Implementing Regulation (EU) 2025/2547, Article 6 & Annex III");
     expect(crosswalkSource).toContain("Implementing Regulation (EU) 2025/2547, Annex II, point E");
+    expect(crosswalkSource).not.toContain("Article 6(2)");
+    expect(registryMappingSource).not.toContain("Annex II.4");
     expect(pdfImplSource).toContain("controlled legal sources are listed row by row");
   });
 

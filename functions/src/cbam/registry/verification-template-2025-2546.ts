@@ -35,7 +35,7 @@ export function buildVerificationCrosswalk(caseData: AuditReadyCase): Verificati
   rows.push({
     requirementId: "CW-INST-INFO",
     legalSourceId: "IMPL_2025_2546",
-    legalLocation: "Implementing Regulation (EU) 2025/2546, Article 6 & Annex",
+    legalLocation: "Implementing Regulation (EU) 2025/2546, Article 6 and Annex point 1.1",
     requirementText: "Installation Name, address and UN/LOCODE coordinates",
     owner: "OPERATOR",
     reportSectionIds: ["SEC_04"],
@@ -80,7 +80,7 @@ export function buildVerificationCrosswalk(caseData: AuditReadyCase): Verificati
   rows.push({
     requirementId: "CW-VER-VISIT",
     legalSourceId: "IMPL_2025_2546",
-    legalLocation: "Implementing Regulation (EU) 2025/2546, Article 6(2)",
+    legalLocation: "Implementing Regulation (EU) 2025/2546, Articles 2 to 4 and Annex point 2.2",
     requirementText: "Installation physical visit date or legal waiver justification basis",
     owner: "INDEPENDENT_VERIFIER",
     reportSectionIds: ["SEC_20", "SEC_24"],

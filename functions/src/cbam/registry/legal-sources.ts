@@ -54,7 +54,7 @@ export interface LegalSourceRecord {
   sourceStatus?: LegalSourceStatus;
 }
 
-export const LEGAL_SOURCE_REGISTRY_VERSION = "CBAM-EU-2026.07.31";
+export const LEGAL_SOURCE_REGISTRY_VERSION = "CBAM-EU-2026.08.13";
 
 /**
  * SHA-256 of the canonical JSON representation of DEFINITIVE_SOURCE_IDS in
@@ -62,7 +62,7 @@ export const LEGAL_SOURCE_REGISTRY_VERSION = "CBAM-EU-2026.07.31";
  * recomputes this value and fails closed on registry drift.
  */
 export const DEFINITIVE_SOURCE_REGISTRY_FINGERPRINT =
-  "e6a3338b06245293e69e291c4604861aefc6497021406d94e1d735f9baa46666";
+  "92ab85ff33e946a6d1f656704bdab46bd92082a3a39adc08f61980c3c5a66016";
 
 export const OFFICIAL_SOURCES = {
   REG_2023_956: {
@@ -152,7 +152,7 @@ export const OFFICIAL_SOURCES = {
     celexId: "32025R2546",
     eliUri: "https://eur-lex.europa.eu/eli/reg_impl/2025/2546/oj/eng",
     title:
-      "Commission Implementing Regulation (EU) 2025/2546 of 10 December 2025 on the application of the principles for verification of declared embedded emissions pursuant to Regulation (EU) 2023/956",
+      "Commission Implementing Regulation (EU) 2025/2546 of 10 December 2025 on the application of the principles for verification of declared embedded emissions pursuant to Regulation (EU) 2023/956 of the European Parliament and of the Council",
     period: "DEFINITIVE",
     adoptedDate: "2025-12-10",
     publishedDate: "2025-12-22",
@@ -160,9 +160,9 @@ export const OFFICIAL_SOURCES = {
     effectiveTo: null,
     legalStatus: "IN_FORCE",
     verificationAuthority: "EUR_LEX",
-    verifiedAt: "2026-07-31",
+    verifiedAt: "2026-08-13",
     articles: ["Article 1", "Article 2", "Article 3", "Article 4", "Article 5", "Article 6", "Article 7"],
-    annexes: ["Annex I", "Annex II"],
+    annexes: ["Annex"],
     sectorApplicability: [
       "Cement",
       "Fertilisers",
@@ -173,23 +173,23 @@ export const OFFICIAL_SOURCES = {
     ],
     verificationApplicability: true,
     methodologyScope: [
-      "reasonable assurance and risk-based verification",
-      "5 percent per-good materiality levels",
-      "electronic verification report template",
-      "site-visit requirements and waiver conditions",
-      "non-conformity and misstatement classification",
+      "definitions of misstatement, materiality level and non-conformity",
+      "physical site-visit replacement, virtual visit and waiver conditions",
+      "5 percent per-good materiality levels for embedded emissions and free allocation",
+      "electronic verification report template (single Annex)",
     ],
     keyProvisions: [
-      "Article 3 — Risk-based verification approach",
-      "Article 4 — Materiality threshold (5 % per good)",
-      "Article 5 — Verification report content and template",
-      "Article 6 — Site-visit requirements and waivers",
-      "Article 7 — Non-conformities and misstatements",
-      "Annex I — Verification report minimum elements",
-      "Annex II — Attribution and allocation methodology",
+      "Article 1 — Definitions (misstatement, materiality level, non-conformity)",
+      "Article 2 — Physical site visits and replacement by virtual site visits or waiver",
+      "Article 3 — Conditions for virtual site visit or waiver of the physical site visit",
+      "Article 4 — Virtual site visit due to serious, extraordinary and unforeseeable circumstances",
+      "Article 5 — Materiality levels (5 % specific embedded emissions and free allocation per good)",
+      "Article 6 — Format of the verification report (Commission electronic template + Annex)",
+      "Article 7 — Entry into force and application from 1 January 2026",
+      "Annex — Template of the verification report",
     ],
     contentHash: "e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3",
-    lastReviewedAt: "2026-07-31",
+    lastReviewedAt: "2026-08-13",
   },
   IMPL_2025_2547: {
     id: "IMPL_2025_2547",
@@ -197,7 +197,7 @@ export const OFFICIAL_SOURCES = {
     celexId: "32025R2547",
     eliUri: "https://eur-lex.europa.eu/eli/reg_impl/2025/2547/oj/eng",
     title:
-      "Commission Implementing Regulation (EU) 2025/2547 of 10 December 2025 laying down rules for the application of Regulation (EU) 2023/956 as regards the methods for the calculation of emissions embedded in goods",
+      "Commission Implementing Regulation (EU) 2025/2547 of 10 December 2025 laying down rules for the application of Regulation (EU) 2023/956 of the European Parliament and the Council as regards the methods for the calculation of emissions embedded in goods",
     period: "DEFINITIVE",
     adoptedDate: "2025-12-10",
     publishedDate: "2025-12-22",
@@ -205,9 +205,26 @@ export const OFFICIAL_SOURCES = {
     effectiveTo: null,
     legalStatus: "IN_FORCE",
     verificationAuthority: "EUR_LEX",
-    verifiedAt: "2026-07-31",
-    articles: ["Article 1", "Article 2", "Article 3", "Article 4", "Article 5", "Article 6", "Article 7", "Article 8"],
-    annexes: ["Annex I", "Annex II", "Annex III", "Annex IV", "Annex V", "Annex VI", "Annex VII"],
+    verifiedAt: "2026-08-13",
+    articles: [
+      "Article 1",
+      "Article 2",
+      "Article 3",
+      "Article 4",
+      "Article 5",
+      "Article 6",
+      "Article 7",
+      "Article 8",
+      "Article 9",
+      "Article 10",
+      "Article 11",
+      "Article 12",
+      "Article 13",
+      "Article 14",
+      "Article 15",
+      "Article 16",
+    ],
+    annexes: ["Annex I", "Annex II", "Annex III", "Annex IV", "Annex V"],
     sectorApplicability: [
       "Cement",
       "Fertilisers",
@@ -218,19 +235,27 @@ export const OFFICIAL_SOURCES = {
     ],
     verificationApplicability: false,
     methodologyScope: [
-      "functional units and production processes",
-      "monitoring plan minimum elements",
-      "sector-specific system boundaries and embedded-emissions methods",
-      "default values and actual-value calculation methods",
+      "actual-value system boundaries, production processes and functional units",
+      "installation-level monitoring plan and attribution of emissions to goods",
+      "default values, alternative defaults and complex-goods precursor rules",
+      "operator’s emissions report templates",
     ],
     keyProvisions: [
-      "Article 2 — Functional units and production processes",
-      "Article 4 — Monitoring plan minimum content",
-      "Annex I — Sector-specific system boundaries",
-      "Annex II — Embedded emissions calculation methods for each sector",
+      "Article 2 — Actual values",
+      "Article 3 — System boundaries",
+      "Article 4 — Production processes and functional unit",
+      "Article 5 — Monitoring methodology at installation level (monitoring plan minimum content)",
+      "Article 6 — Attribution of emissions to goods",
+      "Article 11 — Default values",
+      "Article 16 — Entry into force (third day after OJ publication; 2026+ reporting periods per recitals)",
+      "Annex I — Aggregated goods categories and system boundaries",
+      "Annex II — Monitoring and calculation methods",
+      "Annex III — Attribution of emissions to goods",
+      "Annex IV — Operator’s emissions report templates",
+      "Annex V — Alternative default values conditions",
     ],
     contentHash: "d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2",
-    lastReviewedAt: "2026-07-31",
+    lastReviewedAt: "2026-08-13",
   },
   IMPL_2025_2548: {
     id: "IMPL_2025_2548",
@@ -238,7 +263,7 @@ export const OFFICIAL_SOURCES = {
     celexId: "32025R2548",
     eliUri: "https://eur-lex.europa.eu/eli/reg_impl/2025/2548/oj/eng",
     title:
-      "Commission Implementing Regulation (EU) 2025/2548 of 10 December 2025 laying down rules for the application of Regulation (EU) 2023/956 as regards the calculation and publication of the price of CBAM certificates",
+      "Commission Implementing Regulation (EU) 2025/2548 of 10 December 2025 laying down rules for the application of Regulation (EU) 2023/956 of the European Parliament and of the Council as regards the calculation and publication of the price of CBAM certificates",
     period: "DEFINITIVE",
     adoptedDate: "2025-12-10",
     publishedDate: "2025-12-22",
@@ -246,18 +271,34 @@ export const OFFICIAL_SOURCES = {
     effectiveTo: null,
     legalStatus: "IN_FORCE",
     verificationAuthority: "EUR_LEX",
-    verifiedAt: "2026-07-31",
-    articles: ["Article 1", "Article 2", "Article 3"],
+    verifiedAt: "2026-08-13",
+    articles: [
+      "Article 1",
+      "Article 2",
+      "Article 3",
+      "Article 4",
+      "Article 5",
+      "Article 6",
+      "Article 7",
+      "Article 8",
+      "Article 9",
+    ],
     annexes: [],
     sectorApplicability: ["Cement", "Fertilisers", "Iron and Steel", "Aluminium", "Hydrogen", "Electricity"],
     verificationApplicability: false,
-    methodologyScope: ["calculation and publication of CBAM certificate prices"],
+    methodologyScope: [
+      "2026 quarterly CBAM certificate price calculation and publication",
+      "from 2027 weekly CBAM certificate price calculation and publication",
+    ],
     keyProvisions: [
-      "Article 2 — Weekly average certificate price calculation",
-      "Article 3 — Publication obligations",
+      "Article 1 — Methodology for calculating the price of CBAM certificates in 2026 (quarterly)",
+      "Article 4 — Publication of the price of CBAM certificates regarding 2026",
+      "Article 5 — Methodology for calculating the price of CBAM certificates from 2027 (weekly)",
+      "Article 8 — Publication of the price of CBAM certificates from 2027",
+      "Article 9 — Entry into force and application from 1 January 2026",
     ],
     contentHash: "c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1",
-    lastReviewedAt: "2026-07-31",
+    lastReviewedAt: "2026-08-13",
   },
   DEL_2025_2551: {
     id: "DEL_2025_2551",

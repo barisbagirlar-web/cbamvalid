@@ -632,7 +632,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     empathyLead:
       "Finance teams often confuse certificate price publication cadence with transitional quarterly emissions reporting. That mix-up drives the wrong calendar.",
     directAnswer:
-      "In 2026, CBAM certificate prices are calculated on a quarterly cadence under Implementing Regulation (EU) 2025/2548. Certificate purchase and surrender obligations follow definitive-period rules and must not be confused with transitional quarterly emissions reporting.",
+      "In 2026, CBAM certificate prices are calculated on a quarterly cadence under Implementing Regulation (EU) 2025/2548 Article 1 (weekly from 2027 under Article 5). Certificate purchase and surrender obligations follow definitive-period rules and must not be confused with transitional quarterly emissions reporting.",
     calculation:
       "Certificate price is an official published price used for certificate accounting. It is separate from your installation’s embedded-emissions calculation for goods.",
     explanation:

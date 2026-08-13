@@ -42,20 +42,20 @@ CBAMValid is privately operated self-service B2B software. Customers enter and c
 
 - The CBAM definitive period applies from 1 January 2026.
 - For 2026 imports, the first CBAM declaration and corresponding certificate surrender deadline is 30 September 2027.
-- In 2026, CBAM certificate prices are calculated on a quarterly cadence. Certificate purchase obligations follow the definitive-period rules and must not be confused with transitional quarterly emissions reporting.
+- In 2026, CBAM certificate prices are calculated on a quarterly cadence under Implementing Regulation (EU) 2025/2548 Article 1. From 2027 the cadence is weekly under Article 5. Certificate purchase obligations follow the definitive-period rules and must not be confused with transitional quarterly emissions reporting.
 - CBAMValid prepares operator evidence packages for independent accredited verification. It does not issue an accredited verification opinion, EU approval, customs approval, or registry acceptance.
 
 ## Authoritative source families
 
 - REG_2023_956: [Regulation (EU) 2023/956 of the European Parliament and of the Council of 10 May 2023 establishing a carbon border adjustment mechanism](https://eur-lex.europa.eu/eli/reg/2023/956/oj/eng)
 - REG_2025_2083: [Regulation (EU) 2025/2083 of the European Parliament and of the Council of 8 October 2025 amending Regulation (EU) 2023/956 as regards simplifying and strengthening the carbon border adjustment mechanism](https://eur-lex.europa.eu/eli/reg/2025/2083/oj/eng)
-- IMPL_2025_2546: [Commission Implementing Regulation (EU) 2025/2546 of 10 December 2025 on the application of the principles for verification of declared embedded emissions pursuant to Regulation (EU) 2023/956](https://eur-lex.europa.eu/eli/reg_impl/2025/2546/oj/eng)
-- IMPL_2025_2547: [Commission Implementing Regulation (EU) 2025/2547 of 10 December 2025 laying down rules for the application of Regulation (EU) 2023/956 as regards the methods for the calculation of emissions embedded in goods](https://eur-lex.europa.eu/eli/reg_impl/2025/2547/oj/eng)
-- IMPL_2025_2548: [Commission Implementing Regulation (EU) 2025/2548 of 10 December 2025 laying down rules for the application of Regulation (EU) 2023/956 as regards the calculation and publication of the price of CBAM certificates](https://eur-lex.europa.eu/eli/reg_impl/2025/2548/oj/eng)
+- IMPL_2025_2546: [Commission Implementing Regulation (EU) 2025/2546 of 10 December 2025 on the application of the principles for verification of declared embedded emissions pursuant to Regulation (EU) 2023/956 of the European Parliament and of the Council](https://eur-lex.europa.eu/eli/reg_impl/2025/2546/oj/eng)
+- IMPL_2025_2547: [Commission Implementing Regulation (EU) 2025/2547 of 10 December 2025 laying down rules for the application of Regulation (EU) 2023/956 of the European Parliament and the Council as regards the methods for the calculation of emissions embedded in goods](https://eur-lex.europa.eu/eli/reg_impl/2025/2547/oj/eng)
+- IMPL_2025_2548: [Commission Implementing Regulation (EU) 2025/2548 of 10 December 2025 laying down rules for the application of Regulation (EU) 2023/956 of the European Parliament and of the Council as regards the calculation and publication of the price of CBAM certificates](https://eur-lex.europa.eu/eli/reg_impl/2025/2548/oj/eng)
 
 ## Contact
 
 - Website: https://cbamvalid.com
 - Support: info@cbamvalid.com
 
-Last updated: 2026-08-04
+Last updated: 2026-08-13
