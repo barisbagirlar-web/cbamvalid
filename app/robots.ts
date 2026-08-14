@@ -25,6 +25,12 @@ export const PUBLIC_CRAWLER_USER_AGENTS = [
   "Googlebot",
   "GPTBot",
   "ClaudeBot",
+  "PerplexityBot",
+  "Applebot-Extended",
+  "Meta-ExternalAgent",
+  "Amazonbot",
+  "ByteDanceBot",
+  "CCBot",
   "Google-Extended",
 ] as const;
 
