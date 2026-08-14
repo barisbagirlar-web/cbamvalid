@@ -493,7 +493,7 @@ export const VERIFICATION_PREPARATION_SECTIONS: readonly GuideSection[] = [
     id: "example",
     title: "Practical example",
     paragraphs: [
-      "An operator closes open findings, approves evidence, seals release v3, and sends the ZIP plus verifier workspace to the accredited firm. Re-download later returns the same bytes and hashes.",
+      "An operator closes open findings, approves evidence, seals release v3, and sends the 25-file verifier ZIP to the accredited firm. The Enterprise Compliance Master Record.pdf stays a separate operator download. Re-download later returns the same bytes and hashes.",
     ],
   },
   {
@@ -501,6 +501,8 @@ export const VERIFICATION_PREPARATION_SECTIONS: readonly GuideSection[] = [
     title: "Common errors and risks",
     bullets: [
       "Calling an operator package a “verified” certificate",
+      "Putting the operator Master Record inside the verifier ZIP",
+      "Counting Supporting_Evidence/ as a file component",
       "Sealing with partially supported evidence",
       "Editing sealed files outside the system",
       "Skipping methodology decisions because “the calculator filled them in”",
@@ -524,7 +526,7 @@ export const VERIFICATION_PREPARATION_SECTIONS: readonly GuideSection[] = [
     id: "cbamvalid",
     title: "How CBAMValid handles it",
     paragraphs: [
-      "CBAMValid runs fail-closed readiness gates, seals immutable releases, and packages the canonical verifier-facing components without granting verifier powers to the software.",
+      "CBAMValid runs fail-closed readiness gates, seals immutable releases, and ships a 25-file verifier ZIP plus a separate operator Master Record without granting verifier powers to the software.",
     ],
   },
   {

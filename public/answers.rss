@@ -7,7 +7,7 @@
     <language>en</language>
     <copyright>CBAMValid (cbamvalid.com) — CC BY 4.0</copyright>
     <cc:license>https://creativecommons.org/licenses/by/4.0/</cc:license>
-    <lastBuildDate>Thu, 13 Aug 2026 00:23:56 GMT</lastBuildDate>
+    <lastBuildDate>Fri, 14 Aug 2026 09:48:10 GMT</lastBuildDate>
     <atom:link href="https://cbamvalid.com/answers.rss" rel="self" type="application/rss+xml"/>
     <item>
       <title>What does $449 buy on CBAMValid?</title>
@@ -116,6 +116,15 @@ Verifiers need consistent, evidence-linked data — not a reconstructed email hi
 
 Buyer pressure often arrives before your files are audit-ready. The risk is not formatting — it is defending numbers without evidence, method pins, or a sealed integrity trail.</description>
       <category>/, /product, /how-it-works, /sample-dossier</category>
+    </item>
+    <item>
+      <title>What is in a sealed CBAMValid verifier package versus the operator Master Record?</title>
+      <link>https://cbamvalid.com</link>
+      <guid isPermaLink="false">sealed-verifier-package-boundary</guid>
+      <description>A live seal ships two separate downloads. The Complete Signed Verifier Dossier ZIP contains 25 verifier-facing controlled files. Directory entries are not counted, and Enterprise Compliance Master Record.pdf is a separate Operator Corporate Record — not a ZIP member. Customer-facing scores, state and calendar use the seal generatedAt clock.
+
+Mixing the operator corporate record into the verifier ZIP, or counting a folder as a file, produces a false inventory. Buyers and verifiers need a stable 25-file contract.</description>
+      <category>/, /product, /sample-dossier, /how-it-works, /verify</category>
     </item>
     <item>
       <title>Can one USD 449 payment cover a second plant or another reporting year?</title>

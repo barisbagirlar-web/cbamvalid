@@ -30,7 +30,7 @@
       "empathyLead": "Buyer pressure arrives before your evidence package is ready. You need a defendable dossier for one plant and one year — without pretending the software issued an accredited verification opinion.",
       "directAnswer": "$449 unlocks lock-and-download for one working file: one legal operator, one installation, one reporting year — unlimited drafts and same-file correction re-locks. CBAMValid generates evidence-linked PDF, JSON and XLSX files from customer-controlled data.",
       "calculation": "Authoritative embedded-emissions results run server-side against a named, versioned ruleset. Missing material inputs block sealing; they are never silently converted to zero. Client previews stay advisory until a successful seal.",
-      "explanation": "Define scope, enter goods and production data, link evidence, clear fail-closed quality blockers, pay once to lock that working file, then download immutable PDF/JSON/O3CI field-mapped exports. Same-file corrections stay included; another plant or year needs another payment.",
+      "explanation": "Define scope, enter goods and production data, link evidence, clear fail-closed quality blockers, pay once to lock that working file, then download the 25-file verifier ZIP and the separate operator Master Record. Same-file corrections stay included; another plant or year needs another payment.",
       "methodology": "Methods pin to Regulation (EU) 2023/956 and related implementing rules recorded in the sealed package. Historical seals keep the ruleset they were built against.",
       "evidence": "Material values require evidence lineage (hash, size, support status). Sealing requires approved and fully supported evidence; partially supported is not enough.",
       "expert": "A prior independent academic assessment evaluated selected software calculation logic during product development. That assessment is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.",
@@ -76,7 +76,7 @@
       "empathyLead": "Spreadsheets break under verifier questions. You need deterministic calculations, an evidence register, and fail-closed QC before you hand anything over.",
       "directAnswer": "The pack provides a scoped working file with deterministic embedded-emissions calculations, evidence register, quality controls, methodology decisions, findings closure, and sealed releases for one operator, one installation, and one reporting year. Pay once to lock that file; same-file corrections are included.",
       "calculation": "Server-side engine computes direct and indirect emissions with unit-safe conversions, precursor treatment where applicable, and allocation reconciliation. Every authoritative node carries formula identity, inputs, units, and a SHA-256 node hash.",
-      "explanation": "You compile installation and goods data, link supporting documents, resolve blockers, pay once to lock, then seal releases for buyer or verifier handover without rewriting prior seals.",
+      "explanation": "You compile installation and goods data, link supporting documents, resolve blockers, pay once to lock, then seal. The seal produces a 25-file verifier ZIP and a separate operator Master Record PDF. Prior seals stay immutable.",
       "methodology": "Versioned rulesets and legal source citations travel with each sealed release so method history stays auditable.",
       "evidence": "Evidence objects store hash, size, path ownership, review status, and support status. Seal is blocked when evidence is missing, rejected, unsupported, or hash-mismatched.",
       "expert": "A prior independent academic assessment evaluated selected software calculation logic during product development. That assessment is not included in the purchase, does not review customer files, and does not provide customers with consulting, advice, verification or expert access.",
@@ -269,7 +269,7 @@
       "path": "/how-it-works",
       "primaryQuestion": "How do I go from raw plant data to a sealed CBAM digital working-file output?",
       "empathyLead": "Most teams lose weeks in email threads and version chaos. You need a guided path that shows gaps before a buyer or verifier sees the file.",
-      "directAnswer": "Start with the readiness checklist and pre-flight XLSX. Honest time: 2–4 hours if data is ready, 2–3 weeks if starting from zero. Then define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, pay once to lock that working file, and download PDF, JSON, and O3CI field-mapped exports.",
+      "directAnswer": "Start with the readiness checklist and pre-flight XLSX. Honest time: 2–4 hours if data is ready, 2–3 weeks if starting from zero. Then define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, pay once to lock that working file, and download two separate artifacts: the 25-file Complete Signed Verifier Dossier ZIP and the Enterprise Compliance Master Record.pdf.",
       "calculation": "After material inputs are complete, the server engine computes embedded emissions and writes a calculation trace. Incomplete material data blocks sealing.",
       "explanation": "One Where-you-are strip guides eight plain stages from scope setup through evidence linking, QC, pay-at-lock, seal, and download — without a second duplicate step bar. Drafts stay free until you pay to lock that file.",
       "methodology": "Each sealed release records the ruleset and engine version used so replay stays deterministic.",
@@ -348,7 +348,7 @@
       "path": "/sample-dossier",
       "primaryQuestion": "What does a sealed CBAMValid digital working-file output contain?",
       "empathyLead": "Buyers and verifiers ask what they will receive. You should inspect structure and integrity expectations before you purchase.",
-      "directAnswer": "A sealed package is an immutable operator-prepared dossier with reports, structured data, evidence folder references, and a data integrity manifest with file sizes and SHA-256 hashes — generated for customer-controlled downstream use, not as an accredited verification opinion. Each sealed release also carries a short Package ID (letter + four digits, for example Y7654) so operators can distinguish versions without reading truncated hashes.",
+      "directAnswer": "A live seal ships two separate downloads. The Complete Signed Verifier Dossier ZIP contains 25 verifier-facing controlled files — dossier PDFs, Data Integrity Manifest.json, Manifest Signature.sig, and files under Supporting_Evidence. Directory entries are not counted. Enterprise Compliance Master Record.pdf is a separate Operator Corporate Record and is not a ZIP member. The public sample on this page is a gate-free PDF, JSON and XLSX preview of structure and integrity pattern, not the live 25-file ZIP. Each sealed release also carries a short Package ID (letter + four digits, for example Y7654). The package is generated for customer-controlled downstream use, not as an accredited verification opinion.",
       "calculation": "Sample calculations illustrate trace shape and unit reporting. Live cases recompute from your installation data under the active ruleset.",
       "explanation": "Use the public interactive viewer (page thumbs, document stage, contents panel), then the authority and answer sections below, to inspect cover-to-integrity structure before sealing your own case.",
       "methodology": "Sample content follows the same independence boundary and package-contract discipline as production seals, citing Regulation (EU) 2023/956 and definitive-period implementing rules.",
@@ -373,6 +373,8 @@
       ],
       "entities": [
         "sample sealed dossier",
+        "25 verifier-facing files",
+        "operator Master Record",
         "integrity manifest",
         "SHA-256",
         "verifier navigation package",
@@ -382,6 +384,8 @@
         "CBAM sample dossier",
         "CBAM automated digital output packageage contents",
         "CBAM integrity manifest",
+        "CBAMValid 25 file verifier package",
+        "CBAMValid operator Master Record",
         "CBAMValid sample dossier preview"
       ]
     },
@@ -389,7 +393,7 @@
       "path": "/verify",
       "primaryQuestion": "How can someone check that a sealed CBAMValid dossier was not altered?",
       "empathyLead": "Recipients need a trust check without opening a black box. Integrity verification must be independent of marketing claims.",
-      "directAnswer": "Public verification checks the sealed dossier integrity signature / hash against the published manifest pattern. A passing integrity check confirms package bytes match the seal — it does not mean emissions were accredited-verified.",
+      "directAnswer": "Public verification checks the sealed verifier-dossier integrity signature / hash against the published manifest pattern. A passing integrity check confirms package bytes match the seal — it does not mean emissions were accredited-verified, and it does not cover the separate operator Master Record as a ZIP member.",
       "calculation": "Verification compares cryptographic hashes of package contents. It does not re-run emissions formulas unless you open a separate calculation review.",
       "explanation": "Use the verify flow with the public token or published hash materials supplied with the sealed release.",
       "methodology": "Integrity verification is a data-integrity control, separate from accredited verification under CBAM implementing rules.",
@@ -1600,6 +1604,50 @@
         "/sample-dossier",
         "/pricing",
         "/cbam-exporter-evidence-requirements"
+      ],
+      "schemaEligible": true
+    },
+    {
+      "id": "sealed-verifier-package-boundary",
+      "question": "What is in a sealed CBAMValid verifier package versus the operator Master Record?",
+      "aliases": [
+        "CBAMValid 25 file package",
+        "Enterprise Compliance Master Record",
+        "verifier ZIP vs Master Record",
+        "what does a sealed CBAMValid dossier contain"
+      ],
+      "directAnswer": "A live seal ships two separate downloads. The Complete Signed Verifier Dossier ZIP contains 25 verifier-facing controlled files. Directory entries are not counted, and Enterprise Compliance Master Record.pdf is a separate Operator Corporate Record — not a ZIP member. Customer-facing scores, state and calendar use the seal generatedAt clock.",
+      "empathyContext": "Mixing the operator corporate record into the verifier ZIP, or counting a folder as a file, produces a false inventory. Buyers and verifiers need a stable 25-file contract.",
+      "evidence": [
+        {
+          "label": "Sample structure",
+          "detail": "Public PDF/JSON/XLSX preview; live seals follow the 25-file ZIP plus separate Master Record",
+          "href": "/sample-dossier",
+          "evidenceStatus": "verified"
+        },
+        {
+          "label": "Product capabilities",
+          "detail": "Verifier ZIP and operator Master Record are separate downloads after lock-and-seal",
+          "href": "/product",
+          "evidenceStatus": "verified"
+        },
+        {
+          "label": "Integrity check",
+          "detail": "SHA-256 / signature verify confirms bytes, not accredited verification",
+          "href": "/verify",
+          "evidenceStatus": "verified"
+        }
+      ],
+      "routes": [
+        "/",
+        "/product",
+        "/sample-dossier",
+        "/how-it-works",
+        "/verify"
+      ],
+      "relatedPaths": [
+        "/cbam-verification-preparation",
+        "/pricing"
       ],
       "schemaEligible": true
     },

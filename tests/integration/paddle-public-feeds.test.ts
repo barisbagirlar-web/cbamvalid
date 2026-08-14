@@ -41,6 +41,15 @@ describe("Paddle public machine-readable classification", () => {
     expect(dataset.commercialBoundary?.humanServicesBundled).toBe(false);
   });
 
+  it("llm.txt publishes the 25-file verifier ZIP vs operator Master Record boundary", () => {
+    const text = read("public/llm.txt");
+    expect(text).toContain("## Sealed digital outputs");
+    expect(text).toContain("25 verifier-facing controlled files");
+    expect(text).toContain("Enterprise Compliance Master Record.pdf");
+    expect(text).toContain("generatedAt");
+    expect(text.toLowerCase()).not.toContain("inside the verifier zip");
+  });
+
   it("contains no obsolete commercial classification in any public feed", () => {
     for (const relativePath of PUBLIC_MACHINE_FILES) {
       const content = read(relativePath).toLowerCase();

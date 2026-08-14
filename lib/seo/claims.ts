@@ -44,6 +44,20 @@ export const PRODUCT_POSITIONING_CLAIM: PublicClaim<string> = {
   evidenceId: "Public product classification statement",
 };
 
+/** Live V6+ seal contract. Public sample remains a PDF/JSON/XLSX preview. */
+export const SEALED_OUTPUT_BOUNDARY_CLAIM: PublicClaim<readonly string[]> = {
+  value: [
+    "After lock-and-seal, CBAMValid ships two separate downloads.",
+    "Complete Signed Verifier Dossier ZIP: 25 verifier-facing controlled files (dossier PDFs, Data Integrity Manifest.json, Manifest Signature.sig, and files under Supporting_Evidence). Directory entries are not counted. The operator Master Record is not a ZIP member.",
+    "Enterprise Compliance Master Record.pdf: a separate Operator Corporate Record — not part of the verifier ZIP inventory.",
+    "The public /sample-dossier preview is a gate-free PDF, JSON and XLSX inspection of structure and integrity pattern; live seals follow the 25-file ZIP plus separate Master Record contract.",
+    "Customer-facing scores, state and calendar use the seal generatedAt clock. A synthetic assessment or reporting-period-end clock is not used as the current customer-facing date.",
+    "SHA-256 hashes are recorded in the data integrity manifest. Public /verify checks bytes against the seal. A passing integrity check is not an accredited verification opinion.",
+  ],
+  evidenceStatus: "verified",
+  evidenceId: "verifier-operator-boundary / REQUIRED_TOP_LEVEL_COMPONENT_COUNT_V6",
+};
+
 /** Explicitly unverified — must never appear in structured data or LLM docs. */
 export const FORBIDDEN_SOCIAL_PROOF = {
   aggregateRating: { evidenceStatus: "unverified" as const },

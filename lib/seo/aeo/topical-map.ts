@@ -146,6 +146,8 @@ export const TOPICAL_MAP: readonly TopicalNode[] = [
     childPaths: ["/verify", "/pricing", "/product"],
     covers: [
       "what a sealed package contains",
+      "25 verifier-facing files",
+      "separate operator Master Record",
       "interactive 16-page dossier viewer",
       "integrity manifest preview",
     ],
