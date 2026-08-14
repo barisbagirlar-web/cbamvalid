@@ -53,6 +53,72 @@ Disallow: /cbam/
 Disallow: /login
 Disallow: /register
 
+User-agent: PerplexityBot
+Allow: /
+Disallow: /dashboard/
+Disallow: /cases/
+Disallow: /reports/
+Disallow: /account/
+Disallow: /credits/
+Disallow: /cbam/
+Disallow: /login
+Disallow: /register
+
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /dashboard/
+Disallow: /cases/
+Disallow: /reports/
+Disallow: /account/
+Disallow: /credits/
+Disallow: /cbam/
+Disallow: /login
+Disallow: /register
+
+User-agent: Meta-ExternalAgent
+Allow: /
+Disallow: /dashboard/
+Disallow: /cases/
+Disallow: /reports/
+Disallow: /account/
+Disallow: /credits/
+Disallow: /cbam/
+Disallow: /login
+Disallow: /register
+
+User-agent: Amazonbot
+Allow: /
+Disallow: /dashboard/
+Disallow: /cases/
+Disallow: /reports/
+Disallow: /account/
+Disallow: /credits/
+Disallow: /cbam/
+Disallow: /login
+Disallow: /register
+
+User-agent: ByteDanceBot
+Allow: /
+Disallow: /dashboard/
+Disallow: /cases/
+Disallow: /reports/
+Disallow: /account/
+Disallow: /credits/
+Disallow: /cbam/
+Disallow: /login
+Disallow: /register
+
+User-agent: CCBot
+Allow: /
+Disallow: /dashboard/
+Disallow: /cases/
+Disallow: /reports/
+Disallow: /account/
+Disallow: /credits/
+Disallow: /cbam/
+Disallow: /login
+Disallow: /register
+
 User-agent: Google-Extended
 Allow: /
 Disallow: /dashboard/

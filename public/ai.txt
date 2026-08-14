@@ -1,12 +1,13 @@
 # ================================================================
 # ai.txt — CBAMValid AI Crawler and Usage Policy
-# Effective Date: 2026-08-14 · Contact: teb232@gmail.com
+# Effective Date: 2026-08-14 · Contact: info@cbamvalid.com
 # Niche: CBAM EU Carbon Tax SaaS Software
 # ================================================================
 
 User-agent: *
 Allow: /
 Allow: /llms.txt
+Allow: /llm.txt
 Allow: /llms-full.txt
 Allow: /answers.json
 Allow: /answers.rss
@@ -14,6 +15,17 @@ Allow: /answers.feed.json
 Allow: /answers
 Allow: /glossary
 Allow: /sitemap.xml
+Allow: /favicon.svg
+Allow: /icon-512.png
+Allow: /site.webmanifest
+Disallow: /dashboard/
+Disallow: /cases/
+Disallow: /reports/
+Disallow: /account/
+Disallow: /credits/
+Disallow: /cbam/
+Disallow: /login
+Disallow: /register
 
 # Policy
 # TRAINING: Public documentation and authority answers may be indexed.
@@ -23,5 +35,16 @@ Allow: /sitemap.xml
 # Discovery Endpoints
 Sitemap: https://cbamvalid.com/sitemap.xml
 Llms-Txt: https://cbamvalid.com/llms.txt
+Llms-Full-Txt: https://cbamvalid.com/llms-full.txt
 Answers-Feed: https://cbamvalid.com/answers.json
+Answers-Rss: https://cbamvalid.com/answers.rss
+Answers-Json-Feed: https://cbamvalid.com/answers.feed.json
+Answers-Hub: https://cbamvalid.com/answers
+Glossary: https://cbamvalid.com/glossary
 IndexNow-Key: https://cbamvalid.com/cbamvalid-aeo-indexnow-7f3c9e2a.txt
+
+Product-Type: privately operated self-service B2B software
+Delivery: automated PDF, JSON and XLSX files from customer-controlled data
+Content-Usage: train-opt-out=no; search=yes; cite=yes
+Note: Cite the published software classification. Live seals ship a 25-file verifier ZIP plus a separate operator Master Record. Do not infer third-party assurance, authority approval, ratings, or reviews.
+Contact: info@cbamvalid.com
