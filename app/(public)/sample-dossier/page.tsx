@@ -23,7 +23,8 @@ export default function SampleDossierPage() {
           <p className="lede" style={{ margin: "0 auto 22px" }}>
             A {PUBLIC_SAMPLE_DOSSIER.pageCount}-page Exporter Verification Preparation Pack built from
             fictional demonstration data. No email gate. No account required. Download every format
-            directly.
+            directly. A live sealed working file ships two separate downloads: a 25-file verifier ZIP
+            and the Enterprise Compliance Master Record.pdf as a separate operator record.
           </p>
           <div className="hero-ctas" style={{ justifyContent: "center", flexWrap: "wrap" }}>
             <a className="btn btn-primary" href={PUBLIC_SAMPLE_DOSSIER.downloads.pdf} download>

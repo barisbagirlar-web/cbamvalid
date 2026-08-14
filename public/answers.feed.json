@@ -146,6 +146,19 @@
       ]
     },
     {
+      "id": "sealed-verifier-package-boundary",
+      "url": "https://cbamvalid.com/answers#sealed-verifier-package-boundary",
+      "title": "What is in a sealed CBAMValid verifier package versus the operator Master Record?",
+      "content_text": "A live seal ships two separate downloads. The Complete Signed Verifier Dossier ZIP contains 25 verifier-facing controlled files. Directory entries are not counted, and Enterprise Compliance Master Record.pdf is a separate Operator Corporate Record — not a ZIP member. Customer-facing scores, state and calendar use the seal generatedAt clock.\n\nMixing the operator corporate record into the verifier ZIP, or counting a folder as a file, produces a false inventory. Buyers and verifiers need a stable 25-file contract.",
+      "tags": [
+        "/",
+        "/product",
+        "/sample-dossier",
+        "/how-it-works",
+        "/verify"
+      ]
+    },
+    {
       "id": "one-pack-scope-lock",
       "url": "https://cbamvalid.com/answers#one-pack-scope-lock",
       "title": "Can one USD 449 payment cover a second plant or another reporting year?",

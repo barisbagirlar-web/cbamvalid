@@ -21,7 +21,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     calculation:
       "Authoritative embedded-emissions results run server-side against a named, versioned ruleset. Missing material inputs block sealing; they are never silently converted to zero. Client previews stay advisory until a successful seal.",
     explanation:
-      "Define scope, enter goods and production data, link evidence, clear fail-closed quality blockers, pay once to lock that working file, then download immutable PDF/JSON/O3CI field-mapped exports. Same-file corrections stay included; another plant or year needs another payment.",
+      "Define scope, enter goods and production data, link evidence, clear fail-closed quality blockers, pay once to lock that working file, then download the 25-file verifier ZIP and the separate operator Master Record. Same-file corrections stay included; another plant or year needs another payment.",
     methodology:
       "Methods pin to Regulation (EU) 2023/956 and related implementing rules recorded in the sealed package. Historical seals keep the ruleset they were built against.",
     evidence:
@@ -57,7 +57,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     calculation:
       "Server-side engine computes direct and indirect emissions with unit-safe conversions, precursor treatment where applicable, and allocation reconciliation. Every authoritative node carries formula identity, inputs, units, and a SHA-256 node hash.",
     explanation:
-      "You compile installation and goods data, link supporting documents, resolve blockers, pay once to lock, then seal releases for buyer or verifier handover without rewriting prior seals.",
+      "You compile installation and goods data, link supporting documents, resolve blockers, pay once to lock, then seal. The seal produces a 25-file verifier ZIP and a separate operator Master Record PDF. Prior seals stay immutable.",
     methodology:
       "Versioned rulesets and legal source citations travel with each sealed release so method history stays auditable.",
     evidence:
@@ -179,7 +179,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     empathyLead:
       "Most teams lose weeks in email threads and version chaos. You need a guided path that shows gaps before a buyer or verifier sees the file.",
     directAnswer:
-      "Start with the readiness checklist and pre-flight XLSX. Honest time: 2–4 hours if data is ready, 2–3 weeks if starting from zero. Then define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, pay once to lock that working file, and download PDF, JSON, and O3CI field-mapped exports.",
+      "Start with the readiness checklist and pre-flight XLSX. Honest time: 2–4 hours if data is ready, 2–3 weeks if starting from zero. Then define one installation and reporting year, enter goods and production data, link evidence, clear quality blockers, pay once to lock that working file, and download two separate artifacts: the 25-file Complete Signed Verifier Dossier ZIP and the Enterprise Compliance Master Record.pdf.",
     calculation:
       "After material inputs are complete, the server engine computes embedded emissions and writes a calculation trace. Incomplete material data blocks sealing.",
     explanation:
@@ -241,7 +241,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     empathyLead:
       "Buyers and verifiers ask what they will receive. You should inspect structure and integrity expectations before you purchase.",
     directAnswer:
-      "A sealed package is an immutable operator-prepared dossier with reports, structured data, evidence folder references, and a data integrity manifest with file sizes and SHA-256 hashes — prepared for independent review, not as an accredited verification opinion. Each sealed release also carries a short Package ID (letter + four digits, for example Y7654) so operators can distinguish versions without reading truncated hashes.",
+      "A live seal ships two separate downloads. The Complete Signed Verifier Dossier ZIP contains 25 verifier-facing controlled files — dossier PDFs, Data Integrity Manifest.json, Manifest Signature.sig, and files under Supporting_Evidence. Directory entries are not counted. Enterprise Compliance Master Record.pdf is a separate Operator Corporate Record and is not a ZIP member. The public sample on this page is a gate-free PDF, JSON and XLSX preview of structure and integrity pattern, not the live 25-file ZIP. Each sealed release also carries a short Package ID (letter + four digits, for example Y7654). The package is prepared for independent review, not as an accredited verification opinion.",
     calculation:
       "Sample calculations illustrate trace shape and unit reporting. Live cases recompute from your installation data under the active ruleset.",
     explanation:
@@ -258,6 +258,8 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     ],
     entities: [
       "sample sealed dossier",
+      "25 verifier-facing files",
+      "operator Master Record",
       "integrity manifest",
       "SHA-256",
       "verifier navigation package",
@@ -267,6 +269,8 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
       "CBAM sample dossier",
       "CBAM verification preparation package contents",
       "CBAM integrity manifest",
+      "CBAMValid 25 file verifier package",
+      "CBAMValid operator Master Record",
       "CBAMValid sample dossier preview",
     ],
   },
@@ -276,7 +280,7 @@ export const AUTHORITY_CHAINS: readonly AuthorityChainRecord[] = [
     empathyLead:
       "Recipients need a trust check without opening a black box. Integrity verification must be independent of marketing claims.",
     directAnswer:
-      "Public verification checks the sealed dossier integrity signature / hash against the published manifest pattern. A passing integrity check confirms package bytes match the seal — it does not mean emissions were accredited-verified.",
+      "Public verification checks the sealed verifier-dossier integrity signature / hash against the published manifest pattern. A passing integrity check confirms package bytes match the seal — it does not mean emissions were accredited-verified, and it does not cover the separate operator Master Record as a ZIP member.",
     calculation:
       "Verification compares cryptographic hashes of package contents. It does not re-run emissions formulas unless you open a separate calculation review.",
     explanation:

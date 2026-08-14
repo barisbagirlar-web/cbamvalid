@@ -382,6 +382,43 @@ export const AEO_ANSWER_BANK: readonly AeoAnswerRecord[] = [
     schemaEligible: true,
   },
   {
+    id: "sealed-verifier-package-boundary",
+    question: "What is in a sealed CBAMValid verifier package versus the operator Master Record?",
+    aliases: [
+      "CBAMValid 25 file package",
+      "Enterprise Compliance Master Record",
+      "verifier ZIP vs Master Record",
+      "what does a sealed CBAMValid dossier contain",
+    ],
+    directAnswer:
+      "A live seal ships two separate downloads. The Complete Signed Verifier Dossier ZIP contains 25 verifier-facing controlled files. Directory entries are not counted, and Enterprise Compliance Master Record.pdf is a separate Operator Corporate Record — not a ZIP member. Customer-facing scores, state and calendar use the seal generatedAt clock.",
+    empathyContext:
+      "Mixing the operator corporate record into the verifier ZIP, or counting a folder as a file, produces a false inventory. Buyers and verifiers need a stable 25-file contract.",
+    evidence: [
+      {
+        label: "Sample structure",
+        detail: "Public PDF/JSON/XLSX preview; live seals follow the 25-file ZIP plus separate Master Record",
+        href: "/sample-dossier",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Product capabilities",
+        detail: "Verifier ZIP and operator Master Record are separate downloads after lock-and-seal",
+        href: "/product",
+        evidenceStatus: "verified",
+      },
+      {
+        label: "Integrity check",
+        detail: "SHA-256 / signature verify confirms bytes, not accredited verification",
+        href: "/verify",
+        evidenceStatus: "verified",
+      },
+    ],
+    routes: ["/", "/product", "/sample-dossier", "/how-it-works", "/verify"],
+    relatedPaths: ["/cbam-verification-preparation", "/pricing"],
+    schemaEligible: true,
+  },
+  {
     id: "one-pack-scope-lock",
     question: "Can one USD 449 payment cover a second plant or another reporting year?",
     aliases: [

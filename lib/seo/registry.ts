@@ -6,7 +6,7 @@ import { SEO_REGULATORY_CONTENT_VERSION } from "./regulatory-sources";
 /**
  * Factual content-wave lastmods for sitemap (INV-3.4a).
  * Never stamp “today” at build time. Never bulk-assign one date to every URL.
- * Keep dates ≤ CI clock (use ≤ 2026-08-12).
+ * Keep dates ≤ CI clock (use ≤ 2026-08-14).
  */
 const LASTMOD = {
   /** Stage-1 CN allowlist + original IA baseline surfaces that were not rewritten later. */
@@ -19,6 +19,8 @@ const LASTMOD = {
   LEGAL_CITATION: "2026-08-10",
   /** Trust inventory, status/security, product-boundary honesty wave. */
   TRUST_BOUNDARY: "2026-08-12",
+  /** Verifier ZIP (25 files) vs separate Operator Corporate Record wave. */
+  PACKAGE_BOUNDARY: "2026-08-14",
 } as const;
 
 type RouteDraft = Omit<SeoRouteContract, "regulatoryContentVersion">;
@@ -61,7 +63,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     indexability: "index",
     title: "Exporter Verification Preparation Pack | CBAMValid Product",
     description:
-      "See the CBAMValid Exporter Verification Preparation Pack: deterministic calculations, evidence register, QC gates, and sealed verifier-ready deliverables.",
+      "See the CBAMValid Exporter Verification Preparation Pack: deterministic calculations, evidence register, QC gates, a 25-file verifier ZIP, and a separate operator Master Record.",
     h1: "When spreadsheets fail under verifier questions",
     canonicalPath: "/product",
     primaryIntent: "CBAM verification preparation product",
@@ -70,7 +72,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["Product", "Offer", "WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/pricing", "/sample-dossier", "/how-it-works"],
     regulatorySourceIds: ["REG_2023_956", "IMPL_2025_2546"],
-    factualLastModified: LASTMOD.TRUST_BOUNDARY,
+    factualLastModified: LASTMOD.PACKAGE_BOUNDARY,
   },
   {
     path: "/pricing",
@@ -111,7 +113,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     indexability: "index",
     title: "How CBAMValid Works | From Case Setup to Sealed Dossier",
     description:
-      "Walk through the CBAMValid workflow: goods scope, installation data, evidence, QC, payment at seal, and immutable package download.",
+      "Walk through the CBAMValid workflow: goods scope, installation data, evidence, QC, payment at seal, then two downloads — 25-file verifier ZIP and a separate operator Master Record.",
     h1: "How CBAMValid Works",
     canonicalPath: "/how-it-works",
     primaryIntent: "CBAMValid workflow",
@@ -120,7 +122,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/product", "/pricing", "/sample-dossier"],
     regulatorySourceIds: ["REG_2023_956"],
-    factualLastModified: LASTMOD.COMMERCIAL_CLASS,
+    factualLastModified: LASTMOD.PACKAGE_BOUNDARY,
   },
   {
     path: "/sample-dossier",
@@ -128,7 +130,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     indexability: "index",
     title: "Sample CBAM Verification Preparation Dossier | CBAMValid",
     description:
-      "Inspect a sample sealed CBAMValid dossier structure before you buy: PDF, structured data, integrity manifest and verifier workspace.",
+      "Inspect the public PDF, JSON and XLSX sample, then the live seal contract: a 25-file verifier ZIP plus a separate Operator Corporate Record.",
     h1: "Sample Verification Preparation Dossier",
     canonicalPath: "/sample-dossier",
     primaryIntent: "CBAM sample dossier",
@@ -137,7 +139,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/product", "/pricing", "/verify"],
     regulatorySourceIds: ["REG_2023_956", "IMPL_2025_2546"],
-    factualLastModified: LASTMOD.COMMERCIAL_CLASS,
+    factualLastModified: LASTMOD.PACKAGE_BOUNDARY,
   },
   {
     path: "/methodology",
@@ -184,7 +186,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     indexability: "index",
     title: "Verify a CBAMValid Dossier Signature | Public Integrity Check",
     description:
-      "Learn how CBAMValid public signature verification works for sealed dossier integrity. Individual tokens are not mass-indexed.",
+      "Check SHA-256 / signature integrity of a sealed CBAMValid verifier ZIP. A pass confirms bytes, not accredited verification. Tokens are not mass-indexed.",
     h1: "Verify a Dossier",
     canonicalPath: "/verify",
     primaryIntent: "CBAMValid dossier verification",
@@ -193,7 +195,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/", "/sample-dossier", "/product"],
     regulatorySourceIds: [],
-    factualLastModified: LASTMOD.LEGAL_CITATION,
+    factualLastModified: LASTMOD.PACKAGE_BOUNDARY,
   },
   {
     path: "/about",
@@ -409,7 +411,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     indexability: "index",
     title: "CBAM Verification Preparation Checklist | Operator Evidence Pack",
     description:
-      "What operators must prepare before independent accredited verification, and how CBAMValid structures the evidence package.",
+      "What operators must prepare before independent accredited verification: 25 verifier-facing files in the ZIP, plus a separate operator Master Record.",
     h1: "CBAM Verification Preparation",
     canonicalPath: "/cbam-verification-preparation",
     primaryIntent: "CBAM verifier preparation",
@@ -418,7 +420,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     schemaTypes: ["WebPage", "BreadcrumbList"],
     internalLinkTargets: ["/product", "/sample-dossier", "/cbam-exporter-evidence-requirements"],
     regulatorySourceIds: ["IMPL_2025_2546", "REG_2023_956"],
-    factualLastModified: LASTMOD.DEFINITIVE_GUIDES,
+    factualLastModified: LASTMOD.PACKAGE_BOUNDARY,
   },
   {
     path: "/cbam-exporter-evidence-requirements",
