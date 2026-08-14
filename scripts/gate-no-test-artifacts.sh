@@ -37,19 +37,38 @@ while IFS= read -r -d '' file; do
     echo "G-09 FORBIDDEN in $file: $hits"
     MATCHES=$((MATCHES + 1))
   fi
-done < <(find "$PACKAGE_DIR" -type f -print0)
+done < <(find "$PACKAGE_DIR" -type f ! -name '*.pdf' -print0)
 
-# PDF text is part of the package: extract and scan it too when pdftotext exists.
-if command -v pdftotext >/dev/null 2>&1; then
-  while IFS= read -r -d '' pdf; do
+# PDF text is part of the package: extract and scan text via pdftotext or pdfjs-dist fallback
+while IFS= read -r -d '' pdf; do
+  text=""
+  if command -v pdftotext >/dev/null 2>&1; then
     text=$(pdftotext -q "$pdf" - 2>/dev/null || true)
-    if printf '%s' "$text" | grep -aqiE "$(IFS='|'; echo "${PATTERNS[*]}")"; then
-      hits=$(printf '%s' "$text" | grep -aoiE "$(IFS='|'; echo "${PATTERNS[*]}")" | sort -u | tr '\n' ',')
-      echo "G-09 FORBIDDEN in PDF $pdf: $hits"
-      MATCHES=$((MATCHES + 1))
-    fi
-  done < <(find "$PACKAGE_DIR" -name '*.pdf' -print0)
-fi
+  else
+    text=$(npx tsx -e "
+import fs from 'node:fs';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+async function extract() {
+  const data = new Uint8Array(fs.readFileSync(process.argv[1]));
+  const pdf = await pdfjsLib.getDocument({ data, disableFontFace: true, standardFontDataUrl: 'node_modules/pdfjs-dist/standard_fonts/' }).promise;
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    fullText += content.items.map((item: any) => item.str).join(' ') + '\n';
+  }
+  process.stdout.write(fullText);
+}
+extract().catch(() => process.exit(0));
+" "$pdf" 2>/dev/null || true)
+  fi
+
+  if printf '%s' "$text" | grep -aqiE "$(IFS='|'; echo "${PATTERNS[*]}")"; then
+    hits=$(printf '%s' "$text" | grep -aoiE "$(IFS='|'; echo "${PATTERNS[*]}")" | sort -u | tr '\n' ',')
+    echo "G-09 FORBIDDEN in PDF $pdf: $hits"
+    MATCHES=$((MATCHES + 1))
+  fi
+done < <(find "$PACKAGE_DIR" -name '*.pdf' -print0)
 
 if [ "$MATCHES" -gt 0 ]; then
   echo "G-09 FAIL: $MATCHES component(s) contain forbidden strings. Package is not sealable." >&2
