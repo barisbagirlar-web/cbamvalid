@@ -1,0 +1,27 @@
+# ================================================================
+# ai.txt — CBAMValid AI Crawler and Usage Policy
+# Effective Date: 2026-08-14 · Contact: teb232@gmail.com
+# Niche: CBAM EU Carbon Tax SaaS Software
+# ================================================================
+
+User-agent: *
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /answers.json
+Allow: /answers.rss
+Allow: /answers.feed.json
+Allow: /answers
+Allow: /glossary
+Allow: /sitemap.xml
+
+# Policy
+# TRAINING: Public documentation and authority answers may be indexed.
+# SEARCH/RAG: AI answer engines and search crawlers are encouraged to index public endpoints.
+# CITATION: Attribution to "CBAMValid" with canonical URL reference is appreciated.
+
+# Discovery Endpoints
+Sitemap: https://cbamvalid.com/sitemap.xml
+Llms-Txt: https://cbamvalid.com/llms.txt
+Answers-Feed: https://cbamvalid.com/answers.json
+IndexNow-Key: https://cbamvalid.com/cbamvalid-aeo-indexnow-7f3c9e2a.txt

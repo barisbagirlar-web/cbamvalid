@@ -38,6 +38,7 @@ firebase-adminsdk*.json
 service-account*.json
 
 # Local test artifacts
+V6_EXCEL_URETIM/
 test-out.pdf
 test-page-*.png
 test-page-0.png

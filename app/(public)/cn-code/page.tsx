@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { buildCanonicalUrl } from "@/lib/seo/canonical";
 import { generateSeoMetadata } from "@/lib/seo/build-metadata";
 import { generateBreadcrumbSchema, generateFAQSchema } from "@/lib/seo/schema";
 import {
@@ -33,7 +34,7 @@ export async function generateMetadata({ searchParams }: HubProps): Promise<Meta
       ...base,
       robots: { index: false, follow: false, noarchive: true, nosnippet: true },
       alternates: {
-        canonical: "https://cbamvalid.com/cn-code",
+        canonical: buildCanonicalUrl("/cn-code"),
       },
     };
   }
@@ -75,7 +76,7 @@ export default async function CnCodeHubPage({ searchParams }: HubProps) {
       itemListElement: entries.map((entry, index) => ({
         "@type": "ListItem",
         position: index + 1,
-        url: `https://cbamvalid.com/cn-code/${entry.cnCode}`,
+        url: buildCanonicalUrl(`/cn-code/${entry.cnCode}`),
         name: `CN ${entry.cnCode}`,
       })),
     },
