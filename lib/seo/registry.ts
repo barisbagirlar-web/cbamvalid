@@ -63,7 +63,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     indexability: "index",
     title: "Exporter Verification Preparation Pack | CBAMValid Product",
     description:
-      "See the CBAMValid Exporter Verification Preparation Pack: deterministic calculations, evidence register, QC gates, a 25-file verifier ZIP, and a separate operator Master Record.",
+      "See the CBAMValid Exporter Preparation Pack: calculations, evidence register, QC gates, 25-file verifier ZIP, and operator Master Record.",
     h1: "When spreadsheets fail under verifier questions",
     canonicalPath: "/product",
     primaryIntent: "CBAM verification preparation product",
@@ -79,7 +79,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     pageType: "pricing",
     indexability: "index",
     title: `Pricing | Self-Service Software | ${CANONICAL_PRICING.currency} ${CANONICAL_PRICING.displayPrice} One-Time | CBAMValid`,
-    description: `One self-service software product at ${CANONICAL_PRICING.currency} ${CANONICAL_PRICING.displayPrice} one-time covering one working file — one operator, one installation and one reporting year. Draft free, deterministic calculations, automated QC, evidence linking, automated PDF/JSON/XLSX outputs and same-file correction re-locks.`,
+    description: `USD 449 one-time unlock for one working file: single operator, installation and year. Free draft, automated calculations, QC gates and digital delivery.`,
     h1: "Self-Service Emissions Data Software",
     canonicalPath: "/pricing",
     primaryIntent: "CBAMValid self-service pricing",
@@ -96,7 +96,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     indexability: "index",
     title: "Product Classification | Self-Service B2B Software | CBAMValid",
     description:
-      "Plain-language product classification for CBAMValid: self-service B2B software and automated digital delivery, not government, filing, consulting, certification or verification services.",
+      "Plain-language classification: CBAMValid is self-service B2B software and digital delivery, not government, filing, consulting or verification.",
     h1: "Self-Service B2B Software",
     canonicalPath: "/product-classification",
     primaryIntent: "CBAMValid product classification",
@@ -113,7 +113,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     indexability: "index",
     title: "How CBAMValid Works | From Case Setup to Sealed Dossier",
     description:
-      "Walk through the CBAMValid workflow: goods scope, installation data, evidence, QC, payment at seal, then two downloads — 25-file verifier ZIP and a separate operator Master Record.",
+      "Walkthrough: installation setup, evidence input, QC, payment at seal, and two output downloads — 25-file verifier ZIP and operator Master Record.",
     h1: "How CBAMValid Works",
     canonicalPath: "/how-it-works",
     primaryIntent: "CBAMValid workflow",
@@ -203,7 +203,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     indexability: "index",
     title: "About CBAMValid | Self-Service CBAM Software",
     description:
-      "CBAMValid is a self-service software platform operated by SectorCalc Corporation. Customers enter and control their own data; the software runs deterministic calculations, automated quality checks, evidence-linking controls and digital export generation. No consulting or advisory services are sold.",
+      "CBAMValid is self-service software operated by SectorCalc. Customers input and control data; the engine runs calculations, QC and digital outputs.",
     h1: "About CBAMValid — Self-Service CBAM Software",
     canonicalPath: "/about",
     primaryIntent: "About CBAMValid self-service software",
@@ -220,7 +220,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     indexability: "index",
     title: "Contact CBAMValid | Software Support",
     description:
-      "CBAMValid software support for account access, billing or Paddle transactions, reproducible software defects, file-generation failures, security and privacy. Support is limited to account, billing, security, privacy and technical operation of the software.",
+      "Software support for account access, billing, reproducible defects, file generation failures, security and privacy. Contact technical support.",
     h1: "Software Support",
     canonicalPath: "/contact",
     primaryIntent: "Contact CBAMValid software support",
@@ -285,7 +285,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     pageType: "legal",
     indexability: "index",
     title: "Cookie Policy | CBAMValid Tracking Technologies Notice",
-    description: "Read how CBAMValid uses essential cookies and tracking technologies.",
+    description: "Read how CBAMValid uses essential cookies, consent preferences, and privacy tracking technologies in compliance with GDPR.",
     h1: "Cookie Policy",
     canonicalPath: "/cookie-policy",
     primaryIntent: "Cookie policy",
@@ -301,7 +301,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     pageType: "legal",
     indexability: "index",
     title: "Legal Notice | CBAMValid Corporate Identity Information",
-    description: "View the legal notice and corporate identity information for CBAMValid.",
+    description: "View corporate identity information, legal disclaimers, and contact details for CBAMValid and SectorCalc Corporation.",
     h1: "Legal Notice",
     canonicalPath: "/legal-notice",
     primaryIntent: "Legal notice",
@@ -479,7 +479,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     indexability: "index",
     title: "CBAMValid Product Demo | Self-Service Software Walkthrough",
     description:
-      "See the CBAMValid self-service software in action: customer-controlled data, deterministic CBAM calculations, automated quality-control blockers, evidence linking, and downloadable digital outputs.",
+      "Walkthrough the self-service software: customer data entry, calculations, quality-control blockers, evidence linking, and downloadable outputs.",
     h1: "See CBAMValid software in action",
     canonicalPath: "/demo",
     primaryIntent: "CBAMValid self-service product demo",
@@ -496,7 +496,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     indexability: "index",
     title: "Published CBAM Rulesets | Named, Dated, Pinned | CBAMValid",
     description:
-      "Public CBAMValid ruleset registry: named versions, active dates, source-registry hashes, and EUR-Lex-linked sources. Historical seals keep the ruleset they were built against. Not an accredited verification opinion.",
+      "Public ruleset registry: named versions, active dates, source hashes, and EUR-Lex sources. Pinned calculation rulesets for digital seals.",
     h1: "Published rulesets — named, dated, pinned",
     canonicalPath: "/rulesets",
     primaryIntent: "CBAMValid published ruleset registry",
@@ -513,7 +513,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     indexability: "index",
     title: "Buyer Share Link | /d/token Integrity URL | CBAMValid",
     description:
-      "How CBAMValid buyer share links work: short /d/<token> aliases the canonical /verify/<token> sealed-release view with view logging. Integrity check only — not an accredited verification opinion.",
+      "How CBAMValid buyer share links work: short /d/<token> aliases canonical /verify/<token> sealed views with audit logging.",
     h1: "One link for the buyer — integrity, not assurance",
     canonicalPath: "/buyer-link",
     primaryIntent: "CBAMValid buyer share link",
@@ -604,9 +604,9 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     path: "/platform",
     pageType: "product",
     indexability: "index",
-    title: "Platform Architecture | CBAM First, Reusable Package Contract | CBAMValid",
+    title: "Platform Architecture | CBAM First Contract | CBAMValid",
     description:
-      "CBAMValid category architecture: EU CBAM is the live door; the sealed package contract can accept other regimes later. No second regulated product is sold until opening conditions are met.",
+      "CBAMValid platform architecture: EU CBAM is the live portal; the sealed package contract supports multi-regime expansions.",
     h1: "Door = CBAM. No public half-products.",
     canonicalPath: "/platform",
     primaryIntent: "CBAMValid platform architecture",
@@ -623,7 +623,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     indexability: "index",
     title: "CBAMValid Answer Bank | Direct Answers with Evidence Boundaries",
     description:
-      "Quotable CBAMValid answers for pay-at-lock pricing, payment timing, independence, sealing, and verification preparation — each with evidence links. Not an accredited verification opinion.",
+      "Quotable CBAMValid answers for pricing, payment timing, sealing, and verification preparation — each with evidence links.",
     h1: "CBAMValid answer bank",
     canonicalPath: "/answers",
     primaryIntent: "CBAMValid FAQ and answer engine hub",
@@ -640,7 +640,7 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
     indexability: "index",
     title: "CBAM Glossary | Embedded Emissions, CN Codes, Verifiers | CBAMValid",
     description:
-      "Operational definitions for CBAM entities used across CBAMValid authority chains: embedded emissions, CN codes, actual vs default values, precursors, and preparation-pack terms.",
+      "Definitions for CBAM entities: embedded emissions, CN codes, actual vs default values, precursors, and preparation-pack terms.",
     h1: "CBAM terms used across CBAMValid",
     canonicalPath: "/glossary",
     primaryIntent: "CBAM entity glossary for exporters",
@@ -671,12 +671,12 @@ const STATIC_ROUTES: readonly RouteDraft[] = [
 ];
 
 function buildCnDetailRoute(cnCode: string, description: string, sector: string, lastmod: string): RouteDraft {
-  const short = description.length > 80 ? `${description.slice(0, 77)}...` : description;
+  const short = description.length > 30 ? `${description.slice(0, 27)}...` : description;
   return {
     path: `/cn-code/${cnCode}`,
     pageType: "cn-detail",
     indexability: "index",
-    title: `CN ${cnCode}: ${short} | EU CBAM Scope`,
+    title: `CN ${cnCode}: ${short} | CBAM Scope`,
     description: `CBAM scope decision page for CN ${cnCode} (${sector}). Official description, producer data and evidence considerations for verification preparation.`,
     h1: `CN ${cnCode} — CBAM Scope`,
     canonicalPath: `/cn-code/${cnCode}`,

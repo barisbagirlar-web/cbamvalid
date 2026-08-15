@@ -58,6 +58,18 @@ function validateRegistry(): GateResult[] {
     if (required.some((value) => !value || !value.trim())) {
       results.push(fail("G02", `Incomplete metadata for ${route.path}`));
     }
+    if (route.indexability === "index") {
+      if (route.title.length < 25 || route.title.length > 70) {
+        results.push(
+          fail("G02", `Title length ${route.title.length} chars out of 25-70 range for ${route.path}`)
+        );
+      }
+      if (route.description.length < 80 || route.description.length > 175) {
+        results.push(
+          fail("G02", `Description length ${route.description.length} chars out of 80-175 range for ${route.path}`)
+        );
+      }
+    }
     if (route.canonicalPath !== route.path) {
       results.push(fail("G03", `canonicalPath mismatch for ${route.path}`));
     }

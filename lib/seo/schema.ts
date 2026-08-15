@@ -34,6 +34,14 @@ function websiteNode(): JsonLdNode {
     url: siteConfig.canonicalOrigin,
     inLanguage: "en",
     publisher: { "@id": `${siteConfig.canonicalOrigin}/#organization` },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${siteConfig.canonicalOrigin}/answers?q={search_term_string}`,
+      },
+      "query-input": "required name=search_term_string",
+    },
   };
 }
 
