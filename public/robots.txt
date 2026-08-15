@@ -42,7 +42,29 @@ Disallow: /cbam/
 Disallow: /login
 Disallow: /register
 
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /dashboard/
+Disallow: /cases/
+Disallow: /reports/
+Disallow: /account/
+Disallow: /credits/
+Disallow: /cbam/
+Disallow: /login
+Disallow: /register
+
 User-agent: ClaudeBot
+Allow: /
+Disallow: /dashboard/
+Disallow: /cases/
+Disallow: /reports/
+Disallow: /account/
+Disallow: /credits/
+Disallow: /cbam/
+Disallow: /login
+Disallow: /register
+
+User-agent: anthropic-ai
 Allow: /
 Disallow: /dashboard/
 Disallow: /cases/
