@@ -46,7 +46,7 @@ export default async function CNCodeLandingPage({ params }: PageProps) {
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
       <JsonLdForRoute path={`/cn-code/${entry.cnCode}`} />
 
-      <main className="flex-1 max-w-3xl mx-auto px-6 py-16">
+      <main id="main" className="flex-1 max-w-3xl mx-auto px-6 py-16">
         <nav aria-label="Breadcrumb" className="text-sm text-muted mb-6">
           <ol className="flex flex-wrap gap-2">
             <li>

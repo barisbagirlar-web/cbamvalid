@@ -56,7 +56,7 @@ export default function SampleDossierPage() {
           >
             <div className="deliv-card">
               <span className="fmt">PDF · {PUBLIC_SAMPLE_DOSSIER.pageCount} pages</span>
-              <h3>Sample dossier PDF</h3>
+              <h2>Sample dossier PDF</h2>
               <p className="mono" style={{ fontSize: "0.75rem", wordBreak: "break-all" }}>
                 SHA-256 {pdfHash}
               </p>

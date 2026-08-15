@@ -104,7 +104,7 @@ export default function SampleDossierViewer() {
 
       <aside className="viewer-side">
         <div className="panel">
-          <h4>Integrity</h4>
+          <h3>Integrity</h3>
           <p style={{ fontSize: "0.8rem", color: "var(--muted)", margin: "0 0 12px" }}>
             Verify the published PDF hash live on /verify. No account required.
           </p>
@@ -117,7 +117,7 @@ export default function SampleDossierViewer() {
           </a>
         </div>
         <div className="panel">
-          <h4>Downloads</h4>
+          <h3>Downloads</h3>
           <ul className="toc-list">
             <li>
               <a href={PUBLIC_SAMPLE_DOSSIER.downloads.pdf} download>

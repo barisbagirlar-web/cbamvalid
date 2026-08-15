@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-kil-base px-6">
+    <main id="main" className="min-h-screen flex items-center justify-center bg-kil-base px-6">
       <div className="max-w-md w-full bg-kil-surface border border-kil-text/15 rounded-sm p-10 shadow-sm text-center">
         <p className="font-mono text-6xl text-kil-text/20 tabular-nums tracking-tighter mb-4" aria-hidden="true">
           404

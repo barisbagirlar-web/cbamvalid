@@ -51,7 +51,7 @@ export default function VerifyPackageClientPage() {
     : [];
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-16">
+    <main id="main" className="mx-auto max-w-3xl px-6 py-16">
       <h1 className="text-3xl font-semibold tracking-tight text-ink">Package verification</h1>
       <p className="mt-2 text-sm text-muted mono">{packageId}</p>
       {error ? <p className="mt-6 text-status-blocked">{error}</p> : null}

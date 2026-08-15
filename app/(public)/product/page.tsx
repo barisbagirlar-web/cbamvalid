@@ -313,7 +313,7 @@ export default function Page() {
               </div>
               <div className="ui-mock-body">
                 <div className="ui-panel">
-                  <h4>Workspace trackers</h4>
+                  <h3>Workspace trackers</h3>
                   <ul className="ui-list">
                     <li>Eight-stage completion</li>
                     <li>Seal blockers</li>
@@ -322,7 +322,7 @@ export default function Page() {
                   </ul>
                 </div>
                 <div className="ui-panel">
-                  <h4>Case Readiness</h4>
+                  <h3>Case Readiness</h3>
                   <div className="qc-grid">
                     <div className="qc-box">
                       <div className="v terra">86%</div>

@@ -31,7 +31,7 @@ const EXCLUDED = [
 
 export default function ProductClassificationPage() {
   return (
-    <main>
+    <main id="main">
       <section className="pricing-wrap" aria-label="Product classification">
         <header className="pricing-hero">
           <p className="eyebrow">Commercial classification statement</p>
