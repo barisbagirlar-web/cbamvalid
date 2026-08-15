@@ -6,7 +6,7 @@ const hash = "<64-character-sha256>";
 
 export default function DevelopersPage() {
   return (
-    <main className="mx-auto max-w-4xl px-6 py-12 md:py-16">
+    <main id="main" className="mx-auto max-w-4xl px-6 py-12 md:py-16">
       <p className="text-sm font-semibold uppercase tracking-wide text-accent">Public API v1</p>
       <h1 className="mt-2 text-4xl font-bold tracking-tight">Verify sealed dossier integrity by SHA-256</h1>
       <p className="mt-5 max-w-3xl text-muted">

@@ -32,6 +32,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { generateOrganizationSchema, generateWebSiteSchema } from "@/lib/seo/schema";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -39,10 +41,27 @@ export default async function RootLayout({
 }>) {
   // Request-time render so proxy.ts CSP nonces apply to framework scripts.
   await headers();
+  const orgSchema = generateOrganizationSchema();
+  const siteSchema = generateWebSiteSchema();
 
   return (
     <html lang="en" className={inter.variable}>
-      <body className={`${inter.className} bg-kil-base text-kil-text antialiased min-h-screen`}>
+      <body
+        className={`${inter.className} bg-kil-base text-kil-text antialiased min-h-screen`}
+        data-engine-version="1.0.0-ELITE"
+      >
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-black focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-kil-accent focus:rounded-md"
+        >
+          Skip to main content
+        </a>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify([orgSchema, siteSchema]),
+          }}
+        />
         {/* AuthProvider intentionally NOT on public marketing routes — Firebase client
             was the primary LCP/main-thread tax on anonymous homepage visits. Mounted
             only under (auth) and (workspace) layouts.

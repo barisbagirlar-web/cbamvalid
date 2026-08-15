@@ -5,7 +5,7 @@ export const metadata = generateSeoMetadata("/tools/cbam-cost-pass-through");
 
 export default function CbamCostPassThroughPage() {
   return (
-    <main className="mx-auto max-w-6xl px-6 py-12 md:py-16">
+    <main id="main" className="mx-auto max-w-6xl px-6 py-12 md:py-16">
       <div className="max-w-3xl">
         <p className="text-sm font-semibold uppercase tracking-wide text-accent">Free negotiation tool</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-5xl">CBAM Cost Pass-Through Calculator</h1>

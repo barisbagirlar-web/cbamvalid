@@ -27,7 +27,7 @@ export default function WorkspaceLayout({
         <Teb232TargetCasePreparer />
         <EvidenceQualityWarningBridge />
         <AppHeader />
-        <main className="flex-1 max-w-[1440px] mx-auto w-full px-6 py-8">
+        <main id="main" className="flex-1 max-w-[1440px] mx-auto w-full px-6 py-8">
           {children}
         </main>
       </div>
