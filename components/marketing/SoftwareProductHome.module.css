@@ -1,7 +1,7 @@
 .hero {
   position: relative;
   overflow: hidden;
-  padding: 44px 0 54px;
+  padding: 28px 0 36px;
   background: #fbfcfe;
   border-bottom: 1px solid #e7ebf1;
 }
@@ -11,76 +11,76 @@
   z-index: 1;
   display: grid;
   grid-template-columns: minmax(0, 48fr) minmax(0, 52fr);
-  gap: clamp(24px, 3.5vw, 48px);
+  gap: clamp(18px, 2.8vw, 36px);
   align-items: center;
 }
 
 .copy {
   min-width: 0;
-  padding: 4px 0 8px;
+  padding: 2px 0 4px;
 }
 
 .kicker {
   display: inline-block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   color: #0b5de8;
   font-family: var(--mono, ui-monospace, monospace);
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .saasLabel {
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   color: #40536f;
-  font-size: 0.88rem;
+  font-size: 0.8rem;
   font-weight: 650;
   letter-spacing: 0.01em;
 }
 
 .title {
-  margin: 0 0 16px;
+  margin: 0 0 10px;
   color: #082347;
   font-family: var(--sans, Arial, sans-serif);
-  font-size: clamp(2.2rem, 3.6vw, 3.25rem);
+  font-size: clamp(1.75rem, 2.8vw, 2.45rem);
   font-weight: 760;
   line-height: 1.12;
   letter-spacing: -0.03em;
 }
 
 .lede {
-  max-width: 560px;
-  margin: 0 0 12px;
+  max-width: 520px;
+  margin: 0 0 8px;
   color: #40536f;
-  font-size: clamp(0.98rem, 1.1vw, 1.1rem);
-  line-height: 1.55;
+  font-size: clamp(0.9rem, 1vw, 1rem);
+  line-height: 1.5;
 }
 
 .classification {
-  max-width: 560px;
-  margin: 0 0 20px;
+  max-width: 520px;
+  margin: 0 0 14px;
   color: #40536f;
-  font-size: 0.9rem;
-  line-height: 1.45;
+  font-size: 0.82rem;
+  line-height: 1.4;
 }
 
 .ctas {
   display: flex;
-  gap: 14px;
+  gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 28px;
+  margin-bottom: 18px;
 }
 
 .primary,
 .secondary {
   display: inline-flex;
-  min-height: 48px;
+  min-height: 42px;
   align-items: center;
   justify-content: center;
-  padding: 0 24px;
+  padding: 0 18px;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-weight: 700;
   line-height: 1;
   transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
@@ -142,7 +142,7 @@
 .visual {
   position: relative;
   min-width: 0;
-  padding: 12px 0 24px;
+  padding: 6px 0 12px;
   perspective: 1600px;
 }
 
@@ -151,19 +151,19 @@
   z-index: 2;
   overflow: hidden;
   border: 1px solid #d7dee9;
-  border-radius: 14px;
+  border-radius: 12px;
   background: rgba(255,255,255,.98);
-  box-shadow: 0 20px 48px rgba(21, 44, 78, .16), 0 5px 14px rgba(21, 44, 78, .08);
+  box-shadow: 0 14px 32px rgba(21, 44, 78, .14), 0 4px 10px rgba(21, 44, 78, .07);
   transform-origin: 52% 48%;
-  transform: rotate(1.5deg) skewX(-0.5deg) scale(0.99);
+  transform: rotate(1.5deg) skewX(-0.5deg) scale(0.9);
 }
 
 .dashboardTop {
   display: flex;
-  min-height: 64px;
+  min-height: 52px;
   align-items: center;
-  gap: 14px;
-  padding: 0 24px;
+  gap: 12px;
+  padding: 0 18px;
   background: linear-gradient(90deg, #09264d, #0a2f61);
   color: #fff;
 }
@@ -182,45 +182,45 @@
 }
 
 .dashBrand {
-  font-size: 1.05rem;
+  font-size: 0.92rem;
   font-weight: 800;
 }
 
 .readiness {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin-left: auto;
-  font-size: .9rem;
+  font-size: .78rem;
 }
 
-.readiness strong { font-size: 1rem; }
+.readiness strong { font-size: 0.88rem; }
 
 .ring {
-  width: 35px;
-  height: 35px;
-  border: 5px solid rgba(255,255,255,.20);
+  width: 28px;
+  height: 28px;
+  border: 4px solid rgba(255,255,255,.20);
   border-top-color: #8bd24f;
   border-right-color: #8bd24f;
   border-radius: 50%;
 }
 
 .dashboardBody {
-  padding: 26px 25px 24px;
+  padding: 18px 16px 16px;
 }
 
 .caseHead {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 20px;
+  gap: 14px;
+  margin-bottom: 14px;
 }
 
 .caseTitle {
-  margin: 0 0 4px;
+  margin: 0 0 3px;
   color: #0b1e3b;
-  font-size: 1.58rem;
+  font-size: 1.25rem;
   font-weight: 790;
   line-height: 1.05;
 }
@@ -228,19 +228,19 @@
 .caseSub {
   margin: 0;
   color: #4d5c73;
-  font-size: .92rem;
+  font-size: .8rem;
 }
 
 .verifyBadge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
+  gap: 6px;
+  padding: 7px 10px;
   border: 1px solid #a8d5b5;
-  border-radius: 9px;
+  border-radius: 8px;
   background: #f7fcf8;
   color: #13723b;
-  font-size: .78rem;
+  font-size: .72rem;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -426,28 +426,28 @@
 @media (max-width: 1180px) {
   .grid {
     grid-template-columns: minmax(0, 46fr) minmax(0, 54fr);
-    gap: 24px;
+    gap: 20px;
   }
-  .title { font-size: clamp(2.1rem, 3.8vw, 3.1rem); }
+  .title { font-size: clamp(1.7rem, 3vw, 2.3rem); }
   .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 980px) {
-  .hero { padding: 52px 0 68px; }
+  .hero { padding: 24px 0 32px; }
   .grid { grid-template-columns: 1fr; }
-  .copy { max-width: 760px; }
-  .visual { max-width: 900px; width: 100%; margin: 0 auto; }
-  .dashboard { transform: rotate(2.3deg) scale(.98); }
-  .detachedCards { transform: rotate(2.3deg); }
+  .copy { max-width: 680px; }
+  .visual { max-width: 720px; width: 100%; margin: 0 auto; }
+  .dashboard { transform: rotate(2.3deg) scale(.88); }
+  .detachedCards { transform: rotate(2.3deg) scale(.92); }
 }
 
 @media (max-width: 680px) {
-  .hero { padding: 30px 0 44px; }
-  .kicker { margin-bottom: 18px; font-size: .64rem; }
-  .title { font-size: clamp(2.35rem, 12vw, 3.35rem); margin-bottom: 18px; }
-  .lede { font-size: 1rem; margin-bottom: 24px; }
-  .ctas { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 22px; }
-  .primary, .secondary { width: 100%; min-height: 52px; }
+  .hero { padding: 20px 0 28px; }
+  .kicker { margin-bottom: 8px; font-size: .62rem; }
+  .title { font-size: clamp(1.55rem, 7.5vw, 2rem); margin-bottom: 10px; }
+  .lede { font-size: 0.92rem; margin-bottom: 10px; }
+  .ctas { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 16px; }
+  .primary, .secondary { width: 100%; min-height: 44px; }
   .trustItem { width: 50%; border-right: 0; padding: 7px 8px 7px 0; }
   .visual { padding-top: 18px; overflow: visible; }
   .dashboard { transform: rotate(1.4deg); border-radius: 11px; }
